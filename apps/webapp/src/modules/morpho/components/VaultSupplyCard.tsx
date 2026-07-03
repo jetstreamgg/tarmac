@@ -5,6 +5,7 @@ import { useTokenBalance, getTokenDecimals, type Token } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 
 const NO_VALUE = '–';
 
@@ -30,6 +31,10 @@ export function VaultSupplyCard({
   const decimals = getTokenDecimals(assetToken, chainId);
 
   const { data: balance } = useTokenBalance({ address, chainId, token: assetToken.address[chainId] });
+
+  // The CTA stays enabled while disconnected: clicking routes through the
+  // connect flow and continues into the supply modal once connected.
+  const onSupplyOrConnect = useConnectThenAct(onSupply);
 
   const rate = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
   const idleBalance =
@@ -84,13 +89,7 @@ export function VaultSupplyCard({
         </div>
       </div>
 
-      <Button
-        variant="primary"
-        className="w-full"
-        onClick={onSupply}
-        disabled={!isConnected}
-        data-testid="vault-supply-cta"
-      >
+      <Button variant="primary" className="w-full" onClick={onSupplyOrConnect} data-testid="vault-supply-cta">
         <Trans>Supply</Trans>
       </Button>
     </div>

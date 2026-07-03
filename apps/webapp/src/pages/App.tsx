@@ -15,6 +15,7 @@ import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersConte
 import { ChainModalProvider } from '@/modules/ui/context/ChainModalContext';
 import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
+import { ConnectThenActProvider } from '@/modules/ui/context/ConnectThenActContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
 import { AnalyticsErrorBoundary } from '@/modules/analytics/AnalyticsErrorBoundary';
@@ -47,20 +48,22 @@ const AppContent = () => {
   return (
     <ConnectedProvider>
       <TermsModalProvider>
-        <BalanceFiltersProvider>
-          <TooltipProvider delayDuration={300}>
-            <ChainModalProvider>
-              <NetworkSwitchProvider>
-                <TransactionProvider>
-                  <ExternalLinkModal />
-                  <Toaster />
-                  <ToastCloseAll />
-                  <RouterProvider router={router} />
-                </TransactionProvider>
-              </NetworkSwitchProvider>
-            </ChainModalProvider>
-          </TooltipProvider>
-        </BalanceFiltersProvider>
+        <ConnectThenActProvider>
+          <BalanceFiltersProvider>
+            <TooltipProvider delayDuration={300}>
+              <ChainModalProvider>
+                <NetworkSwitchProvider>
+                  <TransactionProvider>
+                    <ExternalLinkModal />
+                    <Toaster />
+                    <ToastCloseAll />
+                    <RouterProvider router={router} />
+                  </TransactionProvider>
+                </NetworkSwitchProvider>
+              </ChainModalProvider>
+            </TooltipProvider>
+          </BalanceFiltersProvider>
+        </ConnectThenActProvider>
       </TermsModalProvider>
     </ConnectedProvider>
   );

@@ -12,6 +12,7 @@ import {
 } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useStUsdsModal } from '../hooks/useStUsdsModal';
 
 const NO_VALUE = '–';
@@ -34,6 +35,10 @@ function StatRow({ label, children }: { label: ReactNode; children: ReactNode })
 function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => void }) {
   const { isConnected } = useConnection();
   const { data: stUsdsData } = useStUsdsData();
+
+  // The CTA stays enabled while disconnected: clicking routes through the
+  // connect flow and continues into the supply modal once connected.
+  const onSupplyOrConnect = useConnectThenAct(onSupply);
 
   const rateLabel = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
   const idleBalance =
@@ -99,8 +104,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
       <Button
         variant="primary"
         className="w-full"
-        onClick={onSupply}
-        disabled={!isConnected}
+        onClick={onSupplyOrConnect}
         data-testid="stusds-supply-cta"
       >
         <Trans>Supply</Trans>
