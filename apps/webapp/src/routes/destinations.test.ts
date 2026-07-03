@@ -31,7 +31,7 @@ describe('target-IA destination routes', () => {
     [ROUTES.EARN_REWARDS, '/_shell/earn/rewards'],
     [ROUTES.EARN_VAULTS, '/_shell/earn/vaults'],
     [ROUTES.EARN_FIXED, '/_shell/earn/fixed'],
-    [ROUTES.EARN_EXPERT, '/_shell/earn/expert']
+    [ROUTES.EARN_STUSDS, '/_shell/earn/stusds']
   ])('boots the %s module under the Earn destination', async (path, routeId) => {
     expect(matchedRouteIds(await routerAt(path))).toContain(routeId);
   });
@@ -71,12 +71,22 @@ describe('pre-flip module path redirects', () => {
     ['/rewards', ROUTES.EARN_REWARDS],
     ['/vaults', ROUTES.EARN_VAULTS],
     ['/fixed', ROUTES.EARN_FIXED],
-    ['/expert', ROUTES.EARN_EXPERT],
-    ['/expert/stusds', `${ROUTES.EARN_EXPERT}/stusds`]
+    ['/expert', ROUTES.EARN_STUSDS],
+    ['/expert/stusds', ROUTES.EARN_STUSDS]
   ])('redirects %s to %s', async (from, to) => {
     const router = await routerAt(from);
     expect(router.state.location.pathname).toBe(to);
   });
+
+  // The Expert module collapsed into /earn/stusds (D7) — its old /earn URLs
+  // (both generations could have been bookmarked) forward there.
+  it.each([['/earn/expert'], ['/earn/expert/stusds']])(
+    'redirects the retired %s to /earn/stusds',
+    async from => {
+      const router = await routerAt(from);
+      expect(router.state.location.pathname).toBe(ROUTES.EARN_STUSDS);
+    }
+  );
 
   it('keeps entity segments in the path and preserves search params', async () => {
     const reward = '0x0650CAF159C5A49f711e8169D4336ECB9b950275';

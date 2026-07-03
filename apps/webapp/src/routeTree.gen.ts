@@ -19,6 +19,7 @@ import { Route as ShellPortfolioRouteImport } from './routes/_shell.portfolio'
 import { Route as ShellConvertRouteImport } from './routes/_shell.convert'
 import { Route as ShellEarnIndexRouteImport } from './routes/_shell.earn.index'
 import { Route as ShellEarnVaultsRouteImport } from './routes/_shell.earn.vaults'
+import { Route as ShellEarnStusdsRouteImport } from './routes/_shell.earn.stusds'
 import { Route as ShellEarnSavingsRouteImport } from './routes/_shell.earn.savings'
 import { Route as ShellEarnRewardsRouteImport } from './routes/_shell.earn.rewards'
 import { Route as ShellEarnFixedRouteImport } from './routes/_shell.earn.fixed'
@@ -80,6 +81,11 @@ const ShellEarnIndexRoute = ShellEarnIndexRouteImport.update({
 const ShellEarnVaultsRoute = ShellEarnVaultsRouteImport.update({
   id: '/earn/vaults',
   path: '/earn/vaults',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellEarnStusdsRoute = ShellEarnStusdsRouteImport.update({
+  id: '/earn/stusds',
+  path: '/earn/stusds',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellEarnSavingsRoute = ShellEarnSavingsRouteImport.update({
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/earn/fixed': typeof ShellEarnFixedRouteWithChildren
   '/earn/rewards': typeof ShellEarnRewardsRouteWithChildren
   '/earn/savings': typeof ShellEarnSavingsRoute
+  '/earn/stusds': typeof ShellEarnStusdsRoute
   '/earn/vaults': typeof ShellEarnVaultsRouteWithChildren
   '/earn/': typeof ShellEarnIndexRoute
   '/earn/expert/stusds': typeof ShellEarnExpertStusdsRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/earn/fixed': typeof ShellEarnFixedRouteWithChildren
   '/earn/rewards': typeof ShellEarnRewardsRouteWithChildren
   '/earn/savings': typeof ShellEarnSavingsRoute
+  '/earn/stusds': typeof ShellEarnStusdsRoute
   '/earn/vaults': typeof ShellEarnVaultsRouteWithChildren
   '/earn': typeof ShellEarnIndexRoute
   '/earn/expert/stusds': typeof ShellEarnExpertStusdsRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/_shell/earn/fixed': typeof ShellEarnFixedRouteWithChildren
   '/_shell/earn/rewards': typeof ShellEarnRewardsRouteWithChildren
   '/_shell/earn/savings': typeof ShellEarnSavingsRoute
+  '/_shell/earn/stusds': typeof ShellEarnStusdsRoute
   '/_shell/earn/vaults': typeof ShellEarnVaultsRouteWithChildren
   '/_shell/earn/': typeof ShellEarnIndexRoute
   '/_shell/earn/expert/stusds': typeof ShellEarnExpertStusdsRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/earn/fixed'
     | '/earn/rewards'
     | '/earn/savings'
+    | '/earn/stusds'
     | '/earn/vaults'
     | '/earn/'
     | '/earn/expert/stusds'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/earn/fixed'
     | '/earn/rewards'
     | '/earn/savings'
+    | '/earn/stusds'
     | '/earn/vaults'
     | '/earn'
     | '/earn/expert/stusds'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/_shell/earn/fixed'
     | '/_shell/earn/rewards'
     | '/_shell/earn/savings'
+    | '/_shell/earn/stusds'
     | '/_shell/earn/vaults'
     | '/_shell/earn/'
     | '/_shell/earn/expert/stusds'
@@ -367,6 +379,13 @@ declare module '@tanstack/react-router' {
       path: '/earn/vaults'
       fullPath: '/earn/vaults'
       preLoaderRoute: typeof ShellEarnVaultsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/earn/stusds': {
+      id: '/_shell/earn/stusds'
+      path: '/earn/stusds'
+      fullPath: '/earn/stusds'
+      preLoaderRoute: typeof ShellEarnStusdsRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/earn/savings': {
@@ -532,6 +551,7 @@ interface ShellRouteChildren {
   ShellEarnFixedRoute: typeof ShellEarnFixedRouteWithChildren
   ShellEarnRewardsRoute: typeof ShellEarnRewardsRouteWithChildren
   ShellEarnSavingsRoute: typeof ShellEarnSavingsRoute
+  ShellEarnStusdsRoute: typeof ShellEarnStusdsRoute
   ShellEarnVaultsRoute: typeof ShellEarnVaultsRouteWithChildren
   ShellEarnIndexRoute: typeof ShellEarnIndexRoute
 }
@@ -545,6 +565,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellEarnFixedRoute: ShellEarnFixedRouteWithChildren,
   ShellEarnRewardsRoute: ShellEarnRewardsRouteWithChildren,
   ShellEarnSavingsRoute: ShellEarnSavingsRoute,
+  ShellEarnStusdsRoute: ShellEarnStusdsRoute,
   ShellEarnVaultsRoute: ShellEarnVaultsRouteWithChildren,
   ShellEarnIndexRoute: ShellEarnIndexRoute,
 }

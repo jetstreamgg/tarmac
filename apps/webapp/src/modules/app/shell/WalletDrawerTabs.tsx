@@ -18,8 +18,7 @@ export function WalletDrawerTabs() {
   const { onExternalLinkClicked } = useConfigContext();
   const { isRegionRestricted } = useGeoConfig();
 
-  const { rewardsUrl, savingsUrlMap, stakeUrl, expertOverviewUrl, vaultsUrl, fixedYieldUrl } =
-    useModuleUrls();
+  const { rewardsUrl, savingsUrlMap, stakeUrl, stusdsUrl, vaultsUrl, fixedYieldUrl } = useModuleUrls();
 
   return (
     <Tabs defaultValue={WalletDrawerTab.ASSETS} className="flex min-h-0 flex-1 flex-col">
@@ -45,7 +44,7 @@ export function WalletDrawerTabs() {
           rewardsCardUrl={rewardsUrl}
           savingsCardUrlMap={savingsUrlMap}
           stakeCardUrl={stakeUrl}
-          stusdsCardUrl={expertOverviewUrl}
+          stusdsCardUrl={stusdsUrl}
           vaultsCardUrl={vaultsUrl}
           fixedYieldCardUrl={fixedYieldUrl}
           hideRestrictedModules={isRegionRestricted}

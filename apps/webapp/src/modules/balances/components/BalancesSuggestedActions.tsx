@@ -121,7 +121,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'stusds',
     subtitle: 'Rate: {rate}',
     module: 'stusds',
-    url: `${ROUTES.EARN_EXPERT}/stusds`
+    url: ROUTES.EARN_STUSDS
   }
 ];
 

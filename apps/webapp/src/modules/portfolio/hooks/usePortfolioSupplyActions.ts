@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useChainId } from 'wagmi';
 import { VAULTS } from '@/hooks';
 import { useSavingsModal } from '@/modules/savings/hooks/useSavingsModal';
+import { useStUsdsModal } from '@/modules/stusds/hooks/useStUsdsModal';
 import { useVaultModal } from '@/modules/morpho/hooks/useVaultModal';
 import { isMorphoVault } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
@@ -23,6 +24,7 @@ import type { SuppliedPosition } from '../helpers/suppliedView';
 export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (() => void) | undefined {
   const connectedChainId = useChainId();
   const { openSupply: openSavingsSupply } = useSavingsModal();
+  const { openSupply: openStUsdsSupply } = useStUsdsModal();
   const { openSupply: openVaultSupply } = useVaultModal();
 
   return useCallback(
@@ -52,12 +54,15 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
               netRate: position.rate
             });
         }
-        // 'rewards' | 'fixed' | 'stusds' have no in-place supply modal yet — add a
-        // case as each product's trigger is integrated.
+        case 'stusds':
+          // Singleton product, mainnet-family only — no call-time args needed.
+          return onConnectedChain ? () => openStUsdsSupply() : undefined;
+        // 'rewards' | 'fixed' have no in-place supply modal yet — add a case as
+        // each product's trigger is integrated.
         default:
           return undefined;
       }
     },
-    [connectedChainId, openSavingsSupply, openVaultSupply]
+    [connectedChainId, openSavingsSupply, openStUsdsSupply, openVaultSupply]
   );
 }

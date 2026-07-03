@@ -84,7 +84,7 @@ describe('buildEarnProducts', () => {
     expect(byId['rewards-spk'].detailPath).toBe(
       `${ROUTES.EARN_REWARDS}/${REWARD_FIXTURES[0].contractAddress}`
     );
-    expect(byId['stusds'].detailPath).toBe(`${ROUTES.EARN_EXPERT}/stusds`);
+    expect(byId['stusds'].detailPath).toBe(ROUTES.EARN_STUSDS);
     for (const product of products.filter(p => p.kind === 'vault')) {
       expect(product.detailPath.startsWith(`${ROUTES.EARN_VAULTS}/`)).toBe(true);
     }

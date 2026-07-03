@@ -115,9 +115,8 @@ export function buildEarnProducts(
     supplyTokens: [TOKENS.usds.symbol],
     risk: STUSDS_RISK_TIER,
     networks: productNetworks(Intent.EXPERT_INTENT, familyChainIds),
-    // Slug = ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]; inlined because
-    // lib/constants pulls Lingui macros the hooks test runner can't transform.
-    detailPath: intentToPath(Intent.EXPERT_INTENT, 'stusds')
+    // The Expert module flattened into its single product at /earn/stusds (D7).
+    detailPath: intentToPath(Intent.EXPERT_INTENT)
   };
 
   return [savings, ...rewards, ...vaults, ...fixed, stusds];
