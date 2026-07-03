@@ -41,13 +41,13 @@ export function WalletDrawerTabs() {
       </TabsPrimitive.List>
       <TabsContent
         value={WalletDrawerTab.ASSETS}
-        className="scrollbar-thin-always min-h-0 flex-1 overflow-auto [scrollbar-gutter:auto]"
+        className="scrollbar-thin-always min-h-0 flex-1 overflow-auto"
       >
         <WalletDrawerAssets />
       </TabsContent>
       <TabsContent
         value={WalletDrawerTab.ACTIVITY}
-        className="scrollbar-thin-always min-h-0 flex-1 overflow-auto px-4 [scrollbar-gutter:auto]"
+        className="scrollbar-thin-always min-h-0 flex-1 overflow-auto px-4"
       >
         <BalancesHistory
           onExternalLinkClicked={onExternalLinkClicked}
