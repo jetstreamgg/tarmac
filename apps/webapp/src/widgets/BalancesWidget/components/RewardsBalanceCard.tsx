@@ -6,13 +6,7 @@ import {
   useHighestRateFromChartData,
   useRewardContractsToClaim
 } from '@/hooks';
-import {
-  formatBigInt,
-  formatDecimalPercentage,
-  formatNumber,
-  isMainnetId,
-  chainId
-} from '@/utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber, isMainnetId, chainId } from '@/utils';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@/widgets/shared/components/ui/card/InteractiveStatsCard';
@@ -46,7 +40,11 @@ export const RewardsBalanceCard = ({
     f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.spk.symbol
   );
 
-  // Fetch chart data for both reward contracts
+  const usdsGroveRewardContract = rewardContracts.find(
+    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.grove.symbol
+  );
+
+  // Fetch chart data for the reward contracts
   const { data: usdsSkyChartData, isLoading: usdsSkyChartDataLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsSkyRewardContract?.contractAddress as string,
     limit: 1
@@ -57,8 +55,17 @@ export const RewardsBalanceCard = ({
     limit: 1
   });
 
-  // Find the highest rate from both contracts
-  const highestRateData = useHighestRateFromChartData([usdsSkyChartData, usdsSpkChartData]);
+  const { data: usdsGroveChartData, isLoading: usdsGroveChartDataLoading } = useRewardsChartInfo({
+    rewardContractAddress: usdsGroveRewardContract?.contractAddress as string,
+    limit: 1
+  });
+
+  // Find the highest rate from all contracts
+  const highestRateData = useHighestRateFromChartData([
+    usdsSkyChartData,
+    usdsSpkChartData,
+    usdsGroveChartData
+  ]);
 
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
@@ -79,7 +86,7 @@ export const RewardsBalanceCard = ({
     rewardChainId
   );
 
-  const chartDataLoading = usdsSkyChartDataLoading || usdsSpkChartDataLoading;
+  const chartDataLoading = usdsSkyChartDataLoading || usdsSpkChartDataLoading || usdsGroveChartDataLoading;
   const mostRecentRateNumber = highestRateData ? parseFloat(highestRateData.rate) : null;
 
   return variant === ModuleCardVariant.default ? (
