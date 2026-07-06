@@ -12,6 +12,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { AboutCle } from '@/modules/ui/components/AboutCle';
 import { RewardsOverviewAbout } from './RewardsOverviewAbout';
 import { AboutSpk } from '@/modules/ui/components/AboutSpk';
+import { AboutGrove } from '@/modules/ui/components/AboutGrove';
 
 export function RewardsDetailsView({ rewardContract }: { rewardContract?: RewardContract }) {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
@@ -54,6 +55,13 @@ export function RewardsDetailsView({ rewardContract }: { rewardContract?: Reward
         <DetailSection title={t`About the Spark Token`}>
           <DetailSectionRow>
             <AboutSpk />
+          </DetailSectionRow>
+        </DetailSection>
+      )}
+      {rewardContract.rewardToken.symbol === TOKENS.grove.symbol && (
+        <DetailSection title={t`About the Grove Token`}>
+          <DetailSectionRow>
+            <AboutGrove />
           </DetailSectionRow>
         </DetailSection>
       )}

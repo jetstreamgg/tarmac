@@ -144,10 +144,10 @@ jobs:
           echo "🔍 Verifying Alternate VNet files..."
           echo "Checking tenderlyTestnetData-alternate.json:"
           ls -lh tenderlyTestnetData-alternate.json
-          cat tenderlyTestnetData-alternate.json | head -20
+          echo "  Networks: $(jq -r '.[].NETWORK' tenderlyTestnetData-alternate.json 2>/dev/null | wc -l | tr -d ' ') found"
           echo "Checking persistent-vnet-snapshots-alternate.json:"
           ls -lh apps/webapp/src/test/e2e/persistent-vnet-snapshots-alternate.json
-          cat apps/webapp/src/test/e2e/persistent-vnet-snapshots-alternate.json
+          echo "  Snapshots: $(jq -r 'keys | length' apps/webapp/src/test/e2e/persistent-vnet-snapshots-alternate.json 2>/dev/null) found"
           echo "✅ Alternate VNet files ready"
 
       - name: Run Alternate E2E tests

@@ -3,6 +3,7 @@ import { getRewardsFaqItems } from '@/data/faqs/getRewardsFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
 import { getRewardsCleFaqItems } from '@/data/faqs/getRewardsCleFaqItems';
 import { getRewardsSpkFaqItems } from '@/data/faqs/getRewardsSpkFaqItems';
+import { getRewardsGroveFaqItems } from '@/data/faqs/getRewardsGroveFaqItems';
 
 export function RewardsFaq({ rewardContract }: { rewardContract?: RewardContract }) {
   const faqItems =
@@ -10,7 +11,9 @@ export function RewardsFaq({ rewardContract }: { rewardContract?: RewardContract
       ? getRewardsCleFaqItems()
       : rewardContract?.rewardToken.symbol === 'SPK'
         ? getRewardsSpkFaqItems()
-        : getRewardsFaqItems();
+        : rewardContract?.rewardToken.symbol === 'GROVE'
+          ? getRewardsGroveFaqItems()
+          : getRewardsFaqItems();
 
   return <FaqAccordion items={faqItems} />;
 }
