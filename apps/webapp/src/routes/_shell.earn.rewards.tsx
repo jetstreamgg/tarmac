@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { RewardsPanes } from '@/modules/rewards/components/RewardsPanes';
 import { Intent } from '@/lib/enums';
 
+// Pure layout passthrough: the per-contract detail lives at $rewardContract
+// and the bare /earn/rewards index redirects to the Earn marketplace — the
+// legacy overview pane was retired with D6.
 export const Route = createFileRoute('/_shell/earn/rewards')({
-  component: RewardsPanes,
   staticData: { intent: Intent.REWARDS_INTENT }
 });

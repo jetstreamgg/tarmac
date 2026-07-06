@@ -44,29 +44,24 @@ export const BalancesHistory = ({
   const { i18n } = useLingui();
   const memoizedDates = useMemo(() => data?.map(s => s.blockTimestamp), [data]);
   const formattedDates = useFormatDates(memoizedDates, i18n.locale, 'MMM d, h:mm a');
-  const [itemsToDisplay, setItemsToDisplay] = useState(data ? data.slice(0, itemsPerPage) : []);
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(itemsPerPage);
   const observerTarget = useRef<HTMLDivElement>(null);
 
   const onPageChange = (page: number) => {
-    const newStartIndex = (page - 1) * itemsPerPage;
-    setStartIndex(newStartIndex);
-    const endIndex = newStartIndex + itemsPerPage;
-    setItemsToDisplay(data.slice(newStartIndex, endIndex));
+    setStartIndex((page - 1) * itemsPerPage);
   };
 
   const loadMore = useCallback(() => {
     setVisibleCount(prev => Math.min(prev + itemsPerPage, data.length));
   }, [data.length, itemsPerPage]);
 
-  useEffect(() => {
-    if (useInfiniteScroll) {
-      setVisibleCount(itemsPerPage);
-    } else {
-      setItemsToDisplay(data.slice(0, itemsPerPage));
-    }
-  }, [data, itemsPerPage, useInfiniteScroll]);
+  // Derived from `data` rather than synced through an effect so background
+  // refetches never reset the visible window (which read as flashes).
+  const itemsToDisplay = useMemo(
+    () => data.slice(startIndex, startIndex + itemsPerPage),
+    [data, startIndex, itemsPerPage]
+  );
 
   useEffect(() => {
     if (!useInfiniteScroll) return;
@@ -106,7 +101,12 @@ export const BalancesHistory = ({
   const displayItems = useInfiniteScroll ? infiniteScrollItems : itemsToDisplay;
   const getGlobalIndex = (index: number) => (useInfiniteScroll ? index : startIndex + index);
 
-  return data.length > 0 ? (
+  // Dozens of per-module/per-network queries feed `data`; rendering before
+  // they all settle makes rows re-sort under the user as each one lands.
+  // Hold the skeletons until the initial load completes and paint once.
+  return isLoading ? (
+    <>{loadingCards}</>
+  ) : data.length > 0 ? (
     <>
       <VStack gap={2} className={cn('mt-6', className)}>
         {displayItems.map((item, index: number) => {
@@ -142,8 +142,6 @@ export const BalancesHistory = ({
         <CustomPagination dataLength={data.length} onPageChange={onPageChange} itemsPerPage={itemsPerPage} />
       )}
     </>
-  ) : isLoading ? (
-    <>{loadingCards}</>
   ) : error ? (
     <div>
       <Text className="text-textSecondary mt-10 text-center text-xs">

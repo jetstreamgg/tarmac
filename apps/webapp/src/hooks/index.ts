@@ -486,6 +486,7 @@ export {
   usdcAddress,
   usdtAddress,
   spkAddress,
+  groveAddress,
   stakeModuleAddress,
   stakeModuleAbi,
   mcdVatAbi,

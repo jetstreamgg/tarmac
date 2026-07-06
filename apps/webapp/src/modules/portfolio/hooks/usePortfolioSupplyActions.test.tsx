@@ -8,14 +8,16 @@ const h = vi.hoisted(() => ({
   openStUsdsSupply: vi.fn(),
   openVaultSupply: vi.fn(),
   openPendleSupply: vi.fn(),
-  chainId: 1,
   // Far-future expiry so the market reads as active; the maturity test flips it.
-  pendleMarket: { name: 'PT-sUSDS', slug: 'pt-susds', marketAddress: '0x9C5', expiry: 4102444800 }
+  pendleMarket: { name: 'PT-sUSDS', slug: 'pt-susds', marketAddress: '0x9C5', expiry: 4102444800 },
+  openRewardsSupply: vi.fn(),
+  chainId: 1
 }));
 
 vi.mock('wagmi', () => ({ useChainId: () => h.chainId }));
 
 vi.mock('@/hooks', () => ({
+  TOKENS: { cle: { symbol: 'CLE' } },
   VAULTS: [
     {
       provider: 'morpho',
@@ -27,7 +29,23 @@ vi.mock('@/hooks', () => ({
   ],
   getPendleMarketByAddress: (address: string) =>
     address.toLowerCase() === h.pendleMarket.marketAddress.toLowerCase() ? h.pendleMarket : undefined,
-  isMarketMatured: (expiry: number) => expiry * 1000 <= Date.now()
+  isMarketMatured: (expiry: number) => expiry * 1000 <= Date.now(),
+  useAvailableTokenRewardContracts: () => [
+    {
+      contractAddress: '0xFA12',
+      chainId: 1,
+      name: 'With: USDS Get: SPK',
+      supplyToken: { symbol: 'USDS' },
+      rewardToken: { symbol: 'SPK' }
+    },
+    {
+      contractAddress: '0xC1E0',
+      chainId: 1,
+      name: 'Chronicle Points',
+      supplyToken: { symbol: 'USDS' },
+      rewardToken: { symbol: 'CLE' }
+    }
+  ]
 }));
 
 vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
@@ -44,6 +62,10 @@ vi.mock('@/modules/morpho/hooks/useVaultModal', () => ({
 
 vi.mock('@/modules/pendle/hooks/usePendleModal', () => ({
   usePendleModal: () => ({ openSupply: h.openPendleSupply, openWithdraw: vi.fn() })
+}));
+
+vi.mock('@/modules/rewards/hooks/useRewardsModal', () => ({
+  useRewardsModal: () => ({ openSupply: h.openRewardsSupply, openWithdraw: vi.fn() })
 }));
 
 const position = (
@@ -69,6 +91,7 @@ describe('usePortfolioSupplyActions', () => {
     h.openStUsdsSupply.mockClear();
     h.openVaultSupply.mockClear();
     h.openPendleSupply.mockClear();
+    h.openRewardsSupply.mockClear();
     h.chainId = 1;
     h.pendleMarket.expiry = 4102444800;
   });
@@ -120,6 +143,50 @@ describe('usePortfolioSupplyActions', () => {
     expect(result.current(position('vault', { id: 'vault-sky-0xdef' }))).toBeUndefined();
   });
 
+  it('resolves a rewards position to an opener that launches the rewards modal with its config', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(
+      position('rewards', { id: 'rewards-spk', address: '0xFA12', rate: 0.045 })
+    );
+
+    expect(handler).toBeTypeOf('function');
+    handler!();
+    expect(h.openRewardsSupply).toHaveBeenCalledWith({
+      contractAddress: '0xFA12',
+      supplyToken: { symbol: 'USDS' },
+      displayName: 'SPK Rewards',
+      rewardTokenSymbol: 'SPK',
+      rate: 0.045
+    });
+  });
+
+  it('omits the rewards-in token for a points farm (Chronicle) and titles it by its registry name', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(
+      position('rewards', { id: 'rewards-cle', address: '0xC1E0', rate: undefined })
+    );
+
+    handler!();
+    expect(h.openRewardsSupply).toHaveBeenCalledWith({
+      contractAddress: '0xC1E0',
+      supplyToken: { symbol: 'USDS' },
+      displayName: 'Chronicle Points',
+      rewardTokenSymbol: undefined,
+      rate: undefined
+    });
+  });
+
+  it('returns undefined for a rewards position off the connected chain or with no known contract', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+
+    expect(
+      result.current(position('rewards', { id: 'rewards-spk', address: '0xFA12', chainIds: [8453] }))
+    ).toBeUndefined();
+    expect(result.current(position('rewards', { id: 'rewards-spk', address: '0xBEEF' }))).toBeUndefined();
+    expect(result.current(position('rewards', { id: 'rewards-spk' }))).toBeUndefined();
+    expect(h.openRewardsSupply).not.toHaveBeenCalled();
+  });
+
   it('resolves a stUSDS position on the connected chain to an opener that launches the stUSDS modal', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions());
     const handler = result.current(position('stusds'));
@@ -163,11 +230,5 @@ describe('usePortfolioSupplyActions', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions());
     expect(result.current(position('fixed', { id: 'fixed-0x404', address: '0x404' }))).toBeUndefined();
     expect(h.openPendleSupply).not.toHaveBeenCalled();
-  });
-
-  it('returns undefined for products with no in-place supply modal (caller navigates)', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
-
-    expect(result.current(position('rewards'))).toBeUndefined();
   });
 });

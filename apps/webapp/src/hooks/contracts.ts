@@ -195,6 +195,13 @@ export const contracts: {
     }
   },
   {
+    name: 'usdsGroveReward',
+    address: {
+      [mainnet.id]: '0x4E41488C19cD35EB4de3083Fc3e204854c75c86a',
+      [TENDERLY_CHAIN_ID]: '0x4E41488C19cD35EB4de3083Fc3e204854c75c86a'
+    }
+  },
+  {
     name: 'cleReward',
     address: {
       [mainnet.id]: '0x10ab606B067C9C461d8893c47C7512472E19e2Ce',
@@ -228,6 +235,13 @@ export const contracts: {
     address: {
       [mainnet.id]: '0xc20059e0317DE91738d13af027DfC4a50781b066',
       [TENDERLY_CHAIN_ID]: '0xc20059e0317DE91738d13af027DfC4a50781b066'
+    }
+  },
+  {
+    name: 'grove',
+    address: {
+      [mainnet.id]: '0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406',
+      [TENDERLY_CHAIN_ID]: '0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406'
     }
   },
   // LockstakeMkr
