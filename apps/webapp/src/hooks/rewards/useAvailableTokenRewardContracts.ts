@@ -1,6 +1,11 @@
 import { useMemo, useCallback } from 'react';
 import { RewardContract } from './rewards';
-import { cleRewardAddress, usdsSpkRewardAddress, usdsSkyRewardAddress } from '../generated';
+import {
+  cleRewardAddress,
+  usdsGroveRewardAddress,
+  usdsSpkRewardAddress,
+  usdsSkyRewardAddress
+} from '../generated';
 import { TOKENS } from '../tokens/tokens.constants';
 
 const REWARD_CONTRACT_CONFIGS = [
@@ -22,6 +27,15 @@ const REWARD_CONTRACT_CONFIGS = [
     description: 'Supply USDS, get SPK',
     externalLink: 'http://spark.fi/',
     logo: 'https://via.placeholder.com/400x400/04d19a/9CD33B?text=SPK'
+  },
+  {
+    supplyToken: TOKENS.usds,
+    rewardToken: TOKENS.grove,
+    getAddress: (chainId: number) => usdsGroveRewardAddress[chainId as keyof typeof usdsGroveRewardAddress],
+    name: 'With: USDS Get: GROVE',
+    description: 'Supply USDS, get GROVE',
+    externalLink: 'https://grove.finance/',
+    logo: 'https://via.placeholder.com/400x400/04d19a/E3D27A?text=GROVE'
   },
   {
     supplyToken: TOKENS.usds,
