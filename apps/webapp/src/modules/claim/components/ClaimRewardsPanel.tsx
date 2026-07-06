@@ -97,11 +97,12 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     (hasSelectionIn('stake') && !stakeCalls.prepared);
   const disabled = calls.length === 0 || preparing;
 
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute: flow.execute,
-    confirmDisabled: disabled,
-    transactionScreenContent: (
+  // Memoized so the useModalEntryBody sync effect has stable deps — an inline
+  // element here recreates every render and loops updateModalContent →
+  // setActiveConfig → re-render ("Maximum update depth", crashes the page; the
+  // same failure mode the vault form fixed in D4).
+  const transactionScreenContent = useMemo(
+    () => (
       <div className="flex flex-col gap-2" data-testid="claim-rewards-summary">
         {selected.map(reward => (
           <div key={reward.id} className="flex items-center gap-2">
@@ -112,7 +113,15 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
           </div>
         ))}
       </div>
-    )
+    ),
+    [selected]
+  );
+
+  const renderInSlot = useModalEntryBody({
+    sessionId,
+    execute: flow.execute,
+    confirmDisabled: disabled,
+    transactionScreenContent
   });
 
   const toggle = (id: string) =>
