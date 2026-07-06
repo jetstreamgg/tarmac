@@ -1,7 +1,10 @@
-export { useBatchMorphoVaultDeposit } from './useBatchMorphoVaultDeposit';
-export { useMorphoVaultWithdraw } from './useMorphoVaultWithdraw';
-export { useMorphoVaultRedeem } from './useMorphoVaultRedeem';
-export { useMorphoVaultOnChainData } from './useMorphoVaultOnChainData';
+// Provider-neutral transaction + ERC-4626 data hooks now live in ../vaults.
+// Re-exported under their legacy Morpho names as thin aliases so existing
+// call sites keep working.
+export { useBatchVaultDeposit as useBatchMorphoVaultDeposit } from '../vaults/useBatchVaultDeposit';
+export { useVaultWithdraw as useMorphoVaultWithdraw } from '../vaults/useVaultWithdraw';
+export { useVaultRedeem as useMorphoVaultRedeem } from '../vaults/useVaultRedeem';
+export { useErc4626VaultData as useMorphoVaultOnChainData } from '../vaults/useErc4626VaultData';
 export {
   useMorphoVaultRateApiData,
   useMorphoVaultMultipleRateApiData,

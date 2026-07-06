@@ -6,10 +6,12 @@ import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { AnimatePresence, motion } from 'motion/react';
 import { MorphoVaultWidgetPane } from '@/modules/morpho/components/MorphoVaultWidgetPane';
-import { VaultsIntentMapping, QueryParams } from '@/lib/constants';
+import { QueryParams } from '@/lib/constants';
+import { vaultModuleForProvider, vaultsIntentForProvider } from '@/lib/vaults/vaultProviderMapping';
+import { VaultProvider } from '@/hooks/vaults/types';
 import { useSearchParams } from 'react-router-dom';
-import { MorphoVaultStatsCard } from '@/modules/expert/components/MorphoVaultStatsCard';
-import { MORPHO_VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
+import { VaultStatsCard } from '@/modules/expert/components/VaultStatsCard';
+import { VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { useMemo } from 'react';
 import { positionAnimations } from '@/widgets';
@@ -22,17 +24,17 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
   const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
 
   const selectedVault =
-    MORPHO_VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
-    MORPHO_VAULTS[0];
+    VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
+    VAULTS[0];
 
   const { data: userVaultsData } = useAllMorphoVaultsUserAssets();
 
   // Separate vaults into "My Vaults" (user has balance) and "All Vaults"
   const [myVaults, allVaults] = useMemo(() => {
-    const myVaults: typeof MORPHO_VAULTS = [];
-    const allVaults: typeof MORPHO_VAULTS = [];
+    const myVaults: typeof VAULTS = [];
+    const allVaults: typeof VAULTS = [];
 
-    MORPHO_VAULTS.forEach(vault => {
+    VAULTS.forEach(vault => {
       const vaultAddressForChain = vault.vaultAddress[chainId];
       if (!vaultAddressForChain) return;
 
@@ -55,13 +57,15 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
     ? VaultsIntent.MORPHO_VAULT_INTENT
     : selectedVaultsOption;
 
-  const handleSelectMorphoVault = (vaultAddress: `0x${string}`) => {
+  // Derive the URL/routing identity from the selected vault's provider so the
+  // param reflects the vault the user opened (Spark → `spark`, Morpho → `morpho`).
+  const handleSelectVault = (vaultAddress: `0x${string}`, provider: VaultProvider) => {
     setSearchParams(params => {
-      params.set(QueryParams.VaultModule, VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]);
+      params.set(QueryParams.VaultModule, vaultModuleForProvider(provider));
       params.set(QueryParams.Vault, vaultAddress);
       return params;
     });
-    setSelectedVaultsOption(VaultsIntent.MORPHO_VAULT_INTENT);
+    setSelectedVaultsOption(vaultsIntentForProvider(provider));
   };
 
   const renderSelectedWidget = () => {
@@ -73,6 +77,7 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
             vaultAddress={selectedVault.vaultAddress}
             assetToken={selectedVault.assetToken}
             vaultName={selectedVault.name}
+            provider={selectedVault.provider}
           />
         );
       default:
@@ -109,12 +114,13 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
                     const vaultAddressForChain = vault.vaultAddress[chainId];
                     if (!vaultAddressForChain) return null;
                     return (
-                      <MorphoVaultStatsCard
+                      <VaultStatsCard
                         key={vaultAddressForChain}
                         vaultAddress={vault.vaultAddress}
                         vaultName={vault.name}
                         assetToken={vault.assetToken}
-                        onClick={() => handleSelectMorphoVault(vaultAddressForChain)}
+                        provider={vault.provider}
+                        onClick={() => handleSelectVault(vaultAddressForChain, vault.provider)}
                       />
                     );
                   })}
@@ -129,12 +135,13 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
                     const vaultAddressForChain = vault.vaultAddress[chainId];
                     if (!vaultAddressForChain) return null;
                     return (
-                      <MorphoVaultStatsCard
+                      <VaultStatsCard
                         key={vaultAddressForChain}
                         vaultAddress={vault.vaultAddress}
                         vaultName={vault.name}
                         assetToken={vault.assetToken}
-                        onClick={() => handleSelectMorphoVault(vaultAddressForChain)}
+                        provider={vault.provider}
+                        onClick={() => handleSelectVault(vaultAddressForChain, vault.provider)}
                       />
                     );
                   })}

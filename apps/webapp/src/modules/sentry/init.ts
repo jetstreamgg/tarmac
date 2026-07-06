@@ -68,7 +68,15 @@ export function initSentry(): void {
       // it reports 0 affected users (fires pre-connection). Global match
       // because ~10% of events arrive via wagmi auto-reconnect with no `flow`
       // tag, so a flow-scoped beforeSend filter would miss them (WEBAPP-5N).
-      /Transport request timed out/
+      /Transport request timed out/,
+      // MetaMask multichain SDK guard against concurrent connect requests
+      // (@metamask/connect-multichain). On MetaMask Mobile the connect deep-links
+      // and the handshake goes "pending"; a second trigger (deep-link round-trip,
+      // modal remount, or wagmi auto-reconnect) makes the SDK throw this. Benign:
+      // handled, 0 affected users, the message is itself user guidance and the
+      // pending request still resolves. Global match because the auto-reconnect
+      // path fires with no `flow` tag, like WEBAPP-5N above (WEBAPP-5H).
+      /Existing connection is pending/
     ],
     integrations: [
       Sentry.thirdPartyErrorFilterIntegration({

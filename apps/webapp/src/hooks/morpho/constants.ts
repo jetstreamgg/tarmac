@@ -27,26 +27,31 @@ export enum MorphoTransactionType {
  */
 export const MORPHO_VAULTS: MorphoVaultConfig[] = [
   {
+    provider: 'morpho',
     name: 'USDT Savings',
     vaultAddress: usdtSavingsVaultAddress,
     assetToken: TOKENS.usdt
   },
   {
+    provider: 'morpho',
     name: 'USDS Flagship',
     vaultAddress: usdsFlagshipVaultAddress,
     assetToken: TOKENS.usds
   },
   {
+    provider: 'morpho',
     name: 'USDS Risk Capital',
     vaultAddress: usdsRiskCapitalVaultAddress,
     assetToken: TOKENS.usds
   },
   {
+    provider: 'morpho',
     name: 'USDT Risk Capital',
     vaultAddress: usdtRiskCapitalVaultAddress,
     assetToken: TOKENS.usdt
   },
   {
+    provider: 'morpho',
     name: 'USDC Risk Capital',
     vaultAddress: usdcRiskCapitalVaultAddress,
     assetToken: TOKENS.usdc

@@ -4,8 +4,8 @@ import { TradeDetails } from '@/modules/trade/components/TradeDetails';
 import { UpgradeDetails } from '@/modules/upgrade/components/UpgradeDetails';
 import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
-import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
-import { MORPHO_VAULTS } from '@/hooks';
+import { VaultDetails } from '@/modules/morpho/components/VaultDetails';
+import { VAULTS } from '@/hooks';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
 import { useSearchParams } from 'react-router-dom';
@@ -65,8 +65,8 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
 
   // Find the selected vault config, default to first vault if not specified
   const selectedVault =
-    MORPHO_VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
-    MORPHO_VAULTS[0];
+    VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
+    VAULTS[0];
 
   useEffect(() => {
     setIntentState(prevIntentState => {
@@ -147,10 +147,13 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
               }
             case Intent.VAULTS_INTENT:
               switch (selectedVaultsOption) {
+                // Both providers render the same provider-aware detail view,
+                // which derives its provider from the vault address.
                 case VaultsIntent.MORPHO_VAULT_INTENT:
+                case VaultsIntent.SKY_VAULT_INTENT:
                   return (
                     <MotionDetailsWrapper key={keys[10]}>
-                      <MorphoVaultDetails
+                      <VaultDetails
                         vaultAddress={selectedVault.vaultAddress[chainId]}
                         assetToken={selectedVault.assetToken}
                         vaultName={selectedVault.name}

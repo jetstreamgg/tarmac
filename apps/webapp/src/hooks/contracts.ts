@@ -67,6 +67,18 @@ export const contracts: {
       [TENDERLY_CHAIN_ID]: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf'
     }
   },
+
+  // Spark Tether Savings (sUSDT) vault — verified ERC-4626 SparkVault (APP-266).
+  // The address is consumed at runtime via the generated `sparkUsdtVaultAddress`.
+  // Codegen only emits the proxy ABI here; reads/writes use the captured
+  // implementation ABI in hooks/abis/sparkVaultAbi.ts.
+  {
+    name: 'sparkUsdtVault',
+    address: {
+      [mainnet.id]: '0x74cb54e082411cfCAEADb00a0765625B10410DAa',
+      [TENDERLY_CHAIN_ID]: '0x74cb54e082411cfCAEADb00a0765625B10410DAa'
+    }
+  },
   {
     name: 'wstEth',
     address: {
@@ -183,6 +195,13 @@ export const contracts: {
     }
   },
   {
+    name: 'usdsGroveReward',
+    address: {
+      [mainnet.id]: '0x4E41488C19cD35EB4de3083Fc3e204854c75c86a',
+      [TENDERLY_CHAIN_ID]: '0x4E41488C19cD35EB4de3083Fc3e204854c75c86a'
+    }
+  },
+  {
     name: 'cleReward',
     address: {
       [mainnet.id]: '0x10ab606B067C9C461d8893c47C7512472E19e2Ce',
@@ -216,6 +235,13 @@ export const contracts: {
     address: {
       [mainnet.id]: '0xc20059e0317DE91738d13af027DfC4a50781b066',
       [TENDERLY_CHAIN_ID]: '0xc20059e0317DE91738d13af027DfC4a50781b066'
+    }
+  },
+  {
+    name: 'grove',
+    address: {
+      [mainnet.id]: '0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406',
+      [TENDERLY_CHAIN_ID]: '0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406'
     }
   },
   // LockstakeMkr

@@ -102,6 +102,10 @@ pnpm messages        # Extract and compile translations
 - Hooks: camelCase (e.g., `useWallet.ts`)
 - Tests: kebab-case (e.g., `button-test.tsx`)
 
+### TypeScript
+
+- Hand-authored type files use `.ts`, not `.d.ts`. `skipLibCheck` makes TypeScript skip type-checking `.d.ts` contents, so exported types defined there go unchecked. Reserve `.d.ts` for genuine ambient declarations like `vite-env.d.ts`.
+
 ### Web3 Integration
 
 - Use Wagmi hooks for contract interactions

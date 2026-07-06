@@ -16,13 +16,13 @@ import {
   QueryParams,
   IntentMapping,
   ExpertIntentMapping,
-  VaultsIntentMapping,
   ConvertIntentMapping,
   FixedIntentMapping
 } from '@/lib/constants';
+import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
-import { ExpertIntent, VaultsIntent, ConvertIntent, FixedIntent } from '@/lib/enums';
+import { ExpertIntent, ConvertIntent, FixedIntent } from '@/lib/enums';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
@@ -46,7 +46,7 @@ import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
 import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
 import { PendleWidgetPane } from '@/modules/pendle/components/PendleWidgetPane';
 import { useModuleUrls } from '../hooks/useModuleUrls';
-import { useAvailableTokenRewardContracts, MORPHO_VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
+import { useAvailableTokenRewardContracts, VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
@@ -131,11 +131,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   // Vaults only exist on mainnet/testnet, so use appropriate chain based on environment
   const vaultChainId = isTestnetId(chainId) ? TENDERLY_CHAIN_ID : mainnet.id;
-  const vaultSubItems = MORPHO_VAULTS.filter(vault => vault.vaultAddress[vaultChainId]).map(vault => ({
+  const vaultSubItems = VAULTS.filter(vault => vault.vaultAddress[vaultChainId]).map(vault => ({
     label: vault.name,
     icon: <TokenIcon token={{ symbol: vault.assetToken.symbol }} className="h-3 w-3" showChainIcon={false} />,
     params: {
-      [QueryParams.VaultModule]: VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT],
+      [QueryParams.VaultModule]: vaultModuleForProvider(vault.provider),
       [QueryParams.Vault]: vault.vaultAddress[vaultChainId]
     }
   }));

@@ -15,11 +15,7 @@ import {
 import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
 import { StakeAction, StakeFlow, StakeScreen } from '@/widgets/StakeModuleWidget/lib/constants';
 import { StUSDSAction, StUSDSFlow, StUSDSScreen } from '@/widgets/StUSDSWidget/lib/constants';
-import {
-  MorphoVaultAction,
-  MorphoVaultFlow,
-  MorphoVaultScreen
-} from '@/widgets/MorphoVaultWidget/lib/constants';
+import { VaultAction, VaultFlow, VaultScreen } from '@/widgets/VaultWidget/lib/constants';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
 import { RewardContract, Token } from '@/hooks';
 import { TxStatus, NotificationType, InitialAction, InitialFlow, InitialScreen } from '../constants';
@@ -35,7 +31,7 @@ export type WidgetFlow =
   | PsmConversionFlow
   | StakeFlow
   | StUSDSFlow
-  | MorphoVaultFlow
+  | VaultFlow
   | PendleFlow;
 
 export type WidgetAction =
@@ -47,7 +43,7 @@ export type WidgetAction =
   | PsmConversionAction
   | StakeAction
   | StUSDSAction
-  | MorphoVaultAction
+  | VaultAction
   | PendleAction;
 
 export type WidgetScreen =
@@ -59,7 +55,7 @@ export type WidgetScreen =
   | PsmConversionScreen
   | StakeScreen
   | StUSDSScreen
-  | MorphoVaultScreen
+  | VaultScreen
   | PendleScreen;
 
 export type WidgetState = {

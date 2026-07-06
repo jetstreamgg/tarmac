@@ -1,33 +1,30 @@
-import {
-  MorphoVaultWidget,
-  TxStatus,
-  WidgetStateChangeParams,
-  MorphoVaultFlow,
-  MorphoVaultAction
-} from '@/widgets';
-import { Token } from '@/hooks';
-import { VaultsIntentMapping, QueryParams } from '@/lib/constants';
+import { MorphoVaultWidget, TxStatus, WidgetStateChangeParams, VaultFlow, VaultAction } from '@/widgets';
+import { Token, type VaultProvider } from '@/hooks';
+import { QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { VaultsIntent } from '@/lib/enums';
+import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useChainId } from 'wagmi';
 
 type MorphoVaultWidgetPaneProps = SharedProps & {
-  /** The Morpho vault contract address mapping by chain ID */
+  /** The vault contract address mapping by chain ID */
   vaultAddress: Record<number, `0x${string}`>;
   /** The underlying asset token */
   assetToken: Token;
   /** Display name for the vault */
   vaultName: string;
+  /** Which provider operates the vault (branding + data source). Defaults to Morpho. */
+  provider?: VaultProvider;
 };
 
 export function MorphoVaultWidgetPane({
   vaultAddress,
   assetToken,
   vaultName,
+  provider = 'morpho',
   ...sharedProps
 }: MorphoVaultWidgetPaneProps) {
   const chainId = useChainId();
@@ -35,7 +32,7 @@ export function MorphoVaultWidgetPane({
     useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const flow = (searchParams.get(QueryParams.Flow) || undefined) as MorphoVaultFlow | undefined;
+  const flow = (searchParams.get(QueryParams.Flow) || undefined) as VaultFlow | undefined;
 
   // Get addresses for the current chain
   const currentVaultAddress = vaultAddress[chainId];
@@ -46,8 +43,9 @@ export function MorphoVaultWidgetPane({
     widgetState,
     originAmount
   }: WidgetStateChangeParams) => {
-    // Prevent race conditions
-    if (searchParams.get(QueryParams.VaultModule) !== VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]) {
+    // Prevent race conditions: only sync when the URL's module matches this
+    // vault's own provider (Spark → `spark`, Morpho → `morpho`).
+    if (searchParams.get(QueryParams.VaultModule) !== vaultModuleForProvider(provider)) {
       return;
     }
 
@@ -75,7 +73,7 @@ export function MorphoVaultWidgetPane({
 
     // After a successful linked action SUPPLY, set the final step to "success"
     if (
-      widgetState.action === MorphoVaultAction.SUPPLY &&
+      widgetState.action === VaultAction.SUPPLY &&
       txStatus === TxStatus.SUCCESS &&
       linkedActionConfig.step === LinkedActionSteps.COMPLETED_CURRENT
     ) {
@@ -112,6 +110,7 @@ export function MorphoVaultWidgetPane({
       assetAddress={currentAssetAddress}
       assetToken={assetToken}
       vaultName={vaultName}
+      provider={provider}
       onWidgetStateChange={onMorphoVaultWidgetStateChange}
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,

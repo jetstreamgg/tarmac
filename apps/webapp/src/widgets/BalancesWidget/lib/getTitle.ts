@@ -19,7 +19,7 @@ export const getTitle = ({ type, module }: { type: TransactionTypeEnum; module: 
         return t`Savings Supply`;
       } else if (module === ModuleEnum.STUSDS) {
         return t`stUSDS Supply`;
-      } else if (module === ModuleEnum.MORPHO) {
+      } else if (module === ModuleEnum.MORPHO || module === ModuleEnum.SUSDT) {
         return t`Vault Supply`;
       }
       return t`Supply`;
@@ -30,7 +30,7 @@ export const getTitle = ({ type, module }: { type: TransactionTypeEnum; module: 
         return t`Savings Withdraw`;
       } else if (module === ModuleEnum.STUSDS) {
         return t`stUSDS Withdraw`;
-      } else if (module === ModuleEnum.MORPHO) {
+      } else if (module === ModuleEnum.MORPHO || module === ModuleEnum.SUSDT) {
         return t`Vault Withdraw`;
       }
       return t`Withdraw`;

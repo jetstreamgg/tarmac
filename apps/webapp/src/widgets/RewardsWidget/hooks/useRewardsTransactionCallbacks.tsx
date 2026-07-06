@@ -182,6 +182,7 @@ export const useRewardsTransactionCallbacks = ({
           action: RewardsAction.SUPPLY,
           flow: RewardsFlow.SUPPLY,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: rewardsData
@@ -260,6 +261,7 @@ export const useRewardsTransactionCallbacks = ({
           action: RewardsAction.WITHDRAW,
           flow: RewardsFlow.WITHDRAW,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: rewardsData
@@ -348,6 +350,7 @@ export const useRewardsTransactionCallbacks = ({
           action,
           flow: RewardsFlow.CLAIM,
           txHash: hash,
+          error,
           assetSymbol,
           data: isClaim ? rewardsData : { module: 'rewards' }
         });

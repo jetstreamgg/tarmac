@@ -14,6 +14,7 @@ import {
   usdsL2Address,
   stUsdsConfig,
   spkConfig,
+  groveConfig,
   cbBtcConfig,
   wstEthConfig
 } from '../generated';
@@ -169,6 +170,13 @@ export const TOKENS: TokenMapping = {
     name: 'Spark',
     symbol: 'SPK',
     color: '#FA5768',
+    decimals: 18
+  },
+  grove: {
+    address: groveConfig.address,
+    name: 'Grove',
+    symbol: 'GROVE',
+    color: '#E3D27A',
     decimals: 18
   },
   stusds: {

@@ -1,6 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mainnet } from 'wagmi/chains';
 import { BalancesSuggestedActions } from './BalancesSuggestedActions';
+import { sparkUsdtVaultAddress } from '@/hooks';
+
+const SPARK_USDT_VAULT_ADDRESS = sparkUsdtVaultAddress[mainnet.id];
 
 let mockSearchParams = new URLSearchParams();
 
@@ -50,6 +54,7 @@ vi.mock('@/hooks', async importOriginal => {
     useOverallSkyData: () => ({ data: undefined, isLoading: false }),
     useStUsdsData: () => ({ data: undefined, isLoading: false }),
     useMorphoVaultMultipleRateApiData: () => ({ data: [], isLoading: false }),
+    useSparkVaultResolvedRate: () => ({ formattedRate: '6.01%', isLoading: false }),
     useAvailableTokenRewardContracts: () => [],
     useRewardsChartInfo: () => ({ data: undefined, isLoading: false }),
     useHighestRateFromChartData: () => undefined,
@@ -109,5 +114,42 @@ describe('BalancesSuggestedActions', () => {
     expect(mockSearchParams.get('network')).toBe('ethereum');
     expect(mockSearchParams.get('lang')).toBe('en');
     expect(mockSearchParams.get('details')).toBe('false');
+  });
+
+  it('renders the Tether Savings (sUSDT) card with a New badge for stables', () => {
+    render(<BalancesSuggestedActions widget="stables" variant="card" />);
+
+    const card = screen.getByRole('button', { name: /Tether Savings \(sUSDT\)/i });
+    expect(card.textContent).toContain('New');
+    expect(card.textContent).toContain('6.01%');
+  });
+
+  it('deep-links to the sUSDT vault when the Tether Savings card is clicked', () => {
+    render(<BalancesSuggestedActions widget="stables" variant="card" />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Tether Savings \(sUSDT\)/i }));
+
+    expect(mockSearchParams.get('widget')).toBe('vaults');
+    expect(mockSearchParams.get('vault')).toBe(SPARK_USDT_VAULT_ADDRESS);
+    expect(mockSearchParams.get('vault_module')).toBe('sky');
+    expect(mockSearchParams.get('network')).toBe('ethereum');
+    expect(mockSearchParams.get('lang')).toBe('en');
+  });
+
+  // The Tether Savings action links to the vault by address (it bypasses the
+  // VAULTS registry), so it must be gated separately by the feature flag (APP-323).
+  it('hides the Tether Savings (sUSDT) card when the feature flag is off', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_SUSDT_VAULT_ENABLED', 'false');
+    const { BalancesSuggestedActions: GatedActions } = await import('./BalancesSuggestedActions');
+
+    render(<GatedActions widget="stables" variant="card" />);
+
+    expect(screen.queryByRole('button', { name: /Tether Savings \(sUSDT\)/i })).toBeNull();
+    // Other stables suggestions are unaffected.
+    expect(screen.getByRole('button', { name: /Sky Savings Rate/i })).toBeTruthy();
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 });

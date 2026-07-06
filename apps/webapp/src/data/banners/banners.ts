@@ -263,6 +263,14 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
+    id: 'about-the-grove-token',
+    title: 'About the Grove Token',
+    module: 'rewards-banners',
+    description:
+      'GROVE is the native token of the Sky Agent Grove, a credit infrastructure protocol bridging traditional capital with DeFi through credit and tokenized real-world assets. GROVE is expected to support Grove’s governance and community participation, with staking and voting mechanics being rolled out progressively. It is an ERC-20 token on the Ethereum blockchain. The GROVE token’s functionality may change and will be released subject to Grove and Sky Governance.',
+    display: ['connected', 'disconnected']
+  },
+  {
     id: 'vaults',
     title: 'Vaults',
     module: 'vaults-banners',
@@ -308,6 +316,14 @@ export const banners: Banner[] = [
     module: 'vaults-banners',
     description:
       'Curated by Sky on Morpho, allocates 80% of deposits into sUSDS earning the Sky Savings Rate, and the remaining 20% to markets with volatile bluechip collateral exposure including stUSDS/USDS, cbBTC/USDS, wstETH/USDS and WETH/USDS.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'tether-savings-vault',
+    title: 'Tether Savings Vault',
+    module: 'vaults-banners',
+    description:
+      'Tether Savings (sUSDT) is a non-custodial, permissionless stablecoin savings vault backed by USDS, managed by Sky using Spark infrastructure. Deposit USDT to earn a variable savings rate set by Sky.',
     display: ['connected', 'disconnected']
   },
   {

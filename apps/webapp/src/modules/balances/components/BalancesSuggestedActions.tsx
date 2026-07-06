@@ -1,9 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useChainId, useChains } from 'wagmi';
-import { QueryParams, mapQueryParamToIntent, isNewIntent } from '@/lib/constants';
+import { mainnet } from 'wagmi/chains';
+import { QueryParams, mapQueryParamToIntent, isNewIntent, SUSDT_VAULT_ENABLED } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { isMultichain } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Text } from '@/modules/layout/components/Typography';
@@ -13,6 +15,8 @@ import {
   useOverallSkyData,
   useStUsdsData,
   useMorphoVaultMultipleRateApiData,
+  useSparkVaultResolvedRate,
+  sparkUsdtVaultAddress,
   MORPHO_VAULTS,
   useAvailableTokenRewardContracts,
   useRewardsChartInfo,
@@ -48,6 +52,18 @@ import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@/widgets';
 import { useGeoConfig } from '@/modules/geo-config';
 import type { ModuleId } from '@/modules/geo-config';
 
+// Map action module names to geo-config ModuleId where applicable
+const actionModuleToGeoModule: Partial<Record<BalancesAction['module'], ModuleId>> = {
+  trade: 'trade',
+  morpho: 'vaults',
+  rewards: 'rewards',
+  savings: 'savings',
+  fixedYield: 'fixed',
+  stusds: 'expert',
+  stake: 'stake',
+  upgrade: 'upgrade'
+};
+
 type BalancesAction = {
   label: string;
   tokens: string[];
@@ -62,7 +78,7 @@ type BalancesAction = {
     | 'upgrade'
     | 'fixedYield';
   url: string;
-  rateKey?: 'vaults' | 'rewards' | 'savings' | 'stusds' | 'staking' | 'fixedYield';
+  rateKey?: 'vaults' | 'sparkVault' | 'rewards' | 'savings' | 'stusds' | 'staking' | 'fixedYield';
   badge?: string;
   showMorphoIcon?: boolean;
   subtitle?: string;
@@ -79,7 +95,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
   },
   {
     label: 'Rewards and Points',
-    tokens: ['SPK', 'CLE'],
+    tokens: ['SPK', 'GROVE', 'CLE'],
     rateKey: 'rewards',
     subtitle: 'Rates up to {rate}',
     module: 'rewards',
@@ -92,6 +108,23 @@ const STABLE_ACTIONS: BalancesAction[] = [
     subtitle: 'Rate: {rate}',
     module: 'savings',
     url: '?widget=savings'
+  },
+  {
+    label: 'Tether Savings (sUSDT)',
+    tokens: ['USDT'],
+    rateKey: 'sparkVault',
+    subtitle: 'Rate: {rate}',
+    module: 'morpho',
+    url: `?widget=vaults&vault=${sparkUsdtVaultAddress[mainnet.id]}&vault_module=${vaultModuleForProvider('sky')}`,
+    badge: 'New'
+  },
+  {
+    // tokens, subtitle and badge are filled in at render time from active Pendle markets
+    label: 'Fixed Yield Markets',
+    tokens: [],
+    rateKey: 'fixedYield',
+    module: 'fixedYield',
+    url: '?widget=fixed'
   },
   {
     label: 'Expert: stUSDS',
@@ -169,6 +202,7 @@ const MODULE_ICONS: Record<BalancesAction['module'], (props: IconProps) => React
 
 const RATE_TOOLTIP_TYPES: Partial<Record<NonNullable<BalancesAction['rateKey']>, PopoverTooltipType>> = {
   vaults: 'morpho',
+  sparkVault: 'sky',
   rewards: 'str',
   savings: 'ssr',
   stusds: 'stusds',
@@ -220,6 +254,10 @@ function useActionRates(
     vaultAddresses
   });
 
+  const { formattedRate: sparkVaultRate, isLoading: sparkVaultLoading } = useSparkVaultResolvedRate({
+    vaultAddress: sparkUsdtVaultAddress[mainnet.id]
+  });
+
   const allRewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
   const activeRewardContracts = filterDeprecatedRewardContracts(allRewardContracts, mainnetChainId);
 
@@ -231,6 +269,11 @@ function useActionRates(
     contract =>
       contract.supplyToken.symbol === TOKENS.usds.symbol && contract.rewardToken.symbol === TOKENS.cle.symbol
   );
+  const usdsGroveRewardContract = activeRewardContracts.find(
+    contract =>
+      contract.supplyToken.symbol === TOKENS.usds.symbol &&
+      contract.rewardToken.symbol === TOKENS.grove.symbol
+  );
 
   const { data: usdsSpkChartData, isLoading: spkLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsSpkRewardContract?.contractAddress as string
@@ -238,8 +281,15 @@ function useActionRates(
   const { data: usdsCleChartData, isLoading: cleLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsCleRewardContract?.contractAddress as string
   });
-  const rewardsHighestRate = useHighestRateFromChartData([usdsSpkChartData, usdsCleChartData]);
-  const rewardsLoading = spkLoading || cleLoading;
+  const { data: usdsGroveChartData, isLoading: groveLoading } = useRewardsChartInfo({
+    rewardContractAddress: usdsGroveRewardContract?.contractAddress as string
+  });
+  const rewardsHighestRate = useHighestRateFromChartData([
+    usdsSpkChartData,
+    usdsCleChartData,
+    usdsGroveChartData
+  ]);
+  const rewardsLoading = spkLoading || cleLoading || groveLoading;
 
   const { data: stakeRewardContracts, isLoading: stakeContractsLoading } = useStakeRewardContracts();
   const { data: stakeRewardsChartsInfoData, isLoading: stakeChartsLoading } = useMultipleRewardsChartInfo({
@@ -296,6 +346,11 @@ function useActionRates(
       }
     }
 
+    if (rateKeys.has('sparkVault')) {
+      loading.sparkVault = sparkVaultLoading;
+      rates.sparkVault = sparkVaultRate ?? '—';
+    }
+
     if (rateKeys.has('rewards')) {
       loading.rewards = rewardsLoading;
       if (rewardsHighestRate?.rate != null) {
@@ -328,6 +383,8 @@ function useActionRates(
     overallSkyData,
     stUsdsData,
     morphoRatesData,
+    sparkVaultRate,
+    sparkVaultLoading,
     rewardsHighestRate,
     stakeHighestRateData,
     savingsLoading,
@@ -342,12 +399,10 @@ function useActionRates(
 
 export function BalancesSuggestedActions({
   widget,
-  variant = 'default',
-  restrictedModules
+  variant = 'default'
 }: {
   widget: 'stables' | 'sky' | 'tokens';
   variant?: 'default' | 'card' | 'card-sm';
-  restrictedModules?: string[];
 }) {
   const [, setSearchParams] = useSearchParams();
   const chainId = useChainId();
@@ -380,41 +435,32 @@ export function BalancesSuggestedActions({
 
   const { isModuleEnabled } = useGeoConfig();
 
-  // Map action module names to geo-config ModuleId where applicable
-  const actionModuleToGeoModule: Partial<Record<BalancesAction['module'], ModuleId>> = {
-    trade: 'trade'
-  };
-
-  const fixedYieldAction = useMemo<BalancesAction>(() => {
+  const stableActions = useMemo(() => {
     const activeMarkets = PENDLE_MARKETS.filter(m => !isMarketMatured(m.expiry));
-    const activePtSymbols = activeMarkets.map(m => `PT-${m.underlyingSymbol}`);
-    return {
-      label: 'Fixed Yield Markets',
-      tokens: activePtSymbols,
-      rateKey: 'fixedYield',
-      subtitle: activeMarkets.length === 1 ? 'Rate: {rate}' : 'Rates up to {rate}',
-      module: 'fixedYield',
-      url: '?widget=fixed',
-      badge: isNewIntent(Intent.FIXED_INTENT) ? 'New' : undefined
-    };
+    // The sUSDT (Tether Savings) vault is feature-flagged (APP-323); its suggested
+    // action links directly to the vault by address (bypassing the VAULTS registry),
+    // so it must be hidden separately when the flag is off.
+    return STABLE_ACTIONS.filter(action => SUSDT_VAULT_ENABLED || action.rateKey !== 'sparkVault').map(
+      action =>
+        action.rateKey === 'fixedYield'
+          ? {
+              ...action,
+              tokens: activeMarkets.map(m => `PT-${m.underlyingSymbol}`),
+              subtitle: activeMarkets.length === 1 ? 'Rate: {rate}' : 'Rates up to {rate}',
+              badge: isNewIntent(Intent.FIXED_INTENT) ? 'New' : undefined
+            }
+          : action
+    );
   }, []);
 
   const actions = useMemo(() => {
-    let result =
-      widget === 'stables'
-        ? [...STABLE_ACTIONS, fixedYieldAction]
-        : widget === 'sky'
-          ? SKY_ACTIONS
-          : TOKEN_ACTIONS;
-    if (restrictedModules) {
-      result = result.filter(action => restrictedModules.includes(action.module));
-    }
+    let result = widget === 'stables' ? stableActions : widget === 'sky' ? SKY_ACTIONS : TOKEN_ACTIONS;
     result = result.filter(action => {
       const geoModuleId = actionModuleToGeoModule[action.module];
       return !geoModuleId || isModuleEnabled(geoModuleId);
     });
     return result;
-  }, [widget, restrictedModules, isModuleEnabled, fixedYieldAction]);
+  }, [widget, isModuleEnabled, stableActions]);
 
   const { rates: rateMap, loading: rateLoading } = useActionRates(actions, chainId);
 

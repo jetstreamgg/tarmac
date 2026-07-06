@@ -8,7 +8,6 @@ import {
   mapQueryParamToIntent,
   COMING_SOON_MAP,
   ExpertIntentMapping,
-  VaultsIntentMapping,
   ConvertIntentMapping,
   FixedIntentMapping,
   IS_PRODUCTION_ENV
@@ -19,6 +18,7 @@ import { defaultConfig } from '../config/default-config';
 import { isL2ChainId } from '@/utils';
 import { Chain } from 'viem';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { vaultsIntentForVaultModule } from '@/lib/vaults/vaultProviderMapping';
 
 // TODO: Remove once all references to widget=trade|upgrade are migrated
 export const rewriteLegacyWidgetParams = (searchParams: URLSearchParams): void => {
@@ -170,11 +170,11 @@ export const validateSearchParams = (
       setSelectedExpertOption(undefined);
     }
 
-    // validates vaultModule param
+    // validates vaultModule param: its value carries the open vault's provider
+    // (`morpho` | `spark`). An unrecognised value is dropped rather than passed
+    // through; a recognised one selects the matching vaults option.
     if (key === QueryParams.VaultModule) {
-      const intent = Object.entries(VaultsIntentMapping).find(
-        ([, intentValue]) => intentValue === value
-      )?.[0] as VaultsIntent | undefined;
+      const intent = vaultsIntentForVaultModule(value);
       if (!intent) {
         searchParams.delete(key);
       } else {

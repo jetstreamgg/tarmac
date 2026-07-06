@@ -132,6 +132,54 @@ export type {
   AllMorphoVaultsUserAssetsData
 } from './morpho';
 
+// Provider-neutral vault core (Morpho + Spark)
+export {
+  useBatchVaultDeposit,
+  useVaultRedeem,
+  useVaultWithdraw,
+  useErc4626VaultData,
+  useVaultMarketData,
+  useSparkVaultRate,
+  useSparkVaultResolvedRate,
+  useSusdtVaultHistory,
+  type SusdtVaultHistory,
+  type SusdtVaultHistoryItem,
+  useVaultRatesByAddress,
+  VAULTS,
+  getVaultByAddress,
+  SPARK_VAULTS,
+  SPARK_SAVINGS_API_HOST,
+  SPARK_VAULT_IDENTITY,
+  useSparkVaultApiData,
+  normalizeSparkCurrentData,
+  normalizeSparkHistoricData,
+  buildSparkSavingsUrl,
+  fetchSparkSavingsCurrent,
+  fetchSparkSavingsHistoric,
+  type SparkVaultIdentity,
+  type SparkSavingsCurrentResponse,
+  type SparkSavingsCurrentData,
+  type SparkSavingsTokenInfo,
+  type SparkSavingsLiquidityEntry,
+  type SparkSavingsCollateralEntry,
+  type SparkSavingsCollateralComposition,
+  type SparkSavingsHistoricResponse,
+  type SparkSavingsHistoricEntry,
+  type VaultProvider,
+  type VaultConfig,
+  type Erc4626VaultData,
+  type Erc4626VaultDataHook,
+  type VaultRatesByAddressHook,
+  type UseVaultMarketDataParams,
+  type VaultMarketDataHook,
+  type NormalizedVaultMarketData,
+  type NormalizedVaultAllocation,
+  type NormalizedVaultHistoryPoint,
+  computeVaultLimits,
+  type VaultLimits,
+  type VaultLimitsInput
+} from './vaults';
+
 // Pendle (Fixed Yield)
 export {
   PENDLE_API_BASE_URL,
@@ -422,6 +470,7 @@ export {
   usdcAddress,
   usdtAddress,
   spkAddress,
+  groveAddress,
   stakeModuleAddress,
   stakeModuleAbi,
   mcdVatAbi,
@@ -445,6 +494,7 @@ export {
   lsSkySpkRewardAddress,
   lsSkySkyRewardAddress,
   usdsRiskCapitalVaultAddress,
+  sparkUsdtVaultAddress,
   useReadClipperDue
 } from './generated';
 export { contracts, l2Contracts } from './contracts';

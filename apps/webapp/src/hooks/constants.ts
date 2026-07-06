@@ -45,6 +45,7 @@ export enum ModuleEnum {
   STAKE = 'STAKE',
   STUSDS = 'STUSDS',
   MORPHO = 'MORPHO',
+  SUSDT = 'SUSDT',
   PENDLE = 'PENDLE'
 }
 

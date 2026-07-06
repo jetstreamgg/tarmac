@@ -82,6 +82,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://sky-tenderly.blockanalitica.com
       https://api.cow.fi/
       https://api.morpho.org/
+      https://api.spark.fi
       https://api-v2.pendle.finance
       https://*.google-analytics.com
       https://*.analytics.google.com
@@ -166,7 +167,11 @@ export default ({ mode }: { mode: modeEnum }) => {
       ],
       globals: true,
       environment: 'happy-dom',
-      setupFiles: [path.resolve(__dirname, 'src/test/setup.ts')]
+      setupFiles: [path.resolve(__dirname, 'src/test/setup.ts')],
+      // The sUSDT vault is gated behind VITE_SUSDT_VAULT_ENABLED (APP-323). Default
+      // it on for the suite so behavioral tests exercise the flag-on (staging)
+      // contract; flag-off paths stub it back off per-test.
+      env: { VITE_SUSDT_VAULT_ENABLED: 'true' }
     },
     resolve: {
       alias: {

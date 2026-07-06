@@ -26,6 +26,8 @@ const TOOLTIP_ID_MAP = {
   liquidation: 'liquidation-price',
   stusds: 'stusds-rate',
   morpho: 'vault-rate',
+  sky: 'susdt-vault-rate',
+  vaultsAggregate: 'vault-rates',
   expert: 'stusds-rate',
   stusdsLiquidity: 'available-liquidity',
   morphoLiquidity: 'morpho-liquidity',

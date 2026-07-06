@@ -1,6 +1,29 @@
 import { describe, it, expect, vi } from 'vitest';
 import { validateSearchParams, rewriteLegacyWidgetParams } from './validateSearchParams';
 import { mainnet } from 'wagmi/chains';
+import { VaultsIntent } from '@/lib/enums';
+
+const SPARK_VAULT_ADDRESS = '0x74cb54e082411cfCAEADb00a0765625B10410DAa';
+
+// Runs the validator with widget=vaults so the vault_module branch is active,
+// and exposes the setSelectedVaultsOption spy alongside the mutated params.
+const validateVaultParams = (query: string) => {
+  const params = new URLSearchParams(query);
+  const setSelectedVaultsOption = vi.fn();
+  validateSearchParams(
+    params,
+    [],
+    'vaults',
+    vi.fn(),
+    mainnet.id,
+    [mainnet] as [typeof mainnet],
+    vi.fn(),
+    true,
+    setSelectedVaultsOption,
+    vi.fn()
+  );
+  return { params, setSelectedVaultsOption };
+};
 
 const validateParams = (query: string) => {
   const params = new URLSearchParams(query);
@@ -111,6 +134,28 @@ describe('validateSearchParams for convert psm', () => {
     const params = validateParams('widget=convert&convert_module=psm&target_token=USDS');
     expect(params.get('convert_module')).toBe('psm');
     expect(params.has('target_token')).toBe(false);
+  });
+});
+
+describe('validateSearchParams for vault_module', () => {
+  it('preserves vault_module=sky and selects the Spark vaults option', () => {
+    const { params, setSelectedVaultsOption } = validateVaultParams(
+      `widget=vaults&vault_module=sky&vault=${SPARK_VAULT_ADDRESS}`
+    );
+    expect(params.get('vault_module')).toBe('sky');
+    expect(params.get('vault')).toBe(SPARK_VAULT_ADDRESS);
+    expect(setSelectedVaultsOption).toHaveBeenCalledWith(VaultsIntent.SKY_VAULT_INTENT);
+  });
+
+  it('preserves vault_module=morpho and selects the Morpho vaults option', () => {
+    const { params, setSelectedVaultsOption } = validateVaultParams('widget=vaults&vault_module=morpho');
+    expect(params.get('vault_module')).toBe('morpho');
+    expect(setSelectedVaultsOption).toHaveBeenCalledWith(VaultsIntent.MORPHO_VAULT_INTENT);
+  });
+
+  it('deletes an unrecognised vault_module value (no pass-through)', () => {
+    const { params } = validateVaultParams('widget=vaults&vault_module=aave');
+    expect(params.has('vault_module')).toBe(false);
   });
 });
 

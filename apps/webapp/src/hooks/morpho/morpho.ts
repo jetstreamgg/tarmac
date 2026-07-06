@@ -1,19 +1,14 @@
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { Token } from '../tokens/types';
+import { VaultConfig } from '../vaults/types';
 import { MorphoTransactionType } from './constants';
 
 /**
- * Configuration for a Morpho vault
+ * Configuration for a Morpho vault. Alias of the provider-neutral
+ * {@link VaultConfig}; entries set `provider: 'morpho'`.
  */
-export type MorphoVaultConfig = {
-  /** Display name for the vault */
-  name: string;
-  /** The vault contract address mapping by chain ID (also serves as the unique identifier) */
-  vaultAddress: Record<number, `0x${string}`>;
-  /** The underlying asset token */
-  assetToken: Token;
-};
+export type MorphoVaultConfig = VaultConfig;
 
 /**
  * API response type for Morpho V2 vault adapters query.

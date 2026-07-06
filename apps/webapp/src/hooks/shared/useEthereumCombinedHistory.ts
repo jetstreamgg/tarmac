@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { useStakeHistory } from '../stake/useStakeHistory';
 import { useStUsdsHistory } from '../stusds/useStUsdsHistory';
 import { useMorphoVaultHistory } from '../morpho';
+import { useSusdtVaultHistory } from '../vaults';
 import { usePendleCombinedHistory } from '../pendle/usePendleCombinedHistory';
 
 export function useEthereumCombinedHistory() {
@@ -16,6 +17,7 @@ export function useEthereumCombinedHistory() {
   const stakeHistory = useStakeHistory();
   const stUsdsHistory = useStUsdsHistory();
   const morphoVaultsHistory = useMorphoVaultHistory();
+  const susdtVaultHistory = useSusdtVaultHistory();
   const pendleHistory = usePendleCombinedHistory();
 
   const combinedData = useMemo(() => {
@@ -27,6 +29,7 @@ export function useEthereumCombinedHistory() {
       ...(stakeHistory.data || []),
       ...(stUsdsHistory.data || []),
       ...(morphoVaultsHistory.data || []),
+      ...(susdtVaultHistory.data || []),
       ...(pendleHistory.data || [])
     ].sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
   }, [
@@ -37,6 +40,7 @@ export function useEthereumCombinedHistory() {
     stakeHistory.data,
     stUsdsHistory.data,
     morphoVaultsHistory.data,
+    susdtVaultHistory.data,
     pendleHistory.data
   ]);
 
@@ -50,6 +54,7 @@ export function useEthereumCombinedHistory() {
       stakeHistory.isLoading ||
       stUsdsHistory.isLoading ||
       morphoVaultsHistory.isLoading ||
+      susdtVaultHistory.isLoading ||
       pendleHistory.isLoading,
     error:
       savingsHistory.error ||
@@ -59,6 +64,7 @@ export function useEthereumCombinedHistory() {
       stakeHistory.error ||
       stUsdsHistory.error ||
       morphoVaultsHistory.error ||
+      susdtVaultHistory.error ||
       pendleHistory.error,
     mutate: () => {
       savingsHistory.mutate();
@@ -68,6 +74,7 @@ export function useEthereumCombinedHistory() {
       stakeHistory.mutate();
       stUsdsHistory.mutate();
       morphoVaultsHistory.mutate();
+      susdtVaultHistory.mutate();
       pendleHistory.mutate();
     }
   };

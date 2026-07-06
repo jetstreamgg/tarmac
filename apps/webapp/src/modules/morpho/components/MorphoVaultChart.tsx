@@ -1,9 +1,9 @@
-import { useMorphoVaultChartInfo, useMorphoVaultMarketApiData, Token } from '@/hooks';
+import { useMorphoVaultChartInfo, useVaultMarketData, Token, VaultProvider } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState, useMemo } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { Trans } from '@lingui/react/macro';
-import { useParseMorphoVaultChartData } from '../hooks/useParseMorphoVaultChartData';
+import { useParseVaultChartData } from '../hooks/useParseVaultChartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
@@ -16,48 +16,68 @@ enum ChartName {
 type MorphoVaultChartProps = {
   vaultAddress: `0x${string}`;
   assetToken: Token;
+  /** Vault provider; defaults to Morpho for back-compat. */
+  provider?: VaultProvider;
 };
 
-export function MorphoVaultChart({ vaultAddress, assetToken }: MorphoVaultChartProps) {
+export function MorphoVaultChart({ vaultAddress, assetToken, provider = 'morpho' }: MorphoVaultChartProps) {
   const chainId = useChainId();
+  const isMorpho = provider === 'morpho';
   const [activeChart, setActiveChart] = useState<ChartName>(ChartName.TVL);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
   const useHourlyInterval = timeFrame === 'w' || timeFrame === 'm';
   const hourlyWindow = timeFrame === 'w' || timeFrame === 'm' ? timeFrame : undefined;
 
+  // Morpho fetches its history series from the dedicated chart endpoint; disabled
+  // for other providers so a non-Morpho vault never hits the Morpho API.
   const {
-    data: chartInfo,
-    isLoading,
-    error
+    data: morphoChartInfo,
+    isLoading: morphoLoading,
+    error: morphoError
   } = useMorphoVaultChartInfo({
     vaultAddress,
     useHourlyInterval,
-    hourlyWindow
+    hourlyWindow,
+    enabled: isMorpho
   });
-  const { data: marketData } = useMorphoVaultMarketApiData({ vaultAddress });
+
+  // Provider-neutral market data: the live point for both providers, plus the
+  // history series for non-Morpho providers (Spark carries it in this payload).
+  const {
+    data: marketData,
+    isLoading: marketLoading,
+    error: marketError
+  } = useVaultMarketData({
+    provider,
+    vaultAddress
+  });
+
+  // For Morpho the history comes from the chart endpoint; otherwise from the
+  // normalized market-data payload.
+  const chartInfo = isMorpho ? morphoChartInfo : (marketData?.history ?? []);
+  const isLoading = isMorpho ? morphoLoading : marketLoading;
+  const error = isMorpho ? morphoError : marketError;
+
   const decimals =
     typeof assetToken.decimals === 'number' ? assetToken.decimals : assetToken.decimals[chainId];
-  const parsedChartData = useParseMorphoVaultChartData(
-    timeFrame,
-    chartInfo || [],
-    decimals,
-    useHourlyInterval
-  );
+  const parsedChartData = useParseVaultChartData(timeFrame, chartInfo || [], decimals, useHourlyInterval);
 
   const displayValue = useMemo(() => {
     if (!marketData) return undefined;
     if (activeChart === ChartName.TVL) {
-      return parseFloat(formatUnits(marketData.totalAssets, decimals));
+      return marketData.totalAssets !== undefined
+        ? parseFloat(formatUnits(marketData.totalAssets, decimals))
+        : undefined;
     }
-    return marketData.rate.netRate * 100;
+    return marketData.rate ? marketData.rate.netRate * 100 : undefined;
   }, [marketData, activeChart, decimals]);
 
   // Append live data point to chart data
   const chartData = useMemo(() => {
     const liveLabel = 'Current value';
     const tvl =
-      marketData && parsedChartData.tvl.length > 0
+      marketData?.totalAssets !== undefined && parsedChartData.tvl.length > 0
         ? [
             ...parsedChartData.tvl,
             {
@@ -69,7 +89,7 @@ export function MorphoVaultChart({ vaultAddress, assetToken }: MorphoVaultChartP
         : parsedChartData.tvl;
 
     const rate =
-      marketData && parsedChartData.rate.length > 0
+      marketData?.rate && parsedChartData.rate.length > 0
         ? [
             ...parsedChartData.rate,
             {
@@ -102,7 +122,7 @@ export function MorphoVaultChart({ vaultAddress, assetToken }: MorphoVaultChartP
           </Tabs>
         </div>
         <Chart
-          dataTestId="morpho-vault-chart"
+          dataTestId={`${provider}-vault-chart`}
           data={activeChart === ChartName.TVL ? chartData.tvl : chartData.rate}
           isLoading={isLoading}
           error={error}

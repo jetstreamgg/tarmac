@@ -46,12 +46,18 @@ Example invocations:
 
 ## Process
 
-### Step 1: Fetch corpus files
+### Step 1: Resolve the source commit, then fetch corpus files
 
-Use `gh api` to fetch the raw content from the specified branch:
+First pin the exact commit the sync is reading from (the branch name alone is a moving target):
 
 ```
-gh api "repos/sky-ecosystem/corpus/contents/output/webapp/<path>?ref=<branch>" -H "Accept: application/vnd.github.raw+json"
+gh api repos/sky-ecosystem/corpus/commits/<branch> --jq .sha
+```
+
+Record this SHA — it goes in the sync log (Step 5). Then fetch raw content **at that SHA** (not the branch) so the fetch and the recorded provenance can't diverge mid-run:
+
+```
+gh api "repos/sky-ecosystem/corpus/contents/output/webapp/<path>?ref=<sha>" -H "Accept: application/vnd.github.raw+json"
 ```
 
 Save fetched files to `/tmp/corpus-sync/` for diffing.
@@ -81,3 +87,26 @@ Report:
 - Files already in sync
 - Files only in corpus (not yet in tarmac)
 - Files only in tarmac (not in corpus)
+
+### Step 5: Record the sync (provenance)
+
+Always do this, even when no content changed — "checked, nothing changed" is itself a useful log entry.
+
+**Do NOT hand-edit `version.ts` or the log.** Both sync paths (this skill and `sync-content.sh`) record provenance through the **same** helper so their output is byte-identical. Run it from the repo root:
+
+```
+node apps/webapp/scripts/record-corpus-sync.mjs \
+  --branch "<branch>" \
+  --commit "<sha from Step 1>" \
+  --tag "<corpus release tag, or omit>" \
+  --file-types "<types synced, e.g. banners,faqs>" \
+  --changed "<comma-separated tarmac paths edited this run, or omit>" \
+  --in-sync <count already in sync, or omit>
+```
+
+It overwrites `apps/webapp/src/data/version.ts` (`CORPUS_VERSION`/`CORPUS_BRANCH`/`CORPUS_COMMIT`) and appends one line to `apps/webapp/src/data/corpus-sync-log.jsonl`.
+
+- `--tag`: best-effort latest corpus release tag — `gh api repos/sky-ecosystem/corpus/releases/latest --jq .tag_name`; omit if none (logs `version: null`).
+- `--file-types`: the types actually synced this run (default: all four).
+- `--changed` / `--in-sync`: from your Step 2 diff. Omit both for a pointer-only update (log `result` is null).
+- Add `--dry-run` to preview both outputs without writing.

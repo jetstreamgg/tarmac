@@ -23,12 +23,13 @@ import { PostHogProvider, POSTHOG_ENABLED } from '@/modules/analytics/PostHogPro
 import { CookieConsentBanner } from '@/modules/analytics/components/CookieConsentBanner';
 import { GeoConfigProvider } from '@/modules/geo-config';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
-import { CORPUS_VERSION, CORPUS_BRANCH } from '@/data/version';
+import { CORPUS_VERSION, CORPUS_BRANCH, CORPUS_COMMIT } from '@/data/version';
 
 // Expose corpus version to browser console for debugging
 if (typeof window !== 'undefined') {
   (window as any).CORPUS_VERSION = CORPUS_VERSION;
   (window as any).CORPUS_BRANCH = CORPUS_BRANCH;
+  (window as any).CORPUS_COMMIT = CORPUS_COMMIT;
 }
 
 const useMock = import.meta.env.VITE_USE_MOCK_WALLET === 'true';

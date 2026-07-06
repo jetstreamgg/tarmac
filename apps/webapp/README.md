@@ -37,7 +37,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 
 #### Authentication and wallet
 
-- `VITE_AUTH_URL`: Base URL for the authentication service
+- `VITE_AUTH_URL`: Base URL for the sky.money API gateway. Used for authentication/VPN checks and as the base for the Savings vault data API. Falls back to the staging URL if not set
 - `VITE_WALLETCONNECT_PROJECT_ID`: Project ID for WalletConnect integration
 - `VITE_SKIP_AUTH_CHECK`: Boolean flag to bypass authentication checks during development
 
@@ -64,6 +64,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 #### Feature flags
 
 - `VITE_BATCH_TX_ENABLED`: Boolean flag to enable the use of EIP-7702 batch transactions in widgets
+- `VITE_SUSDT_VAULT_ENABLED`: Boolean flag to show the sUSDT (Tether Savings) vault. When unset/`false` the vault is hidden everywhere (Vaults list, "My vaults", balances, suggested actions, deep links); set to `'true'` to reveal it
 - `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
 
 #### Environment metadata

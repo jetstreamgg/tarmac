@@ -1,4 +1,11 @@
-import { useMorphoVaultMarketApiData, useOverallSkyData } from '@/hooks';
+import {
+  getTokenDecimals,
+  Token,
+  useMorphoVaultMarketApiData,
+  useOverallSkyData,
+  useVaultMarketData,
+  VaultProvider
+} from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +21,7 @@ import { PairTokenIcons } from '@/widgets';
 import { useChainId } from 'wagmi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { formatDecimalPercentage } from '@/utils';
+import { formatBigInt, formatDecimalPercentage } from '@/utils';
 import { InfoTooltip } from '@/components/InfoTooltip';
 
 /** Small SVG ring that fills clockwise based on a 0-1 value */
@@ -53,13 +60,135 @@ function CapUtilizationRing({ value, size = 18 }: { value: number; size?: number
 
 type MorphoVaultAllocationsDetailsProps = {
   vaultAddress: `0x${string}`;
+  /** Vault provider; defaults to Morpho for back-compat. */
+  provider?: VaultProvider;
+  /** Underlying asset token — used to format Spark allocation amounts. */
+  assetToken?: Token;
 };
 
-export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAllocationsDetailsProps) {
-  const { data: marketData, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
+/**
+ * Exposure table for non-Morpho providers, rendered from the provider-neutral
+ * normalized allocations (`{ name, assets, allocationPercent }`). Returns null
+ * when there is nothing to show so the parent can hide the whole section.
+ */
+function NormalizedVaultAllocations({
+  vaultAddress,
+  provider,
+  assetToken
+}: {
+  vaultAddress: `0x${string}`;
+  provider: VaultProvider;
+  assetToken?: Token;
+}) {
+  const chainId = useChainId();
+  const { data: marketData, isLoading } = useVaultMarketData({ provider, vaultAddress });
+  const allocations = marketData?.allocations;
+  const decimals = getTokenDecimals(assetToken, chainId);
+  const symbol = assetToken?.symbol;
+
+  if (isLoading) {
+    return (
+      <Table wrapperClassName="overflow-x-auto scrollbar-thin-always">
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              <Skeleton className="h-4 w-24" />
+            </TableHead>
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-16" />
+            </TableHead>
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className="h-auto py-4">
+              <Skeleton className="h-4 w-32" />
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    );
+  }
+
+  // No allocation data — hide the section entirely (parent renders nothing).
+  if (!allocations || allocations.length === 0) {
+    return null;
+  }
+
+  return (
+    <Table wrapperClassName="overflow-x-auto scrollbar-thin-always">
+      <TableHeader>
+        <TableRow>
+          <TableHead>
+            <Text variant="small">
+              <Trans>Allocation</Trans>
+            </Text>
+          </TableHead>
+          <TableHead className="text-right">
+            <Text variant="small">{symbol ? <Trans>Amount ({symbol})</Trans> : <Trans>Amount</Trans>}</Text>
+          </TableHead>
+          <TableHead className="text-right">
+            <Text variant="small">
+              <Trans>Share</Trans>
+            </Text>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {allocations.map(allocation => (
+          <TableRow key={allocation.name}>
+            <TableCell className="h-auto py-4">
+              <div className="flex items-center gap-1.5">
+                {symbol && <TokenIcon token={{ symbol }} className="h-5 w-5" />}
+                <Text className="text-text text-sm">{allocation.name}</Text>
+              </div>
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Text className="text-text text-sm">
+                {formatBigInt(allocation.assets, { unit: decimals, compact: true })}
+              </Text>
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Text className="text-text text-sm">
+                {allocation.allocationPercent !== undefined
+                  ? formatDecimalPercentage(allocation.allocationPercent)
+                  : '-'}
+              </Text>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+export function MorphoVaultAllocationsDetails({
+  vaultAddress,
+  provider = 'morpho',
+  assetToken
+}: MorphoVaultAllocationsDetailsProps) {
+  // Disable the Morpho fetch for non-Morpho vaults so they never hit the Morpho API.
+  const { data: marketData, isLoading } = useMorphoVaultMarketApiData({
+    vaultAddress: provider === 'morpho' ? vaultAddress : undefined
+  });
   const allocationsData = marketData?.market;
   const chainId = useChainId();
   const { data: overallSkyData } = useOverallSkyData();
+
+  if (provider !== 'morpho') {
+    return (
+      <NormalizedVaultAllocations vaultAddress={vaultAddress} provider={provider} assetToken={assetToken} />
+    );
+  }
 
   if (isLoading) {
     return (

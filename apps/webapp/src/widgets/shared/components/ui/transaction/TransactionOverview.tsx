@@ -32,7 +32,7 @@ type TransactionOverviewParams = {
   title: string;
   isFetching: boolean;
   fetchingMessage: string;
-  rateType?: 'str' | 'ssr' | 'srr' | 'dtc' | 'stusds' | 'morpho';
+  rateType?: 'str' | 'ssr' | 'srr' | 'dtc' | 'stusds' | 'morpho' | 'sky';
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /**
    * Headline rows. When provided, renders as a TWO-accordion layout:
@@ -68,10 +68,7 @@ function OverviewRow({
     containerClassName
   } = row;
   return (
-    <motion.div
-      className={cn('flex justify-between', containerClassName)}
-      variants={positionAnimations}
-    >
+    <motion.div className={cn('flex justify-between', containerClassName)} variants={positionAnimations}>
       <HStack className="items-center" gap={1}>
         <Text
           className={cn(

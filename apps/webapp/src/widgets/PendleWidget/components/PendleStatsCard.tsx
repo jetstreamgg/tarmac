@@ -20,7 +20,7 @@ type PendleStatsCardProps = {
 };
 
 /**
- * In-widget stats card mirroring MorphoVaultStatsCard's shape:
+ * In-widget stats card mirroring VaultStatsCard's shape:
  * - Header: market name + Fixed APY
  * - Accordion: View PT contract + collapsible TVL row
  *

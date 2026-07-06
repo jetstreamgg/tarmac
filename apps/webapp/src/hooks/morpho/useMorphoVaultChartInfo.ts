@@ -137,11 +137,14 @@ export type MorphoVaultChartInfoHook = ReadHook & {
 export function useMorphoVaultChartInfo({
   vaultAddress,
   useHourlyInterval,
-  hourlyWindow
+  hourlyWindow,
+  enabled = true
 }: {
   vaultAddress: `0x${string}`;
   useHourlyInterval?: boolean;
   hourlyWindow?: MorphoVaultHourlyWindow;
+  /** Skip the fetch when false — e.g. for non-Morpho vaults that must not hit the Morpho API. */
+  enabled?: boolean;
 }): MorphoVaultChartInfoHook {
   const currentChainId = useChainId();
   const chainId = isTestnetId(currentChainId) ? mainnet.id : currentChainId;
@@ -152,6 +155,7 @@ export function useMorphoVaultChartInfo({
     refetch: mutate,
     isLoading
   } = useQuery({
+    enabled,
     queryKey: ['morpho-vault-chart', vaultAddress, chainId, useHourlyInterval, hourlyWindow],
     queryFn: () => fetchMorphoVaultChartInfo(vaultAddress, chainId, useHourlyInterval, hourlyWindow),
     staleTime: 30_000, // 30 seconds
