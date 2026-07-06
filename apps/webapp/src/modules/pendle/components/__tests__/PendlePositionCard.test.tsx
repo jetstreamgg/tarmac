@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PendleMarketConfig } from '@/hooks/pendle/pendle';
 
@@ -70,19 +70,39 @@ vi.mock('../../hooks/usePendleModal', () => ({
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
+vi.mock('@/modules/ui/context/ConnectedContext', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/modules/ui/context/ConnectedContext')>();
+  return {
+    ...actual,
+    useConnectedContext: () => ({ isConnectedAndAcceptedTerms: h.connected })
+  };
+});
+
+vi.mock('@/modules/ui/components/ConnectModal', () => ({
+  ConnectModal: () => <div data-testid="connect-modal-stub" />
+}));
+
+import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
+import { ConnectThenActProvider, CONTINUATION_DELAY_MS } from '@/modules/ui/context/ConnectThenActContext';
 import { PendlePositionCard } from '../PendlePositionCard';
 
-const renderCard = () =>
-  render(
-    <I18nProvider i18n={i18n}>
-      <PendlePositionCard market={MARKET} />
-    </I18nProvider>
-  );
+const wrap = () => (
+  <I18nProvider i18n={i18n}>
+    <ConnectModalProvider>
+      <ConnectThenActProvider>
+        <PendlePositionCard market={MARKET} />
+      </ConnectThenActProvider>
+    </ConnectModalProvider>
+  </I18nProvider>
+);
+
+const renderCard = () => render(wrap());
 
 describe('PendlePositionCard', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.useRealTimers();
     h.connected = true;
     h.ptBalance = 0n;
     h.walletBalance = 0n;
@@ -105,11 +125,21 @@ describe('PendlePositionCard', () => {
     expect(openSupply).toHaveBeenCalledTimes(1);
   });
 
-  it('disables the CTA when disconnected', () => {
+  it('keeps the CTA enabled while disconnected and routes the click into the connect flow', () => {
+    vi.useFakeTimers();
     h.connected = false;
-    renderCard();
+    const view = renderCard();
 
-    expect((screen.getByTestId('pendle-supply-cta') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId('pendle-supply-cta') as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(screen.getByTestId('pendle-supply-cta'));
+    expect(openSupply).not.toHaveBeenCalled();
+    expect(screen.getByTestId('connect-modal-stub')).toBeTruthy();
+
+    h.connected = true;
+    view.rerender(wrap());
+    act(() => vi.advanceTimersByTime(CONTINUATION_DELAY_MS));
+    expect(openSupply).toHaveBeenCalledTimes(1);
   });
 
   it('shows the position summary when the user holds PT', () => {

@@ -4,6 +4,7 @@ import { useOverallSkyData, useTokenBalances, type TokenItem } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isL2ChainId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import {
   ORIGIN_TOKENS,
   MAINNET_SUPPLY_ORIGINS,
@@ -26,6 +27,10 @@ const NO_VALUE = '–';
 export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
+
+  // The CTA stays enabled while disconnected: clicking routes through the
+  // connect flow and continues into the supply modal once connected.
+  const onSupplyOrConnect = useConnectThenAct(onSupply);
 
   // The supply tokens this card advertises = the same chain-aware origins the
   // supply modal offers (USDS/DAI on mainnet, USDS/USDC on L2). Drives both the
@@ -131,8 +136,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
       <Button
         variant="primary"
         className="w-full"
-        onClick={onSupply}
-        disabled={!isConnected}
+        onClick={onSupplyOrConnect}
         data-testid="savings-supply-cta"
       >
         <Trans>Supply</Trans>

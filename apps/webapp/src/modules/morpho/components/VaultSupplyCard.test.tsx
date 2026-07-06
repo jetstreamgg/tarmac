@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Token } from '@/hooks';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -23,14 +24,8 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
-    useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } }),
-    useTokenBalances: () => ({
-      data: [
-        { symbol: 'USDS', formatted: '20000', value: 0n, decimals: 18, chainId: 1 },
-        { symbol: 'DAI', formatted: '10000', value: 0n, decimals: 18, chainId: 1 }
-      ],
-      isLoading: false
-    })
+    getTokenDecimals: () => 6,
+    useTokenBalance: () => ({ data: { value: 1_000_000_000n, decimals: 6 } })
   };
 });
 
@@ -50,24 +45,21 @@ vi.mock('@/modules/ui/components/ConnectModal', () => ({
 
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider, CONTINUATION_DELAY_MS } from '@/modules/ui/context/ConnectThenActContext';
-import { SavingsSupplyCard } from './SavingsSupplyCard';
+import { VaultSupplyCard } from './VaultSupplyCard';
+
+const usdt = { symbol: 'USDT', name: 'Tether USD', address: { 1: '0x0' } } as unknown as Token;
 
 const wrap = (onSupply: () => void) => (
   <I18nProvider i18n={i18n}>
     <ConnectModalProvider>
       <ConnectThenActProvider>
-        <SavingsSupplyCard onSupply={onSupply} />
+        <VaultSupplyCard assetToken={usdt} netRate={0.0276} onSupply={onSupply} />
       </ConnectThenActProvider>
     </ConnectModalProvider>
   </I18nProvider>
 );
 
-const renderCard = (onSupply = vi.fn()) => {
-  render(wrap(onSupply));
-  return onSupply;
-};
-
-describe('SavingsSupplyCard — no-position entry card', () => {
+describe('VaultSupplyCard — no-position entry card', () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
@@ -75,25 +67,11 @@ describe('SavingsSupplyCard — no-position entry card', () => {
     h.connected = true;
   });
 
-  it('renders the rate, aggregated idle balance, and the chain-aware supply tokens', () => {
-    renderCard();
+  it('opens the supply modal via onSupply when connected', () => {
+    const onSupply = vi.fn();
+    render(wrap(onSupply));
 
-    expect(screen.getByTestId('savings-supply-card')).toBeTruthy();
-    // Current rate from useOverallSkyData (decimal fraction → percentage).
-    expect(screen.getAllByText('3.75%').length).toBeGreaterThan(0);
-    // Idle balance = sum of the supply origins' wallet balances (20k + 10k).
-    expect(screen.getByText('30,000')).toBeTruthy();
-    // Mainnet supply origins are USDS + DAI (no inline input, just labels).
-    expect(screen.getAllByText('USDS').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('DAI').length).toBeGreaterThan(0);
-    // No inline amount input — entry happens in the modal.
-    expect(screen.queryByTestId('savings-amount-input')).toBeNull();
-  });
-
-  it('opens the supply modal via onSupply when the CTA is clicked', () => {
-    const onSupply = renderCard();
-
-    fireEvent.click(screen.getByTestId('savings-supply-cta'));
+    fireEvent.click(screen.getByTestId('vault-supply-cta'));
 
     expect(onSupply).toHaveBeenCalledTimes(1);
   });
@@ -104,17 +82,12 @@ describe('SavingsSupplyCard — no-position entry card', () => {
     const onSupply = vi.fn();
     const view = render(wrap(onSupply));
 
-    // Idle balance still dashes without a wallet, but the CTA is live.
-    expect(screen.getByText('–')).toBeTruthy();
-    expect((screen.getByTestId('savings-supply-cta') as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByTestId('vault-supply-cta') as HTMLButtonElement).disabled).toBe(false);
 
-    // Clicking opens the connect modal instead of the supply modal…
-    fireEvent.click(screen.getByTestId('savings-supply-cta'));
+    fireEvent.click(screen.getByTestId('vault-supply-cta'));
     expect(onSupply).not.toHaveBeenCalled();
     expect(screen.getByTestId('connect-modal-stub')).toBeTruthy();
 
-    // …and once connected (past the terms gate), the supply flow continues
-    // after the anti-flash pause.
     h.connected = true;
     view.rerender(wrap(onSupply));
     act(() => vi.advanceTimersByTime(CONTINUATION_DELAY_MS));

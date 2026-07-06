@@ -14,6 +14,7 @@ import {
 import { formatDecimalPercentage, formatNumber, splitAmount, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
 
 const NO_VALUE = '–';
@@ -46,6 +47,11 @@ function PendleSupplyCard({
 }) {
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
+
+  // The CTA stays enabled while disconnected: clicking routes through the
+  // connect flow and continues into the supply modal once connected.
+  const onSupplyOrConnect = useConnectThenAct(onSupply);
+
   // Pendle markets are mainnet-only; balances follow the fork in dev mode.
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
 
@@ -128,8 +134,7 @@ function PendleSupplyCard({
       <Button
         variant="primary"
         className="w-full"
-        onClick={onSupply}
-        disabled={!isConnected}
+        onClick={onSupplyOrConnect}
         data-testid="pendle-supply-cta"
       >
         <Trans>Supply</Trans>
