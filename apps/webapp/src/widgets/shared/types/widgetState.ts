@@ -5,7 +5,6 @@ import {
   UpgradeScreen,
   upgradeTokens
 } from '@/widgets/UpgradeWidget/lib/constants';
-import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidget/lib/constants';
 import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
 import {
   PsmConversionAction,
@@ -14,10 +13,9 @@ import {
 } from '@/widgets/PsmConversionWidget/lib/constants';
 import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
 import { StakeAction, StakeFlow, StakeScreen } from '@/widgets/StakeModuleWidget/lib/constants';
-import { StUSDSAction, StUSDSFlow, StUSDSScreen } from '@/widgets/StUSDSWidget/lib/constants';
 import { VaultAction, VaultFlow, VaultScreen } from '@/widgets/VaultWidget/lib/constants';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
-import { RewardContract, Token } from '@/hooks';
+import { Token } from '@/hooks';
 import { TxStatus, NotificationType, InitialAction, InitialFlow, InitialScreen } from '../constants';
 import { WidgetAnalyticsEvent } from './analyticsEvents';
 
@@ -26,11 +24,9 @@ export type WidgetFlow =
   | BalancesFlow
   | SavingsFlow
   | UpgradeFlow
-  | RewardsFlow
   | TradeFlow
   | PsmConversionFlow
   | StakeFlow
-  | StUSDSFlow
   | VaultFlow
   | PendleFlow;
 
@@ -38,11 +34,9 @@ export type WidgetAction =
   | InitialAction
   | SavingsAction
   | UpgradeAction
-  | RewardsAction
   | TradeAction
   | PsmConversionAction
   | StakeAction
-  | StUSDSAction
   | VaultAction
   | PendleAction;
 
@@ -50,11 +44,9 @@ export type WidgetScreen =
   | InitialScreen
   | SavingsScreen
   | UpgradeScreen
-  | RewardsScreen
   | TradeScreen
   | PsmConversionScreen
   | StakeScreen
-  | StUSDSScreen
   | VaultScreen
   | PendleScreen;
 
@@ -87,11 +79,6 @@ type TradeWidgetState = Amount & {
 
 type SavingsWidgetState = Amount & Flow;
 
-type RewardsWidgetState = Amount &
-  Flow & {
-    selectedRewardContract?: RewardContract;
-  };
-
 type StakeWidgetState = Amount & {
   urnIndex?: number;
   stakeTab?: StakeAction.LOCK | StakeAction.FREE;
@@ -101,7 +88,6 @@ export type ExternalWidgetState = BalancesWidgetState &
   UpgradeWidgetState &
   TradeWidgetState &
   SavingsWidgetState &
-  RewardsWidgetState &
   StakeWidgetState;
 
 export type WidgetMessage = {

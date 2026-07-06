@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { upgradeTokens } from '@/widgets/UpgradeWidget/lib/constants';
 import { defaultConfig } from '../config/default-config';
 import { SUPPORTED_TOKEN_SYMBOLS } from '..';
-import { RewardsFlow } from '../RewardsWidget/lib/constants';
 import { SavingsFlow } from '../SavingsWidget/lib/constants';
 import { StakeFlow } from '../StakeModuleWidget/lib/constants';
 import { TradeFlow } from '../TradeWidget/lib/constants';
@@ -83,7 +82,6 @@ const createExternalWidgetStateSchema = (allowedTokens?: string[]) =>
         .enum([
           ...Object.values(SavingsFlow),
           ...Object.values(UpgradeFlow),
-          ...Object.values(RewardsFlow),
           ...Object.values(TradeFlow),
           ...Object.values(BalancesFlow),
           ...Object.values(StakeFlow)

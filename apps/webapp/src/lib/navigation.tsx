@@ -3,7 +3,7 @@ import { Link, useParams, useRouter, useRouterState } from '@tanstack/react-rout
 // navigation helpers (see modules/sentry/init.ts for why that matters).
 import type { FileRouteTypes } from '@/routeTree.gen';
 import { ComponentProps, useCallback, useMemo } from 'react';
-import { ConvertIntent, ExpertIntent, FixedIntent, Intent, VaultsIntent } from '@/lib/enums';
+import { ConvertIntent, FixedIntent, Intent, VaultsIntent } from '@/lib/enums';
 import { IS_PRODUCTION_ENV, QueryParams } from '@/lib/constants';
 import { GEO_OVERRIDE_PARAMS } from '@/modules/geo-config/applyGeoOverrides';
 
@@ -14,7 +14,6 @@ declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
     intent?: Intent;
     convertIntent?: ConvertIntent;
-    expertIntent?: ExpertIntent;
     vaultsIntent?: VaultsIntent;
     fixedIntent?: FixedIntent;
     // Destination pages render full-width instead of inside the widget-pane column.
@@ -32,7 +31,7 @@ export const INTENT_PATHS: Record<Intent, AppRoutePath> = {
   [Intent.REWARDS_INTENT]: '/earn/rewards',
   [Intent.STAKE_INTENT]: '/stake',
   [Intent.CONVERT_INTENT]: '/convert',
-  [Intent.EXPERT_INTENT]: '/earn/expert',
+  [Intent.EXPERT_INTENT]: '/earn/stusds',
   [Intent.VAULTS_INTENT]: '/earn/vaults',
   [Intent.FIXED_INTENT]: '/earn/fixed',
   [Intent.TRADE_INTENT]: '/convert/trade',
@@ -61,10 +60,6 @@ export function useRouteConvertIntent(): ConvertIntent | undefined {
   return useDeepestStaticData('convertIntent') as ConvertIntent | undefined;
 }
 
-export function useRouteExpertIntent(): ExpertIntent | undefined {
-  return useDeepestStaticData('expertIntent') as ExpertIntent | undefined;
-}
-
 export function useRouteVaultsIntent(): VaultsIntent | undefined {
   return useDeepestStaticData('vaultsIntent') as VaultsIntent | undefined;
 }
@@ -83,6 +78,7 @@ export type RouteEntityParams = {
   provider?: string;
   vaultAddress?: string;
   marketAddress?: string;
+  slug?: string;
 };
 
 /** Entity path params of the current route (reward contract, vault, market). */

@@ -11,11 +11,11 @@ import {
   Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { COMING_SOON_MAP, ExpertIntentMapping, ConvertIntentMapping } from '@/lib/constants';
+import { COMING_SOON_MAP, ConvertIntentMapping } from '@/lib/constants';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
-import { ExpertIntent, ConvertIntent } from '@/lib/enums';
+import { ConvertIntent } from '@/lib/enums';
 import { IconProps } from '@/modules/icons/Icon';
 import React from 'react';
 
@@ -157,7 +157,7 @@ export function useWidgetItems(intent: Intent): {
         {
           label: 'stUSDS',
           icon: <TokenIcon token={{ symbol: 'stUSDS' }} className="h-3 w-3" showChainIcon={false} />,
-          to: `/expert/${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`
+          to: '/earn/stusds'
         }
       ]
     ],

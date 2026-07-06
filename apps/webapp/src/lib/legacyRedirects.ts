@@ -1,11 +1,5 @@
-import { Intent, ConvertIntent, ExpertIntent, FixedIntent } from '@/lib/enums';
-import {
-  ConvertIntentMapping,
-  ExpertIntentMapping,
-  FixedIntentMapping,
-  IntentMapping,
-  QueryParams
-} from '@/lib/constants';
+import { Intent, ConvertIntent, FixedIntent } from '@/lib/enums';
+import { ConvertIntentMapping, FixedIntentMapping, IntentMapping, QueryParams } from '@/lib/constants';
 import { providerForVaultModule } from '@/lib/vaults/vaultProviderMapping';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { ROUTES } from '@/lib/routes';
@@ -79,11 +73,11 @@ export function legacySearchToLocation(search: Record<string, string>): LegacyRe
       to = module && CONVERT_MODULE_VALUES.includes(module) ? `/convert/${module}` : '/convert';
       break;
     }
-    case IntentMapping[Intent.EXPERT_INTENT]:
-      to =
-        expertModule?.toLowerCase() === ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]
-          ? `/expert/${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`
-          : '/expert';
+    // The historical ?widget= value stays 'expert' (frozen in old links) even
+    // though the module now maps to 'stusds'; both generations land on the
+    // flattened /earn/stusds via V2_REDIRECT_BY_MODULE.
+    case 'expert':
+      to = expertModule?.toLowerCase() === 'stusds' ? '/expert/stusds' : '/expert';
       break;
     case IntentMapping[Intent.VAULTS_INTENT]: {
       const provider = vaultModule ? providerForVaultModule(vaultModule) : undefined;
@@ -132,11 +126,9 @@ const V2_REDIRECT_BY_MODULE: Record<string, V2Redirect> = {
         ? [module.toLowerCase(), market]
         : []
   },
-  expert: {
-    to: ROUTES.EARN_EXPERT,
-    subpath: ([module]): string[] =>
-      module?.toLowerCase() === ExpertIntentMapping[ExpertIntent.STUSDS_INTENT] ? [module.toLowerCase()] : []
-  }
+  // Both the old overview (/expert) and the old detail (/expert/stusds) land
+  // on the flattened product page — the Expert module has exactly one product.
+  expert: { to: ROUTES.EARN_STUSDS }
 };
 
 /**

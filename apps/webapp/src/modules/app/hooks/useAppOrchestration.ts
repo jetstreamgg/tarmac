@@ -5,13 +5,11 @@ import {
   useAppSearchParams,
   useRouteIntent,
   useRouteConvertIntent,
-  useRouteExpertIntent,
   useRouteEntityParams
 } from '@/lib/navigation';
 import { QueryParams, CHAIN_WIDGET_MAP, COMING_SOON_MAP } from '@/lib/constants';
 import { ConvertIntent, Intent } from '@/lib/enums';
 
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
 import { useAvailableTokenRewardContracts } from '@/hooks';
 import { useConnection, useConnectionEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
@@ -34,14 +32,12 @@ import { isL2ChainId } from '@/utils';
  * shell layout route so it stays mounted across module navigations.
  */
 export function useAppOrchestration(): { intent: Intent } {
-  const { expertRiskDisclaimerShown } = useConfigContext();
   const { isAuthorized } = useConnectedContext();
   const [searchParams, setSearchParams] = useAppSearchParams();
   const navigate = useNavigate();
 
   const intent = useRouteIntent();
   const convertIntent = useRouteConvertIntent();
-  const expertIntent = useRouteExpertIntent();
   const { rewardContract } = useRouteEntityParams();
 
   const chainId = useChainId();
@@ -142,12 +138,6 @@ export function useAppOrchestration(): { intent: Intent } {
       return;
     }
 
-    // Expert submodules require the risk disclaimer to have been acknowledged.
-    if (expertIntent !== undefined && !expertRiskDisclaimerShown) {
-      void navigate({ to: '/earn/expert', search: keepSearch, replace: true });
-      return;
-    }
-
     // Reward detail routes must point at a reward contract available on the
     // target chain.
     if (
@@ -156,16 +146,7 @@ export function useAppOrchestration(): { intent: Intent } {
     ) {
       void navigate({ to: '/earn/rewards', search: keepSearch, replace: true });
     }
-  }, [
-    intent,
-    convertIntent,
-    expertIntent,
-    rewardContract,
-    newChainId,
-    expertRiskDisclaimerShown,
-    rewardContracts,
-    navigate
-  ]);
+  }, [intent, convertIntent, rewardContract, newChainId, rewardContracts, navigate]);
 
   // Run validation on the remaining query-driven search params whenever they change
   useEffect(() => {
