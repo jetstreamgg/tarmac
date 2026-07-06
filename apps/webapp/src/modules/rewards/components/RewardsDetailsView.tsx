@@ -17,6 +17,7 @@ import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActi
 import { RewardsOverviewAbout } from './RewardsOverviewAbout';
 import { filterActionsByIntent } from '@/lib/utils';
 import { AboutSpk } from '@/modules/ui/components/AboutSpk';
+import { AboutGrove } from '@/modules/ui/components/AboutGrove';
 
 export function RewardsDetailsView({ rewardContract }: { rewardContract?: RewardContract }) {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
@@ -71,6 +72,13 @@ export function RewardsDetailsView({ rewardContract }: { rewardContract?: Reward
         <DetailSection title={t`About the Spark Token`}>
           <DetailSectionRow>
             <AboutSpk />
+          </DetailSectionRow>
+        </DetailSection>
+      )}
+      {rewardContract.rewardToken.symbol === TOKENS.grove.symbol && (
+        <DetailSection title={t`About the Grove Token`}>
+          <DetailSectionRow>
+            <AboutGrove />
           </DetailSectionRow>
         </DetailSection>
       )}

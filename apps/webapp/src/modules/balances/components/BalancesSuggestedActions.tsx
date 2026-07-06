@@ -95,7 +95,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
   },
   {
     label: 'Rewards and Points',
-    tokens: ['SPK', 'CLE'],
+    tokens: ['SPK', 'GROVE', 'CLE'],
     rateKey: 'rewards',
     subtitle: 'Rates up to {rate}',
     module: 'rewards',
@@ -269,6 +269,11 @@ function useActionRates(
     contract =>
       contract.supplyToken.symbol === TOKENS.usds.symbol && contract.rewardToken.symbol === TOKENS.cle.symbol
   );
+  const usdsGroveRewardContract = activeRewardContracts.find(
+    contract =>
+      contract.supplyToken.symbol === TOKENS.usds.symbol &&
+      contract.rewardToken.symbol === TOKENS.grove.symbol
+  );
 
   const { data: usdsSpkChartData, isLoading: spkLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsSpkRewardContract?.contractAddress as string
@@ -276,8 +281,15 @@ function useActionRates(
   const { data: usdsCleChartData, isLoading: cleLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsCleRewardContract?.contractAddress as string
   });
-  const rewardsHighestRate = useHighestRateFromChartData([usdsSpkChartData, usdsCleChartData]);
-  const rewardsLoading = spkLoading || cleLoading;
+  const { data: usdsGroveChartData, isLoading: groveLoading } = useRewardsChartInfo({
+    rewardContractAddress: usdsGroveRewardContract?.contractAddress as string
+  });
+  const rewardsHighestRate = useHighestRateFromChartData([
+    usdsSpkChartData,
+    usdsCleChartData,
+    usdsGroveChartData
+  ]);
+  const rewardsLoading = spkLoading || cleLoading || groveLoading;
 
   const { data: stakeRewardContracts, isLoading: stakeContractsLoading } = useStakeRewardContracts();
   const { data: stakeRewardsChartsInfoData, isLoading: stakeChartsLoading } = useMultipleRewardsChartInfo({
