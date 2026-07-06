@@ -21,18 +21,21 @@ vi.mock('wagmi/connectors', async importOriginal => {
 
 vi.mock('@sentry/react', async () => {
   const React = await import('react');
-  const withScope = vi.fn((callback: (scope: {
-    setContext: (name: string, context: Record<string, unknown>) => void;
-    setExtras: (extras: Record<string, unknown>) => void;
-    setLevel: (level: string) => void;
-    setTag: (key: string, value: string) => void;
-  }) => void) =>
-    callback({
-      setContext: vi.fn(),
-      setExtras: vi.fn(),
-      setLevel: vi.fn(),
-      setTag: vi.fn()
-    })
+  const withScope = vi.fn(
+    (
+      callback: (scope: {
+        setContext: (name: string, context: Record<string, unknown>) => void;
+        setExtras: (extras: Record<string, unknown>) => void;
+        setLevel: (level: string) => void;
+        setTag: (key: string, value: string) => void;
+      }) => void
+    ) =>
+      callback({
+        setContext: vi.fn(),
+        setExtras: vi.fn(),
+        setLevel: vi.fn(),
+        setTag: vi.fn()
+      })
   );
 
   return {

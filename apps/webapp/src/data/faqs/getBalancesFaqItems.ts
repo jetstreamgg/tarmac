@@ -1,9 +1,4 @@
-import {
-  isArbitrumChainId,
-  isBaseChainId,
-  isOptimismChainId,
-  isUnichainChainId
-} from '@/utils';
+import { isArbitrumChainId, isBaseChainId, isOptimismChainId, isUnichainChainId } from '@/utils';
 
 import {
   L2GeneralFaqItems,

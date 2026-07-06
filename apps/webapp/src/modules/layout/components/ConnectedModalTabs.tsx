@@ -32,7 +32,7 @@ export function ConnectedModalTabs() {
       </TabsList>
       <TabsContent
         value={ConnectedModalTabsEnum.SUPPLIED_FUNDS}
-        className="scrollbar-thin-always max-h-94 min-h-0 flex-1 overflow-auto [scrollbar-gutter:auto]"
+        className="scrollbar-thin-always max-h-94 min-h-0 flex-1 [scrollbar-gutter:auto] overflow-auto"
       >
         <ModulesBalances
           variant={ModuleCardVariant.alt}
@@ -49,7 +49,7 @@ export function ConnectedModalTabs() {
       </TabsContent>
       <TabsContent
         value={ConnectedModalTabsEnum.ACTIVITY}
-        className="scrollbar-thin-always max-h-94 min-h-0 flex-1 overflow-auto [scrollbar-gutter:auto]"
+        className="scrollbar-thin-always max-h-94 min-h-0 flex-1 [scrollbar-gutter:auto] overflow-auto"
       >
         <BalancesHistory
           onExternalLinkClicked={onExternalLinkClicked}

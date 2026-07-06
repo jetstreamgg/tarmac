@@ -95,7 +95,7 @@ export function TradeSummary({
         </CardHeader>
         <CardContent>
           <div className="mb-4 text-center">
-            <MotionHStack className="mb-4 mt-8 items-stretch" variants={positionAnimations}>
+            <MotionHStack className="mt-8 mb-4 items-stretch" variants={positionAnimations}>
               <VStack className="flex-1 items-center gap-3">
                 <TokenIcon token={{ symbol: originToken.symbol || 'ETH' }} className="h-8 w-8" />
                 <Text variant="large" className="mt-0! flex-1 text-[18px] font-medium">
@@ -237,7 +237,7 @@ export function TradeSummary({
         )}
       </Card>
       <motion.div variants={positionAnimations}>
-        <Text className="text-textSecondary text-balance text-center">
+        <Text className="text-textSecondary text-center text-balance">
           {exactInput ? (
             <Trans>
               Output is estimated. You will receive at least {slippageAdjustedQuote} {token.symbol} or the
