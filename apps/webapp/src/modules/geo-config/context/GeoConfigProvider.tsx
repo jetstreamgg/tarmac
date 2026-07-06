@@ -38,12 +38,20 @@ async function fetchGeoConfig(): Promise<GeoConfig> {
     return res.json();
   } catch (error) {
     clearTimeout(timeoutId);
-    reportError(error, {
-      module: 'geo-config',
-      flow: 'fetch-config',
-      action: 'fetch',
-      type: 'request_error'
-    });
+    // AbortError (DOMException code 20) is expected and already handled: either the
+    // 5s timeout above fired on a slow/filtered network, or the user navigated away
+    // mid-flight. We fall back to FALLBACK_CONFIG either way, so it's non-actionable
+    // noise — don't report it (WEBAPP-5M). Genuine failures still surface: non-ok
+    // responses are reported as `http_error` in the branch above.
+    const isAbortError = error instanceof Error && error.name === 'AbortError';
+    if (!isAbortError) {
+      reportError(error, {
+        module: 'geo-config',
+        flow: 'fetch-config',
+        action: 'fetch',
+        type: 'request_error'
+      });
+    }
     return FALLBACK_CONFIG;
   }
 }

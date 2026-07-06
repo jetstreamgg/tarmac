@@ -135,7 +135,8 @@ export const useTransactionCallbacks = ({
           event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
           action: widgetState.action,
           flow: widgetState.flow,
-          txHash: hash
+          txHash: hash,
+          error
         });
       } catch {
         // Analytics must never break functionality

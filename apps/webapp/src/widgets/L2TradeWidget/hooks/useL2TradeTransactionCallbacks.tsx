@@ -108,6 +108,7 @@ export const useL2TradeTransactionCallbacks = ({
           action: 'trade',
           flow: 'trade',
           txHash: hash,
+          error,
           data: swapData
         });
       }
@@ -179,6 +180,7 @@ export const useL2TradeTransactionCallbacks = ({
           action: 'trade',
           flow: 'trade',
           txHash: hash,
+          error,
           data: swapData
         });
       }

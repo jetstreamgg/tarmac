@@ -1,3 +1,6 @@
+// Polyfills first — must run before any dependency code (e.g. wagmi's
+// Object.hasOwn use) evaluates. See lib/polyfills.ts.
+import '../lib/polyfills';
 import { initSentry } from '../modules/sentry/init';
 import React from 'react';
 import ReactDOM from 'react-dom/client';

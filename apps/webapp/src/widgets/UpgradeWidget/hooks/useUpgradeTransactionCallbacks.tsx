@@ -139,6 +139,7 @@ export const useUpgradeTransactionCallbacks = ({
           action: actionType,
           flow,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: upgradeData

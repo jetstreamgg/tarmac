@@ -2654,6 +2654,268 @@ export const gPv2SettlementAddress = {
 export const gPv2SettlementConfig = { address: gPv2SettlementAddress, abi: gPv2SettlementAbi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// grove
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const groveAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_name', internalType: 'string', type: 'string' },
+      { name: '_symbol', internalType: 'string', type: 'string' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'spender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'value', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Approval'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Deny'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'data', internalType: 'string', type: 'string', indexed: false }
+    ],
+    name: 'File'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Rely'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address', indexed: true },
+      { name: 'to', internalType: 'address', type: 'address', indexed: true },
+      { name: 'value', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Transfer'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'DOMAIN_SEPARATOR',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'PERMIT_TYPEHASH',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' }
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'approve',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'burn',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'deny',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'deploymentChainId',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'data', internalType: 'string', type: 'string' }
+    ],
+    name: 'file',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'mint',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'nonces',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'signature', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' }
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'rely',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'version',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'wards',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const groveAddress = {
+  1: '0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406',
+  314310: '0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const groveConfig = { address: groveAddress, abi: groveAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // lsMkr
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -12396,6 +12658,336 @@ export const usdsFlagshipVaultConfig = {
 } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// usdsGroveReward
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const usdsGroveRewardAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_owner', internalType: 'address', type: 'address' },
+      { name: '_rewardsDistribution', internalType: 'address', type: 'address' },
+      { name: '_rewardsToken', internalType: 'address', type: 'address' },
+      { name: '_stakingToken', internalType: 'address', type: 'address' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'oldOwner', internalType: 'address', type: 'address', indexed: false },
+      { name: 'newOwner', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'OwnerChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newOwner', internalType: 'address', type: 'address', indexed: false }],
+    name: 'OwnerNominated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'isPaused', internalType: 'bool', type: 'bool', indexed: false }],
+    name: 'PauseChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'token', internalType: 'address', type: 'address', indexed: false },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Recovered'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'referral', internalType: 'uint16', type: 'uint16', indexed: true },
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Referral'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'reward', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'RewardAdded'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'reward', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'RewardPaid'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newRewardsDistribution', internalType: 'address', type: 'address', indexed: false }],
+    name: 'RewardsDistributionUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newDuration', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'RewardsDurationUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Staked'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Withdrawn'
+  },
+  { type: 'function', inputs: [], name: 'acceptOwnership', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'earned',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'exit', outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', inputs: [], name: 'getReward', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getRewardForDuration',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastPauseTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastTimeRewardApplicable',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastUpdateTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_owner', internalType: 'address', type: 'address' }],
+    name: 'nominateNewOwner',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'nominatedOwner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'reward', internalType: 'uint256', type: 'uint256' }],
+    name: 'notifyRewardAmount',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'paused',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'periodFinish',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenAddress', internalType: 'address', type: 'address' },
+      { name: 'tokenAmount', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'recoverERC20',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardPerToken',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardPerTokenStored',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardRate',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'rewards',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsDistribution',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsDuration',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsToken',
+    outputs: [{ name: '', internalType: 'contract IERC20', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_paused', internalType: 'bool', type: 'bool' }],
+    name: 'setPaused',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_rewardsDistribution', internalType: 'address', type: 'address' }],
+    name: 'setRewardsDistribution',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_rewardsDuration', internalType: 'uint256', type: 'uint256' }],
+    name: 'setRewardsDuration',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'referral', internalType: 'uint16', type: 'uint16' }
+    ],
+    name: 'stake',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'stake',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'stakingToken',
+    outputs: [{ name: '', internalType: 'contract IERC20', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'userRewardPerTokenPaid',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'withdraw',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const usdsGroveRewardAddress = {
+  1: '0x4E41488C19cD35EB4de3083Fc3e204854c75c86a',
+  314310: '0x4E41488C19cD35EB4de3083Fc3e204854c75c86a'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const usdsGroveRewardConfig = { address: usdsGroveRewardAddress, abi: usdsGroveRewardAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // usdsL2
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -21716,6 +22308,425 @@ export const useWatchGPv2SettlementTrade = /*#__PURE__*/ createUseWatchContractE
   abi: gPv2SettlementAbi,
   address: gPv2SettlementAddress,
   eventName: 'Trade'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGrove = /*#__PURE__*/ createUseReadContract({ abi: groveAbi, address: groveAddress });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveDomainSeparator = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'DOMAIN_SEPARATOR'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"PERMIT_TYPEHASH"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGrovePermitTypehash = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'PERMIT_TYPEHASH'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"allowance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveAllowance = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'allowance'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"decimals"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveDecimals = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'decimals'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"deploymentChainId"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveDeploymentChainId = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'deploymentChainId'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"name"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveName = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'name'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"nonces"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveNonces = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'nonces'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"symbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveSymbol = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'symbol'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"version"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveVersion = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'version'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"wards"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useReadGroveWards = /*#__PURE__*/ createUseReadContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'wards'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGrove = /*#__PURE__*/ createUseWriteContract({ abi: groveAbi, address: groveAddress });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGroveApprove = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"burn"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGroveBurn = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'burn'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGroveDeny = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGroveFile = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGroveMint = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGrovePermit = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGroveRely = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGroveTransfer = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWriteGroveTransferFrom = /*#__PURE__*/ createUseWriteContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGrove = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGroveApprove = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"burn"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGroveBurn = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'burn'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGroveDeny = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGroveFile = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGroveMint = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGrovePermit = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGroveRely = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGroveTransfer = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link groveAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useSimulateGroveTransferFrom = /*#__PURE__*/ createUseSimulateContract({
+  abi: groveAbi,
+  address: groveAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link groveAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWatchGrove = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: groveAbi,
+  address: groveAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link groveAbi}__ and `eventName` set to `"Approval"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWatchGroveApproval = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: groveAbi,
+  address: groveAddress,
+  eventName: 'Approval'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link groveAbi}__ and `eventName` set to `"Deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWatchGroveDeny = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: groveAbi,
+  address: groveAddress,
+  eventName: 'Deny'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link groveAbi}__ and `eventName` set to `"File"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWatchGroveFile = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: groveAbi,
+  address: groveAddress,
+  eventName: 'File'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link groveAbi}__ and `eventName` set to `"Rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWatchGroveRely = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: groveAbi,
+  address: groveAddress,
+  eventName: 'Rely'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link groveAbi}__ and `eventName` set to `"Transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xB30FE1Cf884B48a22a50D22a9282004F2c5E9406)
+ */
+export const useWatchGroveTransfer = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: groveAbi,
+  address: groveAddress,
+  eventName: 'Transfer'
 });
 
 /**
@@ -37440,6 +38451,629 @@ export const useWatchUsdsFlagshipVaultWithdraw = /*#__PURE__*/ createUseWatchCon
   abi: usdsFlagshipVaultAbi,
   address: usdsFlagshipVaultAddress,
   eventName: 'Withdraw'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveReward = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"earned"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardEarned = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'earned'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"getRewardForDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardGetRewardForDuration = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'getRewardForDuration'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"lastPauseTime"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardLastPauseTime = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'lastPauseTime'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"lastTimeRewardApplicable"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardLastTimeRewardApplicable = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'lastTimeRewardApplicable'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"lastUpdateTime"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardLastUpdateTime = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'lastUpdateTime'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"nominatedOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardNominatedOwner = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'nominatedOwner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"owner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardOwner = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'owner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"paused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardPaused = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'paused'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"periodFinish"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardPeriodFinish = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'periodFinish'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"rewardPerToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardRewardPerToken = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'rewardPerToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"rewardPerTokenStored"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardRewardPerTokenStored = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'rewardPerTokenStored'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"rewardRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardRewardRate = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'rewardRate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"rewards"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardRewards = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'rewards'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"rewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardRewardsDistribution = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'rewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"rewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardRewardsDuration = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'rewardsDuration'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"rewardsToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardRewardsToken = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'rewardsToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"stakingToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardStakingToken = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'stakingToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"userRewardPerTokenPaid"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useReadUsdsGroveRewardUserRewardPerTokenPaid = /*#__PURE__*/ createUseReadContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'userRewardPerTokenPaid'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveReward = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"acceptOwnership"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardAcceptOwnership = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'acceptOwnership'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"exit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardExit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'exit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"getReward"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardGetReward = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'getReward'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"nominateNewOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardNominateNewOwner = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'nominateNewOwner'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"notifyRewardAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardNotifyRewardAmount = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'notifyRewardAmount'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"recoverERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardRecoverErc20 = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'recoverERC20'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"setPaused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardSetPaused = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'setPaused'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"setRewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardSetRewardsDistribution = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'setRewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"setRewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardSetRewardsDuration = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'setRewardsDuration'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"stake"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardStake = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'stake'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWriteUsdsGroveRewardWithdraw = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveReward = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"acceptOwnership"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardAcceptOwnership = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'acceptOwnership'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"exit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardExit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'exit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"getReward"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardGetReward = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'getReward'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"nominateNewOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardNominateNewOwner = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'nominateNewOwner'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"notifyRewardAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardNotifyRewardAmount = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'notifyRewardAmount'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"recoverERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardRecoverErc20 = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'recoverERC20'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"setPaused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardSetPaused = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'setPaused'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"setRewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardSetRewardsDistribution = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'setRewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"setRewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardSetRewardsDuration = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'setRewardsDuration'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"stake"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardStake = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'stake'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useSimulateUsdsGroveRewardWithdraw = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveReward = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"OwnerChanged"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardOwnerChanged = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'OwnerChanged'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"OwnerNominated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardOwnerNominated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'OwnerNominated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"PauseChanged"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardPauseChanged = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'PauseChanged'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"Recovered"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardRecovered = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'Recovered'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"Referral"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardReferral = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'Referral'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"RewardAdded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardRewardAdded = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'RewardAdded'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"RewardPaid"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardRewardPaid = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'RewardPaid'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"RewardsDistributionUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardRewardsDistributionUpdated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'RewardsDistributionUpdated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"RewardsDurationUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardRewardsDurationUpdated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'RewardsDurationUpdated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"Staked"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardStaked = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'Staked'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsGroveRewardAbi}__ and `eventName` set to `"Withdrawn"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x4E41488C19cD35EB4de3083Fc3e204854c75c86a)
+ */
+export const useWatchUsdsGroveRewardWithdrawn = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsGroveRewardAbi,
+  address: usdsGroveRewardAddress,
+  eventName: 'Withdrawn'
 });
 
 /**

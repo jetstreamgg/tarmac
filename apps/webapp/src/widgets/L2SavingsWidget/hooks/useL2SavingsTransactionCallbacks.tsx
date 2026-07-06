@@ -127,6 +127,7 @@ export const useL2SavingsTransactionCallbacks = ({
           action: SavingsAction.SUPPLY,
           flow: SavingsFlow.SUPPLY,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: savingsData
@@ -215,6 +216,7 @@ export const useL2SavingsTransactionCallbacks = ({
           action: SavingsAction.WITHDRAW,
           flow: SavingsFlow.WITHDRAW,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: savingsData

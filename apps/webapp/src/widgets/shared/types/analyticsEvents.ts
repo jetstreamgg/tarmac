@@ -14,4 +14,6 @@ export type WidgetAnalyticsEvent = {
   amount?: number;
   assetSymbol?: string;
   data?: Record<string, unknown>;
+  // Raw tx error, classified into bounded properties by useWidgetAnalytics. Never stored verbatim.
+  error?: unknown;
 };

@@ -100,6 +100,14 @@ const fetchUserSuggestedActions = (
   const cleRewardContract = activeRewardContracts?.find(
     (rewardContract: RewardContract) => rewardContract.rewardToken === TOKENS.cle
   );
+  const groveRewardContract = activeRewardContracts?.find(
+    (rewardContract: RewardContract) => rewardContract.rewardToken === TOKENS.grove
+  );
+  // Chronicle rewards are points rather than tokens, so they keep bespoke copy
+  const getRewardsStepCopy = (rewardContract: RewardContract) =>
+    rewardContract.rewardToken === TOKENS.cle
+      ? t`Get Chronicle Points with USDS`
+      : t`Get ${rewardContract.rewardToken.symbol} rewards with USDS`;
   const l2ChainId = isL2ChainId(chainId);
 
   // Determine which reward contract to prioritize based on current context
@@ -172,7 +180,7 @@ const fetchUserSuggestedActions = (
           title: t`Upgrade and get rewards`,
           balance: daiBalance.formatted,
           stepOne: t`Upgrade DAI to USDS`,
-          stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
+          stepTwo: getRewardsStepCopy(prioritizedRewardContract),
           url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}&${SourceToken}=DAI`,
           intent: IntentMapping.UPGRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
@@ -183,21 +191,19 @@ const fetchUserSuggestedActions = (
 
       // Add alternative reward options when in specific context (show other options with lower weight)
       if (currentRewardContract) {
-        const availableAlternatives = [spkRewardContract, cleRewardContract].filter(
+        const availableAlternatives = [spkRewardContract, groveRewardContract, cleRewardContract].filter(
           contract => contract && contract.contractAddress !== currentRewardContract.contractAddress
         );
 
         availableAlternatives.forEach((alternativeContract, index) => {
           if (alternativeContract) {
-            const isAltCle = alternativeContract.rewardToken === TOKENS.cle;
-
             linkedActions.push({
               primaryToken: 'DAI',
               secondaryToken: 'USDS',
               title: t`Upgrade and get rewards`,
               balance: daiBalance.formatted,
               stepOne: t`Upgrade DAI to USDS`,
-              stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
+              stepTwo: getRewardsStepCopy(alternativeContract),
               url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}&${SourceToken}=DAI`,
               intent: IntentMapping.UPGRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
@@ -293,7 +299,7 @@ const fetchUserSuggestedActions = (
           balance: usdcBalance.formatted,
           title: t`Trade and get rewards`,
           stepOne: t`Trade USDC for USDS`,
-          stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
+          stepTwo: getRewardsStepCopy(prioritizedRewardContract),
           url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}`,
           intent: IntentMapping.TRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
@@ -304,21 +310,19 @@ const fetchUserSuggestedActions = (
 
       // Add alternative reward options for USDC
       if (currentRewardContract) {
-        const availableAlternatives = [spkRewardContract, cleRewardContract].filter(
+        const availableAlternatives = [spkRewardContract, groveRewardContract, cleRewardContract].filter(
           contract => contract && contract.contractAddress !== currentRewardContract.contractAddress
         );
 
         availableAlternatives.forEach((alternativeContract, index) => {
           if (alternativeContract) {
-            const isAltCle = alternativeContract.rewardToken === TOKENS.cle;
-
             linkedActions.push({
               primaryToken: 'USDC',
               secondaryToken: 'USDS',
               balance: usdcBalance.formatted,
               title: t`Trade and get rewards`,
               stepOne: t`Trade USDC for USDS`,
-              stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
+              stepTwo: getRewardsStepCopy(alternativeContract),
               url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}`,
               intent: IntentMapping.TRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
@@ -397,7 +401,7 @@ const fetchUserSuggestedActions = (
           title: t`Trade and get rewards`,
           balance: usdtBalance.formatted,
           stepOne: t`Trade USDT for USDS`,
-          stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
+          stepTwo: getRewardsStepCopy(prioritizedRewardContract),
           url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}`,
           intent: IntentMapping.TRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
@@ -408,21 +412,19 @@ const fetchUserSuggestedActions = (
 
       // Add alternative reward options for USDT
       if (currentRewardContract) {
-        const availableAlternatives = [spkRewardContract, cleRewardContract].filter(
+        const availableAlternatives = [spkRewardContract, groveRewardContract, cleRewardContract].filter(
           contract => contract && contract.contractAddress !== currentRewardContract.contractAddress
         );
 
         availableAlternatives.forEach((alternativeContract, index) => {
           if (alternativeContract) {
-            const isAltCle = alternativeContract.rewardToken === TOKENS.cle;
-
             linkedActions.push({
               primaryToken: 'USDT',
               secondaryToken: 'USDS',
               title: t`Trade and get rewards`,
               balance: usdtBalance.formatted,
               stepOne: t`Trade USDT for USDS`,
-              stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
+              stepTwo: getRewardsStepCopy(alternativeContract),
               url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}`,
               intent: IntentMapping.TRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
@@ -485,7 +487,7 @@ const fetchUserSuggestedActions = (
 
         suggestedActions.push({
           primaryToken: 'USDS',
-          secondaryToken: isCleContext ? 'CLE' : 'SPK',
+          secondaryToken: prioritizedRewardContract.rewardToken.symbol,
           title: isCleContext ? t`Start earning Chronicle Points` : t`Start getting rewards`,
           balance: usdsBalance.formatted,
           url: `/?${Widget}=${REWARDS}&${InputAmount}=${usdsBalance.formatted}&reward=${prioritizedRewardContract.contractAddress}`,
@@ -497,18 +499,19 @@ const fetchUserSuggestedActions = (
 
       // Add alternative reward suggestions when in specific context
       if (currentRewardContract) {
-        const availableAlternatives = [spkRewardContract, cleRewardContract].filter(
+        const availableAlternatives = [spkRewardContract, groveRewardContract, cleRewardContract].filter(
           contract => contract && contract.contractAddress !== currentRewardContract.contractAddress
         );
 
         availableAlternatives.forEach((alternativeContract, index) => {
           if (alternativeContract) {
-            const isAltCle = alternativeContract.rewardToken === TOKENS.cle;
-
             suggestedActions.push({
               primaryToken: 'USDS',
-              secondaryToken: isAltCle ? 'CLE' : 'SPK',
-              title: isAltCle ? t`Start earning Chronicle Points` : t`Start getting rewards`,
+              secondaryToken: alternativeContract.rewardToken.symbol,
+              title:
+                alternativeContract.rewardToken === TOKENS.cle
+                  ? t`Start earning Chronicle Points`
+                  : t`Start getting rewards`,
               balance: usdsBalance.formatted,
               url: `/?${Widget}=${REWARDS}&${InputAmount}=${usdsBalance.formatted}&reward=${alternativeContract.contractAddress}`,
               intent: IntentMapping.REWARDS_INTENT,

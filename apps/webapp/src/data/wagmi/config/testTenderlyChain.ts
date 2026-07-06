@@ -16,7 +16,7 @@ export const TENDERLY_CHAIN_ID = 314310;
 
 // only works if hardcoded, cannot be set via env variable. Corresponds to the public RPC of `nov-3-mainnet-fork`
 export const TENDERLY_RPC_URL =
-  'https://virtual.rpc.tenderly.co/jetstreamgg/jetstream/public/jetstream-testnet';
+  'https://virtual.mainnet.eu.rpc.tenderly.co/jetstreamgg/jetstream/jetstream-testnet';
 
 export const getTestTenderlyChains = () => {
   const mainnetData = vnetData.find(data => data.NETWORK === NetworkName.mainnet);
