@@ -64,6 +64,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 #### Feature flags
 
 - `VITE_BATCH_TX_ENABLED`: Boolean flag to enable the use of EIP-7702 batch transactions in widgets
+- `VITE_SUSDT_VAULT_ENABLED`: Boolean flag to show the sUSDT (Tether Savings) vault. When unset/`false` the vault is hidden everywhere (Vaults list, "My vaults", balances, suggested actions, deep links); set to `'true'` to reveal it
 - `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
 
 #### Environment metadata

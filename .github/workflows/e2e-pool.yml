@@ -67,32 +67,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Restore pool VNet data from repo variables
+      - name: Restore pool VNet data from repo secrets
         id: restore-pool
         run: |
-          # VNET_POOL_DATA and VNET_SNAPSHOT_DATA are repo-level variables
+          # VNET_POOL_DATA and VNET_SNAPSHOT_DATA are repo-level secrets (auto-masked in logs)
           if [ -n "$VNET_POOL_DATA" ] && [ -n "$VNET_SNAPSHOT_DATA" ]; then
-            echo "Writing VNet data from repo variables..."
+            echo "Writing VNet data from repo secrets..."
 
-            echo "$VNET_POOL_DATA" > tenderlyTestnetData.json
-            echo "$VNET_SNAPSHOT_DATA" > apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+            printf '%s' "$VNET_POOL_DATA" > tenderlyTestnetData.json
+            printf '%s' "$VNET_SNAPSHOT_DATA" > apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+
+            # Log only metadata (counts), never file contents — the data is credential-bearing.
+            POOL_NETWORKS=$(jq -r '.[].NETWORK' tenderlyTestnetData.json 2>/dev/null | wc -l | tr -d ' ')
+            SNAPSHOT_COUNT=$(jq -r 'keys | length' apps/webapp/src/test/e2e/persistent-vnet-snapshots.json 2>/dev/null)
 
             echo "have_pool=true" >> $GITHUB_OUTPUT
-            echo "VNet data:"
-            cat tenderlyTestnetData.json | jq -r '.[].NETWORK' | tr '\n' ', '
-            echo ""
-            echo "Snapshots:"
-            cat apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | jq -r 'keys[]' | tr '\n' ', '
-            echo ""
-            echo "Pool VNet data restored"
+            echo "Pool VNet data restored: ${POOL_NETWORKS} networks, ${SNAPSHOT_COUNT} snapshots"
           else
             echo "have_pool=false" >> $GITHUB_OUTPUT
-            echo "No pool data found in repo variables."
+            echo "No pool data found in repo secrets."
             echo "Run: pnpm vnet:pool:provision:store (or the Provision VNet Pool workflow)"
           fi
         env:
-          VNET_POOL_DATA: ${{ vars.VNET_POOL_DATA }}
-          VNET_SNAPSHOT_DATA: ${{ vars.VNET_SNAPSHOT_DATA }}
+          VNET_POOL_DATA: ${{ secrets.VNET_POOL_DATA }}
+          VNET_SNAPSHOT_DATA: ${{ secrets.VNET_SNAPSHOT_DATA }}
 
       - name: Validate pool VNets
         id: validate-pool

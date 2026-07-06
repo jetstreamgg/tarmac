@@ -12,15 +12,16 @@ import {
   type Token
 } from '@/hooks';
 import {
-  PendleConfigMenu,
   pendleAnalyticsData,
   pendleNonPtLeg,
   usePendleSlippage,
   usePendleTokens,
   usePendleUsdValue
 } from '@/widgets';
+import { SlippageMenu } from '@/components/ui/SlippageMenu';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { PendleRedeem } from '../components/PendleRedeem';
+import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 
 type Options = {
   /** Called after redeem confirms onchain — for refetching balances etc. */
@@ -101,20 +102,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     }
   });
 
-  // Map raw revert messages to user-friendly copy. Mirrors the PendleWidget
-  // mapping so users see consistent guidance whether they're buying, selling,
-  // or redeeming.
-  const prepareErrorMessage = useMemo<string | undefined>(() => {
-    const raw = writeHook.error?.message;
-    if (!raw) return undefined;
-    if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
-      return t`Current market price exceeds your slippage tolerance. Increase slippage via the gear icon, or wait for the quote to refresh.`;
-    }
-    if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
-      return t`Quote expired. Refreshing — please wait a moment.`;
-    }
-    return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
-  }, [writeHook.error]);
+  // Map raw revert messages to user-friendly copy — shared with the buy/sell
+  // modal so users see consistent guidance across all three flows.
+  const prepareErrorMessage = useMemo<string | undefined>(
+    () => pendlePrepareErrorMessage(writeHook.error?.message),
+    [writeHook.error]
+  );
 
   const transactionContent = useMemo(
     () => (
@@ -144,7 +137,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
 
   const rightHeaderComponent = useMemo(
     () => (
-      <PendleConfigMenu slippage={slippage} defaultSlippage={defaultSlippage} setSlippage={setSlippage} />
+      <SlippageMenu
+        value={slippage}
+        defaultValue={defaultSlippage}
+        onChange={setSlippage}
+        dataTestId="pendle-slippage-menu"
+      />
     ),
     [slippage, defaultSlippage, setSlippage]
   );

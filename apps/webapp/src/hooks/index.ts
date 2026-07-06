@@ -190,11 +190,14 @@ export {
   PENDLE_ROUTER_V4_ABI,
   PENDLE_MARKETS,
   getPendleMarketByAddress,
+  getPendleMarketBySlug,
   PendleConvertSide,
   PendleHistoryAction
 } from './pendle/constants';
 export { isMarketMatured, formatPendleAggregatorName } from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
+export { usePendleMarketChartData } from './pendle/usePendleMarketChartData';
+export type { PendleMarketChartPoint } from './pendle/usePendleMarketChartData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
 export { useAllPendleUserAssets } from './pendle/useAllPendleUserAssets';
 export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
@@ -483,6 +486,7 @@ export {
   usdcAddress,
   usdtAddress,
   spkAddress,
+  groveAddress,
   stakeModuleAddress,
   stakeModuleAbi,
   mcdVatAbi,

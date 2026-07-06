@@ -39,7 +39,7 @@ const getWidgetName = (intent: Intent): string => {
     case Intent.STAKE_INTENT:
       return 'Stake';
     case Intent.EXPERT_INTENT:
-      return 'Expert';
+      return 'stUSDS';
     case Intent.VAULTS_INTENT:
       return 'Vaults';
     case Intent.CONVERT_INTENT:

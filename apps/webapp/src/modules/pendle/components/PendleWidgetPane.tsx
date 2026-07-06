@@ -66,8 +66,8 @@ export function PendleWidgetPane() {
 
   const handleSelectMarket = (market: PendleMarketConfig) => {
     void navigate({
-      to: '/earn/fixed/market/$marketAddress',
-      params: { marketAddress: market.marketAddress },
+      to: '/earn/fixed/$slug',
+      params: { slug: market.slug },
       search: keepSearch
     });
   };

@@ -5,6 +5,7 @@ import type { SuppliedPosition } from '../helpers/suppliedView';
 
 const h = vi.hoisted(() => ({
   openSavingsSupply: vi.fn(),
+  openStUsdsSupply: vi.fn(),
   openVaultSupply: vi.fn(),
   openRewardsSupply: vi.fn(),
   chainId: 1
@@ -45,6 +46,10 @@ vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
   useSavingsModal: () => ({ openSupply: h.openSavingsSupply, openWithdraw: vi.fn() })
 }));
 
+vi.mock('@/modules/stusds/hooks/useStUsdsModal', () => ({
+  useStUsdsModal: () => ({ openSupply: h.openStUsdsSupply, openWithdraw: vi.fn() })
+}));
+
 vi.mock('@/modules/morpho/hooks/useVaultModal', () => ({
   useVaultModal: () => ({ openSupply: h.openVaultSupply, openWithdraw: vi.fn() })
 }));
@@ -73,6 +78,7 @@ const position = (
 describe('usePortfolioSupplyActions', () => {
   beforeEach(() => {
     h.openSavingsSupply.mockClear();
+    h.openStUsdsSupply.mockClear();
     h.openVaultSupply.mockClear();
     h.openRewardsSupply.mockClear();
     h.chainId = 1;
@@ -169,10 +175,25 @@ describe('usePortfolioSupplyActions', () => {
     expect(h.openRewardsSupply).not.toHaveBeenCalled();
   });
 
+  it('resolves a stUSDS position on the connected chain to an opener that launches the stUSDS modal', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(position('stusds'));
+
+    expect(handler).toBeTypeOf('function');
+    handler!();
+    expect(h.openStUsdsSupply).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns undefined for a stUSDS position not on the connected chain (caller navigates)', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    expect(result.current(position('stusds', { chainIds: [8453] }))).toBeUndefined();
+    expect(h.openStUsdsSupply).not.toHaveBeenCalled();
+  });
+
   it('returns undefined for products with no in-place supply modal (caller navigates)', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions());
 
-    for (const kind of ['fixed', 'stusds'] as const) {
+    for (const kind of ['fixed'] as const) {
       expect(result.current(position(kind))).toBeUndefined();
     }
   });

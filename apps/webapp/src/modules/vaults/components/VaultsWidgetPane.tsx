@@ -8,7 +8,7 @@ import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { VaultProvider } from '@/hooks/vaults/types';
 import { useNavigate } from '@tanstack/react-router';
 import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
-import { VaultStatsCard } from '@/modules/expert/components/VaultStatsCard';
+import { VaultStatsCard } from './VaultStatsCard';
 import { VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { useMemo } from 'react';

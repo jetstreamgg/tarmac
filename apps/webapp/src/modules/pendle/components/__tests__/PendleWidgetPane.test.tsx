@@ -16,6 +16,7 @@ const MATURED_MARKET_ADDRESS = '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1' as c
 const hoisted = vi.hoisted(() => ({
   activeMarket: {
     name: 'PT-USDG',
+    slug: 'pt-usdg',
     marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as `0x${string}`,
     ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548' as `0x${string}`,
     ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1' as `0x${string}`,
@@ -27,6 +28,7 @@ const hoisted = vi.hoisted(() => ({
   },
   maturedMarket: {
     name: 'PT-MATURED',
+    slug: 'pt-matured',
     marketAddress: '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1' as `0x${string}`,
     ptToken: '0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2' as `0x${string}`,
     ytToken: '0xc3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3' as `0x${string}`,
@@ -177,8 +179,14 @@ vi.mock('../PendleReadyToRedeemList', () => ({
 }));
 
 vi.mock('../PendleMarketStatsCard', () => ({
-  PendleMarketStatsCard: ({ market }: { market: { marketAddress: string; underlyingSymbol: string } }) => (
-    <div data-testid="pendle-market-stats-card" data-market={market.marketAddress}>
+  PendleMarketStatsCard: ({
+    market,
+    onClick
+  }: {
+    market: { marketAddress: string; underlyingSymbol: string };
+    onClick?: () => void;
+  }) => (
+    <div data-testid="pendle-market-stats-card" data-market={market.marketAddress} onClick={onClick}>
       PT-{market.underlyingSymbol}
     </div>
   )
@@ -233,6 +241,24 @@ describe('PendleWidgetPane', () => {
     expect(container.querySelector('[data-testid="pendle-widget-stub"]')).toBeNull();
     expect(cardAddresses(container).length).toBeGreaterThan(0);
     expect(container.textContent).toContain('All markets');
+
+    unmount();
+  });
+
+  it('navigates to the market slug route when a market card is selected', () => {
+    const { container, unmount } = renderComponent(<PendleWidgetPane />);
+
+    // eslint-disable-next-line testing-library/no-container
+    const card = container.querySelector<HTMLElement>(
+      `[data-testid="pendle-market-stats-card"][data-market="${ACTIVE_MARKET_ADDRESS}"]`
+    );
+    act(() => {
+      card?.click();
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ to: '/earn/fixed/$slug', params: { slug: 'pt-usdg' } })
+    );
 
     unmount();
   });

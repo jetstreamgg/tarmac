@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useChainId } from 'wagmi';
 import { TOKENS, VAULTS, useAvailableTokenRewardContracts } from '@/hooks';
 import { useSavingsModal } from '@/modules/savings/hooks/useSavingsModal';
+import { useStUsdsModal } from '@/modules/stusds/hooks/useStUsdsModal';
 import { useVaultModal } from '@/modules/morpho/hooks/useVaultModal';
 import { useRewardsModal } from '@/modules/rewards/hooks/useRewardsModal';
 import { rewardContractDisplayName } from '@/modules/rewards/helpers/rewardContractDisplayName';
@@ -25,6 +26,7 @@ import type { SuppliedPosition } from '../helpers/suppliedView';
 export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (() => void) | undefined {
   const connectedChainId = useChainId();
   const { openSupply: openSavingsSupply } = useSavingsModal();
+  const { openSupply: openStUsdsSupply } = useStUsdsModal();
   const { openSupply: openVaultSupply } = useVaultModal();
   const { openSupply: openRewardsSupply } = useRewardsModal();
   // Deprecated farms are already filtered out of the registry, so a rewards
@@ -75,12 +77,22 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
               rate: position.rate
             });
         }
-        // 'fixed' | 'stusds' have no in-place supply modal yet — add a case as
+        case 'stusds':
+          // Singleton product, mainnet-family only — no call-time args needed.
+          return onConnectedChain ? () => openStUsdsSupply() : undefined;
+        // 'fixed' have no in-place supply modal yet — add a case as
         // each product's trigger is integrated.
         default:
           return undefined;
       }
     },
-    [connectedChainId, openSavingsSupply, openVaultSupply, openRewardsSupply, rewardContracts]
+    [
+      connectedChainId,
+      openSavingsSupply,
+      openVaultSupply,
+      openRewardsSupply,
+      rewardContracts,
+      openStUsdsSupply
+    ]
   );
 }

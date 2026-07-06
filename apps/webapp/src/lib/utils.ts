@@ -1,5 +1,5 @@
-import { ALLOWED_EXTERNAL_DOMAINS, ExpertIntentMapping, QueryParams } from './constants';
-import { ExpertIntent, Intent } from './enums';
+import { ALLOWED_EXTERNAL_DOMAINS, QueryParams } from './constants';
+import { Intent } from './enums';
 import { INTENT_PATHS } from './navigation';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
@@ -111,11 +111,6 @@ export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
     searchParams
   );
 export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number) =>
-  getQueryParams(
-    `${INTENT_PATHS[Intent.EXPERT_INTENT]}/${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}?network=${getMainnetChainName(chainId)}`,
-    searchParams
-  );
-export const getExpertOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
     `${INTENT_PATHS[Intent.EXPERT_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
