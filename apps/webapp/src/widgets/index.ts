@@ -12,7 +12,6 @@ export type {
 export * from './SavingsWidget/lib/constants';
 export * from './TradeWidget/lib/constants';
 export * from './UpgradeWidget/lib/constants';
-export { RewardsFlow, RewardsScreen, RewardsAction } from './RewardsWidget/lib/constants';
 export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './StakeModuleWidget/lib/constants';
 export {
   VaultFlow,
@@ -36,7 +35,6 @@ export {
 } from './PendleWidget/lib/constants';
 
 export { UpgradeWidget } from './UpgradeWidget';
-export { RewardsWidget } from './RewardsWidget';
 export { TradeWidget } from './TradeWidget';
 export { L2TradeWidget as BaseTradeWidget } from './L2TradeWidget';
 export { L2TradeWidget as ArbitrumTradeWidget } from './L2TradeWidget';

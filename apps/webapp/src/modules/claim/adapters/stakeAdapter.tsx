@@ -68,7 +68,11 @@ function useStakeUrnRewards(index: bigint | undefined): { rewards: UrnReward[]; 
       index !== undefined && rewardContractAddresses.length > 0 && !!urnAddress && urnAddress !== ZERO_ADDRESS
   });
 
-  return { rewards: (data as UrnReward[] | undefined) ?? [], isLoading };
+  // Referentially stable while `data` is unchanged (incl. the disabled/undefined
+  // case) — a fresh `[]` here would bust useStakeClaimable's memo every render
+  // and, through the panel's merged-rewards chain, loop its modal-content sync.
+  const rewards = useMemo(() => (data as UrnReward[] | undefined) ?? [], [data]);
+  return { rewards, isLoading };
 }
 
 function useStakeClaimable(scope: ClaimScope): ClaimableResult {

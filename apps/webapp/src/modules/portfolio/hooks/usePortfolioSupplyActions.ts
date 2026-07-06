@@ -1,9 +1,18 @@
 import { useCallback } from 'react';
 import { useChainId } from 'wagmi';
-import { VAULTS } from '@/hooks';
+import {
+  TOKENS,
+  VAULTS,
+  useAvailableTokenRewardContracts,
+  getPendleMarketByAddress,
+  isMarketMatured
+} from '@/hooks';
 import { useSavingsModal } from '@/modules/savings/hooks/useSavingsModal';
 import { useStUsdsModal } from '@/modules/stusds/hooks/useStUsdsModal';
 import { useVaultModal } from '@/modules/morpho/hooks/useVaultModal';
+import { useRewardsModal } from '@/modules/rewards/hooks/useRewardsModal';
+import { usePendleModal } from '@/modules/pendle/hooks/usePendleModal';
+import { rewardContractDisplayName } from '@/modules/rewards/helpers/rewardContractDisplayName';
 import { isMorphoVault } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
@@ -26,6 +35,11 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
   const { openSupply: openSavingsSupply } = useSavingsModal();
   const { openSupply: openStUsdsSupply } = useStUsdsModal();
   const { openSupply: openVaultSupply } = useVaultModal();
+  const { openSupply: openPendleSupply } = usePendleModal();
+  const { openSupply: openRewardsSupply } = useRewardsModal();
+  // Deprecated farms are already filtered out of the registry, so a rewards
+  // position here always resolves to a supplyable contract.
+  const rewardContracts = useAvailableTokenRewardContracts(connectedChainId);
 
   return useCallback(
     (position: SuppliedPosition) => {
@@ -54,15 +68,47 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
               netRate: position.rate
             });
         }
+        case 'rewards': {
+          // Resolve the registry farm from the position's structured address,
+          // then open the shared rewards supply modal against it (D6).
+          if (!onConnectedChain || !position.address) return undefined;
+          const positionAddress = position.address.toLowerCase();
+          const contract = rewardContracts.find(c => c.contractAddress?.toLowerCase() === positionAddress);
+          if (!contract) return undefined;
+          return () =>
+            openRewardsSupply({
+              contractAddress: contract.contractAddress as `0x${string}`,
+              supplyToken: contract.supplyToken,
+              displayName: rewardContractDisplayName(contract),
+              rewardTokenSymbol:
+                contract.rewardToken.symbol === TOKENS.cle.symbol ? undefined : contract.rewardToken.symbol,
+              rate: position.rate
+            });
+        }
         case 'stusds':
           // Singleton product, mainnet-family only — no call-time args needed.
           return onConnectedChain ? () => openStUsdsSupply() : undefined;
-        // 'rewards' | 'fixed' have no in-place supply modal yet — add a case as
-        // each product's trigger is integrated.
+        case 'fixed': {
+          // Resolve the registry market from the position's address. Matured
+          // markets take no new supply — their card navigates to the overview,
+          // where redemption lives (maturity gating unchanged).
+          if (!onConnectedChain || !position.address) return undefined;
+          const market = getPendleMarketByAddress(position.address);
+          if (!market || isMarketMatured(market.expiry)) return undefined;
+          return () => openPendleSupply(market);
+        }
         default:
           return undefined;
       }
     },
-    [connectedChainId, openSavingsSupply, openStUsdsSupply, openVaultSupply]
+    [
+      connectedChainId,
+      openSavingsSupply,
+      openVaultSupply,
+      openRewardsSupply,
+      rewardContracts,
+      openStUsdsSupply,
+      openPendleSupply
+    ]
   );
 }

@@ -82,6 +82,9 @@ export const ModulesBalances = ({
   const usdsSpkRewardContract = rewardContracts.find(
     f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.spk.symbol
   );
+  const usdsGroveRewardContract = rewardContracts.find(
+    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.grove.symbol
+  );
 
   const {
     data: usdsSkySuppliedBalance,
@@ -113,17 +116,34 @@ export const ModulesBalances = ({
     contractAddress: usdsCleRewardContract?.contractAddress as `0x${string}`
   });
 
+  const {
+    data: usdsGroveSuppliedBalance,
+    isLoading: usdsGroveSuppliedBalanceLoading,
+    error: usdsGroveSuppliedBalanceError
+  } = useRewardsSuppliedBalance({
+    chainId: mainnetChainId,
+    address,
+    contractAddress: usdsGroveRewardContract?.contractAddress as `0x${string}`
+  });
+
   const rewardsLoading =
-    usdsSkySuppliedBalanceLoading || usdsSpkSuppliedBalanceLoading || usdsCleSuppliedBalanceIsLoading;
+    usdsSkySuppliedBalanceLoading ||
+    usdsSpkSuppliedBalanceLoading ||
+    usdsCleSuppliedBalanceIsLoading ||
+    usdsGroveSuppliedBalanceLoading;
 
   const suppliedBalanceError =
-    usdsSkySuppliedBalanceError || usdsCleSuppliedBalanceError || usdsSpkSuppliedBalanceError;
+    usdsSkySuppliedBalanceError ||
+    usdsCleSuppliedBalanceError ||
+    usdsSpkSuppliedBalanceError ||
+    usdsGroveSuppliedBalanceError;
 
   const totalUserRewardsSupplied =
     usdsSkySuppliedBalance !== undefined &&
     usdsCleSuppliedBalance !== undefined &&
-    usdsSpkSuppliedBalance !== undefined
-      ? usdsSkySuppliedBalance + usdsCleSuppliedBalance + usdsSpkSuppliedBalance
+    usdsSpkSuppliedBalance !== undefined &&
+    usdsGroveSuppliedBalance !== undefined
+      ? usdsSkySuppliedBalance + usdsCleSuppliedBalance + usdsSpkSuppliedBalance + usdsGroveSuppliedBalance
       : 0n;
 
   const {
@@ -232,12 +252,7 @@ export const ModulesBalances = ({
     parseFloat((Number(balance) / 1e18).toString()) * parseFloat(priceStr);
 
   const anyBalanceLoading =
-    rewardsLoading ||
-    savingsLoading ||
-    stakeLoading ||
-    expertLoading ||
-    morphoLoading ||
-    pendleLoading;
+    rewardsLoading || savingsLoading || stakeLoading || expertLoading || morphoLoading || pendleLoading;
   const canSortByValue = !anyBalanceLoading && !pricesLoading && !!pricesData;
 
   const moduleUsdValues = useMemo(() => {
@@ -313,12 +328,7 @@ export const ModulesBalances = ({
   // Check if all supplied funds are zero (before any filtering)
   const totalRawSavingsBalance = sortedSavingsBalances.reduce((acc, { balance }) => acc + balance, 0n);
   const isAllLoaded =
-    !rewardsLoading &&
-    !savingsLoading &&
-    !stakeLoading &&
-    !expertLoading &&
-    !morphoLoading &&
-    !pendleLoading;
+    !rewardsLoading && !savingsLoading && !stakeLoading && !expertLoading && !morphoLoading && !pendleLoading;
   const allFundsEmpty =
     isAllLoaded &&
     (hideRestrictedModules || totalUserRewardsSupplied === 0n) &&
@@ -337,9 +347,7 @@ export const ModulesBalances = ({
   }
 
   // Render functions for each module type
-  const renderModule = (
-    moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'vaults' | 'fixedYield'
-  ) => {
+  const renderModule = (moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'vaults' | 'fixedYield') => {
     switch (moduleId) {
       case 'rewards':
         return (
