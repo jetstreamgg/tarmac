@@ -12,7 +12,6 @@ import {
 } from '@tanstack/react-router';
 import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { getEtherscanLink } from '@/utils';
 import { WalletPreviewDrawer } from './WalletPreviewDrawer';
 
 const ADDRESS = '0x1234567890abcdef1234567890abcdef12345678';
@@ -25,6 +24,38 @@ const mocks = vi.hoisted(() => ({
   },
   chainId: 1,
   isSafeWallet: false,
+  isRegionRestricted: false,
+  walletAssets: {
+    assets: [
+      {
+        symbol: 'USDS',
+        name: 'Sky USD',
+        amount: 1000,
+        amountUsd: 1000,
+        bestRate: 0.0475,
+        multipleVenues: true
+      },
+      {
+        symbol: 'USDC',
+        name: 'USD Coin',
+        amount: 1000,
+        amountUsd: 1000,
+        bestRate: 0.0525,
+        multipleVenues: true
+      },
+      {
+        symbol: 'USDT',
+        name: 'Tether USD',
+        amount: 0,
+        amountUsd: 0,
+        bestRate: 0.0425,
+        multipleVenues: false
+      },
+      { symbol: 'SKY', name: 'Sky Token', amount: 0, amountUsd: 0, bestRate: 0.107, multipleVenues: false }
+    ],
+    totalUsd: 2000,
+    isLoading: false
+  },
   disconnect: vi.fn(),
   openConnectModal: vi.fn()
 }));
@@ -56,8 +87,10 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   useConfigContext: () => ({ onExternalLinkClicked: undefined })
 }));
 
-vi.mock('@/widgets/BalancesWidget/hooks/useSuppliedBalancesTotalUsd', () => ({
-  useSuppliedBalancesTotalUsd: () => ({ totalUsd: 4605.2, isLoading: false })
+// The drawer's balance/rate wiring has its own coverage; the components under
+// test consume the aggregated shape.
+vi.mock('./useWalletDrawerAssets', () => ({
+  useWalletDrawerAssets: () => mocks.walletAssets
 }));
 
 // Tab contents are the shared balance widgets; their behavior has its own coverage.
@@ -65,33 +98,22 @@ vi.mock('@/widgets', async importOriginal => {
   const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
-    ModulesBalances: () => <div data-testid="modules-balances-stub" />,
     BalancesHistory: () => <div data-testid="balances-history-stub" />
   };
 });
 
-vi.mock('@/modules/app/hooks/useModuleUrls', () => ({
-  useModuleUrls: () => ({
-    rewardsUrl: '/rewards',
-    savingsUrlMap: { 1: '/savings' },
-    stakeUrl: '/stake',
-    stusdsUrl: '/earn/stusds',
-    vaultsUrl: '/vaults',
-    convertUrl: '/convert',
-    fixedYieldUrl: '/fixed'
-  })
-}));
-
 vi.mock('@/modules/geo-config', async importOriginal => {
   const actual = await importOriginal<typeof import('@/modules/geo-config')>();
-  return { ...actual, useGeoConfig: () => ({ isRegionRestricted: false }) };
+  return { ...actual, useGeoConfig: () => ({ isRegionRestricted: mocks.isRegionRestricted }) };
 });
 
 beforeEach(() => {
   mocks.connection = { isConnected: true, address: ADDRESS, connector: undefined };
   mocks.chainId = 1;
   mocks.isSafeWallet = false;
+  mocks.isRegionRestricted = false;
   mocks.disconnect.mockClear();
+  mocks.openConnectModal.mockClear();
 });
 
 let lastRouter: AnyRouter | undefined;
@@ -124,7 +146,12 @@ function renderDrawer({ ensName }: { ensName?: string | null } = {}) {
   const stubRoute = (path: string) =>
     createRoute({ getParentRoute: () => rootRoute, path, component: () => null });
   const router = createRouter({
-    routeTree: rootRoute.addChildren([stubRoute('/'), stubRoute('/savings')]),
+    routeTree: rootRoute.addChildren([
+      stubRoute('/'),
+      stubRoute('/savings'),
+      stubRoute('/earn'),
+      stubRoute('/stake')
+    ]),
     history: createMemoryHistory({ initialEntries: ['/'] })
   });
   lastRouter = router;
@@ -150,27 +177,24 @@ describe('WalletPreviewDrawer', () => {
     expect(await openDrawer()).toBeTruthy();
   });
 
-  it('shows ENS name, truncated address, copy control, explorer link and network selector', async () => {
+  it('shows ENS name, truncated address, copy control and network selector', async () => {
     renderDrawer({ ensName: 'bartoo.eth' });
     const drawer = await openDrawer();
 
     expect(drawer.textContent).toContain('bartoo.eth');
-    expect(drawer.textContent).toContain('0x12345...45678');
+    expect(drawer.textContent).toContain('0x1234...5678');
     expect(drawer.querySelector('[data-testid="copy-to-clipboard"]')).toBeTruthy();
-    expect(drawer.querySelector('[data-testid="wallet-card-explorer"]')?.getAttribute('href')).toBe(
-      getEtherscanLink(1, ADDRESS, 'address')
-    );
     expect(drawer.querySelector('[data-testid="wallet-drawer-network"]')).toBeTruthy();
   });
 
-  it('shows the total supplied USD value', async () => {
+  it('shows the wallet assets total USD value', async () => {
     renderDrawer();
     const drawer = await openDrawer();
 
-    expect(drawer.querySelector('[data-testid="wallet-drawer-total"]')?.textContent).toContain('4,605.2');
+    expect(drawer.querySelector('[data-testid="wallet-drawer-total"]')?.textContent).toContain('2,000');
   });
 
-  it('disconnects via the drawer action', async () => {
+  it('disconnects via the header action', async () => {
     renderDrawer();
     const drawer = await openDrawer();
 
@@ -178,19 +202,32 @@ describe('WalletPreviewDrawer', () => {
     expect(mocks.disconnect).toHaveBeenCalledTimes(1);
   });
 
-  it('hides the disconnect action for Safe wallets', async () => {
+  it('opens the connect modal (and closes) via the switch-account action', async () => {
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    fireEvent.click(drawer.querySelector('[data-testid="wallet-drawer-switch-account"]')!);
+    expect(mocks.openConnectModal).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('wallet-drawer')).toBeNull();
+  });
+
+  it('hides the switch-account and disconnect actions for Safe wallets', async () => {
     mocks.isSafeWallet = true;
     renderDrawer();
     const drawer = await openDrawer();
 
     expect(drawer.querySelector('[data-testid="wallet-drawer-disconnect"]')).toBeNull();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-switch-account"]')).toBeNull();
   });
 
-  it('shows the Assets tab (shared balances component) by default and switches to Activity', async () => {
+  it('lists the wallet assets with rate badges on the Assets tab and switches to Activity', async () => {
     renderDrawer();
     const drawer = await openDrawer();
 
-    expect(drawer.querySelector('[data-testid="modules-balances-stub"]')).toBeTruthy();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-assets"]')).toBeTruthy();
+    const usdsRow = drawer.querySelector('[data-testid="wallet-drawer-asset-usds"]');
+    expect(usdsRow?.textContent).toContain('USDS');
+    expect(usdsRow?.textContent).toContain('up to 4.75%');
     expect(drawer.querySelector('[data-testid="balances-history-stub"]')).toBeNull();
 
     // Radix tabs activate on mousedown, not click.
@@ -199,10 +236,46 @@ describe('WalletPreviewDrawer', () => {
     });
 
     expect(drawer.querySelector('[data-testid="balances-history-stub"]')).toBeTruthy();
-    expect(drawer.querySelector('[data-testid="modules-balances-stub"]')).toBeNull();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-assets"]')).toBeNull();
 
     fireEvent.mouseDown(drawer.querySelector('[data-testid="wallet-drawer-tab-assets"]')!, { button: 0 });
-    expect(drawer.querySelector('[data-testid="modules-balances-stub"]')).toBeTruthy();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-assets"]')).toBeTruthy();
+  });
+
+  it('hides rate badges and earn CTAs when the region is restricted', async () => {
+    mocks.isRegionRestricted = true;
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    const usdsRow = drawer.querySelector('[data-testid="wallet-drawer-asset-usds"]');
+    expect(usdsRow).toBeTruthy();
+    expect(usdsRow?.textContent).not.toContain('up to 4.75%');
+    expect(drawer.querySelector('[data-testid="wallet-drawer-earn-usds"]')).toBeNull();
+  });
+
+  it('deep-links to Earn filtered by token from the Start earning CTA', async () => {
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    await act(async () => {
+      fireEvent.click(drawer.querySelector('[data-testid="wallet-drawer-earn-usds"]')!);
+    });
+
+    expect(lastRouter!.state.location.pathname).toBe('/earn');
+    expect(lastRouter!.state.location.search).toMatchObject({ token: 'USDS' });
+    // The navigation closes the drawer.
+    expect(screen.queryByTestId('wallet-drawer')).toBeNull();
+  });
+
+  it('routes SKY to Stake from the Start earning CTA', async () => {
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    await act(async () => {
+      fireEvent.click(drawer.querySelector('[data-testid="wallet-drawer-earn-sky"]')!);
+    });
+
+    expect(lastRouter!.state.location.pathname).toBe('/stake');
   });
 
   it('closes when a navigation happens', async () => {
