@@ -30,6 +30,9 @@ vi.mock('@/modules/stusds/hooks/useStUsdsModal', () => ({
 vi.mock('@/modules/morpho/hooks/useVaultModal', () => ({
   useVaultModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
 }));
+vi.mock('@/modules/pendle/hooks/usePendleModal', () => ({
+  usePendleModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
+}));
 vi.mock('@/modules/rewards/hooks/useRewardsModal', () => ({
   useRewardsModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
 }));
