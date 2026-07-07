@@ -314,6 +314,19 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-borrow-rate-row').textContent).toContain('0.00%');
   });
 
+  it('repay on a debt-free urn: input disabled, zero max (unstake-repay No-Debt port)', () => {
+    // Port of unstake-repay.spec.ts "No Debt UI": after a full repay the repay
+    // surface must refuse input rather than stage an impossible wipe.
+    h.existingDebt = 0n;
+    renderSheet({ borrowCard: 'repay' });
+
+    expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByTestId('stake-manage-borrow-amount').closest('section')?.textContent).toContain(
+      'max. 0'
+    );
+    expect(confirmButton().disabled).toBe(true);
+  });
+
   it('borrow: amount reaches the seam and the borrowed line shows the delta', () => {
     renderSheet({ borrowCard: 'borrow' });
 
