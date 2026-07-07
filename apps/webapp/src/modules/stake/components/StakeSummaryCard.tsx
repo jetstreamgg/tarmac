@@ -26,6 +26,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
+import { useStakeTotalDebt } from '../hooks/useStakeTotalDebt';
 
 const NO_VALUE = '–';
 
@@ -121,17 +122,22 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   const onOpenPosition = useConnectThenAct(openPosition);
 
   const totalStaked = (positions ?? []).reduce((total, position) => total + position.skyLocked, 0n);
-  const totalBorrowed = (positions ?? []).reduce((total, position) => total + position.usdsDebt, 0n);
+  const subgraphTotalBorrowed = (positions ?? []).reduce((total, position) => total + position.usdsDebt, 0n);
 
   // USD figures: SKY via the protocol price feed; USDS at parity (the same
   // convention the Savings transactions table uses).
   const { priceString: skyPriceString, isLoading: skyPriceLoading } = useSkyPrice();
   const skyPrice = skyPriceString ? parseFloat(skyPriceString) : null;
   const totalStakedUsd = skyPrice !== null ? Number(formatUnits(totalStaked, 18)) * skyPrice : null;
-  const totalBorrowedUsd = Number(formatUnits(totalBorrowed, 18));
 
   // Claimable rewards across every urn, valued via the price feed.
   const { data: urnAddresses } = useAllStakeUrnAddresses(address);
+
+  // Total borrowed = LIVE Vat debt (principal + accrued interest, legacy
+  // parity); the subgraph principal stands in until the batch read lands.
+  const { data: liveTotalDebt } = useStakeTotalDebt(urnAddresses);
+  const totalBorrowed = liveTotalDebt ?? subgraphTotalBorrowed;
+  const totalBorrowedUsd = Number(formatUnits(totalBorrowed, 18));
   const { data: rewardContracts } = useStakeRewardContracts();
   const { data: toClaim, isLoading: claimableLoading } = useRewardContractsToClaim({
     rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],

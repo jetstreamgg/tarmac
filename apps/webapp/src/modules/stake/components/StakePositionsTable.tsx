@@ -70,6 +70,24 @@ function PositionRiskCell({ position }: { position: StakeUserPosition }) {
   return <RiskMeter riskLevel={hasDebt ? vault?.riskLevel : undefined} />;
 }
 
+/**
+ * Borrowed cell: LIVE debt (principal + accrued interest) from the Vat — the
+ * figure the legacy widget shows (`vault.debtValue`). The subgraph's principal
+ * stands in only until the on-chain read lands. Shares the risk cell's cached
+ * vault read, so this adds no extra RPC.
+ */
+function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
+  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
+  const { data: vault } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
+
+  return (
+    <TxAmountCell
+      icon={<TokenIcon token={{ symbol: 'USDS' }} width={20} className="h-5 w-5" showChainIcon={false} />}
+      amount={formatStakeAmount(vault?.debtValue ?? position.usdsDebt)}
+    />
+  );
+}
+
 /** Claimable-rewards cell: USD value of every reward earned by this urn. */
 function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
   const chainId = useChainId();
@@ -143,12 +161,7 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     id: 'borrowed',
     header: <Trans>Total borrowed (USDS)</Trans>,
     width: '1.2fr',
-    cell: position => (
-      <TxAmountCell
-        icon={<TokenIcon token={{ symbol: 'USDS' }} width={20} className="h-5 w-5" showChainIcon={false} />}
-        amount={formatStakeAmount(position.usdsDebt)}
-      />
-    )
+    cell: position => <PositionBorrowedCell position={position} />
   },
   {
     id: 'risk',

@@ -76,6 +76,12 @@ vi.mock('@/hooks', async importOriginal => {
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
+// Live Vat debt read: undefined here, so the card falls back to the subgraph
+// principal — the totals under test stay driven by the positions fixture.
+vi.mock('../hooks/useStakeTotalDebt', () => ({
+  useStakeTotalDebt: () => ({ data: undefined, isLoading: false, error: null })
+}));
+
 import { StakeSummaryCard, calculateNetApy } from './StakeSummaryCard';
 
 const POSITIONS: StakeUserPosition[] = [
