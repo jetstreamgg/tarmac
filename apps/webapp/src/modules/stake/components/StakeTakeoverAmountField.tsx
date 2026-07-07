@@ -21,6 +21,7 @@ export function StakeTakeoverAmountField({
   onPercentClick,
   disabled = false,
   error,
+  maxDisplayDecimals,
   dataTestId
 }: {
   tokenSymbol: string;
@@ -32,12 +33,15 @@ export function StakeTakeoverAmountField({
   onPercentClick?: (percent: number) => void;
   disabled?: boolean;
   error?: string;
+  /** Display-only decimal cap for programmatic amounts (exact-max staging). */
+  maxDisplayDecimals?: number;
   dataTestId: string;
 }) {
   const [text, setText] = useState('');
   // Controlled from outside: when the prop no longer matches the typed text
   // (chip click, slider drag, toggle reset), re-derive the text from the amount.
-  const displayText = parseAmountText(text) === amount ? text : formatAmountForInput(amount);
+  const displayText =
+    parseAmountText(text) === amount ? text : formatAmountForInput(amount, maxDisplayDecimals);
 
   const onChange = (raw: string) => {
     const sanitized = sanitizeAmountText(raw);

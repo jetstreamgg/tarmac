@@ -31,4 +31,12 @@ describe('formatAmountForInput', () => {
     const amount = parseUnits('65500.123456789', 18);
     expect(parseAmountText(formatAmountForInput(amount))).toBe(amount);
   });
+
+  it('caps the display decimals without rounding when asked (exact-max staging)', () => {
+    const liveDebt = parseUnits('30000.242775147091945099', 18);
+    expect(formatAmountForInput(liveDebt, 2)).toBe('30,000.24');
+    expect(formatAmountForInput(parseUnits('500000', 18), 2)).toBe('500,000');
+    // Trailing zeros inside the cap still trim.
+    expect(formatAmountForInput(parseUnits('1.10001', 18), 2)).toBe('1.1');
+  });
 });

@@ -86,6 +86,7 @@ export function StakeManageStakeCard({
           onPercentClick={onPercentClick}
           label={isStake ? <Trans>Staked amount</Trans> : <Trans>Withdraw amount</Trans>}
           error={error}
+          maxDisplayDecimals={2}
           dataTestId="stake-manage-stake-amount"
         />
 

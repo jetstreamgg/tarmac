@@ -154,6 +154,9 @@ export function StakeManageBorrowCard({
           disabled={inputDisabled}
           error={error}
           label={isRepay ? <Trans>Repay amount</Trans> : <Trans>Borrow amount</Trans>}
+          // The repay 100% chip stages the wei-precise live debt — cap only the
+          // DISPLAY (the staged value stays exact for wipeAll/buffer math).
+          maxDisplayDecimals={2}
           dataTestId="stake-manage-borrow-amount"
           topRight={
             isRepay ? (
