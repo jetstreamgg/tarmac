@@ -31,11 +31,11 @@ const REWARD_DECIMALS = 18;
 const ID_SEP = ':';
 
 /** Per-urn identity: `${urnIndex}:${rewardContract}` — carries the urn through `selected`. */
-function makeStakeId(urnIndex: bigint, rewardContract: string): string {
+export function makeStakeId(urnIndex: bigint, rewardContract: string): string {
   return `${urnIndex}${ID_SEP}${rewardContract.toLowerCase()}`;
 }
 
-function parseStakeId(id: string): { urnIndex: bigint; rewardContract: `0x${string}` } {
+export function parseStakeId(id: string): { urnIndex: bigint; rewardContract: `0x${string}` } {
   const separator = id.indexOf(ID_SEP);
   return {
     urnIndex: BigInt(id.slice(0, separator)),
