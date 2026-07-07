@@ -1,0 +1,97 @@
+import { useChainId } from 'wagmi';
+import { Trans } from '@lingui/react/macro';
+import { ExternalLink } from 'lucide-react';
+import { stakeModuleAddress } from '@/hooks';
+import { getEtherscanLink } from '@/utils';
+import { parseBannerContent } from '@/utils/bannerContentParser';
+import { getBannerById } from '@/data/banners/banners';
+import { Button } from '@/components/ui/button';
+import { StakeEngineCard } from './StakeEngineCard';
+
+// Corpus-fed About copy (PRD Decision 11): never hardcode Figma text — the body
+// arrives pre-authored from the sync pipeline. Where corpus and mock differ,
+// corpus wins.
+const ABOUT_BANNER_ID = 'about-the-staking-engine';
+
+function Card({ children, testId }: { children: React.ReactNode; testId: string }) {
+  return (
+    <div data-testid={testId} className="bg-panel flex flex-col gap-4 rounded-[20px] p-6 backdrop-blur-2xl">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * About tab body (hi-fi 486:32043): the corpus-fed "About the Staking Engine"
+ * copy, a numbered How-it-works list, and a Links row — with the shared Sky
+ * Staking Engine promo card in the right rail. Read-only.
+ */
+export function StakeAboutTab() {
+  const banner = getBannerById(ABOUT_BANNER_ID);
+  const chainId = useChainId();
+  const contractHref = getEtherscanLink(
+    chainId,
+    stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
+    'address'
+  );
+
+  const links = [
+    { label: <Trans>Docs</Trans>, href: 'https://docs.sky.money' },
+    { label: <Trans>View contract</Trans>, href: contractHref },
+    { label: <Trans>Governance</Trans>, href: 'https://vote.sky.money/' }
+  ];
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-3">
+      <div className="flex flex-col gap-6 lg:col-span-2">
+        <Card testId="stake-about-copy">
+          {banner?.title && <h3 className="text-text text-2xl font-medium">{banner.title}</h3>}
+          <div className="text-textSecondary">{parseBannerContent(banner?.description)}</div>
+        </Card>
+
+        <Card testId="stake-how-it-works">
+          <h3 className="text-text text-2xl font-medium">
+            <Trans>How it works?</Trans>
+          </h3>
+          <ol className="flex flex-col gap-4">
+            <HowItWorksRow n={1}>
+              <Trans>Stake SKY & earn rewards</Trans>
+            </HowItWorksRow>
+            <HowItWorksRow n={2}>
+              <Trans>Borrow USDS (Optional)</Trans>
+            </HowItWorksRow>
+            <HowItWorksRow n={3}>
+              <Trans>Delegate Voting Power (Optional)</Trans>
+            </HowItWorksRow>
+          </ol>
+        </Card>
+
+        <div data-testid="stake-about-links" className="flex flex-wrap gap-3">
+          {links.map(({ label, href }, i) => (
+            <Button key={i} variant="outline" asChild>
+              <a href={href} target="_blank" rel="noopener noreferrer" className="gap-2">
+                {label}
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="lg:col-span-1">
+        <StakeEngineCard />
+      </div>
+    </div>
+  );
+}
+
+function HowItWorksRow({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <li className="flex items-center gap-3">
+      <span className="bg-surface text-text flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium">
+        {n}
+      </span>
+      <span className="text-text">{children}</span>
+    </li>
+  );
+}

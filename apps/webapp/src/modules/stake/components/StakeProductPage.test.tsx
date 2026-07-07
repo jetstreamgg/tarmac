@@ -49,6 +49,11 @@ vi.mock('./StakeStatisticsTab', () => ({
   StakeStatisticsTab: () => <div data-testid="stake-statistics-tab-stub" />
 }));
 
+// Same rationale for the About tab body (corpus + engine-card reads).
+vi.mock('./StakeAboutTab', () => ({
+  StakeAboutTab: () => <div data-testid="stake-about-tab-stub" />
+}));
+
 import { StakeProductPage } from './StakeProductPage';
 
 const renderPage = () =>
