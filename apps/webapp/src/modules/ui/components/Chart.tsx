@@ -251,6 +251,9 @@ interface ChartProps {
   metrics?: { value: string; label: React.ReactNode }[];
   activeMetric?: string;
   onMetricChange?: (value: string) => void;
+  /** Line/area color. Omit for the default teal; pass a hex to theme the series
+   * (e.g. the Stake destination chart's brand indigo #757dff). */
+  color?: string;
 }
 
 const formatPercentage = (percentage: number, isLarge: boolean) => {
@@ -389,7 +392,8 @@ function ChartContent({
   isLoading,
   error,
   tooltipLabel,
-  chartHeight
+  chartHeight,
+  color
 }: {
   data: Data[];
   isLarge: boolean;
@@ -401,6 +405,7 @@ function ChartContent({
   error?: Error | null;
   tooltipLabel?: string;
   chartHeight?: number;
+  color?: string;
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
@@ -426,8 +431,17 @@ function ChartContent({
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="100%" gradientUnits="objectBoundingBox">
-              <stop offset="5%" stopColor="#1DD9BA" stopOpacity={0.25} />
-              <stop offset="75%" stopColor="#00A167" stopOpacity="0" />
+              {color ? (
+                <>
+                  <stop offset="5%" stopColor={color} stopOpacity={0.25} />
+                  <stop offset="75%" stopColor={color} stopOpacity="0" />
+                </>
+              ) : (
+                <>
+                  <stop offset="5%" stopColor="#1DD9BA" stopOpacity={0.25} />
+                  <stop offset="75%" stopColor="#00A167" stopOpacity="0" />
+                </>
+              )}
             </linearGradient>
           </defs>
           <YAxis domain={['dataMin', 'dataMax']} padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }} hide />
@@ -448,12 +462,12 @@ function ChartContent({
 
           <Area
             dataKey="value"
-            stroke={'#1DD9BA'}
+            stroke={color ?? '#1DD9BA'}
             strokeWidth={2.5}
             type="monotone"
             fill={`url(#${gradientId})`}
             label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
-            dot={<CustomizedDot data={data} stroke="#1DD9BA" />}
+            dot={<CustomizedDot data={data} stroke={color ?? '#1DD9BA'} />}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -478,7 +492,8 @@ export function Chart({
   label,
   metrics,
   activeMetric,
-  onMetricChange
+  onMetricChange,
+  color
 }: ChartProps) {
   const isDetail = variant === 'detail';
   const containerRef = useRef<HTMLDivElement>(null);
@@ -609,6 +624,7 @@ export function Chart({
           error={error}
           chartHeight={isDetail ? 280 : undefined}
           tooltipLabel={tooltipLabel}
+          color={color}
         />
       </Card>
       {/* Detail variant drops the x-axis date labels (Figma). */}

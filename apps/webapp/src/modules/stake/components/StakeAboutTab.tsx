@@ -1,6 +1,6 @@
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import { ExternalLink } from 'lucide-react';
+import { FileText, Signature, Landmark } from 'lucide-react';
 import { stakeModuleAddress } from '@/hooks';
 import { getEtherscanLink } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -35,10 +35,16 @@ export function StakeAboutTab() {
     'address'
   );
 
+  // Leading contextual icons per hi-fi 486:32079 (file · signature · landmark),
+  // not a trailing external-link glyph.
   const links = [
-    { label: <Trans>Docs</Trans>, href: 'https://docs.sky.money' },
-    { label: <Trans>View contract</Trans>, href: contractHref },
-    { label: <Trans>Governance</Trans>, href: 'https://vote.sky.money/' }
+    { label: <Trans>Docs</Trans>, href: 'https://docs.sky.money', icon: <FileText className="h-4 w-4" /> },
+    { label: <Trans>View contract</Trans>, href: contractHref, icon: <Signature className="h-4 w-4" /> },
+    {
+      label: <Trans>Governance</Trans>,
+      href: 'https://vote.sky.money/',
+      icon: <Landmark className="h-4 w-4" />
+    }
   ];
 
   return (
@@ -66,17 +72,17 @@ export function StakeAboutTab() {
           </ol>
         </Card>
 
-        <div data-testid="stake-about-links" className="grid grid-cols-3 gap-3">
-          {links.map(({ label, href }, i) => (
-            <Button key={i} variant="outline" className="w-full" asChild>
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full justify-center gap-2"
-              >
+        <div data-testid="stake-about-links" className="grid grid-cols-3 gap-4">
+          {links.map(({ label, href, icon }, i) => (
+            <Button
+              key={i}
+              variant="outline"
+              className="border-border h-12 w-full gap-2 rounded-full bg-white/[0.03] hover:bg-white/[0.06]"
+              asChild
+            >
+              <a href={href} target="_blank" rel="noopener noreferrer" className="justify-center gap-2">
+                {icon}
                 {label}
-                <ExternalLink className="h-4 w-4" />
               </a>
             </Button>
           ))}

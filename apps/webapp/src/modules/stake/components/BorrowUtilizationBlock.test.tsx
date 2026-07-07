@@ -15,6 +15,11 @@ const CAPACITY = {
   borrowUtilization: 25
 };
 
+// Inline USDS icon on the legend values pulls image/wagmi hooks we don't exercise
+// here; stub to null so the numeric text stays assertable (same pattern the engine
+// card test uses).
+vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {

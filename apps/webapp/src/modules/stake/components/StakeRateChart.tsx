@@ -65,6 +65,8 @@ export function StakeRateChart() {
       <Chart
         variant="detail"
         dataTestId="stake-rate-chart"
+        // Brand indigo (Figma Components/Charts/bg-chart1), not the shared teal.
+        color="#757dff"
         data={isRate ? rateData : tvlData}
         isLoading={isLoading}
         error={error}

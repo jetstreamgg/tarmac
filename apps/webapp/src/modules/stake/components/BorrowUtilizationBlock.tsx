@@ -1,8 +1,10 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { Info } from 'lucide-react';
 import { useBorrowCapacityData } from '@/hooks';
 import { UtilizationBar } from '@/widgets';
 import { formatBigInt } from '@/utils';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const NO_VALUE = '–';
@@ -19,10 +21,22 @@ function LegendRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text text-sm font-medium">
-        {isLoading ? <Skeleton className="h-4 w-16" /> : error ? NO_VALUE : children}
+    <div className="border-textSecondary/10 flex items-center justify-between gap-4 border-b py-3 last:border-b-0">
+      <span className="text-textSecondary flex items-center gap-2 text-sm">
+        <span className="bg-textSecondary/50 h-1 w-1 shrink-0 rounded-full" aria-hidden />
+        {label}
+      </span>
+      <span className="text-text flex items-center gap-1.5 text-sm font-medium">
+        {isLoading ? (
+          <Skeleton className="h-4 w-16" />
+        ) : error ? (
+          NO_VALUE
+        ) : (
+          <>
+            <TokenIcon token={{ symbol: 'USDS' }} width={16} className="h-4 w-4" showChainIcon={false} />
+            {children}
+          </>
+        )}
       </span>
     </div>
   );
@@ -38,12 +52,10 @@ export function BorrowUtilizationBlock() {
   const utilization = data?.borrowUtilization ?? 0;
 
   return (
-    <div
-      data-testid="stake-borrow-utilization"
-      className="bg-panel rounded-card flex flex-col p-6 backdrop-blur-2xl"
-    >
-      <h3 className="text-text mb-4 text-lg font-medium">
+    <div data-testid="stake-borrow-utilization" className="flex flex-col">
+      <h3 className="text-text mb-4 flex items-center gap-1.5 text-lg font-medium">
         <Trans>Borrow Utilization</Trans>
+        <Info className="text-textSecondary h-4 w-4" aria-hidden />
       </h3>
 
       <div className="text-text mb-3 text-2xl font-semibold">

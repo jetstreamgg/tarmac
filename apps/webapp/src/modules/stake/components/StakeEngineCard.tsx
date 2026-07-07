@@ -1,5 +1,6 @@
 import { ReactNode, useCallback } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { StakeSky } from '@/modules/icons';
 import {
   useStakeRewardContracts,
   useMultipleRewardsChartInfo,
@@ -17,13 +18,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const NO_VALUE = '–';
 
-// Inline token chip for the headline / stat values (hi-fi 486:31955).
-function InlineTokenIcon({ symbol }: { symbol: string }) {
+// Inline token chip (hi-fi 486:31955). `headline` variant is 24px and flows in
+// the heading text (vertically centered, with breathing room); `stat` variant is
+// 16px and sits as a flex item beside the stat value.
+function InlineTokenIcon({
+  symbol,
+  variant = 'headline'
+}: {
+  symbol: string;
+  variant?: 'headline' | 'stat';
+}) {
+  const isHeadline = variant === 'headline';
   return (
     <TokenIcon
       token={{ symbol }}
-      width={24}
-      className="inline-flex h-6 w-6 align-text-bottom"
+      width={isHeadline ? 24 : 16}
+      className={isHeadline ? 'mx-1 inline-block h-6 w-6 align-middle' : 'h-4 w-4'}
       showChainIcon={false}
     />
   );
@@ -104,13 +114,17 @@ export function StakeEngineCard() {
   return (
     <div
       data-testid="stake-engine-card"
-      className="bg-panel rounded-card flex flex-col gap-6 p-6 backdrop-blur-2xl"
+      className="bg-panel rounded-card flex flex-col gap-8 p-8 backdrop-blur-2xl"
     >
-      <span className="text-textSecondary text-sm">
+      <span className="bg-surfaceAlt text-textSecondary flex h-6 w-fit items-center gap-1 rounded-full py-0.5 pr-2 pl-1.5 text-xs font-medium">
+        <StakeSky className="h-3.5 w-3.5" />
         <Trans>Sky Staking Engine</Trans>
       </span>
 
-      <h3 data-testid="stake-engine-headline" className="text-text text-3xl leading-snug font-medium">
+      <h3
+        data-testid="stake-engine-headline"
+        className="text-text text-[28px] leading-[30px] font-medium tracking-tight"
+      >
         <Trans>
           Stake <InlineTokenIcon symbol="SKY" />
           SKY to earn rewards, delegate votes and borrow <InlineTokenIcon symbol="USDS" />
@@ -118,17 +132,18 @@ export function StakeEngineCard() {
         </Trans>
       </h3>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex items-center gap-6">
         <Stat
           label={<Trans>Rewards rate</Trans>}
-          icon={<InlineTokenIcon symbol="SKY" />}
+          icon={<InlineTokenIcon symbol="SKY" variant="stat" />}
           isLoading={rewardsLoading}
         >
           {rewardsRate}
         </Stat>
+        <span className="bg-textSecondary/20 h-7 w-px shrink-0" aria-hidden />
         <Stat
           label={<Trans>Min. borrow amount</Trans>}
-          icon={<InlineTokenIcon symbol="USDS" />}
+          icon={<InlineTokenIcon symbol="USDS" variant="stat" />}
           isLoading={collateralLoading}
           error={collateralError}
         >

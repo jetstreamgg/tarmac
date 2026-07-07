@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Percent, CalendarClock, Gauge, Landmark, Droplets, Users } from 'lucide-react';
+import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import {
   useStakeHistoricData,
   useCollateralData,
@@ -95,16 +95,13 @@ export function StakeDetailsStrip() {
   const sixMonthRate = calculateTrailing6MonthRate(historicData);
 
   return (
-    <div
-      data-testid="stake-details-strip"
-      className="bg-panel rounded-card flex flex-col p-6 backdrop-blur-2xl"
-    >
+    <div data-testid="stake-details-strip" className="flex flex-col">
       <h3 className="text-text mb-2 text-lg font-medium">
         <Trans>Details</Trans>
       </h3>
 
-      <div className="grid grid-cols-2 gap-x-8">
-        <DetailRow icon={<Percent className="h-4 w-4" />} label={<Trans>Current Rate</Trans>}>
+      <div className="grid grid-cols-2 gap-x-5">
+        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Current Rate</Trans>}>
           <StatValue isLoading={collateralLoading} error={collateralError}>
             {collateralData?.stabilityFee !== undefined
               ? formatPercent(collateralData.stabilityFee)
@@ -112,13 +109,13 @@ export function StakeDetailsStrip() {
           </StatValue>
         </DetailRow>
 
-        <DetailRow icon={<CalendarClock className="h-4 w-4" />} label={<Trans>6M Rate</Trans>}>
+        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>6M Rate</Trans>}>
           <StatValue isLoading={historicLoading} error={historicError}>
             {sixMonthRate !== null ? formatDecimalPercentage(sixMonthRate) : NO_VALUE}
           </StatValue>
         </DetailRow>
 
-        <DetailRow icon={<Gauge className="h-4 w-4" />} label={<Trans>Risk scale</Trans>}>
+        <DetailRow icon={<Asterisk className="h-4 w-4" />} label={<Trans>Risk scale</Trans>}>
           <span className="flex w-28 gap-0.5" aria-hidden>
             {RISK_LEVELS_ASCENDING.map(({ level }) => (
               <span key={level} className={`h-1.5 flex-1 rounded-full ${RISK_SEGMENT_COLOR[level]}`} />
@@ -126,17 +123,17 @@ export function StakeDetailsStrip() {
           </span>
         </DetailRow>
 
-        <DetailRow icon={<Landmark className="h-4 w-4" />} label={<Trans>TVL</Trans>}>
+        <DetailRow icon={<Vault className="h-4 w-4" />} label={<Trans>TVL</Trans>}>
           <StatValue isLoading={historicLoading} error={historicError}>
             {mostRecent ? `$${formatNumber(mostRecent.tvl)}` : NO_VALUE}
           </StatValue>
         </DetailRow>
 
-        <DetailRow icon={<Droplets className="h-4 w-4" />} label={<Trans>Liquidity</Trans>}>
+        <DetailRow icon={<Droplet className="h-4 w-4" />} label={<Trans>Liquidity</Trans>}>
           <Trans>Unlimited</Trans>
         </DetailRow>
 
-        <DetailRow icon={<Users className="h-4 w-4" />} label={<Trans>Users</Trans>}>
+        <DetailRow icon={<UsersRound className="h-4 w-4" />} label={<Trans>Users</Trans>}>
           <StatValue isLoading={historicLoading} error={historicError}>
             {mostRecent ? formatNumber(mostRecent.numberOfUrns, { maxDecimals: 0 }) : NO_VALUE}
           </StatValue>
