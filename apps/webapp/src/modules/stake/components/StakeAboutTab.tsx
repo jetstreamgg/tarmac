@@ -15,7 +15,7 @@ const ABOUT_BANNER_ID = 'about-the-staking-engine';
 
 function Card({ children, testId }: { children: React.ReactNode; testId: string }) {
   return (
-    <div data-testid={testId} className="bg-panel flex flex-col gap-4 rounded-[20px] p-6 backdrop-blur-2xl">
+    <div data-testid={testId} className="bg-panel rounded-card flex flex-col gap-4 p-6 backdrop-blur-2xl">
       {children}
     </div>
   );
@@ -53,23 +53,28 @@ export function StakeAboutTab() {
           <h3 className="text-text text-2xl font-medium">
             <Trans>How it works?</Trans>
           </h3>
-          <ol className="flex flex-col gap-4">
+          <ol className="flex flex-col">
             <HowItWorksRow n={1}>
               <Trans>Stake SKY & earn rewards</Trans>
             </HowItWorksRow>
-            <HowItWorksRow n={2}>
-              <Trans>Borrow USDS (Optional)</Trans>
+            <HowItWorksRow n={2} optional>
+              <Trans>Borrow USDS</Trans>
             </HowItWorksRow>
-            <HowItWorksRow n={3}>
-              <Trans>Delegate Voting Power (Optional)</Trans>
+            <HowItWorksRow n={3} optional>
+              <Trans>Delegate Voting Power</Trans>
             </HowItWorksRow>
           </ol>
         </Card>
 
-        <div data-testid="stake-about-links" className="flex flex-wrap gap-3">
+        <div data-testid="stake-about-links" className="grid grid-cols-3 gap-3">
           {links.map(({ label, href }, i) => (
-            <Button key={i} variant="outline" asChild>
-              <a href={href} target="_blank" rel="noopener noreferrer" className="gap-2">
+            <Button key={i} variant="outline" className="w-full" asChild>
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full justify-center gap-2"
+              >
                 {label}
                 <ExternalLink className="h-4 w-4" />
               </a>
@@ -85,13 +90,28 @@ export function StakeAboutTab() {
   );
 }
 
-function HowItWorksRow({ n, children }: { n: number; children: React.ReactNode }) {
+function HowItWorksRow({
+  n,
+  optional,
+  children
+}: {
+  n: number;
+  optional?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <li className="flex items-center gap-3">
-      <span className="bg-surface text-text flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium">
-        {n}
+    <li className="border-textSecondary/10 flex items-center justify-between gap-3 border-b py-4 last:border-b-0">
+      <span className="flex items-center gap-3">
+        <span className="bg-surface text-text flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium">
+          {n}
+        </span>
+        <span className="text-text">{children}</span>
       </span>
-      <span className="text-text">{children}</span>
+      {optional && (
+        <span className="text-textSecondary text-sm">
+          <Trans>(Optional)</Trans>
+        </span>
+      )}
     </li>
   );
 }

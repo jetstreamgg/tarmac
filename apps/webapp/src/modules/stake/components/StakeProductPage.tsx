@@ -72,14 +72,24 @@ export function StakeProductPage() {
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>
-        <TabsList data-testid="stake-tabs">
-          <TabsTrigger value="positions" position="left" data-testid="stake-tab-positions">
+        <TabsList data-testid="stake-tabs" className="flex w-fit gap-2 bg-transparent p-0">
+          <TabsTrigger
+            value="positions"
+            position="whole"
+            className="w-auto px-4"
+            data-testid="stake-tab-positions"
+          >
             <Trans>My positions</Trans>
           </TabsTrigger>
-          <TabsTrigger value="statistics" position="middle" data-testid="stake-tab-statistics">
+          <TabsTrigger
+            value="statistics"
+            position="whole"
+            className="w-auto px-4"
+            data-testid="stake-tab-statistics"
+          >
             <Trans>Statistics</Trans>
           </TabsTrigger>
-          <TabsTrigger value="about" position="right" data-testid="stake-tab-about">
+          <TabsTrigger value="about" position="whole" className="w-auto px-4" data-testid="stake-tab-about">
             <Trans>About</Trans>
           </TabsTrigger>
         </TabsList>

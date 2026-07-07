@@ -35,6 +35,10 @@ vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
 // Rewards-rate + collateral (min-borrow) reads are mocked to fixed values.
 const DUST_RAD = 10000n * 10n ** 45n; // 10,000 USDS expressed in RAD (45 decimals)
 
+// Inline token icons pull image hooks we don't exercise here; stub to null so the
+// headline/stat text content stays clean (same pattern the shell test uses).
+vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
@@ -69,7 +73,11 @@ describe('StakeEngineCard', () => {
 
     expect(screen.getByTestId('stake-engine-card')).toBeTruthy();
     expect(screen.getByText('Sky Staking Engine')).toBeTruthy();
-    expect(screen.getByText('Stake SKY to earn rewards, delegate votes and borrow USDS')).toBeTruthy();
+    // Headline embeds inline SKY/USDS icons (stubbed to null), so assert the
+    // whitespace-normalized text rather than a single text node.
+    expect(screen.getByTestId('stake-engine-headline').textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'Stake SKY to earn rewards, delegate votes and borrow USDS'
+    );
     // Rewards rate from the mocked highest rate (0.075 -> 7.50%).
     expect(screen.getByText('7.50%')).toBeTruthy();
     // Min. borrow amount: dust (RAD) converted to WAD and formatted as USDS.

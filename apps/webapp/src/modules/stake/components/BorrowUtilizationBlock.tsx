@@ -40,7 +40,7 @@ export function BorrowUtilizationBlock() {
   return (
     <div
       data-testid="stake-borrow-utilization"
-      className="bg-panel flex flex-col rounded-[20px] p-6 backdrop-blur-2xl"
+      className="bg-panel rounded-card flex flex-col p-6 backdrop-blur-2xl"
     >
       <h3 className="text-text mb-4 text-lg font-medium">
         <Trans>Borrow Utilization</Trans>

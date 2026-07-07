@@ -100,6 +100,9 @@
   --radius-lg: 10px;
   --radius-md: 8px;
   --radius-sm: 6px;
+  /* V2 destination card radius (Figma radius-2xl); a distinct key avoids
+     clobbering Tailwind's builtin rounded-2xl/rounded-xl utilities. */
+  --radius-card: 28px;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;

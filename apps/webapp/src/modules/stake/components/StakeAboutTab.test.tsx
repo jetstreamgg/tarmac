@@ -51,8 +51,11 @@ describe('StakeAboutTab', () => {
 
     const howItWorks = screen.getByTestId('stake-how-it-works');
     expect(howItWorks.textContent).toContain('Stake SKY & earn rewards');
-    expect(howItWorks.textContent).toContain('Borrow USDS (Optional)');
-    expect(howItWorks.textContent).toContain('Delegate Voting Power (Optional)');
+    expect(howItWorks.textContent).toContain('Borrow USDS');
+    expect(howItWorks.textContent).toContain('Delegate Voting Power');
+    // The two optional steps carry a separate right-aligned "(Optional)" tag.
+    expect(howItWorks.querySelectorAll('li').length).toBe(3);
+    expect(howItWorks.textContent?.match(/\(Optional\)/g)?.length).toBe(2);
   });
 
   it('renders Docs, View contract, and Governance links with non-empty hrefs', () => {

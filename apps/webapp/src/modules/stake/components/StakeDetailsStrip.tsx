@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { Percent, CalendarClock, Gauge, Landmark, Droplets, Users } from 'lucide-react';
 import {
   useStakeHistoricData,
   useCollateralData,
@@ -45,10 +46,15 @@ const RISK_SEGMENT_COLOR: Record<RiskLevel, string> = {
 };
 const RISK_LEVELS_ASCENDING = [...RISK_LEVEL_THRESHOLDS].sort((a, b) => a.threshold - b.threshold);
 
-function DetailRow({ label, children }: { label: ReactNode; children: ReactNode }) {
+function DetailRow({ icon, label, children }: { icon: ReactNode; label: ReactNode; children: ReactNode }) {
   return (
-    <div className="border-textSecondary/10 flex items-center justify-between gap-4 border-b py-3 last:border-b-0">
-      <span className="text-textSecondary text-sm">{label}</span>
+    <div className="border-textSecondary/10 flex items-center justify-between gap-4 border-b py-3">
+      <span className="text-textSecondary flex items-center gap-2 text-sm">
+        <span className="text-textSecondary flex h-4 w-4 items-center justify-center" aria-hidden>
+          {icon}
+        </span>
+        {label}
+      </span>
       <span className="text-text flex items-center text-sm font-medium">{children}</span>
     </div>
   );
@@ -91,47 +97,51 @@ export function StakeDetailsStrip() {
   return (
     <div
       data-testid="stake-details-strip"
-      className="bg-panel flex flex-col rounded-[20px] p-6 backdrop-blur-2xl"
+      className="bg-panel rounded-card flex flex-col p-6 backdrop-blur-2xl"
     >
       <h3 className="text-text mb-2 text-lg font-medium">
         <Trans>Details</Trans>
       </h3>
 
-      <DetailRow label={<Trans>Current Rate</Trans>}>
-        <StatValue isLoading={collateralLoading} error={collateralError}>
-          {collateralData?.stabilityFee !== undefined ? formatPercent(collateralData.stabilityFee) : NO_VALUE}
-        </StatValue>
-      </DetailRow>
+      <div className="grid grid-cols-2 gap-x-8">
+        <DetailRow icon={<Percent className="h-4 w-4" />} label={<Trans>Current Rate</Trans>}>
+          <StatValue isLoading={collateralLoading} error={collateralError}>
+            {collateralData?.stabilityFee !== undefined
+              ? formatPercent(collateralData.stabilityFee)
+              : NO_VALUE}
+          </StatValue>
+        </DetailRow>
 
-      <DetailRow label={<Trans>6M Rate</Trans>}>
-        <StatValue isLoading={historicLoading} error={historicError}>
-          {sixMonthRate !== null ? formatDecimalPercentage(sixMonthRate) : NO_VALUE}
-        </StatValue>
-      </DetailRow>
+        <DetailRow icon={<CalendarClock className="h-4 w-4" />} label={<Trans>6M Rate</Trans>}>
+          <StatValue isLoading={historicLoading} error={historicError}>
+            {sixMonthRate !== null ? formatDecimalPercentage(sixMonthRate) : NO_VALUE}
+          </StatValue>
+        </DetailRow>
 
-      <DetailRow label={<Trans>Risk scale</Trans>}>
-        <span className="flex w-28 gap-0.5" aria-hidden>
-          {RISK_LEVELS_ASCENDING.map(({ level }) => (
-            <span key={level} className={`h-1.5 flex-1 rounded-full ${RISK_SEGMENT_COLOR[level]}`} />
-          ))}
-        </span>
-      </DetailRow>
+        <DetailRow icon={<Gauge className="h-4 w-4" />} label={<Trans>Risk scale</Trans>}>
+          <span className="flex w-28 gap-0.5" aria-hidden>
+            {RISK_LEVELS_ASCENDING.map(({ level }) => (
+              <span key={level} className={`h-1.5 flex-1 rounded-full ${RISK_SEGMENT_COLOR[level]}`} />
+            ))}
+          </span>
+        </DetailRow>
 
-      <DetailRow label={<Trans>TVL</Trans>}>
-        <StatValue isLoading={historicLoading} error={historicError}>
-          {mostRecent ? `$${formatNumber(mostRecent.tvl)}` : NO_VALUE}
-        </StatValue>
-      </DetailRow>
+        <DetailRow icon={<Landmark className="h-4 w-4" />} label={<Trans>TVL</Trans>}>
+          <StatValue isLoading={historicLoading} error={historicError}>
+            {mostRecent ? `$${formatNumber(mostRecent.tvl)}` : NO_VALUE}
+          </StatValue>
+        </DetailRow>
 
-      <DetailRow label={<Trans>Liquidity</Trans>}>
-        <Trans>Unlimited</Trans>
-      </DetailRow>
+        <DetailRow icon={<Droplets className="h-4 w-4" />} label={<Trans>Liquidity</Trans>}>
+          <Trans>Unlimited</Trans>
+        </DetailRow>
 
-      <DetailRow label={<Trans>Users</Trans>}>
-        <StatValue isLoading={historicLoading} error={historicError}>
-          {mostRecent ? formatNumber(mostRecent.numberOfUrns, { maxDecimals: 0 }) : NO_VALUE}
-        </StatValue>
-      </DetailRow>
+        <DetailRow icon={<Users className="h-4 w-4" />} label={<Trans>Users</Trans>}>
+          <StatValue isLoading={historicLoading} error={historicError}>
+            {mostRecent ? formatNumber(mostRecent.numberOfUrns, { maxDecimals: 0 }) : NO_VALUE}
+          </StatValue>
+        </DetailRow>
+      </div>
     </div>
   );
 }
