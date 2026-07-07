@@ -54,3 +54,13 @@ export function liquidationDropPercent(liquidationProximityPercentage: number | 
   if (liquidationProximityPercentage === undefined) return null;
   return Math.min(100, Math.max(0, 100 - liquidationProximityPercentage));
 }
+
+/**
+ * The C.2 "has borrow history" predicate: whether the urn EVER drew debt,
+ * from its subgraph history slice. Drives the inactive modal's borrow block
+ * and the Reopen CTA's borrow-expanded pre-configuration — an emptied urn
+ * that only ever staked gets the staked-only variant.
+ */
+export function hasStakeBorrowHistory(history: StakeHistory | undefined): boolean {
+  return (history ?? []).some(item => item.type === TransactionTypeEnum.STAKE_BORROW);
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { initialStakeFlowState, stakeFlowReducer, StakeFlowState } from './useStakeFlowState';
+import { initialStakeFlowState, initStakeFlowState, stakeFlowReducer, StakeFlowState } from './useStakeFlowState';
 
 const DELEGATE = '0x1111111111111111111111111111111111111111' as const;
 const OTHER_DELEGATE = '0x2222222222222222222222222222222222222222' as const;
@@ -71,5 +71,16 @@ describe('stakeFlowReducer', () => {
       rewardContract: REWARD
     });
     expect(state.selectedRewardContract).toBe(REWARD);
+  });
+});
+
+describe('initStakeFlowState', () => {
+  it('pre-toggles the borrow card for a borrowed-history reopen (C19)', () => {
+    expect(initStakeFlowState()).toEqual(initialStakeFlowState);
+    expect(initStakeFlowState({ borrowEnabled: false })).toEqual(initialStakeFlowState);
+    expect(initStakeFlowState({ borrowEnabled: true })).toEqual({
+      ...initialStakeFlowState,
+      borrowEnabled: true
+    });
   });
 });

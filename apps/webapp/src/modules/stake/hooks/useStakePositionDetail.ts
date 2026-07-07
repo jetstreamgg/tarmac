@@ -17,7 +17,7 @@ import {
   Vault,
   ZERO_ADDRESS
 } from '@/hooks';
-import { calculateClaimedRewardsUsd } from '../lib/positionDetail';
+import { calculateClaimedRewardsUsd, hasStakeBorrowHistory } from '../lib/positionDetail';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';
 
 export interface StakePositionDetail {
@@ -25,6 +25,10 @@ export interface StakePositionDetail {
   vault: Vault | undefined;
   vaultLoading: boolean;
   hasDebt: boolean;
+  /** Emptied urn (C13): the vault loaded with zero collateral. Urns are never deleted. */
+  isInactive: boolean;
+  /** Whether the urn EVER drew debt (C14, subgraph) — the inactive borrow block + reopen shape. */
+  hasBorrowHistory: boolean;
   /** The urn's current reward contract / vote delegate (ZERO_ADDRESS = none). */
   rewardContract: `0x${string}` | undefined;
   rewardSymbol: string | undefined;
@@ -113,6 +117,8 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     vault,
     vaultLoading,
     hasDebt: (vault?.debtValue ?? 0n) > 0n,
+    isInactive: !!urnAddress && !vaultLoading && vault !== undefined && (vault.collateralAmount ?? 0n) === 0n,
+    hasBorrowHistory: hasStakeBorrowHistory(urnHistory),
     rewardContract,
     rewardSymbol: rewardContractTokens?.rewardsToken?.symbol,
     voteDelegate,

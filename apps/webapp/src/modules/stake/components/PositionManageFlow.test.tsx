@@ -5,7 +5,8 @@ import type { SetSearchParams } from '@/lib/navigation';
 const h = vi.hoisted(() => ({
   modalProps: undefined as Record<string, unknown> | undefined,
   sheetProps: undefined as Record<string, unknown> | undefined,
-  claimProps: undefined as Record<string, unknown> | undefined
+  claimProps: undefined as Record<string, unknown> | undefined,
+  reopenProps: undefined as Record<string, unknown> | undefined
 }));
 
 let mockSearchParams = new URLSearchParams();
@@ -43,6 +44,13 @@ vi.mock('./StakeClaimModal', () => ({
   }
 }));
 
+vi.mock('./OpenPositionTakeover', () => ({
+  OpenPositionTakeover: (props: Record<string, unknown>) => {
+    h.reopenProps = props.reopen as Record<string, unknown>;
+    return <div data-testid="reopen-takeover-stub" />;
+  }
+}));
+
 import { PositionManageFlow, manageActionInit, stakeTabInit } from './PositionManageFlow';
 
 describe('manageActionInit', () => {
@@ -71,6 +79,7 @@ describe('PositionManageFlow', () => {
     h.modalProps = undefined;
     h.sheetProps = undefined;
     h.claimProps = undefined;
+    h.reopenProps = undefined;
   });
   afterEach(cleanup);
 
@@ -112,6 +121,18 @@ describe('PositionManageFlow', () => {
     expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
     // The flow params stay staged — only a successful claim clears them.
     expect(mockSearchParams.get('flow')).toBe('manage');
+  });
+
+  it('swaps to the reopen takeover with the urn context and history shape (F6/C17)', () => {
+    render(<PositionManageFlow />);
+
+    act(() => (h.modalProps!.onReopen as (b: boolean) => void)(true));
+    expect(screen.getByTestId('reopen-takeover-stub')).toBeTruthy();
+    expect(h.reopenProps?.urnIndex).toBe(2);
+    expect(h.reopenProps?.borrowExpanded).toBe(true);
+
+    act(() => (h.reopenProps!.onBack as () => void)());
+    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
   });
 
   it('opens the sheet directly on a stake_tab deep link', () => {

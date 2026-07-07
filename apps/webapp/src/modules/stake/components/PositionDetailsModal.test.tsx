@@ -38,6 +38,8 @@ const baseDetail: StakePositionDetail = {
   },
   vaultLoading: false,
   hasDebt: true,
+  isInactive: false,
+  hasBorrowHistory: true,
   rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
   rewardSymbol: 'SKY',
   voteDelegate: DELEGATE,
@@ -59,13 +61,40 @@ function renderModal(overrides: Partial<StakePositionDetail> = {}, props: Record
   const onClose = vi.fn();
   const onAction = vi.fn();
   const onClaim = vi.fn();
+  const onReopen = vi.fn();
   render(
     <I18nProvider i18n={i18n}>
-      <PositionDetailsModal urnIndex={0} onClose={onClose} onAction={onAction} onClaim={onClaim} {...props} />
+      <PositionDetailsModal
+        urnIndex={0}
+        onClose={onClose}
+        onAction={onAction}
+        onClaim={onClaim}
+        onReopen={onReopen}
+        {...props}
+      />
     </I18nProvider>
   );
-  return { onClose, onAction, onClaim };
+  return { onClose, onAction, onClaim, onReopen };
 }
+
+/** An emptied urn: zero collateral/debt, residual claimables per test. */
+const inactiveDetail = (overrides: Partial<StakePositionDetail> = {}): Partial<StakePositionDetail> => ({
+  vault: {
+    ...baseDetail.vault!,
+    collateralAmount: 0n,
+    debtValue: 0n,
+    liquidationPrice: undefined,
+    liquidationProximityPercentage: undefined,
+    riskLevel: undefined
+  } as never,
+  hasDebt: false,
+  isInactive: true,
+  hasBorrowHistory: false,
+  estAnnualRewardsSky: null,
+  stakedUsd: 0,
+  borrowedUsd: 0,
+  ...overrides
+});
 
 describe('PositionDetailsModal', () => {
   beforeEach(() => {
@@ -174,5 +203,104 @@ describe('PositionDetailsModal', () => {
     const delegateLink = screen.getByTestId('stake-position-delegate-link') as HTMLAnchorElement;
     expect(delegateLink.textContent).toContain('0x0F23...CC86');
     expect(delegateLink.href).toContain(DELEGATE.toLowerCase());
+  });
+
+  it('never shows the Inactive chip on an active position', () => {
+    renderModal();
+    expect(screen.queryByTestId('stake-position-inactive-chip')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-cta-reopen')).toBeNull();
+  });
+});
+
+describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:21273)', () => {
+  beforeEach(() => {
+    h.detail = { ...baseDetail };
+  });
+  afterEach(cleanup);
+
+  it('staked-only history: chip, 4-row menu, withdraw disabled, claim enabled with chip', () => {
+    const { onAction, onClaim } = renderModal(inactiveDetail());
+
+    expect(screen.getByTestId('stake-position-inactive-chip').textContent).toBe('Inactive');
+
+    // Frame order: Claim rewards · Change reward · Change delegate · Withdraw SKY.
+    const rows = screen.getAllByTestId(/^stake-manage-menu-/);
+    expect(rows.map(row => row.getAttribute('data-testid'))).toEqual([
+      'stake-manage-menu-claim',
+      'stake-manage-menu-change-reward',
+      'stake-manage-menu-change-delegate',
+      'stake-manage-menu-withdraw'
+    ]);
+
+    const claimRow = screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement;
+    expect(claimRow.disabled).toBe(false);
+    expect(claimRow.textContent).toContain('10.9 SKY');
+    fireEvent.click(claimRow);
+    expect(onClaim).toHaveBeenCalled();
+
+    expect((screen.getByTestId('stake-manage-menu-withdraw') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId('stake-manage-menu-change-reward') as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
+    expect(onAction).toHaveBeenLastCalledWith('delegate');
+
+    // No borrow section for a urn that never borrowed.
+    expect(screen.queryByText('Borrowed amount')).toBeNull();
+    expect(screen.queryByTestId('stake-position-closed-copy')).toBeNull();
+    expect(screen.queryByTestId('stake-position-warning')).toBeNull();
+  });
+
+  it('staked-&-borrowed history: zeroed borrow block, No position chip, closed copy, 7 disabled-heavy rows', () => {
+    const { onAction } = renderModal(inactiveDetail({ hasBorrowHistory: true, claimableTokenAmount: 0n }));
+
+    expect(screen.getByText('Borrowed amount')).toBeTruthy();
+    expect(screen.getByTestId('stake-position-risk-pill').textContent).toBe('No position');
+    expect(screen.getByTestId('stake-position-closed-copy').textContent).toContain(
+      'Your position has been closed'
+    );
+    // Liquidation price is a dash; the warning sentence never renders.
+    expect(screen.queryByTestId('stake-position-warning')).toBeNull();
+
+    // Frame order: enabled rows first, then the disabled rest.
+    const rows = screen.getAllByTestId(/^stake-manage-menu-/);
+    expect(rows.map(row => row.getAttribute('data-testid'))).toEqual([
+      'stake-manage-menu-change-reward',
+      'stake-manage-menu-change-delegate',
+      'stake-manage-menu-claim',
+      'stake-manage-menu-borrow',
+      'stake-manage-menu-repay',
+      'stake-manage-menu-withdraw',
+      'stake-manage-menu-close-position'
+    ]);
+
+    for (const testid of [
+      'stake-manage-menu-claim',
+      'stake-manage-menu-borrow',
+      'stake-manage-menu-repay',
+      'stake-manage-menu-withdraw',
+      'stake-manage-menu-close-position'
+    ]) {
+      expect((screen.getByTestId(testid) as HTMLButtonElement).disabled).toBe(true);
+    }
+    fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
+    expect(onAction).toHaveBeenLastCalledWith('delegate');
+  });
+
+  it('keeps claim enabled on a borrowed-history urn with residual claimables (C16)', () => {
+    renderModal(inactiveDetail({ hasBorrowHistory: true }));
+    expect((screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('replaces the CTAs with Reopen position carrying the borrow-history shape (C17)', () => {
+    const { onReopen } = renderModal(inactiveDetail());
+    expect(screen.queryByTestId('stake-manage-cta-stake')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-cta-borrow')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-manage-cta-reopen'));
+    expect(onReopen).toHaveBeenLastCalledWith(false);
+    cleanup();
+
+    const borrowed = renderModal(inactiveDetail({ hasBorrowHistory: true }));
+    fireEvent.click(screen.getByTestId('stake-manage-cta-reopen'));
+    expect(borrowed.onReopen).toHaveBeenLastCalledWith(true);
   });
 });

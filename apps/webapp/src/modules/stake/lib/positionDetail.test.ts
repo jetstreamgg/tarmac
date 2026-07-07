@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
 import { TransactionTypeEnum } from '@/hooks';
-import { calculateClaimedRewardsUsd, liquidationDropPercent, rewardContractSymbols } from './positionDetail';
+import {
+  calculateClaimedRewardsUsd,
+  hasStakeBorrowHistory,
+  liquidationDropPercent,
+  rewardContractSymbols
+} from './positionDetail';
 
 // lsSkySkyRewardAddress[1] — the mainnet SKY farm.
 const SKY_FARM = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
@@ -38,6 +43,29 @@ describe('calculateClaimedRewardsUsd', () => {
 
   it('returns 0 for empty history', () => {
     expect(calculateClaimedRewardsUsd(undefined, 1, priceOf)).toBe(0);
+  });
+});
+
+describe('hasStakeBorrowHistory', () => {
+  it('is true only when the urn history contains a borrow event (C.2)', () => {
+    expect(
+      hasStakeBorrowHistory([
+        { type: TransactionTypeEnum.STAKE, amount: 1n },
+        { type: TransactionTypeEnum.STAKE_BORROW, amount: 2n }
+      ] as never)
+    ).toBe(true);
+
+    // Repay without a recorded borrow does not count; neither do stake events.
+    expect(
+      hasStakeBorrowHistory([
+        { type: TransactionTypeEnum.STAKE, amount: 1n },
+        { type: TransactionTypeEnum.STAKE_REPAY, amount: 2n },
+        { type: TransactionTypeEnum.UNSTAKE, amount: 1n }
+      ] as never)
+    ).toBe(false);
+
+    expect(hasStakeBorrowHistory(undefined)).toBe(false);
+    expect(hasStakeBorrowHistory([])).toBe(false);
   });
 });
 

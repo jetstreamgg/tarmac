@@ -152,32 +152,54 @@ function MenuRow({
 }
 
 /**
- * Position-details modal (F5, hi-fi 486:32508 / UX 1050:20860 + 1050:21185):
- * two panels — left is the read-only position detail (heroes, stat grid,
- * liquidation-zone indicator + warning, bottom stat strip), right is the
- * contextual "Manage position" menu. Menu composition follows the debt state;
- * `Claim rewards` (F6) and the undesigned `Change reward` / `Close position`
- * flows render disabled — flagged on APP-312, not improvised (M4).
+ * Position-details modal (F5, hi-fi 486:32508 / UX 1050:20860 + 1050:21185;
+ * F6 inactive variants 1194:20561 + 1194:21273): two panels — left is the
+ * read-only position detail (heroes, stat grid, liquidation-zone indicator +
+ * warning, bottom stat strip), right is the contextual "Manage position" menu.
+ * Menu composition follows the debt state; an emptied urn gets the `Inactive`
+ * chip, a history-dependent zeroed borrow block, mostly-disabled menu rows and
+ * the single `Reopen position` CTA. The undesigned `Change reward` /
+ * `Close position` flows render disabled — flagged on APP-312, not improvised.
  */
 export function PositionDetailsModal({
   urnIndex,
   onClose,
   onAction,
-  onClaim
+  onClaim,
+  onReopen
 }: {
   urnIndex: number;
   onClose: () => void;
   onAction: (action: StakeManageAction) => void;
   /** Opens the claim-rewards modal (F6) — row enabled while something is claimable. */
   onClaim: () => void;
+  /** Reopen CTA on inactive urns (C17): borrow-expanded iff the urn ever had debt. */
+  onReopen: (borrowExpanded: boolean) => void;
 }) {
   const detail = useStakePositionDetail(urnIndex);
-  const { vault, hasDebt } = detail;
+  const { vault, hasDebt, isInactive } = detail;
+  // The borrow block on an INACTIVE urn follows its history, not its (zero)
+  // debt (C15); active urns keep the F5 behavior (block iff current debt).
+  const showInactiveBorrowBlock = isInactive && detail.hasBorrowHistory;
 
   const dropPercent = liquidationDropPercent(vault?.liquidationProximityPercentage);
   const formattedLiqPrice =
     vault?.liquidationPrice !== undefined ? `$${formatBigInt(vault.liquidationPrice)}` : NO_VALUE;
   const hasDelegate = !!detail.voteDelegate && detail.voteDelegate !== ZERO_ADDRESS;
+
+  const claimDisabled = detail.claimableLoading || detail.claimableTokenAmount === 0n;
+  const claimChip =
+    detail.claimableTokenAmount > 0n ? (
+      <span className="bg-surfaceAlt text-text flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
+        {formatBigInt(detail.claimableTokenAmount)} {detail.claimableSymbols[0]}
+        <TokenIcon
+          token={{ symbol: detail.claimableSymbols[0] }}
+          width={12}
+          className="h-3 w-3"
+          showChainIcon={false}
+        />
+      </span>
+    ) : undefined;
 
   return (
     <Dialog open onOpenChange={open => !open && onClose()}>
@@ -190,8 +212,16 @@ export function PositionDetailsModal({
         {/* Left panel — read-only position detail */}
         <div className="flex flex-1 flex-col gap-6 p-8">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-text text-lg font-medium">
+            <DialogTitle className="text-text flex items-center gap-2 text-lg font-medium">
               <Trans>Position {urnIndex + 1}</Trans>
+              {isInactive && (
+                <span
+                  data-testid="stake-position-inactive-chip"
+                  className="bg-surfaceAlt text-textSecondary rounded-full px-2 py-0.5 text-xs font-medium"
+                >
+                  <Trans>Inactive</Trans>
+                </span>
+              )}
             </DialogTitle>
             <Button
               variant="ghost"
@@ -281,7 +311,10 @@ export function PositionDetailsModal({
               )}
             </StatCell>
             <StatCell label={<Trans>Est. annual rewards</Trans>}>
-              {detail.estAnnualRewardsSky !== null && detail.skyPriceUsd !== null ? (
+              {isInactive ? (
+                // Nothing staked accrues nothing — the frame shows a flat $0.00.
+                formatUsd(0)
+              ) : detail.estAnnualRewardsSky !== null && detail.skyPriceUsd !== null ? (
                 <span className="text-bullish flex items-center gap-1">
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
                   {`+${formatUsd((Number(detail.estAnnualRewardsSky / 10n ** 12n) / 1e6) * detail.skyPriceUsd)}`}
@@ -297,6 +330,56 @@ export function PositionDetailsModal({
               </span>
             </StatCell>
           </div>
+
+          {showInactiveBorrowBlock && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-textSecondary text-sm">
+                  <Trans>Borrowed amount</Trans>
+                </span>
+                <span className="text-text flex items-baseline gap-2 text-4xl font-medium tracking-tight">
+                  <TokenIcon
+                    token={{ symbol: 'USDS' }}
+                    width={32}
+                    className="h-8 w-8 self-center"
+                    showChainIcon={false}
+                  />
+                  {formatStakeAmount(0n)}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <span className="text-textSecondary text-sm">
+                  <Trans>Liquidation risk</Trans>
+                </span>
+                <span
+                  data-testid="stake-position-risk-pill"
+                  className="bg-surfaceAlt text-textSecondary w-fit rounded-full px-2 py-0.5 text-xs font-medium"
+                >
+                  <Trans>No position</Trans>
+                </span>
+                {/* Grayed meter: no proximity, no risk tint (UX 1194:21273). */}
+                <LiquidationZoneIndicator proximityPercentage={undefined} riskLevel={undefined} />
+              </div>
+
+              <p data-testid="stake-position-closed-copy" className="text-textSecondary text-sm">
+                <Trans>
+                  Your position has been closed, SKY has been withdrawn, and the debt has been repaid. To
+                  stake SKY or borrow USDS, you must reopen it.
+                </Trans>
+              </p>
+
+              <div className="border-textSecondary/10 grid grid-cols-2 gap-x-5 gap-y-4 border-t pt-4 sm:grid-cols-3">
+                <StatCell label={<Trans>Borrow rate</Trans>}>
+                  {detail.stabilityFee !== undefined ? formatPercent(detail.stabilityFee) : NO_VALUE}
+                </StatCell>
+                <StatCell label={<Trans>Liquidation price</Trans>}>{NO_VALUE}</StatCell>
+                <StatCell label={<Trans>Protocol SKY Price</Trans>}>
+                  {vault?.delayedPrice !== undefined ? `$${formatBigInt(vault.delayedPrice)}` : NO_VALUE}
+                </StatCell>
+              </div>
+            </>
+          )}
 
           {hasDebt && (
             <>
@@ -362,96 +445,168 @@ export function PositionDetailsModal({
           )}
         </div>
 
-        {/* Right panel — contextual manage menu */}
+        {/* Right panel — contextual manage menu. Inactive urns reorder to the
+            frame layouts (C16): staked-only 1194:20561 / borrowed 1194:21273,
+            enabled rows first, everything else disabled, single Reopen CTA. */}
         <div className="bg-surfaceAlt/30 flex w-full flex-col justify-between gap-6 p-8 lg:w-[340px]">
           <div className="flex flex-col">
             <h3 className="text-text mb-2 text-lg font-medium">
               <Trans>Manage position</Trans>
             </h3>
 
-            <MenuRow
-              icon={<Gem className="h-4 w-4" />}
-              label={<Trans>Claim rewards</Trans>}
-              disabled={detail.claimableLoading || detail.claimableTokenAmount === 0n}
-              onClick={onClaim}
-              dataTestId="stake-manage-menu-claim"
-              chip={
-                detail.claimableTokenAmount > 0n ? (
-                  <span className="bg-surfaceAlt text-text flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
-                    {formatBigInt(detail.claimableTokenAmount)} {detail.claimableSymbols[0]}
-                    <TokenIcon
-                      token={{ symbol: detail.claimableSymbols[0] }}
-                      width={12}
-                      className="h-3 w-3"
-                      showChainIcon={false}
+            {isInactive ? (
+              <>
+                {!showInactiveBorrowBlock && (
+                  <MenuRow
+                    icon={<Gem className="h-4 w-4" />}
+                    label={<Trans>Claim rewards</Trans>}
+                    disabled={claimDisabled}
+                    onClick={onClaim}
+                    dataTestId="stake-manage-menu-claim"
+                    chip={claimChip}
+                  />
+                )}
+                {/* Change reward stays an undesigned stub even though the UX
+                    frame draws it enabled (B-Q1/M4, flagged — C16). */}
+                <MenuRow
+                  icon={<RefreshCcw className="h-4 w-4" />}
+                  label={<Trans>Change reward</Trans>}
+                  disabled
+                  dataTestId="stake-manage-menu-change-reward"
+                />
+                <MenuRow
+                  icon={<UserRound className="h-4 w-4" />}
+                  label={<Trans>Change delegate</Trans>}
+                  onClick={() => onAction('delegate')}
+                  dataTestId="stake-manage-menu-change-delegate"
+                />
+                {showInactiveBorrowBlock && (
+                  <>
+                    <MenuRow
+                      icon={<Gem className="h-4 w-4" />}
+                      label={<Trans>Claim rewards</Trans>}
+                      disabled={claimDisabled}
+                      onClick={onClaim}
+                      dataTestId="stake-manage-menu-claim"
+                      chip={claimChip}
                     />
-                  </span>
-                ) : undefined
-              }
-            />
-            {hasDebt && (
-              <MenuRow
-                icon={<CreditCard className="h-4 w-4" />}
-                label={<Trans>Borrow more USDS</Trans>}
-                onClick={() => onAction('borrow')}
-                dataTestId="stake-manage-menu-borrow"
-              />
-            )}
-            {hasDebt && (
-              <MenuRow
-                icon={<HandCoins className="h-4 w-4" />}
-                label={<Trans>Repay debt</Trans>}
-                onClick={() => onAction('repay')}
-                dataTestId="stake-manage-menu-repay"
-              />
-            )}
-            <MenuRow
-              icon={<ArrowUpFromLine className="h-4 w-4" />}
-              label={<Trans>Withdraw SKY</Trans>}
-              onClick={() => onAction('withdraw')}
-              dataTestId="stake-manage-menu-withdraw"
-            />
-            {/* Undesigned flows (B-Q1) — disabled, flagged on APP-312 (M4). */}
-            <MenuRow
-              icon={<RefreshCcw className="h-4 w-4" />}
-              label={<Trans>Change reward</Trans>}
-              disabled
-              dataTestId="stake-manage-menu-change-reward"
-            />
-            <MenuRow
-              icon={<UserRound className="h-4 w-4" />}
-              label={<Trans>Change delegate</Trans>}
-              onClick={() => onAction('delegate')}
-              dataTestId="stake-manage-menu-change-delegate"
-            />
-            {hasDebt && (
-              <MenuRow
-                icon={<XCircle className="h-4 w-4" />}
-                label={<Trans>Close position</Trans>}
-                disabled
-                dataTestId="stake-manage-menu-close-position"
-              />
+                    <MenuRow
+                      icon={<CreditCard className="h-4 w-4" />}
+                      label={<Trans>Borrow more USDS</Trans>}
+                      disabled
+                      dataTestId="stake-manage-menu-borrow"
+                    />
+                    <MenuRow
+                      icon={<HandCoins className="h-4 w-4" />}
+                      label={<Trans>Repay debt</Trans>}
+                      disabled
+                      dataTestId="stake-manage-menu-repay"
+                    />
+                  </>
+                )}
+                <MenuRow
+                  icon={<ArrowUpFromLine className="h-4 w-4" />}
+                  label={<Trans>Withdraw SKY</Trans>}
+                  disabled
+                  dataTestId="stake-manage-menu-withdraw"
+                />
+                {showInactiveBorrowBlock && (
+                  <MenuRow
+                    icon={<XCircle className="h-4 w-4" />}
+                    label={<Trans>Close position</Trans>}
+                    disabled
+                    dataTestId="stake-manage-menu-close-position"
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <MenuRow
+                  icon={<Gem className="h-4 w-4" />}
+                  label={<Trans>Claim rewards</Trans>}
+                  disabled={claimDisabled}
+                  onClick={onClaim}
+                  dataTestId="stake-manage-menu-claim"
+                  chip={claimChip}
+                />
+                {hasDebt && (
+                  <MenuRow
+                    icon={<CreditCard className="h-4 w-4" />}
+                    label={<Trans>Borrow more USDS</Trans>}
+                    onClick={() => onAction('borrow')}
+                    dataTestId="stake-manage-menu-borrow"
+                  />
+                )}
+                {hasDebt && (
+                  <MenuRow
+                    icon={<HandCoins className="h-4 w-4" />}
+                    label={<Trans>Repay debt</Trans>}
+                    onClick={() => onAction('repay')}
+                    dataTestId="stake-manage-menu-repay"
+                  />
+                )}
+                <MenuRow
+                  icon={<ArrowUpFromLine className="h-4 w-4" />}
+                  label={<Trans>Withdraw SKY</Trans>}
+                  onClick={() => onAction('withdraw')}
+                  dataTestId="stake-manage-menu-withdraw"
+                />
+                {/* Undesigned flows (B-Q1) — disabled, flagged on APP-312 (M4). */}
+                <MenuRow
+                  icon={<RefreshCcw className="h-4 w-4" />}
+                  label={<Trans>Change reward</Trans>}
+                  disabled
+                  dataTestId="stake-manage-menu-change-reward"
+                />
+                <MenuRow
+                  icon={<UserRound className="h-4 w-4" />}
+                  label={<Trans>Change delegate</Trans>}
+                  onClick={() => onAction('delegate')}
+                  dataTestId="stake-manage-menu-change-delegate"
+                />
+                {hasDebt && (
+                  <MenuRow
+                    icon={<XCircle className="h-4 w-4" />}
+                    label={<Trans>Close position</Trans>}
+                    disabled
+                    dataTestId="stake-manage-menu-close-position"
+                  />
+                )}
+              </>
             )}
           </div>
 
           <div className="flex flex-col gap-3">
-            <Button
-              variant="primary"
-              className="w-full"
-              onClick={() => onAction('stake')}
-              data-testid="stake-manage-cta-stake"
-            >
-              <Trans>Stake more SKY</Trans>
-            </Button>
-            {!hasDebt && (
+            {isInactive ? (
               <Button
-                variant="secondary"
+                variant="primary"
                 className="w-full"
-                onClick={() => onAction('borrow')}
-                data-testid="stake-manage-cta-borrow"
+                onClick={() => onReopen(detail.hasBorrowHistory)}
+                data-testid="stake-manage-cta-reopen"
               >
-                <Trans>Borrow USDS</Trans>
+                <Trans>Reopen position</Trans>
               </Button>
+            ) : (
+              <>
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => onAction('stake')}
+                  data-testid="stake-manage-cta-stake"
+                >
+                  <Trans>Stake more SKY</Trans>
+                </Button>
+                {!hasDebt && (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => onAction('borrow')}
+                    data-testid="stake-manage-cta-borrow"
+                  >
+                    <Trans>Borrow USDS</Trans>
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

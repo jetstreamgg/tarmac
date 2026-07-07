@@ -35,6 +35,16 @@ export const initialStakeFlowState: StakeFlowState = {
   selectedRewardContract: undefined
 };
 
+/** Mount-time pre-toggles — the reopen deep link (C19, UX 1194:21914). */
+export interface StakeFlowInit {
+  /** Borrow card starts ON (borrowed-history reopen). */
+  borrowEnabled?: boolean;
+}
+
+export function initStakeFlowState(init: StakeFlowInit = {}): StakeFlowState {
+  return { ...initialStakeFlowState, borrowEnabled: !!init.borrowEnabled };
+}
+
 export function stakeFlowReducer(state: StakeFlowState, action: StakeFlowAction): StakeFlowState {
   switch (action.type) {
     case 'setSkyToLock':
@@ -68,6 +78,6 @@ export function stakeFlowReducer(state: StakeFlowState, action: StakeFlowAction)
 }
 
 /** Reducer-backed hook the takeover consumes. */
-export function useStakeFlowState() {
-  return useReducer(stakeFlowReducer, initialStakeFlowState);
+export function useStakeFlowState(init?: StakeFlowInit) {
+  return useReducer(stakeFlowReducer, init ?? {}, initStakeFlowState);
 }

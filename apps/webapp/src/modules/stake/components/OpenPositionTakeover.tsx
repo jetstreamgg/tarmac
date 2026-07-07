@@ -13,7 +13,11 @@ import {
   useMultipleRewardsChartInfo,
   useSimulatedVault,
   useStakeRewardContracts,
-  useTokenBalance
+  useStakeUrnAddress,
+  useStakeUrnSelectedRewardContract,
+  useStakeUrnSelectedVoteDelegate,
+  useTokenBalance,
+  ZERO_ADDRESS
 } from '@/hooks';
 import { formatDecimalPercentage } from '@/utils';
 import { QueryParams } from '@/lib/constants';
@@ -23,10 +27,22 @@ import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
+import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
+
+/** Reopen context (F6, C17): the takeover re-funds an EXISTING emptied urn. */
+export interface ReopenContext {
+  urnIndex: number;
+  /** Borrow card starts ON — the urn's history had debt (UX 1194:21914). */
+  borrowExpanded: boolean;
+  /** Back to the position-details modal. */
+  onBack: () => void;
+  /** Abandon the whole manage flow (clears the manage params). */
+  onClose: () => void;
+}
 
 /**
  * Open-position takeover (F4, hi-fi 486:32657): a single-page stacked form —
@@ -37,13 +53,31 @@ import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
  * validity, the launch seam) lives here; the cards render props. The legacy
  * Borrow.tsx math is reproduced verbatim (max borrow from debt-ceiling
  * headroom vs collateral, dust minimum, min-collateral constraint).
+ *
+ * With a `reopen` context (F6, UX 1194:21595/21914) the same form re-funds an
+ * existing emptied urn: the launch swaps to the manage seam (no `open()` leg,
+ * manage ordering/copy/analytics), the urn's reward contract passes through
+ * unchanged, and the delegate leg only fires when the user stages a DIFFERENT
+ * delegate — an untouched form must never emit `selectVoteDelegate` (C18: with
+ * `undefined` it would silently undelegate the urn). The frames keep the
+ * "Open a position" header (C17a).
  */
-export function OpenPositionTakeover() {
+export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const chainId = useChainId();
   const { address } = useConnection();
   const [, setSearchParams] = useAppSearchParams();
   const queryClient = useQueryClient();
-  const [state, dispatch] = useStakeFlowState();
+  const [state, dispatch] = useStakeFlowState({ borrowEnabled: reopen?.borrowExpanded });
+
+  // The reopened urn's live context (reads are inert in plain-open mode).
+  const { data: reopenUrnAddress } = useStakeUrnAddress(BigInt(reopen?.urnIndex ?? 0));
+  const reopenUrn = reopen ? reopenUrnAddress : undefined;
+  const { data: urnRewardContract } = useStakeUrnSelectedRewardContract({
+    urn: reopenUrn || ZERO_ADDRESS
+  });
+  const { data: urnVoteDelegate } = useStakeUrnSelectedVoteDelegate({ urn: reopenUrn || ZERO_ADDRESS });
+  const currentUrnDelegate =
+    reopen && urnVoteDelegate && urnVoteDelegate !== ZERO_ADDRESS ? urnVoteDelegate : undefined;
 
   const ilkName = getIlkName(2);
   const { data: skyBalance, isLoading: balanceLoading } = useTokenBalance({
@@ -74,7 +108,12 @@ export function OpenPositionTakeover() {
   const defaultRewardContract =
     rewardContracts?.find(contract => contract.contractAddress.toLowerCase() === skyFarm?.toLowerCase())
       ?.contractAddress ?? rewardContracts?.[0]?.contractAddress;
-  const selectedRewardContract = state.selectedRewardContract ?? defaultRewardContract;
+  // Reopen (C18): an emptied urn keeps its farm — display its rate; the manage
+  // seam passes the urn's reward contract through on its own.
+  const selectedRewardContract =
+    reopen && urnRewardContract && urnRewardContract !== ZERO_ADDRESS
+      ? urnRewardContract
+      : (state.selectedRewardContract ?? defaultRewardContract);
 
   // The selected farm's live rate → card-1 stats.
   const { data: rewardsChartInfo } = useMultipleRewardsChartInfo({
@@ -136,7 +175,7 @@ export function OpenPositionTakeover() {
 
   const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
 
-  const close = useCallback(() => {
+  const closeOpenFlow = useCallback(() => {
     setSearchParams(
       params => {
         params.delete(QueryParams.Flow);
@@ -145,14 +184,20 @@ export function OpenPositionTakeover() {
       { replace: true }
     );
   }, [setSearchParams]);
+  const close = reopen ? reopen.onClose : closeOpenFlow;
 
   const onSuccess = useCallback(() => {
-    // Fresh positions/activity on return — the subgraph hooks re-query.
+    // Fresh positions/activity on return — the subgraph hooks re-query; urn
+    // reads (ink/art, delegate, claimables) are wagmi readContract queries.
     queryClient.invalidateQueries({ queryKey: ['stake-user-positions'] });
     queryClient.invalidateQueries({ queryKey: ['stake-history'] });
+    queryClient.invalidateQueries({ queryKey: ['readContract'] });
     setSearchParams(
       params => {
         params.delete(QueryParams.Flow);
+        // Inert on the plain open flow; clears the reopen deep-link context.
+        params.delete(QueryParams.UrnIndex);
+        params.delete(QueryParams.StakeTab);
         params.set(QueryParams.Tab, 'positions');
         return params;
       },
@@ -165,25 +210,41 @@ export function OpenPositionTakeover() {
     [debouncedSkyToLock, debouncedUsdsToBorrow]
   );
 
-  const {
-    launch,
-    prepared,
-    isLoading: launchLoading
-  } = useStakeLaunch({
+  const openLaunch = useStakeLaunch({
     skyToLock: debouncedSkyToLock,
     usdsToBorrow: debouncedUsdsToBorrow,
     selectedRewardContract,
     selectedDelegate: state.selectedDelegate,
-    enabled: formValid,
+    enabled: !reopen && formValid,
     transactionContent: confirmSummary,
     onSuccess
   });
+
+  // Reopen = manage-flow semantics under this form (C17): flow 'manage', no
+  // open() leg, MANAGE copy/analytics, and the C18 delegate pass-through — the
+  // urn's current delegate is the baseline so an untouched card emits nothing.
+  const reopenLaunch = useStakeManageLaunch({
+    urnIndex: BigInt(reopen?.urnIndex ?? 0),
+    urnAddress: reopenUrn,
+    skyToLock: debouncedSkyToLock,
+    skyToFree: 0n,
+    usdsToBorrow: debouncedUsdsToBorrow,
+    usdsToWipe: 0n,
+    wipeAll: false,
+    selectedDelegate: state.selectedDelegate ?? currentUrnDelegate,
+    enabled: !!reopen && formValid,
+    transactionContent: confirmSummary,
+    onSuccess
+  });
+
+  const { launch, prepared, isLoading: launchLoading } = reopen ? reopenLaunch : openLaunch;
 
   const confirmDisabled = !formValid || !prepared || launchLoading;
 
   return (
     <TakeoverShell
       title={<Trans>Open a position</Trans>}
+      onBack={reopen?.onBack}
       badge={
         <>
           <StakeSky className="h-3.5 w-3.5" />
@@ -240,7 +301,9 @@ export function OpenPositionTakeover() {
       <StakeTakeoverDelegateCard
         enabled={state.delegateEnabled}
         onEnabledChange={enabled => dispatch({ type: 'setDelegateEnabled', enabled })}
-        selectedDelegate={state.selectedDelegate}
+        // Reopen shows the urn's preserved delegate as the selection baseline
+        // (UX 1194:21595); staging a different one is the only way to change it.
+        selectedDelegate={state.selectedDelegate ?? currentUrnDelegate}
         onSelect={delegate => dispatch({ type: 'selectDelegate', delegate })}
       />
     </TakeoverShell>

@@ -16,13 +16,20 @@ const DELEGATE_B = '0x2222222222222222222222222222222222222222' as const;
 const h = vi.hoisted(() => ({
   launchSpy: vi.fn(),
   launchParams: undefined as Record<string, unknown> | undefined,
+  manageLaunchSpy: vi.fn(),
+  manageLaunchParams: undefined as Record<string, unknown> | undefined,
   prepared: true,
   balance: undefined as bigint | undefined,
+  // The reopened urn's on-chain context (reopen-mode tests).
+  urnDelegate: undefined as string | undefined,
+  urnRewardContract: undefined as string | undefined,
   // Simulation knobs (see the useSimulatedVault mock below).
   minCollateralForDust: 0n,
   dust: 0n,
   debtCeilingHeadroom: 0n
 }));
+
+const URN_ADDRESS = '0x8888888888888888888888888888888888888888' as const;
 
 let mockSearchParams = new URLSearchParams();
 const setSearchParamsMock = vi.fn<SetSearchParams>(next => {
@@ -118,7 +125,43 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => undefined,
       dataSources: []
+    }),
+    // The reopened urn's context (inert in plain-open mode).
+    useStakeUrnAddress: () => ({ data: URN_ADDRESS, isLoading: false, error: null }),
+    useStakeUrnSelectedRewardContract: () => ({
+      data: h.urnRewardContract,
+      isLoading: false,
+      error: null,
+      refetch: () => undefined
+    }),
+    useStakeUrnSelectedVoteDelegate: () => ({
+      data: h.urnDelegate,
+      isLoading: false,
+      error: null,
+      refetch: () => undefined
     })
+  };
+});
+
+vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
+  const actual = await importOriginal<typeof import('../hooks/useStakeManageLaunch')>();
+  void actual;
+  return {
+    useStakeManageLaunch: (params: Record<string, unknown>) => {
+      h.manageLaunchParams = params;
+      return {
+        launch: h.manageLaunchSpy,
+        execute: () => undefined,
+        steps: [],
+        calldata: [],
+        hasDelegateChange: false,
+        urnSelectedVoteDelegate: h.urnDelegate,
+        shouldUseBatch: false,
+        prepared: h.prepared,
+        isLoading: false,
+        error: null
+      };
+    }
   };
 });
 
@@ -165,6 +208,10 @@ describe('OpenPositionTakeover', () => {
     setSearchParamsMock.mockClear();
     h.launchSpy.mockClear();
     h.launchParams = undefined;
+    h.manageLaunchSpy.mockClear();
+    h.manageLaunchParams = undefined;
+    h.urnDelegate = undefined;
+    h.urnRewardContract = undefined;
     h.prepared = true;
     h.balance = 1000n * WAD;
     h.minCollateralForDust = 0n;
@@ -297,5 +344,98 @@ describe('OpenPositionTakeover', () => {
     fireEvent.click(screen.getByTestId('stake-takeover-close'));
 
     expect(mockSearchParams.get('flow')).toBeNull();
+  });
+});
+
+describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)', () => {
+  const renderReopen = (borrowExpanded = false) => {
+    const onBack = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <I18nProvider i18n={i18n}>
+        <OpenPositionTakeover reopen={{ urnIndex: 2, borrowExpanded, onBack, onClose }} />
+      </I18nProvider>
+    );
+    return { onBack, onClose };
+  };
+
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams('flow=manage&urn_index=2');
+    setSearchParamsMock.mockClear();
+    h.launchSpy.mockClear();
+    h.launchParams = undefined;
+    h.manageLaunchSpy.mockClear();
+    h.manageLaunchParams = undefined;
+    h.urnDelegate = DELEGATE_A;
+    h.urnRewardContract = lsSkySkyRewardAddress[1];
+    h.prepared = true;
+    h.balance = 1000n * WAD;
+    h.minCollateralForDust = 0n;
+    h.dust = 30n * WAD;
+    h.debtCeilingHeadroom = parseUnits('1000000000', 18);
+  });
+  afterEach(() => {
+    cleanup();
+    document.documentElement.style.overflow = '';
+  });
+
+  it('routes the launch through the manage seam with the urn context (C17)', () => {
+    renderReopen();
+    typeStakeAmount('100');
+
+    expect(h.manageLaunchParams?.urnIndex).toBe(2n);
+    expect(h.manageLaunchParams?.urnAddress).toBe(URN_ADDRESS);
+    expect(h.manageLaunchParams?.skyToLock).toBe(100n * WAD);
+    expect(h.manageLaunchParams?.enabled).toBe(true);
+    // The plain-open seam stays parked.
+    expect(h.launchParams?.enabled).toBe(false);
+
+    fireEvent.click(screen.getByTestId('stake-takeover-confirm'));
+    expect(h.manageLaunchSpy).toHaveBeenCalledTimes(1);
+    expect(h.launchSpy).not.toHaveBeenCalled();
+  });
+
+  it('passes the urn delegate through while the card is untouched (C18: never undelegate)', () => {
+    renderReopen();
+    typeStakeAmount('100');
+
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(DELEGATE_A);
+  });
+
+  it('stages a different delegate once the user selects one', () => {
+    renderReopen();
+    typeStakeAmount('100');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-delegate-card-toggle'));
+    fireEvent.click(screen.getByTestId(`stake-takeover-delegate-${DELEGATE_B.toLowerCase()}`));
+
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(DELEGATE_B);
+  });
+
+  it('opens with the borrow card expanded for a borrowed-history urn (C19)', () => {
+    renderReopen(true);
+    expect(screen.getByTestId('stake-takeover-borrow-amount')).toBeTruthy();
+  });
+
+  it('keeps the borrow card collapsed for a staked-only history urn', () => {
+    renderReopen(false);
+    expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
+  });
+
+  it('renders the back chevron wired to the details modal', () => {
+    const { onBack } = renderReopen();
+    fireEvent.click(screen.getByTestId('stake-takeover-back'));
+    expect(onBack).toHaveBeenCalled();
+  });
+
+  it('keeps the manage seam disabled in plain-open mode', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <OpenPositionTakeover />
+      </I18nProvider>
+    );
+    typeStakeAmount('100');
+    expect(h.manageLaunchParams?.enabled).toBe(false);
+    expect(h.launchParams?.enabled).toBe(true);
   });
 });
