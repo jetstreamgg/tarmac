@@ -478,11 +478,13 @@ describe('generateStakeCalldata — MANAGE gating edge cases golden parity', () 
 // assembler (`context.tsx:296-408` / `generateStakeCalldata`) drops each
 // computed element into a FIXED slot of a static array and then
 // `.filter(Boolean)`s the whole thing, so the presence and encoding of any one
-// element are independent of every other (the sole cross-term is lock's restake
-// addend, covered by the restake dimension in Matrix B). Because of that
-// fixed-slot independence, the UNION of two orthogonal full-factorial
-// sub-matrices exercises every ordering + gating interaction the full product
-// would, deterministically and with no randomness:
+// element are independent of every other, with ONE exception: the lock slot's
+// amount is `skyToLock + restake addend`, so `skyToLock` and `restake` jointly
+// determine whether lock is emitted. That single cross-term is covered explicitly
+// by Matrix D — NOT by Matrix B, which pins `skyToLock` non-zero. Given per-element
+// fixed-slot independence for every other pair, the UNION of four orthogonal
+// full-factorial sub-matrices exercises every ordering + gating interaction the
+// full product would, deterministically and with no randomness:
 //
 //   Matrix A — every amount/wipeAll combination × flow (selections/claims/restake
 //              held empty): proves amount-derived ordering + wipe/wipeAll gating.
@@ -493,8 +495,12 @@ describe('generateStakeCalldata — MANAGE gating edge cases golden parity', () 
 //   Matrix C — wipeAll × usdsToWipe × selections spot-check: confirms the wipeAll
 //              front-slot is independent of the selection dimensions (the one
 //              amount×selection interaction Matrix B fixes amounts for).
+//   Matrix D — skyToLock × restake × flow: the ONE non-independent cross-term.
+//              Isolates the skyToLock=0 × restake:on cells — lock emitted SOLELY
+//              by the restake addend (on+) or suppressed entirely (on0) — which
+//              Matrix B (skyToLock pinned non-zero) never asserts vs the oracle.
 //
-// Cap: 64 + 576 + 48 = 688 cases (stated here per the AC). "Partial amounts +
+// Cap: 64 + 576 + 48 + 12 = 700 cases (stated here per the AC). "Partial amounts +
 // partial selections" combos not enumerated are structurally guaranteed by the
 // per-element fixed-slot filtering above. Each case renders a FRESH legacy
 // provider (the proven `legacyOutput` path) so restake/gating state cannot bleed
@@ -630,6 +636,15 @@ const matrixC = product([flowDim, usdsToWipeDim, farmDim, delegateDim], {
   urnSelectedVoteDelegate: DELEGATE_LC
 });
 
+// Matrix D — skyToLock × restake × flow (12): the sole non-independent cross-term.
+// The lock slot's amount is `skyToLock + (restake addend)`, so lock emission is a
+// JOINT function of these two dimensions. Matrix B holds skyToLock non-zero, so the
+// skyToLock=0 × restake:on cells — where lock is emitted purely by the restake
+// addend (on+, total>0) or suppressed altogether (on0, total=0) — are asserted
+// against the legacy oracle only here. All other amounts stay at their defaults so
+// the lock slot is the only thing in play.
+const matrixD = product([flowDim, skyToLockDim, restakeDim]);
+
 describe('generateStakeCalldata — Matrix A: amounts × flow (full factorial)', () => {
   it.each(matrixA)('$label', ({ params, flowEnum }) => {
     expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
@@ -648,14 +663,22 @@ describe('generateStakeCalldata — Matrix C: wipeAll × usdsToWipe × selection
   });
 });
 
+describe('generateStakeCalldata — Matrix D: skyToLock × restake × flow (lock cross-term)', () => {
+  it.each(matrixD)('$label', ({ params, flowEnum }) => {
+    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
+  });
+});
+
 describe('generateStakeCalldata — matrix cardinality guard', () => {
-  it('enumerates the stated 688-case cap (64 + 576 + 48) deterministically', () => {
+  it('enumerates the stated 700-case cap (64 + 576 + 48 + 12) deterministically', () => {
     expect(matrixA).toHaveLength(64);
     expect(matrixB).toHaveLength(576);
     expect(matrixC).toHaveLength(48);
+    expect(matrixD).toHaveLength(12);
     // Labels are unique per matrix — the serialized combo is a stable case id.
     expect(new Set(matrixA.map(c => c.label)).size).toBe(matrixA.length);
     expect(new Set(matrixB.map(c => c.label)).size).toBe(matrixB.length);
     expect(new Set(matrixC.map(c => c.label)).size).toBe(matrixC.length);
+    expect(new Set(matrixD.map(c => c.label)).size).toBe(matrixD.length);
   });
 });
