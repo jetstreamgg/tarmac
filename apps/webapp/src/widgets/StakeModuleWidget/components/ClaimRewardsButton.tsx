@@ -28,12 +28,12 @@ export function ClaimRewardsButton({
   if (!rewardsBalance || !rewardContractTokens) return null;
 
   return (
-    <div className="flex h-14 items-center justify-between rounded-2xl bg-linear-to-r from-[#403570] to-[#4B337B] light:from-[#C9C0F7] light:to-[#B7ABF1] px-5 py-4">
+    <div className="light:from-[#C9C0F7] light:to-[#B7ABF1] flex h-14 items-center justify-between rounded-2xl bg-linear-to-r from-[#403570] to-[#4B337B] px-5 py-4">
       <div className="flex items-center gap-2">
         <TokenIcon token={{ symbol: rewardContractTokens.rewardsToken.symbol }} className="h-7 w-7" />
         <Text variant="medium">
           {formatBigInt(rewardsBalance)} {rewardContractTokens.rewardsToken.symbol}{' '}
-          <span className="text-[#f2dcfc] light:text-text">Rewards</span>
+          <span className="light:text-text text-[#f2dcfc]">Rewards</span>
         </Text>
       </div>
       <div className="flex items-center gap-2">

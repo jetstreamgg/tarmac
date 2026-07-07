@@ -17,7 +17,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 const ErrorMessage = ({ error }: { error: string }) => (
   <HStack className="items-center pt-4" gap={2}>
     <Warning boxSize={16} viewBox="0 0 16 16" />
-    <Text className="text-error text-xs font-normal leading-none">{error}</Text>
+    <Text className="text-error text-xs leading-none font-normal">{error}</Text>
   </HStack>
 );
 
@@ -55,7 +55,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div>
-        {label && <Text className="text-text text-sm font-normal leading-none">{label}</Text>}
+        {label && <Text className="text-text text-sm leading-none font-normal">{label}</Text>}
         <HStack
           className={cn(
             `items-center justify-between ${
@@ -69,7 +69,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               `bg-background light:bg-transparent flex h-6 w-full px-3 py-0 pl-0 ${
                 error ? 'text-error' : 'text-text'
-              } placeholder:text-textDimmed focus-visible:outline-hidden text-base leading-tight file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:cursor-not-allowed disabled:opacity-50 lg:text-lg lg:leading-normal`,
+              } placeholder:text-textDimmed text-base leading-tight file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 lg:text-lg lg:leading-normal`,
               className
             )}
             ref={ref}

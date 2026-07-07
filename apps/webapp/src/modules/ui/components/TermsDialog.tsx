@@ -79,18 +79,18 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
     <DialogContent aria-describedby={undefined} className="bg-containerDark max-h-[95dvh] overflow-y-auto">
       <DialogTitle className="sr-only">{title}</DialogTitle>
       {termsVersion && (
-        <Text className="text-center text-xs text-text/50 light:text-textDimmed">
+        <Text className="text-text/50 light:text-textDimmed text-center text-xs">
           <Trans>Terms version: {termsVersion}</Trans>
         </Text>
       )}
 
-      <Card className="scrollbar-thin-always mx-auto max-h-[256px] w-full overflow-y-auto bg-termsCard p-3 sm:max-h-[432px] sm:p-4">
+      <Card className="scrollbar-thin-always bg-termsCard mx-auto max-h-[256px] w-full overflow-y-auto p-3 sm:max-h-[432px] sm:p-4">
         {content}
         <div ref={endOfTermsRef} data-testid="end-of-terms" />
       </Card>
 
       {showScrollInstruction && (
-        <Text className="text-center text-sm leading-none text-text/50 light:text-textDimmed md:leading-tight">
+        <Text className="text-text/50 light:text-textDimmed text-center text-sm leading-none md:leading-tight">
           {scrollInstructionText || (
             <Trans>
               Please scroll to the bottom and read the entire terms; the accept button will become enabled
@@ -110,7 +110,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
       <div className="flex w-full justify-between gap-4 sm:mt-0 sm:w-auto">
         <Button
           variant="secondary"
-          className="flex-1 border bg-transparent hover:bg-termsBtnHover active:bg-termsBtnActive"
+          className="hover:bg-termsBtnHover active:bg-termsBtnActive flex-1 border bg-transparent"
           onClick={onDecline}
           disabled={isLoading}
         >

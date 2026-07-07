@@ -80,7 +80,11 @@ export function parseMarkdownLinks(
     } else if (url.startsWith('#tooltip-')) {
       // Render as plain anchor tag for tooltip links
       parts.push(
-        <a key={`link-${keyIndex++}`} href={url} className="text-text hover:text-white light:hover:text-text hover:underline">
+        <a
+          key={`link-${keyIndex++}`}
+          href={url}
+          className="text-text light:hover:text-text hover:text-white hover:underline"
+        >
           {linkText}
         </a>
       );
@@ -90,7 +94,7 @@ export function parseMarkdownLinks(
         <ExternalLink
           key={`link-${keyIndex++}`}
           href={url}
-          className="hover:text-white light:hover:text-text hover:underline"
+          className="light:hover:text-text hover:text-white hover:underline"
           showIcon={false}
           onExternalLinkClicked={onExternalLinkClicked}
         >

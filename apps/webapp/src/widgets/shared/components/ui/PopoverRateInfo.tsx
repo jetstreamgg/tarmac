@@ -58,7 +58,7 @@ const createTooltipContent = (
   return {
     title: tooltip?.title || '',
     description: (
-      <Text variant="small" className="leading-5 text-white/80 light:text-textSecondary">
+      <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
         {parseMarkdownLinks(tooltip?.tooltip, onExternalLinkClicked)}
       </Text>
     )
@@ -85,8 +85,7 @@ export type PopoverTooltipType = keyof typeof TOOLTIP_ID_MAP;
 export function resolvePopoverTooltipKey(raw: string): PopoverTooltipType | undefined {
   if (raw in TOOLTIP_ID_MAP) return raw as PopoverTooltipType;
   return Object.entries(TOOLTIP_ID_MAP).find(([, fullId]) => fullId === raw)?.[0] as
-    | PopoverTooltipType
-    | undefined;
+    PopoverTooltipType | undefined;
 }
 
 export const PopoverRateInfo = ({
@@ -113,7 +112,7 @@ export const PopoverRateInfo = ({
   const defaultContent = content[type];
   const resolvedTitle = tooltipOverride?.title ?? defaultContent.title;
   const resolvedDescription = tooltipOverride?.description ? (
-    <Text variant="small" className="leading-5 text-white/80 light:text-textSecondary">
+    <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
       {parseMarkdownLinks(tooltipOverride.description, onExternalLinkClicked)}
     </Text>
   ) : (
@@ -136,10 +135,10 @@ export const PopoverRateInfo = ({
           {resolvedTitle}
         </Heading>
         <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
-          <Close className="h-5 w-5 cursor-pointer text-text" />
+          <Close className="text-text h-5 w-5 cursor-pointer" />
         </PopoverClose>
         <div
-          className="scrollbar-thin mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] overflow-y-auto"
+          className="mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] scrollbar-thin overflow-y-auto"
           // The `onWheel` and `onTouchMove` stopPropagation handlers allow to scroll through the popover
           // content when rendered on top of another focus capturing elements, like modals.
           onWheel={e => {

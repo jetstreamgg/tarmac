@@ -237,7 +237,9 @@ export function useQuotePendleConvert({
   const nonPtToken = side === PendleConvertSide.BUY ? inputToken : outputToken;
   const effectiveAccepted = syAcceptedTokens ?? (underlyingToken ? [underlyingToken] : []);
   const enableAggregator =
-    !!nonPtToken && effectiveAccepted.length > 0 && !effectiveAccepted.some(t => isAddressEqual(nonPtToken, t));
+    !!nonPtToken &&
+    effectiveAccepted.length > 0 &&
+    !effectiveAccepted.some(t => isAddressEqual(nonPtToken, t));
 
   const { data, isLoading, error, refetch } = useQuery({
     enabled,

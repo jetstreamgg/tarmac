@@ -226,9 +226,7 @@ function resolveAggregatorFields(
  */
 function verifyApiMinOut(quote: PendleConvertQuote, slippage: number): void {
   if (!Number.isFinite(slippage) || slippage < 0 || slippage >= 1) {
-    throw new Error(
-      `Pendle: refusing to sign — slippage ${slippage} is outside the allowed [0, 1) range`
-    );
+    throw new Error(`Pendle: refusing to sign — slippage ${slippage} is outside the allowed [0, 1) range`);
   }
   const slippageBp = BigInt(Math.round(slippage * 10_000));
   const TOLERANCE_BP = 1n;

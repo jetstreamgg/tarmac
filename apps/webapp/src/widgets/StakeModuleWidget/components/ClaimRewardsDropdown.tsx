@@ -142,9 +142,9 @@ export function ClaimRewardsDropdown({
     );
 
   return (
-    <div className="flex h-14 items-center justify-between rounded-2xl bg-linear-to-r from-[#403570] to-[#4B337B] light:from-[#C9C0F7] light:to-[#B7ABF1] px-5 py-4">
+    <div className="light:from-[#C9C0F7] light:to-[#B7ABF1] flex h-14 items-center justify-between rounded-2xl bg-linear-to-r from-[#403570] to-[#4B337B] px-5 py-4">
       <div className="flex items-center">
-        <Text variant="medium" className="text-[#f2dcfc] light:text-text">
+        <Text variant="medium" className="light:text-text text-[#f2dcfc]">
           Select reward
         </Text>
         <Popover open={isOpen} onOpenChange={setIsOpen}>

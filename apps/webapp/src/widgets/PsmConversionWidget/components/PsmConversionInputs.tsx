@@ -1,9 +1,4 @@
-import {
-  ZERO_ADDRESS,
-  type TokenForChain,
-  tokenForChainToToken,
-  getTokenDecimals
-} from '@/hooks';
+import { ZERO_ADDRESS, type TokenForChain, tokenForChainToToken, getTokenDecimals } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { motion } from 'motion/react';

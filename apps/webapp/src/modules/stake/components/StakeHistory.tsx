@@ -65,7 +65,7 @@ const mapTypeEnumToIcon = (type: TransactionTypeEnum) => {
     case TransactionTypeEnum.STAKE_SELECT_REWARD:
       return <SelectRewards width={20} height={20} className="mr-1 -ml-1" />;
     case TransactionTypeEnum.UNSTAKE:
-      return <ArrowDown width={10} height={14} className="mr-1 fill-white light:fill-text" />;
+      return <ArrowDown width={10} height={14} className="light:fill-text mr-1 fill-white" />;
     case TransactionTypeEnum.STAKE_REPAY:
       return <Repaid width={20} height={20} className="mr-1 -ml-1" />;
     case TransactionTypeEnum.UNSTAKE_KICK:

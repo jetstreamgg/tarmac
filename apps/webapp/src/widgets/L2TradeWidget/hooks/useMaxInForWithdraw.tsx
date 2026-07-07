@@ -1,9 +1,4 @@
-import {
-  TokenForChain,
-  tokenForChainToToken,
-  usePreviewSwapExactOut,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { TokenForChain, tokenForChainToToken, usePreviewSwapExactOut, ZERO_ADDRESS } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export const useMaxInForWithdraw = (

@@ -1,12 +1,6 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
-import {
-  isBaseChainId,
-  isMainnetId,
-  isArbitrumChainId,
-  isUnichainChainId,
-  isOptimismChainId
-} from '@/utils';
+import { isBaseChainId, isMainnetId, isArbitrumChainId, isUnichainChainId, isOptimismChainId } from '@/utils';
 
 export const useChainImage = (chainId?: number) => {
   const connectedChainId = useChainId();

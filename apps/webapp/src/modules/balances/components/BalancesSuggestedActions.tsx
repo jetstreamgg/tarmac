@@ -69,15 +69,7 @@ type BalancesAction = {
   label: string;
   tokens: string[];
   module:
-    | 'convert'
-    | 'morpho'
-    | 'rewards'
-    | 'savings'
-    | 'stusds'
-    | 'stake'
-    | 'trade'
-    | 'upgrade'
-    | 'fixedYield';
+    'convert' | 'morpho' | 'rewards' | 'savings' | 'stusds' | 'stake' | 'trade' | 'upgrade' | 'fixedYield';
   url: string;
   rateKey?: 'vaults' | 'sparkVault' | 'rewards' | 'savings' | 'stusds' | 'staking' | 'fixedYield';
   badge?: string;
