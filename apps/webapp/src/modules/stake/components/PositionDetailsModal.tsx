@@ -281,7 +281,7 @@ export function PositionDetailsModal({
               {detail.estAnnualRewardsSky !== null && detail.skyPriceUsd !== null ? (
                 <span className="text-bullish flex items-center gap-1">
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                  {`+${formatUsd(Number(detail.estAnnualRewardsSky / 10n ** 12n) / 1e6 * detail.skyPriceUsd)}`}
+                  {`+${formatUsd((Number(detail.estAnnualRewardsSky / 10n ** 12n) / 1e6) * detail.skyPriceUsd)}`}
                 </span>
               ) : (
                 NO_VALUE

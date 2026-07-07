@@ -253,9 +253,9 @@ describe('useStakeManageLaunch — calldata parity with the F1 seam', () => {
     const calls = h.capturedCalls as RawCall[];
     expect(calls.map(call => call.functionName)).toEqual(['selectVoteDelegate']);
     // The seam still produced exactly one calldata entry for it.
-    expect(
-      expectedCalldata({ selectedDelegate: NEW_DELEGATE, skyToFree: 0n, usdsToWipe: 0n })
-    ).toHaveLength(1);
+    expect(expectedCalldata({ selectedDelegate: NEW_DELEGATE, skyToFree: 0n, usdsToWipe: 0n })).toHaveLength(
+      1
+    );
   });
 
   it('keeps the engine disabled until the form is valid', () => {

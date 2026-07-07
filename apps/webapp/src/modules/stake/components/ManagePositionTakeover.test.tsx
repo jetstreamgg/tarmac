@@ -71,9 +71,7 @@ vi.mock('@/hooks', async importOriginal => {
     useTokenBalance: ({ token }: { token: `0x${string}` }) => ({
       data: {
         value:
-          token?.toLowerCase() === actual.TOKENS.sky.address[1].toLowerCase()
-            ? h.skyBalance
-            : h.usdsBalance,
+          token?.toLowerCase() === actual.TOKENS.sky.address[1].toLowerCase() ? h.skyBalance : h.usdsBalance,
         decimals: 18,
         symbol: 'X'
       },

@@ -201,7 +201,8 @@ export function ManagePositionTakeover({
         ((usdsToBorrow > 0n && usdsToBorrow < availableBorrowFromDebtCeiling) || !usdsToBorrow) &&
         !simulationError &&
         !simulationLoading
-      : (state.usdsAmount === 0n && !state.wipeAll) || (!borrowError && !simulationError && !simulationLoading));
+      : (state.usdsAmount === 0n && !state.wipeAll) ||
+        (!borrowError && !simulationError && !simulationLoading));
 
   // ---- Delegate change ------------------------------------------------------
   const currentDelegate =
@@ -215,8 +216,7 @@ export function ManagePositionTakeover({
   const effectiveDelegate = delegateChanged ? state.selectedDelegate : detail.voteDelegate;
 
   // ---- Confirm gating (M20) -------------------------------------------------
-  const debounceSettled =
-    debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
+  const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
   const hasChange =
     skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll || delegateChanged;
   const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid;

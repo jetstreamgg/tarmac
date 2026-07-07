@@ -59,7 +59,7 @@ export function StakeManageStakeCard({
   const onSliderChange = (percent: number) => {
     if (base === 0n) return;
     // 100% stages the exact base; intermediate stops round to whole SKY.
-    onAmountChange(percent === 100 ? base : (((base * BigInt(percent)) / 100n) / WAD) * WAD);
+    onAmountChange(percent === 100 ? base : ((base * BigInt(percent)) / 100n / WAD) * WAD);
   };
   const onPercentClick = (percent: number) => onSliderChange(percent);
 
@@ -93,11 +93,7 @@ export function StakeManageStakeCard({
         <div className="border-textSecondary/10 flex items-center justify-between border-b pb-3 text-sm">
           <span className="text-textSecondary">{isStake ? t`Balance:` : t`Staked:`}</span>
           <span className="text-text font-medium" data-testid="stake-manage-stake-base">
-            {isStake && walletBalanceLoading ? (
-              <Skeleton className="h-4 w-24" />
-            ) : (
-              formatBigInt(base)
-            )}
+            {isStake && walletBalanceLoading ? <Skeleton className="h-4 w-24" /> : formatBigInt(base)}
           </span>
         </div>
 

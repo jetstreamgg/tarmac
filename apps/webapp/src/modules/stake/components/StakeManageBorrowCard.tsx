@@ -5,7 +5,6 @@ import { Check, Info, TriangleAlert } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Slider } from '@/components/ui/slider';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
@@ -32,10 +31,7 @@ export function RiskValue({ riskLevel }: { riskLevel: RiskLevel }) {
         {[0, 1, 2].map(dot => (
           <span
             key={dot}
-            className={cn(
-              'h-1 w-1 rounded-full',
-              dot < dots.lit ? dots.color : 'bg-textSecondary/30'
-            )}
+            className={cn('h-1 w-1 rounded-full', dot < dots.lit ? dots.color : 'bg-textSecondary/30')}
           />
         ))}
       </span>
@@ -112,7 +108,7 @@ export function StakeManageBorrowCard({
   const onPercentClick = (percent: number) => {
     if (isRepay) {
       if (maxRepayable === 0n) return;
-      const raw = percent === 100 ? maxRepayable : (((maxRepayable * BigInt(percent)) / 100n) / WAD) * WAD;
+      const raw = percent === 100 ? maxRepayable : ((maxRepayable * BigInt(percent)) / 100n / WAD) * WAD;
       // wipeAll only when the exact-max staging clears the full debt (M11).
       onAmountChange(raw, percent === 100 && maxRepayable === existingDebt && existingDebt > 0n);
       return;
@@ -258,13 +254,13 @@ export function StakeManageBorrowCard({
             }
             current={currentRisk ? <RiskValue riskLevel={currentRisk} /> : NO_VALUE}
             next={
-              showDeltas
-                ? isFullRepay
-                  ? t`No position`
-                  : nextRisk && nextRisk !== currentRisk
-                    ? <RiskValue riskLevel={nextRisk} />
-                    : undefined
-                : undefined
+              showDeltas ? (
+                isFullRepay ? (
+                  t`No position`
+                ) : nextRisk && nextRisk !== currentRisk ? (
+                  <RiskValue riskLevel={nextRisk} />
+                ) : undefined
+              ) : undefined
             }
             dataTestId="stake-manage-risk-row"
           />

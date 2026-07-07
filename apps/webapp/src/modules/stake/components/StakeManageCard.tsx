@@ -41,9 +41,7 @@ export function StakeManageCard<Mode extends string>({
               data-testid={`${dataTestId}-mode-${mode.value}`}
               className={cn(
                 'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
-                mode.value === activeMode
-                  ? 'bg-surfaceAlt text-text'
-                  : 'text-textSecondary hover:text-text'
+                mode.value === activeMode ? 'bg-surfaceAlt text-text' : 'text-textSecondary hover:text-text'
               )}
             >
               {mode.label}
