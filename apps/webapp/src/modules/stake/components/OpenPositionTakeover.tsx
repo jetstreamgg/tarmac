@@ -83,9 +83,11 @@ export function OpenPositionTakeover() {
   const highestRateData = useHighestRateFromChartData(rewardsChartInfo ?? []);
   const parsedRate = highestRateData ? parseFloat(highestRateData.rate) : NaN;
   const rewardsRate = Number.isFinite(parsedRate) ? parsedRate : null;
+  // Rate scaled at 1e9 so BA Labs rates (8 decimal places) survive intact —
+  // 1e6 truncated e.g. 5.692243% and drifted the estimate by whole tokens.
   const estAnnualRewards =
     rewardsRate !== null && state.skyToLock > 0n
-      ? (state.skyToLock * BigInt(Math.round(rewardsRate * 1_000_000))) / 1_000_000n
+      ? (state.skyToLock * BigInt(Math.round(rewardsRate * 1_000_000_000))) / 1_000_000_000n
       : null;
 
   // Max borrow — legacy Borrow.tsx:359-375 verbatim: debt-ceiling headroom
