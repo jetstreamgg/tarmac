@@ -38,6 +38,10 @@ export interface ProductTransactionsTableProps<T> {
   dataTestId?: string;
   /** Rows per page; the control appears once the set exceeds it (C4). */
   pageSize?: number;
+  /** Makes rows interactive (button semantics + pointer cursor). */
+  onRowClick?: (row: T) => void;
+  /** Per-row test id, e.g. for row-click specs. */
+  rowTestId?: (row: T) => string;
 }
 
 // --- Reusable cells (compose these in a column's `cell`, or build your own) ---
@@ -165,7 +169,9 @@ export function ProductTransactionsTable<T>({
   emptyLabel,
   minWidth = 560,
   dataTestId = 'product-transactions',
-  pageSize = 7
+  pageSize = 7,
+  onRowClick,
+  rowTestId
 }: ProductTransactionsTableProps<T>) {
   const gridStyle = { gridTemplateColumns: columns.map(column => column.width).join(' ') };
 
@@ -202,10 +208,27 @@ export function ProductTransactionsTable<T>({
               pageRows.map(row => (
                 <div
                   key={rowKey(row)}
+                  data-testid={rowTestId?.(row)}
+                  role={onRowClick ? 'button' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? event => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            onRowClick(row);
+                          }
+                        }
+                      : undefined
+                  }
                   // Figma C3 row: a glassmorphic card — translucent ink fill in dark,
                   // a white gradient + white border in light (the `light:` scope), with
                   // a 20px backdrop blur so the page shows through. (node 1:3906 / 67:4842)
-                  className="light:border-white light:from-white/40 light:to-white/60 light:hover:from-white/55 light:hover:to-white/70 grid min-h-[88px] items-center gap-4 rounded-[20px] border border-white/10 bg-linear-to-b from-[#0e0e20]/40 to-[#0e0e20]/40 px-4 py-3 backdrop-blur-[20px] transition-colors hover:from-[#0e0e20]/55 hover:to-[#0e0e20]/55"
+                  className={cn(
+                    'light:border-white light:from-white/40 light:to-white/60 light:hover:from-white/55 light:hover:to-white/70 grid min-h-[88px] items-center gap-4 rounded-[20px] border border-white/10 bg-linear-to-b from-[#0e0e20]/40 to-[#0e0e20]/40 px-4 py-3 backdrop-blur-[20px] transition-colors hover:from-[#0e0e20]/55 hover:to-[#0e0e20]/55',
+                    onRowClick && 'cursor-pointer'
+                  )}
                   style={gridStyle}
                 >
                   {columns.map(column => (
