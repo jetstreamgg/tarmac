@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useChainId, useReadContracts } from 'wagmi';
-import { stringToHex } from 'viem';
+import { stringToHex, type ContractFunctionParameters } from 'viem';
 import { mcdVatAbi, mcdVatAddress, getIlkName } from '@/hooks';
 
 const RAY = 10n ** 27n;
@@ -25,17 +25,21 @@ export function useStakeTotalDebt(urnAddresses?: `0x${string}`[]) {
   const ilk = stringToHex(getIlkName(2), { size: 32 });
   const urns = urnAddresses ?? [];
 
+  // Heterogeneous batch (one `ilks` + N `urns`): typed as the generic viem
+  // parameter list so TS doesn't force every entry into the first call's shape.
+  const contracts: (ContractFunctionParameters & { chainId: number })[] = [
+    { address: vat, abi: mcdVatAbi, functionName: 'ilks', args: [ilk], chainId },
+    ...urns.map(urn => ({
+      address: vat,
+      abi: mcdVatAbi,
+      functionName: 'urns',
+      args: [ilk, urn],
+      chainId
+    }))
+  ];
+
   const { data, isLoading, error } = useReadContracts({
-    contracts: [
-      { address: vat, abi: mcdVatAbi, functionName: 'ilks', args: [ilk], chainId },
-      ...urns.map(urn => ({
-        address: vat,
-        abi: mcdVatAbi,
-        functionName: 'urns' as const,
-        args: [ilk, urn] as const,
-        chainId
-      }))
-    ],
+    contracts,
     allowFailure: false,
     query: { enabled: Boolean(vat && urns.length) }
   });
