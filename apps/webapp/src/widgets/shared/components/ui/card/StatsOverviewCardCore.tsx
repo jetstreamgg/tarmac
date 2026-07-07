@@ -19,7 +19,7 @@ export const StatsOverviewCardCore = ({
   className?: string;
 }) => {
   return (
-    <Card variant="pool" onClick={onClick} className={cn('mb-3 mt-4', className)}>
+    <Card variant="pool" onClick={onClick} className={cn('mt-4 mb-3', className)}>
       <CardHeader>
         <HStack className="w-full justify-between">
           {headerLeftContent}

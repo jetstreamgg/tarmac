@@ -1,12 +1,5 @@
 import { TokenInput } from '@/widgets/shared/components/ui/token/TokenInput';
-import {
-  TOKENS,
-  useVault,
-  useSimulatedVault,
-  getIlkName,
-  RISK_LEVEL_THRESHOLDS,
-  RiskLevel
-} from '@/hooks';
+import { TOKENS, useVault, useSimulatedVault, getIlkName, RISK_LEVEL_THRESHOLDS, RiskLevel } from '@/hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect } from 'react';
 import { useConnection } from 'wagmi';

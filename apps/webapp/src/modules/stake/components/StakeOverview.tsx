@@ -1,9 +1,4 @@
-import {
-  useStakeHistoricData,
-  useCollateralData,
-  getIlkName,
-  useBorrowCapacityData
-} from '@/hooks';
+import { useStakeHistoricData, useCollateralData, getIlkName, useBorrowCapacityData } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, formatBigInt } from '@/utils';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
@@ -104,7 +99,7 @@ export function StakeOverview() {
               <StatsCard
                 title={
                   <HStack gap={1} className="items-center">
-                    <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
+                    <Heading tag="h3" className="text-textSecondary text-sm leading-tight font-normal">
                       <Trans>Borrow Rate</Trans>
                     </Heading>
                     <PopoverRateInfo type="sbr" />
@@ -122,7 +117,7 @@ export function StakeOverview() {
               <StatsCard
                 title={
                   <HStack gap={1} className="items-center">
-                    <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
+                    <Heading tag="h3" className="text-textSecondary text-sm leading-tight font-normal">
                       <Trans>Debt ceiling</Trans>
                     </Heading>
                     <PopoverRateInfo type="dtc" />

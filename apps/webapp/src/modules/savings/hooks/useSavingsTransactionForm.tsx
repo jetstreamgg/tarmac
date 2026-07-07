@@ -207,11 +207,7 @@ export function useSavingsTransactionForm({
   // Supply is capped by the wallet balance of the origin token; withdraw by the
   // position (mainnet: the USDS savings balance; L2: sUSDS converted to the
   // destination token).
-  const available = isSupply
-    ? (walletBalance?.value ?? 0n)
-    : isL2
-      ? convertedBalance.value
-      : position;
+  const available = isSupply ? (walletBalance?.value ?? 0n) : isL2 ? convertedBalance.value : position;
   const isZero = amount === 0n;
   // A max withdraw bypasses the amount check — the redeem is driven by the flag, not
   // the displayed (rounded) value.

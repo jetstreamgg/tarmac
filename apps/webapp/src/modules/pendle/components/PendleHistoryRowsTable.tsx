@@ -43,7 +43,7 @@ export function PendleHistoryRowsTable({ rows, isLoading, error, dataTestId }: P
     const iconLeft = isBuy ? (
       <SavingsSupply width={14} height={13} className="mr-4.25 shrink-0" />
     ) : (
-      <ArrowDown width={10} height={14} className="mr-4.75 shrink-0 fill-white light:fill-text" />
+      <ArrowDown width={10} height={14} className="light:fill-text mr-4.75 shrink-0 fill-white" />
     );
     return {
       id: tx.id,

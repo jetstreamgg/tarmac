@@ -36,9 +36,7 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
         entry: { confirmLabel: t`Supply`, confirmDisabled: true },
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
-        backgroundContent: (
-          <SavingsModalForm sessionId={supplySessionId} flow="supply" preset={preset} />
-        ),
+        backgroundContent: <SavingsModalForm sessionId={supplySessionId} flow="supply" preset={preset} />,
         onConfirm: () => {},
         onSuccess
       });
@@ -58,9 +56,7 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
         },
         sessionId: withdrawSessionId,
         entry: { confirmLabel: t`Withdraw`, confirmDisabled: true },
-        backgroundContent: (
-          <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" preset={preset} />
-        ),
+        backgroundContent: <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" preset={preset} />,
         onConfirm: () => {},
         onSuccess
       });

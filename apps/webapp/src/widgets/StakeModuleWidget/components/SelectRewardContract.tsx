@@ -123,7 +123,7 @@ export const SelectRewardContract = ({
           <YellowWarning boxSize={16} viewBox="0 0 16 16" className="mt-0.5 shrink-0" />
           <Text className="text-textSecondary text-sm">
             <Trans>
-              Please <span className="font-bold text-text">choose another reward.</span> The SPK rewards are
+              Please <span className="text-text font-bold">choose another reward.</span> The SPK rewards are
               disabled as a Staking Reward option, and the SPK rate set to zero. The pool of SPK will remain
               forever so that you can claim your rewards anytime.
             </Trans>

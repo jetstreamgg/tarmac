@@ -13,11 +13,11 @@ token resolves to. This is the two-mode `data-theme` mechanism adopted from PR #
 There is **no `.dark` block**. "Dark" is the default; "light" is an override layer. Reading the file
 top-to-bottom, the tokens live in three places:
 
-| Scope | Lines (approx) | Holds | Notes |
-|---|---|---|---|
-| `@theme { … }` | top of file | The semantic `--color-*` tokens, **dark values** | Tailwind v4 emits these as live CSS vars and treats them as the default. This is the **dark / at-parity** palette. |
-| `:root { … }` | base layer | Raw **primitives** (`--brand-*`, `--transparent-*`, gradients) | Non-semantic building blocks the `@theme` tokens reference via `var()`. Not theme-switched. |
-| `:root[data-theme='light'] { … }` | base layer | **Light overrides** of the semantic `--color-*` tokens | Only the tokens that need to change for light are redeclared here. |
+| Scope                             | Lines (approx) | Holds                                                          | Notes                                                                                                              |
+| --------------------------------- | -------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `@theme { … }`                    | top of file    | The semantic `--color-*` tokens, **dark values**               | Tailwind v4 emits these as live CSS vars and treats them as the default. This is the **dark / at-parity** palette. |
+| `:root { … }`                     | base layer     | Raw **primitives** (`--brand-*`, `--transparent-*`, gradients) | Non-semantic building blocks the `@theme` tokens reference via `var()`. Not theme-switched.                        |
+| `:root[data-theme='light'] { … }` | base layer     | **Light overrides** of the semantic `--color-*` tokens         | Only the tokens that need to change for light are redeclared here.                                                 |
 
 `<html data-theme="…">` is set before first paint by an inline script in `src/index.html` (mirrors
 `src/lib/theme.ts`: stored choice → OS pref → `dark`). `dark` (or no attribute) → `@theme` defaults.
@@ -32,7 +32,7 @@ re-themes every `bg-secondary` on the page with zero per-component work. That's 
 Two consequences that surprised us during the audit:
 
 1. **Tailwind v4 tree-shakes unused `@theme` tokens.** A `--color-*` token that no compiled utility
-   references is *not emitted* to `:root` at runtime, so it reads as undefined in DevTools even though
+   references is _not emitted_ to `:root` at runtime, so it reads as undefined in DevTools even though
    it's declared in `globals.css`. That's dead-code elimination, not a bug. (Example: `selectBackground`
    has no consumer and is absent at runtime in dark; it still resolves in light because the light block
    declares it as a literal, which is not tree-shaken.)
@@ -60,12 +60,12 @@ Two consequences that surprised us during the audit:
 
 Fixes landed in this ticket, all keeping dark pixel-identical:
 
-| # | Token | Was | Now | Dark impact |
-|---|---|---|---|---|
-| 1 | `--color-borderActive` (dark) | `--transparent-white-25` (no `var()`, **invalid**) | `var(--transparent-white-25)` | None — only `light:` consumers (CookieConsentBanner). Now valid if dark ever consumes it. |
-| 1b | `--transparent-white-25` primitive | commented out | restored `#ffffff40` | None — required so `borderActive` (and the unused `selectBackground`) resolve. |
-| 2 | `--color-secondaryHover` (dark) | `var(--transparent-black-20)` (== `--color-secondary`, no-op hover) | **unchanged** (parity) | None. Light already differentiates the secondary states; dark parity preserved. Annotated in `globals.css`. |
-| 3 | `--color-bgHover` | **undefined everywhere** → `bg-bgHover` was an unknown class (silent no-op) | `transparent` in `@theme` (dark), `rgba(26,24,85,0.06)` in light | None in dark (`transparent` == prior no-op). Light gains the real TopNav MoreMenu row hover. |
+| #   | Token                              | Was                                                                         | Now                                                              | Dark impact                                                                                                 |
+| --- | ---------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 1   | `--color-borderActive` (dark)      | `--transparent-white-25` (no `var()`, **invalid**)                          | `var(--transparent-white-25)`                                    | None — only `light:` consumers (CookieConsentBanner). Now valid if dark ever consumes it.                   |
+| 1b  | `--transparent-white-25` primitive | commented out                                                               | restored `#ffffff40`                                             | None — required so `borderActive` (and the unused `selectBackground`) resolve.                              |
+| 2   | `--color-secondaryHover` (dark)    | `var(--transparent-black-20)` (== `--color-secondary`, no-op hover)         | **unchanged** (parity)                                           | None. Light already differentiates the secondary states; dark parity preserved. Annotated in `globals.css`. |
+| 3   | `--color-bgHover`                  | **undefined everywhere** → `bg-bgHover` was an unknown class (silent no-op) | `transparent` in `@theme` (dark), `rgba(26,24,85,0.06)` in light | None in dark (`transparent` == prior no-op). Light gains the real TopNav MoreMenu row hover.                |
 
 ### Deferred (known issue) — bug 4
 
@@ -91,12 +91,12 @@ Reconciled into named tracking, **not** silently applied (dark is at-parity; cha
 AC #1). Each row is a candidate for a deliberate, signed-off follow-up — most likely during G2 light
 parity or a Button/chrome re-skin.
 
-| Surface | Figma | Code | Where | Disposition |
-|---|---|---|---|---|
-| Primary light purple | `#6161FF` | `#504DFF` (`--brand-light-purple: 80 77 255`) | `globals.css` primitive | Drift. Don't touch the dark primitive; reconcile when the brand ramp is re-tokenised. |
-| Same `#6161FF`, hardcoded | `#6161FF` | magic hex `bg-[#6161FF]` / `text-[#1C1655]` | `widgets/shared/components/ui/card/InteractiveStatsCardAlt.tsx` | Should become a token, not an inline hex. Folds into the brand reconciliation above. |
-| Glass surfaces | glass stroke/fill | `--primary-glass-stroke` (single stroke token) | `globals.css` | Figma models glass as stroke **+** fill + blur; code has only the stroke. Capture full glass token set when glass surfaces are themed. |
-| Pill radii | per Figma spec | `rounded-full` everywhere; `--radius-sm/md/lg = 6/8/10px` | `button.tsx`, `globals.css` | Verify Figma pill/chip radii against `rounded-full` vs the `--radius-*` scale; no code change until confirmed. |
+| Surface                   | Figma             | Code                                                      | Where                                                           | Disposition                                                                                                                            |
+| ------------------------- | ----------------- | --------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Primary light purple      | `#6161FF`         | `#504DFF` (`--brand-light-purple: 80 77 255`)             | `globals.css` primitive                                         | Drift. Don't touch the dark primitive; reconcile when the brand ramp is re-tokenised.                                                  |
+| Same `#6161FF`, hardcoded | `#6161FF`         | magic hex `bg-[#6161FF]` / `text-[#1C1655]`               | `widgets/shared/components/ui/card/InteractiveStatsCardAlt.tsx` | Should become a token, not an inline hex. Folds into the brand reconciliation above.                                                   |
+| Glass surfaces            | glass stroke/fill | `--primary-glass-stroke` (single stroke token)            | `globals.css`                                                   | Figma models glass as stroke **+** fill + blur; code has only the stroke. Capture full glass token set when glass surfaces are themed. |
+| Pill radii                | per Figma spec    | `rounded-full` everywhere; `--radius-sm/md/lg = 6/8/10px` | `button.tsx`, `globals.css`                                     | Verify Figma pill/chip radii against `rounded-full` vs the `--radius-*` scale; no code change until confirmed.                         |
 
 > Adding a token here is cheap and reversible; changing a **dark** value is not. When in doubt, name the
 > drift and defer the change.

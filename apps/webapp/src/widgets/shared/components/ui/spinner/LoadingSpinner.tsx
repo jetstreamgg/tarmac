@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 
 export const LoadingSpinner = ({ className }: { className?: string }) => {
   return (
-    <div className={cn('w-6 mix-blend-overlay light:mix-blend-normal', className)}>
+    <div className={cn('light:mix-blend-normal w-6 mix-blend-overlay', className)}>
       <motion.svg
         viewBox="0 0 1105 1105"
         fill="none"

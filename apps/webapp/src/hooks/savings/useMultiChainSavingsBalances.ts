@@ -7,13 +7,7 @@ import { getEtherscanLink } from '@/utils';
 import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';
 import { usePreviewSwapExactIn } from '../psm/usePreviewSwapExactIn';
-import {
-  isMainnetId,
-  isBaseChainId,
-  isArbitrumChainId,
-  isOptimismChainId,
-  isUnichainChainId
-} from '@/utils';
+import { isMainnetId, isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@/utils';
 
 export type MultiChainSavingsBalancesHook = ReadHook & {
   data?: Record<number, bigint>;

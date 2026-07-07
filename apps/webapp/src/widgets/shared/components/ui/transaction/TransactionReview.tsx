@@ -91,7 +91,7 @@ export function TransactionReview({
                         title="Bundle transactions"
                         description={
                           <>
-                            <Text className="text-[13px] text-white/60 light:text-textSecondary">
+                            <Text className="light:text-textSecondary text-[13px] text-white/60">
                               Bundled transactions are set &apos;on&apos; by default to complete transactions
                               in a single step. Combining actions improves the user experience and reduces gas
                               fees. Manually toggle off to cancel this feature.

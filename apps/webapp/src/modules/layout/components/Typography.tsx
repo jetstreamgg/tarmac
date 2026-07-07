@@ -59,14 +59,7 @@ export function Heading({ variant = 'medium', className, tag = 'h2', ...props }:
 }
 
 type TextVariant =
-  | 'large'
-  | 'medium'
-  | 'small'
-  | 'captionLg'
-  | 'captionSm'
-  | 'button'
-  | 'chartSecondary'
-  | 'terms';
+  'large' | 'medium' | 'small' | 'captionLg' | 'captionSm' | 'button' | 'chartSecondary' | 'terms';
 
 export interface TextProps {
   children: React.ReactNode;
@@ -83,7 +76,8 @@ const TEXT_VARIANTS: Record<TextVariant, string> = {
   captionLg: 'font-normal text-sm font-graphik',
   captionSm: 'font-normal text-xs font-graphik',
   button: 'text-error-red text-xs font-circle',
-  chartSecondary: 'text-[13px] font-normal leading-none text-selectActive light:text-textSecondary lg:hidden font-graphik',
+  chartSecondary:
+    'text-[13px] font-normal leading-none text-selectActive light:text-textSecondary lg:hidden font-graphik',
   terms: 'text-text text-[13px] font-graphik'
 };
 

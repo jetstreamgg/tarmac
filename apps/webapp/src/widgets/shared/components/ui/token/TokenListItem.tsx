@@ -82,7 +82,9 @@ export function TokenListItem({
               </div>
               <VStack className="h-9 items-start justify-between" gap={1}>
                 <Text className="text-text text-[13px] leading-none font-normal">{token.name}</Text>
-                <Text className="text-selectActive light:text-textSecondary text-xs leading-none font-normal">{token.symbol}</Text>
+                <Text className="text-selectActive light:text-textSecondary text-xs leading-none font-normal">
+                  {token.symbol}
+                </Text>
               </VStack>
             </HStack>
             <VStack className="h-9 items-end justify-between p-0">

@@ -2,10 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  ProductTransactionsTable,
-  ProductTransactionColumn
-} from './ProductTransactionsTable';
+import { ProductTransactionsTable, ProductTransactionColumn } from './ProductTransactionsTable';
 
 i18n.load('en', {});
 i18n.activate('en');
