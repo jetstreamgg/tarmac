@@ -58,6 +58,7 @@ import {
 } from '@/widgets/StakeModuleWidget/context/context';
 import { WidgetContext, WidgetProvider } from '@/widgets/context/WidgetContext';
 import { StakeFlow } from '@/widgets/StakeModuleWidget/lib/constants';
+import { getAddress } from 'viem';
 import { generateStakeCalldata, type GenerateStakeCalldataParams } from './useStakeCalldata';
 
 const OWNER = '0x000000000000000000000000000000000000beef' as `0x${string}`;
@@ -464,5 +465,197 @@ describe('generateStakeCalldata — MANAGE gating edge cases golden parity', () 
     expect(pure).toEqual(legacyOpenOutput(params));
     // open + lock only — no select* calls
     expect(pure).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combinatorial golden-master matrix (headline AC of this slice).
+//
+// The naive full cross-product of every dimension the ticket lists —
+//   flow(2) · skyToLock(2) · skyToFree(2) · usdsToBorrow(2) · usdsToWipe(2) ·
+//   wipeAll(2) · farm(4) · delegate(3) · claim(4) · restake(3) · referralCode(2)
+// — is 18,432 combinations. We do NOT enumerate all of them: the calldata
+// assembler (`context.tsx:296-408` / `generateStakeCalldata`) drops each
+// computed element into a FIXED slot of a static array and then
+// `.filter(Boolean)`s the whole thing, so the presence and encoding of any one
+// element are independent of every other (the sole cross-term is lock's restake
+// addend, covered by the restake dimension in Matrix B). Because of that
+// fixed-slot independence, the UNION of two orthogonal full-factorial
+// sub-matrices exercises every ordering + gating interaction the full product
+// would, deterministically and with no randomness:
+//
+//   Matrix A — every amount/wipeAll combination × flow (selections/claims/restake
+//              held empty): proves amount-derived ordering + wipe/wipeAll gating.
+//   Matrix B — every selection/claim/restake/referralCode combination × flow,
+//              with ALL amounts non-zero so selection/claim calldata is ordered
+//              against present amount calldata: proves gating + the full manage
+//              ordering (repay→free→claims→selectFarm→selectDelegate→lock→draw).
+//   Matrix C — wipeAll × usdsToWipe × selections spot-check: confirms the wipeAll
+//              front-slot is independent of the selection dimensions (the one
+//              amount×selection interaction Matrix B fixes amounts for).
+//
+// Cap: 64 + 576 + 48 = 688 cases (stated here per the AC). "Partial amounts +
+// partial selections" combos not enumerated are structurally guaranteed by the
+// per-element fixed-slot filtering above. Each case renders a FRESH legacy
+// provider (the proven `legacyOutput` path) so restake/gating state cannot bleed
+// between cases; `it.each` names each case with its serialized combo so a
+// failure points straight at the offending inputs.
+// ---------------------------------------------------------------------------
+
+type MatrixDim = {
+  tag: string;
+  over: Partial<GenerateStakeCalldataParams>;
+  flowEnum?: StakeFlow;
+};
+
+type MatrixCase = {
+  label: string;
+  params: GenerateStakeCalldataParams;
+  flowEnum: StakeFlow;
+};
+
+/**
+ * Deterministic cartesian product of named dimensions. Merges each dimension's
+ * `over` (later dims win) onto `base`, concatenates the `tag`s into a debuggable
+ * label, and carries the flow dimension's `flowEnum` through to drive the legacy
+ * oracle. No randomness — pure enumeration in declaration order.
+ */
+function product(dims: MatrixDim[][], base: Partial<GenerateStakeCalldataParams> = {}): MatrixCase[] {
+  let combos: MatrixDim[][] = [[]];
+  for (const dim of dims) {
+    combos = combos.flatMap(prefix => dim.map(d => [...prefix, d]));
+  }
+  return combos.map(combo => {
+    const over = combo.reduce<Partial<GenerateStakeCalldataParams>>((acc, d) => ({ ...acc, ...d.over }), {
+      ...base
+    });
+    const flowDim = combo.find(d => d.flowEnum !== undefined);
+    return {
+      label: combo.map(d => d.tag).join(' '),
+      params: scenario(over),
+      flowEnum: flowDim!.flowEnum!
+    };
+  });
+}
+
+const flowDim: MatrixDim[] = [
+  { tag: 'open', over: { flow: 'open', urnAddress: undefined }, flowEnum: StakeFlow.OPEN },
+  { tag: 'manage', over: { flow: 'manage', urnAddress: URN }, flowEnum: StakeFlow.MANAGE }
+];
+
+const skyToLockDim: MatrixDim[] = [
+  { tag: 'lock=0', over: { skyToLock: 0n } },
+  { tag: 'lock+', over: { skyToLock: 1_000_000n } }
+];
+const skyToFreeDim: MatrixDim[] = [
+  { tag: 'free=0', over: { skyToFree: 0n } },
+  { tag: 'free+', over: { skyToFree: 500_000n } }
+];
+const usdsToBorrowDim: MatrixDim[] = [
+  { tag: 'draw=0', over: { usdsToBorrow: 0n } },
+  { tag: 'draw+', over: { usdsToBorrow: 300_000n } }
+];
+const usdsToWipeDim: MatrixDim[] = [
+  { tag: 'wipe=0', over: { usdsToWipe: 0n } },
+  { tag: 'wipe+', over: { usdsToWipe: 100_000n } }
+];
+const wipeAllDim: MatrixDim[] = [
+  { tag: 'wipeAll=false', over: { wipeAll: false } },
+  { tag: 'wipeAll=true', over: { wipeAll: true } }
+];
+
+// Selection dimensions read against a fixed urn baseline (FARM_LC / DELEGATE_LC).
+// 'same' uses the EIP-55 checksummed (mixed-case) form of the baseline so the
+// case-insensitive gating compare is exercised while the address stays encodable
+// by viem when it IS emitted (OPEN flow) — an all-uppercase variant like FARM_UC
+// fails viem's checksum validation the moment `selectFarm` gets encoded. In OPEN
+// flow the urn baseline is ignored by the predicates (they short-circuit on
+// `!urnAddress`), so these still cover the open-flow gating branch.
+const FARM_SAME = getAddress(FARM_LC); // mixed-case, case-insensitively === FARM_LC
+const DELEGATE_SAME = getAddress(DELEGATE_LC);
+const farmDim: MatrixDim[] = [
+  { tag: 'farm:unset', over: { selectedRewardContract: undefined } },
+  { tag: 'farm:same', over: { selectedRewardContract: FARM_SAME } },
+  { tag: 'farm:diff', over: { selectedRewardContract: FARM2 } },
+  { tag: 'farm:zero', over: { selectedRewardContract: ZERO_ADDRESS } }
+];
+const delegateDim: MatrixDim[] = [
+  { tag: 'del:unset', over: { selectedDelegate: undefined } },
+  { tag: 'del:same', over: { selectedDelegate: DELEGATE_SAME } },
+  { tag: 'del:diff', over: { selectedDelegate: DELEGATE2 } }
+];
+const claimDim: MatrixDim[] = [
+  { tag: 'claim:undef', over: { rewardContractsToClaim: undefined } },
+  { tag: 'claim:empty', over: { rewardContractsToClaim: [] } },
+  { tag: 'claim:one', over: { rewardContractsToClaim: [REWARD_A] } },
+  { tag: 'claim:two', over: { rewardContractsToClaim: [REWARD_A, REWARD_B] } }
+];
+// restake:on0 → the legacy effect resets restakeSkyRewards to false (claimBalance
+// 0n); the pure function keeps the flag but adds 0n — both must agree on lock.
+const restakeDim: MatrixDim[] = [
+  { tag: 'restake:off', over: { restakeSkyRewards: false, restakeSkyAmount: 0n } },
+  { tag: 'restake:on+', over: { restakeSkyRewards: true, restakeSkyAmount: 250_000n } },
+  { tag: 'restake:on0', over: { restakeSkyRewards: true, restakeSkyAmount: 0n } }
+];
+const refcodeDim: MatrixDim[] = [
+  { tag: 'ref:0', over: { referralCode: 0 } },
+  { tag: 'ref:12345', over: { referralCode: 12345 } }
+];
+
+// Matrix A — full factorial of the five amount/wipeAll dimensions × flow (64).
+const matrixA = product([flowDim, skyToLockDim, skyToFreeDim, usdsToBorrowDim, usdsToWipeDim, wipeAllDim]);
+
+// Matrix B — full factorial of selection/claim/restake/referralCode × flow (576),
+// with every amount non-zero so selection/claim calldata is ordered against
+// present repay/free/lock/draw calldata.
+const matrixB = product([flowDim, farmDim, delegateDim, claimDim, restakeDim, refcodeDim], {
+  skyToLock: 1_000_000n,
+  skyToFree: 200_000n,
+  usdsToBorrow: 400_000n,
+  usdsToWipe: 100_000n,
+  wipeAll: false,
+  urnSelectedRewardContract: FARM_LC,
+  urnSelectedVoteDelegate: DELEGATE_LC
+});
+
+// Matrix C — wipeAll × usdsToWipe × selections × flow (48): wipeAll fixed true,
+// confirming the wipeAll front-slot and the wipe-suppression-under-wipeAll are
+// independent of the selection dimensions.
+const matrixC = product([flowDim, usdsToWipeDim, farmDim, delegateDim], {
+  skyToLock: 1_000_000n,
+  skyToFree: 200_000n,
+  usdsToBorrow: 400_000n,
+  wipeAll: true,
+  urnSelectedRewardContract: FARM_LC,
+  urnSelectedVoteDelegate: DELEGATE_LC
+});
+
+describe('generateStakeCalldata — Matrix A: amounts × flow (full factorial)', () => {
+  it.each(matrixA)('$label', ({ params, flowEnum }) => {
+    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
+  });
+});
+
+describe('generateStakeCalldata — Matrix B: selections/claims/restake/referralCode × flow', () => {
+  it.each(matrixB)('$label', ({ params, flowEnum }) => {
+    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
+  });
+});
+
+describe('generateStakeCalldata — Matrix C: wipeAll × usdsToWipe × selections × flow', () => {
+  it.each(matrixC)('$label', ({ params, flowEnum }) => {
+    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
+  });
+});
+
+describe('generateStakeCalldata — matrix cardinality guard', () => {
+  it('enumerates the stated 688-case cap (64 + 576 + 48) deterministically', () => {
+    expect(matrixA).toHaveLength(64);
+    expect(matrixB).toHaveLength(576);
+    expect(matrixC).toHaveLength(48);
+    // Labels are unique per matrix — the serialized combo is a stable case id.
+    expect(new Set(matrixA.map(c => c.label)).size).toBe(matrixA.length);
+    expect(new Set(matrixB.map(c => c.label)).size).toBe(matrixB.length);
+    expect(new Set(matrixC.map(c => c.label)).size).toBe(matrixC.length);
   });
 });
