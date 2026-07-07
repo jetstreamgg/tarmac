@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   launchMock: vi.fn(),
   updateMock: vi.fn(),
   isModalOpen: false,
+  txStatus: 'idle',
   txCallbacks: {
     onMutate: vi.fn(),
     onStart: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
     launch: h.launchMock,
     updateModalContent: h.updateMock,
     isModalOpen: h.isModalOpen,
+    txStatus: h.txStatus,
     txCallbacks: h.txCallbacks
   })
 }));
@@ -189,5 +191,16 @@ describe('useConvertLaunch', () => {
     const [sessionId, partial] = h.updateMock.mock.calls.at(-1)!;
     expect(typeof sessionId).toBe('string');
     expect(partial).toMatchObject({ confirmDisabled: false, steps: ['Convert USDS to USDC'] });
+  });
+
+  it('freezes modal content once the transaction leaves the review screen', () => {
+    // Post-confirm, the page resets the form (amount → 0); pushing that state
+    // would blank the executed amounts on the wallet/status screens.
+    h.isModalOpen = true;
+    h.txStatus = 'success';
+    renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: 0n }));
+
+    expect(h.updateMock).not.toHaveBeenCalled();
+    h.txStatus = 'idle';
   });
 });

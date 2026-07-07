@@ -3,6 +3,7 @@ import { formatUnits } from 'viem';
 import { useChainId, useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
+import { TxStatus } from '@/widgets';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
@@ -48,7 +49,7 @@ export function useConvertLaunch({
   amount,
   onSuccess
 }: UseConvertLaunchParams): UseConvertLaunchResult {
-  const { launch: launchModal, updateModalContent, isModalOpen, txCallbacks } = useTransaction();
+  const { launch: launchModal, updateModalContent, isModalOpen, txCallbacks, txStatus } = useTransaction();
   // Per-instance id so the provider ignores live updates from stale launches.
   const sessionId = useId();
   const chainId = useChainId();
@@ -172,13 +173,17 @@ export function useConvertLaunch({
     originDecimals
   ]);
 
-  // Keep the open modal's gating + preview live (amounts can't change mid-review —
-  // the form sits under the overlay — but prepared/allowance state can).
+  // Keep the open modal's gating + preview live while it still sits on the
+  // review screen (amounts can't change mid-review — the form is under the
+  // overlay — but prepared/allowance state can). Once Confirm fires the content
+  // freezes: the post-success form reset must not blank the executed amounts
+  // on the wallet/status screens.
   useEffect(() => {
-    if (!isModalOpen) return;
+    if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, { transactionContent, transactionScreenContent, confirmDisabled, steps });
   }, [
     isModalOpen,
+    txStatus,
     sessionId,
     updateModalContent,
     transactionContent,
