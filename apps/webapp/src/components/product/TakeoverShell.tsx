@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 export function TakeoverShell({
   title,
   badge,
+  onBack,
   onClose,
   footer,
   children,
@@ -19,6 +20,8 @@ export function TakeoverShell({
 }: {
   title: ReactNode;
   badge?: ReactNode;
+  /** Optional back control before the title (UX B.3 "Back + ×" chrome). */
+  onBack?: () => void;
   onClose: () => void;
   footer?: ReactNode;
   children: ReactNode;
@@ -50,6 +53,18 @@ export function TakeoverShell({
     >
       <div className="flex items-center justify-between gap-4 px-8 py-6 lg:px-16">
         <div className="flex items-center gap-3">
+          {onBack && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBack}
+              aria-label="Back"
+              data-testid={`${dataTestId}-back`}
+              className="bg-surfaceAlt h-9 w-9 rounded-full"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
           <h2 className="text-text text-lg font-medium">{title}</h2>
           {badge && (
             <span className="bg-surfaceAlt text-textSecondary flex h-6 items-center gap-1 rounded-full px-2 text-xs font-medium">

@@ -16,14 +16,17 @@ const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.
 /**
  * The card body — search + single-select list. Lives in its own component so
  * the subgraph fetch only runs while the card is enabled (the card shell only
- * mounts children when open).
+ * mounts children when open). Exported for the F5 manage sheet's Change
+ * delegate card, which shares the exact list under its own testid prefix.
  */
-function DelegateList({
+export function DelegateList({
   selectedDelegate,
-  onSelect
+  onSelect,
+  dataTestIdPrefix = 'stake-takeover-delegate'
 }: {
   selectedDelegate: `0x${string}` | undefined;
   onSelect: (delegate: `0x${string}`) => void;
+  dataTestIdPrefix?: string;
 }) {
   const { address } = useConnection();
   const chainId = useChainId();
@@ -51,7 +54,7 @@ function DelegateList({
           value={search}
           placeholder={t`Search`}
           onChange={event => setSearch(event.target.value)}
-          data-testid="stake-takeover-delegate-search"
+          data-testid={`${dataTestIdPrefix}-search`}
           className="text-text placeholder:text-textSecondary w-full bg-transparent text-sm outline-none"
         />
       </div>
@@ -69,7 +72,7 @@ function DelegateList({
       ) : (
         <ul
           className="flex max-h-96 flex-col gap-2 overflow-y-auto"
-          data-testid="stake-takeover-delegate-list"
+          data-testid={`${dataTestIdPrefix}-list`}
         >
           {delegates.map(delegate => {
             const isSelected = selectedDelegate?.toLowerCase() === delegate.id.toLowerCase();
@@ -78,7 +81,7 @@ function DelegateList({
                 <button
                   type="button"
                   onClick={() => onSelect(delegate.id)}
-                  data-testid={`stake-takeover-delegate-${delegate.id.toLowerCase()}`}
+                  data-testid={`${dataTestIdPrefix}-${delegate.id.toLowerCase()}`}
                   aria-pressed={isSelected}
                   className={cn(
                     'bg-surfaceAlt/40 flex w-full items-center justify-between gap-4 rounded-xl border border-transparent p-4 text-left transition-colors',

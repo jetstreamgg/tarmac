@@ -16,6 +16,7 @@ export function StakeTakeoverAmountField({
   tokenSymbol,
   amount,
   onAmountChange,
+  label,
   topRight,
   onPercentClick,
   disabled = false,
@@ -25,6 +26,8 @@ export function StakeTakeoverAmountField({
   tokenSymbol: string;
   amount: bigint;
   onAmountChange: (amount: bigint) => void;
+  /** Field label; defaults to the takeover's plain "Amount". The manage sheet passes mode-specific labels ("Withdraw amount" …). */
+  label?: ReactNode;
   topRight?: ReactNode;
   onPercentClick?: (percent: number) => void;
   disabled?: boolean;
@@ -45,9 +48,7 @@ export function StakeTakeoverAmountField({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
-        <span className="text-textSecondary text-sm">
-          <Trans>Amount</Trans>
-        </span>
+        <span className="text-textSecondary text-sm">{label ?? <Trans>Amount</Trans>}</span>
         {topRight && <span className="text-textSecondary text-sm">{topRight}</span>}
       </div>
       <div className="flex items-center justify-between gap-4">

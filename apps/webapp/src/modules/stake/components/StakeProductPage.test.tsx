@@ -65,6 +65,11 @@ vi.mock('./OpenPositionTakeover', () => ({
   OpenPositionTakeover: () => <div data-testid="stake-takeover-stub" />
 }));
 
+// Likewise the F5 manage flow (PositionManageFlow.test.tsx owns its behavior).
+vi.mock('./PositionManageFlow', () => ({
+  PositionManageFlow: () => <div data-testid="stake-manage-flow-stub" />
+}));
+
 import { StakeProductPage } from './StakeProductPage';
 
 const renderPage = () =>
@@ -152,11 +157,17 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(screen.getByTestId('stake-takeover-stub')).toBeTruthy();
   });
 
-  it('keeps the takeover unmounted for other flow values (manage is F5)', () => {
+  it('mounts the manage flow only on flow=manage — never the open takeover', () => {
     mockSearchParams = new URLSearchParams('flow=manage&urn_index=0');
     renderPage();
 
     expect(screen.queryByTestId('stake-takeover-stub')).toBeNull();
+    expect(screen.getByTestId('stake-manage-flow-stub')).toBeTruthy();
+    cleanup();
+
+    mockSearchParams = new URLSearchParams('flow=open');
+    renderPage();
+    expect(screen.queryByTestId('stake-manage-flow-stub')).toBeNull();
   });
 
   it('scopes the network selector to the stake product networks', () => {
