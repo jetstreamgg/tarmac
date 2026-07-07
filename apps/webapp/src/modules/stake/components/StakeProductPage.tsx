@@ -10,6 +10,7 @@ import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RING_DEFAULT } from '@/components/product/productVisuals';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { StakeStatisticsTab } from './StakeStatisticsTab';
 
 // URL tab contract for the Stake destination page: `?tab=` selects the visible
 // tab; `positions` is the default and the fallback for any unknown value.
@@ -83,7 +84,9 @@ export function StakeProductPage() {
         </TabsList>
 
         <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-6" />
-        <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-6" />
+        <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-6">
+          <StakeStatisticsTab />
+        </TabsContent>
         <TabsContent value="about" data-testid="stake-tab-content-about" className="mt-6" />
       </Tabs>
     </div>

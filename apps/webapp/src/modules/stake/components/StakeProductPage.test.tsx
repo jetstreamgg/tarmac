@@ -42,6 +42,13 @@ vi.mock('@/modules/ui/components/ChainModal', () => ({
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
+// The Statistics tab body is hook-driven (useQuery/wagmi reads); Radix keeps
+// every panel mounted, so stub it to keep this shell test scoped to tab/param
+// behavior rather than standing up query/wallet providers.
+vi.mock('./StakeStatisticsTab', () => ({
+  StakeStatisticsTab: () => <div data-testid="stake-statistics-tab-stub" />
+}));
+
 import { StakeProductPage } from './StakeProductPage';
 
 const renderPage = () =>
