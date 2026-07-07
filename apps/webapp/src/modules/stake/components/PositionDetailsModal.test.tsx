@@ -58,12 +58,13 @@ function renderModal(overrides: Partial<StakePositionDetail> = {}, props: Record
   h.detail = { ...baseDetail, ...overrides };
   const onClose = vi.fn();
   const onAction = vi.fn();
+  const onClaim = vi.fn();
   render(
     <I18nProvider i18n={i18n}>
-      <PositionDetailsModal urnIndex={0} onClose={onClose} onAction={onAction} {...props} />
+      <PositionDetailsModal urnIndex={0} onClose={onClose} onAction={onAction} onClaim={onClaim} {...props} />
     </I18nProvider>
   );
-  return { onClose, onAction };
+  return { onClose, onAction, onClaim };
 }
 
 describe('PositionDetailsModal', () => {
@@ -135,11 +136,7 @@ describe('PositionDetailsModal', () => {
   it('keeps the undesigned flows disabled (M4: flagged, not improvised)', () => {
     const { onAction } = renderModal();
 
-    for (const testid of [
-      'stake-manage-menu-claim',
-      'stake-manage-menu-change-reward',
-      'stake-manage-menu-close-position'
-    ]) {
+    for (const testid of ['stake-manage-menu-change-reward', 'stake-manage-menu-close-position']) {
       const row = screen.getByTestId(testid) as HTMLButtonElement;
       expect(row.disabled).toBe(true);
       fireEvent.click(row);
@@ -147,9 +144,23 @@ describe('PositionDetailsModal', () => {
     expect(onAction).not.toHaveBeenCalled();
   });
 
-  it('shows the live claimable chip on the disabled claim row', () => {
-    renderModal();
-    expect(screen.getByTestId('stake-manage-menu-claim').textContent).toContain('10.9 SKY');
+  it('opens the claim modal from the live claim row with its claimable chip (F6)', () => {
+    const { onClaim } = renderModal();
+
+    const row = screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement;
+    expect(row.textContent).toContain('10.9 SKY');
+    expect(row.disabled).toBe(false);
+    fireEvent.click(row);
+    expect(onClaim).toHaveBeenCalled();
+  });
+
+  it('disables the claim row while nothing is claimable or the read is loading', () => {
+    renderModal({ claimableTokenAmount: 0n });
+    expect((screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+
+    renderModal({ claimableLoading: true });
+    expect((screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('closes through the close button', () => {

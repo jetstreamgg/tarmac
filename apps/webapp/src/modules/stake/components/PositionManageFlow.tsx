@@ -4,6 +4,7 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
 import { PositionDetailsModal, StakeManageAction } from './PositionDetailsModal';
 import { ManagePositionTakeover } from './ManagePositionTakeover';
+import { StakeClaimModal } from './StakeClaimModal';
 
 /** Menu action → sheet pre-toggle mapping (UX B.3 deep links). */
 export function manageActionInit(action: StakeManageAction): StakeManageFlowInit {
@@ -37,13 +38,18 @@ function parseUrnIndex(value: string | null): number | null {
   return Number(value);
 }
 
-type ManageView = { name: 'details' } | { name: 'sheet'; init: StakeManageFlowInit };
+type ManageView =
+  | { name: 'details' }
+  | { name: 'sheet'; init: StakeManageFlowInit }
+  | { name: 'claim' };
 
 /**
- * The F5 manage-flow controller, mounted on `flow=manage&urn_index=N` (M1):
+ * The manage-flow controller, mounted on `flow=manage&urn_index=N` (M1):
  * details modal first; menu rows/CTAs swap to the "Manage a position" sheet
- * with cards pre-toggled; Back returns to the modal; × clears the flow params.
- * A `stake_tab` param (legacy deep-link contract) opens the sheet directly.
+ * with cards pre-toggled; the Claim row swaps to the claim-rewards modal (F6),
+ * whose × returns to the details modal; Back returns to the modal; × clears
+ * the flow params. A `stake_tab` param (legacy deep-link contract) opens the
+ * sheet directly.
  */
 export function PositionManageFlow() {
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -70,12 +76,17 @@ export function PositionManageFlow() {
     (action: StakeManageAction) => setView({ name: 'sheet', init: manageActionInit(action) }),
     []
   );
+  const onClaim = useCallback(() => setView({ name: 'claim' }), []);
   const onBack = useCallback(() => setView({ name: 'details' }), []);
 
   if (urnIndex === null) return null;
 
+  if (view.name === 'claim') {
+    return <StakeClaimModal urnIndex={urnIndex} onClose={onBack} />;
+  }
+
   return view.name === 'details' ? (
-    <PositionDetailsModal urnIndex={urnIndex} onClose={close} onAction={onAction} />
+    <PositionDetailsModal urnIndex={urnIndex} onClose={close} onAction={onAction} onClaim={onClaim} />
   ) : (
     <ManagePositionTakeover urnIndex={urnIndex} init={view.init} onBack={onBack} onClose={close} />
   );

@@ -162,11 +162,14 @@ function MenuRow({
 export function PositionDetailsModal({
   urnIndex,
   onClose,
-  onAction
+  onAction,
+  onClaim
 }: {
   urnIndex: number;
   onClose: () => void;
   onAction: (action: StakeManageAction) => void;
+  /** Opens the claim-rewards modal (F6) — row enabled while something is claimable. */
+  onClaim: () => void;
 }) {
   const detail = useStakePositionDetail(urnIndex);
   const { vault, hasDebt } = detail;
@@ -366,11 +369,11 @@ export function PositionDetailsModal({
               <Trans>Manage position</Trans>
             </h3>
 
-            {/* Claim flow lands at F6 — live chip, disabled row (M4). */}
             <MenuRow
               icon={<Gem className="h-4 w-4" />}
               label={<Trans>Claim rewards</Trans>}
-              disabled
+              disabled={detail.claimableLoading || detail.claimableTokenAmount === 0n}
+              onClick={onClaim}
               dataTestId="stake-manage-menu-claim"
               chip={
                 detail.claimableTokenAmount > 0n ? (

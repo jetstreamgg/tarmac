@@ -7,7 +7,6 @@ import {
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
   usePrices,
-  useRewardContractsToClaim,
   useRewardContractTokens,
   useSkyPrice,
   useStakeHistory,
@@ -19,6 +18,7 @@ import {
   ZERO_ADDRESS
 } from '@/hooks';
 import { calculateClaimedRewardsUsd } from '../lib/positionDetail';
+import { useStakeUrnClaimables } from './useStakeUrnClaimables';
 
 export interface StakePositionDetail {
   urnAddress: `0x${string}` | undefined;
@@ -79,22 +79,19 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
       ? (skyLocked * BigInt(Math.round(rewardsRate * 1_000_000_000))) / 1_000_000_000n
       : null;
 
-  // Claimable rewards for THIS urn (the F3 table-cell convention).
-  const { data: toClaim, isLoading: claimableLoading } = useRewardContractsToClaim({
-    rewardContractAddresses: rewardContract && rewardContract !== ZERO_ADDRESS ? [rewardContract] : [],
-    addresses: urnAddress ? [urnAddress] : [],
-    chainId,
-    enabled: Boolean(urnAddress && rewardContract && rewardContract !== ZERO_ADDRESS)
-  });
+  // Claimable rewards for THIS urn across ALL stake reward contracts — the
+  // legacy PositionDetail read (C12): residual claimables from a previous farm
+  // must surface here and in the claim modal alike. SKY-first order.
+  const { claimables, isLoading: claimableLoading } = useStakeUrnClaimables(BigInt(urnIndex));
   const { data: prices } = usePrices();
   const priceOf = useCallback((symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'), [prices]);
-  const claimableUsd = (toClaim ?? []).reduce(
+  const claimableUsd = claimables.reduce(
     (total, reward) => total + Number(formatUnits(reward.claimBalance, 18)) * priceOf(reward.rewardSymbol),
     0
   );
   const claimableSymbols =
-    toClaim && toClaim.length > 0 ? [...new Set(toClaim.map(reward => reward.rewardSymbol))] : ['SKY'];
-  const claimableTokenAmount = (toClaim ?? []).reduce((total, reward) => total + reward.claimBalance, 0n);
+    claimables.length > 0 ? [...new Set(claimables.map(reward => reward.rewardSymbol))] : ['SKY'];
+  const claimableTokenAmount = claimables.reduce((total, reward) => total + reward.claimBalance, 0n);
 
   // Rewards earned = claimed events of THIS urn + still claimable (F3 convention,
   // urn-scoped through the subgraph index filter).

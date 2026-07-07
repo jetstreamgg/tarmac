@@ -4,7 +4,8 @@ import type { SetSearchParams } from '@/lib/navigation';
 
 const h = vi.hoisted(() => ({
   modalProps: undefined as Record<string, unknown> | undefined,
-  sheetProps: undefined as Record<string, unknown> | undefined
+  sheetProps: undefined as Record<string, unknown> | undefined,
+  claimProps: undefined as Record<string, unknown> | undefined
 }));
 
 let mockSearchParams = new URLSearchParams();
@@ -35,6 +36,13 @@ vi.mock('./ManagePositionTakeover', () => ({
   }
 }));
 
+vi.mock('./StakeClaimModal', () => ({
+  StakeClaimModal: (props: Record<string, unknown>) => {
+    h.claimProps = props;
+    return <div data-testid="claim-modal-stub" />;
+  }
+}));
+
 import { PositionManageFlow, manageActionInit, stakeTabInit } from './PositionManageFlow';
 
 describe('manageActionInit', () => {
@@ -62,6 +70,7 @@ describe('PositionManageFlow', () => {
     setSearchParamsMock.mockClear();
     h.modalProps = undefined;
     h.sheetProps = undefined;
+    h.claimProps = undefined;
   });
   afterEach(cleanup);
 
@@ -90,6 +99,19 @@ describe('PositionManageFlow', () => {
 
     act(() => (h.sheetProps!.onBack as () => void)());
     expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+  });
+
+  it('swaps to the claim modal and its × returns to the details modal (F6/C11)', () => {
+    render(<PositionManageFlow />);
+
+    act(() => (h.modalProps!.onClaim as () => void)());
+    expect(screen.getByTestId('claim-modal-stub')).toBeTruthy();
+    expect(h.claimProps?.urnIndex).toBe(2);
+
+    act(() => (h.claimProps!.onClose as () => void)());
+    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    // The flow params stay staged — only a successful claim clears them.
+    expect(mockSearchParams.get('flow')).toBe('manage');
   });
 
   it('opens the sheet directly on a stake_tab deep link', () => {
