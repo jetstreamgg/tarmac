@@ -54,6 +54,11 @@ vi.mock('./StakeAboutTab', () => ({
   StakeAboutTab: () => <div data-testid="stake-about-tab-stub" />
 }));
 
+// And for the My positions tab body (subgraph + per-urn reads).
+vi.mock('./StakePositionsTab', () => ({
+  StakePositionsTab: () => <div data-testid="stake-positions-tab-stub" />
+}));
+
 import { StakeProductPage } from './StakeProductPage';
 
 const renderPage = () =>

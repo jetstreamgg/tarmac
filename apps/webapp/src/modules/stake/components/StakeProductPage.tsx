@@ -10,6 +10,7 @@ import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RING_DEFAULT } from '@/components/product/productVisuals';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { StakePositionsTab } from './StakePositionsTab';
 import { StakeStatisticsTab } from './StakeStatisticsTab';
 import { StakeAboutTab } from './StakeAboutTab';
 
@@ -24,10 +25,9 @@ function parseStakeTab(value: string | null): StakeTab {
 }
 
 /**
- * Stake destination page shell (F2): SKY-branded header + the three-tab strip
+ * Stake destination page: SKY-branded header + the three-tab strip
  * (My positions / Statistics / About) synced to `?tab=`. Stake is a destination,
  * not a ProductDetailTemplate consumer — the tabs compose L1 pieces directly.
- * Tab bodies are placeholders here; later slices fill Statistics/About/positions.
  */
 export function StakeProductPage() {
   const chains = useChains();
@@ -96,7 +96,9 @@ export function StakeProductPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-6" />
+        <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-6">
+          <StakePositionsTab />
+        </TabsContent>
         <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-6">
           <StakeStatisticsTab />
         </TabsContent>
