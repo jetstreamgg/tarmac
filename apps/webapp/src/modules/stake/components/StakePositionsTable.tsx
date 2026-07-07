@@ -13,7 +13,8 @@ import {
   RiskLevel,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatUsd } from '@/utils';
+import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -31,10 +32,11 @@ import { StakeUserPosition, isInactiveStakePosition } from '../hooks/useStakeUse
 // Mini liquidation-risk meter (hi-fi 486:32084): a bordered pill of three
 // segments; more (and warmer) lit segments = closer to liquidation. Rows with
 // no debt show the meter unlit. Palette mirrors StakeDetailsStrip's risk scale.
+// (Colors follow the legacy risk convention: green/orange-400/red.)
 const RISK_SEGMENTS: Record<RiskLevel, { lit: number; color: string }> = {
   [RiskLevel.LOW]: { lit: 1, color: 'bg-bullish' },
-  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-bullish/50' },
-  [RiskLevel.HIGH]: { lit: 3, color: 'bg-error/60' },
+  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-orange-400' },
+  [RiskLevel.HIGH]: { lit: 3, color: 'bg-error' },
   [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-error' }
 };
 
@@ -95,13 +97,7 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
       {formatUsd(usdValue)}
       <span className="flex items-center -space-x-1">
         {symbols.map(symbol => (
-          <TokenIcon
-            key={symbol}
-            token={{ symbol }}
-            width={16}
-            className="h-4 w-4"
-            showChainIcon={false}
-          />
+          <TokenIcon key={symbol} token={{ symbol }} width={16} className="h-4 w-4" showChainIcon={false} />
         ))}
       </span>
     </span>
@@ -139,7 +135,7 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     cell: position => (
       <TxAmountCell
         icon={<TokenIcon token={{ symbol: 'SKY' }} width={20} className="h-5 w-5" showChainIcon={false} />}
-        amount={formatBigInt(position.skyLocked)}
+        amount={formatStakeAmount(position.skyLocked)}
       />
     )
   },
@@ -150,7 +146,7 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     cell: position => (
       <TxAmountCell
         icon={<TokenIcon token={{ symbol: 'USDS' }} width={20} className="h-5 w-5" showChainIcon={false} />}
-        amount={formatBigInt(position.usdsDebt)}
+        amount={formatStakeAmount(position.usdsDebt)}
       />
     )
   },
@@ -261,5 +257,3 @@ export function StakePositionsTable({
     </div>
   );
 }
-
-export { NO_VALUE as STAKE_NO_VALUE };

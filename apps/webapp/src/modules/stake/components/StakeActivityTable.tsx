@@ -5,7 +5,8 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { TransactionTypeEnum, useSkyPrice, useStakeHistory } from '@/hooks';
-import { formatAddress, formatBigInt, formatUsd, getEtherscanLink } from '@/utils';
+import { formatAddress, formatUsd, getEtherscanLink } from '@/utils';
+import { formatStakeAmount } from '../lib/formatStakeAmount';
 import {
   SavingsSupply,
   ArrowDown,
@@ -98,9 +99,7 @@ export function groupStakeActivity(history: readonly StakeActivityInput[] | unde
   }
 
   const sumAmounts = (items: StakeActivityInput[], ...types: TransactionTypeEnum[]) =>
-    items
-      .filter(item => types.includes(item.type))
-      .reduce((total, item) => total + (item.amount ?? 0n), 0n);
+    items.filter(item => types.includes(item.type)).reduce((total, item) => total + (item.amount ?? 0n), 0n);
 
   return Array.from(byHash.entries())
     .map(([transactionHash, items]) => {
@@ -213,8 +212,10 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
     cell: row => (
       <TxAmountCell
         icon={<TokenIcon token={{ symbol: 'SKY' }} width={20} className="h-5 w-5" showChainIcon={false} />}
-        amount={formatBigInt(row.skyAmount)}
-        usd={row.skyPrice !== null ? formatUsd(Number(formatUnits(row.skyAmount, 18)) * row.skyPrice) : undefined}
+        amount={formatStakeAmount(row.skyAmount)}
+        usd={
+          row.skyPrice !== null ? formatUsd(Number(formatUnits(row.skyAmount, 18)) * row.skyPrice) : undefined
+        }
       />
     )
   },
@@ -225,7 +226,7 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
     cell: row => (
       <TxAmountCell
         icon={<TokenIcon token={{ symbol: 'USDS' }} width={20} className="h-5 w-5" showChainIcon={false} />}
-        amount={formatBigInt(row.usdsAmount)}
+        amount={formatStakeAmount(row.usdsAmount)}
         usd={formatUsd(Number(formatUnits(row.usdsAmount, 18)))}
       />
     )
@@ -285,7 +286,12 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
-              <SelectItem value="all" hideIndicator data-testid="stake-activity-filter-all" className={itemClasses}>
+              <SelectItem
+                value="all"
+                hideIndicator
+                data-testid="stake-activity-filter-all"
+                className={itemClasses}
+              >
                 <Trans>All positions</Trans>
               </SelectItem>
               {(positions ?? []).map(position => (

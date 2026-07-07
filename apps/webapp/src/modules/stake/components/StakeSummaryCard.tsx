@@ -69,12 +69,15 @@ function rewardContractSymbols(chainId: number): Record<string, string> {
 function SummaryStat({
   label,
   icon,
+  iconFirst = false,
   isLoading,
   dataTestId,
   children
 }: {
   label: ReactNode;
   icon?: ReactNode;
+  /** Hi-fi places the token icon before some values (Total borrowed) and after others. */
+  iconFirst?: boolean;
   isLoading?: boolean;
   dataTestId?: string;
   children: ReactNode;
@@ -86,8 +89,9 @@ function SummaryStat({
         <Skeleton className="h-5 w-20" />
       ) : (
         <span data-testid={dataTestId} className="text-text flex items-center gap-1.5 font-medium">
+          {iconFirst && icon}
           {children}
-          {icon}
+          {!iconFirst && icon}
         </span>
       )}
     </div>
@@ -136,10 +140,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
     enabled: Boolean(urnAddresses?.length && rewardContracts?.length)
   });
   const { data: prices } = usePrices();
-  const priceOf = useCallback(
-    (symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'),
-    [prices]
-  );
+  const priceOf = useCallback((symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'), [prices]);
   const claimableUsd = (toClaim ?? []).reduce(
     (total, reward) => total + Number(formatUnits(reward.claimBalance, 18)) * priceOf(reward.rewardSymbol),
     0
@@ -209,15 +210,24 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
       </div>
 
       <div className="border-textSecondary/10 grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-5">
-        <SummaryStat label={<Trans>Claimable rewards</Trans>} isLoading={claimableLoading}>
+        <SummaryStat
+          label={<Trans>Claimable rewards</Trans>}
+          isLoading={claimableLoading}
+          icon={<TokenIcon token={{ symbol: 'SKY' }} width={16} className="h-4 w-4" showChainIcon={false} />}
+        >
           {formatUsd(claimableUsd)}
         </SummaryStat>
-        <SummaryStat label={<Trans>Total rewards earned</Trans>} isLoading={claimableLoading || historyLoading}>
+        <SummaryStat
+          label={<Trans>Total rewards earned</Trans>}
+          isLoading={claimableLoading || historyLoading}
+          icon={<TokenIcon token={{ symbol: 'SKY' }} width={16} className="h-4 w-4" showChainIcon={false} />}
+        >
           {formatUsd(rewardsEarnedUsd)}
         </SummaryStat>
         <SummaryStat
           label={<Trans>Total borrowed</Trans>}
           icon={<TokenIcon token={{ symbol: 'USDS' }} width={16} className="h-4 w-4" showChainIcon={false} />}
+          iconFirst
         >
           {formatUsd(totalBorrowedUsd)}
         </SummaryStat>
