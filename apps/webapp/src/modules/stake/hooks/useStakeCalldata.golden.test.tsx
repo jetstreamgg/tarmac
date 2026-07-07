@@ -16,8 +16,7 @@ const mockState = vi.hoisted(() => ({
   urnSelectedReward: undefined as `0x${string}` | undefined,
   urnSelectedDelegate: undefined as `0x${string}` | undefined,
   rewardClaims: undefined as
-    | Array<{ contractAddress: `0x${string}`; claimBalance: bigint; rewardSymbol: string }>
-    | undefined,
+    Array<{ contractAddress: `0x${string}`; claimBalance: bigint; rewardSymbol: string }> | undefined,
   rewardContracts: undefined as Array<{ contractAddress: `0x${string}` }> | undefined
 }));
 
