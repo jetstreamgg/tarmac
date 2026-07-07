@@ -20,9 +20,10 @@ describe('parseAmountText', () => {
 });
 
 describe('formatAmountForInput', () => {
-  it('renders the exact amount without losing precision, empty for zero', () => {
+  it('renders the exact amount with thousands grouping, empty for zero', () => {
     expect(formatAmountForInput(0n)).toBe('');
-    expect(formatAmountForInput(parseUnits('100000', 18))).toBe('100000');
+    expect(formatAmountForInput(parseUnits('100000', 18))).toBe('100,000');
+    expect(formatAmountForInput(parseUnits('1250000', 18))).toBe('1,250,000');
     expect(formatAmountForInput(parseUnits('4.341234', 18))).toBe('4.341234');
   });
 

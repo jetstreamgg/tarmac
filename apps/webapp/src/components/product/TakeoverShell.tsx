@@ -43,7 +43,10 @@ export function TakeoverShell({
       role="dialog"
       aria-modal="true"
       data-testid={dataTestId}
-      className="bg-background fixed inset-0 z-40 flex flex-col"
+      // Same page-background recipe as the shell surface (shellLayoutClasses):
+      // `bg-background` is undefined in the dark scope (known token gap) and
+      // would leave the overlay transparent.
+      className="bg-app-background light:bg-blend-normal fixed inset-0 z-40 flex flex-col [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity"
     >
       <div className="flex items-center justify-between gap-4 px-8 py-6 lg:px-16">
         <div className="flex items-center gap-3">

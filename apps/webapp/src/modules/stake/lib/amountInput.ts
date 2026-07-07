@@ -20,10 +20,14 @@ export function parseAmountText(text: string): bigint {
 
 /**
  * Exact, re-parseable input text for a programmatic amount (percent chips,
- * slider): trailing zeros trimmed, zero renders as empty (placeholder shows).
+ * slider): thousands grouped per the hi-fi, trailing zeros trimmed, zero
+ * renders as empty (placeholder shows). Round-trips through parseAmountText.
  */
 export function formatAmountForInput(amount: bigint): string {
   if (amount === 0n) return '';
   const text = formatUnits(amount, 18);
-  return text.includes('.') ? text.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '') : text;
+  const [integer, decimals] = text.split('.');
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const trimmedDecimals = decimals?.replace(/0+$/, '');
+  return trimmedDecimals ? `${grouped}.${trimmedDecimals}` : grouped;
 }
