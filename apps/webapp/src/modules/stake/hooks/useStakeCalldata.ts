@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   getStakeDrawCalldata,
   getStakeFreeCalldata,
@@ -8,6 +9,8 @@ import {
   getStakeSelectRewardContractCalldata,
   getStakeWipeAllCalldata,
   getStakeWipeCalldata,
+  useStakeUrnSelectedRewardContract,
+  useStakeUrnSelectedVoteDelegate,
   ZERO_ADDRESS
 } from '@/hooks';
 
@@ -266,4 +269,98 @@ export function calculateStakeApprovalAmounts({
     wipeAll && usdsToWipe ? (usdsToWipe * WIPE_BUFFER_MULTIPLIER) / WIPE_BUFFER_DIVISOR : usdsToWipe;
 
   return { lockAmount, usdsAmount };
+}
+
+/**
+ * Hook input for {@link useStakeCalldata}: the pure-function input MINUS the two
+ * urn-selected values the hook fetches itself.
+ */
+export type UseStakeCalldataParams = Omit<
+  GenerateStakeCalldataParams,
+  'urnSelectedRewardContract' | 'urnSelectedVoteDelegate'
+>;
+
+/**
+ * Thin hook over {@link generateStakeCalldata}. Owns the two live on-chain reads
+ * the legacy context wired itself (`useStakeUrnSelectedRewardContract` /
+ * `useStakeUrnSelectedVoteDelegate`, same `ZERO_ADDRESS` fallback as
+ * `context.tsx:230-235`) and memoizes the pure call. This is the seam's public
+ * surface — F4 (takeover) and F5 (manage) consume this, not the bare function.
+ *
+ * The fetch uses `urnAddress || ZERO_ADDRESS` (a valid contract arg), but the
+ * REAL `urnAddress` (possibly `undefined`) still flows into the pure function so
+ * its new-urn gating is unchanged — mirroring the legacy context, which passes
+ * `activeUrn?.urnAddress` to the gating predicates while fetching with the
+ * fallback.
+ *
+ * Consumers must map legacy CLAIM flows to `flow: 'manage'` (the legacy branch
+ * is binary: `flow === OPEN` else manage-order). Allowance / batching decisions
+ * stay inside `useBatchStakeMulticall` — this hook must NOT grow approval logic.
+ */
+export function useStakeCalldata({
+  flow,
+  ownerAddress,
+  urnIndex,
+  urnAddress,
+  skyToLock,
+  skyToFree,
+  usdsToWipe,
+  wipeAll,
+  usdsToBorrow,
+  selectedRewardContract,
+  selectedDelegate,
+  rewardContractsToClaim,
+  restakeSkyRewards,
+  restakeSkyAmount,
+  referralCode
+}: UseStakeCalldataParams): { calldata: `0x${string}`[] } {
+  const { data: urnSelectedRewardContract } = useStakeUrnSelectedRewardContract({
+    urn: urnAddress || ZERO_ADDRESS
+  });
+  const { data: urnSelectedVoteDelegate } = useStakeUrnSelectedVoteDelegate({
+    urn: urnAddress || ZERO_ADDRESS
+  });
+
+  return useMemo(
+    () => ({
+      calldata: generateStakeCalldata({
+        flow,
+        ownerAddress,
+        urnIndex,
+        urnAddress,
+        skyToLock,
+        skyToFree,
+        usdsToWipe,
+        wipeAll,
+        usdsToBorrow,
+        selectedRewardContract,
+        selectedDelegate,
+        urnSelectedRewardContract,
+        urnSelectedVoteDelegate,
+        rewardContractsToClaim,
+        restakeSkyRewards,
+        restakeSkyAmount,
+        referralCode
+      })
+    }),
+    [
+      flow,
+      ownerAddress,
+      urnIndex,
+      urnAddress,
+      skyToLock,
+      skyToFree,
+      usdsToWipe,
+      wipeAll,
+      usdsToBorrow,
+      selectedRewardContract,
+      selectedDelegate,
+      urnSelectedRewardContract,
+      urnSelectedVoteDelegate,
+      rewardContractsToClaim,
+      restakeSkyRewards,
+      restakeSkyAmount,
+      referralCode
+    ]
+  );
 }
