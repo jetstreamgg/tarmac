@@ -31,7 +31,7 @@ const getDisabledReasonText = (reason?: PsmConversionDisabledReason, targetToken
 
 function HeroBadge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="bg-panel border-borderPrimary rounded-full border px-3 py-1.5">
+    <span className="bg-glassBadge rounded-full px-3 py-1.5 backdrop-blur-[20px]">
       <Text className="text-text text-xs font-medium">{children}</Text>
     </span>
   );
@@ -55,10 +55,7 @@ export function ConvertPage() {
   });
   const launchOrConnect = useConnectThenAct(launch);
 
-  const disabledReasonText = getDisabledReasonText(
-    conversion.disabledReason,
-    conversion.targetToken?.symbol
-  );
+  const disabledReasonText = getDisabledReasonText(conversion.disabledReason, conversion.targetToken?.symbol);
   const reviewDisabled =
     form.isConnected && (form.isZero || form.insufficient || !!conversion.disabledReason);
 
@@ -78,8 +75,8 @@ export function ConvertPage() {
         </Heading>
         <Text className="text-textSecondary max-w-md text-sm">
           <Trans>
-            Move between stablecoins with confidence. Conversions settle at a fixed 1:1 rate, with no fees
-            and no slippage.
+            Move between stablecoins with confidence. Conversions settle at a fixed 1:1 rate, with no fees and
+            no slippage.
           </Trans>
         </Text>
       </div>

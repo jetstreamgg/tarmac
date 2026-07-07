@@ -9,9 +9,9 @@ export const CONVERT_TOKEN_SYMBOLS: ConvertTokenSymbol[] = ['USDS', 'USDC'];
 
 function TokenOption({ symbol }: { symbol: ConvertTokenSymbol }) {
   return (
-    <span className="flex items-center gap-1.5">
-      <TokenIcon token={{ symbol }} width={20} showChainIcon={false} className="h-5 w-5" />
-      <Text className="font-medium">{symbol}</Text>
+    <span className="flex items-center gap-1">
+      <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
+      <Text className="text-sm font-medium">{symbol}</Text>
     </span>
   );
 }
@@ -39,7 +39,7 @@ export function ConvertTokenSelect({
       <SelectTrigger
         data-testid={dataTestId}
         aria-label={t`Select token`}
-        className="text-text bg-panel h-auto w-auto shrink-0 gap-1.5 rounded-full border-none px-2.5 py-1 font-medium focus:ring-0 focus:ring-offset-0"
+        className="text-text border-glassBorder h-auto w-auto shrink-0 gap-1 rounded-full border bg-transparent p-1.5 font-medium focus:ring-0 focus:ring-offset-0"
       >
         <SelectValue>
           <TokenOption symbol={value} />

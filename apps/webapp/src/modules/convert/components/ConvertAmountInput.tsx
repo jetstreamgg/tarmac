@@ -9,16 +9,21 @@ const NO_VALUE = '–';
 const PERCENT_OPTIONS = [25, 50, 100] as const;
 
 const formatBalance = (balance: bigint | undefined, decimals: number) =>
-  balance === undefined ? NO_VALUE : formatNumber(parseFloat(formatUnits(balance, decimals)), { maxDecimals: 2 });
+  balance === undefined
+    ? NO_VALUE
+    : formatNumber(parseFloat(formatUnits(balance, decimals)), { maxDecimals: 2 });
 
 /**
- * One side of the Convert card (Figma 486:31193 / 486:31219): large amount, USD
- * value below-left, token chip top-right, balance below-right. The origin side is
- * editable and reveals 25/50/100% pills next to the chip on hover/focus; the target
- * side is display-only (the PSM rate is fixed, so the amount is always derived).
+ * One side of the Convert card (Figma 486:31204/486:31210): a translucent
+ * glass panel with the large amount top-left, USD value below it, token chip
+ * top-right and balance below-right. The origin side is editable and offers
+ * 25/50/100% shortcuts next to the chip; the target side is display-only (the
+ * PSM rate is fixed, so the amount is always derived).
  *
- * The USD line mirrors the token amount 1:1 — both PSM tokens are USD stablecoins
- * and the swap is fee-free, the same simplification the legacy widget made.
+ * The USD line mirrors the token amount 1:1 — both PSM tokens are USD
+ * stablecoins and the swap is fee-free, the same simplification the legacy
+ * widget made. The "0.00" placeholder renders in the primary text colour per
+ * the Figma default frame (fg-primary, not the muted secondary).
  */
 export function ConvertAmountInput({
   side,
@@ -46,7 +51,10 @@ export function ConvertAmountInput({
   const usdValue = `$${value === '' ? '0.00' : formatNumber(parseFloat(value) || 0, { maxDecimals: 2 })}`;
 
   return (
-    <div className="group flex flex-col gap-1 px-6 py-5" data-testid={`convert-${side}`}>
+    <div
+      className="bg-glassSurface flex flex-col gap-1 px-8 py-6 backdrop-blur-[20px]"
+      data-testid={`convert-${side}`}
+    >
       <div className="flex items-center justify-between gap-3">
         <input
           inputMode="decimal"
@@ -57,18 +65,18 @@ export function ConvertAmountInput({
           readOnly={!isFrom}
           aria-label={isFrom ? t`Convert amount` : t`Amount received`}
           data-testid={`convert-${side}-amount`}
-          className="text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-2xl font-medium outline-none"
+          className="text-text placeholder:text-text w-full min-w-0 bg-transparent text-[32px] leading-9 font-medium outline-none"
         />
         <span className="flex shrink-0 items-center gap-1.5">
           {isFrom && isConnected && onPercentClick && (
-            <span className="hidden items-center gap-1.5 group-focus-within:flex group-hover:flex">
+            <span className="flex items-center gap-1.5">
               {PERCENT_OPTIONS.map(percent => (
                 <button
                   key={percent}
                   type="button"
                   onClick={() => onPercentClick(percent)}
                   data-testid={`convert-from-percent-${percent}`}
-                  className="bg-panel text-textSecondary hover:text-text rounded-full px-2 py-1 text-xs font-medium transition-colors"
+                  className="bg-glassBadge text-textSecondary hover:text-text rounded-full px-2 py-1 text-xs font-medium transition-colors"
                 >
                   {percent}%
                 </button>

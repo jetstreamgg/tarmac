@@ -10,7 +10,7 @@ const formatAmount = (amount: bigint, decimals: number) =>
 
 function TokenChip({ symbol }: { symbol: string }) {
   return (
-    <span className="bg-panel flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1">
+    <span className="bg-glassBadge flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1">
       <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
       <Text className="text-text text-sm font-medium">{symbol}</Text>
     </span>
@@ -80,8 +80,10 @@ export function ConvertReviewContent({
           </span>
           <TokenChip symbol={originSymbol} />
         </div>
-        <span aria-hidden className="text-textSecondary pl-2">
-          <ArrowDown width={16} height={16} />
+        {/* Icon SVGs don't inherit currentColor — fill must be set explicitly
+            (same convention as the history tables' light:fill-text fill-white). */}
+        <span aria-hidden className="pl-2">
+          <ArrowDown width={10} height={14} className="fill-textSecondary" />
         </span>
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-2.5">
@@ -99,7 +101,7 @@ export function ConvertReviewContent({
         </div>
       </div>
 
-      <div className="border-borderPrimary flex flex-col gap-3 border-t pt-4">
+      <div className="border-border flex flex-col gap-3 border-t pt-4">
         {rows.map(row => (
           <ReviewRow key={row.label} row={row} chainId={chainId} />
         ))}
