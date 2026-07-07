@@ -7,7 +7,7 @@ import { REFERRAL_CODE } from '@/lib/constants';
 
 const captured = vi.hoisted(() => ({ params: undefined as Record<string, unknown> | undefined }));
 
-vi.mock('@/widgets/PsmConversionWidget/hooks/usePsmConversion', () => ({
+vi.mock('@/modules/convert/hooks/usePsmConversion', () => ({
   usePsmConversion: (params: Record<string, unknown>) => {
     captured.params = params;
     return {

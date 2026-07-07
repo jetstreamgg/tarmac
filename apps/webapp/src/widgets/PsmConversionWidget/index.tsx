@@ -24,14 +24,14 @@ import { getValidatedState } from '@/widgets/lib/utils';
 import { PsmConversionInputs } from './components/PsmConversionInputs';
 import { PsmConversionReview } from './components/PsmConversionReview';
 import { PsmConversionStatus } from './components/PsmConversionStatus';
-import { usePsmConversion } from './hooks/usePsmConversion';
+import { usePsmConversion } from '@/modules/convert/hooks/usePsmConversion';
 import {
   getPsmTargetAmount,
   getPsmDecimalsForDirection,
   getValidatedPsmExternalAmount,
   type PsmConversionDirection,
   type PsmConversionDisabledReason
-} from './hooks/usePsmConversion.helpers';
+} from '@/modules/convert/hooks/usePsmConversion.helpers';
 import { PsmConversionAction, PsmConversionFlow, PsmConversionScreen } from './lib/constants';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';

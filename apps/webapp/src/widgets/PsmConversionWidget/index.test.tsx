@@ -220,7 +220,7 @@ vi.mock('./components/PsmConversionStatus', async () => {
   };
 });
 
-vi.mock('./hooks/usePsmConversion', () => ({
+vi.mock('@/modules/convert/hooks/usePsmConversion', () => ({
   usePsmConversion: (params: Record<string, any>) => {
     mockPsmState.lastParams = params;
 
