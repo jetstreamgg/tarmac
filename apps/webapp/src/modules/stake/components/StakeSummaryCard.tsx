@@ -146,6 +146,18 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
     0
   );
 
+  // Reward stats carry the icons of what is actually claimable (SKY fallback),
+  // e.g. an SPK-earning urn shows the SPK icon — mirrors the table cell.
+  const rewardSymbolsHeld =
+    toClaim && toClaim.length > 0 ? [...new Set(toClaim.map(reward => reward.rewardSymbol))] : ['SKY'];
+  const rewardIcons = (
+    <span className="flex items-center -space-x-1">
+      {rewardSymbolsHeld.map(symbol => (
+        <TokenIcon key={symbol} token={{ symbol }} width={16} className="h-4 w-4" showChainIcon={false} />
+      ))}
+    </span>
+  );
+
   // Total rewards earned = already-claimed reward events (subgraph) + still
   // claimable. Claimed amounts are valued through the known reward-contract →
   // token map; unknown contracts are skipped rather than mispriced.
@@ -210,17 +222,13 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
       </div>
 
       <div className="border-textSecondary/10 grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-5">
-        <SummaryStat
-          label={<Trans>Claimable rewards</Trans>}
-          isLoading={claimableLoading}
-          icon={<TokenIcon token={{ symbol: 'SKY' }} width={16} className="h-4 w-4" showChainIcon={false} />}
-        >
+        <SummaryStat label={<Trans>Claimable rewards</Trans>} isLoading={claimableLoading} icon={rewardIcons}>
           {formatUsd(claimableUsd)}
         </SummaryStat>
         <SummaryStat
           label={<Trans>Total rewards earned</Trans>}
           isLoading={claimableLoading || historyLoading}
-          icon={<TokenIcon token={{ symbol: 'SKY' }} width={16} className="h-4 w-4" showChainIcon={false} />}
+          icon={rewardIcons}
         >
           {formatUsd(rewardsEarnedUsd)}
         </SummaryStat>
