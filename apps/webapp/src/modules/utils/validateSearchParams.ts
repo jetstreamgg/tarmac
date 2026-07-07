@@ -1,8 +1,10 @@
-import { SUPPORTED_TOKEN_SYMBOLS } from '@/widgets';
 import { QueryParams, IS_PRODUCTION_ENV } from '@/lib/constants';
 import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
-import { ConvertIntent, Intent } from '@/lib/enums';
-import { defaultConfig } from '../config/default-config';
+import { Intent } from '@/lib/enums';
+
+// The modules that read `source_token`, with their accepted values: Savings'
+// origin selector and Convert's PSM direction (E2 — USDC↔USDS only).
+const CONVERT_SOURCE_TOKENS = ['usdc', 'usds'];
 
 /**
  * Validates the search params that remain query-driven after the path
@@ -10,21 +12,7 @@ import { defaultConfig } from '../config/default-config';
  * (module, submodule, entities) lives in the path and is validated by the
  * routes and useAppOrchestration's route-validation effect.
  */
-export const validateSearchParams = (
-  searchParams: URLSearchParams,
-  intent: Intent,
-  convertIntent: ConvertIntent | undefined,
-  isL2Chain: boolean
-) => {
-  // Token params are validated against the module that consumes them: savings,
-  // and the convert submodules (upgrade only outside L2 chains).
-  const acceptsSourceToken =
-    intent === Intent.SAVINGS_INTENT ||
-    (intent === Intent.CONVERT_INTENT &&
-      (convertIntent === ConvertIntent.TRADE_INTENT ||
-        convertIntent === ConvertIntent.PSM_INTENT ||
-        (convertIntent === ConvertIntent.UPGRADE_INTENT && !isL2Chain)));
-
+export const validateSearchParams = (searchParams: URLSearchParams, intent: Intent) => {
   // Iterate over a snapshot: deleting from URLSearchParams while forEach-ing
   // skips the entry that shifts into the deleted slot.
   [...searchParams.entries()].forEach(([key, value]) => {
@@ -39,56 +27,21 @@ export const validateSearchParams = (
       }
     }
 
-    // validate source token
+    // validate source token: Savings validates its own origin values; Convert
+    // (the PSM page) accepts only its two conversion tokens.
     if (key === QueryParams.SourceToken) {
-      if (!acceptsSourceToken) {
+      if (intent === Intent.CONVERT_INTENT) {
+        if (!CONVERT_SOURCE_TOKENS.includes(value.toLowerCase())) {
+          searchParams.delete(key);
+        }
+      } else if (intent !== Intent.SAVINGS_INTENT) {
         searchParams.delete(key);
-      } else if (intent === Intent.CONVERT_INTENT) {
-        // if module is upgrade, only valid source token is MKR, DAI or USDS
-        if (convertIntent === ConvertIntent.UPGRADE_INTENT) {
-          if (!['mkr', 'dai', 'usds'].includes(value.toLowerCase())) {
-            searchParams.delete(key);
-          }
-        }
-
-        // if module is trade, check if token is supported
-        if (convertIntent === ConvertIntent.TRADE_INTENT) {
-          const tradeValidValues = Object.values(SUPPORTED_TOKEN_SYMBOLS).map(symbol => symbol.toLowerCase());
-          if (!tradeValidValues.includes(value.toLowerCase())) {
-            searchParams.delete(key);
-          }
-        }
-
-        if (convertIntent === ConvertIntent.PSM_INTENT) {
-          if (!['usdc', 'usds'].includes(value.toLowerCase())) {
-            searchParams.delete(key);
-          }
-        }
       }
     }
 
-    // validate target token
+    // target token belonged to the legacy trade surface (parked pending E3).
     if (key === QueryParams.TargetToken) {
-      // target token is only valid on trade
-      if (intent !== Intent.CONVERT_INTENT || convertIntent !== ConvertIntent.TRADE_INTENT) {
-        searchParams.delete(key);
-      }
-
-      // check if token is supported
-      const tradeValidValues = Object.values(SUPPORTED_TOKEN_SYMBOLS).map(symbol => symbol.toLowerCase());
-      if (!tradeValidValues.includes(value.toLowerCase())) {
-        searchParams.delete(key);
-      }
-
-      // check if target token is valid based off source token
-      const sourceToken = searchParams.get(QueryParams.SourceToken);
-      if (sourceToken) {
-        const disallowedPairs = defaultConfig.tradeDisallowedPairs;
-        const pairsToCheck = disallowedPairs?.[sourceToken.toUpperCase()];
-        if (pairsToCheck?.includes(value.toUpperCase() as SUPPORTED_TOKEN_SYMBOLS)) {
-          searchParams.delete(key);
-        }
-      }
+      searchParams.delete(key);
     }
   });
 

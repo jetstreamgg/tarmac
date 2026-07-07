@@ -24,14 +24,14 @@ describe('legacySearchToLocation', () => {
     expect(legacySearchToLocation({ widget: 'stake' })).toEqual({ to: '/stake', search: {} });
   });
 
-  it('maps legacy standalone trade into the convert trade submodule', () => {
-    expect(legacySearchToLocation({ widget: 'trade' })).toEqual({ to: '/convert/trade', search: {} });
+  it('maps legacy standalone trade onto the convert page', () => {
+    expect(legacySearchToLocation({ widget: 'trade' })).toEqual({ to: '/convert', search: {} });
   });
 
-  it('maps legacy standalone upgrade into convert only on mainnet', () => {
-    expect(legacySearchToLocation({ widget: 'upgrade' })).toEqual({ to: '/convert/upgrade', search: {} });
+  it('maps legacy standalone upgrade onto convert only on mainnet', () => {
+    expect(legacySearchToLocation({ widget: 'upgrade' })).toEqual({ to: '/convert', search: {} });
     expect(legacySearchToLocation({ widget: 'upgrade', network: 'ethereum' })).toEqual({
-      to: '/convert/upgrade',
+      to: '/convert',
       search: { network: 'ethereum' }
     });
     expect(legacySearchToLocation({ widget: 'upgrade', network: 'base' })).toEqual({
@@ -40,13 +40,13 @@ describe('legacySearchToLocation', () => {
     });
   });
 
-  it('maps convert_module values to convert subroutes', () => {
+  it('maps every convert_module value onto the single convert page', () => {
     expect(legacySearchToLocation({ widget: 'convert', convert_module: 'psm' })).toEqual({
-      to: '/convert/psm',
+      to: '/convert',
       search: {}
     });
     expect(legacySearchToLocation({ widget: 'convert', convert_module: 'trade' })).toEqual({
-      to: '/convert/trade',
+      to: '/convert',
       search: {}
     });
     expect(legacySearchToLocation({ widget: 'convert' })).toEqual({ to: '/convert', search: {} });
@@ -105,13 +105,13 @@ describe('legacySearchToLocation', () => {
         details: 'false'
       })
     ).toEqual({
-      to: '/convert/trade',
+      to: '/convert',
       search: { network: 'ethereum', flow: 'revert', source_token: 'MKR', details: 'false' }
     });
   });
 
   it('handles case-insensitive widget values', () => {
-    expect(legacySearchToLocation({ widget: 'Trade' })).toEqual({ to: '/convert/trade', search: {} });
+    expect(legacySearchToLocation({ widget: 'Trade' })).toEqual({ to: '/convert', search: {} });
   });
 });
 
