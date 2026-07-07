@@ -80,7 +80,7 @@ export function StakePositionOverview({
     >
       <DetailSectionRow>
         <VStack className="gap-8">
-          <HStack gap={2} className="scrollbar-thin w-full overflow-auto">
+          <HStack gap={2} className="w-full scrollbar-thin overflow-auto">
             <StakeSuppliedCard
               label={t`${StakeToken.SKY} staked`}
               token={{ name: 'Sky', symbol: 'SKY' }}
@@ -110,7 +110,7 @@ export function StakePositionOverview({
               {data?.selectedDelegate && <StakeDelegateCard selectedDelegate={data.selectedDelegate} />}
             </HStack>
           )}
-          <HStack gap={2} className="scrollbar-thin w-full overflow-auto">
+          <HStack gap={2} className="w-full scrollbar-thin overflow-auto">
             <StatsCard
               title={t`Collateralization ratio`}
               isLoading={urnAddressLoading || vaultLoading}

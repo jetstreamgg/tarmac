@@ -1,9 +1,5 @@
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
-import {
-  RewardContractInfo,
-  useAvailableTokenRewardContracts,
-  useRewardContractsInfo
-} from '@/hooks';
+import { RewardContractInfo, useAvailableTokenRewardContracts, useRewardContractsInfo } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export const useTotalTvl = () => {

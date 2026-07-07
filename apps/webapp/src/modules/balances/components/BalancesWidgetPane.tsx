@@ -1,9 +1,4 @@
-import {
-  WidgetStateChangeParams,
-  SavingsFlow,
-  BalancesWidget,
-  BalancesWidgetProps
-} from '@/widgets';
+import { WidgetStateChangeParams, SavingsFlow, BalancesWidget, BalancesWidgetProps } from '@/widgets';
 import { useSearchParams } from 'react-router-dom';
 import { useCallback } from 'react';
 import { SharedProps } from '@/modules/app/types/Widgets';

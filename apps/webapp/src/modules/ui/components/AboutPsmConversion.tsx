@@ -22,10 +22,10 @@ export const AboutPsmConversion = ({ height }: { height?: number | undefined }) 
       icon={<ArrowLeftRight size={24} />}
       description={
         <Trans>
-          1:1 Conversion uses contracts deployed by Sky Protocol that enable swapping USDC and USDS
-          at a fixed rate through the Peg Stability Module (PSM) <PopoverRateInfo type="psm" />.
-          This means that unlike market trades, PSM conversions are not exposed to slippage and MEV
-          risks, enabling seamless swapping between supported stablecoins.
+          1:1 Conversion uses contracts deployed by Sky Protocol that enable swapping USDC and USDS at a fixed
+          rate through the Peg Stability Module (PSM) <PopoverRateInfo type="psm" />. This means that unlike
+          market trades, PSM conversions are not exposed to slippage and MEV risks, enabling seamless swapping
+          between supported stablecoins.
         </Trans>
       }
       linkHref={etherscanLink}

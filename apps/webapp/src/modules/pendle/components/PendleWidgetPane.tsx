@@ -101,8 +101,8 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
             subHeader={
               <Text className="text-textSecondary" variant="small">
                 <Trans>
-                  Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full
-                  USDS value at maturity.
+                  Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS
+                  value at maturity.
                 </Trans>
               </Text>
             }

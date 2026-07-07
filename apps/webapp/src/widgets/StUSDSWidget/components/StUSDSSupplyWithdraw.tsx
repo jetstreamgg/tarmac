@@ -1,11 +1,6 @@
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import {
-  getTokenDecimals,
-  TOKENS,
-  StUsdsProviderType,
-  StUsdsProviderSelectionResult
-} from '@/hooks';
+import { getTokenDecimals, TOKENS, StUsdsProviderType, StUsdsProviderSelectionResult } from '@/hooks';
 import { formatBigInt, formatStrAsApy } from '@/utils';
 import { TokenInput } from '@/widgets/shared/components/ui/token/TokenInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/widgets/components/ui/tabs';

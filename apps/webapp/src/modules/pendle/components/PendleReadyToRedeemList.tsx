@@ -1,12 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { motion } from 'motion/react';
 import { positionAnimations } from '@/widgets';
-import {
-  isMarketMatured,
-  PENDLE_MARKETS,
-  usePendleUserPtBalances,
-  type PendleMarketConfig
-} from '@/hooks';
+import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { useConnection } from 'wagmi';
 import { Heading } from '@/modules/layout/components/Typography';
 import { PendleMaturedPositionCard } from './PendleMaturedPositionCard';

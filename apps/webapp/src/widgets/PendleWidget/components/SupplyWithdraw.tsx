@@ -129,8 +129,7 @@ export const SupplyWithdraw = ({
   // and broader DeFi conventions). The raw quote.priceImpact stays unflipped
   // for analytics/debugging.
   const displayPriceImpact = quote?.priceImpact !== undefined ? -quote.priceImpact : undefined;
-  const priceImpactRow =
-    displayPriceImpact !== undefined ? `${(displayPriceImpact * 100).toFixed(3)}%` : '—';
+  const priceImpactRow = displayPriceImpact !== undefined ? `${(displayPriceImpact * 100).toFixed(3)}%` : '—';
 
   const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
   // Pendle's API returns priceImpactBreakDown even on no-aggregator routes

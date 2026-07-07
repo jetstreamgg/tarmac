@@ -94,7 +94,8 @@ const TimeframeControls = ({
   );
 };
 
-const CustomizedLabel = (/*{
+const CustomizedLabel = (
+  /*{
   x = 0,
   y = 0,
   stroke = 'black',
@@ -108,7 +109,8 @@ const CustomizedLabel = (/*{
   value?: any;
   index?: number;
   data?: Data[];
-}*/) => {
+}*/
+) => {
   // TODO: We're returning null until we figure out how to show the labels without clipping on the X or Y edges
   return null;
   // if (!data?.length || index === undefined || (!data[index]?.isMin && !data[index]?.isMax)) return null;

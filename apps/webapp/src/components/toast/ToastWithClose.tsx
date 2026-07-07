@@ -14,7 +14,7 @@ export const ToastWithCloseButton: React.FC<ToastWithCloseButtonProps> = ({ toas
       {/* Close button positioned absolutely in the toast container */}
       <button
         onClick={() => sonnerToast.dismiss(toastId)}
-        className="text-text/50 hover:text-text absolute right-3 top-3 z-10 rounded-md p-1.5 transition-colors"
+        className="text-text/50 hover:text-text absolute top-3 right-3 z-10 rounded-md p-1.5 transition-colors"
         aria-label="Close notification"
       >
         <X size={16} />

@@ -6,8 +6,7 @@ import { PENDLE_MARKETS } from '@/hooks';
 import { WagmiWrapper } from '../../../../test/widgets/WagmiWrapper';
 import { PendleWidget } from '..';
 
-const renderWithWagmiWrapper = (ui: any, options?: any) =>
-  render(ui, { wrapper: WagmiWrapper, ...options });
+const renderWithWagmiWrapper = (ui: any, options?: any) => render(ui, { wrapper: WagmiWrapper, ...options });
 
 const market = PENDLE_MARKETS[0];
 

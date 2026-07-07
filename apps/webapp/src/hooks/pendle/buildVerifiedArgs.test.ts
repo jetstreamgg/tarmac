@@ -406,7 +406,11 @@ describe('buildVerifiedArgs — Buy aggregator branch', () => {
     // Sanity: BUY_KNOWN has inputToken == USDG (the underlying); presence of
     // aggregatorRoute on the quote should be ignored.
     const quote = makeAggBuyQuote({
-      aggregatorRoute: { pendleSwap: PINNED_PENDLE_SWAP, swapData: KYBER_SWAP_DATA, tokenMintSyOrRedeem: USDG }
+      aggregatorRoute: {
+        pendleSwap: PINNED_PENDLE_SWAP,
+        swapData: KYBER_SWAP_DATA,
+        tokenMintSyOrRedeem: USDG
+      }
     });
     quote.method = 'swapExactTokenForPt';
     quote.apiContractParams = makeBuyParams();
@@ -1234,9 +1238,7 @@ describe('buildVerifiedArgs — apiMinOut slippage floor', () => {
       pinnedPendleSwap: PINNED_PENDLE_SWAP,
       slippage: 0.002
     };
-    expect(() => buildVerifiedArgs(exitQuote, EXIT_KNOWN_LOCAL)).toThrow(
-      /below the local slippage floor/
-    );
+    expect(() => buildVerifiedArgs(exitQuote, EXIT_KNOWN_LOCAL)).toThrow(/below the local slippage floor/);
   });
 });
 

@@ -1,12 +1,7 @@
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useContext, useEffect, useState } from 'react';
-import {
-  ZERO_ADDRESS,
-  type TokenForChain,
-  getTokenDecimals,
-  tokenForChainToToken
-} from '@/hooks';
+import { ZERO_ADDRESS, type TokenForChain, getTokenDecimals, tokenForChainToToken } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { useChainId } from 'wagmi';
 import { TxStatus } from '@/widgets/shared/constants';

@@ -1,5 +1,11 @@
 import { formatUnits, parseUnits } from 'viem';
-import { RAD_PRECISION, RAY_PRECISION, SECONDS_PER_YEAR, USDC_PRECISION, WAD_PRECISION } from './math.constants';
+import {
+  RAD_PRECISION,
+  RAY_PRECISION,
+  SECONDS_PER_YEAR,
+  USDC_PRECISION,
+  WAD_PRECISION
+} from './math.constants';
 
 // Maker glossary: https://docs.makerdao.com/other-documentation/system-glossary
 
