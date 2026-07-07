@@ -1,8 +1,4 @@
-import {
-  MORPHO_VAULTS,
-  useMorphoVaultMultipleChartInfo,
-  useMorphoVaultsCombinedTvl
-} from '@/hooks';
+import { MORPHO_VAULTS, useMorphoVaultMultipleChartInfo, useMorphoVaultsCombinedTvl } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState, useMemo } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';

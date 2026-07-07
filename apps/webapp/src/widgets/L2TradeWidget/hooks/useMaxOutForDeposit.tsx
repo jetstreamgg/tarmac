@@ -1,9 +1,4 @@
-import {
-  TokenForChain,
-  tokenForChainToToken,
-  usePreviewSwapExactIn,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { TokenForChain, tokenForChainToToken, usePreviewSwapExactIn, ZERO_ADDRESS } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export const useMaxOutForDeposit = (

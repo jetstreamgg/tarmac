@@ -95,7 +95,7 @@ export function TradeSummary({
         </CardHeader>
         <CardContent>
           <div className="mb-4 text-center">
-            <MotionHStack className="mb-4 mt-8 items-stretch" variants={positionAnimations}>
+            <MotionHStack className="mt-8 mb-4 items-stretch" variants={positionAnimations}>
               <VStack className="flex-1 items-center gap-3">
                 <TokenIcon token={{ symbol: originToken.symbol || 'ETH' }} className="h-8 w-8" />
                 <Text variant="large" className="mt-0! flex-1 text-[18px] font-medium">
@@ -205,7 +205,7 @@ export function TradeSummary({
                         title="Bundle transactions"
                         description={
                           <>
-                            <Text className="text-[13px] text-white/60 light:text-textSecondary">
+                            <Text className="light:text-textSecondary text-[13px] text-white/60">
                               Bundled transactions are set &apos;on&apos; by default to complete transactions
                               in a single step. Combining actions improves the user experience and reduces gas
                               fees. Manually toggle off to cancel this feature.
@@ -218,7 +218,7 @@ export function TradeSummary({
                   </HStack>
                   <Switch checked={batchEnabled} onCheckedChange={setBatchEnabled} />
                 </HStack>
-                <Text className="mt-2 text-[13px] text-white/60 light:text-textSecondary">
+                <Text className="light:text-textSecondary mt-2 text-[13px] text-white/60">
                   {batchEnabled ? (
                     <Trans>
                       USDT allowance will be reset to 0 and then set to the required amount in a single
@@ -237,7 +237,7 @@ export function TradeSummary({
         )}
       </Card>
       <motion.div variants={positionAnimations}>
-        <Text className="text-textSecondary text-balance text-center">
+        <Text className="text-textSecondary text-center text-balance">
           {exactInput ? (
             <Trans>
               Output is estimated. You will receive at least {slippageAdjustedQuote} {token.symbol} or the

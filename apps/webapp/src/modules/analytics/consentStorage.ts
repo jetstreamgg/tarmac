@@ -118,4 +118,3 @@ export function saveConsent(consent: ServiceConsent): void {
     localStorage.removeItem(LEGACY_STORAGE_KEY);
   }
 }
-

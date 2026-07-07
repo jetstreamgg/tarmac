@@ -278,7 +278,7 @@ export const SupplyWithdraw = ({
               </div>
             )}
             {!isVaultDataLoading && isLiquidityDataUnavailable && (
-              <div className="mt-2 ml-3 flex items-start text-text">
+              <div className="text-text mt-2 ml-3 flex items-start">
                 <PopoverRateInfo
                   type="morphoLiquidity"
                   tooltipOverride={liquidityTooltipOverride}
@@ -296,7 +296,7 @@ export const SupplyWithdraw = ({
               isLiquidityConstrained &&
               maxWithdraw !== undefined &&
               maxWithdraw > 0n && (
-                <div className="mt-2 ml-3 flex items-start text-text">
+                <div className="text-text mt-2 ml-3 flex items-start">
                   <PopoverRateInfo
                     type="morphoLiquidity"
                     tooltipOverride={liquidityTooltipOverride}

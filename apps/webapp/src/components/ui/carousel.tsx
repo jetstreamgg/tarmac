@@ -185,7 +185,7 @@ function CarouselPrevious({
       className={cn(
         'absolute size-8 rounded-full',
         orientation === 'horizontal'
-          ? '-left-12 top-1/2 -translate-y-1/2'
+          ? 'top-1/2 -left-12 -translate-y-1/2'
           : '-top-12 left-1/2 -translate-x-1/2 rotate-90',
         className
       )}
@@ -215,7 +215,7 @@ function CarouselNext({
       className={cn(
         'absolute size-8 rounded-full',
         orientation === 'horizontal'
-          ? '-right-12 top-1/2 -translate-y-1/2'
+          ? 'top-1/2 -right-12 -translate-y-1/2'
           : '-bottom-12 left-1/2 -translate-x-1/2 rotate-90',
         className
       )}
@@ -273,7 +273,7 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
         onClick={scrollPrev}
         disabled={!canScrollPrev}
         className={cn(
-          'text-white/60 light:text-textSecondary transition-colors hover:text-white light:hover:text-text',
+          'light:text-textSecondary light:hover:text-text text-white/60 transition-colors hover:text-white',
           !canScrollPrev && 'cursor-not-allowed opacity-30'
         )}
         aria-label="Previous slide"
@@ -290,8 +290,8 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
             className={cn(
               'h-2 w-2 rounded-full transition-all',
               selectedIndex === index
-                ? 'w-6 bg-white light:bg-text'
-                : 'bg-white/30 light:bg-textDimmed hover:bg-white/60 light:hover:bg-textSecondary'
+                ? 'light:bg-text w-6 bg-white'
+                : 'light:bg-textDimmed light:hover:bg-textSecondary bg-white/30 hover:bg-white/60'
             )}
             aria-label={`Go to slide ${index + 1}`}
           />
@@ -303,7 +303,7 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
         onClick={scrollNext}
         disabled={!canScrollNext}
         className={cn(
-          'text-white/60 light:text-textSecondary transition-colors hover:text-white light:hover:text-text',
+          'light:text-textSecondary light:hover:text-text text-white/60 transition-colors hover:text-white',
           !canScrollNext && 'cursor-not-allowed opacity-30'
         )}
         aria-label="Next slide"

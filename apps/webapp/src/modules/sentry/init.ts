@@ -139,8 +139,7 @@ export function initSentry(router: AnyRouter): void {
       //     wallet_watchAsset, etc.) and wallets that don't implement them
       //     reject with this code.
       const extraData = (event.extra as Record<string, unknown> | undefined)?.__serialized__ as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       if (
         event.exception?.values?.some(v =>
           v.value?.includes('Object captured as promise rejection with keys')

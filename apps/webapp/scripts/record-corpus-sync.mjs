@@ -45,12 +45,20 @@ const commit = opts.commit || null;
 // `untagged` is sync-content.sh's own fallback when git describe finds nothing — keep it as-is.
 const tag = opts.tag && opts.tag.length ? opts.tag : null;
 const fileTypes = opts['file-types']
-  ? opts['file-types'].split(',').map(s => s.trim()).filter(Boolean)
+  ? opts['file-types']
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
   : ['banners', 'faqs', 'tooltips'];
 
 // result is optional: the script overwrites everything (no per-section diff), so it omits these.
 // The skill computes a semantic diff and passes them.
-const changed = opts.changed ? opts.changed.split(',').map(s => s.trim()).filter(Boolean) : null;
+const changed = opts.changed
+  ? opts.changed
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+  : null;
 const inSync = opts['in-sync'] != null ? Number(opts['in-sync']) : null;
 const result =
   changed === null && inSync === null
@@ -98,4 +106,6 @@ if (existsSync(LOG_JSONL)) {
 }
 appendFileSync(LOG_JSONL, logLine + '\n');
 
-console.log(`record-corpus-sync: wrote version.ts (branch=${branch}, tag=${tag ?? 'untagged'}, commit=${(commit ?? 'unknown').slice(0, 8)}) and appended 1 log entry.`);
+console.log(
+  `record-corpus-sync: wrote version.ts (branch=${branch}, tag=${tag ?? 'untagged'}, commit=${(commit ?? 'unknown').slice(0, 8)}) and appended 1 log entry.`
+);

@@ -187,7 +187,7 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
         <SliderPrimitive.Root
           ref={ref}
           value={localValue}
-          className={cn('relative flex w-full touch-none select-none items-center', className)}
+          className={cn('relative flex w-full touch-none items-center select-none', className)}
           onValueChange={handleValueChange}
           onValueCommit={onValueCommit}
           {...props}
@@ -232,8 +232,10 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
               </TooltipTrigger>
               <TooltipPortal>
                 <TooltipContent side="right" className="max-w-xs">
-                  <p className="text-sm font-medium text-text">{maxPermittedRiskTooltip?.title}</p>
-                  <p className="mt-2 text-xs text-gray-400 light:text-textSecondary">{maxPermittedRiskTooltip?.tooltip}</p>
+                  <p className="text-text text-sm font-medium">{maxPermittedRiskTooltip?.title}</p>
+                  <p className="light:text-textSecondary mt-2 text-xs text-gray-400">
+                    {maxPermittedRiskTooltip?.tooltip}
+                  </p>
                 </TooltipContent>
               </TooltipPortal>
             </Tooltip>
@@ -257,8 +259,10 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                   </TooltipTrigger>
                   <TooltipPortal>
                     <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-sm font-medium text-text">{riskFloorTooltip?.title}</p>
-                      <p className="mt-2 text-xs text-gray-400 light:text-textSecondary">{riskFloorTooltip?.tooltip}</p>
+                      <p className="text-text text-sm font-medium">{riskFloorTooltip?.title}</p>
+                      <p className="light:text-textSecondary mt-2 text-xs text-gray-400">
+                        {riskFloorTooltip?.tooltip}
+                      </p>
                     </TooltipContent>
                   </TooltipPortal>
                 </Tooltip>
@@ -283,17 +287,19 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                   </TooltipTrigger>
                   <TooltipPortal>
                     <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-sm font-medium text-text">{riskCeilingTooltip?.title}</p>
-                      <p className="mt-2 text-xs text-gray-400 light:text-textSecondary">{riskCeilingTooltip?.tooltip}</p>
+                      <p className="text-text text-sm font-medium">{riskCeilingTooltip?.title}</p>
+                      <p className="light:text-textSecondary mt-2 text-xs text-gray-400">
+                        {riskCeilingTooltip?.tooltip}
+                      </p>
                     </TooltipContent>
                   </TooltipPortal>
                 </Tooltip>
               );
             })()}
           {disabled ? (
-            <SliderPrimitive.Thumb className="focus:outline-hidden block h-0 w-0" aria-label="Slider">
+            <SliderPrimitive.Thumb className="block h-0 w-0 focus:outline-hidden" aria-label="Slider">
               <div
-                className={`absolute ${(value?.[0] || 0) > 95 ? '-left-[20px]' : ''} -top-[0.5px] h-0 w-0 border-b-[11px] border-l-[5.5px] border-r-[5.5px] border-b-white border-l-transparent border-r-transparent`}
+                className={`absolute ${(value?.[0] || 0) > 95 ? '-left-[20px]' : ''} -top-[0.5px] h-0 w-0 border-r-[5.5px] border-b-[11px] border-l-[5.5px] border-r-transparent border-b-white border-l-transparent`}
               />
             </SliderPrimitive.Thumb>
           ) : thumbTooltipContent ? (
@@ -304,7 +310,7 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                 </SliderPrimitive.Thumb>
               </TooltipTrigger>
               <TooltipPortal>
-                <TooltipContent side="top" className="max-w-[280px] whitespace-normal text-left">
+                <TooltipContent side="top" className="max-w-[280px] text-left whitespace-normal">
                   {thumbTooltipContent}
                 </TooltipContent>
               </TooltipPortal>

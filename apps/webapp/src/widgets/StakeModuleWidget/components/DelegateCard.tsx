@@ -37,7 +37,7 @@ export const DelegateCard = ({
       dataTestId={`delegate-card-${delegate.id}`}
       className={`transition-colors ${
         selectedDelegate && getAddress(selectedDelegate) === getAddress(delegate.id)
-          ? 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100'
+          ? 'from-primary-start/100 to-primary-end/100 bg-radial-(--gradient-position)'
           : ''
       } ${setSelectedDelegate ? 'cursor-pointer' : 'cursor-default'}`}
       headerLeftContent={

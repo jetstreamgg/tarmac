@@ -135,7 +135,7 @@ export const UpdateDelegateSelection = ({
                 </div>
                 {search && (
                   <Close
-                    className="text-textSecondary h-4 w-4 cursor-pointer transition-colors hover:text-white light:hover:text-text"
+                    className="text-textSecondary light:hover:text-text h-4 w-4 cursor-pointer transition-colors hover:text-white"
                     onClick={() => setSearch('')}
                   />
                 )}

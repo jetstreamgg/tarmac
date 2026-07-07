@@ -10,7 +10,7 @@ export function BatchTransactionsLegal() {
   return (
     <Layout>
       <main
-        className="scrollbar-hidden md:scrollbar-thin bg-container group mx-4 mt-20 flex h-auto max-w-[480px] min-w-[375px] flex-col gap-3 overflow-x-hidden overflow-y-auto rounded-t-3xl border bg-blend-overlay backdrop-blur-[50px] md:flex-row md:overflow-hidden md:rounded-3xl md:p-3 md:pr-0.5"
+        className="scrollbar-hidden bg-container group mx-4 mt-20 flex h-auto max-w-[480px] min-w-[375px] flex-col gap-3 overflow-x-hidden overflow-y-auto rounded-t-3xl border bg-blend-overlay backdrop-blur-[50px] md:scrollbar-thin md:flex-row md:overflow-hidden md:rounded-3xl md:p-3 md:pr-0.5"
         style={{ borderRadius: '1.5rem' }}
       >
         <div className="flex flex-col gap-4 p-8">

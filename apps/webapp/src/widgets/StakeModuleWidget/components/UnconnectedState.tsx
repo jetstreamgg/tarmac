@@ -15,7 +15,7 @@ export const UnconnectedState = ({
   onShowHelpModal?: () => void;
 }) => {
   return (
-    <div className={'mb-8 mt-6 space-y-2'}>
+    <div className={'mt-6 mb-8 space-y-2'}>
       <HStack className="items-center justify-between">
         <Text>
           <Trans>Open Position</Trans>

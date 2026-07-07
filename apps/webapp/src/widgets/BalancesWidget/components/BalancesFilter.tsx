@@ -22,7 +22,7 @@ export const BalancesFilter = ({
   const chainInfo = chains.find(chain => chain.id === chainId);
   const chainName = chainInfo?.name;
   return (
-    <div className="mb-4 mt-3 flex justify-between">
+    <div className="mt-3 mb-4 flex justify-between">
       <div className="flex items-center gap-2">
         <span className="text-textSecondary text-xs">Network:</span>
         <div className="flex items-center gap-1">
@@ -45,7 +45,7 @@ export const BalancesFilter = ({
       {showBalanceFilter && (
         <div className="flex items-center gap-1.5">
           <Checkbox id="all-balances" checked={hideZeroBalances} onCheckedChange={setHideZeroBalances} />
-          <label htmlFor="all-balances" className="text-textSecondary cursor-pointer select-none text-xs">
+          <label htmlFor="all-balances" className="text-textSecondary cursor-pointer text-xs select-none">
             Hide 0 balances
           </label>
         </div>

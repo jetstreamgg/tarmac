@@ -3,12 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Heading } from '@/modules/layout/components/Typography';
 import { SafeMarkdownRenderer } from './markdown/SafeMarkdownRenderer';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import {
-  PopoverRateInfo,
-  PopoverInfo,
-  getTooltipById,
-  resolvePopoverTooltipKey
-} from '@/widgets';
+import { PopoverRateInfo, PopoverInfo, getTooltipById, resolvePopoverTooltipKey } from '@/widgets';
 
 interface Item {
   question: string;
@@ -25,7 +20,7 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
             <AccordionTrigger className="p-0 text-left">
               <Heading variant="extraSmall">{title}</Heading>
             </AccordionTrigger>
-            <AccordionContent className="space-y-4 pb-0 pr-5 pt-4 leading-5">
+            <AccordionContent className="space-y-4 pt-4 pr-5 pb-0 leading-5">
               <SafeMarkdownRenderer
                 markdown={content}
                 components={{
