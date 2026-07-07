@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { initialStakeFlowState, initStakeFlowState, stakeFlowReducer, StakeFlowState } from './useStakeFlowState';
+import {
+  initialStakeFlowState,
+  initStakeFlowState,
+  stakeFlowReducer,
+  StakeFlowState
+} from './useStakeFlowState';
 
 const DELEGATE = '0x1111111111111111111111111111111111111111' as const;
 const OTHER_DELEGATE = '0x2222222222222222222222222222222222222222' as const;

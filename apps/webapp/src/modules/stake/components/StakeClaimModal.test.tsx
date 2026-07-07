@@ -98,8 +98,7 @@ function renderModal() {
   return { onClose };
 }
 
-const selectedSymbols = () =>
-  ((h.launchParams?.selected ?? []) as ClaimableReward[]).map(r => r.tokenSymbol);
+const selectedSymbols = () => ((h.launchParams?.selected ?? []) as ClaimableReward[]).map(r => r.tokenSymbol);
 
 describe('StakeClaimModal', () => {
   beforeEach(() => {

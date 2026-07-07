@@ -81,10 +81,7 @@ export function PositionManageFlow() {
     []
   );
   const onClaim = useCallback(() => setView({ name: 'claim' }), []);
-  const onReopen = useCallback(
-    (borrowExpanded: boolean) => setView({ name: 'reopen', borrowExpanded }),
-    []
-  );
+  const onReopen = useCallback((borrowExpanded: boolean) => setView({ name: 'reopen', borrowExpanded }), []);
   const onBack = useCallback(() => setView({ name: 'details' }), []);
 
   if (urnIndex === null) return null;

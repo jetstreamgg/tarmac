@@ -17,7 +17,15 @@ import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
 
 const NO_VALUE = '–';
 
-function InfoRow({ label, dataTestId, children }: { label: ReactNode; dataTestId: string; children: ReactNode }) {
+function InfoRow({
+  label,
+  dataTestId,
+  children
+}: {
+  label: ReactNode;
+  dataTestId: string;
+  children: ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-textSecondary">{label}</span>
@@ -125,20 +133,14 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
 
   const confirmSummary = useMemo(() => <StakeClaimConfirmSummary selected={selected} />, [selected]);
 
-  const {
-    launch,
-    restakeAvailable,
-    plainPrepared,
-    plainLoading,
-    restakePrepared,
-    restakeLoading
-  } = useStakeClaimLaunch({
-    urnIndex: BigInt(urnIndex),
-    selected,
-    enabled: selected.length > 0,
-    transactionContent: confirmSummary,
-    onSuccess
-  });
+  const { launch, restakeAvailable, plainPrepared, plainLoading, restakePrepared, restakeLoading } =
+    useStakeClaimLaunch({
+      urnIndex: BigInt(urnIndex),
+      selected,
+      enabled: selected.length > 0,
+      transactionContent: confirmSummary,
+      onSuccess
+    });
 
   const claimDisabled = selected.length === 0 || !plainPrepared || plainLoading;
   const restakeDisabled = !restakePrepared || restakeLoading;
