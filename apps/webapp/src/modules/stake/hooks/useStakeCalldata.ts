@@ -223,3 +223,47 @@ export function generateStakeCalldata({
 
   return filteredCalldata;
 }
+
+/** Approve a 0.005% extra amount of USDS so debt accrual between signing and
+ * mining doesn't break a wipe-all. Named as in the legacy source
+ * (`widgets/StakeModuleWidget/index.tsx`). */
+export const WIPE_BUFFER_MULTIPLIER = 100005n;
+export const WIPE_BUFFER_DIVISOR = 100000n;
+
+export interface CalculateStakeApprovalAmountsParams {
+  skyToLock: bigint;
+  restakeSkyRewards: boolean;
+  restakeSkyAmount: bigint;
+  isSkyRewardPosition: boolean;
+  usdsToWipe: bigint;
+  wipeAll: boolean;
+}
+
+/**
+ * Pure copy of the approval-amount math inlined in the legacy
+ * `widgets/StakeModuleWidget/index.tsx` (`effectiveLockAmount` +
+ * buffered `debouncedUsdsAmount`). Feeds `useBatchStakeMulticall`'s
+ * `{ skyAmount, usdsAmount }` in F4/F5. Debouncing stays a UI concern and is
+ * NOT reproduced here.
+ *
+ * Known asymmetry preserved on purpose (PRD Decision 6): the `lockAmount` here
+ * guards the restake addend behind `isSkyRewardPosition`, but
+ * {@link generateStakeCalldata}'s lock term does NOT — so for
+ * `restakeSkyRewards=true, isSkyRewardPosition=false, restakeSkyAmount>0n` the
+ * two intentionally disagree. Byte-identical means reproducing both exactly.
+ */
+export function calculateStakeApprovalAmounts({
+  skyToLock,
+  restakeSkyRewards,
+  restakeSkyAmount,
+  isSkyRewardPosition,
+  usdsToWipe,
+  wipeAll
+}: CalculateStakeApprovalAmountsParams): { lockAmount: bigint; usdsAmount: bigint } {
+  const restakeContribution = restakeSkyRewards && isSkyRewardPosition ? restakeSkyAmount : 0n;
+  const lockAmount = skyToLock + restakeContribution;
+  const usdsAmount =
+    wipeAll && usdsToWipe ? (usdsToWipe * WIPE_BUFFER_MULTIPLIER) / WIPE_BUFFER_DIVISOR : usdsToWipe;
+
+  return { lockAmount, usdsAmount };
+}
