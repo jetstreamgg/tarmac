@@ -59,6 +59,12 @@ vi.mock('./StakePositionsTab', () => ({
   StakePositionsTab: () => <div data-testid="stake-positions-tab-stub" />
 }));
 
+// The F4 takeover is fully covered by OpenPositionTakeover.test.tsx; here we
+// only assert the flow=open mount contract.
+vi.mock('./OpenPositionTakeover', () => ({
+  OpenPositionTakeover: () => <div data-testid="stake-takeover-stub" />
+}));
+
 import { StakeProductPage } from './StakeProductPage';
 
 const renderPage = () =>
@@ -134,6 +140,23 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
     expect(setSearchParamsMock.mock.calls[0][1]).toEqual({ replace: true });
     expect(mockSearchParams.get('tab')).toBe('statistics');
+  });
+
+  it('mounts the open-position takeover only when flow=open', () => {
+    renderPage();
+    expect(screen.queryByTestId('stake-takeover-stub')).toBeNull();
+    cleanup();
+
+    mockSearchParams = new URLSearchParams('flow=open');
+    renderPage();
+    expect(screen.getByTestId('stake-takeover-stub')).toBeTruthy();
+  });
+
+  it('keeps the takeover unmounted for other flow values (manage is F5)', () => {
+    mockSearchParams = new URLSearchParams('flow=manage&urn_index=0');
+    renderPage();
+
+    expect(screen.queryByTestId('stake-takeover-stub')).toBeNull();
   });
 
   it('scopes the network selector to the stake product networks', () => {

@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { StakePositionsTab } from './StakePositionsTab';
 import { StakeStatisticsTab } from './StakeStatisticsTab';
 import { StakeAboutTab } from './StakeAboutTab';
+import { OpenPositionTakeover } from './OpenPositionTakeover';
 
 // URL tab contract for the Stake destination page: `?tab=` selects the visible
 // tab; `positions` is the default and the fallback for any unknown value.
@@ -42,6 +43,9 @@ export function StakeProductPage() {
 
   const [searchParams, setSearchParams] = useAppSearchParams();
   const tab = parseStakeTab(searchParams.get(QueryParams.Tab));
+  // Route-driven overlay (Architecture §2.1): the F4 takeover mounts on
+  // `flow=open` over whichever tab is active; closing returns to a clean URL.
+  const isOpenFlow = searchParams.get(QueryParams.Flow) === 'open';
 
   const onTabChange = (value: string) => {
     setSearchParams(
@@ -106,6 +110,8 @@ export function StakeProductPage() {
           <StakeAboutTab />
         </TabsContent>
       </Tabs>
+
+      {isOpenFlow && <OpenPositionTakeover />}
     </div>
   );
 }
