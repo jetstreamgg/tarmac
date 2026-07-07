@@ -14,6 +14,7 @@ import { Route as DevRouteImport } from './routes/dev'
 import { Route as BatchTransactionsLegalNoticeRouteImport } from './routes/batch-transactions-legal-notice'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellIndexRouteImport } from './routes/_shell.index'
+import { Route as ShellStakeV2RouteImport } from './routes/_shell.stake-v2'
 import { Route as ShellStakeRouteImport } from './routes/_shell.stake'
 import { Route as ShellPortfolioRouteImport } from './routes/_shell.portfolio'
 import { Route as ShellConvertRouteImport } from './routes/_shell.convert'
@@ -57,6 +58,11 @@ const ShellRoute = ShellRouteImport.update({
 const ShellIndexRoute = ShellIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellStakeV2Route = ShellStakeV2RouteImport.update({
+  id: '/stake-v2',
+  path: '/stake-v2',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellStakeRoute = ShellStakeRouteImport.update({
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/convert': typeof ShellConvertRouteWithChildren
   '/portfolio': typeof ShellPortfolioRoute
   '/stake': typeof ShellStakeRoute
+  '/stake-v2': typeof ShellStakeV2Route
   '/convert/psm': typeof ShellConvertPsmRoute
   '/convert/trade': typeof ShellConvertTradeRoute
   '/convert/upgrade': typeof ShellConvertUpgradeRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/convert': typeof ShellConvertRouteWithChildren
   '/portfolio': typeof ShellPortfolioRoute
   '/stake': typeof ShellStakeRoute
+  '/stake-v2': typeof ShellStakeV2Route
   '/': typeof ShellIndexRoute
   '/convert/psm': typeof ShellConvertPsmRoute
   '/convert/trade': typeof ShellConvertTradeRoute
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/_shell/convert': typeof ShellConvertRouteWithChildren
   '/_shell/portfolio': typeof ShellPortfolioRoute
   '/_shell/stake': typeof ShellStakeRoute
+  '/_shell/stake-v2': typeof ShellStakeV2Route
   '/_shell/': typeof ShellIndexRoute
   '/_shell/convert/psm': typeof ShellConvertPsmRoute
   '/_shell/convert/trade': typeof ShellConvertTradeRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/convert'
     | '/portfolio'
     | '/stake'
+    | '/stake-v2'
     | '/convert/psm'
     | '/convert/trade'
     | '/convert/upgrade'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/convert'
     | '/portfolio'
     | '/stake'
+    | '/stake-v2'
     | '/'
     | '/convert/psm'
     | '/convert/trade'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/_shell/convert'
     | '/_shell/portfolio'
     | '/_shell/stake'
+    | '/_shell/stake-v2'
     | '/_shell/'
     | '/_shell/convert/psm'
     | '/_shell/convert/trade'
@@ -354,6 +366,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof ShellIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/stake-v2': {
+      id: '/_shell/stake-v2'
+      path: '/stake-v2'
+      fullPath: '/stake-v2'
+      preLoaderRoute: typeof ShellStakeV2RouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/stake': {
@@ -565,6 +584,7 @@ interface ShellRouteChildren {
   ShellConvertRoute: typeof ShellConvertRouteWithChildren
   ShellPortfolioRoute: typeof ShellPortfolioRoute
   ShellStakeRoute: typeof ShellStakeRoute
+  ShellStakeV2Route: typeof ShellStakeV2Route
   ShellIndexRoute: typeof ShellIndexRoute
   ShellEarnExpertRoute: typeof ShellEarnExpertRouteWithChildren
   ShellEarnFixedRoute: typeof ShellEarnFixedRouteWithChildren
@@ -579,6 +599,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellConvertRoute: ShellConvertRouteWithChildren,
   ShellPortfolioRoute: ShellPortfolioRoute,
   ShellStakeRoute: ShellStakeRoute,
+  ShellStakeV2Route: ShellStakeV2Route,
   ShellIndexRoute: ShellIndexRoute,
   ShellEarnExpertRoute: ShellEarnExpertRouteWithChildren,
   ShellEarnFixedRoute: ShellEarnFixedRouteWithChildren,
