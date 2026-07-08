@@ -48,6 +48,38 @@ describe('useStakeRiskSlider (open flow — no existing debt)', () => {
     expect(setUsdsToBorrow).toHaveBeenLastCalledWith(0n);
   });
 
+  it('never stages beyond the OSM-capped max when the market-price max is higher', () => {
+    const setUsdsToBorrow = vi.fn();
+    const vault = vaultWith({
+      // Diverged prices: market-based (uncapped) max far above the capped one.
+      maxSafeBorrowableIntAmountNoCap: 65500n * WAD,
+      maxSafeBorrowableIntAmount: 40000n * WAD,
+      debtValue: 42n * WAD,
+      collateralAmount: 100000n * WAD
+    });
+
+    const { result } = renderHook(() =>
+      useStakeRiskSlider({
+        vault,
+        usdsToBorrow: 0n,
+        setUsdsToBorrow,
+        usdsToWipe: 0n,
+        setUsdsToWipe: vi.fn()
+      })
+    );
+
+    act(() => result.current.handleSliderChange(100));
+    expect(setUsdsToBorrow).toHaveBeenLastCalledWith(40000n * WAD);
+
+    act(() => result.current.handleSliderChange(80));
+    // 80% of the uncapped max (52,400) still clamps to the capped amount.
+    expect(setUsdsToBorrow).toHaveBeenLastCalledWith(40000n * WAD);
+
+    act(() => result.current.handleSliderChange(30));
+    // Below the cap the ordinary whole-USDS mapping applies.
+    expect(setUsdsToBorrow).toHaveBeenLastCalledWith(((65500n * WAD * 30n) / 100n / WAD) * WAD);
+  });
+
   it('ignores drags when nothing is borrowable', () => {
     const setUsdsToBorrow = vi.fn();
     const { result } = renderHook(() =>

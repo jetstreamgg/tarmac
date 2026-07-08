@@ -13,12 +13,15 @@ type UseStakeRiskSliderProps = {
 };
 
 /**
- * Copied VERBATIM from `widgets/StakeModuleWidget/hooks/useRiskSlider.ts` (do
- * not import from the widget; do not modify the widget — it dies at F7). The
- * only change is the seam: the four widget-context reads/writes
+ * Copied from `widgets/StakeModuleWidget/hooks/useRiskSlider.ts` (do not
+ * import from the widget). Two deliberate changes from the legacy hook: the
+ * seam — the four widget-context reads/writes
  * (`usdsToBorrow`/`setUsdsToBorrow`/`usdsToWipe`/`setUsdsToWipe`) arrive as
- * explicit params so the takeover (F4) and manage sheet (F5) can drive them
- * from their own local state. All math, gating and sync effects are unchanged.
+ * explicit params so the takeover and manage sheet drive them from their own
+ * local state — and the no-existing-debt branch clamps to the OSM-capped max
+ * (the legacy branch could stage the uncapped market-price max, an amount the
+ * protocol's safety price rejects at submit). All other math, gating and sync
+ * effects are unchanged.
  */
 export const useStakeRiskSlider = ({
   vault,
@@ -129,9 +132,18 @@ export const useStakeRiskSlider = ({
           : 0n;
       setValue(repayPercentage === repayablePercentage ? newValue : roundToWholeUsds(newValue));
     } else {
-      // Original behavior for no existing debt
+      // No existing debt: same OSM-cap clamp as the existing-debt branch —
+      // maxBorrowable here is the uncapped (market-price) max, and staging
+      // beyond the capped amount produces a transaction the protocol's own
+      // safety price rejects. Below the cap, the legacy mapping (whole-USDS
+      // rounding, exact unrounded max at 100%) is unchanged.
       const newValue = value === 0 ? 0n : (maxBorrowable * BigInt(value)) / 100n;
-      setValue(newValue < maxValue ? roundToWholeUsds(newValue) : maxValue);
+      const cappedAmount = vault?.maxSafeBorrowableIntAmount;
+      if (cappedAmount && newValue > cappedAmount) {
+        setValue(cappedAmount);
+      } else {
+        setValue(newValue < maxValue ? roundToWholeUsds(newValue) : maxValue);
+      }
     }
   };
 
