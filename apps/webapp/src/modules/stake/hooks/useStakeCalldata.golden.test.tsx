@@ -1,45 +1,6 @@
 /// <reference types="vite/client" />
 
-import { renderHook, act } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import React from 'react';
-import { i18n } from '@lingui/core';
-
-i18n.load('en', {});
-i18n.activate('en');
-
-// Mutable mock state shared with the hoisted `vi.mock` factory below. Each test
-// (via `beforeEach`) resets it to the OPEN-flow defaults (everything empty), and
-// MANAGE scenarios populate it before rendering the legacy provider so the
-// gating predicates and the restake effect see controlled on-chain values.
-const mockState = vi.hoisted(() => ({
-  urnSelectedReward: undefined as `0x${string}` | undefined,
-  urnSelectedDelegate: undefined as `0x${string}` | undefined,
-  rewardClaims: undefined as
-    Array<{ contractAddress: `0x${string}`; claimBalance: bigint; rewardSymbol: string }> | undefined,
-  rewardContracts: undefined as Array<{ contractAddress: `0x${string}` }> | undefined
-}));
-
-// Golden master: mock ONLY the *data* hooks the legacy provider wires itself,
-// keeping every `getStake*Calldata` encoder REAL (pure viem `encodeFunctionData`,
-// no network). This is what lets us assert byte-identical `Hex[]` output between
-// the legacy context and the extracted pure function.
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
-  return {
-    ...actual,
-    useRewardContractsToClaim: () => ({ data: mockState.rewardClaims, isLoading: false }),
-    useStakeRewardContracts: () => ({ data: mockState.rewardContracts, isLoading: false, error: null }),
-    useStakeUrnSelectedRewardContract: () => ({ data: mockState.urnSelectedReward, refetch: () => {} }),
-    useStakeUrnSelectedVoteDelegate: () => ({ data: mockState.urnSelectedDelegate, refetch: () => {} })
-  };
-});
-
-vi.mock('wagmi', async importOriginal => {
-  const actual = await importOriginal<typeof import('wagmi')>();
-  return { ...actual, useChainId: () => 1 };
-});
-
+import { describe, expect, it } from 'vitest';
 import {
   getStakeDrawCalldata,
   getStakeFreeCalldata,
@@ -51,14 +12,25 @@ import {
   getStakeWipeCalldata,
   ZERO_ADDRESS
 } from '@/hooks';
-import {
-  StakeModuleWidgetContext,
-  StakeModuleWidgetProvider
-} from '@/widgets/StakeModuleWidget/context/context';
-import { WidgetContext, WidgetProvider } from '@/widgets/context/WidgetContext';
-import { StakeFlow } from '@/widgets/StakeModuleWidget/lib/constants';
 import { getAddress } from 'viem';
 import { generateStakeCalldata, type GenerateStakeCalldataParams } from './useStakeCalldata';
+import goldenFixturesRaw from './useStakeCalldata.golden.fixtures.json?raw';
+
+// ---------------------------------------------------------------------------
+// Golden master, fixture form (F7).
+//
+// Until the F7 parity flip this suite asserted `generateStakeCalldata` against
+// the LIVE legacy oracle — a rendered `StakeModuleWidgetProvider` whose
+// `generateAllCalldata` was driven through its setters per scenario. F7 deletes
+// the legacy widget, so the oracle's outputs were captured (GOLDEN_CAPTURE run,
+// same commit, all 724 assertions green — i.e. legacy === pure, byte-identical)
+// into `useStakeCalldata.golden.fixtures.json`, keyed by the serialized scenario
+// params. The suite now replays the identical scenario set against those frozen
+// bytes. The fixtures are NOT regenerable — that is the point: they are the
+// legacy widget's exact output, outliving its deletion.
+// ---------------------------------------------------------------------------
+
+const goldenFixtures: Record<string, `0x${string}`[]> = JSON.parse(goldenFixturesRaw);
 
 const OWNER = '0x000000000000000000000000000000000000beef' as `0x${string}`;
 const URN = '0x00000000000000000000000000000000000000aa' as `0x${string}`;
@@ -74,24 +46,6 @@ const FARM_LC = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`;
 const FARM_UC = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as `0x${string}`;
 const DELEGATE_LC = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`;
 const DELEGATE_UC = '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' as `0x${string}`;
-
-function wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <WidgetProvider locale="en">
-      <StakeModuleWidgetProvider>{children}</StakeModuleWidgetProvider>
-    </WidgetProvider>
-  );
-}
-
-function renderStakeContexts() {
-  return renderHook(
-    () => ({
-      stake: React.useContext(StakeModuleWidgetContext),
-      widget: React.useContext(WidgetContext)
-    }),
-    { wrapper }
-  );
-}
 
 /** Defaults for a scenario; override only the dimensions a case exercises. */
 function scenario(overrides: Partial<GenerateStakeCalldataParams>): GenerateStakeCalldataParams {
@@ -118,71 +72,46 @@ function scenario(overrides: Partial<GenerateStakeCalldataParams>): GenerateStak
 }
 
 /**
- * Drives the legacy `StakeModuleWidgetProvider` to reproduce `params` and returns
- * its `generateAllCalldata` output — the golden oracle. Populates the mocked data
- * hooks (`useStakeUrnSelected*`, `useRewardContractsToClaim`) so the legacy
- * gating predicates and the restake effect see the same on-chain values `params`
- * encodes, then flips the widget flow + drives every setter inside `act`.
- *
- * Restake note: the legacy provider's effect (`context.tsx:265-278`) OVERRIDES
- * `restakeSkyAmount` from `activeSkyReward.claimBalance` and resets
- * `restakeSkyRewards` to false when that balance is 0n. So a restake scenario is
- * driven by mocking a SKY reward claim of `restakeSkyAmount`, not by calling the
- * setter directly.
+ * Serialization of a scenario's full param set — the fixture key. MUST stay
+ * byte-identical to the `goldenKey` used by the capture run, or every lookup
+ * misses. Optional fields serialize as `·` so `undefined` and set values can
+ * never collide.
  */
-function legacyOutput(params: GenerateStakeCalldataParams, flowEnum: StakeFlow): `0x${string}`[] {
-  mockState.urnSelectedReward = params.urnSelectedRewardContract;
-  mockState.urnSelectedDelegate = params.urnSelectedVoteDelegate;
-  if (params.restakeSkyRewards) {
-    mockState.rewardClaims = [
-      { contractAddress: SKY_FARM, claimBalance: params.restakeSkyAmount, rewardSymbol: 'SKY' }
-    ];
-    mockState.rewardContracts = [{ contractAddress: SKY_FARM }];
-  }
-
-  const { result } = renderStakeContexts();
-  act(() => {
-    result.current.widget.setWidgetState(prev => ({ ...prev, flow: flowEnum }));
-    if (params.urnAddress) {
-      result.current.stake.setActiveUrn(
-        { urnAddress: params.urnAddress, urnIndex: params.urnIndex },
-        () => {}
-      );
-    }
-    result.current.stake.setSkyToLock(params.skyToLock);
-    result.current.stake.setSkyToFree(params.skyToFree);
-    result.current.stake.setUsdsToWipe(params.usdsToWipe);
-    result.current.stake.setWipeAll(params.wipeAll);
-    result.current.stake.setUsdsToBorrow(params.usdsToBorrow);
-    result.current.stake.setSelectedRewardContract(params.selectedRewardContract);
-    result.current.stake.setSelectedDelegate(params.selectedDelegate);
-    result.current.stake.setRewardContractsToClaim(params.rewardContractsToClaim);
-    result.current.stake.setRestakeSkyRewards(params.restakeSkyRewards);
-  });
-  return result.current.stake.generateAllCalldata(params.ownerAddress, params.urnIndex, params.referralCode);
+function goldenKey(p: GenerateStakeCalldataParams): string {
+  const opt = (a?: string) => a ?? '·';
+  return [
+    p.flow,
+    p.ownerAddress,
+    p.urnIndex,
+    opt(p.urnAddress),
+    p.skyToLock,
+    p.skyToFree,
+    p.usdsToWipe,
+    p.wipeAll,
+    p.usdsToBorrow,
+    opt(p.selectedRewardContract),
+    opt(p.selectedDelegate),
+    opt(p.urnSelectedRewardContract),
+    opt(p.urnSelectedVoteDelegate),
+    p.rewardContractsToClaim ? `[${p.rewardContractsToClaim.join(',')}]` : '·',
+    p.restakeSkyRewards,
+    p.restakeSkyAmount,
+    p.referralCode
+  ].join('|');
 }
 
-/** Convenience: legacy OPEN-flow oracle. */
-function legacyOpenOutput(params: GenerateStakeCalldataParams): `0x${string}`[] {
-  return legacyOutput(params, StakeFlow.OPEN);
+/** The frozen legacy-widget output for a scenario. Throws on a missing key. */
+function goldenOutput(params: GenerateStakeCalldataParams): `0x${string}`[] {
+  const key = goldenKey(params);
+  const hit = goldenFixtures[key];
+  if (!hit) throw new Error(`No golden fixture for scenario: ${key}`);
+  return hit;
 }
 
-/** Convenience: legacy MANAGE-flow oracle. */
-function legacyManageOutput(params: GenerateStakeCalldataParams): `0x${string}`[] {
-  return legacyOutput(params, StakeFlow.MANAGE);
-}
-
-beforeEach(() => {
-  mockState.urnSelectedReward = undefined;
-  mockState.urnSelectedDelegate = undefined;
-  mockState.rewardClaims = undefined;
-  mockState.rewardContracts = undefined;
-});
-
-describe('generateStakeCalldata — OPEN flow golden parity vs legacy context', () => {
+describe('generateStakeCalldata — OPEN flow golden parity vs legacy fixtures', () => {
   it('open + lock only', () => {
     const params = scenario({ flow: 'open', skyToLock: 1_000_000n });
-    expect(generateStakeCalldata(params)).toEqual(legacyOpenOutput(params));
+    expect(generateStakeCalldata(params)).toEqual(goldenOutput(params));
     expect(generateStakeCalldata(params).length).toBeGreaterThan(0);
   });
 
@@ -194,9 +123,8 @@ describe('generateStakeCalldata — OPEN flow golden parity vs legacy context', 
       selectedRewardContract: FARM,
       selectedDelegate: DELEGATE
     });
-    const legacy = legacyOpenOutput(params);
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacy);
+    expect(pure).toEqual(goldenOutput(params));
     // open, lock, draw, selectFarm, selectDelegate — five distinct calls
     expect(pure).toHaveLength(5);
   });
@@ -208,7 +136,7 @@ describe('generateStakeCalldata — OPEN flow golden parity vs legacy context', 
       selectedRewardContract: FARM,
       referralCode: 12345
     });
-    expect(generateStakeCalldata(params)).toEqual(legacyOpenOutput(params));
+    expect(generateStakeCalldata(params)).toEqual(goldenOutput(params));
   });
 
   it('open with the default-0 referralCode matches legacy', () => {
@@ -218,16 +146,16 @@ describe('generateStakeCalldata — OPEN flow golden parity vs legacy context', 
       selectedRewardContract: FARM,
       referralCode: 0
     });
-    expect(generateStakeCalldata(params)).toEqual(legacyOpenOutput(params));
+    expect(generateStakeCalldata(params)).toEqual(goldenOutput(params));
   });
 
   it('emits the open calldata first when urnAddress is undefined (new position)', () => {
     const params = scenario({ flow: 'open', skyToLock: 1_000_000n });
     const pure = generateStakeCalldata(params);
-    const legacy = legacyOpenOutput(params);
-    // The legacy provider has no activeUrn in OPEN, so both begin with `open`.
-    expect(pure[0]).toBe(legacy[0]);
-    expect(pure).toEqual(legacy);
+    const golden = goldenOutput(params);
+    // The legacy provider had no activeUrn in OPEN, so both begin with `open`.
+    expect(pure[0]).toBe(golden[0]);
+    expect(pure).toEqual(golden);
   });
 });
 
@@ -245,7 +173,7 @@ describe('generateStakeCalldata — OPEN lock term (no isSkyRewardPosition guard
   });
 });
 
-describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy context', () => {
+describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy fixtures', () => {
   // Every MANAGE scenario manages an existing urn (activeUrn set).
   const manage = (overrides: Partial<GenerateStakeCalldataParams>) =>
     scenario({ flow: 'manage', urnAddress: URN, ...overrides });
@@ -253,21 +181,21 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
   it('repay (wipe) only', () => {
     const params = manage({ usdsToWipe: 100_000n });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([getStakeWipeCalldata({ ownerAddress: OWNER, urnIndex: 0n, amount: 100_000n })]);
   });
 
   it('wipeAll only (calldata emitted regardless of usdsToWipe)', () => {
     const params = manage({ wipeAll: true, usdsToWipe: 0n });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([getStakeWipeAllCalldata({ ownerAddress: OWNER, urnIndex: 0n })]);
   });
 
   it('free only', () => {
     const params = manage({ skyToFree: 500_000n });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeFreeCalldata({ ownerAddress: OWNER, urnIndex: 0n, toAddress: OWNER, amount: 500_000n })
     ]);
@@ -276,7 +204,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
   it('repay + free — repay is ordered before free (position-safety rule)', () => {
     const params = manage({ usdsToWipe: 100_000n, skyToFree: 500_000n });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeWipeCalldata({ ownerAddress: OWNER, urnIndex: 0n, amount: 100_000n }),
       getStakeFreeCalldata({ ownerAddress: OWNER, urnIndex: 0n, toAddress: OWNER, amount: 500_000n })
@@ -286,7 +214,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
   it('claim single reward', () => {
     const params = manage({ rewardContractsToClaim: [REWARD_A] });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeGetRewardCalldata({
         ownerAddress: OWNER,
@@ -300,7 +228,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
   it('claim multiple rewards — input order preserved', () => {
     const params = manage({ rewardContractsToClaim: [REWARD_A, REWARD_B] });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeGetRewardCalldata({
         ownerAddress: OWNER,
@@ -325,7 +253,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
       rewardContractsToClaim: [SKY_FARM]
     });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeGetRewardCalldata({
         ownerAddress: OWNER,
@@ -341,7 +269,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
   it('change farm only — differing selection from urn emits selectFarm', () => {
     const params = manage({ selectedRewardContract: FARM2, urnSelectedRewardContract: FARM });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeSelectRewardContractCalldata({
         ownerAddress: OWNER,
@@ -355,7 +283,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
   it('change delegate only — differing selection from urn emits selectDelegate', () => {
     const params = manage({ selectedDelegate: DELEGATE2, urnSelectedVoteDelegate: DELEGATE });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeSelectDelegateCalldata({ ownerAddress: OWNER, urnIndex: 0n, delegateAddress: DELEGATE2 })
     ]);
@@ -364,7 +292,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
   it('add lock', () => {
     const params = manage({ skyToLock: 1_000_000n });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeLockCalldata({ ownerAddress: OWNER, urnIndex: 0n, amount: 1_000_000n, refCode: 0 })
     ]);
@@ -373,7 +301,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
   it('draw more', () => {
     const params = manage({ usdsToBorrow: 500_000n });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeDrawCalldata({ ownerAddress: OWNER, urnIndex: 0n, toAddress: OWNER, amount: 500_000n })
     ]);
@@ -392,7 +320,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
       usdsToBorrow: 400_000n
     });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeWipeCalldata({ ownerAddress: OWNER, urnIndex: 0n, amount: 100_000n }),
       getStakeFreeCalldata({ ownerAddress: OWNER, urnIndex: 0n, toAddress: OWNER, amount: 200_000n }),
@@ -420,9 +348,11 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
       urnAddress: URN,
       rewardContractsToClaim: [REWARD_A, REWARD_B]
     });
-    // Legacy provider driven with StakeFlow.CLAIM must equal the pure `manage`
-    // output — CLAIM is not OPEN, so it takes the manage ordering branch.
-    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, StakeFlow.CLAIM));
+    // The capture run drove the legacy provider with StakeFlow.CLAIM for this
+    // scenario and its output collided (byte-identical, per the capture-time
+    // collision guard) with the MANAGE-driven fixture — CLAIM is not OPEN, so
+    // it takes the manage ordering branch. The fixture locks those bytes.
+    expect(generateStakeCalldata(params)).toEqual(goldenOutput(params));
   });
 });
 
@@ -433,21 +363,21 @@ describe('generateStakeCalldata — MANAGE gating edge cases golden parity', () 
   it('unchanged farm on existing urn (case-flipped) emits NO selectFarm', () => {
     const params = manage({ selectedRewardContract: FARM_UC, urnSelectedRewardContract: FARM_LC });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([]);
   });
 
   it('unchanged delegate on existing urn (case-flipped) emits NO selectDelegate', () => {
     const params = manage({ selectedDelegate: DELEGATE_UC, urnSelectedVoteDelegate: DELEGATE_LC });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([]);
   });
 
   it('undefined selection on existing urn with a set urn farm emits selectFarm with ZERO_ADDRESS', () => {
     const params = manage({ selectedRewardContract: undefined, urnSelectedRewardContract: FARM });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyManageOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     expect(pure).toEqual([
       getStakeSelectRewardContractCalldata({
         ownerAddress: OWNER,
@@ -461,29 +391,30 @@ describe('generateStakeCalldata — MANAGE gating edge cases golden parity', () 
   it('new urn (open) + no selection emits neither selectFarm nor selectDelegate', () => {
     const params = scenario({ flow: 'open', skyToLock: 1_000_000n });
     const pure = generateStakeCalldata(params);
-    expect(pure).toEqual(legacyOpenOutput(params));
+    expect(pure).toEqual(goldenOutput(params));
     // open + lock only — no select* calls
     expect(pure).toHaveLength(2);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Combinatorial golden-master matrix (headline AC of this slice).
+// Combinatorial golden-master matrix (headline AC of F1, fixture-backed since F7).
 //
 // The naive full cross-product of every dimension the ticket lists —
 //   flow(2) · skyToLock(2) · skyToFree(2) · usdsToBorrow(2) · usdsToWipe(2) ·
 //   wipeAll(2) · farm(4) · delegate(3) · claim(4) · restake(3) · referralCode(2)
 // — is 18,432 combinations. We do NOT enumerate all of them: the calldata
-// assembler (`context.tsx:296-408` / `generateStakeCalldata`) drops each
-// computed element into a FIXED slot of a static array and then
-// `.filter(Boolean)`s the whole thing, so the presence and encoding of any one
-// element are independent of every other, with ONE exception: the lock slot's
-// amount is `skyToLock + restake addend`, so `skyToLock` and `restake` jointly
-// determine whether lock is emitted. That single cross-term is covered explicitly
-// by Matrix D — NOT by Matrix B, which pins `skyToLock` non-zero. Given per-element
-// fixed-slot independence for every other pair, the UNION of four orthogonal
-// full-factorial sub-matrices exercises every ordering + gating interaction the
-// full product would, deterministically and with no randomness:
+// assembler (`generateStakeCalldata`, extracted byte-identical from the legacy
+// `context.tsx`) drops each computed element into a FIXED slot of a static
+// array and then `.filter(Boolean)`s the whole thing, so the presence and
+// encoding of any one element are independent of every other, with ONE
+// exception: the lock slot's amount is `skyToLock + restake addend`, so
+// `skyToLock` and `restake` jointly determine whether lock is emitted. That
+// single cross-term is covered explicitly by Matrix D — NOT by Matrix B, which
+// pins `skyToLock` non-zero. Given per-element fixed-slot independence for
+// every other pair, the UNION of four orthogonal full-factorial sub-matrices
+// exercises every ordering + gating interaction the full product would,
+// deterministically and with no randomness:
 //
 //   Matrix A — every amount/wipeAll combination × flow (selections/claims/restake
 //              held empty): proves amount-derived ordering + wipe/wipeAll gating.
@@ -501,29 +432,30 @@ describe('generateStakeCalldata — MANAGE gating edge cases golden parity', () 
 //
 // Cap: 64 + 576 + 48 + 12 = 700 cases (stated here per the AC). "Partial amounts +
 // partial selections" combos not enumerated are structurally guaranteed by the
-// per-element fixed-slot filtering above. Each case renders a FRESH legacy
-// provider (the proven `legacyOutput` path) so restake/gating state cannot bleed
-// between cases; `it.each` names each case with its serialized combo so a
-// failure points straight at the offending inputs.
+// per-element fixed-slot filtering above. Every case resolves its frozen legacy
+// bytes from the fixtures via `goldenKey`; `it.each` names each case with its
+// serialized combo so a failure points straight at the offending inputs.
+//
+// restake:on0 note (fixture provenance): the legacy provider's restake effect
+// reset `restakeSkyRewards` to false when the mocked claim balance was 0n; the
+// pure function keeps the flag but adds 0n — both agreed on lock at capture
+// time, and the fixture holds those agreed bytes.
 // ---------------------------------------------------------------------------
 
 type MatrixDim = {
   tag: string;
   over: Partial<GenerateStakeCalldataParams>;
-  flowEnum?: StakeFlow;
 };
 
 type MatrixCase = {
   label: string;
   params: GenerateStakeCalldataParams;
-  flowEnum: StakeFlow;
 };
 
 /**
  * Deterministic cartesian product of named dimensions. Merges each dimension's
- * `over` (later dims win) onto `base`, concatenates the `tag`s into a debuggable
- * label, and carries the flow dimension's `flowEnum` through to drive the legacy
- * oracle. No randomness — pure enumeration in declaration order.
+ * `over` (later dims win) onto `base` and concatenates the `tag`s into a
+ * debuggable label. No randomness — pure enumeration in declaration order.
  */
 function product(dims: MatrixDim[][], base: Partial<GenerateStakeCalldataParams> = {}): MatrixCase[] {
   let combos: MatrixDim[][] = [[]];
@@ -534,18 +466,16 @@ function product(dims: MatrixDim[][], base: Partial<GenerateStakeCalldataParams>
     const over = combo.reduce<Partial<GenerateStakeCalldataParams>>((acc, d) => ({ ...acc, ...d.over }), {
       ...base
     });
-    const flowDim = combo.find(d => d.flowEnum !== undefined);
     return {
       label: combo.map(d => d.tag).join(' '),
-      params: scenario(over),
-      flowEnum: flowDim!.flowEnum!
+      params: scenario(over)
     };
   });
 }
 
 const flowDim: MatrixDim[] = [
-  { tag: 'open', over: { flow: 'open', urnAddress: undefined }, flowEnum: StakeFlow.OPEN },
-  { tag: 'manage', over: { flow: 'manage', urnAddress: URN }, flowEnum: StakeFlow.MANAGE }
+  { tag: 'open', over: { flow: 'open', urnAddress: undefined } },
+  { tag: 'manage', over: { flow: 'manage', urnAddress: URN } }
 ];
 
 const skyToLockDim: MatrixDim[] = [
@@ -595,8 +525,6 @@ const claimDim: MatrixDim[] = [
   { tag: 'claim:one', over: { rewardContractsToClaim: [REWARD_A] } },
   { tag: 'claim:two', over: { rewardContractsToClaim: [REWARD_A, REWARD_B] } }
 ];
-// restake:on0 → the legacy effect resets restakeSkyRewards to false (claimBalance
-// 0n); the pure function keeps the flag but adds 0n — both must agree on lock.
 const restakeDim: MatrixDim[] = [
   { tag: 'restake:off', over: { restakeSkyRewards: false, restakeSkyAmount: 0n } },
   { tag: 'restake:on+', over: { restakeSkyRewards: true, restakeSkyAmount: 250_000n } },
@@ -640,31 +568,31 @@ const matrixC = product([flowDim, usdsToWipeDim, farmDim, delegateDim], {
 // JOINT function of these two dimensions. Matrix B holds skyToLock non-zero, so the
 // skyToLock=0 × restake:on cells — where lock is emitted purely by the restake
 // addend (on+, total>0) or suppressed altogether (on0, total=0) — are asserted
-// against the legacy oracle only here. All other amounts stay at their defaults so
+// against the frozen oracle only here. All other amounts stay at their defaults so
 // the lock slot is the only thing in play.
 const matrixD = product([flowDim, skyToLockDim, restakeDim]);
 
 describe('generateStakeCalldata — Matrix A: amounts × flow (full factorial)', () => {
-  it.each(matrixA)('$label', ({ params, flowEnum }) => {
-    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
+  it.each(matrixA)('$label', ({ params }) => {
+    expect(generateStakeCalldata(params)).toEqual(goldenOutput(params));
   });
 });
 
 describe('generateStakeCalldata — Matrix B: selections/claims/restake/referralCode × flow', () => {
-  it.each(matrixB)('$label', ({ params, flowEnum }) => {
-    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
+  it.each(matrixB)('$label', ({ params }) => {
+    expect(generateStakeCalldata(params)).toEqual(goldenOutput(params));
   });
 });
 
 describe('generateStakeCalldata — Matrix C: wipeAll × usdsToWipe × selections × flow', () => {
-  it.each(matrixC)('$label', ({ params, flowEnum }) => {
-    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
+  it.each(matrixC)('$label', ({ params }) => {
+    expect(generateStakeCalldata(params)).toEqual(goldenOutput(params));
   });
 });
 
 describe('generateStakeCalldata — Matrix D: skyToLock × restake × flow (lock cross-term)', () => {
-  it.each(matrixD)('$label', ({ params, flowEnum }) => {
-    expect(generateStakeCalldata(params)).toEqual(legacyOutput(params, flowEnum));
+  it.each(matrixD)('$label', ({ params }) => {
+    expect(generateStakeCalldata(params)).toEqual(goldenOutput(params));
   });
 });
 
@@ -679,5 +607,20 @@ describe('generateStakeCalldata — matrix cardinality guard', () => {
     expect(new Set(matrixB.map(c => c.label)).size).toBe(matrixB.length);
     expect(new Set(matrixC.map(c => c.label)).size).toBe(matrixC.length);
     expect(new Set(matrixD.map(c => c.label)).size).toBe(matrixD.length);
+  });
+
+  it('keeps the frozen fixture set intact (709 distinct scenarios captured)', () => {
+    // Captured from the legacy StakeModuleWidgetProvider oracle in the F7 flip
+    // commit, with all 724 legacy-vs-pure assertions green. Distinct-scenario
+    // count < case count because a handful of cases share identical params
+    // (e.g. the CLAIM-flow ≡ MANAGE equivalence pair) and matrix defaults
+    // overlap some handwritten scenarios.
+    expect(Object.keys(goldenFixtures).length).toBe(709);
+    for (const output of Object.values(goldenFixtures)) {
+      expect(Array.isArray(output)).toBe(true);
+      for (const hex of output) {
+        expect(hex).toMatch(/^0x[0-9a-f]+$/i);
+      }
+    }
   });
 });
