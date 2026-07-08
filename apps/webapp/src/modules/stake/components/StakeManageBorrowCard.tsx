@@ -183,7 +183,7 @@ export function StakeManageBorrowCard({
               onValueChange={value => handleSliderChange(value[0])}
               aria-label={t`Liquidation risk meter`}
               data-testid="stake-manage-borrow-slider"
-              className="[&_[data-slot=slider-range]]:bg-orange-400 [&_[data-slot=slider-thumb]]:border-orange-400"
+              className="[&_[data-slot=slider-track]]:bg-textSecondary/10 [&_[data-slot=slider-range]]:bg-orange-400 [&_[data-slot=slider-thumb]]:border-orange-400"
             />
             <div className="text-textSecondary flex items-center justify-between text-xs">
               {isRepay ? (

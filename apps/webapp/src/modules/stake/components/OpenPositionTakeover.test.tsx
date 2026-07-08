@@ -308,7 +308,11 @@ describe('OpenPositionTakeover', () => {
 
     expect(h.launchParams?.usdsToBorrow).toBe(50n * WAD);
     expect(screen.getByTestId('stake-takeover-risk-pill').textContent).toBe('Medium');
-    expect(screen.getByTestId('stake-takeover-borrow-slider')).toBeTruthy();
+    const slider = screen.getByTestId('stake-takeover-borrow-slider');
+    expect(slider).toBeTruthy();
+    // The vendored shadcn track paints bg-muted, which is undefined in the app
+    // theme — the scoped override keeps the track visible.
+    expect(slider.className).toContain('[&_[data-slot=slider-track]]:bg-textSecondary/10');
     // Card 1 now shows the min-stake-to-borrow stat.
     expect(screen.getByTestId('stake-takeover-min-stake')).toBeTruthy();
   });
@@ -333,7 +337,11 @@ describe('OpenPositionTakeover', () => {
 
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
 
-    expect(screen.getByTestId('stake-takeover-min-collateral-warning')).toBeTruthy();
+    const warning = screen.getByTestId('stake-takeover-min-collateral-warning');
+    expect(warning).toBeTruthy();
+    // The callout prose spells the dust floor out in full (UX 1104:19793).
+    expect(warning.textContent).toContain('30,000 USDS');
+    expect(warning.textContent).not.toContain('30K USDS');
     expect((screen.getByTestId('stake-takeover-borrow-amount') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
   });

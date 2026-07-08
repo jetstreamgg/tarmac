@@ -105,6 +105,7 @@ export function StakeManageStakeCard({
             onValueChange={value => onSliderChange(value[0])}
             aria-label={isStake ? t`Stake percentage` : t`Withdraw percentage`}
             data-testid="stake-manage-stake-slider"
+            className="[&_[data-slot=slider-track]]:bg-textSecondary/10"
           />
           <div className="text-textSecondary flex items-center justify-between text-xs">
             <span>0%</span>

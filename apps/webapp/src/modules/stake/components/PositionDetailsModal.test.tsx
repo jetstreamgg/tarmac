@@ -125,6 +125,14 @@ describe('PositionDetailsModal', () => {
     expect(screen.queryByTestId('stake-manage-cta-borrow')).toBeNull();
   });
 
+  it('keeps menu-row chevrons persistently visible (no hover-only opacity gate)', () => {
+    renderModal();
+
+    const chevron = screen.getByTestId('stake-manage-menu-claim').querySelector('svg.lucide-chevron-right');
+    expect(chevron).toBeTruthy();
+    expect(chevron?.getAttribute('class') ?? '').not.toContain('opacity-0');
+  });
+
   it('reduces the menu and adds the Borrow USDS CTA without debt (UX 1050:21185)', () => {
     renderModal({
       hasDebt: false,

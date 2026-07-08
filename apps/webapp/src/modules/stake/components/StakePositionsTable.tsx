@@ -50,14 +50,14 @@ function RiskMeter({ riskLevel }: { riskLevel?: RiskLevel }) {
   const segments = riskLevel ? RISK_SEGMENTS[riskLevel] : undefined;
   return (
     <span
-      className="border-borderPrimary inline-flex w-fit items-center gap-1 rounded-full border px-2.5 py-2"
+      className="border-borderPrimary inline-flex w-fit items-center gap-px rounded-full border px-1.5 py-1.5"
       aria-hidden
     >
       {[0, 1, 2].map(segment => (
         <span
           key={segment}
           className={cn(
-            'h-1 w-2.5 rounded-full',
+            'h-[3px] w-2 rounded-full',
             segments && segment < segments.lit ? segments.color : 'bg-textSecondary/30'
           )}
         />

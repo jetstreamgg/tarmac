@@ -167,6 +167,16 @@ describe('StakePositionsTable', () => {
     expect(screen.getAllByText('$128.90').length).toBeGreaterThan(0);
   });
 
+  it('renders the risk meter at the hi-fi geometry: 6px pill padding, 1px gap, 8×3 segments', () => {
+    renderTable();
+
+    const meter = screen.getByTestId('stake-position-row-1').querySelector('span[aria-hidden]');
+    expect(meter?.className).toContain('px-1.5 py-1.5');
+    expect(meter?.className).toContain('gap-px');
+    const segment = meter?.querySelector('span');
+    expect(segment?.className).toContain('h-[3px] w-2');
+  });
+
   it('renders a dash, not an unlit meter, when the vault read fails on a debt-carrying row', () => {
     h.vaultError = new Error('rpc down');
     renderTable();

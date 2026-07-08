@@ -121,7 +121,7 @@ export function StakeTakeoverBorrowCard({
               onValueChange={value => handleSliderChange(value[0])}
               aria-label="Liquidation risk meter"
               data-testid="stake-takeover-borrow-slider"
-              className="[&_[data-slot=slider-range]]:bg-orange-400 [&_[data-slot=slider-thumb]]:border-orange-400"
+              className="[&_[data-slot=slider-track]]:bg-textSecondary/10 [&_[data-slot=slider-range]]:bg-orange-400 [&_[data-slot=slider-thumb]]:border-orange-400"
             />
             <div className="text-textSecondary flex items-center justify-between text-xs">
               <span className="flex items-center gap-1">
@@ -158,9 +158,8 @@ export function StakeTakeoverBorrowCard({
               </span>
               <span className="text-textSecondary">
                 <Trans>
-                  The minimum borrow is{' '}
-                  {dust !== undefined ? formatBigInt(dust, { compact: true }) : NO_VALUE} USDS, which requires
-                  at least{' '}
+                  The minimum borrow is {dust !== undefined ? formatBigInt(dust) : NO_VALUE} USDS, which
+                  requires at least{' '}
                   {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY as
                   collateral. You currently have {formatBigInt(skyToLock)}/
                   {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY

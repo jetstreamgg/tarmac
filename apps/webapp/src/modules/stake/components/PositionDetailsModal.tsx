@@ -143,10 +143,7 @@ function MenuRow({
         {label}
         {chip}
       </span>
-      <ChevronRight
-        className="text-textSecondary h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100"
-        aria-hidden
-      />
+      <ChevronRight className="text-textSecondary h-4 w-4" aria-hidden />
     </button>
   );
 }
