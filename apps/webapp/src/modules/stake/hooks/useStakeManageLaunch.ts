@@ -36,7 +36,8 @@ export function buildStakeManageSteps({
   hasFree,
   hasWipe,
   hasBorrow,
-  hasDelegateChange
+  hasDelegateChange,
+  claimSymbols
 }: {
   needsSkyAllowance: boolean;
   needsUsdsAllowance: boolean;
@@ -45,6 +46,8 @@ export function buildStakeManageSteps({
   hasWipe: boolean;
   hasBorrow: boolean;
   hasDelegateChange: boolean;
+  /** Display symbols for the getReward legs, aligned to the engine's free-before-claim order. */
+  claimSymbols?: string[];
 }): string[] {
   return [
     // Approval steps only render alongside the action that needs them, so a
@@ -54,6 +57,7 @@ export function buildStakeManageSteps({
     needsUsdsAllowance && hasWipe && t`Approve USDS`,
     hasWipe && t`Repay USDS`,
     hasFree && t`Withdraw SKY`,
+    ...(claimSymbols ?? []).map(symbol => t`Claim ${symbol}`),
     hasDelegateChange && t`Change delegate`,
     hasLock && t`Stake SKY`,
     hasBorrow && t`Borrow USDS`
@@ -72,6 +76,10 @@ export interface UseStakeManageLaunchParams {
   selectedDelegate: `0x${string}` | undefined;
   /** Form validity — gates the engine's prepare/simulation. */
   enabled: boolean;
+  /** Reward contracts to bundle a getReward leg for, e.g. a liquidation-recovery claim. */
+  rewardContractsToClaim?: `0x${string}`[];
+  /** Display symbols aligned to `rewardContractsToClaim`, for step labels only. */
+  claimSymbols?: string[];
   /** Review-screen body (per-action amount heroes / delegate From→To). */
   transactionContent?: ReactNode;
   onSuccess?: () => void;
@@ -100,6 +108,8 @@ export function useStakeManageLaunch({
   wipeAll,
   selectedDelegate,
   enabled,
+  rewardContractsToClaim,
+  claimSymbols,
   transactionContent,
   onSuccess
 }: UseStakeManageLaunchParams) {
@@ -127,7 +137,7 @@ export function useStakeManageLaunch({
     usdsToBorrow,
     selectedRewardContract: urnSelectedRewardContract,
     selectedDelegate,
-    rewardContractsToClaim: undefined,
+    rewardContractsToClaim,
     restakeSkyRewards: false,
     restakeSkyAmount: 0n,
     referralCode: REFERRAL_CODE
@@ -150,7 +160,10 @@ export function useStakeManageLaunch({
   const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
   const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
 
-  // Legacy StakeModuleWidget/index.tsx:194-205 verbatim (M19).
+  // Legacy StakeModuleWidget/index.tsx:194-205 verbatim (M19). `calldata` already
+  // includes any getReward legs (useStakeCalldata's manage ordering), so a
+  // bundled claim counts toward the multi-leg batch condition without a
+  // separate check here.
   const needsAllowance = needsSkyAllowance || needsUsdsAllowance;
   const [batchEnabled] = useBatchToggle();
   const { data: batchSupported } = useIsBatchSupported();
@@ -184,7 +197,8 @@ export function useStakeManageLaunch({
     hasFree,
     hasWipe,
     hasBorrow,
-    hasDelegateChange
+    hasDelegateChange,
+    claimSymbols
   });
 
   const { data: rewardContractTokens } = useRewardContractTokens(urnSelectedRewardContract);

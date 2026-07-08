@@ -12,6 +12,8 @@ i18n.activate('en');
 const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 const URN_ADDRESS = '0x8888888888888888888888888888888888888888' as const;
 const REWARD_CONTRACT = '0x0650CAF159C5A49f711e8169D4336ECB9b950275' as const;
+const SKY_REWARD_CONTRACT = '0x1111111111111111111111111111111111111111' as const;
+const SPK_REWARD_CONTRACT = '0x3333333333333333333333333333333333333333' as const;
 const CURRENT_DELEGATE = '0x5555555555555555555555555555555555555555' as const;
 const NEW_DELEGATE = '0x4444444444444444444444444444444444444444' as const;
 const URN_INDEX = 1n;
@@ -199,6 +201,34 @@ describe('buildStakeManageSteps', () => {
       })
     ).toEqual(['Borrow USDS']);
   });
+
+  it('places one Claim {symbol} step per claimSymbols entry right after Withdraw SKY', () => {
+    expect(
+      buildStakeManageSteps({
+        needsSkyAllowance: false,
+        needsUsdsAllowance: false,
+        hasLock: false,
+        hasFree: true,
+        hasWipe: false,
+        hasBorrow: false,
+        hasDelegateChange: false,
+        claimSymbols: ['SKY', 'SPK']
+      })
+    ).toEqual(['Withdraw SKY', 'Claim SKY', 'Claim SPK']);
+
+    // No claimSymbols — untouched (no Claim steps at all).
+    expect(
+      buildStakeManageSteps({
+        needsSkyAllowance: false,
+        needsUsdsAllowance: false,
+        hasLock: false,
+        hasFree: true,
+        hasWipe: false,
+        hasBorrow: false,
+        hasDelegateChange: false
+      })
+    ).toEqual(['Withdraw SKY']);
+  });
 });
 
 describe('useStakeManageLaunch — calldata parity with the F1 seam', () => {
@@ -262,6 +292,22 @@ describe('useStakeManageLaunch — calldata parity with the F1 seam', () => {
     renderLaunch({ enabled: false });
     expect(h.capturedEnabled).toBe(false);
   });
+
+  it('threads rewardContractsToClaim into the calldata fed to the engine', () => {
+    renderLaunch({ rewardContractsToClaim: [SKY_REWARD_CONTRACT, SPK_REWARD_CONTRACT] });
+
+    const multicall = (h.capturedCalls as RawCall[])[1];
+    expect(multicall.args?.[0]).toEqual(
+      expectedCalldata({ rewardContractsToClaim: [SKY_REWARD_CONTRACT, SPK_REWARD_CONTRACT] })
+    );
+  });
+
+  it('leaves the calldata byte-for-byte identical without the new params (default undefined)', () => {
+    renderLaunch();
+
+    const multicall = (h.capturedCalls as RawCall[])[1];
+    expect(multicall.args?.[0]).toEqual(expectedCalldata());
+  });
 });
 
 describe('useStakeManageLaunch — launch() config', () => {
@@ -298,6 +344,17 @@ describe('useStakeManageLaunch — launch() config', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
     expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Approve USDS', 'Repay USDS', 'Withdraw SKY']);
+  });
+
+  it('orders bundled claim steps after Withdraw SKY (recovery launch shape)', () => {
+    h.usdsAllowance = HAS_ALLOWANCE;
+    const { result } = renderLaunch({
+      usdsToWipe: 0n,
+      rewardContractsToClaim: [SKY_REWARD_CONTRACT, SPK_REWARD_CONTRACT],
+      claimSymbols: ['SKY', 'SPK']
+    });
+    act(() => result.current.launch());
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Withdraw SKY', 'Claim SKY', 'Claim SPK']);
   });
 
   it('carries the legacy manage stakeData analytics shape (M15)', () => {
