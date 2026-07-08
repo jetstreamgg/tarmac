@@ -46,7 +46,11 @@ export function StakePositionRowBanner({
   const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
   const { data: vault, isLoading: vaultLoading } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
   const { data: rewardContracts } = useStakeRewardContracts();
-  const { data: toClaim, isLoading: claimableLoading } = useRewardContractsToClaim({
+  const {
+    data: toClaim,
+    isLoading: claimableLoading,
+    error: claimableError
+  } = useRewardContractsToClaim({
     rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
     addresses: urnAddress ? [urnAddress] : [],
     chainId,
@@ -61,12 +65,16 @@ export function StakePositionRowBanner({
     if (vaultLoading || claimableLoading) return null;
 
     const claimable = toClaim ?? [];
-    const rewardsUsd = formatUsd(
-      claimable.reduce((total, reward) => {
-        const price = parseFloat(prices?.[reward.rewardSymbol]?.price ?? '0');
-        return total + Number(formatUnits(reward.claimBalance, 18)) * price;
-      }, 0)
-    );
+    // A failed claimables read is "unknown", not $0.00.
+    const rewardsUsd =
+      claimableError && !toClaim
+        ? NO_VALUE
+        : formatUsd(
+            claimable.reduce((total, reward) => {
+              const price = parseFloat(prices?.[reward.rewardSymbol]?.price ?? '0');
+              return total + Number(formatUnits(reward.claimBalance, 18)) * price;
+            }, 0)
+          );
     const refund = formatStakeAmount(vault?.collateralAmount ?? 0n);
 
     return (

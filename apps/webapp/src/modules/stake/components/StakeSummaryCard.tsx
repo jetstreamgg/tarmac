@@ -122,12 +122,18 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   const totalBorrowed = liveTotalDebt ?? subgraphTotalBorrowed;
   const totalBorrowedUsd = Number(formatUnits(totalBorrowed, 18));
   const { data: rewardContracts } = useStakeRewardContracts();
-  const { data: toClaim, isLoading: claimableLoading } = useRewardContractsToClaim({
+  const {
+    data: toClaim,
+    isLoading: claimableLoading,
+    error: claimableError
+  } = useRewardContractsToClaim({
     rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
     addresses: urnAddresses ?? [],
     chainId,
     enabled: Boolean(urnAddresses?.length && rewardContracts?.length)
   });
+  // A failed claimables read is "unknown", not $0.00 — dash both reward stats.
+  const claimableUnavailable = Boolean(claimableError && !toClaim);
   const { data: prices } = usePrices();
   const priceOf = useCallback((symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'), [prices]);
   const claimableUsd = (toClaim ?? []).reduce(
@@ -204,14 +210,14 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
 
       <div className="border-textSecondary/10 grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-5">
         <SummaryStat label={<Trans>Claimable rewards</Trans>} isLoading={claimableLoading} icon={rewardIcons}>
-          {formatUsd(claimableUsd)}
+          {claimableUnavailable ? NO_VALUE : formatUsd(claimableUsd)}
         </SummaryStat>
         <SummaryStat
           label={<Trans>Total rewards earned</Trans>}
           isLoading={claimableLoading || historyLoading}
           icon={rewardIcons}
         >
-          {formatUsd(rewardsEarnedUsd)}
+          {claimableUnavailable ? NO_VALUE : formatUsd(rewardsEarnedUsd)}
         </SummaryStat>
         <SummaryStat
           label={<Trans>Total borrowed</Trans>}

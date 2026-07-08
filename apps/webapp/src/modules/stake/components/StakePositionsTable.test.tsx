@@ -31,7 +31,9 @@ vi.mock('wagmi', async importOriginal => {
 });
 
 const h = vi.hoisted(() => ({
-  vault: { riskLevel: 'LOW' } as Record<string, unknown>
+  vault: { riskLevel: 'LOW' } as Record<string, unknown> | undefined,
+  vaultError: null as Error | null,
+  claimError: null as Error | null
 }));
 
 // Per-row reads: urn address, vault risk, claimable rewards, prices — all
@@ -41,21 +43,29 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     useStakeUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111', isLoading: false }),
-    useVault: () => ({ data: h.vault, isLoading: false, error: null }),
+    useVault: () => ({
+      data: h.vaultError ? undefined : h.vault,
+      isLoading: false,
+      error: h.vaultError
+    }),
     useStakeRewardContracts: () => ({
       data: [{ contractAddress: '0x2222222222222222222222222222222222222222' }],
       isLoading: false
     }),
-    useRewardContractsToClaim: () => ({
-      data: [
-        {
-          contractAddress: '0x2222222222222222222222222222222222222222',
-          claimBalance: 128900000000000000000n, // 128.9 SKY
-          rewardSymbol: 'SKY'
-        }
-      ],
-      isLoading: false
-    }),
+    useRewardContractsToClaim: () =>
+      h.claimError
+        ? { data: undefined, isLoading: false, error: h.claimError }
+        : {
+            data: [
+              {
+                contractAddress: '0x2222222222222222222222222222222222222222',
+                claimBalance: 128900000000000000000n, // 128.9 SKY
+                rewardSymbol: 'SKY'
+              }
+            ],
+            isLoading: false,
+            error: null
+          },
     usePrices: () => ({ data: { SKY: { price: '1' } }, isLoading: false, error: null })
   };
 });
@@ -98,7 +108,12 @@ const renderTable = (
 ) =>
   render(
     <I18nProvider i18n={i18n}>
-      <StakePositionsTable positions={positions} isLoading={isLoading} error={null} onRemediate={onRemediate} />
+      <StakePositionsTable
+        positions={positions}
+        isLoading={isLoading}
+        error={null}
+        onRemediate={onRemediate}
+      />
     </I18nProvider>
   );
 
@@ -107,6 +122,8 @@ describe('StakePositionsTable', () => {
     mockSearchParams = new URLSearchParams();
     setSearchParamsMock.mockClear();
     h.vault = { riskLevel: 'LOW' };
+    h.vaultError = null;
+    h.claimError = null;
   });
 
   afterEach(cleanup);
@@ -148,6 +165,23 @@ describe('StakePositionsTable', () => {
 
     // 128.9 SKY * $1 — one per visible row (both rows share the mocked reads).
     expect(screen.getAllByText('$128.90').length).toBeGreaterThan(0);
+  });
+
+  it('renders a dash, not an unlit meter, when the vault read fails on a debt-carrying row', () => {
+    h.vaultError = new Error('rpc down');
+    renderTable();
+
+    // Only the row with subgraph debt dashes; the zero-debt row keeps its
+    // ordinary unlit meter (nothing is being masked there).
+    expect(screen.getAllByTestId('stake-position-risk-unavailable').length).toBe(1);
+  });
+
+  it('renders a dash, not $0.00, when the claimables read fails', () => {
+    h.claimError = new Error('rpc down');
+    renderTable();
+
+    expect(screen.getAllByTestId('stake-position-claimable-unavailable').length).toBeGreaterThan(0);
+    expect(screen.queryByText('$128.90')).toBeNull();
   });
 
   it('renders the empty state when the user has no positions', () => {

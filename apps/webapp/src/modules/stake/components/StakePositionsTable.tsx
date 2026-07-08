@@ -82,11 +82,20 @@ function LiquidatedBadge() {
 /** Liquidation-risk cell: liquidated badge, vault risk for urns with debt, or an unlit meter. */
 function PositionRiskCell({ position }: { position: StakeUserPosition }) {
   const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
-  const { data: vault, isLoading } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
+  const { data: vault, isLoading, error } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
   const hasDebt = position.usdsDebt > 0n;
 
   if (isLiquidatedStakePosition(position)) return <LiquidatedBadge />;
   if (hasDebt && isLoading) return <Skeleton className="h-5 w-14" />;
+  if (hasDebt && error && !vault) {
+    // A failed read on a debt-carrying urn must not render the unlit
+    // "no risk" meter — that masks a position that may be near liquidation.
+    return (
+      <span data-testid="stake-position-risk-unavailable" className="text-textSecondary text-sm">
+        –
+      </span>
+    );
+  }
   return <RiskMeter riskLevel={hasDebt ? vault?.riskLevel : undefined} />;
 }
 
@@ -113,7 +122,11 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
   const chainId = useChainId();
   const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
   const { data: rewardContracts } = useStakeRewardContracts();
-  const { data: toClaim, isLoading } = useRewardContractsToClaim({
+  const {
+    data: toClaim,
+    isLoading,
+    error
+  } = useRewardContractsToClaim({
     rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
     addresses: urnAddress ? [urnAddress] : [],
     chainId,
@@ -122,6 +135,14 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
   const { data: prices } = usePrices();
 
   if (isLoading || !urnAddress) return <Skeleton className="h-5 w-16" />;
+  if (error && !toClaim) {
+    // A failed claimables read is "unknown", not $0.00.
+    return (
+      <span data-testid="stake-position-claimable-unavailable" className="text-textSecondary text-sm">
+        –
+      </span>
+    );
+  }
 
   const claimable = toClaim ?? [];
   const usdValue = claimable.reduce((total, reward) => {
