@@ -66,6 +66,15 @@
   --color-termsCard: #181720;
   --color-termsBtnHover: rgb(17, 16, 31);
   --color-termsBtnActive: rgb(34, 32, 66);
+  /* E2 convert glass tokens — dark values are the Figma source values
+     (colors/bg/bg-secondary, components/badges/bg-secondary,
+     colors/border/border-secondary, and the flip control's literal fills);
+     light values are interim (G2 owns full light parity). */
+  --color-glassSurface: rgba(188, 182, 239, 0.05);
+  --color-glassBadge: rgba(188, 182, 239, 0.1);
+  --color-glassBorder: rgba(188, 182, 239, 0.2);
+  --color-flipSurface: #1b1735;
+  --color-flipRing: #140f2b;
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
@@ -398,6 +407,13 @@
     --color-border: rgba(26, 24, 85, 0.12);
     --color-borderActive: rgba(26, 24, 85, 0.25);
     --color-borderPurple: #b9a8ff;
+
+    /* E2 convert glass tokens (interim light values; G2 owns parity) */
+    --color-glassSurface: rgba(255, 255, 255, 0.5);
+    --color-glassBadge: rgba(26, 24, 85, 0.06);
+    --color-glassBorder: rgba(26, 24, 85, 0.2);
+    --color-flipSurface: rgba(255, 255, 255, 0.9);
+    --color-flipRing: #e8ebfa;
 
     /* Lighter purple for active nav tabs / toggles (primary) and connect/chain
        buttons (primary-bright); dark keeps the deep indigo from :root. */

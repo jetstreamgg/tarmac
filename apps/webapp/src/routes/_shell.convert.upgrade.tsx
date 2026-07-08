@@ -1,8 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { ConvertIntent } from '@/lib/enums';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { keepSearch } from '@/lib/navigation';
 
-// Upgrade is mainnet-only; the L2 redirect lives in useAppOrchestration's
-// route-validation effect where the connected chain is known.
+// The Upgrade surface is parked (unreachable) pending the product decision on
+// folding DAI→USDS / MKR→SKY onto the V2 convert surface vs retiring it.
 export const Route = createFileRoute('/_shell/convert/upgrade')({
-  staticData: { convertIntent: ConvertIntent.UPGRADE_INTENT }
+  beforeLoad: () => {
+    throw redirect({ to: '/convert', search: keepSearch, replace: true });
+  }
 });

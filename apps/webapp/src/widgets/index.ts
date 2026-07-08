@@ -39,7 +39,6 @@ export { TradeWidget } from './TradeWidget';
 export { L2TradeWidget as BaseTradeWidget } from './L2TradeWidget';
 export { L2TradeWidget as ArbitrumTradeWidget } from './L2TradeWidget';
 export { L2TradeWidget } from './L2TradeWidget';
-export { PsmConversionWidget } from './PsmConversionWidget';
 export { BalancesWidget } from './BalancesWidget';
 export type { BalancesWidgetProps } from './BalancesWidget';
 export { StakeModuleWidget } from './StakeModuleWidget/index';

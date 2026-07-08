@@ -1,14 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import {
-  keepSearch,
-  useAppSearchParams,
-  useRouteIntent,
-  useRouteConvertIntent,
-  useRouteEntityParams
-} from '@/lib/navigation';
+import { keepSearch, useAppSearchParams, useRouteIntent, useRouteEntityParams } from '@/lib/navigation';
 import { QueryParams, CHAIN_WIDGET_MAP, COMING_SOON_MAP } from '@/lib/constants';
-import { ConvertIntent, Intent } from '@/lib/enums';
+import { Intent } from '@/lib/enums';
 
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
 import { useAvailableTokenRewardContracts } from '@/hooks';
@@ -23,7 +17,6 @@ import { usePageLoadNotifications } from './usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
-import { isL2ChainId } from '@/utils';
 
 /**
  * App-level orchestration that must run once for every module route: route
@@ -37,7 +30,6 @@ export function useAppOrchestration(): { intent: Intent } {
   const navigate = useNavigate();
 
   const intent = useRouteIntent();
-  const convertIntent = useRouteConvertIntent();
   const { rewardContract } = useRouteEntityParams();
 
   const chainId = useChainId();
@@ -132,12 +124,6 @@ export function useAppOrchestration(): { intent: Intent } {
       return;
     }
 
-    // Upgrade is not available on L2 chains → Convert overview.
-    if (convertIntent === ConvertIntent.UPGRADE_INTENT && isL2ChainId(newChainId)) {
-      void navigate({ to: '/convert', search: keepSearch, replace: true });
-      return;
-    }
-
     // Reward detail routes must point at a reward contract available on the
     // target chain.
     if (
@@ -146,14 +132,14 @@ export function useAppOrchestration(): { intent: Intent } {
     ) {
       void navigate({ to: '/earn/rewards', search: keepSearch, replace: true });
     }
-  }, [intent, convertIntent, rewardContract, newChainId, rewardContracts, navigate]);
+  }, [intent, rewardContract, newChainId, rewardContracts, navigate]);
 
   // Run validation on the remaining query-driven search params whenever they change
   useEffect(() => {
-    setSearchParams(params => validateSearchParams(params, intent, convertIntent, isL2ChainId(newChainId)), {
+    setSearchParams(params => validateSearchParams(params, intent), {
       replace: true
     });
-  }, [searchParams, intent, convertIntent, newChainId]);
+  }, [searchParams, intent, newChainId]);
 
   useEffect(() => {
     // If there's no network param, default to the current chain
