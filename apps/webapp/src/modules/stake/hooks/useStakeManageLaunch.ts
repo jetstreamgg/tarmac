@@ -18,7 +18,7 @@ import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 // Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
-import { getStakeSubtitle, getStakeTitle, StakeFlow } from '@/widgets/StakeModuleWidget/lib/constants';
+import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, needsDelegateUpdate, useStakeCalldata } from './useStakeCalldata';
 

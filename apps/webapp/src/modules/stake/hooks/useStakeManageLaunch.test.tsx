@@ -305,6 +305,7 @@ describe('useStakeManageLaunch — launch() config', () => {
     act(() => result.current.launch());
 
     const { analytics } = h.launchMock.mock.calls[0][0];
+    expect(analytics.widgetName).toBe('stake');
     expect(analytics.flow).toBe('manage');
     expect(analytics.action).toBe('multicall');
     expect(analytics.data).toMatchObject({

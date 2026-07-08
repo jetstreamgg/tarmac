@@ -12,7 +12,6 @@ import {
   PsmConversionScreen
 } from '@/widgets/PsmConversionWidget/lib/constants';
 import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
-import { StakeAction, StakeFlow, StakeScreen } from '@/widgets/StakeModuleWidget/lib/constants';
 import { VaultAction, VaultFlow, VaultScreen } from '@/widgets/VaultWidget/lib/constants';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
 import { Token } from '@/hooks';
@@ -26,7 +25,6 @@ export type WidgetFlow =
   | UpgradeFlow
   | TradeFlow
   | PsmConversionFlow
-  | StakeFlow
   | VaultFlow
   | PendleFlow;
 
@@ -36,7 +34,6 @@ export type WidgetAction =
   | UpgradeAction
   | TradeAction
   | PsmConversionAction
-  | StakeAction
   | VaultAction
   | PendleAction;
 
@@ -46,7 +43,6 @@ export type WidgetScreen =
   | UpgradeScreen
   | TradeScreen
   | PsmConversionScreen
-  | StakeScreen
   | VaultScreen
   | PendleScreen;
 
@@ -79,16 +75,10 @@ type TradeWidgetState = Amount & {
 
 type SavingsWidgetState = Amount & Flow;
 
-type StakeWidgetState = Amount & {
-  urnIndex?: number;
-  stakeTab?: StakeAction.LOCK | StakeAction.FREE;
-};
-
 export type ExternalWidgetState = BalancesWidgetState &
   UpgradeWidgetState &
   TradeWidgetState &
-  SavingsWidgetState &
-  StakeWidgetState;
+  SavingsWidgetState;
 
 export type WidgetMessage = {
   title: string;
@@ -111,8 +101,6 @@ export type WidgetStateChangeParams = {
   executedSellAmount?: string;
   displayToken?: Token;
   originAmount?: string;
-  stakeTab?: StakeAction.LOCK | StakeAction.FREE;
-  urnIndex?: number;
 };
 
 export type WidgetProps = {

@@ -19,7 +19,7 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { parseStakeId, stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 // Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
-import { claimSubtitle, claimTitle } from '@/widgets/StakeModuleWidget/lib/constants';
+import { claimSubtitle, claimTitle } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';

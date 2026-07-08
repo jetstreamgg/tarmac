@@ -22,8 +22,6 @@ export interface ConfigContextProps {
   loaded: boolean;
   locale: string;
   updateUserConfig: (config: UserConfig) => void;
-  selectedStakeUrnIndex: number | undefined;
-  setSelectedStakeUrnIndex: (position: number | undefined) => void;
   externalLinkModalOpened: boolean;
   setExternalLinkModalOpened: (val: boolean) => void;
   externalLinkModalUrl: string;
@@ -51,8 +49,6 @@ export const ConfigContext = createContext<ConfigContextProps>({
   updateUserConfig: () => {
     // do nothing.
   },
-  selectedStakeUrnIndex: undefined,
-  setSelectedStakeUrnIndex: () => {},
   externalLinkModalOpened: false,
   setExternalLinkModalOpened: () => {},
   externalLinkModalUrl: '',
