@@ -44,6 +44,8 @@ export interface StakePositionDetail {
   claimableLoading: boolean;
   /** Claimed (subgraph history) + still claimable, in USD. */
   rewardsEarnedUsd: number;
+  /** True while either leg of rewardsEarnedUsd (history or claimables) is still loading. */
+  rewardsEarnedLoading: boolean;
   stabilityFee: bigint | undefined;
   skyPriceUsd: number | null;
   stakedUsd: number | null;
@@ -99,7 +101,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
 
   // Rewards earned = claimed events of THIS urn + still claimable (F3 convention,
   // urn-scoped through the subgraph index filter).
-  const { data: urnHistory } = useStakeHistory({ index: urnIndex });
+  const { data: urnHistory, isLoading: historyLoading } = useStakeHistory({ index: urnIndex });
   const claimedUsd = useMemo(
     () => calculateClaimedRewardsUsd(urnHistory, chainId, priceOf),
     [urnHistory, chainId, priceOf]
@@ -129,6 +131,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     claimableTokenAmount,
     claimableLoading,
     rewardsEarnedUsd,
+    rewardsEarnedLoading: historyLoading || claimableLoading,
     stabilityFee: collateralData?.stabilityFee,
     skyPriceUsd,
     stakedUsd,

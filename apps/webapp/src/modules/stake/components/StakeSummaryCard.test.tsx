@@ -85,7 +85,13 @@ vi.mock('../hooks/useStakeTotalDebt', () => ({
 import { StakeSummaryCard, calculateNetApy } from './StakeSummaryCard';
 
 const POSITIONS: StakeUserPosition[] = [
-  { index: 0, skyLocked: 700550n * 10n ** 18n, usdsDebt: 30000n * 10n ** 18n, barks: [], lastMutationTimestamp: undefined },
+  {
+    index: 0,
+    skyLocked: 700550n * 10n ** 18n,
+    usdsDebt: 30000n * 10n ** 18n,
+    barks: [],
+    lastMutationTimestamp: undefined
+  },
   { index: 1, skyLocked: 50000n * 10n ** 18n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }
 ];
 
@@ -140,6 +146,17 @@ describe('StakeSummaryCard', () => {
     expect(screen.getByText('$30,000.00')).toBeTruthy();
     // Claimable rewards and (with empty claim history) rewards earned: $17.90.
     expect(screen.getAllByText('$17.90').length).toBe(2);
+  });
+
+  it('renders a zero total with the stake zero convention (0.00, not 0)', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <StakeSummaryCard
+          positions={[{ index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }]}
+        />
+      </I18nProvider>
+    );
+    expect(screen.getByText('0.00')).toBeTruthy();
   });
 
   it('renders the signed Net APY including negative values as-is', () => {

@@ -36,8 +36,9 @@ import { StakePositionRowBanner } from './StakePositionRowBanner';
 
 // Mini liquidation-risk meter (hi-fi 486:32084): a bordered pill of three
 // segments; more (and warmer) lit segments = closer to liquidation. Rows with
-// no debt show the meter unlit. Palette mirrors StakeDetailsStrip's risk scale.
-// (Colors follow the legacy risk convention: green/orange-400/red.)
+// no debt show the meter unlit. Colors follow the legacy risk convention
+// (green/orange-400/red); StakeDetailsStrip's legend uses different mid-tier
+// tints — the canonical palette is an open design question.
 const RISK_SEGMENTS: Record<RiskLevel, { lit: number; color: string }> = {
   [RiskLevel.LOW]: { lit: 1, color: 'bg-bullish' },
   [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-orange-400' },
@@ -240,7 +241,9 @@ export function StakePositionsTable({
 
   const allPositions = positions ?? [];
   const visiblePositions = hideInactive
-    ? allPositions.filter(position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position))
+    ? allPositions.filter(
+        position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position)
+      )
     : allPositions;
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 

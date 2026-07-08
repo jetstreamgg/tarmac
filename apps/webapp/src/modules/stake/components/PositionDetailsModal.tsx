@@ -15,7 +15,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { RISK_LEVEL_THRESHOLDS, RiskLevel, ZERO_ADDRESS } from '@/hooks';
-import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage } from '@/utils';
+import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -183,8 +183,12 @@ export function PositionDetailsModal({
   const showInactiveBorrowBlock = isInactive && detail.hasBorrowHistory;
 
   const dropPercent = liquidationDropPercent(vault?.liquidationProximityPercentage);
+  // Price fields pin 4 decimals like the takeover/manage cards — the bare
+  // magnitude-driven default would drop to 2 the moment a price crosses $10.
   const formattedLiqPrice =
-    vault?.liquidationPrice !== undefined ? `$${formatBigInt(vault.liquidationPrice)}` : NO_VALUE;
+    vault?.liquidationPrice !== undefined
+      ? `$${formatBigInt(vault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+      : NO_VALUE;
   const hasDelegate = !!detail.voteDelegate && detail.voteDelegate !== ZERO_ADDRESS;
 
   const claimDisabled = detail.claimableLoading || detail.claimableTokenAmount === 0n;
@@ -324,10 +328,16 @@ export function PositionDetailsModal({
               )}
             </StatCell>
             <StatCell label={<Trans>Rewards earned</Trans>}>
-              <span className="text-bullish flex items-center gap-1">
-                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                {`+${formatUsd(detail.rewardsEarnedUsd)}`}
-              </span>
+              {detail.rewardsEarnedLoading ? (
+                // A still-loading history leg reads as $0.00 otherwise — hold
+                // the figure like the claimable cell above does.
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                <span className="text-bullish flex items-center gap-1">
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                  {`+${formatUsd(detail.rewardsEarnedUsd)}`}
+                </span>
+              )}
             </StatCell>
           </div>
 
@@ -375,7 +385,9 @@ export function PositionDetailsModal({
                 </StatCell>
                 <StatCell label={<Trans>Liquidation price</Trans>}>{NO_VALUE}</StatCell>
                 <StatCell label={<Trans>Protocol SKY Price</Trans>}>
-                  {vault?.delayedPrice !== undefined ? `$${formatBigInt(vault.delayedPrice)}` : NO_VALUE}
+                  {vault?.delayedPrice !== undefined
+                    ? `$${formatBigInt(vault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+                    : NO_VALUE}
                 </StatCell>
               </div>
             </>
@@ -410,7 +422,7 @@ export function PositionDetailsModal({
                 <Trans>
                   If the price of the collateral will go down{' '}
                   <span className="text-text font-medium">
-                    {dropPercent !== null ? `${dropPercent.toFixed(2)}%` : NO_VALUE} ({formattedLiqPrice})
+                    {dropPercent !== null ? `${dropPercent}%` : NO_VALUE} ({formattedLiqPrice})
                   </span>
                   , you&apos;ll get liquidated. If you want to reduce these risks, add collateral or repay
                   part of your loan.
@@ -438,7 +450,9 @@ export function PositionDetailsModal({
                 </StatCell>
                 <StatCell label={<Trans>Liquidation price</Trans>}>{formattedLiqPrice}</StatCell>
                 <StatCell label={<Trans>Protocol SKY Price</Trans>}>
-                  {vault?.delayedPrice !== undefined ? `$${formatBigInt(vault.delayedPrice)}` : NO_VALUE}
+                  {vault?.delayedPrice !== undefined
+                    ? `$${formatBigInt(vault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+                    : NO_VALUE}
                 </StatCell>
               </div>
             </>

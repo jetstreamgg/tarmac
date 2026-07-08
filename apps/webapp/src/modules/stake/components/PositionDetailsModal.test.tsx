@@ -50,6 +50,7 @@ const baseDetail: StakePositionDetail = {
   claimableTokenAmount: parseUnits('10.9', 18),
   claimableLoading: false,
   rewardsEarnedUsd: 128.9,
+  rewardsEarnedLoading: false,
   stabilityFee: 85100000000000000000000000n * 10n ** 3n, // placeholder ray; display asserted loosely
   skyPriceUsd: 0.05,
   stakedUsd: 120788.9,
@@ -143,8 +144,16 @@ describe('PositionDetailsModal', () => {
   it('derives the warning sentence from the liquidation proximity (M14)', () => {
     renderModal();
     const warning = screen.getByTestId('stake-position-warning');
-    expect(warning.textContent).toContain('48.00%');
+    // Integer percent — the row banner interpolates the same value bare, and
+    // the proximity math only ever produces integers.
+    expect(warning.textContent).toContain('48%');
+    expect(warning.textContent).not.toContain('48.00%');
     expect(warning.textContent).toContain('$0.0432');
+  });
+
+  it('holds the rewards-earned figure while either of its legs is loading', () => {
+    renderModal({ rewardsEarnedLoading: true });
+    expect(screen.queryByText('+$128.90')).toBeNull();
   });
 
   it('routes menu rows and CTAs through onAction', () => {

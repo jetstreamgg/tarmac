@@ -13,7 +13,8 @@ import {
   useHighestRateFromChartData,
   useStakeHistoricData
 } from '@/hooks';
-import { formatBigInt, formatUsd, formatDecimalPercentage } from '@/utils';
+import { formatUsd, formatDecimalPercentage } from '@/utils';
+import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { calculateClaimedRewardsUsd } from '../lib/positionDetail';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -190,7 +191,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
       <div className="flex flex-col gap-1">
         <span className="text-text flex items-center gap-2 text-4xl font-medium tracking-tight">
           <TokenIcon token={{ symbol: 'SKY' }} width={32} className="h-8 w-8" showChainIcon={false} />
-          {formatBigInt(totalStaked)}
+          {formatStakeAmount(totalStaked)}
         </span>
         {skyPriceLoading ? (
           <Skeleton className="h-4 w-28" />

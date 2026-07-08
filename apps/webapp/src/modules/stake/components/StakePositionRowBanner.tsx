@@ -12,7 +12,7 @@ import {
   getIlkName,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd, WAD_PRECISION } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { isAtRiskOfLiquidation } from '../lib/liquidation';
@@ -98,8 +98,11 @@ export function StakePositionRowBanner({
   if (!isAtRiskOfLiquidation(vault)) return null;
 
   const dropPercent = liquidationDropPercent(vault?.liquidationProximityPercentage);
+  // 4 decimals pinned like every other liquidation-price display in the module.
   const formattedLiqPrice =
-    vault?.liquidationPrice !== undefined ? `$${formatBigInt(vault.liquidationPrice)}` : NO_VALUE;
+    vault?.liquidationPrice !== undefined
+      ? `$${formatBigInt(vault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+      : NO_VALUE;
 
   return (
     <div
