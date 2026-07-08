@@ -170,7 +170,7 @@ export function ProductDetailTemplate({
   dataTestId = 'product-detail'
 }: ProductDetailTemplateProps) {
   return (
-    <div className="flex w-full flex-col gap-8 p-4 md:px-8 md:py-10" data-testid={dataTestId}>
+    <div className="flex w-full flex-col gap-8 py-4 md:py-10" data-testid={dataTestId}>
       {/* Header: back-link, token title (+glow), per-product network selector. */}
       <div className="flex flex-col gap-5">
         <AppLink

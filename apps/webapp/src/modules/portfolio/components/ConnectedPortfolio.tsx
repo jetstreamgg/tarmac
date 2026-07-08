@@ -96,7 +96,7 @@ export function ConnectedPortfolio() {
   const displayName = ensName ?? (address ? formatAddress(address) : undefined);
 
   return (
-    <div className="flex w-full flex-col gap-6 p-4 md:px-8 md:py-10" data-testid="portfolio-page">
+    <div className="flex w-full flex-col gap-6 py-4 md:py-10" data-testid="portfolio-page">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           {displayName && (

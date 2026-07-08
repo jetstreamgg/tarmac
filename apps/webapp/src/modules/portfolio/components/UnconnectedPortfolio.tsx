@@ -12,7 +12,7 @@ export function UnconnectedPortfolio() {
   const { rows, isLoading } = useEarnMarketplace();
 
   return (
-    <div className="flex w-full flex-col gap-10 p-4 md:px-8 md:py-10" data-testid="portfolio-page">
+    <div className="flex w-full flex-col gap-10 py-4 md:py-10" data-testid="portfolio-page">
       <ConnectWalletCard />
       <EarnMarketplaceSection rows={rows} isLoading={isLoading} />
       <PortfolioStatistics />

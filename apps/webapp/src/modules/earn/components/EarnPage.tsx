@@ -153,7 +153,7 @@ export function EarnPage() {
   };
 
   return (
-    <div className="flex w-full flex-col gap-5 p-4 md:px-8 md:py-10" data-testid="earn-opportunities">
+    <div className="flex w-full flex-col gap-5 py-4 md:py-10" data-testid="earn-opportunities">
       <Heading tag="h1" variant="large">
         <Trans>Earn Opportunities</Trans>
       </Heading>
