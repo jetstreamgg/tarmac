@@ -20,7 +20,7 @@ import { IdleStablecoinsTable } from './IdleStablecoinsTable';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
 
 // Each card spans a fraction of the row so 1 (mobile) → 4 (xl) show at once.
-const ITEM_BASIS = 'basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4';
+const ITEM_BASIS = 'basis-full sm:basis-1/2 desktop:basis-1/3';
 // Neutralizes CarouselPrevious/Next's default absolute positioning so the
 // arrows sit inline in the section header instead of flanking the row.
 const INLINE_ARROW = 'static left-auto right-auto top-auto translate-y-0';

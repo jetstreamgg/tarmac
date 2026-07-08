@@ -190,14 +190,15 @@ export function ProductDetailTemplate({
         </div>
       </div>
 
-      {/* Body: chart | position on top, details/about/transactions stacked in
-          the left column (the right column below position stays empty, per
-          Figma). DOM order keeps the mobile single-column flow correct:
+      {/* Body on the 12-col design grid (desktop tier): chart spans 8 columns,
+          the position card the remaining 4; details/about/transactions stack in
+          the 8-col left region (the right region below position stays empty,
+          per Figma). DOM order keeps the mobile single-column flow correct:
           chart → position → details → about → transactions. */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="lg:col-start-1 lg:row-start-1">{chart}</div>
-        <div className="lg:col-start-2 lg:row-start-1">{position}</div>
-        <div className="flex flex-col gap-10 lg:col-start-1 lg:row-start-2">
+      <div className="desktop:grid-cols-12 desktop:gap-8 grid gap-5">
+        <div className="desktop:col-span-8 desktop:row-start-1">{chart}</div>
+        <div className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1">{position}</div>
+        <div className="desktop:col-span-8 desktop:col-start-1 desktop:row-start-2 flex flex-col gap-10">
           <DetailsSection title={detailsTitle} details={details} />
           {afterDetails && (
             <section className="flex flex-col gap-4" data-testid="product-detail-after-details">

@@ -95,8 +95,13 @@ export function ConnectedPortfolio() {
 
   const displayName = ensName ?? (address ? formatAddress(address) : undefined);
 
+  // The desktop px-calc insets the page to the middle 10 columns of the design
+  // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
   return (
-    <div className="flex w-full flex-col gap-6 py-4 md:py-10" data-testid="portfolio-page">
+    <div
+      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:py-10"
+      data-testid="portfolio-page"
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           {displayName && (

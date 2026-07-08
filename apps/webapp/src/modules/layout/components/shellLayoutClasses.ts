@@ -21,10 +21,10 @@ export const shellSurfaceClasses = (fullWidth: boolean) =>
     !fullWidth && 'max-h-svh overflow-auto md:max-h-screen md:p-4 md:pb-2'
   );
 
-/** The shell header row (logo + TopNav). */
+/** The shell header bar (full-bleed; the row content lives in the inner div). */
 export const shellHeaderClasses = (fullWidth: boolean) =>
   cn(
-    'flex w-full items-center gap-4 px-3 py-2 sm:px-10 md:mb-1',
+    'w-full py-2 md:mb-1',
     // Full-width routes scroll on the document, so the header pins as a sticky,
     // see-through frosted bar (Figma: transparent + blur(7px), no opaque fill).
     fullWidth && 'sticky top-0 z-30',
@@ -35,4 +35,14 @@ export const shellHeaderClasses = (fullWidth: boolean) =>
     // block for the absolute pseudo, so no `relative` is needed.
     fullWidth &&
       "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-z-10 before:h-[150%] before:backdrop-blur-[7px] before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_35%,transparent)] before:[-webkit-mask-image:linear-gradient(to_bottom,#000_35%,transparent)]"
+  );
+
+/** The header row content (logo + TopNav) inside the full-bleed bar. */
+export const shellHeaderContentClasses = (fullWidth: boolean) =>
+  cn(
+    'flex items-center gap-4',
+    // Full-width routes align the header content with the design-system page
+    // container (12 columns / 1280 + 20px gutters — same geometry as the bare
+    // AppContainer); boxed routes keep the legacy full-bleed padding.
+    fullWidth ? 'mx-auto w-full max-w-[1320px] px-5' : 'w-full px-3 sm:px-10'
   );

@@ -12,7 +12,7 @@ import { Banner } from '@/components/extensible';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
 import { TopNav } from '@/modules/app/shell/TopNav';
 import { AppLink } from '@/lib/navigation';
-import { shellHeaderClasses, shellSurfaceClasses } from './shellLayoutClasses';
+import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { defaultConfig } from '../../config/default-config';
 
 export function Layout({
@@ -55,13 +55,15 @@ export function Layout({
       <VStack className={shellSurfaceClasses(fullWidth)}>
         <ErrorBoundary>
           <div className={shellHeaderClasses(fullWidth)}>
-            <AppLink to="/" title="Home page" className="min-w-[96px]">
-              {/* Theme-specific logo: dark is the default; light swaps in under
-                  [data-theme='light'] (the `light:` variant). */}
-              <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
-              <img src={defaultConfig.logoLight} alt="logo" width={96} className="light:block hidden" />
-            </AppLink>
-            <TopNav />
+            <div className={shellHeaderContentClasses(fullWidth)}>
+              <AppLink to="/" title="Home page" className="min-w-[96px]">
+                {/* Theme-specific logo: dark is the default; light swaps in under
+                    [data-theme='light'] (the `light:` variant). */}
+                <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
+                <img src={defaultConfig.logoLight} alt="logo" width={96} className="light:block hidden" />
+              </AppLink>
+              <TopNav />
+            </div>
           </div>
         </ErrorBoundary>
 
