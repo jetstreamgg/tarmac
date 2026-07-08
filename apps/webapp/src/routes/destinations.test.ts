@@ -63,6 +63,32 @@ describe('target-IA destination routes', () => {
   });
 });
 
+describe('stake destination (F7 flip)', () => {
+  it('boots /stake as a full-width shell route with the Stake intent', async () => {
+    const router = await routerAt('/stake');
+    const match = router.state.matches.find(m => (m.routeId as string) === '/_shell/stake');
+    expect(match).toBeDefined();
+    expect(match?.staticData?.intent).toBe(Intent.STAKE_INTENT);
+    expect(match?.staticData?.fullWidth).toBe(true);
+  });
+
+  it('preserves stake deep-link params on /stake', async () => {
+    const router = await routerAt('/stake?flow=manage&urn_index=0&stake_tab=free&network=ethereum');
+    expect(router.state.location.pathname).toBe('/stake');
+    expect(router.state.location.search).toEqual({
+      flow: 'manage',
+      urn_index: '0',
+      stake_tab: 'free',
+      network: 'ethereum'
+    });
+  });
+
+  it('resolves the retired /stake-v2 dev mount outside the shell (not found)', async () => {
+    const router = await routerAt('/stake-v2');
+    expect(matchedRouteIds(router).some(id => id.startsWith('/_shell'))).toBe(false);
+  });
+});
+
 describe('root path', () => {
   it('redirects "/" to the Portfolio destination', async () => {
     const router = await routerAt('/');
