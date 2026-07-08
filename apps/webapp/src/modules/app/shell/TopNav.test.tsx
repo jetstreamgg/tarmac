@@ -189,7 +189,7 @@ describe('TopNav new-module dot', () => {
 });
 
 describe('TopNav More menu', () => {
-  it('lists batch toggle, upgrade shortcut, legal links and cookie settings', async () => {
+  it('lists batch toggle, legal links and cookie settings (no upgrade shortcut — E2)', async () => {
     vi.stubEnv(
       'VITE_FOOTER_LINKS',
       JSON.stringify([
@@ -202,7 +202,8 @@ describe('TopNav More menu', () => {
 
     fireEvent.click(await screen.findByTestId('nav-more'));
 
-    expect((await screen.findByTestId('nav-more-upgrade')).getAttribute('href')).toBe('/convert/upgrade');
+    // The Upgrade DAI/MKR shortcut left with the parked upgrade surface (E2).
+    expect(screen.queryByTestId('nav-more-upgrade')).toBeNull();
     expect(screen.getByTestId('batch-transactions-toggle-stub')).toBeTruthy();
     expect(screen.getByTestId('theme-toggle-stub')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Docs/ }).getAttribute('href')).toBe('https://docs.sky.money/');

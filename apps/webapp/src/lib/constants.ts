@@ -1,4 +1,4 @@
-import { ConvertIntent, Intent, FixedIntent, VaultsIntent } from './enums';
+import { Intent, FixedIntent, VaultsIntent } from './enums';
 import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
@@ -44,12 +44,6 @@ export const isNewIntent = (intent: Intent): boolean => NEW_INTENTS.includes(int
 export const VaultsIntentMapping: Record<VaultsIntent, string> = {
   [VaultsIntent.MORPHO_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.MORPHO_VAULT_INTENT),
   [VaultsIntent.SKY_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.SKY_VAULT_INTENT)
-};
-
-export const ConvertIntentMapping: Record<ConvertIntent, string> = {
-  [ConvertIntent.PSM_INTENT]: 'psm',
-  [ConvertIntent.UPGRADE_INTENT]: 'upgrade',
-  [ConvertIntent.TRADE_INTENT]: 'trade'
 };
 
 export const FixedIntentMapping: Record<FixedIntent, string> = {
