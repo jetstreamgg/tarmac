@@ -1,8 +1,13 @@
+import { i18n } from '@lingui/core';
 import { describe, expect, it } from 'vitest';
 import { buildConvertModalRows } from './convertModalRows';
 
+// The `t` macro resolves against the global i18n singleton (not React context).
+i18n.load('en', {});
+i18n.activate('en');
+
 describe('buildConvertModalRows', () => {
-  it('matches the Figma review-modal contract (486:32223): labels, order and values', () => {
+  it('matches the Figma review-modal contract (486:32223): ids, labels, order and values', () => {
     const rows = buildConvertModalRows({
       originSymbol: 'USDS',
       targetSymbol: 'USDC',
@@ -11,11 +16,11 @@ describe('buildConvertModalRows', () => {
     });
 
     expect(rows).toEqual([
-      { kind: 'rate', label: 'Rate', value: '1.00 USDS = 1.00 USDC' },
-      { kind: 'network', label: 'Network', value: 'Ethereum' },
-      { kind: 'plain', label: 'Slippage', value: '0.00%' },
-      { kind: 'plain', label: 'Fee', value: '$0.00' },
-      { kind: 'plain', label: 'Network fee', value: '–' }
+      { kind: 'rate', id: 'rate', label: 'Rate', value: '1.00 USDS = 1.00 USDC' },
+      { kind: 'network', id: 'network', label: 'Network', value: 'Ethereum' },
+      { kind: 'plain', id: 'slippage', label: 'Slippage', value: '0.00%' },
+      { kind: 'plain', id: 'fee', label: 'Fee', value: '$0.00' },
+      { kind: 'plain', id: 'networkFee', label: 'Network fee', value: '–' }
     ]);
   });
 

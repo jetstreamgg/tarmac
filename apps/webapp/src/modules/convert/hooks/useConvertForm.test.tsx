@@ -2,14 +2,21 @@ import { renderHook, act, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
 
-const h = vi.hoisted(() => ({
-  chainId: 1 as number,
-  isConnected: true,
-  usdsBalance: 0n as bigint,
-  usdcBalance: 0n as bigint,
-  searchInit: '' as string,
-  setSearchParams: vi.fn()
-}));
+const h = vi.hoisted(() => {
+  const state = {
+    chainId: 1 as number,
+    isConnected: true,
+    usdsBalance: 0n as bigint,
+    usdcBalance: 0n as bigint,
+    searchInit: '' as string,
+    setSearchParams: undefined as unknown as ReturnType<typeof vi.fn>
+  };
+  state.setSearchParams = vi.fn((init: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) => {
+    const next = typeof init === 'function' ? init(new URLSearchParams(state.searchInit)) : init;
+    state.searchInit = next.toString();
+  });
+  return state;
+});
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
@@ -35,6 +42,9 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
+// The setter applies the update to the shared search string (mirroring the real
+// router) — the hook derives `direction` from the params, so flips only work if
+// URL writes actually land.
 vi.mock('@/lib/navigation', () => ({
   useAppSearchParams: () => [new URLSearchParams(h.searchInit), h.setSearchParams]
 }));
@@ -93,28 +103,45 @@ describe('useConvertForm', () => {
     expect(result.current.value).toBe('1.123456');
   });
 
-  it('flip inverts the direction, clamps the fraction and writes ?source_token=', () => {
-    const { result } = renderHook(() => useConvertForm());
+  it('flip inverts the direction via the URL, clamping the typed fraction', () => {
+    // The router re-renders on URL writes in the app; `rerender()` stands in here.
+    const { result, rerender } = renderHook(() => useConvertForm());
     act(() => result.current.onInput('1.1234567890123'));
     act(() => result.current.flip());
+    rerender();
 
+    expect(h.searchInit).toContain('source_token=USDC');
     expect(result.current.direction).toBe('USDC_TO_USDS');
-    // 18-dec USDS fraction clamped to USDC's 6 decimals.
+    // 18-dec USDS fraction clamped to USDC's 6 decimals at read time.
     expect(result.current.value).toBe('1.123456');
-    expect(h.setSearchParams).toHaveBeenCalled();
-    const updater = h.setSearchParams.mock.calls.at(-1)![0];
-    expect(updater(new URLSearchParams()).get('source_token')).toBe('USDC');
+  });
+
+  it('follows external ?source_token= changes (browser back/forward)', () => {
+    const { result, rerender } = renderHook(() => useConvertForm());
+    expect(result.current.direction).toBe('USDS_TO_USDC');
+
+    // Back/forward and direct navigation change the param without touching the
+    // form — the derived direction must follow.
+    h.searchInit = 'source_token=USDC';
+    rerender();
+    expect(result.current.direction).toBe('USDC_TO_USDS');
+
+    h.searchInit = 'source_token=USDS';
+    rerender();
+    expect(result.current.direction).toBe('USDS_TO_USDC');
   });
 
   it('token chips flip direction from either side and never duplicate a token', () => {
-    const { result } = renderHook(() => useConvertForm());
+    const { result, rerender } = renderHook(() => useConvertForm());
 
     // Picking USDC on the From side: USDC becomes the origin.
     act(() => result.current.selectToken('from', 'USDC'));
+    rerender();
     expect(result.current.direction).toBe('USDC_TO_USDS');
 
     // Picking USDC on the To side: USDC becomes the target again.
     act(() => result.current.selectToken('to', 'USDC'));
+    rerender();
     expect(result.current.direction).toBe('USDS_TO_USDC');
   });
 

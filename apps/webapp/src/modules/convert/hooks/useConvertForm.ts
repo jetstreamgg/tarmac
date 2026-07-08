@@ -38,9 +38,14 @@ const clampFraction = (value: string, decimals: number) => {
 /**
  * Form model for the Convert page (Figma 486:31193): direction + typed amount +
  * balances + validation. Presentation-free — `ConvertCard` renders it and
- * `useConvertLaunch` executes it. The initial direction honours the legacy
- * `?source_token=` deep-link param (kept in sync on flip); the default is
- * USDS → USDC per the Figma default frame.
+ * `useConvertLaunch` executes it.
+ *
+ * The URL is the source of truth for the direction: it is *derived* from the
+ * legacy `?source_token=` param every render (default USDS → USDC per the Figma
+ * default frame), and flips only write the param. Deep links, back/forward and
+ * in-page flips therefore can never disagree with the form. The typed amount is
+ * kept raw and clamped to the active origin's decimals at read time, so a
+ * direction change (whichever way it arrives) needs no state surgery.
  *
  * All decimal handling defers to the PSM helpers (6↔18 scaling parity with the
  * engine): input strings are validated by `getValidatedPsmExternalAmount` and the
@@ -52,13 +57,14 @@ export function useConvertForm() {
   const { address, isConnected } = useConnection();
   const [searchParams, setSearchParams] = useAppSearchParams();
 
-  const [direction, setDirection] = useState<PsmConversionDirection>(
-    () => directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDS_TO_USDC'
-  );
-  const [value, setValue] = useState('');
+  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDS_TO_USDC';
+  const [rawValue, setRawValue] = useState('');
 
   const originDecimals = getPsmDecimalsForDirection(direction);
   const targetDecimals = getPsmDecimalsForDirection(OPPOSITE[direction]);
+  // The typed string re-clamped to the active origin's decimals (USDS 18 → USDC 6);
+  // everything below (display, parsing, validation) reads this, never rawValue.
+  const value = rawValue === '' ? rawValue : clampFraction(rawValue, originDecimals);
   const { originToken, targetToken } = useMemo(
     () => getPsmConversionTokens(chainId, direction),
     [chainId, direction]
@@ -89,18 +95,16 @@ export function useConvertForm() {
   const onInput = useCallback(
     (raw: string) => {
       if (raw === '' || getValidatedPsmExternalAmount(raw, direction) !== undefined) {
-        setValue(raw);
+        setRawValue(raw);
       }
     },
     [direction]
   );
 
+  // Flips only write the URL; the derived `direction` follows on the next render.
   const applyDirection = useCallback(
     (next: PsmConversionDirection) => {
       if (next === direction) return;
-      setDirection(next);
-      // Re-clamp the typed amount to the new origin's decimals (USDS 18 → USDC 6).
-      setValue(v => (v === '' ? v : clampFraction(v, getPsmDecimalsForDirection(next))));
       setSearchParams(
         params => {
           params.set(QueryParams.SourceToken, originSymbolFor(next));
@@ -134,7 +138,7 @@ export function useConvertForm() {
     (percent: number) => {
       const balance = originBalance?.value;
       if (balance === undefined) return;
-      setValue(formatUnits((balance * BigInt(percent)) / 100n, originDecimals));
+      setRawValue(formatUnits((balance * BigInt(percent)) / 100n, originDecimals));
     },
     [originBalance?.value, originDecimals]
   );
@@ -144,7 +148,7 @@ export function useConvertForm() {
     mutateTargetBalance();
   }, [mutateOriginBalance, mutateTargetBalance]);
 
-  const reset = useCallback(() => setValue(''), []);
+  const reset = useCallback(() => setRawValue(''), []);
 
   const isZero = amount === 0n;
   const insufficient = isConnected && !isZero && originBalance !== undefined && amount > originBalance.value;

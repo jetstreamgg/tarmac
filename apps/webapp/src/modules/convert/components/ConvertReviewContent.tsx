@@ -19,7 +19,7 @@ function TokenChip({ symbol }: { symbol: string }) {
 
 function ReviewRow({ row, chainId }: { row: ConvertModalRow; chainId: number }) {
   return (
-    <div className="flex items-center justify-between" data-testid={`convert-modal-row-${row.label}`}>
+    <div className="flex items-center justify-between" data-testid={`convert-modal-row-${row.id}`}>
       <Text className="text-textSecondary text-sm">{row.label}</Text>
       <span className="text-text flex items-center gap-1.5 text-sm font-medium">
         {row.kind === 'network' && getChainIcon(chainId, 'h-4 w-4')}
@@ -103,7 +103,7 @@ export function ConvertReviewContent({
 
       <div className="border-border flex flex-col gap-3 border-t pt-4">
         {rows.map(row => (
-          <ReviewRow key={row.label} row={row} chainId={chainId} />
+          <ReviewRow key={row.id} row={row} chainId={chainId} />
         ))}
       </div>
     </div>

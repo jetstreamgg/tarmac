@@ -1,14 +1,22 @@
+import { t } from '@lingui/core/macro';
+
 /**
  * Pure row builders for the "Review conversion" modal (Figma 486:32223). Rows are
  * *data* (an array), not a fixed JSX block — `ConvertReviewContent` maps them to UI
- * and decorates the `rate`/`network` rows with icons. The label set + order is the
+ * and decorates the `rate`/`network` rows with icons. The id set + order is the
  * Figma contract and is asserted in `convertModalRows.test.ts`.
  */
 
 /** Distinguishes rows the review body decorates with icons from plain text rows. */
 export type ConvertModalRowKind = 'rate' | 'network' | 'plain';
 
-export type ConvertModalRow = { kind: ConvertModalRowKind; label: string; value: string };
+export type ConvertModalRow = {
+  kind: ConvertModalRowKind;
+  /** Locale-independent identity — the React key and `data-testid` suffix. */
+  id: 'rate' | 'network' | 'slippage' | 'fee' | 'networkFee';
+  label: string;
+  value: string;
+};
 
 export type ConvertModalRowInput = {
   /** Origin token symbol (e.g. "USDS"). */
@@ -29,10 +37,15 @@ export type ConvertModalRowInput = {
  */
 export function buildConvertModalRows(input: ConvertModalRowInput): ConvertModalRow[] {
   return [
-    { kind: 'rate', label: 'Rate', value: `1.00 ${input.originSymbol} = 1.00 ${input.targetSymbol}` },
-    { kind: 'network', label: 'Network', value: input.network },
-    { kind: 'plain', label: 'Slippage', value: '0.00%' },
-    { kind: 'plain', label: 'Fee', value: '$0.00' },
-    { kind: 'plain', label: 'Network fee', value: input.networkFee }
+    {
+      kind: 'rate',
+      id: 'rate',
+      label: t`Rate`,
+      value: `1.00 ${input.originSymbol} = 1.00 ${input.targetSymbol}`
+    },
+    { kind: 'network', id: 'network', label: t`Network`, value: input.network },
+    { kind: 'plain', id: 'slippage', label: t`Slippage`, value: '0.00%' },
+    { kind: 'plain', id: 'fee', label: t`Fee`, value: '$0.00' },
+    { kind: 'plain', id: 'networkFee', label: t`Network fee`, value: input.networkFee }
   ];
 }

@@ -99,28 +99,47 @@ export function useConvertLaunch({
     onSuccess?.();
   }, [mutatePocketBalance, onSuccess]);
 
-  const transactionContent = (
-    <ConvertReviewContent
-      originSymbol={originSymbol}
-      targetSymbol={targetSymbol}
-      originAmount={amount}
-      targetAmount={conversion.targetAmount}
-      originDecimals={originDecimals}
-      targetDecimals={targetDecimals}
-      chainId={chainId}
-      networkName={networkName}
-      networkFee={NO_VALUE}
-    />
+  // Both nodes are memoised on their data (the Pendle-redeem precedent): they sit
+  // in the live-update effect's deps, and fresh identities every render would make
+  // that effect re-push into the (unmemoised) provider on each of its re-renders —
+  // a continuous update loop while the review modal is open.
+  const transactionContent = useMemo(
+    () => (
+      <ConvertReviewContent
+        originSymbol={originSymbol}
+        targetSymbol={targetSymbol}
+        originAmount={amount}
+        targetAmount={conversion.targetAmount}
+        originDecimals={originDecimals}
+        targetDecimals={targetDecimals}
+        chainId={chainId}
+        networkName={networkName}
+        networkFee={NO_VALUE}
+      />
+    ),
+    [
+      originSymbol,
+      targetSymbol,
+      amount,
+      conversion.targetAmount,
+      originDecimals,
+      targetDecimals,
+      chainId,
+      networkName
+    ]
   );
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, originDecimals)), { maxDecimals: 2 })} ${originSymbol}`;
   const targetLabel = `${formatNumber(parseFloat(formatUnits(conversion.targetAmount, targetDecimals)), { maxDecimals: 2 })} ${targetSymbol}`;
 
   // Compact wallet/status-screen summary (Figma draws the amounts above the steps).
-  const transactionScreenContent = (
-    <Text className="text-textSecondary text-sm" dataTestId="convert-modal-screen-summary">
-      {amountLabel} → {targetLabel}
-    </Text>
+  const transactionScreenContent = useMemo(
+    () => (
+      <Text className="text-textSecondary text-sm" dataTestId="convert-modal-screen-summary">
+        {amountLabel} → {targetLabel}
+      </Text>
+    ),
+    [amountLabel, targetLabel]
   );
 
   const launch = useCallback(() => {
