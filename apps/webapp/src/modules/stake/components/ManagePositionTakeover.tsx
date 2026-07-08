@@ -228,9 +228,14 @@ export function ManagePositionTakeover({
   const onSuccess = useCallback(() => {
     // Fresh positions/activity AND fresh on-chain reads (vault, balances,
     // allowances) on return — manage txs change what every read hook reports.
+    // Batched reads (claimables, wallet balances, total debt) key under
+    // 'readContracts' (plural) — a separate wagmi key the singular prefix
+    // does not match; the drip simulation has its own key too.
     queryClient.invalidateQueries({ queryKey: ['stake-user-positions'] });
     queryClient.invalidateQueries({ queryKey: ['stake-history'] });
     queryClient.invalidateQueries({ queryKey: ['readContract'] });
+    queryClient.invalidateQueries({ queryKey: ['readContracts'] });
+    queryClient.invalidateQueries({ queryKey: ['simulateDrip'] });
     setSearchParams(
       params => {
         params.delete(QueryParams.Flow);

@@ -177,9 +177,13 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
   const onSuccess = useCallback(() => {
     // Same invalidation set as every other manage-flow success path — the
     // recovery tx changes positions, history and every on-chain read alike.
+    // The claimables this tx just zeroed are batched reads keyed under
+    // 'readContracts' (plural), which the singular prefix does not match.
     queryClient.invalidateQueries({ queryKey: ['stake-user-positions'] });
     queryClient.invalidateQueries({ queryKey: ['stake-history'] });
     queryClient.invalidateQueries({ queryKey: ['readContract'] });
+    queryClient.invalidateQueries({ queryKey: ['readContracts'] });
+    queryClient.invalidateQueries({ queryKey: ['simulateDrip'] });
   }, [queryClient]);
 
   const transactionContent = useMemo(

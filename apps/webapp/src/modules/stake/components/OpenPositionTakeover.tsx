@@ -193,11 +193,15 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const close = reopen ? reopen.onClose : closeOpenFlow;
 
   const onSuccess = useCallback(() => {
-    // Fresh positions/activity on return — the subgraph hooks re-query; urn
-    // reads (ink/art, delegate, claimables) are wagmi readContract queries.
+    // Fresh positions/activity on return — the subgraph hooks re-query. Urn
+    // reads (ink/art, delegate) key under wagmi's 'readContract'; batched
+    // reads (claimables, wallet balances) under 'readContracts' (plural, a
+    // separate key); the drip simulation has its own key too.
     queryClient.invalidateQueries({ queryKey: ['stake-user-positions'] });
     queryClient.invalidateQueries({ queryKey: ['stake-history'] });
     queryClient.invalidateQueries({ queryKey: ['readContract'] });
+    queryClient.invalidateQueries({ queryKey: ['readContracts'] });
+    queryClient.invalidateQueries({ queryKey: ['simulateDrip'] });
     setSearchParams(
       params => {
         params.delete(QueryParams.Flow);
