@@ -47,6 +47,11 @@ export function Layout({
       <meta name="description" content={descriptionContent} />
       <link rel="icon" href={siteConfig.favicon} />
 
+      {/* Viewport-fixed page background (image + bottom fade), pinned while the
+          document scrolls. Defined in globals.css; theme-swapped via the
+          --background-image-app-background token. */}
+      <div aria-hidden className="app-background" />
+
       <VStack className={shellSurfaceClasses(fullWidth)}>
         <ErrorBoundary>
           <div className={shellHeaderClasses(fullWidth)}>

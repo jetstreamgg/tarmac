@@ -1,5 +1,5 @@
-import { Intent, ConvertIntent, FixedIntent } from '@/lib/enums';
-import { ConvertIntentMapping, FixedIntentMapping, IntentMapping, QueryParams } from '@/lib/constants';
+import { Intent, FixedIntent } from '@/lib/enums';
+import { FixedIntentMapping, IntentMapping, QueryParams } from '@/lib/constants';
 import { providerForVaultModule } from '@/lib/vaults/vaultProviderMapping';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { ROUTES } from '@/lib/routes';
@@ -19,8 +19,6 @@ const LegacyParams = {
 
 export type LegacyRedirect = { to: string; search: Record<string, string> };
 
-const CONVERT_MODULE_VALUES = Object.values(ConvertIntentMapping);
-
 /**
  * Translates pre-path-navigation URLs (?widget=...&convert_module=... etc.)
  * into their path equivalents so external deep links and bookmarks keep
@@ -31,7 +29,6 @@ const CONVERT_MODULE_VALUES = Object.values(ConvertIntentMapping);
 export function legacySearchToLocation(search: Record<string, string>): LegacyRedirect | null {
   const {
     [LegacyParams.Widget]: widget,
-    [LegacyParams.ConvertModule]: convertModule,
     [LegacyParams.ExpertModule]: expertModule,
     [LegacyParams.VaultModule]: vaultModule,
     [LegacyParams.Vault]: vault,
@@ -42,6 +39,10 @@ export function legacySearchToLocation(search: Record<string, string>): LegacyRe
   } = search;
 
   if (widget === undefined) return null;
+
+  // convert_module is consumed but no longer routes anywhere: every legacy
+  // convert module lands on the single E2 page.
+  delete rest[LegacyParams.ConvertModule];
 
   let to: string;
   switch (widget.toLowerCase()) {
@@ -54,25 +55,22 @@ export function legacySearchToLocation(search: Record<string, string>): LegacyRe
     case IntentMapping[Intent.REWARDS_INTENT]:
       to = reward ? `/rewards/${reward}` : '/rewards';
       break;
-    // Standalone trade was folded into Convert before this migration.
+    // Standalone trade was folded into Convert before this migration; the E2
+    // page-as-widget owns /convert outright (trade/upgrade surfaces are parked),
+    // so both generations land on the page itself — no sub-path hop.
     case IntentMapping[Intent.TRADE_INTENT]:
-      to = `/convert/${ConvertIntentMapping[ConvertIntent.TRADE_INTENT]}`;
+      to = ROUTES.CONVERT;
       break;
-    // Standalone upgrade only maps into Convert on mainnet (parity with the
+    // Standalone upgrade only mapped into Convert on mainnet (parity with the
     // legacy rewrite); on other networks it was stripped, landing on Balances.
     case IntentMapping[Intent.UPGRADE_INTENT]: {
       const network = rest[QueryParams.Network];
-      to =
-        !network || normalizeUrlParam(network) === normalizeUrlParam('ethereum')
-          ? `/convert/${ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT]}`
-          : '/';
+      to = !network || normalizeUrlParam(network) === normalizeUrlParam('ethereum') ? ROUTES.CONVERT : '/';
       break;
     }
-    case IntentMapping[Intent.CONVERT_INTENT]: {
-      const module = convertModule?.toLowerCase();
-      to = module && CONVERT_MODULE_VALUES.includes(module) ? `/convert/${module}` : '/convert';
+    case IntentMapping[Intent.CONVERT_INTENT]:
+      to = ROUTES.CONVERT;
       break;
-    }
     // The historical ?widget= value stays 'expert' (frozen in old links) even
     // though the module now maps to 'stusds'; both generations land on the
     // flattened /earn/stusds via V2_REDIRECT_BY_MODULE.
