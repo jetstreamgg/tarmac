@@ -1,21 +1,9 @@
-import {
-  Balances,
-  RewardsModule,
-  Savings,
-  Stake,
-  Expert,
-  Vaults,
-  Convert,
-  Upgrade,
-  Trade,
-  Pendle
-} from '../../icons';
+import { Balances, RewardsModule, Savings, Stake, Expert, Vaults, Convert, Pendle } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { COMING_SOON_MAP, ConvertIntentMapping } from '@/lib/constants';
+import { COMING_SOON_MAP } from '@/lib/constants';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
-import { ConvertIntent } from '@/lib/enums';
 import { IconProps } from '@/modules/icons/Icon';
 import React from 'react';
 
@@ -161,33 +149,9 @@ export function useWidgetItems(intent: Intent): {
         }
       ]
     ],
-    [
-      Intent.CONVERT_INTENT,
-      'Convert',
-      Convert,
-      false,
-      undefined,
-      'Get Sky Ecosystem tokens with best possible rates',
-      [
-        {
-          label: '1:1 Conversion',
-          icon: <Convert className="h-3 w-3" />,
-          to: `/convert/${ConvertIntentMapping[ConvertIntent.PSM_INTENT]}`
-        },
-        {
-          label: 'Trade',
-          icon: <Trade className="h-3 w-3" />,
-          to: `/convert/${ConvertIntentMapping[ConvertIntent.TRADE_INTENT]}`,
-          intent: Intent.TRADE_INTENT
-        },
-        {
-          label: 'Upgrade',
-          icon: <Upgrade className="h-3 w-3" />,
-          to: `/convert/${ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT]}`,
-          intent: Intent.UPGRADE_INTENT
-        }
-      ]
-    ]
+    // The E2 page-as-widget owns /convert whole: no sub-items (legacy trade and
+    // upgrade surfaces are parked, pending the restore-vs-retire decision).
+    [Intent.CONVERT_INTENT, 'Convert', Convert, false, undefined, 'Convert stablecoins at a fixed 1:1 rate']
   ]
     .filter(([intent]) => {
       const moduleId = intentToModule[intent as Intent];

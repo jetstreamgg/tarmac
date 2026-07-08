@@ -8,7 +8,7 @@ import { Balances, Savings, StakeSky, Trade } from '@/modules/icons';
 import { Intent } from '@/lib/enums';
 import { BATCH_TX_ENABLED, QueryParams } from '@/lib/constants';
 import { intentToPath, ROUTES, RoutePath } from '@/lib/routes';
-import { AppRoutePath, INTENT_PATHS, retainOnNavigate, useRouteIntent } from '@/lib/navigation';
+import { AppRoutePath, retainOnNavigate, useRouteIntent } from '@/lib/navigation';
 import { getNetworkOverrideForIntent } from '@/lib/widget-network-map';
 import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -85,7 +85,7 @@ const navItemClasses =
 const moreItemClasses =
   'text-textSecondary hover:text-text hover:bg-bgHover rounded-md px-3 py-2 text-left text-sm transition-colors';
 
-/** Secondary actions that don't earn a destination: batch toggle, upgrade shortcut, legal links. */
+/** Secondary actions that don't earn a destination: batch toggle, legal links. */
 function MoreMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const { showBanner } = useCookieConsent();
@@ -106,15 +106,6 @@ function MoreMenu() {
           <ThemeToggle />
           {BATCH_TX_ENABLED && <BatchTransactionsToggle />}
         </div>
-        <Link
-          to={INTENT_PATHS[Intent.UPGRADE_INTENT]}
-          search={retainOnNavigate}
-          onClick={closeMenu}
-          data-testid="nav-more-upgrade"
-          className={moreItemClasses}
-        >
-          <Trans>Upgrade DAI/MKR</Trans>
-        </Link>
         {footerLinks.map(link => {
           const url = sanitizeUrl(link.url);
           if (!url) return null;

@@ -5,7 +5,6 @@ import { reportError } from '@/modules/sentry/reportError';
 
 export const AppEvents = {
   WIDGET_SELECTED: 'app_widget_selected',
-  CONVERT_MODULE_SELECTED: 'app_convert_module_selected',
   TRANSACTION_STARTED: 'app_widget_flow_started',
   TRANSACTION_COMPLETED: 'app_widget_flow_completed',
   WIDGET_REVIEW_VIEWED: 'app_widget_review_viewed',
