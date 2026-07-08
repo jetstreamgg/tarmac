@@ -190,14 +190,17 @@ export function ProductDetailTemplate({
         </div>
       </div>
 
-      {/* Body on the 12-col design grid (desktop tier): chart spans 8 columns,
-          the position card the remaining 4; details/about/transactions stack in
-          the 8-col left region (the right region below position stays empty,
-          per Figma). DOM order keeps the mobile single-column flow correct:
-          chart → position → details → about → transactions. */}
+      {/* Body on the 12-col design grid (desktop tier), two independent sides:
+          the left pane (8 cols) flows chart → details → about → transactions;
+          the right pane (4 cols) holds the position card. The card spans both
+          rows (self-start keeps it at its own height), so a card taller than
+          the chart can't push the left pane's stack down. Flat DOM keeps the
+          mobile single-column flow correct: chart → position → details → …. */}
       <div className="desktop:grid-cols-12 desktop:gap-8 grid gap-5">
         <div className="desktop:col-span-8 desktop:row-start-1">{chart}</div>
-        <div className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1">{position}</div>
+        <div className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:row-span-2 desktop:self-start">
+          {position}
+        </div>
         <div className="desktop:col-span-8 desktop:col-start-1 desktop:row-start-2 flex flex-col gap-10">
           <DetailsSection title={detailsTitle} details={details} />
           {afterDetails && (
