@@ -189,7 +189,7 @@ vi.mock('../hooks/useStakeLaunch', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
-import { lsSkySkyRewardAddress } from '@/hooks';
+import { lsSkySkyRewardAddress, ZERO_ADDRESS } from '@/hooks';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
 
 const renderTakeover = () =>
@@ -400,6 +400,17 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     typeStakeAmount('100');
 
     expect(h.manageLaunchParams?.selectedDelegate).toBe(DELEGATE_A);
+  });
+
+  it('passes the RAW zero delegate through for a never-delegated urn (no spurious selectVoteDelegate)', () => {
+    // The urn's on-chain read returns ZERO_ADDRESS when it never delegated. The
+    // gating fallback must be that raw value — an `undefined` here would make
+    // needsDelegateUpdate fire and bake selectVoteDelegate(0x0) into the reopen.
+    h.urnDelegate = ZERO_ADDRESS;
+    renderReopen();
+    typeStakeAmount('100');
+
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(ZERO_ADDRESS);
   });
 
   it('stages a different delegate once the user selects one', () => {

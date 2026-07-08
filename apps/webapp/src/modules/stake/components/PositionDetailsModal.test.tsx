@@ -210,6 +210,15 @@ describe('PositionDetailsModal', () => {
     expect(screen.queryByTestId('stake-position-inactive-chip')).toBeNull();
     expect(screen.queryByTestId('stake-manage-cta-reopen')).toBeNull();
   });
+
+  it('skeletons the menu and CTAs while the vault state is unknown (no wrong-variant flash)', () => {
+    renderModal({ vault: undefined, vaultLoading: true, hasDebt: false, isInactive: false });
+
+    expect(screen.getByTestId('stake-manage-menu-loading')).toBeTruthy();
+    expect(screen.queryAllByTestId(/^stake-manage-menu-(claim|borrow|repay|withdraw)/)).toHaveLength(0);
+    expect(screen.queryByTestId('stake-manage-cta-stake')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-cta-reopen')).toBeNull();
+  });
 });
 
 describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:21273)', () => {

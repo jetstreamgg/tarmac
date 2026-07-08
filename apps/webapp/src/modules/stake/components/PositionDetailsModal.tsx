@@ -454,7 +454,16 @@ export function PositionDetailsModal({
               <Trans>Manage position</Trans>
             </h3>
 
-            {isInactive ? (
+            {detail.vaultLoading ? (
+              // Active vs inactive is unknown until the vault resolves — a
+              // premature active menu would offer the wrong flow for an
+              // emptied urn (e.g. Stake more instead of Reopen).
+              <div className="flex flex-col gap-4 py-2" data-testid="stake-manage-menu-loading">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <Skeleton key={i} className="h-9 w-full" />
+                ))}
+              </div>
+            ) : isInactive ? (
               <>
                 {!showInactiveBorrowBlock && (
                   <MenuRow
@@ -577,7 +586,9 @@ export function PositionDetailsModal({
           </div>
 
           <div className="flex flex-col gap-3">
-            {isInactive ? (
+            {detail.vaultLoading ? (
+              <Skeleton className="h-10 w-full" />
+            ) : isInactive ? (
               <Button
                 variant="primary"
                 className="w-full"

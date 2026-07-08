@@ -76,8 +76,14 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     urn: reopenUrn || ZERO_ADDRESS
   });
   const { data: urnVoteDelegate } = useStakeUrnSelectedVoteDelegate({ urn: reopenUrn || ZERO_ADDRESS });
+  // Display-only baseline: the delegate card highlights a real delegate, never
+  // the zero sentinel. The calldata gating below must use the RAW read instead —
+  // clamping it to undefined on a never-delegated urn would make
+  // needsDelegateUpdate compare undefined !== ZERO_ADDRESS and bake a spurious
+  // selectVoteDelegate(0x0) into the reopen multicall.
   const currentUrnDelegate =
     reopen && urnVoteDelegate && urnVoteDelegate !== ZERO_ADDRESS ? urnVoteDelegate : undefined;
+  const reopenDelegateBaseline = reopen ? urnVoteDelegate : undefined;
 
   const ilkName = getIlkName(2);
   const { data: skyBalance, isLoading: balanceLoading } = useTokenBalance({
@@ -231,7 +237,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     usdsToBorrow: debouncedUsdsToBorrow,
     usdsToWipe: 0n,
     wipeAll: false,
-    selectedDelegate: state.selectedDelegate ?? currentUrnDelegate,
+    selectedDelegate: state.selectedDelegate ?? reopenDelegateBaseline,
     enabled: !!reopen && formValid,
     transactionContent: confirmSummary,
     onSuccess
