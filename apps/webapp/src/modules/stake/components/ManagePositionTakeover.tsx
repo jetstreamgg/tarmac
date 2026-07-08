@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
+import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
@@ -182,7 +183,7 @@ export function ManagePositionTakeover({
         : minCollateralNotMet
           ? undefined
           : usdsToBorrow > 0n
-            ? (simulationError?.message ?? undefined)
+            ? formatSimulationErrorMessage(simulationError?.message, existingVault?.dust)
             : undefined
       : minDebtNotMet
         ? t`Debt must be paid off entirely, or left with a minimum of ${formatBigInt(existingVault?.dust ?? 0n)}`

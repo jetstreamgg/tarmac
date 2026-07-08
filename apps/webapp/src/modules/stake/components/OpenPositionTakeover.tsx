@@ -28,6 +28,7 @@ import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
+import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
@@ -176,7 +177,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       : minCollateralNotMet
         ? undefined
         : debouncedUsdsToBorrow > 0n
-          ? (simulationError?.message ?? undefined)
+          ? formatSimulationErrorMessage(simulationError?.message, simulatedVault?.dust)
           : undefined;
 
   const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
