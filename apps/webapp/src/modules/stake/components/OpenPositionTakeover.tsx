@@ -245,7 +245,13 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
 
   const { launch, prepared, isLoading: launchLoading } = reopen ? reopenLaunch : openLaunch;
 
-  const confirmDisabled = !formValid || !prepared || launchLoading;
+  // The launch seam prepares calldata from the DEBOUNCED amounts; until they
+  // catch up with what's typed, `prepared` refers to stale calldata (e.g. an
+  // [open]-only multicall before the first lock amount settles).
+  const amountsSettled =
+    debouncedSkyToLock === state.skyToLock && debouncedUsdsToBorrow === state.usdsToBorrow;
+
+  const confirmDisabled = !formValid || !prepared || launchLoading || !amountsSettled;
 
   return (
     <TakeoverShell

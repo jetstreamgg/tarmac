@@ -20,6 +20,9 @@ const h = vi.hoisted(() => ({
   manageLaunchParams: undefined as Record<string, unknown> | undefined,
   prepared: true,
   balance: undefined as bigint | undefined,
+  // When true, the useDebounce mock lags behind: bigint values report 0n,
+  // reproducing the window where typed amounts haven't settled yet.
+  debounceLag: false,
   // The reopened urn's on-chain context (reopen-mode tests).
   urnDelegate: undefined as string | undefined,
   urnRewardContract: undefined as string | undefined,
@@ -66,7 +69,7 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
-    useDebounce: <T,>(value: T) => value,
+    useDebounce: <T,>(value: T) => (h.debounceLag && typeof value === 'bigint' ? (0n as T) : value),
     useTokenBalance: () => ({
       data: h.balance !== undefined ? { value: h.balance, decimals: 18, symbol: 'SKY' } : undefined,
       isLoading: false,
@@ -214,6 +217,7 @@ describe('OpenPositionTakeover', () => {
     h.urnRewardContract = undefined;
     h.prepared = true;
     h.balance = 1000n * WAD;
+    h.debounceLag = false;
     h.minCollateralForDust = 0n;
     h.dust = 30n * WAD;
     h.debtCeilingHeadroom = parseUnits('1000000000', 18);
@@ -249,6 +253,18 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(100n * WAD);
     expect(h.launchParams?.usdsToBorrow).toBe(0n);
     expect(h.launchParams?.enabled).toBe(true);
+  });
+
+  it('keeps Confirm disabled while the typed amount has not debounced yet', () => {
+    // The seam prepares calldata from the DEBOUNCED amounts; clicking Confirm
+    // inside the debounce window would launch stale calldata (an [open]-only
+    // multicall → an empty urn). The gate must wait for the amounts to settle.
+    h.debounceLag = true;
+    renderTakeover();
+
+    typeStakeAmount('100');
+
+    expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('auto-defaults the reward contract to the SKY farm (A-Q2)', () => {
@@ -370,6 +386,7 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     h.urnRewardContract = lsSkySkyRewardAddress[1];
     h.prepared = true;
     h.balance = 1000n * WAD;
+    h.debounceLag = false;
     h.minCollateralForDust = 0n;
     h.dust = 30n * WAD;
     h.debtCeilingHeadroom = parseUnits('1000000000', 18);

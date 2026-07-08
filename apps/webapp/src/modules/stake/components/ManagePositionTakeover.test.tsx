@@ -19,6 +19,9 @@ const h = vi.hoisted(() => ({
   launchSpy: vi.fn(),
   launchParams: undefined as Record<string, unknown> | undefined,
   prepared: true,
+  // When true, the useDebounce mock lags behind: bigint values report 0n,
+  // reproducing the window where typed amounts haven't settled yet.
+  debounceLag: false,
   skyBalance: 0n,
   usdsBalance: 0n,
   existingCollateral: 0n,
@@ -67,7 +70,7 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
-    useDebounce: <T,>(value: T) => value,
+    useDebounce: <T,>(value: T) => (h.debounceLag && typeof value === 'bigint' ? (0n as T) : value),
     useTokenBalance: ({ token }: { token: `0x${string}` }) => ({
       data: {
         value:
@@ -206,6 +209,7 @@ describe('ManagePositionTakeover', () => {
     h.launchSpy.mockClear();
     h.launchParams = undefined;
     h.prepared = true;
+    h.debounceLag = false;
     h.skyBalance = 1_000_000n * WAD;
     h.usdsBalance = 100_000n * WAD;
     h.existingCollateral = 3_000_000n * WAD;
@@ -242,6 +246,18 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-borrow-card-mode-repay').getAttribute('aria-pressed')).toBe(
       'true'
     );
+  });
+
+  it('keeps Confirm disabled while the typed amount has not debounced yet', () => {
+    // The seam prepares calldata from the DEBOUNCED amounts; clicking Confirm
+    // inside the debounce window would launch stale calldata. The gate must
+    // wait for the amounts to settle.
+    h.debounceLag = true;
+    renderSheet({ stakeCard: 'stake' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+
+    expect(confirmButton().disabled).toBe(true);
   });
 
   it('stake mode stages skyToLock; withdraw mode stages skyToFree', () => {
