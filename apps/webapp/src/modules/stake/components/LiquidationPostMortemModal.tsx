@@ -259,9 +259,11 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
                   {formatStakeAmount(skyToFree)}
                 </span>
               )}
-              <span className="text-textSecondary text-xs">
-                {skyToFreeUsd !== null ? formatUsd(skyToFreeUsd) : NO_VALUE}
-              </span>
+              {!vaultLoading && (
+                <span className="text-textSecondary text-xs">
+                  {skyToFreeUsd !== null ? formatUsd(skyToFreeUsd) : NO_VALUE}
+                </span>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5" data-testid="stake-postmortem-claimable-rewards">

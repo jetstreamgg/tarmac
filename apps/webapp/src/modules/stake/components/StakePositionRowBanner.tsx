@@ -30,8 +30,8 @@ function stopRowClick(event: MouseEvent) {
  * table's per-row vault read (`useStakeUrnAddress` + `useVault`, same ilk),
  * so mounting this alongside `PositionRiskCell` costs no extra RPC. Liquidated
  * takes precedence — it's a historical fact independent of the current vault
- * read — and renders nothing while the vault is still loading, to avoid a
- * healthy→warning flash for a genuinely at-risk row.
+ * read. Either variant waits for its figures to load before rendering, so the
+ * banner never flashes a 0.00 refund or a false healthy→warning transition.
  */
 export function StakePositionRowBanner({
   position,
@@ -46,7 +46,7 @@ export function StakePositionRowBanner({
   const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
   const { data: vault, isLoading: vaultLoading } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
   const { data: rewardContracts } = useStakeRewardContracts();
-  const { data: toClaim } = useRewardContractsToClaim({
+  const { data: toClaim, isLoading: claimableLoading } = useRewardContractsToClaim({
     rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
     addresses: urnAddress ? [urnAddress] : [],
     chainId,
@@ -55,6 +55,11 @@ export function StakePositionRowBanner({
   const { data: prices } = usePrices();
 
   if (isLiquidatedStakePosition(position)) {
+    // The risk-cell badge already marks the row as liquidated from the pure
+    // predicate; hold the banner (which quotes the refund/reward figures) until
+    // the reads land so it never flashes a 0.00 refund.
+    if (vaultLoading || claimableLoading) return null;
+
     const claimable = toClaim ?? [];
     const rewardsUsd = formatUsd(
       claimable.reduce((total, reward) => {
