@@ -58,6 +58,7 @@ export default defineConfig({
         '**/la-u-r.spec.ts',
         '**/la-u-s.spec.ts',
         '**/stake.spec.ts',
+        '**/stake-onchain.spec.ts',
         '**/landing.spec.ts',
         '**/upgrade.spec.ts',
         '**/unstake-repay.spec.ts',

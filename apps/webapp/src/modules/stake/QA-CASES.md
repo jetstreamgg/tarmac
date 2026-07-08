@@ -163,7 +163,7 @@ delta → finding) · **fail** (defect) · **n/e** (not exercisable end-to-end; 
 | D-4  | Inactive with borrow history: zeroed borrow block, `No position` chip, closure copy        | **pass**  | Zeroed borrow block, `No position` chip, closure copy, liq price `–`, mostly-disabled menu, Reopen.                                                                                                       |
 | D-5  | Claim modal, single reward: hero, Network/Network-fee rows, `Claim & Restake SKY` when SKY | **pass**  | SKY row present → dual `Claim` / `Claim & Restake SKY`; unchecking SKY collapses to single `Claim`.                                                                                                       |
 | D-6  | Claim modal, multi reward: checkbox list; SKY unchecked → single `Claim` CTA               | **pass**  | USDS+SPK checkboxes with per-row USD; no SKY → single Claim. Network fee row renders honest `–` on the fork.                                                                                              |
-| D-7  | Claim & restake: bundled claim→stake steps                                                 | **n/e**   | Claim & Restake not executed in pass 1 (claimables were spent by the D-9 run) — promoted to the e2e suite with on-chain assertions.                                                                       |
+| D-7  | Claim & restake: bundled claim→stake steps                                                 | **pass**  | Not exercisable in pass 1 (claimables spent by the D-9 run) → executed in e2e spec 7 (§3): `earned()` drains into vat ink, wallet SKY flat.                                                               |
 | D-8  | Post-mortem: heroes, stat grid with documented `–` gaps (stay honest), explorer link       | **pass**  | Real bark: refunded 18,398,595 SKY + USD, collateral-before 20,000,000 (bark.ink), honest `–` for SKY sold / debt repaid / penalty (non-indexed), timestamp, explorer link.                               |
 | D-9  | Recovery bundle → on-chain free+claim → modal converges to the inactive variant            | **pass*** | Recovery executed: on-chain ink 0 / art 0 / earned 0; modal converged to Inactive. Claimables were zero at run time so the bundle adapted to withdraw-only — claim+withdraw combo covered in e2e instead. |
 | D-10 | Claim menu chip = first-symbol-only balance (AUD-1 live)                                   | **pass**  | Chip shows 22.9 USDS (first symbol only), never a cross-token sum — AUD-1 fix live.                                                                                                                       |
@@ -202,5 +202,42 @@ delta → finding) · **fail** (defect) · **n/e** (not exercisable end-to-end; 
 
 ## 3. e2e promotion table
 
-_Filled during pass 3, after the QA matrix. Target: 6–9 specs in one stake spec file; every
-contract-write path exactly one spec; promotions carry rationale, rejections a one-line reason._
+Curated 2026-07-08 (pass 3). The suite is **`src/test/e2e/tests/stake-onchain.spec.ts`** — 8 specs
+(2 read smokes + 6 write specs, one per contract-write path), backed by
+`src/test/e2e/utils/stakeOnChain.ts` (on-chain oracles + liquidation staging). Registered in
+`playwright-parallel.config.ts`. **Oracle rule:** success copy is never asserted as the outcome —
+the mock wallet's `wallet_sendCalls` is non-atomic and reports optimistically — every write spec
+asserts `vat.urns` ink/art, farm `earned()`, and ERC-20 balances directly. Run isolated (like
+`stake.spec.ts`): the liquidation spec warps the vnet clock and un-stops the LockstakeClipper.
+
+All 8 specs green on a fresh vnet, 2026-07-08 (~2–3 min wall-clock, 1 worker). One vnet-RPC flake
+observed across four runs (a dropped HTTP request failed a _setup_ transaction, not an assertion;
+same spec green on re-run) — the class `run-tests-with-retry.sh` absorbs in CI.
+
+### Promotions
+
+| #   | Spec                                                          | Covers (§2)       | Why promoted                                                                                                                                                                       |
+| --- | ------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | smoke: shell renders all three tabs with live engine reads    | A-10, A-11, E-5   | Cheapest full-page mount check: tabs, empty positions, statistics engine card, about links — catches route/build breakage before any write spec spends a transaction.              |
+| 2   | smoke: flow deep links mount takeover / reject junk urn_index | E-1, E-3          | The deep-link contract is the module's public API (other surfaces link into it); junk `urn_index` must never crash (AUD-20 class).                                                 |
+| 3   | open + borrow + delegate multicall                            | B-9, B-7, B-14    | The only urn-creating multicall. Asserts exact ink, debt band incl. fee accrual, delegate set, and pins the A-Q2 decision on-chain (`urnFarms == SKY farm` default).               |
+| 4   | stake more / withdraw exact ink deltas                        | C-3, C-4          | Both directions of the lock/free write pair in one spec; exact-to-the-wei ink assertions plus the freed SKY landing in the wallet.                                                 |
+| 5   | borrow more / dust-gap guard / wipe-all                       | C-5, C-6          | Both directions of the draw/wipe pair. The dust-gap leg is UI-only by design — the guard exists to prevent a transaction, so there is nothing on-chain to assert; wipe-all is.     |
+| 6   | delegate change                                               | C-8               | The `selectVoteDelegate` write path: old ≠ new ≠ 0 read back from the engine.                                                                                                      |
+| 7   | claim + claim & restake                                       | D-5, D-6, **D-7** | D-7 was not exercisable in pass 1 (claimables spent) — the reason this spec exists. Plain claim pays exactly the minted USDS; restake drains `earned()` into vat ink, wallet flat. |
+| 8   | liquidation recovery bundle                                   | **D-9**           | Real bark + auction staged via engine calls (sized 2M SKY: debt > 30K dust, tab < 250K hole); subgraph interception mirrors the real bark. Claims + frees verified to zero.        |
+
+### Rejections
+
+| Candidate (§2)                                  | Why not e2e                                                                                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B-2/B-5/B-6 input-validation errors             | Pure client-side simulation — no transaction exists; covered by component tests (`OpenPositionTakeover.test.tsx`, `simulationErrorMessage.test`). |
+| B-4/C-5 slider clamp exactness                  | Already covered by `stake.spec.ts` (slider two-way sync) + the AUD-2 unit math; re-asserting exact clamp values adds wall-clock, no new write.    |
+| B-8/F-1 sequential (non-batch) confirm steps    | Identical calldata to the bundled path — only wallet presentation differs; verified in pass-1 browser QA.                                         |
+| B-11/B-12 reopen variants                       | Reopen re-executes the same lock/draw writes as specs 3–5; card pre-expansion logic is unit-tested and passed pass-1.                             |
+| A-4/A-5/A-6 table banners + remediation CTAs    | Positions table is subgraph-backed and blind to vnet urns; would be interception-heavy for read-only surfaces already covered `[fab]` in pass 1.  |
+| E-4 `stake_tab` legacy deep links               | Kept in the existing `stake.spec.ts` (exact coverage there); not duplicated.                                                                      |
+| C-6/D full repay + full withdraw landing states | Kept in the existing `unstake-repay.spec.ts`; spec 5 asserts the on-chain wipe-all outcome those UI specs don't.                                  |
+| F-4 wallet rejection                            | Mock wallet auto-approves every request — no rejection hook in the harness; flow-state unit tests cover it.                                       |
+| D-8 post-mortem `–` gaps                        | Display-only rendering of non-indexed fields, verified against a real bark in pass 1.                                                             |
+| G-1/G-2/G-3 themes & widths                     | Visual judgment — pass-2 design-review territory, not e2e.                                                                                        |
