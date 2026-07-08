@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { parseEther } from 'viem';
+import { formatUnits, parseEther } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import { useStakeHistoricData } from '@/hooks';
+import { getIlkName, useCollateralData, useStakeHistoricData } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -19,7 +19,10 @@ const toEtherScaled = (value: number) => parseEther(value.toFixed(18));
  * `Rate | TVL` series toggle and a `1W/1M/1Y/All` range picker, rendered through
  * the shared Chart's `detail` variant. Both series ride the `useParseTvlChartData`
  * pipeline the legacy `StakeChart` demonstrates — the Rate series is scaled into
- * percent units. Read-only; no engine hook is touched here.
+ * percent units. The rate HERO is the on-chain stability fee (what the protocol
+ * actually charges, and what the details strip's identically-labeled stat shows),
+ * not the charted analytics series' latest point — the two can lag apart; the
+ * series value only stands in if the on-chain read fails. Read-only.
  */
 export function StakeRateChart() {
   const [metric, setMetric] = useState<Metric>('rate');
@@ -47,8 +50,8 @@ export function StakeRateChart() {
   const rateData = useParseTvlChartData(timeFrame, rateInput);
   const tvlData = useParseTvlChartData(timeFrame, tvlInput);
 
-  // Hero = the newest raw datapoint of the selected series (sorted by datetime
-  // desc), independent of the timeframe-filtered chart series.
+  // TVL hero = the newest raw datapoint (sorted by datetime desc), independent
+  // of the timeframe-filtered chart series.
   const mostRecent = useMemo(
     () =>
       historicData
@@ -57,8 +60,14 @@ export function StakeRateChart() {
     [historicData]
   );
 
+  const { data: collateralData, isLoading: collateralLoading } = useCollateralData(getIlkName(2));
+  const stabilityFeePercent =
+    collateralData?.stabilityFee !== undefined
+      ? Number(formatUnits(collateralData.stabilityFee, 18)) * 100
+      : undefined;
+
   const isRate = metric === 'rate';
-  const displayValue = mostRecent ? (isRate ? toPercent(mostRecent.borrowRate) : mostRecent.tvl) : undefined;
+  const displayValue = isRate ? stabilityFeePercent : mostRecent?.tvl;
 
   return (
     <ErrorBoundary variant="small">
@@ -68,7 +77,7 @@ export function StakeRateChart() {
         // Brand indigo (Figma Components/Charts/bg-chart1), not the shared teal.
         color="#757dff"
         data={isRate ? rateData : tvlData}
-        isLoading={isLoading}
+        isLoading={isLoading || (isRate && collateralLoading)}
         error={error}
         isPercentage={isRate}
         prefix={isRate ? undefined : '$'}
