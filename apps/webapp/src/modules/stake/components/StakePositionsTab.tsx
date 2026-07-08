@@ -1,5 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
-import { useStakeUserPositions } from '../hooks/useStakeUserPositions';
+import { useStakeUserPositions, StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { StakePositionsTable } from './StakePositionsTable';
 import { StakeSummaryCard } from './StakeSummaryCard';
 import { StakeActivityTable } from './StakeActivityTable';
@@ -11,14 +11,24 @@ import { StakeEngineCard } from './StakeEngineCard';
  * no positions (or disconnected) the rail falls back to the Sky Staking Engine
  * promo card — the flow entry point of the empty state (UX 929:11803).
  */
-export function StakePositionsTab() {
+export function StakePositionsTab({
+  onRemediate
+}: {
+  /** Passed straight through to the positions table — see its prop doc. */
+  onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
+}) {
   const { data: positions, isLoading, error } = useStakeUserPositions();
   const hasPositions = (positions?.length ?? 0) > 0;
 
   return (
     <div data-testid="stake-positions-tab" className="grid items-start gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
-        <StakePositionsTable positions={positions} isLoading={isLoading} error={error} />
+        <StakePositionsTable
+          positions={positions}
+          isLoading={isLoading}
+          error={error}
+          onRemediate={onRemediate}
+        />
       </div>
       <div className="lg:col-span-1">
         {isLoading ? (

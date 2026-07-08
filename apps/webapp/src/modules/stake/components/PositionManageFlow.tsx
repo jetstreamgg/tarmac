@@ -1,8 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
+import { isLiquidatedStakePosition, useStakeUserPositions } from '../hooks/useStakeUserPositions';
 import { PositionDetailsModal, StakeManageAction } from './PositionDetailsModal';
+import { LiquidationPostMortemModal } from './LiquidationPostMortemModal';
 import { ManagePositionTakeover } from './ManagePositionTakeover';
 import { StakeClaimModal } from './StakeClaimModal';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
@@ -53,16 +55,32 @@ type ManageView =
  * the open-position takeover in reopen mode (F6/C17), borrow-expanded when the
  * urn ever had debt — the urn context rides the already-staged `urn_index`.
  * Back returns to the modal; × clears the flow params. A `stake_tab` param
- * (legacy deep-link contract) opens the sheet directly.
+ * (legacy deep-link contract) opens the sheet directly, and so does
+ * `initialSheetInit` (a caller-staged pre-toggle, e.g. a remediation CTA
+ * clicked before this flow was even mounted) — it takes priority over both.
  */
-export function PositionManageFlow() {
+export function PositionManageFlow({
+  initialSheetInit,
+  onInitialSheetInitConsumed
+}: {
+  initialSheetInit?: StakeManageFlowInit;
+  onInitialSheetInitConsumed?: () => void;
+} = {}) {
   const [searchParams, setSearchParams] = useAppSearchParams();
   const urnIndex = parseUrnIndex(searchParams.get(QueryParams.UrnIndex));
 
   const [view, setView] = useState<ManageView>(() => {
+    if (initialSheetInit) return { name: 'sheet', init: initialSheetInit };
     const init = stakeTabInit(searchParams.get(QueryParams.StakeTab));
     return init ? { name: 'sheet', init } : { name: 'details' };
   });
+
+  // The lazy useState initializer above already captured initialSheetInit into
+  // `view` — this only tells the parent its pending state is now redundant.
+  useEffect(() => {
+    if (initialSheetInit) onInitialSheetInitConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const close = useCallback(() => {
     setSearchParams(
@@ -84,6 +102,9 @@ export function PositionManageFlow() {
   const onReopen = useCallback((borrowExpanded: boolean) => setView({ name: 'reopen', borrowExpanded }), []);
   const onBack = useCallback(() => setView({ name: 'details' }), []);
 
+  const { data: positions } = useStakeUserPositions();
+  const position = urnIndex !== null ? positions?.find(p => p.index === urnIndex) : undefined;
+
   if (urnIndex === null) return null;
 
   if (view.name === 'claim') {
@@ -98,15 +119,23 @@ export function PositionManageFlow() {
     );
   }
 
-  return view.name === 'details' ? (
-    <PositionDetailsModal
-      urnIndex={urnIndex}
-      onClose={close}
-      onAction={onAction}
-      onClaim={onClaim}
-      onReopen={onReopen}
-    />
-  ) : (
-    <ManagePositionTakeover urnIndex={urnIndex} init={view.init} onBack={onBack} onClose={close} />
-  );
+  if (view.name === 'details') {
+    // A successful recovery frees the SKY, so the position's next mutation
+    // timestamp overtakes the bark and `isLiquidatedStakePosition` flips to
+    // false on its own — this branch then falls through to the ordinary
+    // (inactive) details modal without any extra transition here.
+    return position && isLiquidatedStakePosition(position) ? (
+      <LiquidationPostMortemModal urnIndex={urnIndex} onClose={close} />
+    ) : (
+      <PositionDetailsModal
+        urnIndex={urnIndex}
+        onClose={close}
+        onAction={onAction}
+        onClaim={onClaim}
+        onReopen={onReopen}
+      />
+    );
+  }
+
+  return <ManagePositionTakeover urnIndex={urnIndex} init={view.init} onBack={onBack} onClose={close} />;
 }

@@ -1,12 +1,15 @@
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SetSearchParams } from '@/lib/navigation';
+import type { StakeUrnBark, StakeUserPosition } from '../hooks/useStakeUserPositions';
 
 const h = vi.hoisted(() => ({
   modalProps: undefined as Record<string, unknown> | undefined,
   sheetProps: undefined as Record<string, unknown> | undefined,
   claimProps: undefined as Record<string, unknown> | undefined,
-  reopenProps: undefined as Record<string, unknown> | undefined
+  reopenProps: undefined as Record<string, unknown> | undefined,
+  postMortemProps: undefined as Record<string, unknown> | undefined,
+  positions: undefined as unknown[] | undefined
 }));
 
 let mockSearchParams = new URLSearchParams();
@@ -23,10 +26,25 @@ vi.mock('@/lib/navigation', async importOriginal => {
   };
 });
 
+vi.mock('../hooks/useStakeUserPositions', async importOriginal => {
+  const actual = await importOriginal<typeof import('../hooks/useStakeUserPositions')>();
+  return {
+    ...actual,
+    useStakeUserPositions: () => ({ data: h.positions, isLoading: false, error: null, mutate: vi.fn() })
+  };
+});
+
 vi.mock('./PositionDetailsModal', () => ({
   PositionDetailsModal: (props: Record<string, unknown>) => {
     h.modalProps = props;
     return <div data-testid="details-modal-stub" />;
+  }
+}));
+
+vi.mock('./LiquidationPostMortemModal', () => ({
+  LiquidationPostMortemModal: (props: Record<string, unknown>) => {
+    h.postMortemProps = props;
+    return <div data-testid="post-mortem-modal-stub" />;
   }
 }));
 
@@ -72,6 +90,32 @@ describe('stakeTabInit', () => {
   });
 });
 
+function makeBark(overrides: Partial<StakeUrnBark> = {}): StakeUrnBark {
+  return {
+    id: '1-ilk-1',
+    ilk: '0x4c534556322d534b592d41',
+    clip: '0x71eb8943c6b4426b315745c6001ae824e6dc7fb2',
+    clipperId: '1',
+    ink: 1n,
+    art: 1n,
+    due: 1n,
+    blockTimestamp: 1_700_000_000,
+    transactionHash: '0xf90d3823abc',
+    ...overrides
+  };
+}
+
+function makePosition(overrides: Partial<StakeUserPosition> = {}): StakeUserPosition {
+  return {
+    index: 2,
+    skyLocked: 0n,
+    usdsDebt: 0n,
+    barks: [],
+    lastMutationTimestamp: undefined,
+    ...overrides
+  };
+}
+
 describe('PositionManageFlow', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams('flow=manage&urn_index=2');
@@ -80,8 +124,30 @@ describe('PositionManageFlow', () => {
     h.sheetProps = undefined;
     h.claimProps = undefined;
     h.reopenProps = undefined;
+    h.postMortemProps = undefined;
+    h.positions = [makePosition()];
   });
   afterEach(cleanup);
+
+  it('routes a liquidated position to the post-mortem modal instead of the details modal (F8)', () => {
+    h.positions = [makePosition({ barks: [makeBark()] })];
+    render(<PositionManageFlow />);
+
+    expect(screen.getByTestId('post-mortem-modal-stub')).toBeTruthy();
+    expect(screen.queryByTestId('details-modal-stub')).toBeNull();
+    expect(h.postMortemProps?.urnIndex).toBe(2);
+
+    act(() => (h.postMortemProps!.onClose as () => void)());
+    expect(mockSearchParams.get('flow')).toBeNull();
+  });
+
+  it('keeps a non-liquidated position on the ordinary details modal', () => {
+    h.positions = [makePosition({ skyLocked: 100n, barks: [] })];
+    render(<PositionManageFlow />);
+
+    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    expect(screen.queryByTestId('post-mortem-modal-stub')).toBeNull();
+  });
 
   it('mounts the details modal for a valid urn_index', () => {
     render(<PositionManageFlow />);
@@ -151,5 +217,28 @@ describe('PositionManageFlow', () => {
     expect(mockSearchParams.get('flow')).toBeNull();
     expect(mockSearchParams.get('urn_index')).toBeNull();
     expect(mockSearchParams.get('stake_tab')).toBeNull();
+  });
+
+  it('opens the sheet directly on initialSheetInit, ahead of stake_tab and details', () => {
+    mockSearchParams = new URLSearchParams('flow=manage&urn_index=2&stake_tab=lock');
+    const onInitialSheetInitConsumed = vi.fn();
+    render(
+      <PositionManageFlow
+        initialSheetInit={{ borrowCard: 'repay' }}
+        onInitialSheetInitConsumed={onInitialSheetInitConsumed}
+      />
+    );
+
+    expect(screen.getByTestId('manage-sheet-stub')).toBeTruthy();
+    expect(h.sheetProps?.init).toEqual({ borrowCard: 'repay' });
+    expect(onInitialSheetInitConsumed).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves existing details/stake_tab behavior unchanged without initialSheetInit', () => {
+    const onInitialSheetInitConsumed = vi.fn();
+    render(<PositionManageFlow onInitialSheetInitConsumed={onInitialSheetInitConsumed} />);
+
+    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    expect(onInitialSheetInitConsumed).not.toHaveBeenCalled();
   });
 });

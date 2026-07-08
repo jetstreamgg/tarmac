@@ -18,7 +18,7 @@ import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import { Stake } from '@/modules/icons';
+import { Stake, Liquidated } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,7 +27,12 @@ import {
   ProductTransactionColumn,
   TxAmountCell
 } from '@/components/product/ProductTransactionsTable';
-import { StakeUserPosition, isInactiveStakePosition } from '../hooks/useStakeUserPositions';
+import {
+  StakeUserPosition,
+  isInactiveStakePosition,
+  isLiquidatedStakePosition
+} from '../hooks/useStakeUserPositions';
+import { StakePositionRowBanner } from './StakePositionRowBanner';
 
 // Mini liquidation-risk meter (hi-fi 486:32084): a bordered pill of three
 // segments; more (and warmer) lit segments = closer to liquidation. Rows with
@@ -60,12 +65,26 @@ function RiskMeter({ riskLevel }: { riskLevel?: RiskLevel }) {
   );
 }
 
-/** Liquidation-risk cell: vault risk for urns with debt, an unlit meter otherwise. */
+/** Filled pill badge replacing the risk meter once a position has been liquidated. */
+function LiquidatedBadge() {
+  return (
+    <span
+      data-testid="stake-position-liquidated-badge"
+      className="bg-error/15 text-error inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+    >
+      <Liquidated width={16} height={16} />
+      <Trans>Liquidation</Trans>
+    </span>
+  );
+}
+
+/** Liquidation-risk cell: liquidated badge, vault risk for urns with debt, or an unlit meter. */
 function PositionRiskCell({ position }: { position: StakeUserPosition }) {
   const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
   const { data: vault, isLoading } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
   const hasDebt = position.usdsDebt > 0n;
 
+  if (isLiquidatedStakePosition(position)) return <LiquidatedBadge />;
   if (hasDebt && isLoading) return <Skeleton className="h-5 w-14" />;
   return <RiskMeter riskLevel={hasDebt ? vault?.riskLevel : undefined} />;
 }
@@ -193,11 +212,14 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
 export function StakePositionsTable({
   positions,
   isLoading,
-  error
+  error,
+  onRemediate
 }: {
   positions?: StakeUserPosition[];
   isLoading: boolean;
   error?: Error | null;
+  /** Warning-banner CTA: stage the given remediation action for that position's manage sheet. */
+  onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
 }) {
   const [hideInactive, setHideInactive] = useState(true);
   const [, setSearchParams] = useAppSearchParams();
@@ -218,7 +240,7 @@ export function StakePositionsTable({
 
   const allPositions = positions ?? [];
   const visiblePositions = hideInactive
-    ? allPositions.filter(position => !isInactiveStakePosition(position))
+    ? allPositions.filter(position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position))
     : allPositions;
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
@@ -265,6 +287,13 @@ export function StakePositionsTable({
           error={error}
           emptyLabel={<Trans>No active positions.</Trans>}
           minWidth={720}
+          renderBelowRow={position => (
+            <StakePositionRowBanner
+              position={position}
+              onRemediate={action => onRemediate(position, action)}
+              onClaim={() => onRowClick(position)}
+            />
+          )}
         />
       )}
     </div>

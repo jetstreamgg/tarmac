@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
@@ -10,11 +10,13 @@ import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RING_DEFAULT } from '@/components/product/productVisuals';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { StakeUserPosition } from '../hooks/useStakeUserPositions';
+import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
 import { StakePositionsTab } from './StakePositionsTab';
 import { StakeStatisticsTab } from './StakeStatisticsTab';
 import { StakeAboutTab } from './StakeAboutTab';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
-import { PositionManageFlow } from './PositionManageFlow';
+import { PositionManageFlow, manageActionInit } from './PositionManageFlow';
 
 // URL tab contract for the Stake destination page: `?tab=` selects the visible
 // tab; `positions` is the default and the fallback for any unknown value.
@@ -60,6 +62,27 @@ export function StakeProductPage() {
     );
   };
 
+  // A row-banner remediation CTA can fire before the manage flow is even
+  // mounted (it stages `flow=manage` itself); this carries the sheet
+  // pre-toggle across that gap until the flow's own view state picks it up.
+  const [pendingSheetInit, setPendingSheetInit] = useState<StakeManageFlowInit | null>(null);
+
+  const onRemediate = useCallback(
+    (position: StakeUserPosition, action: 'stake' | 'repay') => {
+      setPendingSheetInit(manageActionInit(action));
+      setSearchParams(
+        params => {
+          params.set(QueryParams.Flow, 'manage');
+          params.set(QueryParams.UrnIndex, String(position.index));
+          return params;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+  const onInitialSheetInitConsumed = useCallback(() => setPendingSheetInit(null), []);
+
   return (
     <div data-testid="stake-product-page" className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
@@ -104,7 +127,7 @@ export function StakeProductPage() {
         </TabsList>
 
         <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-6">
-          <StakePositionsTab />
+          <StakePositionsTab onRemediate={onRemediate} />
         </TabsContent>
         <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-6">
           <StakeStatisticsTab />
@@ -115,7 +138,12 @@ export function StakeProductPage() {
       </Tabs>
 
       {isOpenFlow && <OpenPositionTakeover />}
-      {isManageFlow && <PositionManageFlow />}
+      {isManageFlow && (
+        <PositionManageFlow
+          initialSheetInit={pendingSheetInit ?? undefined}
+          onInitialSheetInitConsumed={onInitialSheetInitConsumed}
+        />
+      )}
     </div>
   );
 }

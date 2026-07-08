@@ -30,6 +30,10 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+const h = vi.hoisted(() => ({
+  vault: { riskLevel: 'LOW' } as Record<string, unknown>
+}));
+
 // Per-row reads: urn address, vault risk, claimable rewards, prices — all
 // mocked to fixed values so the table logic is what's under test.
 vi.mock('@/hooks', async importOriginal => {
@@ -37,7 +41,7 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     useStakeUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111', isLoading: false }),
-    useVault: () => ({ data: { riskLevel: 'LOW' }, isLoading: false, error: null }),
+    useVault: () => ({ data: h.vault, isLoading: false, error: null }),
     useStakeRewardContracts: () => ({
       data: [{ contractAddress: '0x2222222222222222222222222222222222222222' }],
       isLoading: false
@@ -60,16 +64,41 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { StakePositionsTable } from './StakePositionsTable';
 
+function bark(overrides: Partial<StakeUserPosition['barks'][number]> = {}) {
+  return {
+    id: '1-ilk-1',
+    ilk: '0x4c534556322d534b592d41',
+    clip: '0x71eb8943c6b4426b315745c6001ae824e6dc7fb2',
+    clipperId: '1',
+    ink: 1n,
+    art: 1n,
+    due: 1n,
+    blockTimestamp: 1_700_000_000,
+    transactionHash: '0xf90d3823abc',
+    ...overrides
+  };
+}
+
 const POSITIONS: StakeUserPosition[] = [
-  { index: 0, skyLocked: 700550n * 10n ** 18n, usdsDebt: 30000n * 10n ** 18n },
-  { index: 1, skyLocked: 50000n * 10n ** 18n, usdsDebt: 0n },
-  { index: 2, skyLocked: 0n, usdsDebt: 0n } // inactive (emptied) urn
+  {
+    index: 0,
+    skyLocked: 700550n * 10n ** 18n,
+    usdsDebt: 30000n * 10n ** 18n,
+    barks: [],
+    lastMutationTimestamp: undefined
+  },
+  { index: 1, skyLocked: 50000n * 10n ** 18n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined },
+  { index: 2, skyLocked: 0n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined } // inactive (emptied) urn
 ];
 
-const renderTable = (positions: StakeUserPosition[] | undefined = POSITIONS, isLoading = false) =>
+const renderTable = (
+  positions: StakeUserPosition[] | undefined = POSITIONS,
+  isLoading = false,
+  onRemediate = vi.fn()
+) =>
   render(
     <I18nProvider i18n={i18n}>
-      <StakePositionsTable positions={positions} isLoading={isLoading} error={null} />
+      <StakePositionsTable positions={positions} isLoading={isLoading} error={null} onRemediate={onRemediate} />
     </I18nProvider>
   );
 
@@ -77,6 +106,7 @@ describe('StakePositionsTable', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams();
     setSearchParamsMock.mockClear();
+    h.vault = { riskLevel: 'LOW' };
   });
 
   afterEach(cleanup);
@@ -125,5 +155,51 @@ describe('StakePositionsTable', () => {
 
     expect(screen.getByTestId('stake-positions-empty')).toBeTruthy();
     expect(screen.getByText("You don't have any staking and borrowing position yet.")).toBeTruthy();
+  });
+
+  it('shows the liquidation badge instead of the risk meter for a liquidated position', () => {
+    const positions: StakeUserPosition[] = [
+      { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [bark()], lastMutationTimestamp: undefined }
+    ];
+    renderTable(positions);
+
+    expect(screen.getByTestId('stake-position-liquidated-badge')).toBeTruthy();
+    expect(screen.getByText('Liquidation')).toBeTruthy();
+  });
+
+  it('keeps a liquidated-but-empty urn visible while hiding a plain inactive one', () => {
+    const positions: StakeUserPosition[] = [
+      { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [bark()], lastMutationTimestamp: undefined }, // liquidated
+      { index: 1, skyLocked: 0n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined } // plain inactive
+    ];
+    renderTable(positions);
+
+    expect(screen.getByText('Position 1')).toBeTruthy();
+    expect(screen.queryByText('Position 2')).toBeNull();
+  });
+
+  it('renders the row banner directly under its matching row', () => {
+    const positions: StakeUserPosition[] = [
+      { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [bark()], lastMutationTimestamp: undefined }
+    ];
+    renderTable(positions);
+
+    expect(screen.getByTestId('stake-position-liquidated-banner')).toBeTruthy();
+  });
+
+  it('routes the warning banner CTAs through the onRemediate table prop for the clicked position', () => {
+    h.vault = {
+      debtValue: 30000n * 10n ** 18n,
+      liquidationProximityPercentage: 65,
+      liquidationPrice: 1n * 10n ** 18n
+    };
+    const onRemediate = vi.fn();
+    renderTable(POSITIONS, false, onRemediate);
+
+    fireEvent.click(screen.getAllByTestId('stake-warning-stake-cta')[0]);
+    expect(onRemediate).toHaveBeenCalledWith(POSITIONS[0], 'stake');
+
+    fireEvent.click(screen.getAllByTestId('stake-warning-repay-cta')[0]);
+    expect(onRemediate).toHaveBeenCalledWith(POSITIONS[0], 'repay');
   });
 });

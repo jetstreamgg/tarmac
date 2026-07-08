@@ -1,8 +1,9 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SetSearchParams } from '@/lib/navigation';
+import type { StakeUserPosition } from '../hooks/useStakeUserPositions';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -54,9 +55,17 @@ vi.mock('./StakeAboutTab', () => ({
   StakeAboutTab: () => <div data-testid="stake-about-tab-stub" />
 }));
 
+const h = vi.hoisted(() => ({
+  positionsTabProps: undefined as Record<string, unknown> | undefined,
+  manageFlowProps: undefined as Record<string, unknown> | undefined
+}));
+
 // And for the My positions tab body (subgraph + per-urn reads).
 vi.mock('./StakePositionsTab', () => ({
-  StakePositionsTab: () => <div data-testid="stake-positions-tab-stub" />
+  StakePositionsTab: (props: Record<string, unknown>) => {
+    h.positionsTabProps = props;
+    return <div data-testid="stake-positions-tab-stub" />;
+  }
 }));
 
 // The F4 takeover is fully covered by OpenPositionTakeover.test.tsx; here we
@@ -65,10 +74,18 @@ vi.mock('./OpenPositionTakeover', () => ({
   OpenPositionTakeover: () => <div data-testid="stake-takeover-stub" />
 }));
 
-// Likewise the F5 manage flow (PositionManageFlow.test.tsx owns its behavior).
-vi.mock('./PositionManageFlow', () => ({
-  PositionManageFlow: () => <div data-testid="stake-manage-flow-stub" />
-}));
+// Likewise the F5 manage flow (PositionManageFlow.test.tsx owns its behavior);
+// `manageActionInit` stays real since it's a pure mapping this page relies on.
+vi.mock('./PositionManageFlow', async importOriginal => {
+  const actual = await importOriginal<typeof import('./PositionManageFlow')>();
+  return {
+    ...actual,
+    PositionManageFlow: (props: Record<string, unknown>) => {
+      h.manageFlowProps = props;
+      return <div data-testid="stake-manage-flow-stub" />;
+    }
+  };
+});
 
 import { StakeProductPage } from './StakeProductPage';
 
@@ -90,6 +107,8 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams();
     setSearchParamsMock.mockClear();
+    h.positionsTabProps = undefined;
+    h.manageFlowProps = undefined;
   });
 
   afterEach(cleanup);
@@ -176,5 +195,33 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     // productNetworks(STAKE_INTENT, [1]) — mainnet is the only stake network.
     const stub = screen.getByTestId('chain-modal-stub');
     expect(JSON.parse(stub.getAttribute('data-chain-ids') || '[]')).toContain(1);
+  });
+
+  it('routes a table onRemediate into a staged manage-flow deep link', () => {
+    renderPage();
+
+    const onRemediate = h.positionsTabProps?.onRemediate as (
+      position: StakeUserPosition,
+      action: 'stake' | 'repay'
+    ) => void;
+    act(() => onRemediate({ index: 3 } as StakeUserPosition, 'repay'));
+
+    expect(mockSearchParams.get('flow')).toBe('manage');
+    expect(mockSearchParams.get('urn_index')).toBe('3');
+    expect(h.manageFlowProps?.initialSheetInit).toEqual({ borrowCard: 'repay' });
+  });
+
+  it('clears the pending sheet init once the manage flow reports it consumed', () => {
+    renderPage();
+
+    const onRemediate = h.positionsTabProps?.onRemediate as (
+      position: StakeUserPosition,
+      action: 'stake' | 'repay'
+    ) => void;
+    act(() => onRemediate({ index: 1 } as StakeUserPosition, 'stake'));
+    expect(h.manageFlowProps?.initialSheetInit).toEqual({ stakeCard: 'stake' });
+
+    act(() => (h.manageFlowProps!.onInitialSheetInitConsumed as () => void)());
+    expect(h.manageFlowProps?.initialSheetInit).toBeUndefined();
   });
 });
