@@ -39,7 +39,7 @@ export interface StakePositionDetail {
   estAnnualRewardsSky: bigint | null;
   claimableUsd: number;
   claimableSymbols: string[];
-  /** Raw claimable balance of the urn's farm (single-farm sum) — the menu chip. */
+  /** Claimable balance of `claimableSymbols[0]`'s token only — the menu chip pairs it with that symbol. */
   claimableTokenAmount: bigint;
   claimableLoading: boolean;
   /** Claimed (subgraph history) + still claimable, in USD. */
@@ -95,9 +95,17 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     (total, reward) => total + Number(formatUnits(reward.claimBalance, 18)) * priceOf(reward.rewardSymbol),
     0
   );
+  // The chip renders ONE amount next to ONE symbol, so its figure must be that
+  // token's own balance — never a sum across different reward tokens (residual
+  // claimables from a previous farm can put two tokens on the same urn).
+  const positiveClaimables = claimables.filter(reward => reward.claimBalance > 0n);
   const claimableSymbols =
-    claimables.length > 0 ? [...new Set(claimables.map(reward => reward.rewardSymbol))] : ['SKY'];
-  const claimableTokenAmount = claimables.reduce((total, reward) => total + reward.claimBalance, 0n);
+    positiveClaimables.length > 0
+      ? [...new Set(positiveClaimables.map(reward => reward.rewardSymbol))]
+      : ['SKY'];
+  const claimableTokenAmount = positiveClaimables
+    .filter(reward => reward.rewardSymbol === claimableSymbols[0])
+    .reduce((total, reward) => total + reward.claimBalance, 0n);
 
   // Rewards earned = claimed events of THIS urn + still claimable (F3 convention,
   // urn-scoped through the subgraph index filter).
