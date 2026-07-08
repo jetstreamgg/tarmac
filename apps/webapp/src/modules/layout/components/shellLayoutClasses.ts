@@ -13,9 +13,9 @@ import { cn } from '@/lib/utils';
 /** The shell surface (the VStack wrapping the header + content). */
 export const shellSurfaceClasses = (fullWidth: boolean) =>
   cn(
-    // Dark: the sky image blended (luminosity) with the app container's #040434
-    // backdrop so it takes that hue; light keeps the lilac gradient.
-    'bg-app-background light:bg-blend-normal flex min-h-svh max-w-full items-center [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity md:min-h-screen',
+    // The surface is transparent: the page background lives on the
+    // viewport-fixed .app-background layer Layout renders behind it.
+    'flex min-h-svh max-w-full items-center md:min-h-screen',
     // Boxed routes cap to the viewport and scroll inside the VStack; full-width
     // routes omit the cap so the document scrolls instead.
     !fullWidth && 'max-h-svh overflow-auto md:max-h-screen md:p-4 md:pb-2'

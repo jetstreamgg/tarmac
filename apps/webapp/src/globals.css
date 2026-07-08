@@ -102,7 +102,12 @@
   --background-image-primaryActive: var(--service-purple-5);
   --background-image-primaryFocus: var(--primary-purple-40);
   --background-image-primaryTransparent: var(--service-purple-transparent);
-  --background-image-app-background: URL('/images/background.png');
+  /* Dark page background (Figma 5010:6624): a bottom fade into the solid
+     backdrop over the sky image. The image is pre-baked — sunset sky blended
+     (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
+     Layer geometry (fixed layer, sizes, positions) lives in .app-background. */
+  --background-image-app-background:
+    linear-gradient(to bottom, rgba(9, 4, 32, 0) 58%, #090420 100%), url('/images/background-dark.webp');
   --background-image-nav-light: var(--service-nav-light);
   --background-image-nav-light-vertical: var(--service-nav-light-vertical);
 
@@ -417,8 +422,12 @@
     --color-primary-bright-start: rgba(130, 112, 245);
     --color-primary-bright-end: rgba(148, 131, 248);
 
-    /* page background: lilac daytime gradient, a touch deeper than the cards. */
-    --background-image-app-background: linear-gradient(180deg, #d3ddf6 0%, #dbd3f3 55%, #e2daf5 100%);
+    /* Light page background (Figma 5124:25430): bottom fade + daytime sky
+       image over a pale blue base gradient (visible only while the image
+       loads, since the image is opaque and covers the layer). */
+    --background-image-app-background:
+      linear-gradient(to bottom, rgba(236, 240, 255, 0) 58%, #ecf0ff 100%),
+      url('/images/background-light.webp'), linear-gradient(180deg, #f7fbff 0%, #ecf4ff 100%);
   }
 }
 
@@ -504,6 +513,33 @@
     -webkit-appearance: none;
     margin: 0;
   }
+}
+
+/* App page background (Figma: Backgrounds 5177:37170) ----------------------
+   A viewport-fixed layer behind the shell (rendered once in Layout). Fixed
+   instead of `background-attachment: fixed` because the latter is broken on
+   iOS Safari. The image layers come from --background-image-app-background
+   (dark default in @theme; light override in the [data-theme='light'] block);
+   the sizes/positions below are per-layer: fade gradient, image(, base
+   gradient in light). The dark image keeps the design's top framing on wide
+   viewports and centers when the viewport is taller than the image's aspect. */
+.app-background {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background-color: #090420;
+  background-image: var(--background-image-app-background);
+  background-repeat: no-repeat;
+  background-size: auto, cover;
+  background-position:
+    center,
+    center top;
+}
+[data-theme='light'] .app-background {
+  background-color: #f7fbff;
+  background-size: auto, cover, auto;
+  background-position: center;
 }
 
 /* Header nav pills (TopNav) ------------------------------------------------
