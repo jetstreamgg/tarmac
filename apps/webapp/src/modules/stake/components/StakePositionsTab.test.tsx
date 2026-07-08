@@ -21,8 +21,13 @@ vi.mock('../hooks/useStakeUserPositions', async importOriginal => {
   };
 });
 
+const h = vi.hoisted(() => ({ tableProps: undefined as Record<string, unknown> | undefined }));
+
 vi.mock('./StakePositionsTable', () => ({
-  StakePositionsTable: () => <div data-testid="stake-positions-table-stub" />
+  StakePositionsTable: (props: Record<string, unknown>) => {
+    h.tableProps = props;
+    return <div data-testid="stake-positions-table-stub" />;
+  }
 }));
 vi.mock('./StakeSummaryCard', () => ({
   StakeSummaryCard: () => <div data-testid="stake-summary-card-stub" />
@@ -36,19 +41,27 @@ vi.mock('./StakeEngineCard', () => ({
 
 import { StakePositionsTab } from './StakePositionsTab';
 
-const renderTab = () =>
+const renderTab = (onRemediate = vi.fn()) =>
   render(
     <I18nProvider i18n={i18n}>
-      <StakePositionsTab />
+      <StakePositionsTab onRemediate={onRemediate} />
     </I18nProvider>
   );
 
 describe('StakePositionsTab', () => {
   afterEach(cleanup);
 
+  it('passes onRemediate straight through to the positions table', () => {
+    const onRemediate = vi.fn();
+    mockPositions = { data: [], isLoading: false, error: null };
+    renderTab(onRemediate);
+
+    expect(h.tableProps?.onRemediate).toBe(onRemediate);
+  });
+
   it('shows the summary card in the rail when the user has positions', () => {
     mockPositions = {
-      data: [{ index: 0, skyLocked: 1n, usdsDebt: 0n }],
+      data: [{ index: 0, skyLocked: 1n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }],
       isLoading: false,
       error: null
     };

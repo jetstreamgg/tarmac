@@ -85,8 +85,8 @@ vi.mock('../hooks/useStakeTotalDebt', () => ({
 import { StakeSummaryCard, calculateNetApy } from './StakeSummaryCard';
 
 const POSITIONS: StakeUserPosition[] = [
-  { index: 0, skyLocked: 700550n * 10n ** 18n, usdsDebt: 30000n * 10n ** 18n },
-  { index: 1, skyLocked: 50000n * 10n ** 18n, usdsDebt: 0n }
+  { index: 0, skyLocked: 700550n * 10n ** 18n, usdsDebt: 30000n * 10n ** 18n, barks: [], lastMutationTimestamp: undefined },
+  { index: 1, skyLocked: 50000n * 10n ** 18n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }
 ];
 
 const renderCard = () =>

@@ -89,8 +89,8 @@ const renderTable = () =>
     <I18nProvider i18n={i18n}>
       <StakeActivityTable
         positions={[
-          { index: 0, skyLocked: 1n, usdsDebt: 1n },
-          { index: 1, skyLocked: 1n, usdsDebt: 0n }
+          { index: 0, skyLocked: 1n, usdsDebt: 1n, barks: [], lastMutationTimestamp: undefined },
+          { index: 1, skyLocked: 1n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }
         ]}
       />
     </I18nProvider>
