@@ -39,7 +39,8 @@ export function calculateVaultInfo({
     debtValue,
     liquidationPrice,
     marketPrice || delayedPrice, // Use market price for accurate risk calculation, fallback to capped price
-    collateralValue
+    collateralValue,
+    delayedPrice
   );
   const riskLevel = calculateRiskLevel(liquidationProximityPercentage);
 
@@ -66,10 +67,19 @@ function calculateLiquidationProximityPercentage(
   debtValue: bigint,
   liquidationPrice: bigint,
   marketPrice: bigint,
-  collateralValue: bigint
+  collateralValue: bigint,
+  delayedPrice: bigint
 ): number {
   if (debtValue === 0n) {
     return 0;
+  }
+  // The delayed (OSM) price is what the protocol's safety check (vat.spot)
+  // enforces, so liquidationPrice >= delayedPrice means the position is
+  // liquidatable right now — an off-chain market price sitting above the
+  // liquidation price (e.g. recovering faster than the OSM lag) must not
+  // mask that.
+  if (liquidationPrice >= delayedPrice) {
+    return 100;
   }
   if (liquidationPrice >= marketPrice) {
     return 100;
