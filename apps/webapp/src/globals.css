@@ -75,6 +75,20 @@
   --color-glassBorder: rgba(188, 182, 239, 0.2);
   --color-flipSurface: #1b1735;
   --color-flipRing: #140f2b;
+  /* Design-system button tokens (Figma 5010:7958): dark values are the Figma
+     source values — colors/bg/bg-brand-primary + bg-brand-secondary (primary
+     hover/pressed fills), colors/border/border-focus (focus ring),
+     colors/fg/fg-tertiary (disabled/loading text) and the primary gradient
+     stops. None are overridden in the light scope: fgConsistent
+     (colors/fg/fg-text-consistent-light) stays light on the brand gradient in
+     both themes by design; the rest are interim (G2 owns full light parity). */
+  --color-brandHover: #504dff;
+  --color-brandPressed: #4836f5;
+  --color-focusRing: #c2ccff;
+  --color-fgTertiary: #636685;
+  --color-fgConsistent: #f2f3f7;
+  --color-button-gradient-start: #2a197d;
+  --color-button-gradient-end: #6a6cfb;
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
