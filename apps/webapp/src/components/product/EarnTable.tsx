@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { EarnRiskTier } from '@/hooks';
-import { RiskMeter } from './RiskMeter';
+import { RiskTierMeter } from './RiskMeter';
 
 export type EarnTableColumn = 'token' | 'network' | 'risk' | 'rate' | 'rate30d' | 'tvl' | 'position';
 
@@ -146,7 +146,7 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
             </TableCell>
             <TableCell className={cellClasses}>{row.network}</TableCell>
             <TableCell className={cellClasses}>
-              <RiskMeter tier={row.risk} />
+              <RiskTierMeter tier={row.risk} />
             </TableCell>
             <NumericCell value={row.rate} isLoading={row.isLoading} />
             <NumericCell value={row.rate30d} isLoading={row.isLoading} />

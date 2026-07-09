@@ -1,6 +1,7 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import {
+  BORROW_SPEC_SKY,
   confirmTransactionModal,
   gotoManagePosition,
   openStakePosition,
@@ -27,18 +28,19 @@ test('destination shell renders tabs with the empty positions state', async ({ i
   await stakeDeepLink(isolatedPage);
   await expect(isolatedPage.getByTestId('stake-tabs')).toBeVisible();
 
-  // Fresh vnet account → no subgraph rows → empty positions state, with the
-  // Sky Staking Engine promo card as the flow entry point.
+  // Fresh vnet account → no subgraph rows → the page defaults to Statistics
+  // (post-review behavior: never land on an empty positions table).
+  await expect(isolatedPage.getByTestId('stake-engine-card')).toBeVisible({ timeout: 15_000 });
+
+  // The positions tab is still one click away and renders its empty state
+  // with the Sky Staking Engine promo card as the flow entry point.
+  await isolatedPage.getByTestId('stake-tab-positions').click();
   await expect(isolatedPage.getByTestId('stake-positions-empty')).toBeVisible({ timeout: 15_000 });
   await expect(isolatedPage.getByTestId('stake-open-position-cta')).toBeVisible();
-
-  // Statistics tab renders the engine card read-only surface.
-  await isolatedPage.getByTestId('stake-tab-statistics').click();
-  await expect(isolatedPage.getByTestId('stake-engine-card')).toBeVisible({ timeout: 15_000 });
 });
 
 test('opens a stake + borrow + delegate position through the takeover', async ({ isolatedPage }) => {
-  const SKY_AMOUNT_TO_LOCK = '2400000';
+  const SKY_AMOUNT_TO_LOCK = BORROW_SPEC_SKY;
   const USDS_AMOUNT_TO_BORROW = '38000';
 
   await openStakePosition(isolatedPage, {
@@ -50,12 +52,15 @@ test('opens a stake + borrow + delegate position through the takeover', async ({
   // Verify the urn on-chain through the manage deep link: details modal shows
   // the position with a delegate attached.
   await gotoManagePosition(isolatedPage, 0);
-  await expect(isolatedPage.getByText('2,400,000').first()).toBeVisible();
+  await expect(isolatedPage.getByText('25,000,000').first()).toBeVisible();
   await expect(isolatedPage.getByTestId('stake-position-delegate-link')).toBeVisible();
 });
 
 test('opens a stake-only position from the empty-state CTA', async ({ isolatedPage }) => {
   await stakeDeepLink(isolatedPage);
+  // Empty account lands on Statistics (post-review default) — the empty
+  // positions state is behind its tab.
+  await isolatedPage.getByTestId('stake-tab-positions').click();
   await expect(isolatedPage.getByTestId('stake-positions-empty')).toBeVisible({ timeout: 15_000 });
 
   // Real CTA path (not the deep link): the engine promo card launches the takeover.
@@ -75,7 +80,7 @@ test('opens a stake-only position from the empty-state CTA', async ({ isolatedPa
 });
 
 test('borrows more against an existing position through the manage sheet', async ({ isolatedPage }) => {
-  await openStakePosition(isolatedPage, { sky: '2400000', usds: '30000' });
+  await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '30000' });
 
   await gotoManagePosition(isolatedPage, 0);
   await isolatedPage.getByTestId('stake-manage-menu-borrow').click();
@@ -103,7 +108,7 @@ test('risk slider two-way sync in the takeover borrow card', async ({ isolatedPa
   await stakeDeepLink(isolatedPage, 'flow=open');
   await expect(isolatedPage.getByTestId('stake-takeover')).toBeVisible({ timeout: 15_000 });
 
-  await isolatedPage.getByTestId('stake-takeover-stake-amount').fill('2400000');
+  await isolatedPage.getByTestId('stake-takeover-stake-amount').fill(BORROW_SPEC_SKY);
   await isolatedPage.getByTestId('stake-takeover-borrow-card-toggle').click();
   await isolatedPage.getByTestId('stake-takeover-borrow-amount').fill('20000');
 

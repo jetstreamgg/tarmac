@@ -56,4 +56,14 @@ describe('BorrowUtilizationBlock', () => {
     expect(screen.getByText('250')).toBeTruthy();
     expect(screen.getByText('750')).toBeTruthy();
   });
+
+  it('colors the Borrowed legend dot and bar fill brand purple, Available gray (hi-fi 486:31955)', () => {
+    renderBlock();
+
+    const dot = (label: string) => screen.getByText(label).parentElement!.querySelector('span[aria-hidden]')!;
+    expect(dot('Borrowed (USDS)').className).toContain('bg-[#757dff]');
+    expect(dot('Available (USDS)').className).toContain('bg-textSecondary/50');
+    const bar = screen.getByTestId('utilization-bar');
+    expect(bar.querySelector('.bg-\\[\\#757dff\\]')).toBeTruthy();
+  });
 });

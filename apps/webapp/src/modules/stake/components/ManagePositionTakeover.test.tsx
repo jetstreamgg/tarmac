@@ -218,6 +218,7 @@ describe('ManagePositionTakeover', () => {
     h.voteDelegate = CURRENT_DELEGATE;
     h.simLiqPrice = 432n * 10n ** 14n;
     h.simDelayedPrice = 608n * 10n ** 14n;
+    h.simProximity = 36;
     h.minCollateralForDust = 1_440_000n * WAD;
   });
   afterEach(() => {
@@ -288,6 +289,20 @@ describe('ManagePositionTakeover', () => {
 
   it('flags the capped-OSM withdraw (liquidation price above the delayed price)', () => {
     h.simLiqPrice = 700n * 10n ** 14n; // above delayedPrice 608
+    renderSheet({ stakeCard: 'withdraw' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toBe(
+      'Liquidation price is higher than the capped OSM SKY price'
+    );
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('prefers the capped-OSM message when the F8 proximity short-circuit also maxes the risk error', () => {
+    // Real hook behavior once liq price ≥ delayed price: proximity reports
+    // 100, so BOTH error conditions hold — the specific copy must win.
+    h.simLiqPrice = 700n * 10n ** 14n;
+    h.simProximity = 100;
     renderSheet({ stakeCard: 'withdraw' });
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });

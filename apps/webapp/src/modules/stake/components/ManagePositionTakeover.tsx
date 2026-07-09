@@ -24,6 +24,7 @@ import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
+import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
@@ -136,10 +137,14 @@ export function ManagePositionTakeover({
         : undefined
       : state.skyAmount > existingCollateral && state.skyAmount !== 0n
         ? t`Insufficient funds`
-        : isLiquidationError
-          ? t`Liquidation risk too high`
-          : isCappedOsmError
-            ? t`Liquidation price is higher than the capped OSM SKY price`
+        : // The capped-OSM state implies max liquidation risk (the F8 proximity
+          // short-circuit reports 100 whenever liquidation price ≥ delayed
+          // price), so the more specific message must win the tie — after it,
+          // the generic risk error is unreachable-shadowed, not the reverse.
+          isCappedOsmError
+          ? t`Liquidation price is higher than the capped OSM SKY price`
+          : isLiquidationError
+            ? t`Liquidation risk too high`
             : undefined;
   const stakeCardValid = !state.stakeEnabled || state.skyAmount === 0n || !stakeError;
 
@@ -229,14 +234,7 @@ export function ManagePositionTakeover({
   const onSuccess = useCallback(() => {
     // Fresh positions/activity AND fresh on-chain reads (vault, balances,
     // allowances) on return — manage txs change what every read hook reports.
-    // Batched reads (claimables, wallet balances, total debt) key under
-    // 'readContracts' (plural) — a separate wagmi key the singular prefix
-    // does not match; the drip simulation has its own key too.
-    queryClient.invalidateQueries({ queryKey: ['stake-user-positions'] });
-    queryClient.invalidateQueries({ queryKey: ['stake-history'] });
-    queryClient.invalidateQueries({ queryKey: ['readContract'] });
-    queryClient.invalidateQueries({ queryKey: ['readContracts'] });
-    queryClient.invalidateQueries({ queryKey: ['simulateDrip'] });
+    invalidateStakeQueries(queryClient);
     setSearchParams(
       params => {
         params.delete(QueryParams.Flow);

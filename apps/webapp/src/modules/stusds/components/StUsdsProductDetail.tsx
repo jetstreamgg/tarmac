@@ -18,7 +18,7 @@ import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { resolveTokenColor } from '@/widgets/shared/constants';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { RiskMeter } from '@/components/product/RiskMeter';
+import { RiskTierMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { RING_DEFAULT } from '@/components/product/productVisuals';
 import { StUsdsDetailChart } from './StUsdsDetailChart';
@@ -98,7 +98,7 @@ export function StUsdsProductDetail() {
       // Mirrors the marketplace's hardcoded tier (earnProducts.ts
       // STUSDS_RISK_TIER = 'advanced', BL-07) so the table and detail page
       // never diverge.
-      value: <RiskMeter tier="advanced" />
+      value: <RiskTierMeter tier="advanced" />
     },
     {
       id: 'tvl',

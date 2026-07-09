@@ -1,6 +1,17 @@
 import { expect, type Page } from '@playwright/test';
 
 /**
+ * Collateral for every borrow-involving spec. The 30K-USDS dust floor needs
+ * `ink ≥ dust × liqRatio / OSM price`, and forks inherit mainnet's LIVE OSM —
+ * which has swung 10× between fork days ($0.025 → $0.0025, = a 1.44M → 14.4M
+ * SKY floor). 25M SKY clears the floor at any OSM ≥ ~$0.00144 and stays well
+ * inside the 100M-SKY account funding. Debt legs must stay under the vat
+ * safety edge `ink × spot` (~52K USDS at $0.0025) — keep per-spec borrows
+ * ≤ 43K so they survive the low end.
+ */
+export const BORROW_SPEC_SKY = '25000000';
+
+/**
  * Shared driving helpers for the V2 /stake destination page (F7 flip).
  *
  * Navigation caveat: the mock-wallet connection does not survive a full page
@@ -31,7 +42,7 @@ export async function stakeDeepLink(page: Page, search = '') {
 /** Waits out the review screen and drives a launched TransactionModal to success. */
 export async function confirmTransactionModal(page: Page) {
   const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
-  await expect(confirm).toBeEnabled({ timeout: 30_000 });
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
   await confirm.click();
   await expect(page.getByText('Transaction completed successfully.')).toBeVisible({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Done' }).click();
@@ -53,7 +64,13 @@ export async function openStakePosition(
 
   if (usds) {
     await page.getByTestId('stake-takeover-borrow-card-toggle').click();
-    await page.getByTestId('stake-takeover-borrow-amount').fill(usds);
+    // The borrow input is disabled while the debounced vault simulation still
+    // reflects a zero stake (`minCollateralNotMet`); on a loaded CI fork that
+    // re-simulation can exceed fill()'s 30s action timeout, so wait for the
+    // enabled state explicitly (fits the 120s test budget).
+    const borrowAmount = page.getByTestId('stake-takeover-borrow-amount');
+    await expect(borrowAmount).toBeEnabled({ timeout: 60_000 });
+    await borrowAmount.fill(usds);
   }
 
   if (delegate) {
@@ -67,7 +84,7 @@ export async function openStakePosition(
   }
 
   const confirm = page.getByTestId('stake-takeover-confirm');
-  await expect(confirm).toBeEnabled({ timeout: 30_000 });
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
   await confirm.click();
   await confirmTransactionModal(page);
 }

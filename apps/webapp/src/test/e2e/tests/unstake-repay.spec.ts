@@ -1,6 +1,7 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import {
+  BORROW_SPEC_SKY,
   confirmTransactionModal,
   gotoManagePosition,
   openStakePosition,
@@ -20,7 +21,7 @@ test.beforeEach(async ({ isolatedPage }) => {
 });
 
 test('repays all debt and the position lands in the no-debt state', async ({ isolatedPage }) => {
-  await openStakePosition(isolatedPage, { sky: '2400000', usds: '38000' });
+  await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '38000' });
 
   // Legacy deep link into the withdraw/repay side of the sheet.
   await stakeDeepLink(isolatedPage, 'flow=manage&urn_index=0&stake_tab=free');

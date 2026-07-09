@@ -3,6 +3,7 @@ import { parseUnits } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import {
+  BORROW_SPEC_SKY,
   confirmTransactionModal,
   gotoManagePosition,
   openStakePosition,
@@ -126,11 +127,13 @@ test.beforeEach(async ({ isolatedPage }) => {
 test('smoke: destination shell renders all three tabs with live engine reads', async ({ isolatedPage }) => {
   await stakeDeepLink(isolatedPage);
   await expect(isolatedPage.getByTestId('stake-tabs')).toBeVisible();
+
+  // Empty account → Statistics is the landing tab (post-review default).
+  await expect(isolatedPage.getByTestId('stake-engine-card')).toBeVisible({ timeout: 15_000 });
+
+  await isolatedPage.getByTestId('stake-tab-positions').click();
   await expect(isolatedPage.getByTestId('stake-positions-empty')).toBeVisible({ timeout: 15_000 });
   await expect(isolatedPage.getByTestId('stake-open-position-cta')).toBeVisible();
-
-  await isolatedPage.getByTestId('stake-tab-statistics').click();
-  await expect(isolatedPage.getByTestId('stake-engine-card')).toBeVisible({ timeout: 15_000 });
 
   await isolatedPage.getByTestId('stake-tab-about').click();
   await expect(isolatedPage.getByTestId('stake-about-links')).toBeVisible();
@@ -157,11 +160,11 @@ test('open + borrow + delegate multicall lands ink, art, farm and delegate on-ch
   testAccount
 }) => {
   test.setTimeout(240_000);
-  await openStakePosition(isolatedPage, { sky: '2400000', usds: '38000', delegate: true });
+  await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '38000', delegate: true });
 
   const urn = await getUrnAddress(testAccount, 0n);
   const { ink } = await getUrnInkArt(urn);
-  expect(ink).toBe(parseUnits('2400000', 18));
+  expect(ink).toBe(parseUnits(BORROW_SPEC_SKY, 18));
 
   const debt = await getUrnDebt(urn);
   expect(debt).toBeGreaterThanOrEqual(parseUnits('38000', 18));
@@ -216,7 +219,7 @@ test('borrow more, dust-gap repay guard, then wipe-all clears art on-chain', asy
   testAccount
 }) => {
   test.setTimeout(240_000);
-  await openStakePosition(isolatedPage, { sky: '2400000', usds: '38000' });
+  await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '38000' });
   const urn = await getUrnAddress(testAccount, 0n);
 
   // Borrow 5K more.
@@ -251,6 +254,80 @@ test('borrow more, dust-gap repay guard, then wipe-all clears art on-chain', asy
   expect((await getUrnInkArt(urn)).art).toBe(0n);
   const usdsSpent = usdsBefore - (await getTokenBalance(USDS_TOKEN, testAccount));
   expect(usdsSpent).toBeGreaterThanOrEqual(parseUnits('43000', 18)); // debt + accrued fee left the wallet
+});
+
+// Mixed flows (PR #1710 review follow-up): both manage cards staged in ONE
+// sheet session → one bundle mixing opposite-direction legs. The engine
+// orders repay → free → lock → borrow, so these cross combos are legal but
+// were never exercised by the single-card specs above.
+
+test('mixed flow: withdraw + borrow in one bundle moves ink down and art up together', async ({
+  isolatedPage,
+  testAccount
+}) => {
+  test.setTimeout(240_000);
+  await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY });
+  const urn = await getUrnAddress(testAccount, 0n);
+  expect((await getUrnInkArt(urn)).ink).toBe(parseUnits(BORROW_SPEC_SKY, 18));
+
+  // Withdraw card via the menu deep pre-toggle, then hand-enable the borrow
+  // card in the same sheet (fresh toggle defaults to borrow mode).
+  await gotoManagePosition(isolatedPage, 0);
+  await isolatedPage.getByTestId('stake-manage-menu-withdraw').click();
+  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await isolatedPage.getByTestId('stake-manage-stake-amount').fill('400000');
+  await isolatedPage.getByTestId('stake-manage-borrow-card-toggle').click();
+  const borrowAmount = isolatedPage.getByTestId('stake-manage-borrow-amount');
+  await expect(borrowAmount).toBeEnabled({ timeout: 60_000 });
+  await borrowAmount.fill('31000');
+
+  const usdsBefore = await getTokenBalance(USDS_TOKEN, testAccount);
+  const confirm = isolatedPage.getByTestId('stake-manage-confirm');
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
+  await confirm.click();
+  await confirmTransactionModal(isolatedPage);
+
+  const { ink } = await getUrnInkArt(urn);
+  expect(ink).toBe(parseUnits('24600000', 18));
+  const debt = await getUrnDebt(urn);
+  expect(debt).toBeGreaterThanOrEqual(parseUnits('31000', 18));
+  expect(debt).toBeLessThan(parseUnits('31050', 18));
+  expect((await getTokenBalance(USDS_TOKEN, testAccount)) - usdsBefore).toBe(parseUnits('31000', 18));
+});
+
+test('mixed flow: supply + repay in one bundle moves ink up and art down together', async ({
+  isolatedPage,
+  testAccount
+}) => {
+  test.setTimeout(240_000);
+  await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '38000' });
+  const urn = await getUrnAddress(testAccount, 0n);
+
+  // Stake card via the details CTA, then hand-enable the borrow card and flip
+  // it to repay. Partial repay of 7K leaves ~31K debt — above the 30K dust
+  // floor, so the mixed bundle must not trip the dust-gap guard.
+  await gotoManagePosition(isolatedPage, 0);
+  await isolatedPage.getByTestId('stake-manage-cta-stake').click();
+  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await isolatedPage.getByTestId('stake-manage-stake-amount').fill('200000');
+  await isolatedPage.getByTestId('stake-manage-borrow-card-toggle').click();
+  await isolatedPage.getByTestId('stake-manage-borrow-card-mode-repay').click();
+  const repayAmount = isolatedPage.getByTestId('stake-manage-borrow-amount');
+  await expect(repayAmount).toBeEnabled({ timeout: 60_000 });
+  await repayAmount.fill('7000');
+
+  const usdsBefore = await getTokenBalance(USDS_TOKEN, testAccount);
+  const confirm = isolatedPage.getByTestId('stake-manage-confirm');
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
+  await confirm.click();
+  await confirmTransactionModal(isolatedPage);
+
+  const { ink } = await getUrnInkArt(urn);
+  expect(ink).toBe(parseUnits('25200000', 18));
+  const debt = await getUrnDebt(urn);
+  expect(debt).toBeGreaterThanOrEqual(parseUnits('31000', 18)); // 38K + fee − 7K
+  expect(debt).toBeLessThan(parseUnits('31100', 18));
+  expect(usdsBefore - (await getTokenBalance(USDS_TOKEN, testAccount))).toBe(parseUnits('7000', 18));
 });
 
 test('delegate change rewires the urn vote delegate on-chain', async ({ isolatedPage, testAccount }) => {

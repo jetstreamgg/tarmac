@@ -29,7 +29,23 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChains: () => [{ id: 1 }] as unknown as ReturnType<typeof actual.useChains>
+    useChains: () => [{ id: 1 }] as unknown as ReturnType<typeof actual.useChains>,
+    useConnection: () => ({ address: h.address }) as unknown as ReturnType<typeof actual.useConnection>
+  };
+});
+
+// The page reads the positions query only to pick the default tab (statistics
+// for disconnected/known-empty states); the tab bodies themselves stay stubbed.
+vi.mock('../hooks/useStakeUserPositions', async importOriginal => {
+  const actual = await importOriginal<typeof import('../hooks/useStakeUserPositions')>();
+  return {
+    ...actual,
+    useStakeUserPositions: () => ({
+      data: h.positions,
+      isLoading: h.positionsLoading,
+      error: null,
+      mutate: vi.fn()
+    })
   };
 });
 
@@ -57,7 +73,10 @@ vi.mock('./StakeAboutTab', () => ({
 
 const h = vi.hoisted(() => ({
   positionsTabProps: undefined as Record<string, unknown> | undefined,
-  manageFlowProps: undefined as Record<string, unknown> | undefined
+  manageFlowProps: undefined as Record<string, unknown> | undefined,
+  address: '0x1234567890123456789012345678901234567890' as string | undefined,
+  positions: [{ index: 0 }] as unknown[] | undefined,
+  positionsLoading: false
 }));
 
 // And for the My positions tab body (subgraph + per-urn reads).
@@ -109,6 +128,9 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     setSearchParamsMock.mockClear();
     h.positionsTabProps = undefined;
     h.manageFlowProps = undefined;
+    h.address = '0x1234567890123456789012345678901234567890';
+    h.positions = [{ index: 0 }];
+    h.positionsLoading = false;
   });
 
   afterEach(cleanup);
@@ -132,6 +154,60 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
   it('defaults to the positions tab when no tab param is present', () => {
     renderPage();
 
+    expect(activeTab()).toBe('positions');
+  });
+
+  it('defaults to the statistics tab when disconnected', () => {
+    h.address = undefined;
+    h.positions = undefined;
+    renderPage();
+
+    expect(activeTab()).toBe('statistics');
+  });
+
+  it('defaults to the statistics tab when the positions query settles empty', () => {
+    h.positions = [];
+    renderPage();
+
+    expect(activeTab()).toBe('statistics');
+  });
+
+  it('stays on the positions tab while the positions query is still loading', () => {
+    h.positions = undefined;
+    h.positionsLoading = true;
+    renderPage();
+
+    expect(activeTab()).toBe('positions');
+  });
+
+  it('lets an explicit tab=positions param beat the statistics default', () => {
+    h.address = undefined;
+    h.positions = undefined;
+    mockSearchParams = new URLSearchParams('tab=positions');
+    renderPage();
+
+    expect(activeTab()).toBe('positions');
+  });
+
+  it('pins the positions tab when clicked while active, so an empty settle cannot yank the view', () => {
+    h.positions = undefined;
+    h.positionsLoading = true;
+    const view = renderPage();
+    expect(activeTab()).toBe('positions');
+
+    // Clicking the already-active trigger must still write the param …
+    fireEvent.click(screen.getByTestId('stake-tab-positions'));
+    expect(mockSearchParams.get('tab')).toBe('positions');
+
+    // … so when the query settles empty, the pinned tab wins over the
+    // statistics default.
+    h.positions = [];
+    h.positionsLoading = false;
+    view.rerender(
+      <I18nProvider i18n={i18n}>
+        <StakeProductPage />
+      </I18nProvider>
+    );
     expect(activeTab()).toBe('positions');
   });
 

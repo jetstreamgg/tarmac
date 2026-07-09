@@ -11,7 +11,7 @@ import { getBannerById } from '@/data/banners/banners';
 import { resolveTokenColor } from '@/widgets/shared/constants';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { RiskMeter } from '@/components/product/RiskMeter';
+import { RiskTierMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { RING_DEFAULT } from '@/components/product/productVisuals';
 import { SavingsDetailChart } from './SavingsDetailChart';
@@ -87,7 +87,7 @@ export function SavingsProductDetail() {
       // DEFAULT_RISK_TIER = 'moderate', BL-07) so the table and detail page
       // never diverge for the same product. 🔶 the C3 design meter showed 'low'
       // — confirm with design; updating the registry constant flips both.
-      value: <RiskMeter tier="moderate" />
+      value: <RiskTierMeter tier="moderate" />
     },
     { id: 'tvl', icon: <Vault className="h-3 w-3" />, label: <Trans>TVL</Trans>, value: tvl },
     {

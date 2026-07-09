@@ -202,8 +202,9 @@ delta → finding) · **fail** (defect) · **n/e** (not exercisable end-to-end; 
 
 ## 3. e2e promotion table
 
-Curated 2026-07-08 (pass 3). The suite is **`src/test/e2e/tests/stake-onchain.spec.ts`** — 8 specs
-(2 read smokes + 6 write specs, one per contract-write path), backed by
+Curated 2026-07-08 (pass 3), extended 2026-07-09 (PR #1710 review round: mixed-flow specs 9–10).
+The suite is **`src/test/e2e/tests/stake-onchain.spec.ts`** — 10 specs
+(2 read smokes + 8 write specs, one per contract-write path plus the two cross combos), backed by
 `src/test/e2e/utils/stakeOnChain.ts` (on-chain oracles + liquidation staging). Registered in
 `playwright-parallel.config.ts`. **Oracle rule:** success copy is never asserted as the outcome —
 the mock wallet's `wallet_sendCalls` is non-atomic and reports optimistically — every write spec
@@ -226,6 +227,8 @@ same spec green on re-run) — the class `run-tests-with-retry.sh` absorbs in CI
 | 6   | delegate change                                               | C-8               | The `selectVoteDelegate` write path: old ≠ new ≠ 0 read back from the engine.                                                                                                      |
 | 7   | claim + claim & restake                                       | D-5, D-6, **D-7** | D-7 was not exercisable in pass 1 (claimables spent) — the reason this spec exists. Plain claim pays exactly the minted USDS; restake drains `earned()` into vat ink, wallet flat. |
 | 8   | liquidation recovery bundle                                   | **D-9**           | Real bark + auction staged via engine calls (sized 2M SKY: debt > 30K dust, tab < 250K hole); subgraph interception mirrors the real bark. Claims + frees verified to zero.        |
+| 9   | mixed flow: withdraw + borrow in one bundle                   | C-3+C-5 combo     | Review follow-up (#7): opposite-direction legs (free + draw) in ONE sheet session were never exercised by the single-card specs; asserts ink down / art up / exact USDS received.  |
+| 10  | mixed flow: supply + repay in one bundle                      | C-4+C-6 combo     | The other cross combo (lock + wipe); partial repay above the dust floor proves the mixed bundle doesn't trip the dust-gap guard; exact ink/USDS deltas.                            |
 
 ### Rejections
 

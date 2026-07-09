@@ -167,14 +167,14 @@ describe('StakePositionsTable', () => {
     expect(screen.getAllByText('$128.90').length).toBeGreaterThan(0);
   });
 
-  it('renders the risk meter at the hi-fi geometry: 6px pill padding, 1px gap, 8×3 segments', () => {
+  it('renders the risk cell through the shared RiskMeter pill (review: one pill app-wide)', () => {
     renderTable();
 
-    const meter = screen.getByTestId('stake-position-row-1').querySelector('span[aria-hidden]');
-    expect(meter?.className).toContain('px-1.5 py-1.5');
-    expect(meter?.className).toContain('gap-px');
+    const meter = screen.getByTestId('stake-position-row-1').querySelector('div[aria-hidden]');
+    expect(meter?.className).toContain('bg-surface');
+    expect(meter?.className).toContain('gap-0.5');
     const segment = meter?.querySelector('span');
-    expect(segment?.className).toContain('h-[3px] w-2');
+    expect(segment?.className).toContain('h-1 w-2.5');
   });
 
   it('renders a dash, not an unlit meter, when the vault read fails on a debt-carrying row', () => {

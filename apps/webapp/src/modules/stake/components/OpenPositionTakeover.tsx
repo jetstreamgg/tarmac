@@ -29,6 +29,8 @@ import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
+import { farmRewardSymbol } from '../lib/farmRewardSymbol';
+import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
@@ -122,6 +124,11 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       ? urnRewardContract
       : (state.selectedRewardContract ?? defaultRewardContract);
 
+  // The selected farm's reward token, for the surfaces that must say which
+  // reward the flow picked on the user's behalf (review feedback; AUD-19 is
+  // the real picker). Unknown farms fall back to SKY, the default selection.
+  const rewardSymbol = farmRewardSymbol(selectedRewardContract, chainId) ?? 'SKY';
+
   // The selected farm's live rate → card-1 stats.
   const { data: rewardsChartInfo } = useMultipleRewardsChartInfo({
     rewardContractAddresses: selectedRewardContract ? [selectedRewardContract] : []
@@ -194,15 +201,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const close = reopen ? reopen.onClose : closeOpenFlow;
 
   const onSuccess = useCallback(() => {
-    // Fresh positions/activity on return — the subgraph hooks re-query. Urn
-    // reads (ink/art, delegate) key under wagmi's 'readContract'; batched
-    // reads (claimables, wallet balances) under 'readContracts' (plural, a
-    // separate key); the drip simulation has its own key too.
-    queryClient.invalidateQueries({ queryKey: ['stake-user-positions'] });
-    queryClient.invalidateQueries({ queryKey: ['stake-history'] });
-    queryClient.invalidateQueries({ queryKey: ['readContract'] });
-    queryClient.invalidateQueries({ queryKey: ['readContracts'] });
-    queryClient.invalidateQueries({ queryKey: ['simulateDrip'] });
+    // Fresh positions/activity on return — the subgraph hooks re-query along
+    // the shared lag trail; on-chain reads refetch once.
+    invalidateStakeQueries(queryClient);
     setSearchParams(
       params => {
         params.delete(QueryParams.Flow);
@@ -217,8 +218,14 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   }, [queryClient, setSearchParams]);
 
   const confirmSummary = useMemo(
-    () => <StakeTakeoverConfirmSummary skyToLock={debouncedSkyToLock} usdsToBorrow={debouncedUsdsToBorrow} />,
-    [debouncedSkyToLock, debouncedUsdsToBorrow]
+    () => (
+      <StakeTakeoverConfirmSummary
+        skyToLock={debouncedSkyToLock}
+        usdsToBorrow={debouncedUsdsToBorrow}
+        rewardSymbol={rewardSymbol}
+      />
+    ),
+    [debouncedSkyToLock, debouncedUsdsToBorrow, rewardSymbol]
   );
 
   const openLaunch = useStakeLaunch({
@@ -294,7 +301,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         balanceLoading={balanceLoading}
         rewardsRate={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : null}
         estAnnualRewards={estAnnualRewards}
-        rewardSymbol="SKY"
+        rewardSymbol={rewardSymbol}
         minStakeToBorrow={state.borrowEnabled ? simulatedVault?.minCollateralForDust : undefined}
         error={stakeError}
       />

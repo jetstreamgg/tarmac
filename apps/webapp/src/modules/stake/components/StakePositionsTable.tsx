@@ -22,6 +22,7 @@ import { Stake, Liquidated } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RiskMeter } from '@/components/product/RiskMeter';
 import {
   ProductTransactionsTable,
   ProductTransactionColumn,
@@ -34,11 +35,13 @@ import {
 } from '../hooks/useStakeUserPositions';
 import { StakePositionRowBanner } from './StakePositionRowBanner';
 
-// Mini liquidation-risk meter (hi-fi 486:32084): a bordered pill of three
-// segments; more (and warmer) lit segments = closer to liquidation. Rows with
-// no debt show the meter unlit. Colors follow the legacy risk convention
-// (green/orange-400/red); StakeDetailsStrip's legend uses different mid-tier
-// tints — the canonical palette is an open design question.
+// Liquidation-proximity mapping for the shared risk pill: more (and warmer)
+// lit segments = closer to liquidation; rows with no debt render unlit.
+// Colors follow the legacy risk convention (green/orange-400/red);
+// StakeDetailsStrip's legend uses different mid-tier tints — the canonical
+// palette is an open design question. The pill chrome is the shared
+// RiskMeter (review feedback: one pill app-wide), a deliberate divergence
+// from the bordered treatment in stake hi-fi 486:32084.
 const RISK_SEGMENTS: Record<RiskLevel, { lit: number; color: string }> = {
   [RiskLevel.LOW]: { lit: 1, color: 'bg-bullish' },
   [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-orange-400' },
@@ -46,23 +49,12 @@ const RISK_SEGMENTS: Record<RiskLevel, { lit: number; color: string }> = {
   [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-error' }
 };
 
-function RiskMeter({ riskLevel }: { riskLevel?: RiskLevel }) {
+function PositionRiskMeter({ riskLevel }: { riskLevel?: RiskLevel }) {
   const segments = riskLevel ? RISK_SEGMENTS[riskLevel] : undefined;
   return (
-    <span
-      className="border-borderPrimary inline-flex w-fit items-center gap-px rounded-full border px-1.5 py-1.5"
-      aria-hidden
-    >
-      {[0, 1, 2].map(segment => (
-        <span
-          key={segment}
-          className={cn(
-            'h-[3px] w-2 rounded-full',
-            segments && segment < segments.lit ? segments.color : 'bg-textSecondary/30'
-          )}
-        />
-      ))}
-    </span>
+    <RiskMeter
+      segments={[0, 1, 2].map(index => (segments && index < segments.lit ? segments.color : null))}
+    />
   );
 }
 
@@ -96,7 +88,7 @@ function PositionRiskCell({ position }: { position: StakeUserPosition }) {
       </span>
     );
   }
-  return <RiskMeter riskLevel={hasDebt ? vault?.riskLevel : undefined} />;
+  return <PositionRiskMeter riskLevel={hasDebt ? vault?.riskLevel : undefined} />;
 }
 
 /**

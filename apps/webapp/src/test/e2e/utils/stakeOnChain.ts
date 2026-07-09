@@ -6,7 +6,6 @@ import {
   keccak256,
   numberToHex,
   parseAbi,
-  parseUnits,
   stringToHex,
   type Address
 } from 'viem';
@@ -176,11 +175,21 @@ export type StagedLiquidation = {
  */
 export async function stageLiquidatedUrn(owner: Address): Promise<StagedLiquidation> {
   const { rpcUrl, pub } = await clients();
-  // Sized so the debt clears the 30K dust floor but its chop-inclusive tab
-  // stays under the Dog's 250K `hole` — a larger position gets only PARTIALLY
-  // barked, leaving residual art the recovery flow can't handle. At the fork's
-  // spot (~0.0208) 2M SKY draws ~41.6K.
-  const lockWad = parseUnits('2000000', 18);
+  // Sized off the LIVE vat state, because forks inherit mainnet's OSM and it
+  // has swung 10× between fork days ($0.025 → $0.0025): the debt must clear
+  // the dust floor, and its chop-inclusive tab must stay under the Dog's
+  // 250K `hole` — a larger position gets only PARTIALLY barked, leaving
+  // residual art the recovery flow can't handle. Target debt = dust × 1.25;
+  // ink = whatever collateral puts that debt a hair under the safety edge
+  // (ink × spot), rounded up to a whole SKY.
+  const [, , spot, , dustRad] = await pub.readContract({
+    address: VAT,
+    abi,
+    functionName: 'ilks',
+    args: [STAKE_ILK]
+  });
+  const targetDebt = ((dustRad / RAY) * 125n) / 100n;
+  const lockWad = ((targetDebt * RAY) / spot / WAD + 1n) * WAD;
 
   // Collateral allowance (test accounts are funded with 100M SKY).
   await sendAs(rpcUrl, owner, SKY_TOKEN, 'approve', [STAKE_ENGINE, 2n ** 256n - 1n]);
@@ -196,7 +205,6 @@ export async function stageLiquidatedUrn(owner: Address): Promise<StagedLiquidat
   await sendAs(rpcUrl, owner, STAKE_ENGINE, 'lock', [owner, urnIndex, lockWad, 0]);
 
   // Draw to a hair under the vat safety edge (ink × spot).
-  const [, , spot] = await pub.readContract({ address: VAT, abi, functionName: 'ilks', args: [STAKE_ILK] });
   const maxDebt = (lockWad * spot) / RAY;
   await sendAs(rpcUrl, owner, STAKE_ENGINE, 'draw', [owner, urnIndex, owner, maxDebt - 6n * WAD]);
 

@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
-import { gotoManagePosition, openStakePosition } from '../utils/stakeV2.ts';
-import { triggerCappedOsmError } from '../utils/setOsmSpotPrice.ts';
+import { BORROW_SPEC_SKY, gotoManagePosition, openStakePosition } from '../utils/stakeV2.ts';
+import { getOsmSpotPrice, restoreOsmSpotPrice, triggerCappedOsmError } from '../utils/setOsmSpotPrice.ts';
 import { updateStakeModuleDebtCeiling } from '../utils/updateStakeDebtCeiling.ts';
 import { parseUnits } from 'viem';
 
@@ -13,6 +13,18 @@ import { parseUnits } from 'viem';
  */
 
 test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
+  // The trigger rewrites the ilk's GLOBAL vat spot — on the shared fork,
+  // every borrow-gated spec running after it would see a 100× lower capped
+  // price (the min-collateral gate becomes unsatisfiable). Restore what we
+  // broke, pass or fail.
+  let originalSpot: bigint | undefined;
+  test.afterEach(async () => {
+    if (originalSpot !== undefined) {
+      await restoreOsmSpotPrice('LSEV2-SKY-A', originalSpot);
+      originalSpot = undefined;
+    }
+  });
+
   test.beforeEach(async ({ isolatedPage }) => {
     // Ensure debt ceiling is high enough (other tests may have lowered it).
     const highCeiling = parseUnits('1000000000', 45);
@@ -25,7 +37,7 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
 
   test('should block unstake when liquidation price exceeds capped OSM price', async ({ isolatedPage }) => {
     // Step 1: a position with SKY staked and USDS borrowed.
-    await openStakePosition(isolatedPage, { sky: '2400000', usds: '38000' });
+    await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '38000' });
 
     // Step 2: withdraw works normally before the OSM price is manipulated.
     await gotoManagePosition(isolatedPage, 0);
@@ -39,7 +51,9 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     await expect(isolatedPage.getByTestId('stake-manage-confirm')).toBeEnabled({ timeout: 30_000 });
 
     // Step 3: lower the OSM spot price so the cap binds (LSEV2-SKY-A is the
-    // staking engine ilk).
+    // staking engine ilk). Capture the pre-trigger spot for the afterEach
+    // restore.
+    originalSpot = (await getOsmSpotPrice('LSEV2-SKY-A')).spot;
     await triggerCappedOsmError('LSEV2-SKY-A');
 
     // Step 4: fresh page load for fresh price reads (a plain reload would keep

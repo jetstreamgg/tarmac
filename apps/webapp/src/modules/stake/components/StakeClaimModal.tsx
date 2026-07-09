@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
+import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 
 const NO_VALUE = '–';
 
@@ -115,14 +116,7 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
     });
 
   const onSuccess = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['stake-user-positions'] });
-    queryClient.invalidateQueries({ queryKey: ['stake-history'] });
-    // Allowances / urn state key under wagmi's 'readContract'; the claimable
-    // balances this modal just zeroed are batched reads under 'readContracts'
-    // (plural, a separate key); the drip simulation has its own key too.
-    queryClient.invalidateQueries({ queryKey: ['readContract'] });
-    queryClient.invalidateQueries({ queryKey: ['readContracts'] });
-    queryClient.invalidateQueries({ queryKey: ['simulateDrip'] });
+    invalidateStakeQueries(queryClient);
     setSearchParams(
       params => {
         params.delete(QueryParams.Flow);
