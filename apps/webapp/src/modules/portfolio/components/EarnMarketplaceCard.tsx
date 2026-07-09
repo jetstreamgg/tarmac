@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
-import { RiskMeter } from '@/components/product/RiskMeter';
+import { RiskTierMeter } from '@/components/product/RiskMeter';
 import { productIconSymbol, productRingColor } from '@/components/product/productVisuals';
 import { ProductGlyph } from './ProductGlyph';
 
@@ -49,7 +49,7 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
       <div className="mt-auto grid grid-cols-2 gap-4">
         <Stat label={<Trans>Risk</Trans>}>
           <div className="flex items-center gap-2">
-            <RiskMeter tier={row.risk} />
+            <RiskTierMeter tier={row.risk} />
             <span className="text-text text-sm font-medium">{RISK_LABEL[row.risk]}</span>
           </div>
         </Stat>

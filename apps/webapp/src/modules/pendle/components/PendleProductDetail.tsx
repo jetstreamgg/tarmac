@@ -9,7 +9,7 @@ import { productNetworks, usePendleMarketsApiData, type PendleMarketConfig } fro
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { RiskMeter } from '@/components/product/RiskMeter';
+import { RiskTierMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { RING_PENDLE } from '@/components/product/productVisuals';
 import { PendleDetailChart } from './PendleDetailChart';
@@ -70,7 +70,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       label: <Trans>Risk profile</Trans>,
       // Mirrors the marketplace's hardcoded tier (earnProducts.ts
       // DEFAULT_RISK_TIER, BL-07) so the table and detail page never diverge.
-      value: <RiskMeter tier="moderate" />
+      value: <RiskTierMeter tier="moderate" />
     },
     {
       id: 'maturity',

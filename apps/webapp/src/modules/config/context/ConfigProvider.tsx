@@ -11,7 +11,6 @@ import { reportError } from '@/modules/sentry/reportError';
 export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const [userConfig, setUserConfig] = useState<UserConfig>(defaultUserConfig);
   const [loaded, setLoaded] = useState<boolean>(false);
-  const [selectedStakeUrnIndex, setSelectedStakeUrnIndex] = useState<number | undefined>(undefined);
   const [externalLinkModalOpened, setExternalLinkModalOpened] = useState(false);
   const [externalLinkModalUrl, setExternalLinkModalUrl] = useState('');
 
@@ -115,8 +114,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         updateUserConfig,
         loaded,
         locale,
-        selectedStakeUrnIndex: selectedStakeUrnIndex,
-        setSelectedStakeUrnIndex: setSelectedStakeUrnIndex,
         externalLinkModalOpened,
         setExternalLinkModalOpened,
         externalLinkModalUrl,
