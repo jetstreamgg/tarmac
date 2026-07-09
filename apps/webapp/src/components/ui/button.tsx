@@ -7,16 +7,22 @@ import { cn } from '@/lib/cn';
 // App look — canonical, unchanged.
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-[background-color,background-image,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
+  // --tw-gradient-from/to are @property-registered colors, so listing them
+  // here lets gradient-stop changes (the primary/secondary state fills)
+  // cross-fade; background-image itself never interpolates.
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-[background-color,background-image,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
   {
     variants: {
       variant: {
         default: 'bg-primary text-text hover:bg-primaryHover active:bg-primaryActive focus:bg-primaryFocus',
-        // Design-system recipes (Figma 5010:7958). Hover/pressed drop the
-        // gradient for a solid fill, so both need bg-none alongside the color.
-        // The focus ring hugs the edge (offset-0), overriding the base offset.
+        // Design-system recipes (Figma 5010:7958). Every state keeps the
+        // gradient and only moves the stop colors (solid fills = equal stops):
+        // background-image can't interpolate, so swapping the gradient out for
+        // a plain color would flash transparent mid-transition, while the
+        // @property-registered stops cross-fade. Focus ring hugs the edge
+        // (offset-0 overrides base).
         primary:
-          'rounded-full border border-glassBorder bg-linear-to-b from-button-gradient-start to-button-gradient-end text-fgConsistent hover:bg-none hover:bg-brandHover active:bg-none active:bg-brandPressed focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:bg-none disabled:border-transparent disabled:bg-glassSurface disabled:text-fgTertiary',
+          'rounded-full border border-glassBorder bg-linear-to-b from-button-gradient-start to-button-gradient-end text-fgConsistent hover:from-brandHover hover:to-brandHover active:from-brandPressed active:to-brandPressed focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary',
         primaryAlt:
           'bg-radial-(--gradient-position) from-primary-alt-start/100 to-primary-alt-end/100 border text-text hover:from-primary-alt-start/60 hover:to-primary-alt-end/60 active:from-primary-alt-start/45 active:to-primary-alt-end/45 focus:from-primary-alt-start/45 focus:to-primary-alt-end/45 disabled:from-primary-alt-start/35 disabled:to-primary-alt-end/35',
         connectPrimary:
@@ -24,7 +30,7 @@ const buttonVariants = cva(
         connect:
           'bg-radial-(--gradient-position) text-text border border-[rgb(127,92,246)] from-primary-bright-start/100 to-primary-bright-end/100 hover:from-primary-bright-start/60 hover:to-primary-bright-end/60 hover:border-[rgb(101,70,222)] focus:from-primary-bright-start/40 focus:to-primary-bright-end/40 focus:border-[rgb(92,62,209)]',
         secondary:
-          'rounded-full border border-glassBadge bg-linear-to-b from-white/0 to-white/8 text-text hover:bg-none hover:bg-glassBadge active:bg-none active:bg-glassBorder focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:bg-none disabled:border-transparent disabled:bg-glassSurface disabled:text-fgTertiary',
+          'rounded-full border border-glassBadge bg-linear-to-b from-white/0 to-white/8 text-text hover:from-glassBadge hover:to-glassBadge active:from-glassBorder active:to-glassBorder focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary',
         pill: 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text rounded-full hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 bg-blend-overlay hover:bg-white/10 focus:border-transparent focus:bg-white/15 active:bg-white/15',
         chip: 'bg-secondary text-text rounded-full hover:bg-secondaryHover active:bg-secondaryActive, focus:bg-secondaryFocus',
         link: 'text-textSecondary no-underline hover:text-white light:hover:text-text active:text-[rgba(198,194,255,0.5)]',
