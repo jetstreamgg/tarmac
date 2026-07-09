@@ -226,6 +226,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
 
       <Button
         variant="primary"
+        size="l"
         className="w-full"
         onClick={onOpenPosition}
         data-testid="stake-open-new-position-cta"

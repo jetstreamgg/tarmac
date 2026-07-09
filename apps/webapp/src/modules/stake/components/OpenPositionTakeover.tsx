@@ -286,6 +286,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
           </p>
           <Button
             variant="primary"
+            size="xl"
             onClick={launch}
             disabled={confirmDisabled}
             data-testid="stake-takeover-confirm"

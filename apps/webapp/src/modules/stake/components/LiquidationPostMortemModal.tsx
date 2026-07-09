@@ -358,6 +358,7 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
 
           <Button
             variant="primary"
+            size="xl"
             className="w-full"
             onClick={() => recovery.launch()}
             disabled={ctaDisabled}

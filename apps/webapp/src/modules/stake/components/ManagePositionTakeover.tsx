@@ -320,6 +320,7 @@ export function ManagePositionTakeover({
           </p>
           <Button
             variant="primary"
+            size="xl"
             onClick={launch}
             disabled={confirmDisabled}
             data-testid="stake-manage-confirm"

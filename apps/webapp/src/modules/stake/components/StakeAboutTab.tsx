@@ -77,13 +77,8 @@ export function StakeAboutTab() {
 
         <div data-testid="stake-about-links" className="grid grid-cols-3 gap-4">
           {links.map(({ label, href, icon }, i) => (
-            <Button
-              key={i}
-              variant="outline"
-              className="border-border h-12 w-full gap-2 rounded-full bg-white/[0.03] hover:bg-white/[0.06]"
-              asChild
-            >
-              <a href={href} target="_blank" rel="noopener noreferrer" className="justify-center gap-2">
+            <Button key={i} variant="secondary" size="l" className="w-full" asChild>
+              <a href={href} target="_blank" rel="noopener noreferrer">
                 {icon}
                 {label}
               </a>

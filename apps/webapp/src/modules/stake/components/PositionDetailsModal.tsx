@@ -602,6 +602,7 @@ export function PositionDetailsModal({
             ) : isInactive ? (
               <Button
                 variant="primary"
+                size="xl"
                 className="w-full"
                 onClick={() => onReopen(detail.hasBorrowHistory)}
                 data-testid="stake-manage-cta-reopen"
@@ -612,6 +613,7 @@ export function PositionDetailsModal({
               <>
                 <Button
                   variant="primary"
+                  size="xl"
                   className="w-full"
                   onClick={() => onAction('stake')}
                   data-testid="stake-manage-cta-stake"
@@ -621,6 +623,7 @@ export function PositionDetailsModal({
                 {!hasDebt && (
                   <Button
                     variant="secondary"
+                    size="xl"
                     className="w-full"
                     onClick={() => onAction('borrow')}
                     data-testid="stake-manage-cta-borrow"
