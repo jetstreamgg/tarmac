@@ -3,7 +3,6 @@ import { upgradeTokens } from '@/widgets/UpgradeWidget/lib/constants';
 import { defaultConfig } from '../config/default-config';
 import { SUPPORTED_TOKEN_SYMBOLS } from '..';
 import { SavingsFlow } from '../SavingsWidget/lib/constants';
-import { StakeFlow } from '../StakeModuleWidget/lib/constants';
 import { TradeFlow } from '../TradeWidget/lib/constants';
 import { UpgradeFlow } from '../UpgradeWidget/lib/constants';
 import { ExternalWidgetState } from '@/widgets/shared/types/widgetState';
@@ -83,8 +82,7 @@ const createExternalWidgetStateSchema = (allowedTokens?: string[]) =>
           ...Object.values(SavingsFlow),
           ...Object.values(UpgradeFlow),
           ...Object.values(TradeFlow),
-          ...Object.values(BalancesFlow),
-          ...Object.values(StakeFlow)
+          ...Object.values(BalancesFlow)
         ] as [string, ...string[]])
         .optional(),
       token: createTokenValidationRule(allowedTokens),

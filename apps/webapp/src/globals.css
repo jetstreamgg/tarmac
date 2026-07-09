@@ -114,6 +114,9 @@
   --radius-lg: 10px;
   --radius-md: 8px;
   --radius-sm: 6px;
+  /* V2 destination card radius (Figma radius-2xl); a distinct key avoids
+     clobbering Tailwind's builtin rounded-2xl/rounded-xl utilities. */
+  --radius-card: 28px;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -550,19 +553,23 @@
 /* Header nav pills (TopNav) ------------------------------------------------
    Dark is the default; light overrides via [data-theme='light'] (synced by
    ConfigProvider). The exact gradient/rgba backgrounds and the selected-icon
-   gradient fill don't map cleanly to utilities, so they live here. */
+   gradient fill don't map cleanly to utilities, so they live here. Reused by
+   the Stake destination tab strip, whose selected pill is a Radix tab and so
+   flags itself with [data-state='active'] rather than [aria-current]. */
 .nav-pill {
   border: 1px solid #363a4d;
   background: #10121e;
 }
-.nav-pill[aria-current='page'] {
+.nav-pill[aria-current='page'],
+.nav-pill[data-state='active'] {
   background: #222533;
 }
 [data-theme='light'] .nav-pill {
   border-color: transparent;
   background: radial-gradient(116.48% 116.48% at 50% 2.27%, rgba(255, 255, 255, 0) 0%, #fff 100%), #dde3ff;
 }
-[data-theme='light'] .nav-pill[aria-current='page'] {
+[data-theme='light'] .nav-pill[aria-current='page'],
+[data-theme='light'] .nav-pill[data-state='active'] {
   background:
     radial-gradient(116.48% 116.48% at 50% 2.27%, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.5) 100%),
     #c2ccff;

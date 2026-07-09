@@ -13,6 +13,7 @@ export enum QueryParams {
   Network = 'network',
   Flow = 'flow',
   StakeTab = 'stake_tab',
+  Tab = 'tab',
   /** Earn list supply-token filter, e.g. /earn?token=USDS. */
   Token = 'token'
 }
