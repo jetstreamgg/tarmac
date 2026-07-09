@@ -1,6 +1,9 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useId, useRef } from 'react';
 import { ChevronLeft, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * Full-screen takeover chrome (hi-fi 486:32657): header row with title + badge
@@ -27,6 +30,9 @@ export function TakeoverShell({
   children: ReactNode;
   dataTestId?: string;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
   // Escape-to-close + document scroll lock: syncing with the DOM outside React.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -41,10 +47,49 @@ export function TakeoverShell({
     };
   }, [onClose]);
 
+  // Focus management (aria-modal contract): move focus into the dialog on
+  // open, wrap Tab/Shift+Tab at the edges, restore the trigger's focus on
+  // close. The Tab listener sits on the CONTAINER, not the document — the
+  // transaction modal (z-50) portals above this shell with its own Radix
+  // focus scope, and a document-level trap would yank focus back out of it.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    container.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const focusables = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+      if (focusables.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === container)) {
+        last.focus();
+        event.preventDefault();
+      } else if (!event.shiftKey && active === last) {
+        first.focus();
+        event.preventDefault();
+      }
+    };
+    container.addEventListener('keydown', onKeyDown);
+    return () => {
+      container.removeEventListener('keydown', onKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, []);
+
   return (
     <div
+      ref={containerRef}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
+      tabIndex={-1}
       data-testid={dataTestId}
       // Same page-background recipe as the shell surface (shellLayoutClasses):
       // `bg-background` is undefined in the dark scope (known token gap) and
@@ -65,7 +110,9 @@ export function TakeoverShell({
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
-          <h2 className="text-text text-lg font-medium">{title}</h2>
+          <h2 id={titleId} className="text-text text-lg font-medium">
+            {title}
+          </h2>
           {badge && (
             <span className="bg-surfaceAlt text-textSecondary flex h-6 items-center gap-1 rounded-full px-2 text-xs font-medium">
               {badge}

@@ -278,6 +278,10 @@ describe('OpenPositionTakeover', () => {
     typeStakeAmount('2000');
 
     expect(screen.getByTestId('stake-takeover-stake-amount-error').textContent).toBe('Insufficient funds');
+    // The error is announced by screen readers via the aria-describedby link.
+    const input = screen.getByTestId('stake-takeover-stake-amount');
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.getAttribute('aria-describedby')).toBe('stake-takeover-stake-amount-error');
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
   });
 

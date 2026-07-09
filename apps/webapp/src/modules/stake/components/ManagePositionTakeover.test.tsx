@@ -326,6 +326,18 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.wipeAll).toBe(false);
   });
 
+  it('repay: a full-left slider drag stages wipeAll like the 100% chip (M11)', () => {
+    renderSheet({ borrowCard: 'repay' });
+
+    // Radix slider: Home jumps to the minimum → stages the exact full debt.
+    // Without wipeAll this would launch a plain wipe that strands sub-dust
+    // accrued interest (vat dust revert).
+    fireEvent.keyDown(screen.getByRole('slider'), { key: 'Home' });
+
+    expect(h.launchParams?.usdsToWipe).toBe(30_000n * WAD);
+    expect(h.launchParams?.wipeAll).toBe(true);
+  });
+
   it('repay: sub-dust remainder is rejected with the legacy message', () => {
     renderSheet({ borrowCard: 'repay' });
 

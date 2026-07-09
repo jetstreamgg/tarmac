@@ -141,6 +141,26 @@ describe('PositionManageFlow', () => {
     expect(mockSearchParams.get('flow')).toBeNull();
   });
 
+  it('routes a liquidated position to the post-mortem even on a stake_tab deep link', () => {
+    // stake_tab mounts the flow directly in the sheet view — the liquidation
+    // guard must run BEFORE the view dispatch, or a barked urn opens a manage
+    // sheet over zeroed collateral.
+    mockSearchParams = new URLSearchParams('flow=manage&urn_index=2&stake_tab=free');
+    h.positions = [makePosition({ barks: [makeBark()] })];
+    render(<PositionManageFlow />);
+
+    expect(screen.getByTestId('post-mortem-modal-stub')).toBeTruthy();
+    expect(screen.queryByTestId('manage-sheet-stub')).toBeNull();
+  });
+
+  it('routes a liquidated position to the post-mortem even on initialSheetInit', () => {
+    h.positions = [makePosition({ barks: [makeBark()] })];
+    render(<PositionManageFlow initialSheetInit={{ borrowCard: 'repay' }} />);
+
+    expect(screen.getByTestId('post-mortem-modal-stub')).toBeTruthy();
+    expect(screen.queryByTestId('manage-sheet-stub')).toBeNull();
+  });
+
   it('keeps a non-liquidated position on the ordinary details modal', () => {
     h.positions = [makePosition({ skyLocked: 100n, barks: [] })];
     render(<PositionManageFlow />);

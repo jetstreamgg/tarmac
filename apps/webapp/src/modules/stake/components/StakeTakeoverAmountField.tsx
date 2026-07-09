@@ -38,6 +38,7 @@ export function StakeTakeoverAmountField({
   dataTestId: string;
 }) {
   const [text, setText] = useState('');
+  const errorId = `${dataTestId}-error`;
   // Controlled from outside: when the prop no longer matches the typed text
   // (chip click, slider drag, toggle reset), re-derive the text from the amount.
   const displayText =
@@ -67,6 +68,7 @@ export function StakeTakeoverAmountField({
             disabled={disabled}
             data-testid={dataTestId}
             aria-invalid={!!error}
+            aria-describedby={error ? errorId : undefined}
             className={cn(
               'text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-3xl font-medium tracking-tight outline-none disabled:opacity-50',
               error && 'text-error'
@@ -91,7 +93,7 @@ export function StakeTakeoverAmountField({
         )}
       </div>
       {error && (
-        <span data-testid={`${dataTestId}-error`} className="text-error text-sm">
+        <span id={errorId} data-testid={errorId} className="text-error text-sm">
           {error}
         </span>
       )}

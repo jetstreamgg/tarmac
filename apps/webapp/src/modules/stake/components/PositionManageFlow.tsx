@@ -107,6 +107,17 @@ export function PositionManageFlow({
 
   if (urnIndex === null) return null;
 
+  // Liquidated urns always land on the post-mortem, BEFORE the view dispatch:
+  // a `stake_tab` deep link or a caller-staged `initialSheetInit` mounts the
+  // flow directly in 'sheet', which must not open a manage sheet on a barked
+  // urn. A successful recovery frees the SKY, so the position's next mutation
+  // timestamp overtakes the bark and `isLiquidatedStakePosition` flips to
+  // false on its own — this then falls through to the ordinary views without
+  // any extra transition here.
+  if (position && isLiquidatedStakePosition(position)) {
+    return <LiquidationPostMortemModal urnIndex={urnIndex} onClose={close} />;
+  }
+
   if (view.name === 'claim') {
     return <StakeClaimModal urnIndex={urnIndex} onClose={onBack} />;
   }
@@ -120,13 +131,7 @@ export function PositionManageFlow({
   }
 
   if (view.name === 'details') {
-    // A successful recovery frees the SKY, so the position's next mutation
-    // timestamp overtakes the bark and `isLiquidatedStakePosition` flips to
-    // false on its own — this branch then falls through to the ordinary
-    // (inactive) details modal without any extra transition here.
-    return position && isLiquidatedStakePosition(position) ? (
-      <LiquidationPostMortemModal urnIndex={urnIndex} onClose={close} />
-    ) : (
+    return (
       <PositionDetailsModal
         urnIndex={urnIndex}
         onClose={close}

@@ -10,6 +10,7 @@ import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
+import { delegateProfileUrl } from '../lib/delegateProfileUrl';
 
 const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
@@ -90,10 +91,7 @@ export function DelegateList({
                     <span className="text-text flex items-center gap-1.5 text-sm font-medium">
                       {delegate.metadata?.name || shortenAddress(delegate.id)}
                       <a
-                        href={
-                          delegate.metadata?.externalProfileURL ||
-                          `https://vote.sky.money/address/${delegate.id.toLowerCase()}`
-                        }
+                        href={delegateProfileUrl(delegate.metadata?.externalProfileURL, delegate.id)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={event => event.stopPropagation()}

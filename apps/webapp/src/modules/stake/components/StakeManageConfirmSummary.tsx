@@ -57,8 +57,9 @@ export function StakeManageConfirmSummary({
 }) {
   const skyUsd = (amount: bigint) =>
     skyPriceUsd !== null ? Number(formatUnits(amount, 18)) * skyPriceUsd : null;
-  const hasAmounts = skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n;
-  const showDelegate = !!delegateTo && !hasAmounts;
+  // A staged delegate change always previews — including mixed bundles where
+  // amounts are staged too, since "Change delegate" is a step either way.
+  const showDelegate = !!delegateTo;
 
   return (
     <div data-testid="stake-manage-confirm-summary" className="flex flex-col gap-5">

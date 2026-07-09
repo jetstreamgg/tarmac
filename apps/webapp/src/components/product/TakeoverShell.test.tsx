@@ -63,4 +63,48 @@ describe('TakeoverShell', () => {
     unmount();
     expect(document.documentElement.style.overflow).toBe('');
   });
+
+  it('names the dialog from its title via aria-labelledby', () => {
+    renderShell();
+
+    const overlay = screen.getByTestId('stake-takeover');
+    const labelId = overlay.getAttribute('aria-labelledby');
+    expect(labelId).toBeTruthy();
+    expect(document.getElementById(labelId!)?.textContent).toBe('Open a position');
+  });
+
+  it('moves focus into the dialog on open and restores it on unmount', () => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const { unmount } = render(
+      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
+        <div />
+      </TakeoverShell>
+    );
+
+    expect(document.activeElement).toBe(screen.getByTestId('stake-takeover'));
+    unmount();
+    expect(document.activeElement).toBe(trigger);
+    trigger.remove();
+  });
+
+  it('wraps Tab at the dialog edges instead of escaping the overlay', () => {
+    renderShell();
+
+    const overlay = screen.getByTestId('stake-takeover');
+    const close = screen.getByTestId('stake-takeover-close');
+    const footerButton = screen.getByText('Confirm');
+
+    // Forward from the last focusable wraps to the first.
+    footerButton.focus();
+    fireEvent.keyDown(overlay, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+
+    // Backward from the first focusable wraps to the last.
+    close.focus();
+    fireEvent.keyDown(overlay, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(footerButton);
+  });
 });

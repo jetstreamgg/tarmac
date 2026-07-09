@@ -98,7 +98,11 @@ export function StakeManageBorrowCard({
     usdsToBorrow: isRepay ? 0n : amount,
     setUsdsToBorrow: value => onAmountChange(value),
     usdsToWipe: isRepay ? amount : 0n,
-    setUsdsToWipe: value => onAmountChange(value)
+    // Mirror the 100% chip's wipeAll staging (M11): a full-left drag lands on
+    // the exact debt, and without wipeAll the launch builds a plain wipe whose
+    // accrued-interest remainder strands sub-dust debt (vat dust revert).
+    setUsdsToWipe: value =>
+      onAmountChange(value, value === existingDebt && maxRepayable === existingDebt && existingDebt > 0n)
   });
 
   const debtCeilingReached = collateralData?.debtCeilingUtilization === 1;

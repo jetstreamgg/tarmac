@@ -33,7 +33,7 @@ describe('calculateMaxRepayable — legacy Repay.tsx math, verbatim', () => {
     );
   });
 
-  it('returns 0 when even the dust-capped repay is out of reach', () => {
+  it('stays inside the balance/dust-gap rules when only part of the debt is reachable', () => {
     // debt 40k, balance 5k → remaining 35k ≥ dust → repay balance 5k.
     expect(calculateMaxRepayable({ debtValue: usds('40000'), dust: DUST, balance: usds('5000') })).toEqual(
       usds('5000')
@@ -43,5 +43,13 @@ describe('calculateMaxRepayable — legacy Repay.tsx math, verbatim', () => {
     expect(calculateMaxRepayable({ debtValue: usds('30000.1'), dust: DUST, balance: usds('29999') })).toEqual(
       usds('0.1')
     );
+  });
+
+  it('returns 0 when even the dust-capped repay is out of reach', () => {
+    // debt exactly at dust, tiny balance → remaining < dust and debt−dust = 0:
+    // nothing short of a full wipe is repayable.
+    expect(calculateMaxRepayable({ debtValue: usds('30000'), dust: DUST, balance: usds('1') })).toBe(0n);
+    // debt below dust (already sub-dust urn) → debt−dust is negative → 0.
+    expect(calculateMaxRepayable({ debtValue: usds('29000'), dust: DUST, balance: usds('1000') })).toBe(0n);
   });
 });

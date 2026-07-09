@@ -29,11 +29,13 @@ function Card({ children, testId }: { children: React.ReactNode; testId: string 
 export function StakeAboutTab() {
   const banner = getBannerById(ABOUT_BANNER_ID);
   const chainId = useChainId();
-  const contractHref = getEtherscanLink(
-    chainId,
-    stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
-    'address'
-  );
+  // Staking is mainnet-only; on a chain without a module deployment (the page
+  // itself has no hard chain gate) link the mainnet contract rather than
+  // rendering /address/undefined.
+  const stakeAddress = stakeModuleAddress[chainId as keyof typeof stakeModuleAddress];
+  const contractHref = stakeAddress
+    ? getEtherscanLink(chainId, stakeAddress, 'address')
+    : getEtherscanLink(1, stakeModuleAddress[1], 'address');
 
   // Leading contextual icons per hi-fi 486:32079 (file · signature · landmark),
   // not a trailing external-link glyph.
