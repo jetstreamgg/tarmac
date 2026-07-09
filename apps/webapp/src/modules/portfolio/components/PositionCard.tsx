@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
 import { Text } from '@/modules/layout/components/Typography';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { productRingColor } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 import { ProductGlyph } from './ProductGlyph';
@@ -37,13 +38,9 @@ export function PositionCard({
           width={40}
           className="h-10 w-10"
         />
-        <div className="flex -space-x-1.5" data-testid="position-card-networks">
-          {position.chainIds.map(id => (
-            <span key={id} className="ring-container inline-flex rounded-full ring-2">
-              {getChainIcon(id, 'h-5 w-5')}
-            </span>
-          ))}
-        </div>
+        <IconStack size={20} data-testid="position-card-networks">
+          {position.chainIds.map(id => getChainIcon(id, 'h-full w-full'))}
+        </IconStack>
       </div>
 
       <div className="flex items-center gap-1.5">

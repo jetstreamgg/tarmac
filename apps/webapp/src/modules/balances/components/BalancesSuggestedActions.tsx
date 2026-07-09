@@ -10,7 +10,7 @@ import { ROUTES } from '@/lib/routes';
 import { isMultichain } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import {
   TOKENS,
   useOverallSkyData,
@@ -542,17 +542,7 @@ export function BalancesSuggestedActions({
                       </Text>
                     ))}
                 </div>
-                <div className="flex shrink-0 -space-x-1.5">
-                  {action.tokens.map(symbol => (
-                    <TokenIcon
-                      key={symbol}
-                      token={{ symbol, name: symbol }}
-                      className="h-5 w-5"
-                      width={20}
-                      showChainIcon={false}
-                    />
-                  ))}
-                </div>
+                <TokenIconStack symbols={action.tokens} size={20} className="shrink-0" />
               </button>
             );
           })}
@@ -587,17 +577,7 @@ export function BalancesSuggestedActions({
                       </Text>
                     )}
                   </div>
-                  <div className="flex shrink-0 -space-x-1.5">
-                    {featuredAction.tokens.map(symbol => (
-                      <TokenIcon
-                        key={symbol}
-                        token={{ symbol, name: symbol }}
-                        className="h-5 w-5"
-                        width={20}
-                        showChainIcon={false}
-                      />
-                    ))}
-                  </div>
+                  <TokenIconStack symbols={featuredAction.tokens} size={20} className="shrink-0" />
                 </button>
               );
             })()}
@@ -629,17 +609,7 @@ export function BalancesSuggestedActions({
                         {action.badge}
                       </span>
                     )}
-                    <div className="flex -space-x-1.5">
-                      {action.tokens.map(symbol => (
-                        <TokenIcon
-                          key={symbol}
-                          token={{ symbol, name: symbol }}
-                          className="h-5 w-5"
-                          width={20}
-                          showChainIcon={false}
-                        />
-                      ))}
-                    </div>
+                    <TokenIconStack symbols={action.tokens} size={20} />
                   </div>
                 </button>
               );
@@ -663,17 +633,7 @@ export function BalancesSuggestedActions({
               className="hover:bg-brandLight/20 flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 px-3 py-2 text-left transition-colors"
             >
               <ModuleIcon boxSize={16} className="text-textSecondary shrink-0" />
-              <div className="flex -space-x-1.5">
-                {action.tokens.map(symbol => (
-                  <TokenIcon
-                    key={symbol}
-                    token={{ symbol, name: symbol }}
-                    className="h-5 w-5"
-                    width={20}
-                    showChainIcon={false}
-                  />
-                ))}
-              </div>
+              <TokenIconStack symbols={action.tokens} size={20} />
               <Text variant="small" className="text-textSecondary">
                 {resolved.label}
               </Text>

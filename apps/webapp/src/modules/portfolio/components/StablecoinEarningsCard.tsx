@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
@@ -252,7 +253,7 @@ function EarningsHeadline({
         <Heading tag="h2" className="text-text font-circle text-[40px] leading-none">
           {formatUsd(value)}
         </Heading>
-        <span className="flex -space-x-2">
+        <IconStack size={28}>
           {tokenSymbols.map(symbol => (
             <TokenIcon
               key={symbol}
@@ -260,12 +261,12 @@ function EarningsHeadline({
               width={28}
               showChainIcon={false}
               className={cn(
-                'h-7 w-7 transition-opacity',
+                'h-full w-full transition-opacity',
                 activeSymbol && activeSymbol !== symbol && 'opacity-50'
               )}
             />
           ))}
-        </span>
+        </IconStack>
       </div>
     </div>
   );

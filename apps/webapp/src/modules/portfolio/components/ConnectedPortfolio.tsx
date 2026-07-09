@@ -10,6 +10,7 @@ import { ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
 import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
 import { Heading, Text } from '@/modules/layout/components/Typography';
+import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
 import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
@@ -82,13 +83,7 @@ export function ConnectedPortfolio() {
 
   const allNetworksLabel = (
     <span className="flex items-center gap-2">
-      <span className="flex -space-x-1">
-        {supportedChainIds.map(id => (
-          <span key={id} className="inline-flex">
-            {getChainIcon(id, 'h-4 w-4')}
-          </span>
-        ))}
-      </span>
+      <IconStack size={16}>{supportedChainIds.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>
       <Trans>All networks</Trans>
     </span>
   );
