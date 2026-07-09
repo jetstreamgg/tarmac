@@ -6,6 +6,7 @@ import { getEtherscanLink } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { Button } from '@/components/ui/button';
+import { Card as CardSurface } from '@/components/ui/card';
 import { StakeEngineCard } from './StakeEngineCard';
 
 // Corpus-fed About copy (PRD Decision 11): never hardcode Figma text — the body
@@ -15,9 +16,9 @@ const ABOUT_BANNER_ID = 'about-the-staking-engine';
 
 function Card({ children, testId }: { children: React.ReactNode; testId: string }) {
   return (
-    <div data-testid={testId} className="bg-panel rounded-card flex flex-col gap-4 p-6 backdrop-blur-2xl">
+    <CardSurface data-testid={testId} className="flex flex-col gap-4 p-6">
       {children}
-    </div>
+    </CardSurface>
   );
 }
 

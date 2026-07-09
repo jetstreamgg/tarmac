@@ -13,6 +13,7 @@ import {
 } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useSavingsModal } from '../hooks/useSavingsModal';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
@@ -88,10 +89,7 @@ export function SavingsPositionCard() {
   const projectedEarnings = projectAnnualEarnings(positionValue, rateValue);
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-5 rounded-[20px] p-2 backdrop-blur-2xl"
-      data-testid="savings-position-card"
-    >
+    <Card className="flex flex-col gap-5 p-2" data-testid="savings-position-card">
       {/* Hero — "My position" pill + balance over a soft brand-tinted inset. */}
       <div className="flex flex-col gap-6 rounded-2xl bg-[radial-gradient(130%_130%_at_15%_0%,_rgba(126,107,242,0.22)_0%,_rgba(58,46,125,0.1)_55%,_transparent_100%)] p-5">
         <span className="bg-surface text-textSecondary flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm">
@@ -159,6 +157,6 @@ export function SavingsPositionCard() {
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useTokenBalance, getTokenDecimals, type Token } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 
@@ -43,10 +44,7 @@ export function VaultSupplyCard({
       : NO_VALUE;
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-6 rounded-[20px] p-6 backdrop-blur-2xl"
-      data-testid="vault-supply-card"
-    >
+    <Card className="flex flex-col gap-6 p-6" data-testid="vault-supply-card">
       <h3 className="text-text text-2xl leading-snug font-medium">
         <Trans>
           Supply{' '}
@@ -92,6 +90,6 @@ export function VaultSupplyCard({
       <Button variant="primary" className="w-full" onClick={onSupplyOrConnect} data-testid="vault-supply-cta">
         <Trans>Supply</Trans>
       </Button>
-    </div>
+    </Card>
   );
 }

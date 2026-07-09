@@ -13,6 +13,7 @@ import {
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, splitAmount, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
@@ -68,10 +69,7 @@ function PendleSupplyCard({
       : NO_VALUE;
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-6 rounded-[20px] p-6 backdrop-blur-2xl"
-      data-testid="pendle-supply-card"
-    >
+    <Card className="flex flex-col gap-6 p-6" data-testid="pendle-supply-card">
       <h3 className="text-text text-2xl leading-snug font-medium">
         <Trans>
           Supply{' '}
@@ -139,7 +137,7 @@ function PendleSupplyCard({
       >
         <Trans>Supply</Trans>
       </Button>
-    </div>
+    </Card>
   );
 }
 
@@ -197,10 +195,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
       : `${formatNumber(positionValue, { maxDecimals: 2 })} ${market.underlyingSymbol}`;
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-5 rounded-[20px] p-2 backdrop-blur-2xl"
-      data-testid="pendle-position-card"
-    >
+    <Card className="flex flex-col gap-5 p-2" data-testid="pendle-position-card">
       {/* Hero — "My position" pill + PT balance over a soft brand-tinted inset. */}
       <div className="flex flex-col gap-6 rounded-2xl bg-[radial-gradient(130%_130%_at_15%_0%,_rgba(126,107,242,0.22)_0%,_rgba(58,46,125,0.1)_55%,_transparent_100%)] p-5">
         <span className="bg-surface text-textSecondary flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm">
@@ -262,6 +257,6 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -38,8 +38,8 @@ export function PortfolioStatistics() {
       </Heading>
 
       <Card className="p-6">
-        {/* The detail Chart ships its own bg-panel card (a white box in light
-            mode); flatten it so the chart blends into this statistics card. */}
+        {/* The detail Chart ships its own Card surface; flatten it so the
+            chart blends into this statistics card. */}
         <div className="[&_[data-testid=portfolio-totals-chart]]:border-0! [&_[data-testid=portfolio-totals-chart]]:bg-transparent! [&_[data-testid=portfolio-totals-chart]]:backdrop-blur-none">
           <PortfolioTotalsChart />
         </div>
