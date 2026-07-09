@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import type { EarnProductRow, EarnRiskTier } from '@/hooks';
+import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
@@ -23,10 +24,7 @@ const RISK_LABEL: Record<EarnRiskTier, ReactNode> = {
  */
 export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onStart: () => void }) {
   return (
-    <div
-      className="bg-container flex h-full flex-col gap-8 rounded-3xl border p-5 bg-blend-overlay backdrop-blur-[50px]"
-      data-testid="earn-marketplace-card"
-    >
+    <Card className="flex h-full flex-col gap-8 p-5" data-testid="earn-marketplace-card">
       <ProductTokenIcon
         symbol={productIconSymbol(row)}
         ringColor={productRingColor(row)}
@@ -75,7 +73,7 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
         <Trans>Start earning</Trans>
         <ArrowRight className="h-4 w-4" />
       </button>
-    </div>
+    </Card>
   );
 }
 

@@ -11,6 +11,7 @@ import {
   CarouselPrevious,
   CarouselNext
 } from '@/components/ui/carousel';
+import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
 import type { SuppliedView } from '../helpers/suppliedView';
@@ -139,19 +140,19 @@ function EmptyState({ children }: { children: ReactNode }) {
 function CarouselSkeleton() {
   return (
     <div className="desktop:grid-cols-3 mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div className="bg-surface h-[280px] animate-pulse rounded-3xl" />
-      <div className="bg-surface hidden h-[280px] animate-pulse rounded-3xl sm:block" />
-      <div className="bg-surface desktop:block hidden h-[280px] animate-pulse rounded-3xl" />
+      <div className="bg-surface h-[280px] animate-pulse rounded-[28px]" />
+      <div className="bg-surface hidden h-[280px] animate-pulse rounded-[28px] sm:block" />
+      <div className="bg-surface desktop:block hidden h-[280px] animate-pulse rounded-[28px]" />
     </div>
   );
 }
 
 function TableSkeleton() {
   return (
-    <div className="bg-container mt-6 flex animate-pulse flex-col gap-4 rounded-3xl border p-6">
+    <Card className="mt-6 flex animate-pulse flex-col gap-4 p-6">
       {Array.from({ length: 3 }).map((_, index) => (
         <div key={index} className="bg-surface h-12 rounded-xl" />
       ))}
-    </div>
+    </Card>
   );
 }

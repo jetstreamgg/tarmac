@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { formatDecimalPercentage, formatUsd, getChainIcon, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
 import { Text } from '@/modules/layout/components/Typography';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
@@ -27,10 +28,7 @@ export function PositionCard({
   const projected = projectAnnualEarnings(position.amountUsd, position.rate);
 
   return (
-    <div
-      className="bg-container flex flex-col gap-8 rounded-3xl border p-5 bg-blend-overlay backdrop-blur-[50px]"
-      data-testid="position-card"
-    >
+    <Card className="flex flex-col gap-8 p-5" data-testid="position-card">
       {/* Token icon with its family-colored outline ring + network badge */}
       <div className="flex items-start justify-between">
         <ProductTokenIcon
@@ -87,7 +85,7 @@ export function PositionCard({
           <Trans>Manage</Trans>
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 

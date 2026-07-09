@@ -3,6 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { useOverallSkyData, useUsdsDaiData } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { PortfolioTotalsChart } from './PortfolioTotalsChart';
 
@@ -36,7 +37,7 @@ export function PortfolioStatistics() {
         <Trans>Statistics</Trans>
       </Heading>
 
-      <div className="bg-container rounded-3xl border p-6 bg-blend-overlay backdrop-blur-[50px]">
+      <Card className="p-6">
         {/* The detail Chart ships its own bg-panel card (a white box in light
             mode); flatten it so the chart blends into this statistics card. */}
         <div className="[&_[data-testid=portfolio-totals-chart]]:border-0! [&_[data-testid=portfolio-totals-chart]]:bg-transparent! [&_[data-testid=portfolio-totals-chart]]:backdrop-blur-none">
@@ -57,7 +58,7 @@ export function PortfolioStatistics() {
             </a>
           </Button>
         </div>
-      </div>
+      </Card>
     </section>
   );
 }
