@@ -11,9 +11,10 @@ import {
   useUserRewardsBalance,
   type RewardContract
 } from '@/hooks';
-import { formatDecimalPercentage, formatNumber, projectAnnualEarnings, splitAmount } from '@/utils';
+import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { PositionHero } from '@/components/product/PositionHero';
 import { GainValue } from '@/components/ui/GainValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useClaimRewardsModal } from '@/modules/claim';
@@ -117,7 +118,6 @@ export function RewardsPositionCard({
   // Position value in supply-token units (USDS is $1-pegged, so it doubles as
   // the USD value used for the projection).
   const positionValue = parseFloat(formatUnits(staked, decimals));
-  const { whole, fraction } = splitAmount(positionValue);
   const projectedEarnings = projectAnnualEarnings(positionValue, rate);
 
   const rewardSymbol = contract.rewardToken.symbol;
@@ -137,23 +137,11 @@ export function RewardsPositionCard({
 
   return (
     <Card className="flex flex-col gap-5 p-2" data-testid="rewards-position-card">
-      {/* Hero — "My position" pill + staked balance over a soft brand-tinted inset. */}
-      <div className="flex flex-col gap-6 rounded-2xl bg-[radial-gradient(130%_130%_at_15%_0%,_rgba(126,107,242,0.22)_0%,_rgba(58,46,125,0.1)_55%,_transparent_100%)] p-5">
-        <span className="bg-surface text-textSecondary flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm">
-          <TokenIcon token={{ symbol: rewardSymbol }} width={16} showChainIcon={false} className="h-4 w-4" />
-          <Trans>My position</Trans>
-        </span>
-        <span className="text-text flex items-end gap-2 font-semibold">
-          <TokenIcon
-            token={{ symbol: contract.supplyToken.symbol }}
-            width={32}
-            showChainIcon={false}
-            className="mb-1 h-8 w-8"
-          />
-          <span className="text-4xl leading-none">{whole}</span>
-          {fraction && <span className="text-textSecondary text-2xl leading-tight">.{fraction}</span>}
-        </span>
-      </div>
+      <PositionHero
+        pillSymbol={rewardSymbol}
+        balanceSymbol={contract.supplyToken.symbol}
+        amount={positionValue}
+      />
 
       <div className="flex flex-col gap-5 px-3 pb-3">
         <div className="flex flex-col gap-3">

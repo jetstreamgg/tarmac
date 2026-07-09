@@ -11,9 +11,10 @@ import {
   useTokenBalance,
   type PendleMarketConfig
 } from '@/hooks';
-import { formatDecimalPercentage, formatNumber, splitAmount, isTestnetId } from '@/utils';
+import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { PositionHero } from '@/components/product/PositionHero';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
@@ -187,7 +188,6 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
 
   // PT decimals match the underlying's (Pendle convention).
   const positionValue = parseFloat(formatUnits(ptBalance, market.underlyingDecimals));
-  const { whole, fraction } = splitAmount(positionValue);
   // At maturity 1 PT redeems 1 USDS on pegged markets — the claimable amount.
   const claimAmount =
     market.usdsEquivalence === 'pegged'
@@ -196,28 +196,11 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
 
   return (
     <Card className="flex flex-col gap-5 p-2" data-testid="pendle-position-card">
-      {/* Hero — "My position" pill + PT balance over a soft brand-tinted inset. */}
-      <div className="flex flex-col gap-6 rounded-2xl bg-[radial-gradient(130%_130%_at_15%_0%,_rgba(126,107,242,0.22)_0%,_rgba(58,46,125,0.1)_55%,_transparent_100%)] p-5">
-        <span className="bg-surface text-textSecondary flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm">
-          <TokenIcon
-            token={{ symbol: `PT-${market.underlyingSymbol}` }}
-            width={16}
-            showChainIcon={false}
-            className="h-4 w-4"
-          />
-          <Trans>My position</Trans>
-        </span>
-        <span className="text-text flex items-end gap-2 font-semibold">
-          <TokenIcon
-            token={{ symbol: `PT-${market.underlyingSymbol}` }}
-            width={32}
-            showChainIcon={false}
-            className="mb-1 h-8 w-8"
-          />
-          <span className="text-4xl leading-none">{whole}</span>
-          {fraction && <span className="text-textSecondary text-2xl leading-tight">.{fraction}</span>}
-        </span>
-      </div>
+      <PositionHero
+        pillSymbol={`PT-${market.underlyingSymbol}`}
+        balanceSymbol={`PT-${market.underlyingSymbol}`}
+        amount={positionValue}
+      />
 
       <div className="flex flex-col gap-5 px-3 pb-3">
         <div className="flex flex-col gap-3">
