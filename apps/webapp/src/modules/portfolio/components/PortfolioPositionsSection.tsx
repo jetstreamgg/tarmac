@@ -19,8 +19,8 @@ import { PositionCard } from './PositionCard';
 import { IdleStablecoinsTable } from './IdleStablecoinsTable';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
 
-// Each card spans a fraction of the row so 1 (mobile) → 4 (xl) show at once.
-const ITEM_BASIS = 'basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4';
+// Each card spans a fraction of the row so 1 (mobile) → 3 (desktop) show at once.
+const ITEM_BASIS = 'basis-full sm:basis-1/2 desktop:basis-1/3';
 // Neutralizes CarouselPrevious/Next's default absolute positioning so the
 // arrows sit inline in the section header instead of flanking the row.
 const INLINE_ARROW = 'static left-auto right-auto top-auto translate-y-0';
@@ -134,15 +134,14 @@ function EmptyState({ children }: { children: ReactNode }) {
   );
 }
 
+// Skeleton placeholders sized like the loaded cards: an exact-fit grid showing
+// as many cards as the carousel does per tier (1 → 2 → 3), no clipped extras.
 function CarouselSkeleton() {
   return (
-    <div className="mt-6 flex gap-4">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div
-          key={index}
-          className={`bg-surface h-[280px] shrink-0 grow-0 animate-pulse rounded-3xl ${ITEM_BASIS}`}
-        />
-      ))}
+    <div className="desktop:grid-cols-3 mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="bg-surface h-[280px] animate-pulse rounded-3xl" />
+      <div className="bg-surface hidden h-[280px] animate-pulse rounded-3xl sm:block" />
+      <div className="bg-surface desktop:block hidden h-[280px] animate-pulse rounded-3xl" />
     </div>
   );
 }

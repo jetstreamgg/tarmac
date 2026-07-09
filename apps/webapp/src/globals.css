@@ -127,6 +127,11 @@
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 912px;
+  /* `desktop` is the M/L tier of the design-system grid (Figma: Foundations /
+     Grids & Spacing 5176:33992): tiers break at 640 (sm) and 1200. New and
+     redesigned surfaces should branch on `sm:` + `desktop:` only; md/lg/xl/2xl/3xl
+     are legacy values kept for the pre-redesign screens and die with them. */
+  --breakpoint-desktop: 1200px;
   --breakpoint-xl: 1280px;
   --breakpoint-2xl: 1400px;
   --breakpoint-3xl: 1680px;

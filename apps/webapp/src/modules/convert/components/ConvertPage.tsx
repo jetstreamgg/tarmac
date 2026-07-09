@@ -60,7 +60,7 @@ export function ConvertPage() {
     form.isConnected && (form.isZero || form.insufficient || !!conversion.disabledReason);
 
   return (
-    <div className="flex w-full flex-col items-center gap-8 p-4 md:px-8 md:py-14" data-testid="convert-page">
+    <div className="flex w-full flex-col items-center gap-8 py-4 md:py-14" data-testid="convert-page">
       <div className="flex flex-col items-center gap-4 text-center">
         <div className="flex items-center gap-2">
           <HeroBadge>
@@ -81,7 +81,9 @@ export function ConvertPage() {
         </Text>
       </div>
 
-      <div className="flex w-full max-w-[560px] flex-col gap-4">
+      {/* Form column: the middle 6 columns of the design grid (624px @1280)
+          minus 48px breathing room each side, per the Convert mock. */}
+      <div className="flex w-full max-w-[528px] flex-col gap-4">
         <ConvertCard form={form} />
 
         {form.insufficient && (
