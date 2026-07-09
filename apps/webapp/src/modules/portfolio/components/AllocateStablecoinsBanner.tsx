@@ -43,7 +43,7 @@ export function AllocateStablecoinsBanner({
         </Text>
       </div>
 
-      <Button variant="primary" className="shrink-0" onClick={onAllocate}>
+      <Button variant="primary" size="l" className="shrink-0" onClick={onAllocate}>
         <Trans>Allocate your stablecoins</Trans>
       </Button>
     </Card>

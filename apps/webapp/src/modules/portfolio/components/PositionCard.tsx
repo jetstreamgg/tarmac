@@ -75,10 +75,22 @@ export function PositionCard({
       </div>
 
       <div className="mt-1 flex gap-2">
-        <Button variant="primary" className="flex-1" onClick={onSupply} data-testid="position-card-supply">
+        <Button
+          variant="primary"
+          size="l"
+          className="flex-1"
+          onClick={onSupply}
+          data-testid="position-card-supply"
+        >
           <Trans>Supply</Trans>
         </Button>
-        <Button variant="outline" className="flex-1" onClick={onManage} data-testid="position-card-manage">
+        <Button
+          variant="secondary"
+          size="l"
+          className="flex-1"
+          onClick={onManage}
+          data-testid="position-card-manage"
+        >
           <Trans>Manage</Trans>
         </Button>
       </div>

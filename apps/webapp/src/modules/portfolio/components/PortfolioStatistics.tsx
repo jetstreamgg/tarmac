@@ -52,7 +52,7 @@ export function PortfolioStatistics() {
             <Stat label={<Trans>Savings TVL</Trans>} value={savingsTvl} />
             <Stat label={<Trans>Rewards TVL</Trans>} value={rewardsTvl} />
           </div>
-          <Button asChild variant="secondary" className="w-fit">
+          <Button asChild variant="primary" size="l" className="w-fit">
             <a href={INSIGHTS_URL} target="_blank" rel="noreferrer">
               <Trans>Get more insights</Trans>
             </a>

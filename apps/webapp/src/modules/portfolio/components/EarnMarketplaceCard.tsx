@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
-import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import type { EarnProductRow, EarnRiskTier } from '@/hooks';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
@@ -58,15 +58,15 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
         </Stat>
       </div>
 
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="l"
+        className="w-full"
         onClick={onStart}
-        className="text-text hover:text-textSecondary flex w-full items-center justify-between border-t pt-4 text-sm font-medium transition-colors"
         data-testid="earn-marketplace-card-start"
       >
         <Trans>Start earning</Trans>
-        <ArrowRight className="h-4 w-4" />
-      </button>
+      </Button>
     </Card>
   );
 }
