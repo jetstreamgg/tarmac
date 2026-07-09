@@ -127,6 +127,7 @@ export function RewardsSupplyCard({
       {onSupply && (
         <Button
           variant="primary"
+          size="l"
           className="w-full"
           onClick={onSupply}
           disabled={!isConnected}

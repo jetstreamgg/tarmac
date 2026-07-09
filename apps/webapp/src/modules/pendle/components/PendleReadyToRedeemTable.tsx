@@ -110,8 +110,7 @@ const PendleMaturedRow = ({ market, ptBalance }: RowProps) => {
       <TableCell className="text-right">
         <Button
           variant="primary"
-          size="sm"
-          className="rounded-xl px-4"
+          size="m"
           onClick={openRedeemModal}
           disabled={!isPrepared}
           data-testid="pendle-row-redeem-button"

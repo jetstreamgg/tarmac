@@ -132,6 +132,7 @@ function PendleSupplyCard({
 
       <Button
         variant="primary"
+        size="l"
         className="w-full"
         onClick={onSupplyOrConnect}
         data-testid="pendle-supply-cta"
@@ -222,6 +223,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
         <div className="flex flex-col gap-3">
           <Button
             variant="primary"
+            size="l"
             className="w-full"
             onClick={() => openSupply(market)}
             disabled={!isConnected}
@@ -231,6 +233,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
           </Button>
           <Button
             variant="secondary"
+            size="l"
             className="w-full"
             onClick={() => openWithdraw(market)}
             disabled={!isConnected}

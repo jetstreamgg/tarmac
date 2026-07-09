@@ -72,6 +72,7 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
         )}
         <Button
           variant="primary"
+          size="l"
           className="mt-4 w-full"
           onClick={openRedeemModal}
           disabled={!isRedeemable || !isPrepared || previewLoading}
