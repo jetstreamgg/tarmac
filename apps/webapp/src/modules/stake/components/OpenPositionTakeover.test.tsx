@@ -346,6 +346,37 @@ describe('OpenPositionTakeover', () => {
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('borrow: the 100% chip at a binding debt ceiling keeps Confirm enabled (boundary)', () => {
+    // Ceiling headroom (50) below the collateral max (1000/10 = 100) → the
+    // 100% chip stages exactly the headroom. Equality must stay valid: with
+    // the old strict < gate, Confirm went dead with no error at the very max
+    // the card itself advertised.
+    h.debtCeilingHeadroom = 50n * WAD;
+    renderTakeover();
+    typeStakeAmount('1000');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-percent-100'));
+
+    expect(h.launchParams?.usdsToBorrow).toBe(50n * WAD);
+    expect(screen.queryByTestId('stake-takeover-borrow-amount-error')).toBeNull();
+    expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('borrow above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {
+    h.debtCeilingHeadroom = 50n * WAD;
+    renderTakeover();
+    typeStakeAmount('1000');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    fireEvent.change(screen.getByTestId('stake-takeover-borrow-amount'), { target: { value: '51' } });
+
+    expect(screen.getByTestId('stake-takeover-borrow-amount-error').textContent).toBe(
+      'Requested borrow amount exceeds the debt ceiling'
+    );
+    expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('delegate card: toggle expands the list, selection is single-select and reaches the seam', () => {
     renderTakeover();
     typeStakeAmount('100');

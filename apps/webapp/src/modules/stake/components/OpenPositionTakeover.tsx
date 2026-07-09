@@ -176,7 +176,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     debouncedUsdsToBorrow === state.usdsToBorrow &&
     !simulationError &&
     !simulationLoading &&
-    ((debouncedUsdsToBorrow > 0n && debouncedUsdsToBorrow < availableBorrowFromDebtCeiling) ||
+    // <= so the exact ceiling headroom (what the 100% chip stages when the
+    // ceiling binds) stays valid — strict < left Confirm disabled with no error.
+    ((debouncedUsdsToBorrow > 0n && debouncedUsdsToBorrow <= availableBorrowFromDebtCeiling) ||
       !debouncedUsdsToBorrow);
   const borrowError =
     debouncedUsdsToBorrow > availableBorrowFromDebtCeiling

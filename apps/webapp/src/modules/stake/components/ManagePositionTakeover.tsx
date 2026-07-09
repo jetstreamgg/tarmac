@@ -204,7 +204,9 @@ export function ManagePositionTakeover({
     !state.borrowEnabled ||
     (state.borrowMode === 'borrow'
       ? !minCollateralNotMet &&
-        ((usdsToBorrow > 0n && usdsToBorrow < availableBorrowFromDebtCeiling) || !usdsToBorrow) &&
+        // <= so the exact ceiling headroom (what the 100% chip stages when the
+        // ceiling binds) stays valid — strict < left Confirm disabled with no error.
+        ((usdsToBorrow > 0n && usdsToBorrow <= availableBorrowFromDebtCeiling) || !usdsToBorrow) &&
         !simulationError &&
         !simulationLoading
       : (state.usdsAmount === 0n && !state.wipeAll) ||

@@ -32,7 +32,8 @@ const h = vi.hoisted(() => ({
   simLiqPrice: 432n * 10n ** 14n,
   simDelayedPrice: 608n * 10n ** 14n,
   simProximity: 36,
-  minCollateralForDust: 0n
+  minCollateralForDust: 0n,
+  debtCeiling: 0n
 }));
 
 let mockSearchParams = new URLSearchParams();
@@ -85,7 +86,7 @@ vi.mock('@/hooks', async importOriginal => {
     useCollateralData: () => ({
       data: {
         stabilityFee: 0.0851,
-        debtCeiling: parseUnits('1000000000', 18),
+        debtCeiling: h.debtCeiling,
         totalDaiDebt: 0n,
         debtCeilingUtilization: 0.5
       },
@@ -220,6 +221,7 @@ describe('ManagePositionTakeover', () => {
     h.simDelayedPrice = 608n * 10n ** 14n;
     h.simProximity = 36;
     h.minCollateralForDust = 1_440_000n * WAD;
+    h.debtCeiling = parseUnits('1000000000', 18);
   });
   afterEach(() => {
     cleanup();
@@ -362,6 +364,33 @@ describe('ManagePositionTakeover', () => {
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
     expect(h.launchParams?.usdsToBorrow).toBe(10_000n * WAD);
     expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('→');
+  });
+
+  it('borrow: the 100% chip at a binding debt ceiling keeps Confirm enabled (boundary)', () => {
+    // Ceiling headroom (40k) below the collateral max (3M/10 = 300k) → the
+    // 100% chip stages exactly the headroom. Equality must stay valid: with
+    // the old strict < gate, Confirm went dead with no error at the very max
+    // the card itself advertised.
+    h.debtCeiling = 40_000n * WAD;
+    renderSheet({ borrowCard: 'borrow' });
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-100'));
+
+    expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+    expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('borrow: above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {
+    h.debtCeiling = 40_000n * WAD;
+    renderSheet({ borrowCard: 'borrow' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '40001' } });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Requested borrow amount exceeds the debt ceiling'
+    );
+    expect(confirmButton().disabled).toBe(true);
   });
 
   it('delegate: picking a different delegate stages the change and enables Confirm', () => {
