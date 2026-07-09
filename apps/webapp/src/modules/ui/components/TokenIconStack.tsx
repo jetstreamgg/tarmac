@@ -25,10 +25,13 @@ export function IconStack({
 } & ComponentPropsWithoutRef<'span'>) {
   return (
     <span className={cn('flex items-center', className)} {...props}>
+      {/* `relative` lifts each badge (ring + icon) into the positioned paint
+          phase: the icons inside are positioned, so without it every icon
+          paints above every ring and the punched-out cut never shows. */}
       {Children.toArray(children).map((child, index) => (
         <span
           key={index}
-          className="ring-pageBackground inline-flex shrink-0 rounded-full ring-[1.5px]"
+          className="ring-pageBackground relative inline-flex shrink-0 rounded-full ring-[1.5px]"
           style={{ width: size, height: size, marginLeft: index === 0 ? 0 : -size / 3 }}
         >
           {child}
