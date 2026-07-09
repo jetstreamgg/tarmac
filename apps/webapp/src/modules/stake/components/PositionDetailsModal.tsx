@@ -598,7 +598,7 @@ export function PositionDetailsModal({
 
           <div className="flex flex-col gap-3">
             {detail.vaultLoading ? (
-              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-14 w-full rounded-full" />
             ) : isInactive ? (
               <Button
                 variant="primary"
