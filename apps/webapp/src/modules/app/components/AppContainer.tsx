@@ -17,12 +17,18 @@ export function AppContainer({
   return (
     <main
       className={cn(
-        // Shared: the centered max-width column.
-        'scrollbar-hidden group flex w-full max-w-[480px] min-w-[375px] flex-col gap-1.5 overflow-x-hidden md:max-w-[1150px] md:flex-row xl:max-w-[calc(100vw-128px)] 2xl:max-w-[1570px]',
-        variant === 'card' &&
-          // Card: the viewport-capped inner-scroll box + chrome. `bare` omits all
-          // of this so the page flows at content height and the document scrolls.
-          'bg-container h-dvh overflow-y-auto rounded-t-3xl border bg-blend-overlay backdrop-blur-[50px] md:my-auto md:h-[calc(100dvh-70px)] md:overflow-hidden md:rounded-3xl md:p-3 md:pl-[10px] lg:pl-3 xl:max-h-[1080px]'
+        'group flex w-full flex-col overflow-x-hidden',
+        variant === 'card'
+          ? // Card: the legacy width ladder + the viewport-capped inner-scroll box
+            // and chrome. Untouched by the design-system grid — it dies with the
+            // two-pane routes.
+            'scrollbar-hidden bg-container h-dvh max-w-[480px] min-w-[375px] gap-1.5 overflow-y-auto rounded-t-3xl border bg-blend-overlay backdrop-blur-[50px] md:my-auto md:h-[calc(100dvh-70px)] md:max-w-[1150px] md:flex-row md:overflow-hidden md:rounded-3xl md:p-3 md:pl-[10px] lg:pl-3 xl:max-h-[1080px] xl:max-w-[calc(100vw-128px)] 2xl:max-w-[1570px]'
+          : // Bare: the design-system container (Figma: Foundations / Grids &
+            // Spacing 5176:33992) — content capped at 1280 and centered, with a
+            // uniform 20px side gutter (1320 = 1280 + 2×20). Below the 1200 tier
+            // the spec is full-width + 20px paddings, which the same rule yields.
+            // Pages own only their vertical padding; horizontal lives here.
+            'max-w-[1320px] px-5'
       )}
     >
       {children}

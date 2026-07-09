@@ -170,7 +170,7 @@ export function ProductDetailTemplate({
   dataTestId = 'product-detail'
 }: ProductDetailTemplateProps) {
   return (
-    <div className="flex w-full flex-col gap-8 p-4 md:px-8 md:py-10" data-testid={dataTestId}>
+    <div className="flex w-full flex-col gap-8 py-4 md:py-10" data-testid={dataTestId}>
       {/* Header: back-link, token title (+glow), per-product network selector. */}
       <div className="flex flex-col gap-5">
         <AppLink
@@ -190,25 +190,37 @@ export function ProductDetailTemplate({
         </div>
       </div>
 
-      {/* Body: chart | position on top, details/about/transactions stacked in
-          the left column (the right column below position stays empty, per
-          Figma). DOM order keeps the mobile single-column flow correct:
-          chart → position → details → about → transactions. */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="lg:col-start-1 lg:row-start-1">{chart}</div>
-        <div className="lg:col-start-2 lg:row-start-1">{position}</div>
-        <div className="flex flex-col gap-10 lg:col-start-1 lg:row-start-2">
-          <DetailsSection title={detailsTitle} details={details} />
-          {afterDetails && (
-            <section className="flex flex-col gap-4" data-testid="product-detail-after-details">
-              <SectionHeading>{afterDetails.title}</SectionHeading>
-              {afterDetails.body}
-            </section>
-          )}
-          <AboutSection title={aboutTitle} about={about} />
-          <TransactionsSection title={transactionsTitle} action={transactionsAction}>
-            {transactions}
-          </TransactionsSection>
+      {/* Body on the 12-col design grid (desktop tier): two panes side by side.
+          The left pane (8 cols) flows chart → details → about → transactions;
+          the right pane (4 cols, self-start) holds the position card at its own
+          height. Below desktop the left pane dissolves (`contents`) so all four
+          blocks stack in the single column, with `order` slotting the card
+          between chart and details: chart → position → details → …. */}
+      <div className="desktop:grid-cols-12 desktop:gap-8 grid gap-5" data-testid="product-detail-body">
+        <div
+          className="desktop:col-span-8 desktop:flex desktop:flex-col desktop:gap-8 contents"
+          data-testid="product-detail-left-pane"
+        >
+          <div className="order-1">{chart}</div>
+          <div className="order-3 flex flex-col gap-10">
+            <DetailsSection title={detailsTitle} details={details} />
+            {afterDetails && (
+              <section className="flex flex-col gap-4" data-testid="product-detail-after-details">
+                <SectionHeading>{afterDetails.title}</SectionHeading>
+                {afterDetails.body}
+              </section>
+            )}
+            <AboutSection title={aboutTitle} about={about} />
+            <TransactionsSection title={transactionsTitle} action={transactionsAction}>
+              {transactions}
+            </TransactionsSection>
+          </div>
+        </div>
+        <div
+          className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-2"
+          data-testid="product-detail-right-pane"
+        >
+          {position}
         </div>
       </div>
     </div>
