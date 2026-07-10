@@ -6,7 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
-import { Balances, Savings, StakeSky, Trade } from '@/modules/icons';
+import { Convert, Earn, StakeSky, Wallet } from '@/modules/icons';
 import { Intent } from '@/lib/enums';
 import { BATCH_TX_ENABLED, QueryParams } from '@/lib/constants';
 import { intentToPath, ROUTES, RoutePath } from '@/lib/routes';
@@ -29,8 +29,6 @@ type DestinationPath = Extract<AppRoutePath, RoutePath>;
 type Destination = {
   path: DestinationPath;
   label: ReactNode;
-  // Reuses the legacy module icons: Balances → Portfolio, Savings → Earn,
-  // Trade → Convert; StakeSky is the new pinwheel mark.
   icon: ComponentType<{ className?: string }>;
   // Modules the destination covers; the first is its landing module and
   // decides the network override for the link.
@@ -42,13 +40,13 @@ const DESTINATIONS: Destination[] = [
   {
     path: ROUTES.PORTFOLIO,
     label: <Trans>Portfolio</Trans>,
-    icon: Balances,
+    icon: Wallet,
     intents: [Intent.BALANCES_INTENT]
   },
   {
     path: ROUTES.EARN,
     label: <Trans>Earn</Trans>,
-    icon: Savings,
+    icon: Earn,
     intents: [
       Intent.SAVINGS_INTENT,
       Intent.REWARDS_INTENT,
@@ -61,7 +59,7 @@ const DESTINATIONS: Destination[] = [
   {
     path: ROUTES.CONVERT,
     label: <Trans>Convert</Trans>,
-    icon: Trade,
+    icon: Convert,
     intents: [Intent.CONVERT_INTENT, Intent.TRADE_INTENT, Intent.UPGRADE_INTENT]
   }
 ];

@@ -1,4 +1,4 @@
-import { Balances, RewardsModule, Savings, Stake, Expert, Vaults, Convert, Pendle } from '../../icons';
+import { Balances, RewardsModule, Savings, Stake, Expert, Vaults, ConvertArrows, Pendle } from '../../icons';
 import { Intent } from '@/lib/enums';
 import { COMING_SOON_MAP } from '@/lib/constants';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
@@ -151,7 +151,14 @@ export function useWidgetItems(intent: Intent): {
     ],
     // The E2 page-as-widget owns /convert whole: no sub-items (legacy trade and
     // upgrade surfaces are parked, pending the restore-vs-retire decision).
-    [Intent.CONVERT_INTENT, 'Convert', Convert, false, undefined, 'Convert stablecoins at a fixed 1:1 rate']
+    [
+      Intent.CONVERT_INTENT,
+      'Convert',
+      ConvertArrows,
+      false,
+      undefined,
+      'Convert stablecoins at a fixed 1:1 rate'
+    ]
   ]
     .filter(([intent]) => {
       const moduleId = intentToModule[intent as Intent];
