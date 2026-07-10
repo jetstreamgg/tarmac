@@ -99,6 +99,7 @@ export function ConvertPage() {
 
         <Button
           variant="primary"
+          size="xl"
           className="w-full"
           disabled={reviewDisabled}
           onClick={launchOrConnect}

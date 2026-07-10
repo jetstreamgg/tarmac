@@ -544,7 +544,7 @@ export function Chart({
         data-testid={dataTestId}
         className={cn(
           'relative overflow-hidden p-0',
-          isDetail ? 'bg-panel pb-3 backdrop-blur-2xl' : 'bg-cardLight h-[288px] lg:h-[220px] lg:p-0'
+          isDetail ? 'pb-3' : 'bg-cardLight h-[288px] lg:h-[220px] lg:p-0'
         )}
         ref={containerRef}
       >

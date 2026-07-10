@@ -4,15 +4,11 @@ import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { useSavingsData, useTokenBalance, useOverallSkyData, TOKENS } from '@/hooks';
-import {
-  formatDecimalPercentage,
-  formatNumber,
-  formatUsd,
-  projectAnnualEarnings,
-  splitAmount
-} from '@/utils';
+import { formatDecimalPercentage, formatNumber, formatUsd, projectAnnualEarnings } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { PositionHero } from '@/components/product/PositionHero';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useSavingsModal } from '../hooks/useSavingsModal';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
@@ -80,7 +76,6 @@ export function SavingsPositionCard() {
   // its USD value for projections — USDS is $1-pegged, the convention across the
   // savings surfaces.
   const positionValue = parseFloat(formatUnits(savingsData?.userSavingsBalance ?? 0n, 18));
-  const { whole, fraction } = splitAmount(positionValue);
   const susds = isConnected ? formatToken(susdsBalance?.value) : NO_VALUE;
 
   const rateValue = overall?.skySavingsRatecRate ? parseFloat(overall.skySavingsRatecRate) : undefined;
@@ -88,22 +83,8 @@ export function SavingsPositionCard() {
   const projectedEarnings = projectAnnualEarnings(positionValue, rateValue);
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-5 rounded-[20px] p-2 backdrop-blur-2xl"
-      data-testid="savings-position-card"
-    >
-      {/* Hero — "My position" pill + balance over a soft brand-tinted inset. */}
-      <div className="flex flex-col gap-6 rounded-2xl bg-[radial-gradient(130%_130%_at_15%_0%,_rgba(126,107,242,0.22)_0%,_rgba(58,46,125,0.1)_55%,_transparent_100%)] p-5">
-        <span className="bg-surface text-textSecondary flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm">
-          <TokenIcon token={{ symbol: 'sUSDS' }} width={16} showChainIcon={false} className="h-4 w-4" />
-          <Trans>My position</Trans>
-        </span>
-        <span className="text-text flex items-end gap-2 font-semibold">
-          <TokenIcon token={{ symbol: 'USDS' }} width={32} showChainIcon={false} className="mb-1 h-8 w-8" />
-          <span className="text-4xl leading-none">{whole}</span>
-          {fraction && <span className="text-textSecondary text-2xl leading-tight">.{fraction}</span>}
-        </span>
-      </div>
+    <Card className="flex flex-col gap-5 p-2" data-testid="savings-position-card">
+      <PositionHero pillSymbol="sUSDS" balanceSymbol="USDS" amount={positionValue} />
 
       <div className="flex flex-col gap-5 px-3 pb-3">
         {/* Stats laid out as two rows, each pair split by its own short divider. */}
@@ -141,6 +122,7 @@ export function SavingsPositionCard() {
         <div className="flex gap-3">
           <Button
             variant="primary"
+            size="l"
             className="flex-1"
             onClick={() => openSupply()}
             disabled={!isConnected}
@@ -150,6 +132,7 @@ export function SavingsPositionCard() {
           </Button>
           <Button
             variant="secondary"
+            size="l"
             className="flex-1"
             onClick={() => openWithdraw()}
             disabled={!isConnected}
@@ -159,6 +142,6 @@ export function SavingsPositionCard() {
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

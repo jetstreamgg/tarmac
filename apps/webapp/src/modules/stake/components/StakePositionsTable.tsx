@@ -20,6 +20,8 @@ import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { Stake, Liquidated } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RiskMeter } from '@/components/product/RiskMeter';
@@ -146,11 +148,7 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
   return (
     <span className="text-text flex items-center gap-1.5 text-sm">
       {formatUsd(usdValue)}
-      <span className="flex items-center -space-x-1">
-        {symbols.map(symbol => (
-          <TokenIcon key={symbol} token={{ symbol }} width={16} className="h-4 w-4" showChainIcon={false} />
-        ))}
-      </span>
+      <TokenIconStack symbols={symbols} size={16} />
     </span>
   );
 }
@@ -279,9 +277,9 @@ export function StakePositionsTable({
       </div>
 
       {isEmpty ? (
-        <div
+        <Card
           data-testid="stake-positions-empty"
-          className="bg-panel rounded-card flex flex-col items-center justify-center gap-4 px-6 py-16 backdrop-blur-2xl"
+          className="flex flex-col items-center justify-center gap-4 px-6 py-16"
         >
           <span className="flex items-center" aria-hidden>
             <span className="bg-textSecondary/20 h-10 w-10 rounded-full" />
@@ -290,7 +288,7 @@ export function StakePositionsTable({
           <p className="text-textSecondary text-center text-sm">
             <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
           </p>
-        </div>
+        </Card>
       ) : (
         <ProductTransactionsTable
           dataTestId="stake-positions-table"

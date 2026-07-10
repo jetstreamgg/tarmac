@@ -123,7 +123,7 @@ function HeaderIconButton({
       title={label}
       data-testid={testId}
       onClick={onClick}
-      className="flex size-8 items-center justify-center rounded-full border border-[#bcb6ef]/10 bg-gradient-to-b from-white/0 to-white/8 text-[#f2f3f7] transition-colors hover:bg-white/10"
+      className="flex size-8 items-center justify-center rounded-full border border-[#bcb6ef]/10 bg-gradient-to-b from-white/0 to-white/8 bg-origin-border text-[#f2f3f7] transition-colors hover:bg-white/10"
     >
       {children}
     </button>

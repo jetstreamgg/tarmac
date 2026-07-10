@@ -223,6 +223,7 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
         <div className="flex gap-3">
           <Button
             variant={restakeAvailable ? 'secondary' : 'primary'}
+            size="xl"
             className="flex-1"
             onClick={() => launch(false)}
             disabled={claimDisabled}
@@ -233,6 +234,7 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
           {restakeAvailable && (
             <Button
               variant="primary"
+              size="xl"
               className="flex-1"
               onClick={() => launch(true)}
               disabled={restakeDisabled}

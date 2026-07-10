@@ -75,6 +75,20 @@
   --color-glassBorder: rgba(188, 182, 239, 0.2);
   --color-flipSurface: #1b1735;
   --color-flipRing: #140f2b;
+  /* Design-system button tokens (Figma 5010:7958): dark values are the Figma
+     source values — colors/bg/bg-brand-primary + bg-brand-secondary (primary
+     hover/pressed fills), colors/border/border-focus (focus ring),
+     colors/fg/fg-tertiary (disabled/loading text) and the primary gradient
+     stops. None are overridden in the light scope: fgConsistent
+     (colors/fg/fg-text-consistent-light) stays light on the brand gradient in
+     both themes by design; the rest are interim (G2 owns full light parity). */
+  --color-brandHover: #504dff;
+  --color-brandPressed: #4836f5;
+  --color-focusRing: #c2ccff;
+  --color-fgTertiary: #636685;
+  --color-fgConsistent: #f2f3f7;
+  --color-button-gradient-start: #2a197d;
+  --color-button-gradient-end: #6a6cfb;
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
@@ -102,6 +116,11 @@
   --background-image-primaryActive: var(--service-purple-5);
   --background-image-primaryFocus: var(--primary-purple-40);
   --background-image-primaryTransparent: var(--service-purple-transparent);
+  /* Page background color (Figma colors/bg/bg-primary). Backs .app-background
+     and rings the stacked-badge icons (IconStack), which must match the page —
+     not the surface they sit on — to read as punched-out circles. Changing the
+     dark value requires re-baking the pre-blended background image below. */
+  --color-pageBackground: #090420;
   /* Dark page background (Figma 5010:6624): a bottom fade into the solid
      backdrop over the sky image. The image is pre-baked — sunset sky blended
      (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
@@ -430,6 +449,7 @@
     --color-primary-bright-start: rgba(130, 112, 245);
     --color-primary-bright-end: rgba(148, 131, 248);
 
+    --color-pageBackground: #f7fbff;
     /* Light page background (Figma 5124:25430): bottom fade + daytime sky
        image over a pale blue base gradient (visible only while the image
        loads, since the image is opaque and covers the layer). */
@@ -536,7 +556,7 @@
   inset: 0;
   z-index: -10;
   pointer-events: none;
-  background-color: #090420;
+  background-color: var(--color-pageBackground);
   background-image: var(--background-image-app-background);
   background-repeat: no-repeat;
   background-size: auto, cover;
@@ -545,7 +565,6 @@
     center top;
 }
 [data-theme='light'] .app-background {
-  background-color: #f7fbff;
   background-size: auto, cover, auto;
   background-position: center;
 }

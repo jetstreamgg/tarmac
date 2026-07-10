@@ -169,6 +169,7 @@ export function ClaimableRewardsTable() {
       <div className="flex justify-end">
         <Button
           variant="primary"
+          size="m"
           disabled={!hasSelection || !claimRewards.prepared}
           onClick={() =>
             launch({

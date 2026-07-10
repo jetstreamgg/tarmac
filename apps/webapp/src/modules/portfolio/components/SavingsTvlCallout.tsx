@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { SimulateEarningsModal } from './SimulateEarningsModal';
 
@@ -14,8 +15,8 @@ export function SavingsTvlCallout({ tvlUsd, savingsRate }: { tvlUsd: number; sav
   const [open, setOpen] = useState(false);
 
   return (
-    <div
-      className="bg-container flex flex-col gap-4 rounded-3xl border p-6 bg-blend-overlay backdrop-blur-[50px] md:flex-row md:items-center md:justify-between md:p-8"
+    <Card
+      className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between md:p-8"
       data-testid="savings-tvl-callout"
     >
       <div className="flex flex-col gap-2">
@@ -33,11 +34,11 @@ export function SavingsTvlCallout({ tvlUsd, savingsRate }: { tvlUsd: number; sav
         </Text>
       </div>
 
-      <Button variant="primary" className="shrink-0" onClick={() => setOpen(true)}>
+      <Button variant="primary" size="l" className="shrink-0" onClick={() => setOpen(true)}>
         <Trans>Simulate earnings</Trans>
       </Button>
 
       <SimulateEarningsModal open={open} onOpenChange={setOpen} savingsRate={savingsRate} />
-    </div>
+    </Card>
   );
 }

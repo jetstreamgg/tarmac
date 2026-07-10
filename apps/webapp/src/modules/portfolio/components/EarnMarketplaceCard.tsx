@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
-import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import type { EarnProductRow, EarnRiskTier } from '@/hooks';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { RiskTierMeter } from '@/components/product/RiskMeter';
 import { productIconSymbol, productRingColor } from '@/components/product/productVisuals';
@@ -23,10 +24,7 @@ const RISK_LABEL: Record<EarnRiskTier, ReactNode> = {
  */
 export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onStart: () => void }) {
   return (
-    <div
-      className="bg-container flex h-full flex-col gap-8 rounded-3xl border p-5 bg-blend-overlay backdrop-blur-[50px]"
-      data-testid="earn-marketplace-card"
-    >
+    <Card className="flex h-full flex-col gap-8 p-5" data-testid="earn-marketplace-card">
       <ProductTokenIcon
         symbol={productIconSymbol(row)}
         ringColor={productRingColor(row)}
@@ -56,26 +54,20 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
           </div>
         </Stat>
         <Stat label={<Trans>Supply</Trans>}>
-          <div className="flex -space-x-1">
-            {row.supplyTokens.map(symbol => (
-              <span key={symbol} className="ring-container inline-flex rounded-full ring-2">
-                <TokenIcon token={{ symbol }} width={20} showChainIcon={false} className="h-5 w-5" />
-              </span>
-            ))}
-          </div>
+          <TokenIconStack symbols={row.supplyTokens} size={20} />
         </Stat>
       </div>
 
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="l"
+        className="w-full"
         onClick={onStart}
-        className="text-text hover:text-textSecondary flex w-full items-center justify-between border-t pt-4 text-sm font-medium transition-colors"
         data-testid="earn-marketplace-card-start"
       >
         <Trans>Start earning</Trans>
-        <ArrowRight className="h-4 w-4" />
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }
 

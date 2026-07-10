@@ -3,6 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { formatDecimalPercentage, formatNumber, formatUsd } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { STABLECOIN_PEG_BADGE, type IdleSupplyInfo, type IdleToken } from '../helpers/idleView';
@@ -37,7 +38,7 @@ export function IdleStablecoinsTable({
         <span className={ACTION_COL} aria-hidden />
       </div>
 
-      <div className="bg-container divide-borderPrimary divide-y rounded-3xl border bg-blend-overlay backdrop-blur-[50px]">
+      <Card className="divide-borderPrimary divide-y p-0">
         {tokens.map(token => {
           const info = supplyInfo.get(token.symbol);
           const pegBadge = STABLECOIN_PEG_BADGE[token.symbol];
@@ -77,13 +78,18 @@ export function IdleStablecoinsTable({
                 </Text>
               </div>
 
-              <Button variant="primary" className={ACTION_COL} onClick={() => onSupply(token.symbol)}>
+              <Button
+                variant="primary"
+                size="m"
+                className={ACTION_COL}
+                onClick={() => onSupply(token.symbol)}
+              >
                 <Trans>Supply</Trans>
               </Button>
             </div>
           );
         })}
-      </div>
+      </Card>
     </div>
   );
 }

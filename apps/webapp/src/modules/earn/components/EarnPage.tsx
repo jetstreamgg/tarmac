@@ -10,6 +10,7 @@ import { QueryParams } from '@/lib/constants';
 import { retainOnNavigate, useAppSearchParams } from '@/lib/navigation';
 import { Heading } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { IconStack, TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
 import { productIconSymbol } from '@/components/product/productVisuals';
@@ -119,23 +120,9 @@ export function EarnPage() {
           row.kind === 'vault' && row.id.startsWith('vault-morpho') ? (
             <Morpho className="h-3 w-3 rounded-sm" />
           ) : undefined,
-        supply: (
-          <span className="flex -space-x-1">
-            {row.supplyTokens.map(symbol => (
-              <TokenIcon key={symbol} token={{ symbol }} width={14} className="h-3.5 w-3.5" />
-            ))}
-          </span>
-        ),
+        supply: <TokenIconStack symbols={row.supplyTokens} size={14} />,
         maturityLabel: row.maturity ? maturityFormatter.format(new Date(row.maturity * 1000)) : undefined,
-        network: (
-          <div className="flex -space-x-1.5">
-            {row.networks.map(id => (
-              <span key={id} className="inline-flex">
-                {getChainIcon(id, 'h-5 w-5')}
-              </span>
-            ))}
-          </div>
-        ),
+        network: <IconStack size={20}>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>,
         risk: row.risk,
         rate: row.rate.formatted,
         rate30d: row.rate30d?.formatted ?? NO_VALUE,

@@ -3,6 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { useOverallSkyData, useUsdsDaiData } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { PortfolioTotalsChart } from './PortfolioTotalsChart';
 
@@ -36,9 +37,9 @@ export function PortfolioStatistics() {
         <Trans>Statistics</Trans>
       </Heading>
 
-      <div className="bg-container rounded-3xl border p-6 bg-blend-overlay backdrop-blur-[50px]">
-        {/* The detail Chart ships its own bg-panel card (a white box in light
-            mode); flatten it so the chart blends into this statistics card. */}
+      <Card className="p-6">
+        {/* The detail Chart ships its own Card surface; flatten it so the
+            chart blends into this statistics card. */}
         <div className="[&_[data-testid=portfolio-totals-chart]]:border-0! [&_[data-testid=portfolio-totals-chart]]:bg-transparent! [&_[data-testid=portfolio-totals-chart]]:backdrop-blur-none">
           <PortfolioTotalsChart />
         </div>
@@ -51,13 +52,13 @@ export function PortfolioStatistics() {
             <Stat label={<Trans>Savings TVL</Trans>} value={savingsTvl} />
             <Stat label={<Trans>Rewards TVL</Trans>} value={rewardsTvl} />
           </div>
-          <Button asChild variant="secondary" className="w-fit">
+          <Button asChild variant="primary" size="l" className="w-fit">
             <a href={INSIGHTS_URL} target="_blank" rel="noreferrer">
               <Trans>Get more insights</Trans>
             </a>
           </Button>
         </div>
-      </div>
+      </Card>
     </section>
   );
 }

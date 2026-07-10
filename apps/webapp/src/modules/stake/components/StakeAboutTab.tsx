@@ -6,6 +6,7 @@ import { getEtherscanLink } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { Button } from '@/components/ui/button';
+import { Card as CardSurface } from '@/components/ui/card';
 import { StakeEngineCard } from './StakeEngineCard';
 
 // Corpus-fed About copy (PRD Decision 11): never hardcode Figma text — the body
@@ -15,9 +16,9 @@ const ABOUT_BANNER_ID = 'about-the-staking-engine';
 
 function Card({ children, testId }: { children: React.ReactNode; testId: string }) {
   return (
-    <div data-testid={testId} className="bg-panel rounded-card flex flex-col gap-4 p-6 backdrop-blur-2xl">
+    <CardSurface data-testid={testId} className="flex flex-col gap-4 p-6">
       {children}
-    </div>
+    </CardSurface>
   );
 }
 
@@ -76,13 +77,8 @@ export function StakeAboutTab() {
 
         <div data-testid="stake-about-links" className="grid grid-cols-3 gap-4">
           {links.map(({ label, href, icon }, i) => (
-            <Button
-              key={i}
-              variant="outline"
-              className="border-border h-12 w-full gap-2 rounded-full bg-white/[0.03] hover:bg-white/[0.06]"
-              asChild
-            >
-              <a href={href} target="_blank" rel="noopener noreferrer" className="justify-center gap-2">
+            <Button key={i} variant="secondary" size="l" className="w-full" asChild>
+              <a href={href} target="_blank" rel="noopener noreferrer">
                 {icon}
                 {label}
               </a>

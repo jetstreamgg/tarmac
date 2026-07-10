@@ -7,13 +7,26 @@ import { cn } from '@/lib/cn';
 // App look — canonical, unchanged.
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-[background-color,background-image,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
+  // --tw-gradient-from/to are @property-registered colors, so listing them
+  // here lets gradient-stop changes (the primary/secondary state fills)
+  // cross-fade; background-image itself never interpolates.
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-[background-color,background-image,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
   {
     variants: {
       variant: {
         default: 'bg-primary text-text hover:bg-primaryHover active:bg-primaryActive focus:bg-primaryFocus',
+        // Design-system recipes (Figma 5010:7958). Every state keeps the
+        // gradient and only moves the stop colors (solid fills = equal stops):
+        // background-image can't interpolate, so swapping the gradient out for
+        // a plain color would flash transparent mid-transition, while the
+        // @property-registered stops cross-fade. Focus ring hugs the edge
+        // (offset-0 overrides base).
+        // bg-origin-border spans the gradient across the border box: the
+        // translucent border must blend over the local gradient color (Figma
+        // fill + inner stroke); by default the gradient tiles from the padding
+        // box, wrapping the opposite end's color into the border ring.
         primary:
-          'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 bg-blend-overlay hover:bg-white/10 focus:border-transparent focus:bg-white/15',
+          'rounded-full border border-glassBorder bg-origin-border bg-linear-to-b from-button-gradient-start to-button-gradient-end text-fgConsistent hover:from-brandHover hover:to-brandHover active:from-brandPressed active:to-brandPressed focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary',
         primaryAlt:
           'bg-radial-(--gradient-position) from-primary-alt-start/100 to-primary-alt-end/100 border text-text hover:from-primary-alt-start/60 hover:to-primary-alt-end/60 active:from-primary-alt-start/45 active:to-primary-alt-end/45 focus:from-primary-alt-start/45 focus:to-primary-alt-end/45 disabled:from-primary-alt-start/35 disabled:to-primary-alt-end/35',
         connectPrimary:
@@ -21,7 +34,7 @@ const buttonVariants = cva(
         connect:
           'bg-radial-(--gradient-position) text-text border border-[rgb(127,92,246)] from-primary-bright-start/100 to-primary-bright-end/100 hover:from-primary-bright-start/60 hover:to-primary-bright-end/60 hover:border-[rgb(101,70,222)] focus:from-primary-bright-start/40 focus:to-primary-bright-end/40 focus:border-[rgb(92,62,209)]',
         secondary:
-          'bg-secondary text-text hover:bg-secondaryHover active:bg-secondaryActive, focus:bg-secondaryFocus',
+          'rounded-full border border-glassBadge bg-origin-border bg-linear-to-b from-white/0 to-white/8 text-text hover:from-glassBadge hover:to-glassBadge active:from-glassBorder active:to-glassBorder focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary',
         pill: 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text rounded-full hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 bg-blend-overlay hover:bg-white/10 focus:border-transparent focus:bg-white/15 active:bg-white/15',
         chip: 'bg-secondary text-text rounded-full hover:bg-secondaryHover active:bg-secondaryActive, focus:bg-secondaryFocus',
         link: 'text-textSecondary no-underline hover:text-white light:hover:text-text active:text-[rgba(198,194,255,0.5)]',
@@ -44,7 +57,14 @@ const buttonVariants = cva(
         xs: 'h-6 rounded-full px-2 py-1 text-xs',
         sm: 'h-9 rounded-full px-2',
         large: 'p-4',
-        icon: 'h-10 w-10'
+        icon: 'h-10 w-10',
+        // Design-system scale (Figma XL/L/M/S). Figma pads icons tighter than
+        // text (icon inset 12px vs text 20px on xl/l), so edge svg children
+        // pull themselves in with negative margins instead of an icon-slot API.
+        xl: 'h-14 gap-2 rounded-full px-5 font-circle text-base leading-[18px] tracking-[-0.32px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-2 [&>svg:last-child]:-mr-2',
+        l: 'h-12 gap-2 rounded-full px-5 font-circle text-sm leading-4 tracking-[-0.28px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-2 [&>svg:last-child]:-mr-2',
+        m: 'h-10 gap-2 rounded-full px-4 font-circle text-sm leading-4 tracking-[-0.28px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-2 [&>svg:last-child]:-mr-2',
+        s: 'h-8 gap-1 rounded-full px-2.5 font-circle text-sm leading-4 tracking-[-0.28px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-1 [&>svg:last-child]:-mr-1'
       }
     },
     defaultVariants: {
@@ -54,15 +74,66 @@ const buttonVariants = cva(
   }
 );
 
+// Loading-state glyph (Figma "Loader"): the static Figma asset gives the
+// three-dot geometry; the staggered pulse makes it read as busy.
+const ButtonLoader = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    className={className}
+  >
+    <circle cx="2.667" cy="8.667" r="1.333" fill="currentColor" className="animate-pulse" />
+    <circle
+      cx="8"
+      cy="6.667"
+      r="1.333"
+      fill="currentColor"
+      className="animate-pulse [animation-delay:200ms]"
+    />
+    <circle
+      cx="13.333"
+      cy="8.667"
+      r="1.333"
+      fill="currentColor"
+      className="animate-pulse [animation-delay:400ms]"
+    />
+  </svg>
+);
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /** Design-system loading state: disables the button (the disabled recipe
+   *  doubles as Figma State=Loading) and prepends the dots loader. */
+  loading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading = false, disabled, children, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
-    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {/* Slot requires a single element child, so the loader only renders on real buttons */}
+        {loading && !asChild ? (
+          <>
+            {/* span wrapper keeps the loader out of the [&>svg] icon sizing rules (xl uses a 24px loader) */}
+            <span className={cn('shrink-0', size === 's' ? '-ml-1' : '-ml-2')}>
+              <ButtonLoader className={size === 'xl' ? 'size-6' : 'size-4'} />
+            </span>
+            {children}
+          </>
+        ) : (
+          children
+        )}
+      </Comp>
+    );
   }
 );
 Button.displayName = 'Button';

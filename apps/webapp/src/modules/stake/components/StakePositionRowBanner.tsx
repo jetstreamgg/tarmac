@@ -131,11 +131,17 @@ export function StakePositionRowBanner({
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <Button variant="primary" onClick={() => onRemediate('stake')} data-testid="stake-warning-stake-cta">
+        <Button
+          variant="primary"
+          size="m"
+          onClick={() => onRemediate('stake')}
+          data-testid="stake-warning-stake-cta"
+        >
           <Trans>Stake SKY</Trans>
         </Button>
         <Button
           variant="secondary"
+          size="m"
           onClick={() => onRemediate('repay')}
           data-testid="stake-warning-repay-cta"
         >

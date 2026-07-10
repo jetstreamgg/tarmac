@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
@@ -290,17 +291,17 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
                 <>
                   <span className="text-text flex items-center gap-2 text-3xl font-medium tracking-tight">
                     {formatUsd(claimableUsd)}
-                    <span className="flex items-center -space-x-1">
+                    <IconStack size={20}>
                       {claims.map(claim => (
                         <TokenIcon
                           key={claim.contractAddress}
                           token={{ symbol: claim.symbol }}
                           width={20}
-                          className="h-5 w-5"
+                          className="h-full w-full"
                           showChainIcon={false}
                         />
                       ))}
-                    </span>
+                    </IconStack>
                   </span>
                   <span className="text-textSecondary text-xs">
                     ({claims.map(claim => claim.symbol).join(', ')})
@@ -357,6 +358,7 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
 
           <Button
             variant="primary"
+            size="xl"
             className="w-full"
             onClick={() => recovery.launch()}
             disabled={ctaDisabled}
