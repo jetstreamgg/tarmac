@@ -225,12 +225,11 @@ export function PositionDetailsModal({
               )}
             </DialogTitle>
             <Button
-              variant="ghost"
-              size="icon"
+              variant="secondary"
+              size="iconM"
               onClick={onClose}
               aria-label={t`Close`}
               data-testid="stake-position-details-close"
-              className="bg-surfaceAlt h-9 w-9 rounded-full"
             >
               <X className="h-4 w-4" />
             </Button>

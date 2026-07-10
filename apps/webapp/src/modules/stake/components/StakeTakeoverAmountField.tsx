@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { cn } from '@/lib/cn';
+import { buttonVariants } from '@/components/ui/button';
 import { formatAmountForInput, parseAmountText, sanitizeAmountText } from '../lib/amountInput';
 
 const PERCENT_CHIPS = [25, 50, 100] as const;
@@ -78,13 +79,19 @@ export function StakeTakeoverAmountField({
         {onPercentClick && (
           <div className="flex shrink-0 items-center gap-1.5">
             {PERCENT_CHIPS.map(percent => (
+              // Design-system Button / Mini (Figma 5051:168712); the base
+              // recipe's solid disabled fill is swapped back for the field's
+              // subtler faded look.
               <button
                 key={percent}
                 type="button"
                 disabled={disabled}
                 onClick={() => onPercentClick(percent)}
                 data-testid={`${dataTestId}-percent-${percent}`}
-                className="border-borderPrimary text-textSecondary hover:text-text rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+                className={cn(
+                  buttonVariants({ variant: 'mini', size: 'mini' }),
+                  'disabled:text-text disabled:bg-transparent disabled:opacity-50'
+                )}
               >
                 {percent}%
               </button>

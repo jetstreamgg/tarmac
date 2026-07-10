@@ -3,6 +3,7 @@ import { t } from '@lingui/core/macro';
 import { ChevronDown } from 'lucide-react';
 import { useConnection, useDisconnect, useEnsAvatar, useEnsName } from 'wagmi';
 import { mainnet } from 'viem/chains';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { TermsModal } from '@/modules/ui/components/TermsModal';
@@ -44,14 +45,18 @@ export function WalletChip() {
         connectButton
       ) : isConnected && !!address ? (
         <>
+          {/* Wallet type of Button / Navbar (Figma 5010:29059): the drawer is
+              not a Radix trigger, so data-state carries the open recipe and
+              the chevron flip by hand. */}
           <Button
-            variant="connect"
+            variant="navbar"
+            size="navbarWallet"
+            data-state={showDrawer ? 'open' : 'closed'}
             onClick={() => setShowDrawer(true)}
-            className="border-borderPrimary flex h-10 items-center gap-2 rounded-full border px-3"
           >
             <CustomAvatar address={address} size={24} />
             <Text className="hidden sm:inline">{`${isSafeWallet ? 'safe:' : ''}${ensName || formatAddress(address)}`}</Text>
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className={cn('h-4 w-4 transition-transform', showDrawer && 'rotate-180')} />
           </Button>
           <WalletPreviewDrawer
             isOpen={showDrawer}

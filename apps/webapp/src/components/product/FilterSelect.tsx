@@ -1,4 +1,6 @@
 import { ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import { buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export type FilterOption = { value: string; label: ReactNode };
@@ -28,9 +30,17 @@ export function FilterSelect({
     'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
   return (
     <Select value={selected} onValueChange={onChange}>
+      {/* Design-system Button / Dropdown, size S (Figma 5019:4105). The
+          shadcn trigger's own h-10/w-full/bg and its 16px half-opacity chevron
+          are overridden here rather than editing the vendored component; the
+          [&>svg] rules only reach the trigger's direct chevron child, not
+          icons inside option labels. */}
       <SelectTrigger
         data-testid={testId}
-        className="border-borderPrimary text-text bg-secondary hover:bg-surfaceAlt h-8 w-auto gap-1.5 rounded-full px-3 text-sm transition-colors"
+        className={cn(
+          buttonVariants({ variant: 'dropdown', size: 'dropdownS' }),
+          'h-auto w-auto bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
+        )}
       >
         <SelectValue />
       </SelectTrigger>

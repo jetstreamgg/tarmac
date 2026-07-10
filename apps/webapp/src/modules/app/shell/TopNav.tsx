@@ -1,8 +1,10 @@
 import { ComponentType, MouseEvent, ReactNode, useCallback, useState } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useChainId } from 'wagmi';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { cn } from '@/lib/cn';
+import { buttonVariants } from '@/components/ui/button';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
 import { Balances, Savings, StakeSky, Trade } from '@/modules/icons';
 import { Intent } from '@/lib/enums';
@@ -79,8 +81,9 @@ function useActiveDestinationPath(): RoutePath | null {
   return DESTINATIONS.find(d => isUnderDestination(intentPath, d.path))?.path ?? null;
 }
 
-const navItemClasses =
-  'nav-pill text-text relative flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors';
+// Design-system Button / Navbar (Figma 5010:29059, Default type); active
+// styling keys off the link's aria-current="page".
+const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'relative');
 
 const moreItemClasses =
   'text-textSecondary hover:text-text hover:bg-bgHover rounded-md px-3 py-2 text-left text-sm transition-colors';
@@ -94,12 +97,14 @@ function MoreMenu() {
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
+      {/* Menu type of Button / Navbar: Radix supplies data-state=open for the
+          active recipe, and the glyph flips hamburger → X while open. */}
       <PopoverTrigger
         data-testid="nav-more"
         aria-label="More"
-        className="text-textSecondary hover:text-text border-borderPrimary flex h-10 w-10 items-center justify-center rounded-full border transition-colors"
+        className={cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'w-10 px-0')}
       >
-        <Menu size={16} />
+        {isOpen ? <X size={16} /> : <Menu size={16} />}
       </PopoverTrigger>
       <PopoverContent align="end" className="flex w-60 flex-col gap-1 p-2">
         <div className="flex items-center gap-1 px-1">
@@ -207,7 +212,7 @@ export function TopNav() {
               aria-current={isActive ? 'page' : undefined}
               className={navItemClasses}
             >
-              <Icon className="nav-icon h-5 w-5 shrink-0" />
+              <Icon className="nav-icon h-4 w-4 shrink-0" />
               {destination.label}
               {destination.intents.some(showNewDot) && (
                 <span

@@ -100,12 +100,11 @@ export function TakeoverShell({
         <div className="flex items-center gap-3">
           {onBack && (
             <Button
-              variant="ghost"
-              size="icon"
+              variant="secondary"
+              size="iconM"
               onClick={onBack}
               aria-label="Back"
               data-testid={`${dataTestId}-back`}
-              className="bg-surfaceAlt h-9 w-9 rounded-full"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -120,12 +119,11 @@ export function TakeoverShell({
           )}
         </div>
         <Button
-          variant="ghost"
-          size="icon"
+          variant="secondary"
+          size="iconM"
           onClick={onClose}
           aria-label="Close"
           data-testid={`${dataTestId}-close`}
-          className="bg-surfaceAlt h-9 w-9 rounded-full"
         >
           <X className="h-4 w-4" />
         </Button>

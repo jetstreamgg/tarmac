@@ -50,7 +50,23 @@ const buttonVariants = cva(
           'bg-black/20 hover:bg-radial-(--gradient-position) hover:from-primary-alt-start/70 hover:to-primary-alt-end/70 active:bg-radial-(--gradient-position) active:from-primary-alt-start/50 active:to-primary-alt-end/50 text-text text-[13px] font-normal leading-4 disabled:pointer-events-auto disabled:cursor-not-allowed font-graphik',
         suggest:
           'bg-brandLight/10 hover:bg-radial-(--gradient-position) hover:from-primary-start/50 hover:to-primary-end/50 active:bg-radial-(--gradient-position) active:from-primary-start/35 active:to-primary-end/35 text-text',
-        light: 'bg-[#EEDEFF] text-[#39128D] text-base'
+        light: 'bg-[#EEDEFF] text-[#39128D] text-base',
+        // Design-system Button / Navbar (Figma 5010:29059): glass-border pill;
+        // hover only deepens the border (no fill), active = the shared brand2
+        // gradient. Active answers both aria-current="page" (nav links) and
+        // data-state=open (Radix triggers / manual drawer state).
+        navbar:
+          'text-text border border-glassBorder bg-origin-border hover:border-borderTertiary focus-visible:ring-focusRing focus-visible:ring-offset-0 aria-[current=page]:border-borderBrandDim aria-[current=page]:bg-linear-to-b aria-[current=page]:from-brand2-start aria-[current=page]:to-brand2-end data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
+        // Design-system Button / Dropdown (Figma 5019:4105): same glass pill,
+        // but hover also fills (bg-tertiary) and active means "menu open".
+        dropdown:
+          'text-text border border-glassBorder bg-origin-border hover:border-borderTertiary hover:bg-glassBadge focus-visible:ring-focusRing focus-visible:ring-offset-0 data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
+        // Design-system Button / Mini (Figma 5051:168712): compact chip.
+        // Hover/pressed drop the border in Figma; border-transparent keeps the
+        // geometry stable while the fill shows through (bg paints the border
+        // box by default). Pressed 0.2 fill reuses glassBorder as a fill, same
+        // call as the secondary button's pressed state.
+        mini: 'text-text border border-glassBorder hover:border-transparent hover:bg-glassBadge active:border-transparent active:bg-glassBorder focus-visible:ring-focusRing focus-visible:ring-offset-0'
       },
       size: {
         default: 'h-10 px-4 py-2',
@@ -64,7 +80,30 @@ const buttonVariants = cva(
         xl: 'h-14 gap-2 rounded-full px-5 font-circle text-base leading-[18px] tracking-[-0.32px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-2 [&>svg:last-child]:-mr-2',
         l: 'h-12 gap-2 rounded-full px-5 font-circle text-sm leading-4 tracking-[-0.28px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-2 [&>svg:last-child]:-mr-2',
         m: 'h-10 gap-2 rounded-full px-4 font-circle text-sm leading-4 tracking-[-0.28px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-2 [&>svg:last-child]:-mr-2',
-        s: 'h-8 gap-1 rounded-full px-2.5 font-circle text-sm leading-4 tracking-[-0.28px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-1 [&>svg:last-child]:-mr-1'
+        s: 'h-8 gap-1 rounded-full px-2.5 font-circle text-sm leading-4 tracking-[-0.28px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg:first-child]:-ml-1 [&>svg:last-child]:-mr-1',
+        // Geometry mates for the navbar/dropdown/mini variants (all Label 5).
+        // The wallet chip trades the 12px inline padding for 8px all around
+        // (its 24px avatar fills the pill); menu triggers use `navbar` and
+        // come out square from the 16px glyph alone.
+        navbar:
+          'h-10 gap-1.5 rounded-full px-3 py-2 font-circle text-sm leading-4 font-medium tracking-[-0.28px] [&_svg]:shrink-0',
+        navbarWallet:
+          'h-10 gap-1.5 rounded-full p-2 font-circle text-sm leading-4 font-medium tracking-[-0.28px] [&_svg]:shrink-0',
+        // Dropdown S trims the trailing padding so the chevron tucks in;
+        // Network M/XS pad evenly around a leading 24/16px token icon.
+        dropdownS:
+          'gap-1.5 rounded-full py-2 pr-2 pl-3 font-circle text-sm leading-4 font-medium tracking-[-0.28px] [&_svg]:shrink-0',
+        dropdownM:
+          'gap-2 rounded-full p-2 font-circle text-sm leading-4 font-medium tracking-[-0.28px] [&_svg]:shrink-0',
+        dropdownXs:
+          'gap-1 rounded-full p-1.5 font-circle text-sm leading-4 font-medium tracking-[-0.28px] [&_svg]:shrink-0',
+        mini: 'gap-1 rounded-full px-2 py-1.5 font-circle text-sm leading-4 font-medium tracking-[-0.28px]',
+        // Design-system Button / Icon squares (Figma 5010:7987), pairing with
+        // the primary/secondary variants: 56/48/40/32px with 20/16/16/12 glyphs.
+        iconXl: 'size-14 rounded-full [&>svg]:size-5 [&>svg]:shrink-0',
+        iconL: 'size-12 rounded-full [&>svg]:size-4 [&>svg]:shrink-0',
+        iconM: 'size-10 rounded-full [&>svg]:size-4 [&>svg]:shrink-0',
+        iconS: 'size-8 rounded-full [&>svg]:size-3 [&>svg]:shrink-0'
       }
     },
     defaultVariants: {
