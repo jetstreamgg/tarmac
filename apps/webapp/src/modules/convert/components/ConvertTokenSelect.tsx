@@ -1,4 +1,6 @@
 import { t } from '@lingui/core/macro';
+import { cn } from '@/lib/cn';
+import { buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -36,10 +38,15 @@ export function ConvertTokenSelect({
 
   return (
     <Select value={value} onValueChange={next => onChange(next as ConvertTokenSymbol)}>
+      {/* Design-system Button / Dropdown, size S (Figma 5019:4105); same
+          shadcn-trigger overrides as FilterSelect. */}
       <SelectTrigger
         data-testid={dataTestId}
         aria-label={t`Select token`}
-        className="text-text border-glassBorder h-auto w-auto shrink-0 gap-1 rounded-full border bg-transparent p-1.5 font-medium focus:ring-0 focus:ring-offset-0"
+        className={cn(
+          buttonVariants({ variant: 'dropdown', size: 'dropdownS' }),
+          'h-auto w-auto shrink-0 bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
+        )}
       >
         <SelectValue>
           <TokenOption symbol={value} />
@@ -47,7 +54,7 @@ export function ConvertTokenSelect({
       </SelectTrigger>
       <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
         {CONVERT_TOKEN_SYMBOLS.map(symbol => (
-          <SelectItem key={symbol} value={symbol} className={itemClasses}>
+          <SelectItem key={symbol} value={symbol} hideIndicator className={itemClasses}>
             <TokenOption symbol={symbol} />
           </SelectItem>
         ))}

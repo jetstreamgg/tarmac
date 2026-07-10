@@ -56,7 +56,7 @@ const buttonVariants = cva(
         // gradient. Active answers both aria-current="page" (nav links) and
         // data-state=open (Radix triggers / manual drawer state).
         navbar:
-          'text-text border border-glassBorder bg-origin-border hover:border-borderTertiary focus-visible:ring-focusRing focus-visible:ring-offset-0 aria-[current=page]:border-borderBrandDim aria-[current=page]:bg-linear-to-b aria-[current=page]:from-brand2-start aria-[current=page]:to-brand2-end data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
+          'text-fgPrimary border border-glassBorder bg-origin-border hover:border-borderTertiary focus-visible:ring-focusRing focus-visible:ring-offset-0 aria-[current=page]:border-borderBrandDim aria-[current=page]:bg-linear-to-b aria-[current=page]:from-brand2-start aria-[current=page]:to-brand2-end data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
         // Design-system Button / Dropdown (Figma 5019:4105): same glass pill,
         // but hover also fills (bg-tertiary) and active means "menu open".
         dropdown:

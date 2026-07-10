@@ -1,15 +1,13 @@
 import { useMemo, useState } from 'react';
-import { formatUnits, parseEther } from 'viem';
+import { parseEther } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import { getIlkName, useCollateralData, useStakeHistoricData } from '@/hooks';
+import { useStakeHistoricData } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
+import { useStakeRewardsRate } from '../hooks/useStakeRewardsRate';
 
 type Metric = 'rate' | 'tvl';
-
-// borrowRate arrives as a decimal fraction (0.05 = 5%); the Chart plots percent units.
-const toPercent = (fraction: number) => fraction * 100;
 
 // toFixed(18) strips scientific notation before parseEther, matching legacy StakeChart.
 const toEtherScaled = (value: number) => parseEther(value.toFixed(18));
@@ -18,25 +16,33 @@ const toEtherScaled = (value: number) => parseEther(value.toFixed(18));
  * Statistics-tab chart card (hi-fi 486:31955): a `Current Rate` hero with a
  * `Rate | TVL` series toggle and a `1W/1M/1Y/All` range picker, rendered through
  * the shared Chart's `detail` variant. Both series ride the `useParseTvlChartData`
- * pipeline the legacy `StakeChart` demonstrates — the Rate series is scaled into
- * percent units. The rate HERO is the on-chain stability fee (what the protocol
- * actually charges, and what the details strip's identically-labeled stat shows),
- * not the charted analytics series' latest point — the two can lag apart; the
- * series value only stands in if the on-chain read fails. Read-only.
+ * pipeline the legacy `StakeChart` demonstrates. The Rate metric is the staking
+ * REWARDS rate — the highest-rate farm's history and latest value, the same
+ * figure the Sky Staking Engine promo card headlines (product call on the F1
+ * review; the borrow rate lives in the open/manage borrow cards instead). The
+ * rate hero reads that farm's latest datapoint, so hero and series agree by
+ * construction. Read-only.
  */
 export function StakeRateChart() {
   const [metric, setMetric] = useState<Metric>('rate');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
   const { data: historicData, isLoading, error } = useStakeHistoricData();
+  const {
+    series: rewardsSeries,
+    currentRate,
+    isLoading: rewardsLoading,
+    error: rewardsError
+  } = useStakeRewardsRate();
 
   const rateInput = useMemo(
     () =>
-      (historicData || []).map(item => ({
-        blockTimestamp: new Date(item.date).getTime() / 1000,
-        amount: toEtherScaled(toPercent(item.borrowRate))
+      rewardsSeries.map(item => ({
+        blockTimestamp: item.blockTimestamp,
+        // `rate` is a decimal fraction (0.05 = 5%); the Chart plots percent units.
+        amount: toEtherScaled(parseFloat(item.rate) * 100)
       })),
-    [historicData]
+    [rewardsSeries]
   );
   const tvlInput = useMemo(
     () =>
@@ -60,14 +66,8 @@ export function StakeRateChart() {
     [historicData]
   );
 
-  const { data: collateralData, isLoading: collateralLoading } = useCollateralData(getIlkName(2));
-  const stabilityFeePercent =
-    collateralData?.stabilityFee !== undefined
-      ? Number(formatUnits(collateralData.stabilityFee, 18)) * 100
-      : undefined;
-
   const isRate = metric === 'rate';
-  const displayValue = isRate ? stabilityFeePercent : mostRecent?.tvl;
+  const displayValue = isRate ? (currentRate !== null ? currentRate * 100 : undefined) : mostRecent?.tvl;
 
   return (
     <ErrorBoundary variant="small">
@@ -77,8 +77,8 @@ export function StakeRateChart() {
         // Brand indigo (Figma Components/Charts/bg-chart1), not the shared teal.
         color="#757dff"
         data={isRate ? rateData : tvlData}
-        isLoading={isLoading || (isRate && collateralLoading)}
-        error={error}
+        isLoading={isRate ? rewardsLoading : isLoading}
+        error={isRate ? rewardsError : error}
         isPercentage={isRate}
         prefix={isRate ? undefined : '$'}
         label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}

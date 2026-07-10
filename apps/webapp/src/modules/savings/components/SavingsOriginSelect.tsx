@@ -1,5 +1,7 @@
 import { t } from '@lingui/core/macro';
 import { TOKENS, type Token } from '@/hooks';
+import { cn } from '@/lib/cn';
+import { buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -68,10 +70,15 @@ export function SavingsOriginSelect({
 
   return (
     <Select value={value} onValueChange={next => onChange(next as OriginSymbol)} disabled={disabled}>
+      {/* Design-system Button / Dropdown, size S (Figma 5019:4105); same
+          shadcn-trigger overrides as FilterSelect. */}
       <SelectTrigger
         data-testid="savings-origin-select"
         aria-label={t`Select token`}
-        className="text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 font-medium focus:ring-0 focus:ring-offset-0"
+        className={cn(
+          buttonVariants({ variant: 'dropdown', size: 'dropdownS' }),
+          'h-auto w-auto shrink-0 bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
+        )}
       >
         <SelectValue>
           <OriginOption symbol={value} />
