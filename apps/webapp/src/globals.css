@@ -89,6 +89,21 @@
   --color-fgConsistent: #f2f3f7;
   --color-button-gradient-start: #2a197d;
   --color-button-gradient-end: #6a6cfb;
+  /* Design-system tabs tokens (Figma Tabs 5029:51846 / Tabs2 5039:73501 /
+     Tabs3 5043:59408): dark values are the Figma source values —
+     colors/border/border-tertiary (hover border),
+     colors/border/border-brand-dim-quaternary (active border),
+     colors/fg/fg-secondary (Tabs2 resting text), colors/fg/fg-brand-primary
+     (Tabs3 hover text) and the gradient-brand2 stops (the active-tab fill all
+     three families share). borderTertiary/fgSecondary get interim light values
+     in the light scope (G2 owns full parity); the brand-tinted ones read on
+     white as-is. */
+  --color-borderTertiary: rgba(188, 182, 239, 0.3);
+  --color-borderBrandDim: rgba(156, 160, 229, 0.4);
+  --color-fgSecondary: #a1a6c4;
+  --color-fgBrand: #757dff;
+  --color-brand2-start: rgba(148, 154, 255, 0.2);
+  --color-brand2-end: rgba(80, 77, 255, 0.2);
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
@@ -439,6 +454,10 @@
     --color-glassSurface: rgba(255, 255, 255, 0.5);
     --color-glassBadge: rgba(26, 24, 85, 0.06);
     --color-glassBorder: rgba(26, 24, 85, 0.2);
+
+    /* H5 tabs tokens (interim light values; G2 owns parity) */
+    --color-borderTertiary: rgba(26, 24, 85, 0.3);
+    --color-fgSecondary: rgba(26, 24, 85, 0.62);
     --color-flipSurface: rgba(255, 255, 255, 0.9);
     --color-flipRing: #e8ebfa;
 
