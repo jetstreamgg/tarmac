@@ -64,7 +64,9 @@ export function TableIconBox({
     <span
       className={cn(
         'flex size-9 shrink-0 items-center justify-center rounded-full',
-        variant === 'action' ? 'border-glassBorder border p-[2px]' : 'border-statusSuccessBorder border-[1.5px] p-px',
+        variant === 'action'
+          ? 'border-glassBorder border p-[2px]'
+          : 'border-statusSuccessBorder border-[1.5px] p-px',
         className
       )}
     >
@@ -115,12 +117,7 @@ function DotsIcon() {
 function CheckIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-      <path
-        d="M10 3L4.5 8.5L2 6"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -343,7 +340,7 @@ export function CellHash({ label, href }: { label: ReactNode; href: string }) {
       target="_blank"
       rel="noreferrer"
       onClick={event => event.stopPropagation()}
-      className="text-fgSecondary hover:text-fgPrimary flex w-fit items-center gap-1 font-graphik text-sm leading-[22px] font-normal tracking-normal transition-colors"
+      className="text-fgSecondary hover:text-fgPrimary font-graphik flex w-fit items-center gap-1 text-sm leading-[22px] font-normal tracking-normal transition-colors"
     >
       {label}
       <MoveUpRightIcon />

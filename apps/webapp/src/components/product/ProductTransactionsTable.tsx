@@ -60,7 +60,7 @@ function columnWidths<T>(columns: ProductTransactionColumn<T>[]): string[] {
 function StateRow({ colSpan, children }: { colSpan: number; children: ReactNode }) {
   return (
     <TableRow className="pointer-events-none">
-      <TableCell colSpan={colSpan} className="text-fgSecondary text-center font-graphik tracking-normal">
+      <TableCell colSpan={colSpan} className="text-fgSecondary font-graphik text-center tracking-normal">
         {children}
       </TableCell>
     </TableRow>

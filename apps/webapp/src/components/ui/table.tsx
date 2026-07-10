@@ -20,7 +20,7 @@ const Table = React.forwardRef<
     <table
       ref={ref}
       className={cn(
-        'w-full border-separate border-spacing-y-[2px] caption-bottom',
+        'w-full caption-bottom border-separate border-spacing-y-[2px]',
         '[&>tbody>tr:first-child>td:first-child]:rounded-tl-[24px] [&>tbody>tr:first-child>td:last-child]:rounded-tr-[24px] [&>tbody>tr:last-child>td:first-child]:rounded-bl-[24px] [&>tbody>tr:last-child>td:last-child]:rounded-br-[24px]',
         className
       )}
@@ -84,7 +84,7 @@ const TableHead = React.forwardRef<
     // 32px Figma header row. First column indents 28px (24px cell inset + 4
     // optical).
     className={cn(
-      'text-fgSecondary px-2 pt-0.5 pb-3 text-left align-middle font-graphik text-xs leading-[18px] font-normal first:pl-7 [&:has([role=checkbox])]:pr-0',
+      'text-fgSecondary font-graphik px-2 pt-0.5 pb-3 text-left align-middle text-xs leading-[18px] font-normal first:pl-7 [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}

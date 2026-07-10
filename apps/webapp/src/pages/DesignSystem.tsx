@@ -955,7 +955,14 @@ function TablesSection() {
             </CellSpecimenRow>
             <CellSpecimenRow name="Token">
               <CellToken
-                icon={<TokenIcon token={{ symbol: 'sUSDS' }} width={28} className="h-7 w-7" showChainIcon={false} />}
+                icon={
+                  <TokenIcon
+                    token={{ symbol: 'sUSDS' }}
+                    width={28}
+                    className="h-7 w-7"
+                    showChainIcon={false}
+                  />
+                }
                 title="Sky Savings"
                 subtitle={
                   <>
@@ -967,7 +974,14 @@ function TablesSection() {
             <CellSpecimenRow name="Token (active position, showMode + showDate)">
               <CellToken
                 active
-                icon={<TokenIcon token={{ symbol: 'sUSDS' }} width={28} className="h-7 w-7" showChainIcon={false} />}
+                icon={
+                  <TokenIcon
+                    token={{ symbol: 'sUSDS' }}
+                    width={28}
+                    className="h-7 w-7"
+                    showChainIcon={false}
+                  />
+                }
                 title="Pendle sUSDS"
                 titleSuffix={<Pendle className="h-4 w-4" />}
                 subtitle={
@@ -981,7 +995,14 @@ function TablesSection() {
             </CellSpecimenRow>
             <CellSpecimenRow name="Token Idle">
               <CellTokenIdle
-                icon={<TokenIcon token={{ symbol: 'USDS' }} width={28} className="h-7 w-7" showChainIcon={false} />}
+                icon={
+                  <TokenIcon
+                    token={{ symbol: 'USDS' }}
+                    width={28}
+                    className="h-7 w-7"
+                    showChainIcon={false}
+                  />
+                }
                 symbol="USDS"
                 badges={
                   <>
@@ -996,7 +1017,11 @@ function TablesSection() {
               <CellPosition icon={<Stake width={16} height={16} />} label="Position 1" />
             </CellSpecimenRow>
             <CellSpecimenRow name="Action">
-              <CellAction icon={<ArrowDownToLine className="size-4" />} label="Supply" sublabel="35 min ago" />
+              <CellAction
+                icon={<ArrowDownToLine className="size-4" />}
+                label="Supply"
+                sublabel="35 min ago"
+              />
             </CellSpecimenRow>
             <CellSpecimenRow name="Action and Position">
               <CellAction
@@ -1012,19 +1037,35 @@ function TablesSection() {
             </CellSpecimenRow>
             <CellSpecimenRow name="Product">
               <CellProduct
-                icon={<TokenIcon token={{ symbol: 'stUSDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                icon={
+                  <TokenIcon
+                    token={{ symbol: 'stUSDS' }}
+                    width={12}
+                    className="h-3 w-3"
+                    showChainIcon={false}
+                  />
+                }
                 label="Staked USDS"
               />
             </CellSpecimenRow>
             <CellSpecimenRow name="Amount with Token">
               <CellAmountWithToken
                 amount="$128.90"
-                icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                icon={
+                  <TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />
+                }
               />
             </CellSpecimenRow>
             <CellSpecimenRow name="Amount">
               <CellAmount
-                icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                icon={
+                  <TokenIcon
+                    token={{ symbol: 'USDS' }}
+                    width={12}
+                    className="h-3 w-3"
+                    showChainIcon={false}
+                  />
+                }
                 amount="1,000.00"
                 usd="$1,000.00"
               />
@@ -1069,7 +1110,12 @@ function TablesSection() {
                 <CellToken
                   active
                   icon={
-                    <TokenIcon token={{ symbol: 'sUSDS' }} width={28} className="h-7 w-7" showChainIcon={false} />
+                    <TokenIcon
+                      token={{ symbol: 'sUSDS' }}
+                      width={28}
+                      className="h-7 w-7"
+                      showChainIcon={false}
+                    />
                   }
                   title="Sky Savings"
                   subtitle={
@@ -1102,7 +1148,12 @@ function TablesSection() {
               <TableCell>
                 <CellToken
                   icon={
-                    <TokenIcon token={{ symbol: 'sUSDS' }} width={28} className="h-7 w-7" showChainIcon={false} />
+                    <TokenIcon
+                      token={{ symbol: 'sUSDS' }}
+                      width={28}
+                      className="h-7 w-7"
+                      showChainIcon={false}
+                    />
                   }
                   title="Pendle sUSDS"
                   titleSuffix={<Pendle className="h-4 w-4" />}
@@ -1136,7 +1187,12 @@ function TablesSection() {
               <TableCell>
                 <CellToken
                   icon={
-                    <TokenIcon token={{ symbol: 'USDS' }} width={28} className="h-7 w-7" showChainIcon={false} />
+                    <TokenIcon
+                      token={{ symbol: 'USDS' }}
+                      width={28}
+                      className="h-7 w-7"
+                      showChainIcon={false}
+                    />
                   }
                   title="USDS Flagship Vault"
                   subtitle={
@@ -1201,14 +1257,26 @@ function TablesSection() {
               <TableCell>
                 <CellProduct
                   icon={
-                    <TokenIcon token={{ symbol: 'stUSDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
+                    <TokenIcon
+                      token={{ symbol: 'stUSDS' }}
+                      width={12}
+                      className="h-3 w-3"
+                      showChainIcon={false}
+                    />
                   }
                   label="Staked USDS"
                 />
               </TableCell>
               <TableCell>
                 <CellAmount
-                  icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                  icon={
+                    <TokenIcon
+                      token={{ symbol: 'USDS' }}
+                      width={12}
+                      className="h-3 w-3"
+                      showChainIcon={false}
+                    />
+                  }
                   amount="1,000.00"
                   usd="$1,000.00"
                 />
@@ -1236,14 +1304,26 @@ function TablesSection() {
               <TableCell>
                 <CellProduct
                   icon={
-                    <TokenIcon token={{ symbol: 'sUSDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
+                    <TokenIcon
+                      token={{ symbol: 'sUSDS' }}
+                      width={12}
+                      className="h-3 w-3"
+                      showChainIcon={false}
+                    />
                   }
                   label="Sky Savings"
                 />
               </TableCell>
               <TableCell>
                 <CellAmount
-                  icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                  icon={
+                    <TokenIcon
+                      token={{ symbol: 'USDS' }}
+                      width={12}
+                      className="h-3 w-3"
+                      showChainIcon={false}
+                    />
+                  }
                   amount="500.00"
                   usd="$500.00"
                 />
@@ -1269,7 +1349,14 @@ function TablesSection() {
             <TableRow>
               <TableCell>
                 <CellTokenIdle
-                  icon={<TokenIcon token={{ symbol: 'USDS' }} width={28} className="h-7 w-7" showChainIcon={false} />}
+                  icon={
+                    <TokenIcon
+                      token={{ symbol: 'USDS' }}
+                      width={28}
+                      className="h-7 w-7"
+                      showChainIcon={false}
+                    />
+                  }
                   symbol="USDS"
                   badges={
                     <>
@@ -1282,7 +1369,14 @@ function TablesSection() {
               </TableCell>
               <TableCell>
                 <CellAmount
-                  icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                  icon={
+                    <TokenIcon
+                      token={{ symbol: 'USDS' }}
+                      width={12}
+                      className="h-3 w-3"
+                      showChainIcon={false}
+                    />
+                  }
                   amount="1,000.00"
                   usd="$1,000.00"
                 />
@@ -1300,7 +1394,14 @@ function TablesSection() {
               <TableCell>
                 <CellAmountWithToken
                   amount="$128.90"
-                  icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                  icon={
+                    <TokenIcon
+                      token={{ symbol: 'SKY' }}
+                      width={12}
+                      className="h-3 w-3"
+                      showChainIcon={false}
+                    />
+                  }
                 />
               </TableCell>
               <TableCell>
