@@ -1342,7 +1342,9 @@ function TablesSection() {
             <TableRow>
               <TableHead className="w-[40%]">Token</TableHead>
               <TableHead>Supplied</TableHead>
-              <TableHead className="w-[148px]" />
+              <TableHead className="w-[148px]">
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -121,12 +121,16 @@ export function ProductTransactionsTable<T>({
                 <Fragment key={rowKey(row)}>
                   <TableRow
                     data-testid={rowTestId?.(row)}
-                    role={onRowClick ? 'button' : undefined}
+                    // No role="button": overriding the native row role breaks
+                    // table navigation for assistive tech (CodeRabbit).
                     tabIndex={onRowClick ? 0 : undefined}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
                     onKeyDown={
                       onRowClick
                         ? event => {
+                            // Only activate on the row itself — Enter on a
+                            // nested link/button must keep its native action.
+                            if (event.target !== event.currentTarget) return;
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault();
                               onRowClick(row);

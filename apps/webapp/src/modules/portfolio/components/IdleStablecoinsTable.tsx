@@ -32,8 +32,13 @@ export function IdleStablecoinsTable({
             <TableHead className="w-[148px]">
               <Trans>Balance</Trans>
             </TableHead>
-            {/* The CTA column's header cell exists but stays empty (Figma). */}
-            <TableHead className="w-[148px]" />
+            {/* The CTA column's header stays visually empty (Figma) but keeps
+                an accessible name for screen readers. */}
+            <TableHead className="w-[148px]">
+              <span className="sr-only">
+                <Trans>Actions</Trans>
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

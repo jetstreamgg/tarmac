@@ -221,7 +221,7 @@ export function CellToken({
           {title}
           {titleSuffix}
         </span>
-        {subtitle && (
+        {subtitle != null && (
           <span className={cn(body6, 'text-fgSecondary flex items-center gap-1')}>{subtitle}</span>
         )}
       </span>
@@ -264,7 +264,7 @@ export function CellPosition({ icon, label }: { icon: ReactNode; label: ReactNod
   return (
     <span className="flex items-center gap-3">
       <TableIconBox variant="position">{icon}</TableIconBox>
-      <span className="text-fgPrimary">{label}</span>
+      <span className={cn(label5, 'text-fgPrimary')}>{label}</span>
     </span>
   );
 }
@@ -291,7 +291,7 @@ export function CellAction({
       <TableIconBox variant="action">{icon}</TableIconBox>
       <span className="flex flex-col gap-0.5">
         <span className={cn(compact ? label5 : label4, 'text-fgPrimary')}>{label}</span>
-        {sublabel && (
+        {sublabel != null && (
           <span className={cn(body6, 'text-fgSecondary flex items-center gap-1')}>{sublabel}</span>
         )}
       </span>
@@ -302,7 +302,7 @@ export function CellAction({
 /** Type=Product: 12px token logo + Label 5 product name. */
 export function CellProduct({ icon, label }: { icon?: ReactNode; label: ReactNode }) {
   return (
-    <span className="flex items-center gap-1 whitespace-nowrap">
+    <span className={cn(label5, 'text-fgPrimary flex items-center gap-1 whitespace-nowrap')}>
       {icon}
       {label}
     </span>
@@ -317,7 +317,7 @@ export function CellAmount({ icon, amount, usd }: { icon?: ReactNode; amount: Re
         {icon}
         {amount}
       </span>
-      {usd && <span className={cn(body6, 'text-fgSecondary')}>{usd}</span>}
+      {usd != null && <span className={cn(body6, 'text-fgSecondary')}>{usd}</span>}
     </span>
   );
 }
