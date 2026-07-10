@@ -104,6 +104,28 @@
   --color-fgBrand: #757dff;
   --color-brand2-start: rgba(148, 154, 255, 0.2);
   --color-brand2-end: rgba(80, 77, 255, 0.2);
+  /* Design-system form-control tokens (Figma Sliders 5246:16073 / Switch
+     5044:49116 / Checkbox 5044:49213 / Radio 5044:49317): dark values are the
+     Figma source values — colors/fg/fg-quaternary (disabled thumbs/glyphs),
+     colors/bg/bg-brand-quarternary (pressed checked fills),
+     colors/border/border-brand-dim-tertiary (unchecked control borders),
+     colors/border/border-quarternary (disabled radio center), the
+     gradient-slider stops and the components/slider palette (thumb center
+     dot + ring, max-marker line, min/next-step marker, filled range thumb).
+     None are overridden in the light scope yet (G2 owns light parity). */
+  --color-fgQuaternary: #4d4d6e;
+  --color-brandQuaternary: #3325ae;
+  --color-borderBrandDimTertiary: rgba(156, 160, 229, 0.3);
+  --color-borderQuarternary: rgba(188, 182, 239, 0.4);
+  --color-slider-brand-start: #504dff;
+  --color-slider-brand-end: #757dff;
+  --color-slider-yellow-start: #ff8a5c;
+  --color-slider-yellow-end: #ffc738;
+  --color-sliderDot: #1a192d;
+  --color-sliderRing: rgba(255, 255, 255, 0.2);
+  --color-sliderLine: #2a2a40;
+  --color-sliderMarker: #fe8b5b;
+  --color-sliderAmber: #ffc23b;
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;

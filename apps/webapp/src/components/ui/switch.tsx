@@ -2,12 +2,32 @@ import * as React from 'react';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import { cn } from '@/lib/cn';
 
-function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimitive.Root>) {
+// App look — design-system Switch (Figma 5044:49116). Sizes M (44×24, 20px
+// thumb — the default) and S (28×16, 12px thumb). Off = glass fill + glass
+// border; on = the shared brand gradient. Hover deepens the border, pressed
+// goes solid (bg-quarternary off / bg-brand-primary on, moving only the
+// gradient stops so the fill cross-fades), disabled drops the border and
+// greys the thumb.
+function Switch({
+  className,
+  size = 'default',
+  ...props
+}: React.ComponentProps<typeof SwitchPrimitive.Root> & { size?: 'default' | 'sm' }) {
   return (
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        'data-[state=checked]:from-primary-alt-start/100 data-[state=checked]:to-primary-alt-end/100 focus-visible:border-ring focus-visible:ring-ring/50 data-[state=unchecked]:from-primary-alt-start/30 data-[state=unchecked]:to-primary-alt-end/30 peer inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent bg-radial-(--gradient-position) shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
+        'group border-glassBorder bg-glassBadge peer inline-flex shrink-0 items-center rounded-full border bg-origin-border transition-all outline-none',
+        'hover:border-borderTertiary',
+        'data-[state=unchecked]:active:bg-glassBorder data-[state=unchecked]:active:border-transparent',
+        'data-[state=checked]:from-button-gradient-start data-[state=checked]:to-button-gradient-end data-[state=checked]:bg-linear-to-b',
+        'data-[state=checked]:active:from-brandHover data-[state=checked]:active:to-brandHover',
+        'focus-visible:ring-focusRing focus-visible:ring-1 focus-visible:ring-offset-0',
+        // Disabled overrides are stacked with the state variant: the plain
+        // disabled:from-* would lose the cascade to data-[state=checked]:from-*.
+        'disabled:bg-glassBorder disabled:pointer-events-none disabled:border-transparent',
+        'data-[state=checked]:disabled:from-glassBorder data-[state=checked]:disabled:to-glassBorder',
+        size === 'sm' ? 'h-4 w-7' : 'h-6 w-11',
         className
       )}
       {...props}
@@ -15,7 +35,10 @@ function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimi
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
         className={cn(
-          'pointer-events-none block size-4 rounded-full bg-white ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0'
+          'bg-fgConsistent group-data-[disabled]:bg-fgQuaternary pointer-events-none block rounded-full shadow-[0_1px_2px_0_rgba(9,4,32,0.08),0_1px_10px_0_rgba(9,4,32,0.12)] transition-transform data-[state=unchecked]:translate-x-px',
+          size === 'sm'
+            ? 'size-3 data-[state=checked]:translate-x-[13px]'
+            : 'size-5 data-[state=checked]:translate-x-[21px]'
         )}
       />
     </SwitchPrimitive.Root>

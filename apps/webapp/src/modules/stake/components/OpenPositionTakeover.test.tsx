@@ -314,9 +314,10 @@ describe('OpenPositionTakeover', () => {
     expect(screen.getByTestId('stake-takeover-risk-pill').textContent).toBe('Medium');
     const slider = screen.getByTestId('stake-takeover-borrow-slider');
     expect(slider).toBeTruthy();
-    // The vendored shadcn track paints bg-muted, which is undefined in the app
-    // theme — the scoped override keeps the track visible.
-    expect(slider.className).toContain('[&_[data-slot=slider-track]]:bg-textSecondary/10');
+    // The risk slider uses the design-system range treatment (H7): the
+    // orange→yellow fill instead of the default brand gradient.
+    const range = slider.querySelector('[data-slot=slider-range]');
+    expect(range?.className).toContain('from-slider-yellow-start');
     // Card 1 now shows the min-stake-to-borrow stat.
     expect(screen.getByTestId('stake-takeover-min-stake')).toBeTruthy();
   });

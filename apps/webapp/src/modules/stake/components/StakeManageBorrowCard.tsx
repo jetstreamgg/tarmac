@@ -5,7 +5,7 @@ import { Check, Info, TriangleAlert } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
-import { Slider } from '@/components/ui/slider';
+import { Slider, SliderTicks } from '@/components/ui/slider';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
 import { StakeManageCard, StakeManageDeltaRow } from './StakeManageCard';
@@ -181,18 +181,19 @@ export function StakeManageBorrowCard({
         {shouldShowSlider && !minCollateralNotMet && (
           <div className="flex flex-col gap-2">
             <Slider
+              variant="range"
               value={sliderValue}
               max={100}
               step={1}
               onValueChange={value => handleSliderChange(value[0])}
               aria-label={t`Liquidation risk meter`}
               data-testid="stake-manage-borrow-slider"
-              className="[&_[data-slot=slider-track]]:bg-textSecondary/10 [&_[data-slot=slider-range]]:bg-orange-400 [&_[data-slot=slider-thumb]]:border-orange-400"
             />
-            <div className="text-textSecondary flex items-center justify-between text-xs">
+            <div className="text-fgSecondary flex items-center gap-4 text-xs">
               {isRepay ? (
                 <>
                   <span>0%</span>
+                  <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
                   <span>100%</span>
                 </>
               ) : (
@@ -206,6 +207,7 @@ export function StakeManageBorrowCard({
                       USDS
                     </Trans>
                   </span>
+                  <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
                   <span className="flex items-center gap-1">
                     <Trans>max. {formatBigInt(maxBorrowable, { compact: true })} USDS</Trans>
                   </span>
