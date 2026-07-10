@@ -179,19 +179,15 @@ export function TopNav() {
   return (
     <nav className="flex w-full items-center gap-3" data-testid="top-nav">
       {/* Shared gradient for the selected nav icon (dark mode); referenced by
-          fill: url(#nav-icon-gradient) in globals.css. */}
+          fill: url(#nav-icon-gradient) in globals.css. Bounding-box units span
+          each glyph exactly (Figma's per-icon ramp), which relies on every nav
+          icon being a single path — a multi-path icon would restart the ramp
+          per subelement. Stops are gradient-brand2 at full opacity. */}
       <svg aria-hidden="true" focusable="false" width="0" height="0" className="absolute">
         <defs>
-          <linearGradient
-            id="nav-icon-gradient"
-            x1="12"
-            y1="0"
-            x2="12"
-            y2="24"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stopColor="#F7A7F9" />
-            <stop offset="1" stopColor="#9583FF" />
+          <linearGradient id="nav-icon-gradient" x1="0.5" y1="0" x2="0.5" y2="1">
+            <stop stopColor="#949AFF" />
+            <stop offset="1" stopColor="#504DFF" />
           </linearGradient>
         </defs>
       </svg>
