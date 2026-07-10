@@ -35,8 +35,13 @@ function Slider({
       value={value}
       min={min}
       max={max}
+      // Radix absolutely positions the thumb, so the root's flow height is
+      // just the 2-4px track — a near-impossible click target. The before
+      // overlay stretches it 12px past the root on both sides without moving
+      // layout; pointer events on it hit-test to the root, where Radix's
+      // click-to-jump listener lives.
       className={cn(
-        'group relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
+        'group relative flex w-full cursor-pointer touch-none items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
         className
       )}
       {...props}
@@ -82,7 +87,11 @@ function Slider({
             'after:bg-sliderDot focus-visible:ring-focusRing relative block size-4 shrink-0 rounded-full transition-[color,box-shadow] after:absolute after:inset-1 after:rounded-full focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:outline-hidden disabled:pointer-events-none',
             isRange
               ? 'bg-sliderAmber group-data-[empty]:bg-fgQuaternary'
-              : 'border-sliderRing from-slider-brand-start to-slider-brand-end border bg-linear-to-b'
+              : // bg-origin-border spans the gradient across the border box: the
+                // translucent ring must blend over the local gradient color; by
+                // default the gradient tiles from the padding box, wrapping the
+                // opposite end's color into the ring (same fix as button.tsx).
+                'border-sliderRing from-slider-brand-start to-slider-brand-end border bg-linear-to-b bg-origin-border'
           )}
         />
       ))}
@@ -110,8 +119,50 @@ function SliderTicks({
   const mask = isRange
     ? '[mask-image:repeating-linear-gradient(to_right,black_0_1px,transparent_1px_5.6px)]'
     : '[mask-image:repeating-linear-gradient(to_right,black_0_1px,transparent_1px_8.2px)]';
+
+  // The ticks row usually sits between the min/max labels, so it's narrower
+  // than and offset from the Slider above — mapping `progress` straight to a
+  // width leaves the colored boundary drifting off the thumb (ahead near min,
+  // behind near max). The Figma Progress variants pin the boundary under the
+  // thumb, so measure the row's inset within its parent (which shares the
+  // slider's width — both are laid out in the same column) and project the
+  // thumb-center position (8px radius inset at each end) into tick space.
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [geometry, setGeometry] = React.useState<{
+    offset: number;
+    width: number;
+    sliderWidth: number;
+  } | null>(null);
+
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    const row = el?.parentElement;
+    if (!el || !row) return;
+    const measure = () => {
+      const elRect = el.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      setGeometry({
+        offset: elRect.left - rowRect.left,
+        width: elRect.width,
+        sliderWidth: rowRect.width
+      });
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const fraction = Math.min(100, Math.max(0, progress)) / 100;
+  const percent =
+    geometry && geometry.width > 0
+      ? ((8 + fraction * (geometry.sliderWidth - 16) - geometry.offset) / geometry.width) * 100
+      : fraction * 100;
+
   return (
-    <div aria-hidden className={cn('relative overflow-hidden', isRange ? 'h-2' : 'h-1', className)}>
+    <div ref={ref} aria-hidden className={cn('relative overflow-hidden', isRange ? 'h-2' : 'h-1', className)}>
       <div className={cn('bg-glassBadge absolute inset-0', mask)} />
       <div
         className={cn(
@@ -121,7 +172,7 @@ function SliderTicks({
             ? 'from-slider-yellow-start to-slider-yellow-end'
             : 'from-slider-brand-start to-slider-brand-end'
         )}
-        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+        style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
       />
     </div>
   );
