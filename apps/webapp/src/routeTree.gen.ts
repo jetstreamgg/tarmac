@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SealEngineRouteImport } from './routes/seal-engine'
 import { Route as DevRouteImport } from './routes/dev'
+import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as BatchTransactionsLegalNoticeRouteImport } from './routes/batch-transactions-legal-notice'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellIndexRouteImport } from './routes/_shell.index'
@@ -42,6 +43,11 @@ const SealEngineRoute = SealEngineRouteImport.update({
 const DevRoute = DevRouteImport.update({
   id: '/dev',
   path: '/dev',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignSystemRoute = DesignSystemRouteImport.update({
+  id: '/design-system',
+  path: '/design-system',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BatchTransactionsLegalNoticeRoute =
@@ -161,6 +167,7 @@ const ShellEarnFixedMarketMarketAddressRoute =
 export interface FileRoutesByFullPath {
   '/': typeof ShellIndexRoute
   '/batch-transactions-legal-notice': typeof BatchTransactionsLegalNoticeRoute
+  '/design-system': typeof DesignSystemRoute
   '/dev': typeof DevRoute
   '/seal-engine': typeof SealEngineRoute
   '/convert': typeof ShellConvertRouteWithChildren
@@ -185,6 +192,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/batch-transactions-legal-notice': typeof BatchTransactionsLegalNoticeRoute
+  '/design-system': typeof DesignSystemRoute
   '/dev': typeof DevRoute
   '/seal-engine': typeof SealEngineRoute
   '/convert': typeof ShellConvertRouteWithChildren
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_shell': typeof ShellRouteWithChildren
   '/batch-transactions-legal-notice': typeof BatchTransactionsLegalNoticeRoute
+  '/design-system': typeof DesignSystemRoute
   '/dev': typeof DevRoute
   '/seal-engine': typeof SealEngineRoute
   '/_shell/convert': typeof ShellConvertRouteWithChildren
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/batch-transactions-legal-notice'
+    | '/design-system'
     | '/dev'
     | '/seal-engine'
     | '/convert'
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/batch-transactions-legal-notice'
+    | '/design-system'
     | '/dev'
     | '/seal-engine'
     | '/convert'
@@ -288,6 +299,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_shell'
     | '/batch-transactions-legal-notice'
+    | '/design-system'
     | '/dev'
     | '/seal-engine'
     | '/_shell/convert'
@@ -315,6 +327,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   ShellRoute: typeof ShellRouteWithChildren
   BatchTransactionsLegalNoticeRoute: typeof BatchTransactionsLegalNoticeRoute
+  DesignSystemRoute: typeof DesignSystemRoute
   DevRoute: typeof DevRoute
   SealEngineRoute: typeof SealEngineRoute
 }
@@ -333,6 +346,13 @@ declare module '@tanstack/react-router' {
       path: '/dev'
       fullPath: '/dev'
       preLoaderRoute: typeof DevRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-system': {
+      id: '/design-system'
+      path: '/design-system'
+      fullPath: '/design-system'
+      preLoaderRoute: typeof DesignSystemRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/batch-transactions-legal-notice': {
@@ -594,6 +614,7 @@ const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   ShellRoute: ShellRouteWithChildren,
   BatchTransactionsLegalNoticeRoute: BatchTransactionsLegalNoticeRoute,
+  DesignSystemRoute: DesignSystemRoute,
   DevRoute: DevRoute,
   SealEngineRoute: SealEngineRoute,
 }
