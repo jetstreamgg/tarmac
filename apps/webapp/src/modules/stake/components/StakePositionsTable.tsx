@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
-import { ChevronRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
   useStakeUrnAddress,
@@ -29,7 +28,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
-import { CellAmount } from '@/components/ui/table-cells';
+import { CellAmount, CellAmountWithToken, CellChevron, CellPosition } from '@/components/ui/table-cells';
 import {
   StakeUserPosition,
   isInactiveStakePosition,
@@ -38,15 +37,14 @@ import {
 import { StakePositionRowBanner } from './StakePositionRowBanner';
 
 // Liquidation-proximity mapping for the shared risk pill: more (and warmer)
-// lit segments = closer to liquidation; rows with no debt render unlit.
-// Colors follow the legacy risk convention (green/orange-400/red);
-// StakeDetailsStrip's legend uses different mid-tier tints — the canonical
-// palette is an open design question. The pill chrome is the shared
-// RiskMeter (review feedback: one pill app-wide), a deliberate divergence
-// from the bordered treatment in stake hi-fi 486:32084.
+// lit segments = closer to liquidation; rows with no debt render unlit
+// (Figma Type=Risk "None"). Colors are the design-system status palette the
+// pill uses everywhere; a 3-lit error tier never appears in the Figma
+// patterns — red pending design confirmation. The pill chrome is the shared
+// RiskMeter (review feedback: one pill app-wide).
 const RISK_SEGMENTS: Record<RiskLevel, { lit: number; color: string }> = {
-  [RiskLevel.LOW]: { lit: 1, color: 'bg-bullish' },
-  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-orange-400' },
+  [RiskLevel.LOW]: { lit: 1, color: 'bg-statusSuccess' },
+  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-statusWarning' },
   [RiskLevel.HIGH]: { lit: 3, color: 'bg-error' },
   [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-error' }
 };
@@ -146,26 +144,18 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
   const symbols = claimable.length > 0 ? claimable.map(reward => reward.rewardSymbol) : ['SKY'];
 
   return (
-    <span className="text-text flex items-center gap-1.5 text-sm">
-      {formatUsd(usdValue)}
-      <TokenIconStack symbols={symbols} size={16} />
-    </span>
+    <CellAmountWithToken amount={formatUsd(usdValue)} icon={<TokenIconStack symbols={symbols} size={12} />} />
   );
 }
 
 function PositionIdCell({ position }: { position: StakeUserPosition }) {
   const inactive = isInactiveStakePosition(position);
   return (
-    <div
-      data-testid={`stake-position-id-${position.index}`}
-      className={cn('flex items-center gap-3', inactive && 'opacity-50')}
-    >
-      <span className="border-borderPrimary text-bullish flex h-9 w-9 shrink-0 items-center justify-center rounded-full border">
-        <Stake width={18} height={18} />
-      </span>
-      <span className="text-text text-base font-medium">
-        <Trans>Position {position.index + 1}</Trans>
-      </span>
+    <div data-testid={`stake-position-id-${position.index}`} className={cn(inactive && 'opacity-50')}>
+      <CellPosition
+        icon={<Stake width={16} height={16} />}
+        label={<Trans>Position {position.index + 1}</Trans>}
+      />
     </div>
   );
 }
@@ -209,8 +199,12 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
   {
     id: 'chevron',
     header: null,
-    width: '24px',
-    cell: () => <ChevronRight className="text-textSecondary h-4 w-4" />
+    width: '64px',
+    cell: () => (
+      <span className="flex justify-center">
+        <CellChevron />
+      </span>
+    )
   }
 ];
 
