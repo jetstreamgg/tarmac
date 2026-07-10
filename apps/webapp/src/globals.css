@@ -126,6 +126,9 @@
   --color-sliderLine: #2a2a40;
   --color-sliderMarker: #fe8b5b;
   --color-sliderAmber: #ffc23b;
+  /* colors/fg/fg-primary (navbar label + hovered nav icon, Figma 5010:29059).
+     Interim light value mirrors --color-text (G2 owns full parity). */
+  --color-fgPrimary: #f2f3f7;
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
@@ -480,6 +483,7 @@
     /* H5 tabs tokens (interim light values; G2 owns parity) */
     --color-borderTertiary: rgba(26, 24, 85, 0.3);
     --color-fgSecondary: rgba(26, 24, 85, 0.62);
+    --color-fgPrimary: #1a1855;
     --color-flipSurface: rgba(255, 255, 255, 0.9);
     --color-flipRing: #e8ebfa;
 
@@ -615,6 +619,13 @@
    utilities, so they stay here, keyed off the link's [aria-current]. */
 .nav-icon {
   color: #9ca9ff;
+  transition: color 250ms var(--ease-out-expo);
+}
+/* Hovering the pill brightens the glyph to fg-primary (Figma hover state).
+   Light mode is unaffected: its .nav-icon rules below tie on specificity and
+   win by source order. */
+:hover > .nav-icon {
+  color: var(--color-fgPrimary);
 }
 [aria-current='page'] > .nav-icon :where(path) {
   fill: url(#nav-icon-gradient);
@@ -628,4 +639,13 @@
 }
 [data-theme='light'] [aria-current='page'] > .nav-icon :where(path) {
   fill: #2d2689;
+}
+/* Menu trigger glyph (lucide, stroke-based): open gets the brand gradient
+   (Figma Type=Menu State=Active); rest/hover stay fg-primary via
+   currentColor. */
+[data-state='open'] > .nav-menu-icon {
+  stroke: url(#nav-icon-gradient);
+}
+[data-theme='light'] [data-state='open'] > .nav-menu-icon {
+  stroke: #2d2689;
 }

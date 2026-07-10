@@ -1,10 +1,10 @@
 import { ReactNode, useState } from 'react';
-import * as SliderPrimitive from '@radix-ui/react-slider';
 import { Trans } from '@lingui/react/macro';
 import { Info, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Text } from '@/modules/layout/components/Typography';
 
 // First-iteration slider bounds (per design): $50k–$10M, starting at $100k.
@@ -69,24 +69,23 @@ export function SimulateEarningsModal({
             {formatUsd(balance)}
           </span>
 
-          <SliderPrimitive.Root
-            className="relative mt-2 flex w-full touch-none items-center select-none"
-            value={[balance]}
-            min={MIN_BALANCE}
-            max={MAX_BALANCE}
-            step={STEP}
-            onValueChange={([value]) => setBalance(value)}
-            aria-label="Balance deposited"
-          >
-            <SliderPrimitive.Track className="bg-surface relative h-1.5 w-full grow cursor-pointer rounded-full">
-              <SliderPrimitive.Range className="bg-text absolute h-full rounded-full" />
-            </SliderPrimitive.Track>
-            <SliderPrimitive.Thumb className="border-text focus-visible:ring-ring block h-5 w-5 cursor-pointer rounded-full border-2 bg-white shadow transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden" />
-          </SliderPrimitive.Root>
-
-          <div className="text-textSecondary flex justify-between text-xs">
-            <span>$50k</span>
-            <span>$10M</span>
+          <div className="mt-2 flex flex-col gap-1.5">
+            <Slider
+              value={[balance]}
+              min={MIN_BALANCE}
+              max={MAX_BALANCE}
+              step={STEP}
+              onValueChange={([value]) => setBalance(value)}
+              aria-label="Balance deposited"
+            />
+            <div className="text-fgSecondary flex items-center gap-4 text-xs">
+              <span>$50k</span>
+              <SliderTicks
+                progress={((balance - MIN_BALANCE) / (MAX_BALANCE - MIN_BALANCE)) * 100}
+                className="grow"
+              />
+              <span>$10M</span>
+            </div>
           </div>
         </div>
 

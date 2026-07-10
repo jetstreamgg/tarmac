@@ -39,7 +39,8 @@ import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/s
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/cn';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
@@ -49,6 +50,10 @@ import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 export type PendleModalFlow = 'supply' | 'withdraw';
 
 const NO_VALUE = '–';
+
+// Same option-row treatment as FilterSelect / the header MoreMenu popover.
+const selectItemClasses =
+  'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
 
 function Row({ label, value, dataTestId }: { label: ReactNode; value: ReactNode; dataTestId?: string }) {
   return (
@@ -376,7 +381,10 @@ export function PendleModalForm({
               <SelectTrigger
                 aria-label={t`Select token`}
                 data-testid="pendle-modal-token-select"
-                className="text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 font-medium focus:ring-0 focus:ring-offset-0"
+                className={cn(
+                  buttonVariants({ variant: 'dropdown', size: 'dropdownS' }),
+                  'h-auto w-auto shrink-0 bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
+                )}
               >
                 <SelectValue>
                   <span className="flex items-center gap-1.5">
@@ -392,7 +400,12 @@ export function PendleModalForm({
               </SelectTrigger>
               <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
                 {tokenOptions.map(option => (
-                  <SelectItem key={option.symbol} value={option.symbol} hideIndicator>
+                  <SelectItem
+                    key={option.symbol}
+                    value={option.symbol}
+                    hideIndicator
+                    className={selectItemClasses}
+                  >
                     <span className="flex items-center gap-1.5">
                       <TokenIcon
                         token={{ symbol: option.symbol }}
@@ -463,7 +476,10 @@ export function PendleModalForm({
                 <SelectTrigger
                   aria-label={t`Select token`}
                   data-testid="pendle-modal-token-select"
-                  className="text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 font-medium focus:ring-0 focus:ring-offset-0"
+                  className={cn(
+                    buttonVariants({ variant: 'dropdown', size: 'dropdownS' }),
+                    'h-auto w-auto shrink-0 bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
+                  )}
                 >
                   <SelectValue>
                     <span className="flex items-center gap-1.5">
@@ -479,7 +495,12 @@ export function PendleModalForm({
                 </SelectTrigger>
                 <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
                   {tokenOptions.map(option => (
-                    <SelectItem key={option.symbol} value={option.symbol} hideIndicator>
+                    <SelectItem
+                      key={option.symbol}
+                      value={option.symbol}
+                      hideIndicator
+                      className={selectItemClasses}
+                    >
                       <span className="flex items-center gap-1.5">
                         <TokenIcon
                           token={{ symbol: option.symbol }}

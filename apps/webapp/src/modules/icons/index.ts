@@ -10,11 +10,11 @@ import { Reward } from './Reward';
 import { Rewards } from './Rewards';
 import { RewardsEmpty } from './RewardsEmpty';
 import { Savings } from './Savings';
+import { Earn } from './Earn';
 import { Supply } from './Supply';
 import { Supplied } from './Supplied';
 import { SuppliedEmpty } from './SuppliedEmpty';
 import { Success } from './Success';
-import { Trade } from './Trade';
 import { Unavailable } from './Unavailable';
 import { Withdraw } from './Withdraw';
 import { Withdrawn } from './Withdrawn';
@@ -41,6 +41,8 @@ import { Repaid } from './Repaid';
 import { SelectRewards } from './SelectRewards';
 import { Vaults } from './Vaults';
 import { Convert } from './Convert';
+import { ConvertArrows } from './ConvertArrows';
+import { Wallet } from './Wallet';
 import { Pendle } from './Pendle';
 import { Merkl } from './Merkl';
 
@@ -57,11 +59,11 @@ export {
   Rewards,
   RewardsEmpty,
   Savings,
+  Earn,
   Supply,
   Supplied,
   SuppliedEmpty,
   Success,
-  Trade,
   Unavailable,
   Withdraw,
   Withdrawn,
@@ -88,6 +90,8 @@ export {
   SelectRewards,
   Vaults,
   Convert,
+  ConvertArrows,
+  Wallet,
   Pendle,
   Merkl
 };

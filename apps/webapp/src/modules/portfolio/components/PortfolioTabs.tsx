@@ -1,14 +1,16 @@
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { Button } from '@/components/ui/button';
+import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 
 /** The two Portfolio views. `idle` is a placeholder pending requirements. */
 export type PortfolioTab = 'supplied' | 'idle';
 
 /**
- * Supplied/Idle pill toggle. Rendered by every Portfolio section (earnings
- * card, positions carousel) but driven by one page-level state, so the toggles
- * stay in sync wherever they appear.
+ * Supplied/Idle toggle — design-system Tabs chips (Figma 5029:51762) on plain
+ * buttons: single-select, so aria-pressed carries the semantics and data-state
+ * drives the recipe's styling contract. Rendered by every Portfolio section
+ * (earnings card, positions carousel) but driven by one page-level state, so
+ * the toggles stay in sync wherever they appear.
  */
 export function PortfolioTabs({
   tab,
@@ -19,26 +21,24 @@ export function PortfolioTabs({
   onTabChange: (tab: PortfolioTab) => void;
   className?: string;
 }) {
+  const tabs: { value: PortfolioTab; label: React.ReactNode }[] = [
+    { value: 'supplied', label: <Trans>Supplied</Trans> },
+    { value: 'idle', label: <Trans>Idle</Trans> }
+  ];
   return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <Button
-        variant={tab === 'supplied' ? 'pill' : 'chip'}
-        size="xs"
-        className="h-8 px-4 text-sm"
-        aria-pressed={tab === 'supplied'}
-        onClick={() => onTabChange('supplied')}
-      >
-        <Trans>Supplied</Trans>
-      </Button>
-      <Button
-        variant={tab === 'idle' ? 'pill' : 'chip'}
-        size="xs"
-        className="h-8 px-4 text-sm"
-        aria-pressed={tab === 'idle'}
-        onClick={() => onTabChange('idle')}
-      >
-        <Trans>Idle</Trans>
-      </Button>
+    <div className={cn(tabsListVariants({ variant: 'pills' }), className)}>
+      {tabs.map(({ value, label }) => (
+        <button
+          key={value}
+          type="button"
+          aria-pressed={tab === value}
+          data-state={tab === value ? 'active' : 'inactive'}
+          onClick={() => onTabChange(value)}
+          className={cn(tabsTriggerVariants({ variant: 'pill' }))}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
