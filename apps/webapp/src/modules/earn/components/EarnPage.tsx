@@ -129,7 +129,6 @@ export function EarnPage() {
         rate30d: row.rate30d?.formatted ?? NO_VALUE,
         tvl: formatUsd(row.tvl?.totalUsd),
         position: formatUsd(row.position?.totalUsd),
-        hasPosition: (row.position?.totalUsd ?? 0) > 0,
         isLoading: row.isLoading
       })),
     [visibleRows]

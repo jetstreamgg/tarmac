@@ -30,8 +30,6 @@ export type EarnTableRowItem = {
   rate30d: string;
   tvl: string;
   position: string;
-  /** The user holds a position: mint iconbox border + status dot. */
-  hasPosition?: boolean;
   /** Numeric cells render skeletons while true. */
   isLoading?: boolean;
 };
@@ -125,10 +123,12 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
             onKeyDown={event => handleRowKeyDown(event, row.id)}
             className="cursor-pointer"
           >
+            {/* The Figma active-position iconbox (CellToken `active`) is not
+                wired here on purpose: its trigger follows product logic that
+                is not part of the H8 batch. */}
             <TableCell>
               <CellToken
                 icon={row.icon}
-                active={row.hasPosition}
                 title={row.name}
                 titleSuffix={row.nameSuffix}
                 subtitle={
