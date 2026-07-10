@@ -55,11 +55,11 @@ import {
   CellPercent,
   CellPosition,
   CellProduct,
-  CellRisk,
   CellStatus,
   CellToken,
   CellTokenIdle
 } from '@/components/ui/table-cells';
+import { RiskMeter, RiskTierMeter } from '@/components/product/RiskMeter';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { BaseChain, MainnetChain, OptimismChain, Pendle, Stake } from '@/modules/icons';
@@ -927,12 +927,12 @@ function TablesSection() {
             <CellSpecimenRow name="Icon">
               <CellChevron />
             </CellSpecimenRow>
-            <CellSpecimenRow name="Risk (none / low / medium / high*)">
+            <CellSpecimenRow name="Risk (none / low / moderate / advanced)">
               <span className="flex items-center gap-2">
-                <CellRisk tier="none" />
-                <CellRisk tier="low" />
-                <CellRisk tier="medium" />
-                <CellRisk tier="high" />
+                <RiskMeter segments={[null, null, null]} />
+                <RiskTierMeter tier="low" />
+                <RiskTierMeter tier="moderate" />
+                <RiskTierMeter tier="advanced" />
               </span>
             </CellSpecimenRow>
             <CellSpecimenRow name="Status">
@@ -1087,7 +1087,7 @@ function TablesSection() {
                 </CellNetworks>
               </TableCell>
               <TableCell>
-                <CellRisk tier="low" />
+                <RiskTierMeter tier="low" />
               </TableCell>
               <TableCell>
                 <CellPercent value="3.75" />
@@ -1121,7 +1121,7 @@ function TablesSection() {
                 </CellNetworks>
               </TableCell>
               <TableCell>
-                <CellRisk tier="low" />
+                <RiskTierMeter tier="low" />
               </TableCell>
               <TableCell>
                 <CellPercent value="8.61" />
@@ -1152,7 +1152,7 @@ function TablesSection() {
                 </CellNetworks>
               </TableCell>
               <TableCell>
-                <CellRisk tier="medium" />
+                <RiskTierMeter tier="moderate" />
               </TableCell>
               <TableCell>
                 <CellPercent value="5.12" />

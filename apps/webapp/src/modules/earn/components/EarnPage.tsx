@@ -10,7 +10,8 @@ import { QueryParams } from '@/lib/constants';
 import { retainOnNavigate, useAppSearchParams } from '@/lib/navigation';
 import { Heading } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { IconStack, TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { CellNetworks } from '@/components/ui/table-cells';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
 import { productIconSymbol } from '@/components/product/productVisuals';
@@ -115,19 +116,20 @@ export function EarnPage() {
       visibleRows.map(row => ({
         id: row.id,
         name: row.name,
-        icon: <TokenIcon token={{ symbol: productIconSymbol(row) }} width={36} className="h-9 w-9" />,
+        icon: <TokenIcon token={{ symbol: productIconSymbol(row) }} width={28} className="h-7 w-7" />,
         nameSuffix:
           row.kind === 'vault' && row.id.startsWith('vault-morpho') ? (
-            <Morpho className="h-3 w-3 rounded-sm" />
+            <Morpho className="h-4 w-4 rounded-sm" />
           ) : undefined,
-        supply: <TokenIconStack symbols={row.supplyTokens} size={14} />,
+        supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
         maturityLabel: row.maturity ? maturityFormatter.format(new Date(row.maturity * 1000)) : undefined,
-        network: <IconStack size={20}>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>,
+        network: <CellNetworks>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</CellNetworks>,
         risk: row.risk,
         rate: row.rate.formatted,
         rate30d: row.rate30d?.formatted ?? NO_VALUE,
         tvl: formatUsd(row.tvl?.totalUsd),
         position: formatUsd(row.position?.totalUsd),
+        hasPosition: (row.position?.totalUsd ?? 0) > 0,
         isLoading: row.isLoading
       })),
     [visibleRows]

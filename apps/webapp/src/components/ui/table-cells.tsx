@@ -7,10 +7,12 @@ import { IconStack } from '@/modules/ui/components/TokenIconStack';
 // Design-system typed table cells (Figma Table Cell 5032:9625, 17 types).
 // These are cell *contents*: the surface, height and padding live on the
 // ui/table TableCell (or an equivalent grid track), so the same components
-// serve both <table>- and grid-built tables. Two Figma types have no
-// component on purpose: Type=Text is the TableCell default (Label 5,
-// fg-primary — plain text needs no wrapper) and Type=Button is the existing
-// design-system <Button variant="primary" size="m"> rendered as-is.
+// serve both <table>- and grid-built tables. Three Figma types have no
+// component here on purpose: Type=Text is the TableCell default (Label 5,
+// fg-primary — plain text needs no wrapper), Type=Button is the existing
+// design-system <Button variant="primary" size="m"> rendered as-is, and
+// Type=Risk is the shared RiskMeter pill (components/product/RiskMeter —
+// one pill app-wide, restyled to the Figma Badges/Risk chrome).
 //
 // Typography per Figma: titles are Circular (Label 4 16/18 / Label 5 14/16),
 // secondary lines are Graphik (Body 6 12/18); the Hash cell is the only one
@@ -157,32 +159,6 @@ export function CellEmpty() {
 /** Type=Icon: the 16px row-link chevron (centered in fixed chevron columns). */
 export function CellChevron() {
   return <ChevronRight className="text-fgTertiary size-4" aria-hidden />;
-}
-
-export type CellRiskTier = 'none' | 'low' | 'medium' | 'high';
-
-// Lit-segment colors per tier. High never appears in the Figma patterns —
-// error red is the working assumption, pending design confirmation.
-const RISK_SEGMENTS: Record<CellRiskTier, (string | null)[]> = {
-  none: [null, null, null],
-  low: ['bg-statusSuccess', null, null],
-  medium: ['bg-statusWarning', 'bg-statusWarning', null],
-  high: ['bg-error', 'bg-error', 'bg-error']
-};
-
-/** Type=Risk (Badges/Risk): bordered pill of three 8×3 segments. */
-export function CellRisk({ tier }: { tier: CellRiskTier }) {
-  return (
-    <span
-      data-testid="cell-risk"
-      data-tier={tier}
-      className="border-glassBorder inline-flex h-[15px] items-center gap-px rounded-full border px-1.5"
-    >
-      {RISK_SEGMENTS[tier].map((lit, index) => (
-        <span key={index} className={cn('h-[3px] w-2 rounded-[2px]', lit ?? 'bg-fgQuaternary/40')} />
-      ))}
-    </span>
-  );
 }
 
 export type CellStatusValue = 'pending' | 'completed';
