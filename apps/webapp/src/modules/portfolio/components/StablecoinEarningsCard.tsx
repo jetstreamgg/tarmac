@@ -2,9 +2,11 @@ import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
+import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
@@ -29,10 +31,7 @@ export function StablecoinEarningsCard({
   onTabChange: (tab: PortfolioTab) => void;
 }) {
   return (
-    <div
-      className="bg-container rounded-3xl border p-6 bg-blend-overlay backdrop-blur-[50px] md:p-8"
-      data-testid="stablecoin-earnings-card"
-    >
+    <Card className="p-6 md:p-8" data-testid="stablecoin-earnings-card">
       <PortfolioTabs tab={tab} onTabChange={onTabChange} />
 
       {tab === 'idle' ? (
@@ -40,7 +39,7 @@ export function StablecoinEarningsCard({
       ) : (
         <SuppliedContent view={suppliedView} isLoading={suppliedLoading} />
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -254,7 +253,7 @@ function EarningsHeadline({
         <Heading tag="h2" className="text-text font-circle text-[40px] leading-none">
           {formatUsd(value)}
         </Heading>
-        <span className="flex -space-x-2">
+        <IconStack size={28}>
           {tokenSymbols.map(symbol => (
             <TokenIcon
               key={symbol}
@@ -262,12 +261,12 @@ function EarningsHeadline({
               width={28}
               showChainIcon={false}
               className={cn(
-                'h-7 w-7 transition-opacity',
+                'h-full w-full transition-opacity',
                 activeSymbol && activeSymbol !== symbol && 'opacity-50'
               )}
             />
           ))}
-        </span>
+        </IconStack>
       </div>
     </div>
   );

@@ -3,14 +3,10 @@ import { useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { useStUsdsData } from '@/hooks';
-import {
-  calculateApyFromStr,
-  formatDecimalPercentage,
-  formatNumber,
-  projectAnnualEarnings,
-  splitAmount
-} from '@/utils';
+import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { PositionHero } from '@/components/product/PositionHero';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useStUsdsModal } from '../hooks/useStUsdsModal';
@@ -47,10 +43,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
       : NO_VALUE;
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-6 rounded-[20px] p-6 backdrop-blur-2xl"
-      data-testid="stusds-supply-card"
-    >
+    <Card className="flex flex-col gap-6 p-6" data-testid="stusds-supply-card">
       <h3 className="text-text text-2xl leading-snug font-medium">
         <Trans>
           Supply{' '}
@@ -109,7 +102,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
       >
         <Trans>Supply</Trans>
       </Button>
-    </div>
+    </Card>
   );
 }
 
@@ -138,28 +131,13 @@ export function StUsdsPositionCard() {
   }
 
   const suppliedValue = parseFloat(formatUnits(suppliedUsds, 18));
-  const { whole, fraction } = splitAmount(suppliedValue);
   const shares = formatNumber(parseFloat(formatUnits(stUsdsData?.userStUsdsBalance ?? 0n, 18)), {
     maxDecimals: 2
   });
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-5 rounded-[20px] p-2 backdrop-blur-2xl"
-      data-testid="stusds-position-card"
-    >
-      {/* Hero — "My position" pill + supplied USDS over a soft brand-tinted inset. */}
-      <div className="flex flex-col gap-6 rounded-2xl bg-[radial-gradient(130%_130%_at_15%_0%,_rgba(126,107,242,0.22)_0%,_rgba(58,46,125,0.1)_55%,_transparent_100%)] p-5">
-        <span className="bg-surface text-textSecondary flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm">
-          <TokenIcon token={{ symbol: 'stUSDS' }} width={16} showChainIcon={false} className="h-4 w-4" />
-          <Trans>My position</Trans>
-        </span>
-        <span className="text-text flex items-end gap-2 font-semibold">
-          <TokenIcon token={{ symbol: 'USDS' }} width={32} showChainIcon={false} className="mb-1 h-8 w-8" />
-          <span className="text-4xl leading-none">{whole}</span>
-          {fraction && <span className="text-textSecondary text-2xl leading-tight">.{fraction}</span>}
-        </span>
-      </div>
+    <Card className="flex flex-col gap-5 p-2" data-testid="stusds-position-card">
+      <PositionHero pillSymbol="stUSDS" balanceSymbol="USDS" amount={suppliedValue} />
 
       <div className="flex flex-col gap-5 px-3 pb-3">
         <div className="flex flex-col gap-3">
@@ -206,6 +184,6 @@ export function StUsdsPositionCard() {
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

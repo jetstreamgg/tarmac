@@ -5,21 +5,24 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { motion } from 'motion/react';
 
 // App look — canonical, unchanged.
-const cardVariants = cva('rounded-[20px] bg-card p-4 text-text text-base font-normal leading-normal', {
-  variants: {
-    variant: {
-      default: '',
-      pool: 'leading-tight lg:px-5 lg:py-4',
-      stats: 'p-5 w-full min-w-[220px]',
-      statsCompact: 'p-3 lg:pl-4 lg:pb-4 lg:pt-3 lg:pr-3',
-      stepper: 'w-full rounded-none border text-sm',
-      spotlight: 'p-10 bg-[linear-gradient(0deg,_#581BE0_0%,_#2A197D_100%)]'
+const cardVariants = cva(
+  'bg-glassSurface text-text rounded-[28px] p-4 text-base font-normal leading-normal backdrop-blur-[20px]',
+  {
+    variants: {
+      variant: {
+        default: '',
+        pool: 'leading-tight lg:px-5 lg:py-4',
+        stats: 'p-5 w-full min-w-[220px]',
+        statsCompact: 'p-3 lg:pl-4 lg:pb-4 lg:pt-3 lg:pr-3',
+        stepper: 'w-full rounded-none border text-sm',
+        spotlight: 'p-10 bg-[linear-gradient(0deg,_#581BE0_0%,_#2A197D_100%)]'
+      }
+    },
+    defaultVariants: {
+      variant: 'default'
     }
-  },
-  defaultVariants: {
-    variant: 'default'
   }
-});
+);
 
 const cardHeaderVariants = cva('flex justify-between space-y-1.5', {
   variants: {

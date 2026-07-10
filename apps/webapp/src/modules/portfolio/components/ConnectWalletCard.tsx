@@ -1,5 +1,6 @@
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 
@@ -11,8 +12,8 @@ export function ConnectWalletCard() {
   const connect = useCustomConnectModal();
 
   return (
-    <div
-      className="bg-container flex flex-col items-start justify-between gap-6 rounded-3xl border p-6 bg-blend-overlay backdrop-blur-[50px] md:flex-row md:items-center md:p-8"
+    <Card
+      className="flex flex-col items-start justify-between gap-6 p-6 md:flex-row md:items-center md:p-8"
       data-testid="portfolio-connect-card"
     >
       <div className="flex flex-col gap-2">
@@ -28,6 +29,6 @@ export function ConnectWalletCard() {
       <Button variant="connect" onClick={connect} data-testid="portfolio-connect-card-button">
         <Trans>Connect wallet</Trans>
       </Button>
-    </div>
+    </Card>
   );
 }

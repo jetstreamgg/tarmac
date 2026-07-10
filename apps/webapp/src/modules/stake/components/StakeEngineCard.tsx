@@ -14,6 +14,7 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const NO_VALUE = '–';
@@ -112,10 +113,7 @@ export function StakeEngineCard() {
       : NO_VALUE;
 
   return (
-    <div
-      data-testid="stake-engine-card"
-      className="bg-panel rounded-card flex flex-col gap-8 p-8 backdrop-blur-2xl"
-    >
+    <Card data-testid="stake-engine-card" className="flex flex-col gap-8 p-8">
       <span className="bg-surfaceAlt text-textSecondary flex h-6 w-fit items-center gap-1 rounded-full py-0.5 pr-2 pl-1.5 text-xs font-medium">
         <StakeSky className="h-3.5 w-3.5" />
         <Trans>Sky Staking Engine</Trans>
@@ -159,6 +157,6 @@ export function StakeEngineCard() {
       >
         <Trans>Open a position</Trans>
       </Button>
-    </div>
+    </Card>
   );
 }

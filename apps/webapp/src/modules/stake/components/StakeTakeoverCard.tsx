@@ -28,7 +28,7 @@ export function StakeTakeoverCard({
   return (
     <section
       data-testid={dataTestId}
-      className="bg-panel rounded-card flex flex-col gap-6 p-6 backdrop-blur-2xl"
+      className="bg-glassSurface rounded-card flex flex-col gap-6 p-6 backdrop-blur-[20px]"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">

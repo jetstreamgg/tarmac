@@ -6,6 +6,7 @@ import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 const NO_VALUE = '–';
@@ -75,10 +76,7 @@ export function RewardsSupplyCard({
   const rewardToken = inlineToken(rewardSymbol);
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-6 rounded-[20px] p-6 backdrop-blur-2xl"
-      data-testid="rewards-supply-card"
-    >
+    <Card className="flex flex-col gap-6 p-6" data-testid="rewards-supply-card">
       <h3 className="text-text text-2xl leading-snug font-medium">
         {isPointsFarm ? (
           <Trans>
@@ -137,6 +135,6 @@ export function RewardsSupplyCard({
           <Trans>Supply</Trans>
         </Button>
       )}
-    </div>
+    </Card>
   );
 }

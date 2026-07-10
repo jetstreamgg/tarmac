@@ -9,8 +9,10 @@ import {
   getTokenDecimals,
   type Token
 } from '@/hooks';
-import { formatNumber, projectAnnualEarnings, splitAmount } from '@/utils';
+import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { PositionHero } from '@/components/product/PositionHero';
 import { GainValue } from '@/components/ui/GainValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useClaimRewardsModal } from '@/modules/claim';
@@ -80,7 +82,6 @@ export function VaultPositionCard({
   // Position value in asset units (USDC is $1-pegged, so it doubles as the USD
   // value used for the projection).
   const positionValue = parseFloat(formatUnits(userAssets, decimals));
-  const { whole, fraction } = splitAmount(positionValue);
   const shares =
     vaultData?.userShares !== undefined
       ? formatNumber(parseFloat(formatUnits(vaultData.userShares, vaultData.decimals)), { maxDecimals: 2 })
@@ -89,32 +90,8 @@ export function VaultPositionCard({
   const reward = rewardsData?.rewards[0];
 
   return (
-    <div
-      className="bg-panel flex flex-col gap-5 rounded-[20px] p-2 backdrop-blur-2xl"
-      data-testid="vault-position-card"
-    >
-      {/* Hero — "My position" pill + balance over a soft brand-tinted inset. */}
-      <div className="flex flex-col gap-6 rounded-2xl bg-[radial-gradient(130%_130%_at_15%_0%,_rgba(126,107,242,0.22)_0%,_rgba(58,46,125,0.1)_55%,_transparent_100%)] p-5">
-        <span className="bg-surface text-textSecondary flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm">
-          <TokenIcon
-            token={{ symbol: assetToken.symbol }}
-            width={16}
-            showChainIcon={false}
-            className="h-4 w-4"
-          />
-          <Trans>My position</Trans>
-        </span>
-        <span className="text-text flex items-end gap-2 font-semibold">
-          <TokenIcon
-            token={{ symbol: assetToken.symbol }}
-            width={32}
-            showChainIcon={false}
-            className="mb-1 h-8 w-8"
-          />
-          <span className="text-4xl leading-none">{whole}</span>
-          {fraction && <span className="text-textSecondary text-2xl leading-tight">.{fraction}</span>}
-        </span>
-      </div>
+    <Card className="flex flex-col gap-5 p-2" data-testid="vault-position-card">
+      <PositionHero pillSymbol={assetToken.symbol} balanceSymbol={assetToken.symbol} amount={positionValue} />
 
       <div className="flex flex-col gap-5 px-3 pb-3">
         <div className="flex flex-col gap-3">
@@ -183,6 +160,6 @@ export function VaultPositionCard({
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

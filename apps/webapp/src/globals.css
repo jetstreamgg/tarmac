@@ -102,6 +102,11 @@
   --background-image-primaryActive: var(--service-purple-5);
   --background-image-primaryFocus: var(--primary-purple-40);
   --background-image-primaryTransparent: var(--service-purple-transparent);
+  /* Page background color (Figma colors/bg/bg-primary). Backs .app-background
+     and rings the stacked-badge icons (IconStack), which must match the page —
+     not the surface they sit on — to read as punched-out circles. Changing the
+     dark value requires re-baking the pre-blended background image below. */
+  --color-pageBackground: #090420;
   /* Dark page background (Figma 5010:6624): a bottom fade into the solid
      backdrop over the sky image. The image is pre-baked — sunset sky blended
      (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
@@ -430,6 +435,7 @@
     --color-primary-bright-start: rgba(130, 112, 245);
     --color-primary-bright-end: rgba(148, 131, 248);
 
+    --color-pageBackground: #f7fbff;
     /* Light page background (Figma 5124:25430): bottom fade + daytime sky
        image over a pale blue base gradient (visible only while the image
        loads, since the image is opaque and covers the layer). */
@@ -536,7 +542,7 @@
   inset: 0;
   z-index: -10;
   pointer-events: none;
-  background-color: #090420;
+  background-color: var(--color-pageBackground);
   background-image: var(--background-image-app-background);
   background-repeat: no-repeat;
   background-size: auto, cover;
@@ -545,7 +551,6 @@
     center top;
 }
 [data-theme='light'] .app-background {
-  background-color: #f7fbff;
   background-size: auto, cover, auto;
   background-position: center;
 }

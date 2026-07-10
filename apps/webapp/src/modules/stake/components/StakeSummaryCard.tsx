@@ -21,7 +21,9 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { StakeSky } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { useStakeTotalDebt } from '../hooks/useStakeTotalDebt';
@@ -145,13 +147,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   // e.g. an SPK-earning urn shows the SPK icon — mirrors the table cell.
   const rewardSymbolsHeld =
     toClaim && toClaim.length > 0 ? [...new Set(toClaim.map(reward => reward.rewardSymbol))] : ['SKY'];
-  const rewardIcons = (
-    <span className="flex items-center -space-x-1">
-      {rewardSymbolsHeld.map(symbol => (
-        <TokenIcon key={symbol} token={{ symbol }} width={16} className="h-4 w-4" showChainIcon={false} />
-      ))}
-    </span>
-  );
+  const rewardIcons = <TokenIconStack symbols={rewardSymbolsHeld} size={16} />;
 
   // Total rewards earned = already-claimed reward events (subgraph) + still
   // claimable. Claimed amounts are valued through the known reward-contract →
@@ -185,10 +181,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   });
 
   return (
-    <div
-      data-testid="stake-summary-card"
-      className="bg-panel rounded-card flex flex-col gap-6 p-8 backdrop-blur-2xl"
-    >
+    <Card data-testid="stake-summary-card" className="flex flex-col gap-6 p-8">
       <span className="bg-surfaceAlt text-textSecondary flex h-6 w-fit items-center gap-1 rounded-full py-0.5 pr-2 pl-1.5 text-xs font-medium">
         <StakeSky className="h-3.5 w-3.5" />
         <Trans>Total Staked</Trans>
@@ -239,6 +232,6 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
       >
         <Trans>Open a new position</Trans>
       </Button>
-    </div>
+    </Card>
   );
 }

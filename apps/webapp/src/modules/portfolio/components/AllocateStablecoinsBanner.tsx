@@ -1,6 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 
 /**
@@ -20,8 +21,8 @@ export function AllocateStablecoinsBanner({
   const yearly = projectAnnualEarnings(idleUsd, savingsRate);
 
   return (
-    <div
-      className="bg-container flex flex-col gap-4 rounded-3xl border p-6 bg-blend-overlay backdrop-blur-[50px] md:flex-row md:items-center md:justify-between md:p-8"
+    <Card
+      className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between md:p-8"
       data-testid="allocate-stablecoins-banner"
     >
       <div className="flex flex-col gap-2">
@@ -45,6 +46,6 @@ export function AllocateStablecoinsBanner({
       <Button variant="primary" className="shrink-0" onClick={onAllocate}>
         <Trans>Allocate your stablecoins</Trans>
       </Button>
-    </div>
+    </Card>
   );
 }

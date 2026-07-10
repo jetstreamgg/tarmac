@@ -2,9 +2,11 @@ import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { formatDecimalPercentage, formatUsd, getChainIcon, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
 import { Text } from '@/modules/layout/components/Typography';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { productRingColor } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 import { ProductGlyph } from './ProductGlyph';
@@ -27,10 +29,7 @@ export function PositionCard({
   const projected = projectAnnualEarnings(position.amountUsd, position.rate);
 
   return (
-    <div
-      className="bg-container flex flex-col gap-8 rounded-3xl border p-5 bg-blend-overlay backdrop-blur-[50px]"
-      data-testid="position-card"
-    >
+    <Card className="flex flex-col gap-8 p-5" data-testid="position-card">
       {/* Token icon with its family-colored outline ring + network badge */}
       <div className="flex items-start justify-between">
         <ProductTokenIcon
@@ -39,13 +38,9 @@ export function PositionCard({
           width={40}
           className="h-10 w-10"
         />
-        <div className="flex -space-x-1.5" data-testid="position-card-networks">
-          {position.chainIds.map(id => (
-            <span key={id} className="ring-container inline-flex rounded-full ring-2">
-              {getChainIcon(id, 'h-5 w-5')}
-            </span>
-          ))}
-        </div>
+        <IconStack size={20} data-testid="position-card-networks">
+          {position.chainIds.map(id => getChainIcon(id, 'h-full w-full'))}
+        </IconStack>
       </div>
 
       <div className="flex items-center gap-1.5">
@@ -87,7 +82,7 @@ export function PositionCard({
           <Trans>Manage</Trans>
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
