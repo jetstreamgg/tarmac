@@ -4,12 +4,28 @@ import { cn } from '@/lib/cn';
 import { HTMLMotionProps, motion } from 'motion/react';
 import { fadeAnimations } from '@/modules/ui/animation/presets';
 
+// Design-system table (Figma Patterns/Tables 5178:37455). The construction is
+// unusual: rows are separated by a 2px transparent gap (border-spacing, page
+// background showing through) instead of borders, cells carry the row surface
+// (bg-bgSecondary) so a row reads as one bar, and the *body* — not the table —
+// is a 24px-radius surface, so the outer corners live on the first/last data
+// row's edge cells. The header row is transparent and sits outside that
+// surface. All columns are left-aligned per Figma, including numeric ones.
+
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement> & { className?: string; wrapperClassName?: string }
 >(({ className, wrapperClassName, ...props }, ref) => (
   <div className={cn('relative w-full overflow-hidden', wrapperClassName)}>
-    <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
+    <table
+      ref={ref}
+      className={cn(
+        'w-full border-separate border-spacing-y-[2px] caption-bottom',
+        '[&>tbody>tr:first-child>td:first-child]:rounded-tl-[24px] [&>tbody>tr:first-child>td:last-child]:rounded-tr-[24px] [&>tbody>tr:last-child>td:first-child]:rounded-bl-[24px] [&>tbody>tr:last-child>td:last-child]:rounded-br-[24px]',
+        className
+      )}
+      {...props}
+    />
   </div>
 ));
 Table.displayName = 'Table';
@@ -43,8 +59,12 @@ const TableRow = React.forwardRef<HTMLTableRowElement, HTMLMotionProps<'tr'>>(
     <motion.tr
       ref={ref}
       initial={false}
+      // The hover/selected tint must land on the cells (the row surface), not
+      // the tr: with border-separate a tr background would also paint under
+      // the 2px slits and the corner radii wouldn't clip it.
       className={cn(
-        'border-brandLight/20 has-[td]:hover:bg-brandLight/20 has-[td]:focus:border-brandLight/40 has-[td]:active:bg-brandLight/10 data-[state=selected]:bg-brandLight/10 border-t transition-colors last:border-b has-[td]:focus:border-y-2 has-[th]:border-0',
+        'group/row',
+        'has-[td]:hover:[&>td]:bg-bgTertiary data-[state=selected]:[&>td]:bg-bgTertiary',
         className
       )}
       variants={fadeAnimations}
@@ -60,8 +80,11 @@ const TableHead = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <th
     ref={ref}
+    // Body 6 label; 2px top + 12px bottom padding around the 18px line = the
+    // 32px Figma header row. First column indents 28px (24px cell inset + 4
+    // optical).
     className={cn(
-      'text-selectActive light:text-textSecondary h-4 px-4 py-2 text-left align-middle text-[13px] leading-none font-normal [&:has([role=checkbox])]:pr-0',
+      'text-fgSecondary px-2 pt-0.5 pb-3 text-left align-middle font-graphik text-xs leading-[18px] font-normal first:pl-7 [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}
@@ -75,8 +98,10 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
+    // Label 5 / fg-primary is the default cell value type; typed cells
+    // (table-cells.tsx) override locally. 24px first-column inset.
     className={cn(
-      'text-text h-14 p-4 align-middle text-base leading-normal font-normal [&:has([role=checkbox])]:pr-0',
+      'bg-bgSecondary text-fgPrimary font-circle h-[88px] px-2 align-middle text-sm leading-4 font-medium tracking-[-0.28px] transition-colors first:pl-6 [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}
