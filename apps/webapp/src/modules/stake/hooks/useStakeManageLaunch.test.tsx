@@ -175,7 +175,11 @@ describe('buildStakeManageSteps', () => {
         hasBorrow: false,
         hasDelegateChange: false
       })
-    ).toEqual(['Approve USDS', 'Repay USDS', 'Withdraw SKY']);
+    ).toEqual([
+      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Repay', tokenSymbol: 'USDS' },
+      { label: 'Withdraw', tokenSymbol: 'SKY' }
+    ]);
 
     expect(
       buildStakeManageSteps({
@@ -187,7 +191,12 @@ describe('buildStakeManageSteps', () => {
         hasBorrow: true,
         hasDelegateChange: true
       })
-    ).toEqual(['Approve SKY', 'Change delegate', 'Stake SKY', 'Borrow USDS']);
+    ).toEqual([
+      { label: 'Approve', tokenSymbol: 'SKY' },
+      'Change delegate',
+      { label: 'Stake', tokenSymbol: 'SKY' },
+      { label: 'Borrow', tokenSymbol: 'USDS' }
+    ]);
 
     expect(
       buildStakeManageSteps({
@@ -199,7 +208,7 @@ describe('buildStakeManageSteps', () => {
         hasBorrow: true,
         hasDelegateChange: false
       })
-    ).toEqual(['Borrow USDS']);
+    ).toEqual([{ label: 'Borrow', tokenSymbol: 'USDS' }]);
   });
 
   it('places one Claim {symbol} step per claimSymbols entry right after Withdraw SKY', () => {
@@ -214,7 +223,11 @@ describe('buildStakeManageSteps', () => {
         hasDelegateChange: false,
         claimSymbols: ['SKY', 'SPK']
       })
-    ).toEqual(['Withdraw SKY', 'Claim SKY', 'Claim SPK']);
+    ).toEqual([
+      { label: 'Withdraw', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SPK' }
+    ]);
 
     // No claimSymbols — untouched (no Claim steps at all).
     expect(
@@ -227,7 +240,7 @@ describe('buildStakeManageSteps', () => {
         hasBorrow: false,
         hasDelegateChange: false
       })
-    ).toEqual(['Withdraw SKY']);
+    ).toEqual([{ label: 'Withdraw', tokenSymbol: 'SKY' }]);
   });
 });
 
@@ -343,7 +356,11 @@ describe('useStakeManageLaunch — launch() config', () => {
   it('derives the withdraw+repay steps from the calldata set, not the stale mock (M6)', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Approve USDS', 'Repay USDS', 'Withdraw SKY']);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Repay', tokenSymbol: 'USDS' },
+      { label: 'Withdraw', tokenSymbol: 'SKY' }
+    ]);
   });
 
   it('orders bundled claim steps after Withdraw SKY (recovery launch shape)', () => {
@@ -354,7 +371,11 @@ describe('useStakeManageLaunch — launch() config', () => {
       claimSymbols: ['SKY', 'SPK']
     });
     act(() => result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Withdraw SKY', 'Claim SKY', 'Claim SPK']);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+      { label: 'Withdraw', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SPK' }
+    ]);
   });
 
   it('carries the legacy manage stakeData analytics shape (M15)', () => {

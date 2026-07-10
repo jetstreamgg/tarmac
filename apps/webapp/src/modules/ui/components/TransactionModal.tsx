@@ -1,17 +1,10 @@
 import { useState, useCallback, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import {
-  TxStatus,
-  Clock,
-  InProgress,
-  SuccessCheck,
-  SuccessCheckSolidColor,
-  FailedX,
-  Cancel
-} from '@/widgets';
+import { TxStatus, Clock, InProgress, SuccessCheck, FailedX, Cancel } from '@/widgets';
 import { ChevronLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Steps, StepsItem, type StepState } from '@/components/ui/steps';
 import { Switch } from '@/components/ui/switch';
 import { Close, Info } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
@@ -24,11 +17,20 @@ import { useIsSafeWallet } from '@/hooks';
 import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
 
 // 'entry' is an editable first screen (the body owns its inputs); 'review' is the
 // read-only first screen. Both transition to the shared 'transaction' screen.
 type TransactionModalStep = 'entry' | 'review' | 'transaction';
+
+/**
+ * One entry of a flow's step list. The plain-string form is a bare label; the
+ * object form adds the token rendered as an icon+symbol chip after the label
+ * (DS Steps pattern, Figma 5200:30561) — e.g. `{ label: "Approve", tokenSymbol:
+ * "SKY" }` renders "Approve ◉ SKY".
+ */
+export type TransactionStep = string | { label: string; tokenSymbol?: string };
 
 export type TransactionSubtitles = {
   review?: string;
@@ -82,7 +84,7 @@ export type TransactionModalProps = {
   confirmDisabled?: boolean;
   successLabel?: string;
   errorLabel?: string;
-  steps?: string[];
+  steps?: TransactionStep[];
   currentStep?: number;
 };
 
@@ -138,6 +140,7 @@ export function TransactionModal({
   const isSafeWallet = useIsSafeWallet();
   const explorerName = getExplorerName(chainId, isSafeWallet);
   const { data: batchSupported } = useIsBatchSupported();
+  const [batchEnabled] = useBatchToggle();
 
   const isEntry = step === 'entry';
   const isReview = step === 'review';
@@ -147,6 +150,10 @@ export function TransactionModal({
   const isTransaction = step === 'transaction';
   const hasMultipleSteps = steps && steps.length > 1;
   const showBatchToggle = hasMultipleSteps && batchSupported;
+  // Same expression the launch hooks use for `shouldUseBatch` — when true the
+  // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
+  // steps active together, "Bundled" header badge).
+  const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
 
   // The entry screen sources its label/gating from the entry descriptor (kept
@@ -283,27 +290,46 @@ export function TransactionModal({
             )}
           </AnimatePresence>
 
-          {/* Step indicators — Figma shows them only on the wallet/status screen,
-              not on the review/entry screen. */}
+          {/* Step list (DS Steps pattern) — Figma shows it only on the wallet/status
+              screen, not on the review/entry screen. Standard flows advance one step
+              per tx; bundled flows mark every step active while the single bundle is
+              in flight, then complete together. */}
           {hasMultipleSteps && isTransaction && (
-            <div className="flex flex-col">
-              {steps.map((label, i) => {
-                const allDone = isTransaction && txStatus === TxStatus.SUCCESS;
-                const isCompleted = isTransaction && (allDone || i < currentStep);
-                const isCurrent = isTransaction && !allDone && i === currentStep;
-                const stepTxStatus = isCompleted ? TxStatus.SUCCESS : isCurrent ? txStatus : TxStatus.IDLE;
+            <Steps
+              bundled={isBundled}
+              badge={txStatus === TxStatus.INITIALIZED ? <Trans>Confirm in the wallet</Trans> : undefined}
+            >
+              {steps.map((step, i) => {
+                const { label, tokenSymbol } = typeof step === 'string' ? { label: step } : step;
+                const allDone = txStatus === TxStatus.SUCCESS;
+                const state: StepState =
+                  allDone || (!isBundled && i < currentStep)
+                    ? 'completed'
+                    : isBundled || i === currentStep
+                      ? 'active'
+                      : 'upcoming';
 
                 return (
-                  <StepIndicator
+                  <StepsItem
                     key={i}
                     stepNumber={i + 1}
                     label={label}
-                    txStatus={stepTxStatus}
-                    active={isCurrent || (allDone && i === steps.length - 1)}
+                    tokenSymbol={tokenSymbol}
+                    tokenIcon={
+                      tokenSymbol && (
+                        <TokenIcon
+                          token={{ symbol: tokenSymbol }}
+                          className="h-3.5 w-3.5"
+                          showChainIcon={false}
+                        />
+                      )
+                    }
+                    state={state}
+                    showConnector={i < steps.length - 1}
                   />
                 );
               })}
-            </div>
+            </Steps>
           )}
 
           {/* The editable entry body stays MOUNTED for the modal's lifetime — it can
@@ -458,53 +484,6 @@ function BatchToggle() {
         onCheckedChange={setBatchEnabled}
         aria-label={t`Toggle bundled transactions`}
       />
-    </div>
-  );
-}
-
-function StepIndicator({
-  stepNumber,
-  label,
-  txStatus,
-  active
-}: {
-  stepNumber: number;
-  label: string;
-  txStatus: TxStatus;
-  active: boolean;
-}) {
-  return (
-    <div className="mt-4 flex items-center gap-3">
-      <div className="relative inline-flex h-5 w-5 items-center justify-center">
-        {active && txStatus === TxStatus.LOADING && (
-          <span className="absolute inset-0 flex items-center justify-center">
-            <svg className="h-5 w-5 animate-spin text-white" viewBox="0 0 20 20">
-              <circle
-                className="text-white/30"
-                cx="10"
-                cy="10"
-                r="9"
-                stroke="currentColor"
-                strokeWidth="2"
-                fill="none"
-              />
-              <path className="text-white" fill="none" stroke="currentColor" d="M10 1 A9 9 0 1 1 1 10" />
-            </svg>
-          </span>
-        )}
-        <span
-          className={`inline-flex h-5 w-5 items-center justify-center rounded-full border-2 text-xs ${
-            active
-              ? txStatus === TxStatus.LOADING
-                ? 'border-transparent text-white'
-                : 'border-white text-white'
-              : 'border-white/60 text-white/60'
-          }`}
-        >
-          {txStatus === TxStatus.SUCCESS ? <SuccessCheckSolidColor /> : stepNumber}
-        </span>
-      </div>
-      <Text className={active ? 'text-white' : 'text-white/60'}>{label}</Text>
     </div>
   );
 }

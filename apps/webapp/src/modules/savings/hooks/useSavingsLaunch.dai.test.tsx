@@ -341,7 +341,12 @@ describe('useSavingsLaunch — DAI upgrade-and-supply launch() config', () => {
     act(() => result.current.launch());
 
     const config = h.launchMock.mock.calls[0][0];
-    expect(config.steps).toEqual(['Approve DAI', 'Upgrade DAI to USDS', 'Approve USDS', 'Supply USDS']);
+    expect(config.steps).toEqual([
+      { label: 'Approve', tokenSymbol: 'DAI' },
+      'Upgrade DAI to USDS',
+      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Supply', tokenSymbol: 'USDS' }
+    ]);
   });
 
   it('elides each approve step when its allowance is already present (steps match call count)', () => {
@@ -353,7 +358,7 @@ describe('useSavingsLaunch — DAI upgrade-and-supply launch() config', () => {
     act(() => result.current.launch());
 
     const config = h.launchMock.mock.calls[0][0];
-    expect(config.steps).toEqual(['Upgrade DAI to USDS', 'Supply USDS']);
+    expect(config.steps).toEqual(['Upgrade DAI to USDS', { label: 'Supply', tokenSymbol: 'USDS' }]);
   });
 
   it('routes onConfirm to the enabled upgrade engine (not the disabled supply engine, not withdraw)', () => {

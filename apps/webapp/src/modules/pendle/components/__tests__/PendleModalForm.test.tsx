@@ -312,7 +312,10 @@ describe('PendleModalForm', () => {
       renderForm('supply');
       typeAmount('100');
 
-      expect(lastEntryUpdate()?.steps).toEqual(['Approve USDG', 'Supply USDG']);
+      expect(lastEntryUpdate()?.steps).toEqual([
+        { label: 'Approve', tokenSymbol: 'USDG' },
+        { label: 'Supply', tokenSymbol: 'USDG' }
+      ]);
     });
 
     it('collapses to a single supply step once the allowance covers the amount', () => {
@@ -320,7 +323,7 @@ describe('PendleModalForm', () => {
       renderForm('supply');
       typeAmount('100');
 
-      expect(lastEntryUpdate()?.steps).toEqual(['Supply USDG']);
+      expect(lastEntryUpdate()?.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDG' }]);
     });
 
     it('pushes the SlippageMenu into the modal header', () => {
@@ -358,7 +361,10 @@ describe('PendleModalForm', () => {
       renderForm('withdraw');
       typeAmount('200');
 
-      expect(lastEntryUpdate()?.steps).toEqual(['Approve PT-USDG', 'Withdraw PT-USDG']);
+      expect(lastEntryUpdate()?.steps).toEqual([
+        { label: 'Approve', tokenSymbol: 'PT-USDG' },
+        { label: 'Withdraw', tokenSymbol: 'PT-USDG' }
+      ]);
     });
 
     it('fires withdraw-flavored analytics', () => {

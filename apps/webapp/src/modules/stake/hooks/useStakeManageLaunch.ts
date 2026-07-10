@@ -17,6 +17,7 @@ import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 // Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
@@ -48,20 +49,20 @@ export function buildStakeManageSteps({
   hasDelegateChange: boolean;
   /** Display symbols for the getReward legs, aligned to the engine's free-before-claim order. */
   claimSymbols?: string[];
-}): string[] {
+}): TransactionStep[] {
   return [
     // Approval steps only render alongside the action that needs them, so a
     // still-loading allowance can't flash a phantom Approve step (the engine
     // still derives the real approve calls itself).
-    needsSkyAllowance && hasLock && t`Approve SKY`,
-    needsUsdsAllowance && hasWipe && t`Approve USDS`,
-    hasWipe && t`Repay USDS`,
-    hasFree && t`Withdraw SKY`,
-    ...(claimSymbols ?? []).map(symbol => t`Claim ${symbol}`),
+    needsSkyAllowance && hasLock && { label: t`Approve`, tokenSymbol: 'SKY' },
+    needsUsdsAllowance && hasWipe && { label: t`Approve`, tokenSymbol: 'USDS' },
+    hasWipe && { label: t`Repay`, tokenSymbol: 'USDS' },
+    hasFree && { label: t`Withdraw`, tokenSymbol: 'SKY' },
+    ...(claimSymbols ?? []).map(symbol => ({ label: t`Claim`, tokenSymbol: symbol })),
     hasDelegateChange && t`Change delegate`,
-    hasLock && t`Stake SKY`,
-    hasBorrow && t`Borrow USDS`
-  ].filter(Boolean) as string[];
+    hasLock && { label: t`Stake`, tokenSymbol: 'SKY' },
+    hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS' }
+  ].filter(Boolean) as TransactionStep[];
 }
 
 export interface UseStakeManageLaunchParams {
