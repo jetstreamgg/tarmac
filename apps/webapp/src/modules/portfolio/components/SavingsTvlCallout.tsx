@@ -34,7 +34,7 @@ export function SavingsTvlCallout({ tvlUsd, savingsRate }: { tvlUsd: number; sav
         </Text>
       </div>
 
-      <Button variant="primary" className="shrink-0" onClick={() => setOpen(true)}>
+      <Button variant="primary" size="l" className="shrink-0" onClick={() => setOpen(true)}>
         <Trans>Simulate earnings</Trans>
       </Button>
 

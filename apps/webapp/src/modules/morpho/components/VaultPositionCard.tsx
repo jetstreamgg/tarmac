@@ -132,6 +132,7 @@ export function VaultPositionCard({
         <div className="flex flex-col gap-3">
           <Button
             variant="primary"
+            size="l"
             className="w-full"
             onClick={() => openSupply(modalArgs)}
             disabled={!isConnected}
@@ -142,6 +143,7 @@ export function VaultPositionCard({
           {rewardsData?.hasClaimableRewards && (
             <Button
               variant="secondary"
+              size="l"
               className="w-full"
               onClick={() => openClaim({ kind: 'vault', vaultAddress })}
               data-testid="vault-position-claim"
@@ -151,6 +153,7 @@ export function VaultPositionCard({
           )}
           <Button
             variant="secondary"
+            size="l"
             className="w-full"
             onClick={() => openWithdraw(modalArgs)}
             disabled={!isConnected}

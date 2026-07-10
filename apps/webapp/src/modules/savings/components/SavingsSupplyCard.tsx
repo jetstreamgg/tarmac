@@ -124,6 +124,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
 
       <Button
         variant="primary"
+        size="l"
         className="w-full"
         onClick={onSupplyOrConnect}
         data-testid="savings-supply-cta"

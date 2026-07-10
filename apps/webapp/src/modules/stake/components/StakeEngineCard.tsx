@@ -151,6 +151,7 @@ export function StakeEngineCard() {
 
       <Button
         variant="primary"
+        size="l"
         className="w-full"
         onClick={onOpenPosition}
         data-testid="stake-open-position-cta"

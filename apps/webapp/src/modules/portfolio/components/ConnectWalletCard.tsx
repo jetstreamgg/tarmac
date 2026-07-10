@@ -26,7 +26,7 @@ export function ConnectWalletCard() {
           </Trans>
         </Text>
       </div>
-      <Button variant="connect" onClick={connect} data-testid="portfolio-connect-card-button">
+      <Button variant="primary" size="xl" onClick={connect} data-testid="portfolio-connect-card-button">
         <Trans>Connect wallet</Trans>
       </Button>
     </Card>

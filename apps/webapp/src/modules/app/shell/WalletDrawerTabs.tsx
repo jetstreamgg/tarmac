@@ -15,7 +15,8 @@ enum WalletDrawerTab {
 const pillTriggerClasses =
   'font-circle text-text rounded-full border px-3 py-2 text-sm font-medium leading-4 tracking-tight transition-colors ' +
   'border-[#bcb6ef]/20 hover:bg-white/5 light:border-[#1a1855]/20 light:hover:bg-[#1a1855]/5 ' +
-  'data-[state=active]:border-[#949aff]/40 data-[state=active]:bg-gradient-to-b data-[state=active]:from-[#949aff]/20 data-[state=active]:to-[#504dff]/20';
+  // bg-origin-border keeps the active gradient from tiling into the translucent border ring
+  'bg-origin-border data-[state=active]:border-[#949aff]/40 data-[state=active]:bg-gradient-to-b data-[state=active]:from-[#949aff]/20 data-[state=active]:to-[#504dff]/20';
 
 /** Assets/Activity tabs: wallet token balances with earn CTAs, and the shared history widget. */
 export function WalletDrawerTabs() {

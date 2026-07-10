@@ -122,6 +122,7 @@ export function SavingsPositionCard() {
         <div className="flex gap-3">
           <Button
             variant="primary"
+            size="l"
             className="flex-1"
             onClick={() => openSupply()}
             disabled={!isConnected}
@@ -131,6 +132,7 @@ export function SavingsPositionCard() {
           </Button>
           <Button
             variant="secondary"
+            size="l"
             className="flex-1"
             onClick={() => openWithdraw()}
             disabled={!isConnected}

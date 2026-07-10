@@ -96,6 +96,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
 
       <Button
         variant="primary"
+        size="l"
         className="w-full"
         onClick={onSupplyOrConnect}
         data-testid="stusds-supply-cta"
@@ -166,6 +167,7 @@ export function StUsdsPositionCard() {
         <div className="flex flex-col gap-3">
           <Button
             variant="primary"
+            size="l"
             className="w-full"
             onClick={() => openSupply()}
             disabled={!isConnected}
@@ -175,6 +177,7 @@ export function StUsdsPositionCard() {
           </Button>
           <Button
             variant="secondary"
+            size="l"
             className="w-full"
             onClick={() => openWithdraw()}
             disabled={!isConnected}

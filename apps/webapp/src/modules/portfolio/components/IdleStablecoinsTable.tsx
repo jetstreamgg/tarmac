@@ -78,7 +78,12 @@ export function IdleStablecoinsTable({
                 </Text>
               </div>
 
-              <Button variant="primary" className={ACTION_COL} onClick={() => onSupply(token.symbol)}>
+              <Button
+                variant="primary"
+                size="m"
+                className={ACTION_COL}
+                onClick={() => onSupply(token.symbol)}
+              >
                 <Trans>Supply</Trans>
               </Button>
             </div>

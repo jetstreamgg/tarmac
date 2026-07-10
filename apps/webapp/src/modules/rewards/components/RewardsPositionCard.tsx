@@ -189,6 +189,7 @@ export function RewardsPositionCard({
           {!isDeprecated && (
             <Button
               variant="primary"
+              size="l"
               className="w-full"
               onClick={() => openSupply(modalArgs)}
               disabled={!isConnected}
@@ -200,6 +201,7 @@ export function RewardsPositionCard({
           {hasClaimable && (
             <Button
               variant="secondary"
+              size="l"
               className="w-full"
               onClick={() => openClaim({ kind: 'reward-contract', address: contractAddress })}
               data-testid="rewards-position-claim"
@@ -209,6 +211,7 @@ export function RewardsPositionCard({
           )}
           <Button
             variant="secondary"
+            size="l"
             className="w-full"
             onClick={() => openWithdraw(modalArgs)}
             disabled={!isConnected}

@@ -343,7 +343,8 @@ export function TransactionModal({
               >
                 {showBatchToggle && <BatchToggle />}
                 <Button
-                  variant="primaryAlt"
+                  variant="primary"
+                  size="xl"
                   className="w-full"
                   onClick={handleConfirm}
                   disabled={firstScreenConfirmDisabled}
@@ -379,29 +380,29 @@ export function TransactionModal({
 
                 <div className="w-full">
                   {txStatus === TxStatus.INITIALIZED && (
-                    <Button variant="primaryAlt" className="w-full" disabled>
+                    <Button variant="primary" size="xl" className="w-full" loading>
                       <Trans>Waiting for confirmation</Trans>
                     </Button>
                   )}
 
                   {txStatus === TxStatus.LOADING && (
-                    <Button variant="primaryAlt" className="w-full" disabled>
+                    <Button variant="primary" size="xl" className="w-full" loading>
                       <Trans>Processing</Trans>
                     </Button>
                   )}
 
                   {(txStatus === TxStatus.SUCCESS || txStatus === TxStatus.CANCELLED) && (
-                    <Button variant="primaryAlt" className="w-full" onClick={handleClose}>
+                    <Button variant="primary" size="xl" className="w-full" onClick={handleClose}>
                       {successLabel ?? <Trans>Done</Trans>}
                     </Button>
                   )}
 
                   {txStatus === TxStatus.ERROR && (
                     <div className="flex w-full gap-3">
-                      <Button variant="outline" className="flex-1" onClick={handleBack}>
+                      <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
                         <Trans>Back</Trans>
                       </Button>
-                      <Button variant="primaryAlt" className="flex-1" onClick={handleRetry}>
+                      <Button variant="primary" size="xl" className="flex-1" onClick={handleRetry}>
                         {errorLabel ?? <Trans>Retry</Trans>}
                       </Button>
                     </div>

@@ -7,6 +7,7 @@ import { retainOnNavigate } from '@/lib/navigation';
 import { formatDecimalPercentage, formatNumber, formatUsd } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGeoConfig } from '@/modules/geo-config';
 import { useWalletDrawerAssets, type WalletDrawerAsset } from './useWalletDrawerAssets';
@@ -111,14 +112,15 @@ function AssetRow({
       {showEarnActions && (
         <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-200 group-focus-within:grid-rows-[1fr] group-focus-within:opacity-100 group-hover:grid-rows-[1fr] group-hover:opacity-100">
           <div className="overflow-hidden">
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="m"
+              className="mt-4 w-full"
               onClick={onStartEarning}
               data-testid={`wallet-drawer-earn-${asset.symbol.toLowerCase()}`}
-              className="font-circle mt-4 flex h-10 w-full items-center justify-center rounded-full border border-[#bcb6ef]/20 bg-gradient-to-b from-[#2a197d] to-[#6a6cfb] text-sm font-medium text-[#f2f3f7] transition-opacity hover:opacity-90"
             >
               <Trans>Start earning</Trans>
-            </button>
+            </Button>
           </div>
         </div>
       )}
