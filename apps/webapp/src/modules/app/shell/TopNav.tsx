@@ -102,7 +102,7 @@ function MoreMenu() {
         aria-label="More"
         className={cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'w-10 px-0')}
       >
-        {isOpen ? <X size={16} /> : <Menu size={16} />}
+        {isOpen ? <X size={16} className="nav-menu-icon" /> : <Menu size={16} className="nav-menu-icon" />}
       </PopoverTrigger>
       <PopoverContent align="end" className="flex w-60 flex-col gap-1 p-2">
         <div className="flex items-center gap-1 px-1">

@@ -2,6 +2,8 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
+import { cn } from '@/lib/cn';
+import { buttonVariants } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { ConvertTokenSelect, type ConvertTokenSymbol } from './ConvertTokenSelect';
 
@@ -71,12 +73,13 @@ export function ConvertAmountInput({
           {isFrom && isConnected && onPercentClick && (
             <span className="flex items-center gap-1.5">
               {PERCENT_OPTIONS.map(percent => (
+                // Design-system Button / Mini (Figma 5051:168712)
                 <button
                   key={percent}
                   type="button"
                   onClick={() => onPercentClick(percent)}
                   data-testid={`convert-from-percent-${percent}`}
-                  className="bg-glassBadge text-textSecondary hover:text-text rounded-full px-2 py-1 text-xs font-medium transition-colors"
+                  className={cn(buttonVariants({ variant: 'mini', size: 'mini' }))}
                 >
                   {percent}%
                 </button>
