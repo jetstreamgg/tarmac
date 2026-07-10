@@ -70,6 +70,10 @@ export function ChainModal({
     variables: switchChainVariables
   } = useChainModalContext();
 
+  // Non-widget trigger = design-system Button / Dropdown, Network M (Figma
+  // 5019:4105): 24px chain icon, 16px chevron that flips while open (Radix
+  // DialogTrigger supplies data-state). The widget look keeps its legacy
+  // connect recipe untouched.
   return (
     <Dialog open={open} onOpenChange={disabled ? undefined : setOpen}>
       <DialogTrigger asChild disabled={disabled}>
@@ -77,17 +81,23 @@ export function ChainModal({
           <button className="h-full w-full">{children}</button>
         ) : (
           <Button
-            variant="connect"
+            variant={variant === ChainModalVariant.widget ? 'connect' : 'dropdown'}
+            size={variant === ChainModalVariant.widget ? 'default' : 'dropdownM'}
             className={cn(
-              'flex items-center gap-1.5 px-2.5 py-2',
-              variant === ChainModalVariant.widget &&
-                'from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 border-transparent bg-radial-(--gradient-position) px-[9px] bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
+              variant === ChainModalVariant.widget
+                ? 'from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 flex items-center gap-1.5 border-transparent bg-radial-(--gradient-position) px-[9px] py-2 bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
+                : 'group'
             )}
             data-testid={dataTestId}
           >
             {getChainIcon(chainId, variant === ChainModalVariant.widget ? 'h-5 w-5' : 'h-6 w-6')}
             {showLabel && <Text className="text-text">{client?.chain.name || 'Ethereum'}</Text>}
-            {showDropdownIcon && <ChevronDown width={14} height={14} />}
+            {showDropdownIcon &&
+              (variant === ChainModalVariant.widget ? (
+                <ChevronDown width={14} height={14} />
+              ) : (
+                <ChevronDown className="size-4 transition-transform group-data-[state=open]:rotate-180" />
+              ))}
           </Button>
         )}
       </DialogTrigger>

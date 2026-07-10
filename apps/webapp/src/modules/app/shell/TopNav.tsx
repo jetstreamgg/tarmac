@@ -1,10 +1,12 @@
 import { ComponentType, MouseEvent, ReactNode, useCallback, useState } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useChainId } from 'wagmi';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { cn } from '@/lib/cn';
+import { buttonVariants } from '@/components/ui/button';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
-import { Balances, Savings, StakeSky, Trade } from '@/modules/icons';
+import { Convert, Earn, StakeSky, Wallet } from '@/modules/icons';
 import { Intent } from '@/lib/enums';
 import { BATCH_TX_ENABLED, QueryParams } from '@/lib/constants';
 import { intentToPath, ROUTES, RoutePath } from '@/lib/routes';
@@ -27,8 +29,6 @@ type DestinationPath = Extract<AppRoutePath, RoutePath>;
 type Destination = {
   path: DestinationPath;
   label: ReactNode;
-  // Reuses the legacy module icons: Balances → Portfolio, Savings → Earn,
-  // Trade → Convert; StakeSky is the new pinwheel mark.
   icon: ComponentType<{ className?: string }>;
   // Modules the destination covers; the first is its landing module and
   // decides the network override for the link.
@@ -40,13 +40,13 @@ const DESTINATIONS: Destination[] = [
   {
     path: ROUTES.PORTFOLIO,
     label: <Trans>Portfolio</Trans>,
-    icon: Balances,
+    icon: Wallet,
     intents: [Intent.BALANCES_INTENT]
   },
   {
     path: ROUTES.EARN,
     label: <Trans>Earn</Trans>,
-    icon: Savings,
+    icon: Earn,
     intents: [
       Intent.SAVINGS_INTENT,
       Intent.REWARDS_INTENT,
@@ -59,7 +59,7 @@ const DESTINATIONS: Destination[] = [
   {
     path: ROUTES.CONVERT,
     label: <Trans>Convert</Trans>,
-    icon: Trade,
+    icon: Convert,
     intents: [Intent.CONVERT_INTENT, Intent.TRADE_INTENT, Intent.UPGRADE_INTENT]
   }
 ];
@@ -79,8 +79,9 @@ function useActiveDestinationPath(): RoutePath | null {
   return DESTINATIONS.find(d => isUnderDestination(intentPath, d.path))?.path ?? null;
 }
 
-const navItemClasses =
-  'nav-pill text-text relative flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors';
+// Design-system Button / Navbar (Figma 5010:29059, Default type); active
+// styling keys off the link's aria-current="page".
+const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'relative');
 
 const moreItemClasses =
   'text-textSecondary hover:text-text hover:bg-bgHover rounded-md px-3 py-2 text-left text-sm transition-colors';
@@ -94,12 +95,14 @@ function MoreMenu() {
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
+      {/* Menu type of Button / Navbar: Radix supplies data-state=open for the
+          active recipe, and the glyph flips hamburger → X while open. */}
       <PopoverTrigger
         data-testid="nav-more"
         aria-label="More"
-        className="text-textSecondary hover:text-text border-borderPrimary flex h-10 w-10 items-center justify-center rounded-full border transition-colors"
+        className={cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'w-10 px-0')}
       >
-        <Menu size={16} />
+        {isOpen ? <X size={16} className="nav-menu-icon" /> : <Menu size={16} className="nav-menu-icon" />}
       </PopoverTrigger>
       <PopoverContent align="end" className="flex w-60 flex-col gap-1 p-2">
         <div className="flex items-center gap-1 px-1">
@@ -176,19 +179,15 @@ export function TopNav() {
   return (
     <nav className="flex w-full items-center gap-3" data-testid="top-nav">
       {/* Shared gradient for the selected nav icon (dark mode); referenced by
-          fill: url(#nav-icon-gradient) in globals.css. */}
+          fill: url(#nav-icon-gradient) in globals.css. Bounding-box units span
+          each glyph exactly (Figma's per-icon ramp), which relies on every nav
+          icon being a single path — a multi-path icon would restart the ramp
+          per subelement. Stops are gradient-brand2 at full opacity. */}
       <svg aria-hidden="true" focusable="false" width="0" height="0" className="absolute">
         <defs>
-          <linearGradient
-            id="nav-icon-gradient"
-            x1="12"
-            y1="0"
-            x2="12"
-            y2="24"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stopColor="#F7A7F9" />
-            <stop offset="1" stopColor="#9583FF" />
+          <linearGradient id="nav-icon-gradient" x1="0.5" y1="0" x2="0.5" y2="1">
+            <stop stopColor="#949AFF" />
+            <stop offset="1" stopColor="#504DFF" />
           </linearGradient>
         </defs>
       </svg>
@@ -207,7 +206,7 @@ export function TopNav() {
               aria-current={isActive ? 'page' : undefined}
               className={navItemClasses}
             >
-              <Icon className="nav-icon h-5 w-5 shrink-0" />
+              <Icon className="nav-icon h-4 w-4 shrink-0" />
               {destination.label}
               {destination.intents.some(showNewDot) && (
                 <span

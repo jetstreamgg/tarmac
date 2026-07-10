@@ -43,8 +43,8 @@ import {
   Stake,
   Expert,
   Vaults,
-  Trade,
   Convert,
+  ConvertArrows,
   Pendle
 } from '@/modules/icons';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -182,10 +182,10 @@ const TOKEN_ACTIONS: BalancesAction[] = [
 ];
 
 const MODULE_ICONS: Record<BalancesAction['module'], (props: IconProps) => React.ReactElement> = {
-  convert: Convert,
+  convert: ConvertArrows,
   savings: Savings,
   upgrade: Upgrade,
-  trade: Trade,
+  trade: Convert,
   rewards: RewardsModule,
   stake: Stake,
   stusds: Expert,

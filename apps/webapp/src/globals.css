@@ -104,6 +104,9 @@
   --color-fgBrand: #757dff;
   --color-brand2-start: rgba(148, 154, 255, 0.2);
   --color-brand2-end: rgba(80, 77, 255, 0.2);
+  /* colors/fg/fg-primary (navbar label + hovered nav icon, Figma 5010:29059).
+     Interim light value mirrors --color-text (G2 owns full parity). */
+  --color-fgPrimary: #f2f3f7;
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
@@ -458,6 +461,7 @@
     /* H5 tabs tokens (interim light values; G2 owns parity) */
     --color-borderTertiary: rgba(26, 24, 85, 0.3);
     --color-fgSecondary: rgba(26, 24, 85, 0.62);
+    --color-fgPrimary: #1a1855;
     --color-flipSurface: rgba(255, 255, 255, 0.9);
     --color-flipRing: #e8ebfa;
 
@@ -588,45 +592,38 @@
   background-position: center;
 }
 
-/* Header nav pills (TopNav) ------------------------------------------------
-   Dark is the default; light overrides via [data-theme='light'] (synced by
-   ConfigProvider). The exact gradient/rgba backgrounds and the selected-icon
-   gradient fill don't map cleanly to utilities, so they live here. Reused by
-   the Stake destination tab strip, whose selected pill is a Radix tab and so
-   flags itself with [data-state='active'] rather than [aria-current]. */
-.nav-pill {
-  border: 1px solid #363a4d;
-  background: #10121e;
-}
-.nav-pill[aria-current='page'],
-.nav-pill[data-state='active'] {
-  background: #222533;
-}
-[data-theme='light'] .nav-pill {
-  border-color: transparent;
-  background: radial-gradient(116.48% 116.48% at 50% 2.27%, rgba(255, 255, 255, 0) 0%, #fff 100%), #dde3ff;
-}
-[data-theme='light'] .nav-pill[aria-current='page'],
-[data-theme='light'] .nav-pill[data-state='active'] {
-  background:
-    radial-gradient(116.48% 116.48% at 50% 2.27%, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.5) 100%),
-    #c2ccff;
-}
-
-/* Nav icon: idle = solid (currentColor); selected = gradient (dark) / indigo (light). */
-.nav-pill .nav-icon {
+/* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
+   selected-icon gradient fill (dark) / indigo tint (light) don't map to
+   utilities, so they stay here, keyed off the link's [aria-current]. */
+.nav-icon {
   color: #9ca9ff;
+  transition: color 250ms var(--ease-out-expo);
 }
-.nav-pill[aria-current='page'] .nav-icon :where(path) {
+/* Hovering the pill brightens the glyph to fg-primary (Figma hover state).
+   Light mode is unaffected: its .nav-icon rules below tie on specificity and
+   win by source order. */
+:hover > .nav-icon {
+  color: var(--color-fgPrimary);
+}
+[aria-current='page'] > .nav-icon :where(path) {
   fill: url(#nav-icon-gradient);
 }
-[data-theme='light'] .nav-pill .nav-icon {
+[data-theme='light'] .nav-icon {
   color: #2d2689;
   opacity: 0.5;
 }
-[data-theme='light'] .nav-pill[aria-current='page'] .nav-icon {
+[data-theme='light'] [aria-current='page'] > .nav-icon {
   opacity: 1;
 }
-[data-theme='light'] .nav-pill[aria-current='page'] .nav-icon :where(path) {
+[data-theme='light'] [aria-current='page'] > .nav-icon :where(path) {
   fill: #2d2689;
+}
+/* Menu trigger glyph (lucide, stroke-based): open gets the brand gradient
+   (Figma Type=Menu State=Active); rest/hover stay fg-primary via
+   currentColor. */
+[data-state='open'] > .nav-menu-icon {
+  stroke: url(#nav-icon-gradient);
+}
+[data-theme='light'] [data-state='open'] > .nav-menu-icon {
+  stroke: #2d2689;
 }
