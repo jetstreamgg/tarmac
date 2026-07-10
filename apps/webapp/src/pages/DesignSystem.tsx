@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowRight, ChevronDown, Copy, Settings2, Star, Wallet } from 'lucide-react';
+import { ArrowRight, ChevronDown, Copy, LineChart, Settings2, Star, Wallet } from 'lucide-react';
 
 import { applyTheme } from '@/lib/theme';
 import { cn } from '@/lib/cn';
@@ -48,6 +48,18 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Toggle } from '@/components/ui/toggle';
 import { Toaster } from '@/components/ui/sonner';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselDots,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious
+} from '@/components/ui/carousel';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChartSkeleton } from '@/components/ui/chart-skeleton';
+import { GainValue } from '@/components/ui/GainValue';
+import { SlippageMenu } from '@/components/ui/SlippageMenu';
 
 // Internal-only living style guide (route /design-system, hidden in production).
 // Shows every canonical components/ui primitive in its prop-reachable states;
@@ -385,6 +397,21 @@ function ButtonsSection() {
           <Spec label="connect">
             <Button variant="connect">Connect</Button>
           </Spec>
+          <Spec label="connectPrimary">
+            <Button variant="connectPrimary">Connect</Button>
+          </Spec>
+          <Spec label="primaryAlt">
+            <Button variant="primaryAlt">Primary alt</Button>
+          </Spec>
+          <Spec label="input">
+            <Button variant="input">Input</Button>
+          </Spec>
+          <Spec label="suggest">
+            <Button variant="suggest">Suggest</Button>
+          </Spec>
+          <Spec label="light">
+            <Button variant="light">Light</Button>
+          </Spec>
         </Row>
       </SubSection>
     </Section>
@@ -441,6 +468,32 @@ function TabsSection() {
               </TabsTrigger>
               <TabsTrigger variant="nav" value="c">
                 Convert
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </Spec>
+        <Spec label="default (legacy)" className="w-80">
+          <Tabs defaultValue="a" className="w-full">
+            <TabsList className="flex">
+              <TabsTrigger value="a" position="left">
+                Deposit
+              </TabsTrigger>
+              <TabsTrigger value="b" position="right">
+                Withdraw
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </Spec>
+        <Spec label="icons (legacy)">
+          <Tabs defaultValue="a">
+            <TabsList variant="pills">
+              <TabsTrigger variant="icons" value="a">
+                <LineChart className="size-5" />
+                Chart
+              </TabsTrigger>
+              <TabsTrigger variant="icons" value="b">
+                <Settings2 className="size-5" />
+                Config
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -598,6 +651,14 @@ function FormControlsSection() {
               <Toggle variant="singleSwitcher">1W</Toggle>
             </span>
           </Spec>
+          <Spec label="singleSwitcherBright">
+            <span className="flex items-center gap-1">
+              <Toggle variant="singleSwitcherBright" pressed>
+                1D
+              </Toggle>
+              <Toggle variant="singleSwitcherBright">1W</Toggle>
+            </span>
+          </Spec>
         </Row>
       </SubSection>
     </Section>
@@ -658,6 +719,27 @@ function CardsSection() {
           </CardHeader>
           <CardContent variant="stats">
             <Heading variant="medium">$2.4B</Heading>
+          </CardContent>
+        </Card>
+        <Card variant="pool">
+          <CardHeader variant="pool">
+            <CardTitle variant="pool">Pool card</CardTitle>
+          </CardHeader>
+          <CardContent variant="pool">
+            <Text variant="medium">Tighter leading, lg breakpoint padding.</Text>
+          </CardContent>
+        </Card>
+        <Card variant="statsCompact">
+          <CardHeader variant="statsCompact">
+            <CardTitle variant="statsCompact">Stats compact</CardTitle>
+          </CardHeader>
+          <CardContent variant="statsCompact">
+            <Heading variant="small">1.2M SKY</Heading>
+          </CardContent>
+        </Card>
+        <Card variant="stepper">
+          <CardContent variant="stepper">
+            <Text variant="medium">Stepper card — square corners, border, small text.</Text>
           </CardContent>
         </Card>
         <Card variant="spotlight" className="sm:col-span-2">
@@ -760,6 +842,11 @@ function OverlaysSection() {
 
 // ─── Data & misc ──────────────────────────────────────────────────────────────
 
+function SlippageMenuDemo() {
+  const [slippage, setSlippage] = useState(0.002);
+  return <SlippageMenu value={slippage} defaultValue={0.002} onChange={setSlippage} />;
+}
+
 function DataSection() {
   return (
     <Section id="data" title="Data & misc">
@@ -849,6 +936,55 @@ function DataSection() {
           </Spec>
         </Row>
       </SubSection>
+
+      <SubSection title="Carousel">
+        <Carousel className="mx-12 max-w-md">
+          <CarouselContent>
+            {[1, 2, 3].map(n => (
+              <CarouselItem key={n}>
+                <Card>
+                  <CardContent className="flex h-32 items-center justify-center p-0">
+                    <Heading variant="medium">Slide {n}</Heading>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+          <CarouselDots />
+        </Carousel>
+      </SubSection>
+
+      <SubSection title="Collapsible">
+        <Collapsible className="max-w-md">
+          <CollapsibleTrigger asChild>
+            <Button variant="secondary" size="s">
+              Toggle details
+              <ChevronDown />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3">
+            <Text variant="medium">Collapsible content revealed on demand.</Text>
+          </CollapsibleContent>
+        </Collapsible>
+      </SubSection>
+
+      <SubSection title="Module bits — ChartSkeleton / GainValue / SlippageMenu">
+        <div className="max-w-2xl space-y-8">
+          <Spec label="chart skeleton (animated)" className="w-full">
+            <div className="w-full">
+              <ChartSkeleton />
+            </div>
+          </Spec>
+          <Spec label="gain value">
+            <GainValue value={557.9} className="text-lg" />
+          </Spec>
+          <Spec label="slippage menu — the gear opens the settings popover">
+            <SlippageMenuDemo />
+          </Spec>
+        </div>
+      </SubSection>
     </Section>
   );
 }
@@ -867,7 +1003,10 @@ function DesignSystem() {
   };
 
   return (
-    <div className="bg-pageBackground text-text min-h-screen">
+    <div className="text-text min-h-screen">
+      {/* Same viewport-fixed background the app shell uses — glass surfaces
+          (cards, badges) are nearly invisible over a flat fill. */}
+      <div aria-hidden className="app-background" />
       <header className="border-glassBorder bg-pageBackground/80 sticky top-0 z-10 border-b backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-6 py-3">
           <Heading tag="h1" variant="small" className="mr-auto">
