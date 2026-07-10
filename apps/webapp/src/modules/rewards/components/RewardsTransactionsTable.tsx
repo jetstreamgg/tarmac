@@ -9,12 +9,9 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import {
   ProductTransactionsTable,
-  ProductTransactionColumn,
-  TxStatusBadge,
-  TxActionCell,
-  TxAmountCell,
-  TxHashLink
+  ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
 
 type RewardsTxKind = 'supply' | 'withdraw' | 'claim';
 
@@ -44,7 +41,7 @@ const COLUMNS: ProductTransactionColumn<RewardsTxRow>[] = [
     header: <Trans>Action</Trans>,
     width: '1.5fr',
     cell: row => (
-      <TxActionCell
+      <CellAction
         icon={
           row.kind === 'supply' ? (
             <SavingsSupply width={16} height={15} />
@@ -55,7 +52,7 @@ const COLUMNS: ProductTransactionColumn<RewardsTxRow>[] = [
           )
         }
         label={ACTION_LABELS[row.kind]}
-        timeAgo={row.timeAgo}
+        sublabel={row.timeAgo}
       />
     )
   },
@@ -64,16 +61,16 @@ const COLUMNS: ProductTransactionColumn<RewardsTxRow>[] = [
     header: <Trans>Status</Trans>,
     width: '1fr',
     // Confirmed on-chain history only; pending in-flight txs are a later ticket.
-    cell: () => <TxStatusBadge status="completed" />
+    cell: () => <CellStatus status="completed" />
   },
   {
     id: 'amount',
     header: <Trans>Amount</Trans>,
     width: '1.5fr',
     cell: row => (
-      <TxAmountCell
+      <CellAmount
         icon={
-          <TokenIcon token={{ symbol: row.symbol }} width={20} showChainIcon={false} className="h-5 w-5" />
+          <TokenIcon token={{ symbol: row.symbol }} width={12} showChainIcon={false} className="h-3 w-3" />
         }
         amount={row.amount}
         usd={row.usd}
@@ -84,7 +81,7 @@ const COLUMNS: ProductTransactionColumn<RewardsTxRow>[] = [
     id: 'hash',
     header: <Trans>Txn hash</Trans>,
     width: '1fr',
-    cell: row => <TxHashLink label={row.txHashLabel} href={row.txHref} />
+    cell: row => <CellHash label={row.txHashLabel} href={row.txHref} />
   }
 ];
 

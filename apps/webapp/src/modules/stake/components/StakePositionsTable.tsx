@@ -27,9 +27,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RiskMeter } from '@/components/product/RiskMeter';
 import {
   ProductTransactionsTable,
-  ProductTransactionColumn,
-  TxAmountCell
+  ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { CellAmount } from '@/components/ui/table-cells';
 import {
   StakeUserPosition,
   isInactiveStakePosition,
@@ -104,8 +104,8 @@ function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
   const { data: vault } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
 
   return (
-    <TxAmountCell
-      icon={<TokenIcon token={{ symbol: 'USDS' }} width={20} className="h-5 w-5" showChainIcon={false} />}
+    <CellAmount
+      icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
       amount={formatStakeAmount(vault?.debtValue ?? position.usdsDebt)}
     />
   );
@@ -182,8 +182,8 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     header: <Trans>Total staked (SKY)</Trans>,
     width: '1.2fr',
     cell: position => (
-      <TxAmountCell
-        icon={<TokenIcon token={{ symbol: 'SKY' }} width={20} className="h-5 w-5" showChainIcon={false} />}
+      <CellAmount
+        icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
         amount={formatStakeAmount(position.skyLocked)}
       />
     )

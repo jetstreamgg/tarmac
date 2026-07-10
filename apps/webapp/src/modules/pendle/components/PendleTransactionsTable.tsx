@@ -7,11 +7,9 @@ import { formatNumber, getEtherscanLink, formatAddress } from '@/utils';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import {
   ProductTransactionsTable,
-  ProductTransactionColumn,
-  TxActionCell,
-  TxAmountCell,
-  TxHashLink
+  ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { CellAction, CellAmount, CellHash } from '@/components/ui/table-cells';
 
 type PendleTxRow = {
   id: string;
@@ -37,7 +35,7 @@ const COLUMNS: ProductTransactionColumn<PendleTxRow>[] = [
     header: <Trans>Transaction</Trans>,
     width: '1.5fr',
     cell: row => (
-      <TxActionCell
+      <CellAction
         icon={
           row.action === PendleHistoryAction.BUY_PT ? (
             <SavingsSupply width={16} height={15} />
@@ -53,13 +51,13 @@ const COLUMNS: ProductTransactionColumn<PendleTxRow>[] = [
     id: 'amount',
     header: <Trans>Amount</Trans>,
     width: '1.5fr',
-    cell: row => <TxAmountCell amount={`${row.amount} ${row.marketName}`} usd={row.usd} />
+    cell: row => <CellAmount amount={`${row.amount} ${row.marketName}`} usd={row.usd} />
   },
   {
     id: 'hash',
     header: <Trans>Txn hash</Trans>,
     width: '1fr',
-    cell: row => <TxHashLink label={row.txHashLabel} href={row.txHref} />
+    cell: row => <CellHash label={row.txHashLabel} href={row.txHref} />
   },
   {
     id: 'time',

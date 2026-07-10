@@ -8,11 +8,9 @@ import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import {
   ProductTransactionsTable,
-  ProductTransactionColumn,
-  TxActionCell,
-  TxAmountCell,
-  TxHashLink
+  ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { CellAction, CellAmount, CellHash } from '@/components/ui/table-cells';
 
 export type VaultTxFilter = 'all' | 'supply' | 'withdraw';
 
@@ -35,7 +33,7 @@ const COLUMNS: ProductTransactionColumn<VaultTxRow>[] = [
     header: <Trans>Transaction</Trans>,
     width: '1.5fr',
     cell: row => (
-      <TxActionCell
+      <CellAction
         icon={
           row.isSupply ? (
             <SavingsSupply width={16} height={15} />
@@ -52,9 +50,9 @@ const COLUMNS: ProductTransactionColumn<VaultTxRow>[] = [
     header: <Trans>Amount</Trans>,
     width: '1.5fr',
     cell: row => (
-      <TxAmountCell
+      <CellAmount
         icon={
-          <TokenIcon token={{ symbol: row.symbol }} width={20} showChainIcon={false} className="h-5 w-5" />
+          <TokenIcon token={{ symbol: row.symbol }} width={12} showChainIcon={false} className="h-3 w-3" />
         }
         amount={`${row.amount} ${row.symbol}`}
         usd={row.usd}
@@ -65,7 +63,7 @@ const COLUMNS: ProductTransactionColumn<VaultTxRow>[] = [
     id: 'hash',
     header: <Trans>Txn hash</Trans>,
     width: '1fr',
-    cell: row => <TxHashLink label={row.txHashLabel} href={row.txHref} />
+    cell: row => <CellHash label={row.txHashLabel} href={row.txHref} />
   },
   {
     id: 'time',

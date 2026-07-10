@@ -170,11 +170,12 @@ describe('StakePositionsTable', () => {
   it('renders the risk cell through the shared RiskMeter pill (review: one pill app-wide)', () => {
     renderTable();
 
+    // The design-system Badges/Risk chrome (Figma Table Cell Type=Risk).
     const meter = screen.getByTestId('stake-position-row-1').querySelector('div[aria-hidden]');
-    expect(meter?.className).toContain('bg-surface');
-    expect(meter?.className).toContain('gap-0.5');
+    expect(meter?.className).toContain('border-glassBorder');
+    expect(meter?.className).toContain('gap-px');
     const segment = meter?.querySelector('span');
-    expect(segment?.className).toContain('h-1 w-2.5');
+    expect(segment?.className).toContain('h-[3px] w-2');
   });
 
   it('renders a dash, not an unlit meter, when the vault read fails on a debt-carrying row', () => {
