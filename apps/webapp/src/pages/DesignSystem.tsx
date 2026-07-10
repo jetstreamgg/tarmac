@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowRight, ChevronDown, Copy, LineChart, Settings2, Star, Wallet } from 'lucide-react';
+import {
+  ArrowDownToLine,
+  ArrowRight,
+  ArrowUpToLine,
+  ChevronDown,
+  Copy,
+  LineChart,
+  Settings2,
+  Star,
+  Wallet
+} from 'lucide-react';
 
 import { applyTheme } from '@/lib/theme';
 import { cn } from '@/lib/cn';
@@ -33,6 +43,26 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  CellAction,
+  CellAmount,
+  CellAmountWithToken,
+  CellBadge,
+  CellChevron,
+  CellEmpty,
+  CellHash,
+  CellNetworks,
+  CellPercent,
+  CellPosition,
+  CellProduct,
+  CellRisk,
+  CellStatus,
+  CellToken,
+  CellTokenIdle
+} from '@/components/ui/table-cells';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { BaseChain, MainnetChain, OptimismChain, Pendle, Stake } from '@/modules/icons';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   Pagination,
@@ -75,6 +105,7 @@ const SECTIONS = [
   { id: 'select', title: 'Select' },
   { id: 'cards', title: 'Cards' },
   { id: 'overlays', title: 'Overlays' },
+  { id: 'tables', title: 'Tables' },
   { id: 'data', title: 'Data & misc' }
 ];
 
@@ -847,35 +878,447 @@ function SlippageMenuDemo() {
   return <SlippageMenu value={slippage} defaultValue={0.002} onChange={setSlippage} />;
 }
 
+/** One primitive-built row per typed cell, so the table showcases itself. */
+function CellSpecimenRow({ name, children }: { name: string; children: React.ReactNode }) {
+  return (
+    <TableRow>
+      <TableCell className="text-fgSecondary w-64">{name}</TableCell>
+      <TableCell>{children}</TableCell>
+    </TableRow>
+  );
+}
+
+/** Sortable-header button as consumers build it (EarnTable pattern). */
+function SortableHead({ label, active }: { label: string; active?: boolean }) {
+  return (
+    <button
+      type="button"
+      className={cn('hover:text-fgPrimary inline-flex items-center gap-1 transition-colors')}
+    >
+      {label}
+      <ChevronDown size={12} className={cn(active ? 'rotate-180 opacity-100' : 'opacity-40')} />
+    </button>
+  );
+}
+
+function TablesSection() {
+  return (
+    <Section
+      id="tables"
+      title="Tables"
+      note="Patterns / Tables: transparent 32px Body-6 header, 88px rows separated by 2px slits, 24px corners on the body block only, bg-tertiary row hover. All columns left-aligned per Figma. Type=Text is the bare TableCell; Type=Button is the DS Button (primary, m)."
+    >
+      <SubSection title="Typed cells">
+        <Table className="max-w-3xl">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Specimen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <CellSpecimenRow name="Text (TableCell default)">$4.23b</CellSpecimenRow>
+            <CellSpecimenRow name="Percent">
+              <CellPercent value="3.75" />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Empty">
+              <CellEmpty />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Icon">
+              <CellChevron />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Risk (none / low / medium / high*)">
+              <span className="flex items-center gap-2">
+                <CellRisk tier="none" />
+                <CellRisk tier="low" />
+                <CellRisk tier="medium" />
+                <CellRisk tier="high" />
+              </span>
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Status">
+              <span className="flex items-center gap-2">
+                <CellStatus status="pending" />
+                <CellStatus status="completed" />
+              </span>
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Button (DS Button primary/m)">
+              <Button variant="primary" size="m">
+                Supply
+              </Button>
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Networks">
+              <CellNetworks>
+                <MainnetChain className="h-full w-full" />
+                <BaseChain className="h-full w-full" />
+                <OptimismChain className="h-full w-full" />
+              </CellNetworks>
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Token">
+              <CellToken
+                icon={<TokenIcon token={{ symbol: 'sUSDS' }} width={28} className="h-7 w-7" showChainIcon={false} />}
+                title="Sky Savings"
+                subtitle={
+                  <>
+                    Supply: <TokenIconStack symbols={['USDS', 'USDC']} size={12} />
+                  </>
+                }
+              />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Token (active position, showMode + showDate)">
+              <CellToken
+                active
+                icon={<TokenIcon token={{ symbol: 'sUSDS' }} width={28} className="h-7 w-7" showChainIcon={false} />}
+                title="Pendle sUSDS"
+                titleSuffix={<Pendle className="h-4 w-4" />}
+                subtitle={
+                  <>
+                    Supply: <TokenIconStack symbols={['USDS']} size={12} />
+                    <span aria-hidden>·</span>
+                    18 Jun 2026
+                  </>
+                }
+              />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Token Idle">
+              <CellTokenIdle
+                icon={<TokenIcon token={{ symbol: 'USDS' }} width={28} className="h-7 w-7" showChainIcon={false} />}
+                symbol="USDS"
+                badges={
+                  <>
+                    <CellBadge tone="success">up to 4.75%</CellBadge>
+                    <CellBadge>1:1 USDC</CellBadge>
+                  </>
+                }
+                name="Sky USD"
+              />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Position">
+              <CellPosition icon={<Stake width={16} height={16} />} label="Position 1" />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Action">
+              <CellAction icon={<ArrowDownToLine className="size-4" />} label="Supply" sublabel="35 min ago" />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Action and Position">
+              <CellAction
+                compact
+                icon={<ArrowUpToLine className="size-4" />}
+                label="Stake & Borrow"
+                sublabel={
+                  <>
+                    35 min ago <span aria-hidden>·</span> Position 1
+                  </>
+                }
+              />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Product">
+              <CellProduct
+                icon={<TokenIcon token={{ symbol: 'stUSDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                label="Staked USDS"
+              />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Amount with Token">
+              <CellAmountWithToken
+                amount="$128.90"
+                icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+              />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Amount">
+              <CellAmount
+                icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                amount="1,000.00"
+                usd="$1,000.00"
+              />
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Hash">
+              <CellHash label="0xff9s...dsa6" href="https://etherscan.io" />
+            </CellSpecimenRow>
+          </TableBody>
+        </Table>
+      </SubSection>
+
+      <SubSection title="Table / Earn">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[34%]">
+                <SortableHead label="Token" active />
+              </TableHead>
+              <TableHead>
+                <SortableHead label="Network" />
+              </TableHead>
+              <TableHead>
+                <SortableHead label="Risk profile" />
+              </TableHead>
+              <TableHead>
+                <SortableHead label="Rate" />
+              </TableHead>
+              <TableHead>
+                <SortableHead label="30D Rate" />
+              </TableHead>
+              <TableHead>
+                <SortableHead label="TVL" />
+              </TableHead>
+              <TableHead>
+                <SortableHead label="My position" />
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow className="cursor-pointer">
+              <TableCell>
+                <CellToken
+                  active
+                  icon={
+                    <TokenIcon token={{ symbol: 'sUSDS' }} width={28} className="h-7 w-7" showChainIcon={false} />
+                  }
+                  title="Sky Savings"
+                  subtitle={
+                    <>
+                      Supply: <TokenIconStack symbols={['USDS', 'USDC']} size={12} />
+                    </>
+                  }
+                />
+              </TableCell>
+              <TableCell>
+                <CellNetworks>
+                  <MainnetChain className="h-full w-full" />
+                  <BaseChain className="h-full w-full" />
+                  <OptimismChain className="h-full w-full" />
+                </CellNetworks>
+              </TableCell>
+              <TableCell>
+                <CellRisk tier="low" />
+              </TableCell>
+              <TableCell>
+                <CellPercent value="3.75" />
+              </TableCell>
+              <TableCell>
+                <CellPercent value="3.81" />
+              </TableCell>
+              <TableCell>$4.23b</TableCell>
+              <TableCell>$2,500.00</TableCell>
+            </TableRow>
+            <TableRow className="cursor-pointer">
+              <TableCell>
+                <CellToken
+                  icon={
+                    <TokenIcon token={{ symbol: 'sUSDS' }} width={28} className="h-7 w-7" showChainIcon={false} />
+                  }
+                  title="Pendle sUSDS"
+                  titleSuffix={<Pendle className="h-4 w-4" />}
+                  subtitle={
+                    <>
+                      Supply: <TokenIconStack symbols={['USDS']} size={12} />
+                      <span aria-hidden>·</span>
+                      18 Jun 2026
+                    </>
+                  }
+                />
+              </TableCell>
+              <TableCell>
+                <CellNetworks>
+                  <MainnetChain className="h-full w-full" />
+                </CellNetworks>
+              </TableCell>
+              <TableCell>
+                <CellRisk tier="low" />
+              </TableCell>
+              <TableCell>
+                <CellPercent value="8.61" />
+              </TableCell>
+              <TableCell>
+                <CellEmpty />
+              </TableCell>
+              <TableCell>$78.9m</TableCell>
+              <TableCell>$0.00</TableCell>
+            </TableRow>
+            <TableRow className="cursor-pointer">
+              <TableCell>
+                <CellToken
+                  icon={
+                    <TokenIcon token={{ symbol: 'USDS' }} width={28} className="h-7 w-7" showChainIcon={false} />
+                  }
+                  title="USDS Flagship Vault"
+                  subtitle={
+                    <>
+                      Supply: <TokenIconStack symbols={['USDS']} size={12} />
+                    </>
+                  }
+                />
+              </TableCell>
+              <TableCell>
+                <CellNetworks>
+                  <BaseChain className="h-full w-full" />
+                </CellNetworks>
+              </TableCell>
+              <TableCell>
+                <CellRisk tier="medium" />
+              </TableCell>
+              <TableCell>
+                <CellPercent value="5.12" />
+              </TableCell>
+              <TableCell>
+                <CellPercent value="5.02" />
+              </TableCell>
+              <TableCell>$312.4m</TableCell>
+              <TableCell>
+                <CellEmpty />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </SubSection>
+
+      <SubSection title="Table / Transactions">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[23%]">Action</TableHead>
+              <TableHead>Network</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Product</TableHead>
+              <TableHead>Supplied</TableHead>
+              <TableHead>Txn hash</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell>
+                <CellAction
+                  icon={<ArrowDownToLine className="size-4" />}
+                  label="Supply"
+                  sublabel="35 min ago"
+                />
+              </TableCell>
+              <TableCell>
+                <CellNetworks>
+                  <MainnetChain className="h-full w-full" />
+                </CellNetworks>
+              </TableCell>
+              <TableCell>
+                <CellStatus status="pending" />
+              </TableCell>
+              <TableCell>
+                <CellProduct
+                  icon={
+                    <TokenIcon token={{ symbol: 'stUSDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
+                  }
+                  label="Staked USDS"
+                />
+              </TableCell>
+              <TableCell>
+                <CellAmount
+                  icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                  amount="1,000.00"
+                  usd="$1,000.00"
+                />
+              </TableCell>
+              <TableCell>
+                <CellHash label="0xff9s...dsa6" href="https://etherscan.io" />
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>
+                <CellAction
+                  icon={<ArrowUpToLine className="size-4" />}
+                  label="Withdraw"
+                  sublabel="2 days ago"
+                />
+              </TableCell>
+              <TableCell>
+                <CellNetworks>
+                  <BaseChain className="h-full w-full" />
+                </CellNetworks>
+              </TableCell>
+              <TableCell>
+                <CellStatus status="completed" />
+              </TableCell>
+              <TableCell>
+                <CellProduct
+                  icon={
+                    <TokenIcon token={{ symbol: 'sUSDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
+                  }
+                  label="Sky Savings"
+                />
+              </TableCell>
+              <TableCell>
+                <CellAmount
+                  icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                  amount="500.00"
+                  usd="$500.00"
+                />
+              </TableCell>
+              <TableCell>
+                <CellHash label="0x8a2b...41ce" href="https://etherscan.io" />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </SubSection>
+
+      <SubSection title="Table / Active Positions + Idle (excerpt)">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40%]">Token</TableHead>
+              <TableHead>Supplied</TableHead>
+              <TableHead className="w-[148px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell>
+                <CellTokenIdle
+                  icon={<TokenIcon token={{ symbol: 'USDS' }} width={28} className="h-7 w-7" showChainIcon={false} />}
+                  symbol="USDS"
+                  badges={
+                    <>
+                      <CellBadge tone="success">up to 4.75%</CellBadge>
+                      <CellBadge>1:1 USDC</CellBadge>
+                    </>
+                  }
+                  name="Sky USD"
+                />
+              </TableCell>
+              <TableCell>
+                <CellAmount
+                  icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                  amount="1,000.00"
+                  usd="$1,000.00"
+                />
+              </TableCell>
+              <TableCell className="px-4">
+                <Button variant="primary" size="m" className="w-full">
+                  Supply
+                </Button>
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>
+                <CellPosition icon={<Stake width={16} height={16} />} label="Position 1" />
+              </TableCell>
+              <TableCell>
+                <CellAmountWithToken
+                  amount="$128.90"
+                  icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+                />
+              </TableCell>
+              <TableCell>
+                <span className="flex justify-center">
+                  <CellChevron />
+                </span>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </SubSection>
+    </Section>
+  );
+}
+
 function DataSection() {
   return (
     <Section id="data" title="Data & misc">
-      <SubSection title="Table">
-        <div className="max-w-2xl">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Asset</TableHead>
-                <TableHead>Balance</TableHead>
-                <TableHead className="text-right">Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell>USDS</TableCell>
-                <TableCell>12,400.00</TableCell>
-                <TableCell className="text-right">$12,400.00</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>SKY</TableCell>
-                <TableCell>850,000.00</TableCell>
-                <TableCell className="text-right">$44,795.00</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
-      </SubSection>
-
       <SubSection title="Accordion">
         <Accordion type="single" collapsible className="max-w-2xl">
           <AccordionItem value="a">
@@ -1046,6 +1489,7 @@ function DesignSystem() {
         <SelectSection />
         <CardsSection />
         <OverlaysSection />
+        <TablesSection />
         <DataSection />
       </main>
       <Toaster />
