@@ -49,7 +49,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Toggle } from '@/components/ui/toggle';
 import { Toaster } from '@/components/ui/sonner';
 
-// Internal-only living style guide (route /design-system, dev builds only).
+// Internal-only living style guide (route /design-system, hidden in production).
 // Shows every canonical components/ui primitive in its prop-reachable states;
 // pointer states (hover/pressed/focus) are exercised live on the specimens.
 // Purely presentational — no primitive is modified here.
@@ -895,9 +895,9 @@ function DesignSystem() {
 
       <main className="mx-auto max-w-6xl space-y-16 px-6 py-10">
         <p className="text-fgSecondary max-w-3xl text-sm">
-          Internal preview of the canonical <code>components/ui</code> primitives (dev builds only). Dark is
-          the at-parity theme; light is the interim mechanism pending G2. Hover, press and focus the specimens
-          to see their live states.
+          Internal preview of the canonical <code>components/ui</code> primitives (hidden in production). Dark
+          is the at-parity theme; light is the interim mechanism pending G2. Hover, press and focus the
+          specimens to see their live states.
         </p>
         <ColorsSection />
         <TypographySection />
