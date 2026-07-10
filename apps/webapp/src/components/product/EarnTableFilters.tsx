@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { Button } from '@/components/ui/button';
+import { tabsTriggerVariants } from '@/components/ui/tabs';
 import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
 import type { EarnRiskTier } from '@/hooks';
 
@@ -51,22 +51,20 @@ export function EarnTableFilters({
         {RISK_TIERS.map(tier => {
           const isSelected = selectedRiskTiers.includes(tier.value);
           return (
-            <Button
+            // Design-system Tabs chip (Figma 5029:51762) on a plain button:
+            // these are multi-select toggles, so aria-pressed carries the
+            // semantics and data-state drives the recipe's styling contract.
+            <button
               key={tier.value}
-              variant={isSelected ? 'pill' : 'chip'}
-              size="xs"
+              type="button"
               aria-pressed={isSelected}
+              data-state={isSelected ? 'active' : 'inactive'}
               data-testid={`earn-filter-risk-${tier.value}`}
               onClick={() => onRiskTierToggle(tier.value)}
-              className={cn(
-                'border-borderPrimary h-8 border px-3 text-sm',
-                // secondaryHover === secondary today, so the chip needs its own
-                // visible hover; the selected pill keeps its variant hover.
-                !isSelected && 'hover:bg-surfaceAlt'
-              )}
+              className={cn(tabsTriggerVariants({ variant: 'pill' }))}
             >
               {tier.label}
-            </Button>
+            </button>
           );
         })}
       </div>

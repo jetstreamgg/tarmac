@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@/utils';
@@ -196,8 +197,10 @@ const TIMEFRAME_OPTIONS: { value: TimeFrame; label: string }[] = [
 ];
 
 /**
- * Rounded segmented pill group used by the `detail` variant header (the Rate|TVL
- * metric toggle and the timeframe toggle in the Figma product-detail chart).
+ * Segmented pill group used by the `detail` variant header (the Rate|TVL
+ * metric toggle and the timeframe toggle) — the design-system Tabs2 family
+ * (Figma 5039:73501), reusing the tabs recipes via manual data-state since
+ * this is a plain button group, not a Radix Tabs tree.
  */
 function SegmentedPills<T extends string>({
   options,
@@ -211,19 +214,14 @@ function SegmentedPills<T extends string>({
   dataTestId?: string;
 }) {
   return (
-    <div className="bg-chartSelect inline-flex items-center gap-1 rounded-full p-1" data-testid={dataTestId}>
+    <div className={cn(tabsListVariants({ variant: 'segmented' }))} data-testid={dataTestId}>
       {options.map(option => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
           data-state={value === option.value ? 'active' : 'inactive'}
-          className={cn(
-            'rounded-full px-3 py-1 text-sm leading-none transition-colors',
-            value === option.value
-              ? 'from-primary-start/100 to-primary-end/100 text-text bg-radial-(--gradient-position)'
-              : 'text-selectActive light:text-textSecondary hover:text-text'
-          )}
+          className={cn(tabsTriggerVariants({ variant: 'segmented' }))}
         >
           {option.label}
         </button>
