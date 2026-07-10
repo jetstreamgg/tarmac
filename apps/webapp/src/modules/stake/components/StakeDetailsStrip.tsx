@@ -1,38 +1,35 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
-import {
-  useStakeHistoricData,
-  useCollateralData,
-  getIlkName,
-  RISK_LEVEL_THRESHOLDS,
-  RiskLevel
-} from '@/hooks';
-import { formatNumber, formatPercent, formatDecimalPercentage } from '@/utils';
+import { useStakeHistoricData, RISK_LEVEL_THRESHOLDS, RiskLevel } from '@/hooks';
+import { formatNumber, formatDecimalPercentage } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useStakeRewardsRate } from '../hooks/useStakeRewardsRate';
 
 const NO_VALUE = '–';
 
-// Trailing 6-month window, in days, used to average the historic borrow rate.
+// Trailing 6-month window, in days, used to average the historic rewards rate.
 const SIX_MONTH_DAYS = 183;
 
-type RatePoint = { datetime: string; borrowRate: number };
+// Structural subset of RewardsChartInfoParsed: seconds timestamp + decimal-
+// fraction rate string, as the BA Labs farms endpoint delivers them.
+type RatePoint = { blockTimestamp: number; rate: string };
 
 /**
- * Mean of the historic `borrowRate` over the trailing 6 months relative to the
- * most recent datapoint. Pure and structurally typed so the test can hit it
+ * Mean of the historic rewards `rate` over the trailing 6 months relative to
+ * the most recent datapoint. Pure and structurally typed so the test can hit it
  * directly without standing up the hook. Returns null when there is no data in
- * the window. (Semantics flagged for product confirmation — PRD Decision 7.)
+ * the window. (Rewards — not borrow — rate per the product call on the F1
+ * review; 6M window semantics flagged for confirmation in PRD Decision 7.)
  */
 export function calculateTrailing6MonthRate(data: readonly RatePoint[] | undefined): number | null {
   if (!data || data.length === 0) return null;
-  const sorted = [...data].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
-  const latestTime = new Date(sorted[0].datetime).getTime();
-  const cutoff = latestTime - SIX_MONTH_DAYS * 24 * 60 * 60 * 1000;
-  const windowPoints = sorted.filter(point => new Date(point.datetime).getTime() >= cutoff);
+  const sorted = [...data].sort((a, b) => b.blockTimestamp - a.blockTimestamp);
+  const cutoff = sorted[0].blockTimestamp - SIX_MONTH_DAYS * 24 * 60 * 60;
+  const windowPoints = sorted.filter(point => point.blockTimestamp >= cutoff);
   if (windowPoints.length === 0) return null;
-  const sum = windowPoints.reduce((acc, point) => acc + point.borrowRate, 0);
-  return sum / windowPoints.length;
+  const sum = windowPoints.reduce((acc, point) => acc + parseFloat(point.rate), 0);
+  return Number.isFinite(sum) ? sum / windowPoints.length : null;
 }
 
 // Static risk meter: iterate the canonical thresholds low→high and tint each
@@ -86,13 +83,16 @@ export function StakeDetailsStrip() {
     ?.slice()
     .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime())[0];
 
+  // Rewards rate (highest-rate farm) — the same figure the promo card and the
+  // Statistics chart hero show, so all three rate surfaces agree.
   const {
-    data: collateralData,
-    isLoading: collateralLoading,
-    error: collateralError
-  } = useCollateralData(getIlkName(2));
+    series: rewardsSeries,
+    currentRate,
+    isLoading: rewardsLoading,
+    error: rewardsError
+  } = useStakeRewardsRate();
 
-  const sixMonthRate = calculateTrailing6MonthRate(historicData);
+  const sixMonthRate = calculateTrailing6MonthRate(rewardsSeries);
 
   return (
     <div data-testid="stake-details-strip" className="flex flex-col">
@@ -102,15 +102,13 @@ export function StakeDetailsStrip() {
 
       <div className="grid grid-cols-2 gap-x-5">
         <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Current Rate</Trans>}>
-          <StatValue isLoading={collateralLoading} error={collateralError}>
-            {collateralData?.stabilityFee !== undefined
-              ? formatPercent(collateralData.stabilityFee)
-              : NO_VALUE}
+          <StatValue isLoading={rewardsLoading} error={rewardsError}>
+            {currentRate !== null ? formatDecimalPercentage(currentRate) : NO_VALUE}
           </StatValue>
         </DetailRow>
 
         <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>6M Rate</Trans>}>
-          <StatValue isLoading={historicLoading} error={historicError}>
+          <StatValue isLoading={rewardsLoading} error={rewardsError}>
             {sixMonthRate !== null ? formatDecimalPercentage(sixMonthRate) : NO_VALUE}
           </StatValue>
         </DetailRow>

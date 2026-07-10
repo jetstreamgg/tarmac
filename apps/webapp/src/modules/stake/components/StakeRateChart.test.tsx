@@ -6,24 +6,36 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 i18n.load('en', {});
 i18n.activate('en');
 
-// Fixed historic series. Newest by datetime is 2026-06-01 (borrowRate 0.075 -> 7.5%,
-// tvl 1,000,000 -> $1M). The hero reads the newest raw datapoint regardless of the
-// timeframe-filtered chart series, so the assertions are wall-clock independent.
+// Fixed historic series feeding the TVL metric. Newest by datetime is
+// 2026-06-01 (tvl 1,000,000 -> $1M hero).
 const HISTORIC = [
   { date: '2026-06-01', datetime: '2026-06-01T00:00:00Z', borrowRate: 0.075, tvl: 1000000 },
   { date: '2026-01-01', datetime: '2026-01-01T00:00:00Z', borrowRate: 0.03, tvl: 500000 }
 ];
 
-// On-chain stability fee (0.082 WAD → 8.2%), deliberately different from the
-// series' newest point (7.5%) so the hero's source is provable.
-const STABILITY_FEE = 82n * 10n ** 15n;
+const ts = (date: string) => new Date(date).getTime() / 1000;
+
+// Two stake farms. Farm A's latest rate (5.69%) beats farm B's (3%), so the
+// Rate hero must read farm A — the same winner the promo card crowns.
+const FARM_A = [
+  { blockTimestamp: ts('2026-01-01'), rate: '0.02' },
+  { blockTimestamp: ts('2026-06-01'), rate: '0.0569' }
+];
+const FARM_B = [
+  { blockTimestamp: ts('2026-01-01'), rate: '0.09' },
+  { blockTimestamp: ts('2026-06-01'), rate: '0.03' }
+];
 
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     useStakeHistoricData: () => ({ data: HISTORIC, isLoading: false, error: null }),
-    useCollateralData: () => ({ data: { stabilityFee: STABILITY_FEE }, isLoading: false, error: null })
+    useStakeRewardContracts: () => ({
+      data: [{ contractAddress: '0xfarmA' }, { contractAddress: '0xfarmB' }],
+      isLoading: false
+    }),
+    useMultipleRewardsChartInfo: () => ({ data: [FARM_A, FARM_B], isLoading: false, error: null })
   };
 });
 
@@ -48,13 +60,14 @@ describe('StakeRateChart', () => {
     expect(within(toggle).getByText('TVL')).toBeTruthy();
   });
 
-  it('shows the on-chain stability fee as the rate hero, not the charted series', () => {
+  it('shows the winning farm rewards rate as the rate hero, not the borrow rate', () => {
     renderChart();
 
     expect(screen.getByText('Current Rate')).toBeTruthy();
-    // The hero is the protocol's live rate (8.2%), while the analytics series'
-    // newest point (7.5%) only draws the chart line.
-    expect(screen.getByText('8.2%')).toBeTruthy();
+    // The hero is the highest-rate farm's latest datapoint (5.69%) — not the
+    // losing farm's (3%) and not the historic borrowRate (7.5%).
+    expect(screen.getByText('5.69%')).toBeTruthy();
+    expect(screen.queryByText('3%')).toBeNull();
     expect(screen.queryByText('7.5%')).toBeNull();
   });
 
