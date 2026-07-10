@@ -48,12 +48,13 @@ const COLUMNS: { key: EarnTableColumn; label: ReactNode }[] = [
 
 /**
  * Formatted numeric value → typed cell: percent strings get the dimmed unit
- * (Type=Percent), the en-dash placeholder gets Type=Empty, USD strings render
- * as the TableCell default (Type=Text).
+ * (Type=Percent), dash placeholders (EarnPage's en-dash, useEarnMarketplace's
+ * em-dash NO_RATE) get Type=Empty, USD strings render as the TableCell
+ * default (Type=Text).
  */
 function NumericValue({ value, isLoading }: { value: string; isLoading?: boolean }) {
   if (isLoading) return <Skeleton className="h-4 w-12" />;
-  if (value === '–') return <CellEmpty />;
+  if (value === '–' || value === '—') return <CellEmpty />;
   if (value.endsWith('%')) return <CellPercent value={value.slice(0, -1)} />;
   return value;
 }
