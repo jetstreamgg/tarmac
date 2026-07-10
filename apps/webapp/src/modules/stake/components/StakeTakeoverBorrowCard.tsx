@@ -5,7 +5,7 @@ import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { Slider } from '@/components/ui/slider';
+import { Slider, SliderTicks } from '@/components/ui/slider';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
@@ -115,32 +115,23 @@ export function StakeTakeoverBorrowCard({
         {shouldShowSlider && !minCollateralNotMet && (
           <div className="flex flex-col gap-2">
             <Slider
+              variant="range"
               value={sliderValue}
               max={100}
               step={1}
               onValueChange={value => handleSliderChange(value[0])}
               aria-label="Liquidation risk meter"
               data-testid="stake-takeover-borrow-slider"
-              className="[&_[data-slot=slider-track]]:bg-textSecondary/10 [&_[data-slot=slider-range]]:bg-orange-400 [&_[data-slot=slider-thumb]]:border-orange-400"
             />
-            <div className="text-textSecondary flex items-center justify-between text-xs">
+            <div className="text-fgSecondary flex items-center gap-4 text-xs">
               <span className="flex items-center gap-1">
                 <Trans>min. {dust !== undefined ? formatBigInt(dust, { compact: true }) : NO_VALUE}</Trans>
-                <TokenIcon
-                  token={{ symbol: 'USDS' }}
-                  width={14}
-                  className="h-3.5 w-3.5"
-                  showChainIcon={false}
-                />
+                <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
               </span>
+              <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
               <span className="flex items-center gap-1">
                 <Trans>max. {formatBigInt(maxBorrowable, { compact: true })}</Trans>
-                <TokenIcon
-                  token={{ symbol: 'USDS' }}
-                  width={14}
-                  className="h-3.5 w-3.5"
-                  showChainIcon={false}
-                />
+                <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
               </span>
             </div>
           </div>

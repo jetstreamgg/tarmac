@@ -2,7 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
 import { formatBigInt } from '@/utils';
-import { Slider } from '@/components/ui/slider';
+import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
@@ -105,10 +105,10 @@ export function StakeManageStakeCard({
             onValueChange={value => onSliderChange(value[0])}
             aria-label={isStake ? t`Stake percentage` : t`Withdraw percentage`}
             data-testid="stake-manage-stake-slider"
-            className="[&_[data-slot=slider-track]]:bg-textSecondary/10"
           />
-          <div className="text-textSecondary flex items-center justify-between text-xs">
+          <div className="text-fgSecondary flex items-center gap-4 text-xs">
             <span>0%</span>
+            <SliderTicks progress={sliderPercent} className="grow" />
             <span>100%</span>
           </div>
         </div>
