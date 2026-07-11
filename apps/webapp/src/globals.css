@@ -129,6 +129,23 @@
   /* colors/fg/fg-primary (navbar label + hovered nav icon, Figma 5010:29059).
      Interim light value mirrors --color-text (G2 owns full parity). */
   --color-fgPrimary: #f2f3f7;
+  /* Design-system table tokens (Figma Patterns/Tables 5178:37455): dark values
+     are the Figma source values — colors/bg/bg-secondary (row/cell surface),
+     colors/bg/bg-tertiary (hovered row) and the components/status palette
+     shared by the Status/Risk/Token-Idle cells: fg/bg/border-success,
+     fg-warning (risk Medium segments) and fg/bg-brand (Pending badge).
+     statusSuccessSolid is colors/system/success (#02c2a1), the active-position
+     dot; statusSuccessBorder doubles as the position-iconbox ring. None are
+     overridden in the light scope yet (G2 owns light parity). */
+  --color-bgSecondary: rgba(188, 182, 239, 0.05);
+  --color-bgTertiary: rgba(188, 182, 239, 0.1);
+  --color-statusSuccess: #40e3c8;
+  --color-statusSuccessBg: rgba(2, 194, 161, 0.1);
+  --color-statusSuccessBorder: rgba(2, 194, 161, 0.2);
+  --color-statusSuccessSolid: #02c2a1;
+  --color-statusWarning: #ffc044;
+  --color-statusBrand: #9ca9ff;
+  --color-statusBrandBg: rgba(156, 160, 229, 0.1);
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;

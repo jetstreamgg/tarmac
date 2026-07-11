@@ -45,6 +45,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 
 export type PendleModalFlow = 'supply' | 'withdraw';
@@ -150,11 +151,11 @@ export function PendleModalForm({
   });
   const needsAllowance = allowance !== undefined && amount > 0n && allowance < amount;
 
-  // Step labels mirror the engine's call count ([approve?, convert]) so the
+  // Steps mirror the engine's call count ([approve?, convert]) so the
   // indicator advances in lockstep with the sequential flow's onMutate bumps.
-  const steps = useMemo<string[]>(() => {
-    const convertStep = isSupply ? t`Supply ${inputSymbol}` : t`Withdraw ${inputSymbol}`;
-    return needsAllowance ? [t`Approve ${inputSymbol}`, convertStep] : [convertStep];
+  const steps = useMemo<TransactionStep[]>(() => {
+    const convertStep = { label: isSupply ? t`Supply` : t`Withdraw`, tokenSymbol: inputSymbol };
+    return needsAllowance ? [{ label: t`Approve`, tokenSymbol: inputSymbol }, convertStep] : [convertStep];
   }, [isSupply, needsAllowance, inputSymbol]);
 
   const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({

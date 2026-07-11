@@ -22,12 +22,9 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ProductTransactionsTable,
-  ProductTransactionColumn,
-  TxStatusBadge,
-  TxActionCell,
-  TxAmountCell,
-  TxHashLink
+  ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 
 /**
@@ -185,10 +182,12 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
     header: <Trans>Action</Trans>,
     width: '1.6fr',
     cell: row => (
-      <TxActionCell
+      // Figma Type=Action and Position (Transaction Stake): Label 5 title.
+      <CellAction
+        compact
         icon={verbIcon(row.verb)}
         label={verbLabel(row.verb)}
-        timeAgo={
+        sublabel={
           <>
             {formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
             {row.urnIndex !== undefined && <> · Position {row.urnIndex + 1}</>}
@@ -203,15 +202,15 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
     width: '1fr',
     // Subgraph history is confirmed-only; optimistic pending rows are an open
     // product decision (Ticket Breakdown) and would slot in via this badge.
-    cell: () => <TxStatusBadge status="completed" />
+    cell: () => <CellStatus status="completed" />
   },
   {
     id: 'sky',
     header: <Trans>Stake/unstake</Trans>,
     width: '1.2fr',
     cell: row => (
-      <TxAmountCell
-        icon={<TokenIcon token={{ symbol: 'SKY' }} width={20} className="h-5 w-5" showChainIcon={false} />}
+      <CellAmount
+        icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
         amount={formatStakeAmount(row.skyAmount)}
         usd={
           row.skyPrice !== null ? formatUsd(Number(formatUnits(row.skyAmount, 18)) * row.skyPrice) : undefined
@@ -224,8 +223,8 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
     header: <Trans>Borrow/repay</Trans>,
     width: '1.2fr',
     cell: row => (
-      <TxAmountCell
-        icon={<TokenIcon token={{ symbol: 'USDS' }} width={20} className="h-5 w-5" showChainIcon={false} />}
+      <CellAmount
+        icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
         amount={formatStakeAmount(row.usdsAmount)}
         usd={formatUsd(Number(formatUnits(row.usdsAmount, 18)))}
       />
@@ -236,7 +235,7 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
     header: <Trans>Txn hash</Trans>,
     width: '1fr',
     cell: row => (
-      <TxHashLink
+      <CellHash
         label={formatAddress(row.transactionHash, 6, 4)}
         href={getEtherscanLink(row.chainId, row.transactionHash, 'tx')}
       />

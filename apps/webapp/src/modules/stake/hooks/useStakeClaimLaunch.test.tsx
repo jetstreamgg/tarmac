@@ -201,21 +201,28 @@ describe('buildStakeClaimSteps', () => {
   it('derives steps from the selection: Claim per token, then Restake SKY (UX 1050:23881)', () => {
     expect(
       buildStakeClaimSteps({ needsSkyAllowance: false, claimSymbols: ['SKY', 'SPK'], restake: false })
-    ).toEqual(['Claim SKY', 'Claim SPK']);
+    ).toEqual([
+      { label: 'Claim', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SPK' }
+    ]);
 
     expect(
       buildStakeClaimSteps({ needsSkyAllowance: false, claimSymbols: ['SKY', 'SPK'], restake: true })
-    ).toEqual(['Claim SKY', 'Claim SPK', 'Restake SKY']);
+    ).toEqual([
+      { label: 'Claim', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SPK' },
+      { label: 'Restake', tokenSymbol: 'SKY' }
+    ]);
 
     expect(buildStakeClaimSteps({ needsSkyAllowance: true, claimSymbols: ['SKY'], restake: true })).toEqual([
-      'Approve SKY',
-      'Claim SKY',
-      'Restake SKY'
+      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SKY' },
+      { label: 'Restake', tokenSymbol: 'SKY' }
     ]);
 
     // Plain claim never needs an approval: nothing is pulled from the owner.
     expect(buildStakeClaimSteps({ needsSkyAllowance: true, claimSymbols: ['SPK'], restake: false })).toEqual([
-      'Claim SPK'
+      { label: 'Claim', tokenSymbol: 'SPK' }
     ]);
   });
 });
@@ -309,7 +316,10 @@ describe('useStakeClaimLaunch — launch() config', () => {
     expect(config.transactionTitle).toBe('Claim your rewards');
     expect(config.subtitles.loading).toBe('Your claim is being processed on the blockchain. Please wait.');
     expect(config.subtitles.success).toBe('You’ve claimed your rewards');
-    expect(config.steps).toEqual(['Claim SKY', 'Claim SPK']);
+    expect(config.steps).toEqual([
+      { label: 'Claim', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SPK' }
+    ]);
     expect(config.toast).toEqual({
       loading: 'Claiming rewards',
       success: 'Claim successful',
@@ -321,7 +331,12 @@ describe('useStakeClaimLaunch — launch() config', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch(true));
 
-    expect(launchConfig().steps).toEqual(['Approve SKY', 'Claim SKY', 'Claim SPK', 'Restake SKY']);
+    expect(launchConfig().steps).toEqual([
+      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SPK' },
+      { label: 'Restake', tokenSymbol: 'SKY' }
+    ]);
   });
 
   it('fires legacy claim analytics: claimAll for a multi-token plain claim', () => {
@@ -357,7 +372,11 @@ describe('useStakeClaimLaunch — launch() config', () => {
     act(() => result.current.launch(true));
 
     expect(launchConfig().analytics.action).toBe('claimAndRestake');
-    expect(launchConfig().steps).toEqual(['Approve SKY', 'Claim SKY', 'Restake SKY']);
+    expect(launchConfig().steps).toEqual([
+      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Claim', tokenSymbol: 'SKY' },
+      { label: 'Restake', tokenSymbol: 'SKY' }
+    ]);
   });
 
   it('exposes restake availability from the selection', () => {

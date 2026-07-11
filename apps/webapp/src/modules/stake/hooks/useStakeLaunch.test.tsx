@@ -171,17 +171,17 @@ const expectedCalldata = (usdsToBorrow: bigint, delegate?: `0x${string}`) =>
 describe('buildStakeOpenSteps', () => {
   it('derives the step list from the calldata set (A-Q3: delegate shown honestly)', () => {
     expect(buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: true, hasDelegate: true })).toEqual([
-      'Approve SKY',
-      'Stake SKY',
-      'Borrow USDS',
+      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Stake', tokenSymbol: 'SKY' },
+      { label: 'Borrow', tokenSymbol: 'USDS' },
       'Delegate voting power'
     ]);
     expect(buildStakeOpenSteps({ needsSkyAllowance: false, hasBorrow: false, hasDelegate: false })).toEqual([
-      'Stake SKY'
+      { label: 'Stake', tokenSymbol: 'SKY' }
     ]);
     expect(buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: false, hasDelegate: false })).toEqual([
-      'Approve SKY',
-      'Stake SKY'
+      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Stake', tokenSymbol: 'SKY' }
     ]);
   });
 });
@@ -247,7 +247,12 @@ describe('useStakeLaunch — launch() config', () => {
     const config = h.launchMock.mock.calls[0][0];
     expect(config.title).toBe('Confirm');
     expect(config.transactionTitle).toBe('Confirm your transaction');
-    expect(config.steps).toEqual(['Approve SKY', 'Stake SKY', 'Borrow USDS', 'Delegate voting power']);
+    expect(config.steps).toEqual([
+      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Stake', tokenSymbol: 'SKY' },
+      { label: 'Borrow', tokenSymbol: 'USDS' },
+      'Delegate voting power'
+    ]);
     expect(config.analytics.widgetName).toBe('stake');
     expect(config.analytics.flow).toBe('open');
     expect(config.analytics.action).toBe('multicall');

@@ -331,7 +331,7 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the L2 supply steps generic ("Approve" / "Supply") — Figma is mainnet-only', () => {
+  it('labels the L2 supply steps with the origin token chip', () => {
     h.allowance = 0n;
     const a = renderHook(() =>
       useSavingsLaunch({
@@ -343,8 +343,11 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
       })
     );
     act(() => a.result.current.launch());
-    // L2 has no Figma frame; the labels intentionally stay token-agnostic.
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Approve', 'Supply']);
+    // DS Steps chips are token-derived (APP-354), so L2 flows carry the origin token too.
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Supply', tokenSymbol: 'USDS' }
+    ]);
     a.unmount();
     h.launchMock.mockClear();
 
@@ -359,7 +362,7 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
       })
     );
     act(() => b.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Supply']);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDS' }]);
     b.unmount();
   });
 });

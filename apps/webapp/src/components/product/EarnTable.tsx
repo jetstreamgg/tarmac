@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CellEmpty, CellPercent, CellToken } from '@/components/ui/table-cells';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { EarnRiskTier } from '@/hooks';
 import { RiskTierMeter } from './RiskMeter';
@@ -14,7 +15,7 @@ export type EarnTableSort = { column: EarnTableColumn; direction: 'asc' | 'desc'
 export type EarnTableRowItem = {
   id: string;
   name: string;
-  /** Product icon slot (the caller injects its TokenIcon). */
+  /** 28px product logo for the token iconbox (the caller injects its TokenIcon). */
   icon?: ReactNode;
   /** Optional glyph rendered after the name (e.g. a provider logo). */
   nameSuffix?: ReactNode;
@@ -43,20 +44,17 @@ const COLUMNS: { key: EarnTableColumn; label: ReactNode }[] = [
   { key: 'position', label: <Trans>My position</Trans> }
 ];
 
-// Card-style rows: the row spacing comes from border-separate on the table,
-// the card surface from the cells (rounded on the outer edges), so the ui
-// TableRow's own border/hover treatments are neutralized.
-const rowClasses =
-  'group/row cursor-pointer border-0 last:border-b-0 has-[td]:hover:bg-transparent has-[td]:active:bg-transparent has-[td]:focus:border-y-0';
-// Container-card surface for contrast against the page background, deepening
-// on hover (surface-tint hovers go nearly transparent over the bright bg).
-const cellClasses =
-  'bg-container group-hover/row:bg-containerDark transition-colors first:rounded-l-2xl last:rounded-r-2xl';
-
-function NumericCell({ value, isLoading }: { value: string; isLoading?: boolean }) {
-  return (
-    <TableCell className={cellClasses}>{isLoading ? <Skeleton className="h-4 w-12" /> : value}</TableCell>
-  );
+/**
+ * Formatted numeric value → typed cell: percent strings get the dimmed unit
+ * (Type=Percent), dash placeholders (EarnPage's en-dash, useEarnMarketplace's
+ * em-dash NO_RATE) get Type=Empty, USD strings render as the TableCell
+ * default (Type=Text).
+ */
+function NumericValue({ value, isLoading }: { value: string; isLoading?: boolean }) {
+  if (isLoading) return <Skeleton className="h-4 w-12" />;
+  if (value === '–' || value === '—') return <CellEmpty />;
+  if (value.endsWith('%')) return <CellPercent value={value.slice(0, -1)} />;
+  return value;
 }
 
 export type EarnTableProps = {
@@ -67,8 +65,9 @@ export type EarnTableProps = {
 };
 
 /**
- * The Earn Opportunities table (L1): layout only — rows arrive filtered,
- * sorted and formatted; sorting/selection intent is reported via callbacks.
+ * The Earn Opportunities table (Figma Table/Earn 5178:37463): layout only —
+ * rows arrive filtered, sorted and formatted; sorting/selection intent is
+ * reported via callbacks. Surface, header and hover come from ui/table.
  */
 export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTableProps) {
   const handleRowKeyDown = (event: KeyboardEvent, id: string) => {
@@ -79,7 +78,7 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
   };
 
   return (
-    <Table className="border-separate border-spacing-y-2" data-testid="earn-opportunities-table">
+    <Table data-testid="earn-opportunities-table">
       <TableHeader>
         <TableRow>
           {COLUMNS.map(column => {
@@ -87,6 +86,7 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
             return (
               <TableHead
                 key={column.key}
+                className={cn(column.key === 'token' && 'w-[34%]')}
                 aria-sort={isSorted ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined}
               >
                 <button
@@ -94,8 +94,8 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
                   data-testid={`earn-sort-${column.key}`}
                   onClick={() => onSortChange(column.key)}
                   className={cn(
-                    'hover:text-text inline-flex items-center gap-1 transition-colors',
-                    isSorted && 'text-text'
+                    'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
+                    isSorted && 'text-fgPrimary'
                   )}
                 >
                   {column.label}
@@ -121,17 +121,18 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
             tabIndex={onRowSelect ? 0 : undefined}
             onClick={() => onRowSelect?.(row.id)}
             onKeyDown={event => handleRowKeyDown(event, row.id)}
-            className={rowClasses}
+            className="cursor-pointer"
           >
-            <TableCell className={cellClasses}>
-              <div className="flex items-center gap-3">
-                {row.icon}
-                <div className="flex flex-col gap-0.5">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    {row.name}
-                    {row.nameSuffix}
-                  </span>
-                  <span className="text-textSecondary flex items-center gap-1.5 text-xs">
+            {/* The Figma active-position iconbox (CellToken `active`) is not
+                wired here on purpose: its trigger follows product logic that
+                is not part of the H8 batch. */}
+            <TableCell>
+              <CellToken
+                icon={row.icon}
+                title={row.name}
+                titleSuffix={row.nameSuffix}
+                subtitle={
+                  <>
                     <Trans>Supply:</Trans>
                     {row.supply}
                     {row.maturityLabel && (
@@ -140,18 +141,26 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
                         {row.maturityLabel}
                       </>
                     )}
-                  </span>
-                </div>
-              </div>
+                  </>
+                }
+              />
             </TableCell>
-            <TableCell className={cellClasses}>{row.network}</TableCell>
-            <TableCell className={cellClasses}>
+            <TableCell>{row.network}</TableCell>
+            <TableCell>
               <RiskTierMeter tier={row.risk} />
             </TableCell>
-            <NumericCell value={row.rate} isLoading={row.isLoading} />
-            <NumericCell value={row.rate30d} isLoading={row.isLoading} />
-            <NumericCell value={row.tvl} isLoading={row.isLoading} />
-            <NumericCell value={row.position} isLoading={row.isLoading} />
+            <TableCell>
+              <NumericValue value={row.rate} isLoading={row.isLoading} />
+            </TableCell>
+            <TableCell>
+              <NumericValue value={row.rate30d} isLoading={row.isLoading} />
+            </TableCell>
+            <TableCell>
+              <NumericValue value={row.tvl} isLoading={row.isLoading} />
+            </TableCell>
+            <TableCell>
+              <NumericValue value={row.position} isLoading={row.isLoading} />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

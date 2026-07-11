@@ -21,6 +21,7 @@ import {
 import { formatNumber, isL2ChainId } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 
 export type SavingsLaunchFlow = 'supply' | 'withdraw';
 
@@ -73,8 +74,8 @@ export interface UseSavingsLaunchResult {
    * re-launching. Same call as `launch()`'s `onConfirm`, so calldata is identical.
    */
   execute: () => void;
-  /** Step labels for the configured flow (e.g. ["Approve", "Supply"]); matches `launch()`. */
-  steps: string[];
+  /** Steps for the configured flow (e.g. ["Approve", "Supply"]); matches `launch()`. */
+  steps: TransactionStep[];
   /** Whether the routed call-builder hook is ready to execute. */
   prepared: boolean;
   isLoading: boolean;
@@ -246,24 +247,34 @@ export function useSavingsLaunch({
   //  - L2 PSM supply/withdraw: optional approve(assetIn → psm3L2) → swap
   // Hoisted from launch() so the editable modal entry body can pass them straight
   // to the shared modal; launch() consumes the same value (behaviour unchanged).
-  const steps = useMemo<string[]>(() => {
+  const steps = useMemo<TransactionStep[]>(() => {
     if (isSupply) {
       return isL2
         ? needsPsmApproval
-          ? [t`Approve`, t`Supply`]
-          : [t`Supply`]
+          ? [
+              { label: t`Approve`, tokenSymbol: originToken.symbol },
+              { label: t`Supply`, tokenSymbol: originToken.symbol }
+            ]
+          : [{ label: t`Supply`, tokenSymbol: originToken.symbol }]
         : isDai
           ? ([
-              needsDaiApproval && t`Approve DAI`,
+              needsDaiApproval && { label: t`Approve`, tokenSymbol: 'DAI' },
               t`Upgrade DAI to USDS`,
-              needsUsdsApproval && t`Approve USDS`,
-              t`Supply USDS`
-            ].filter(Boolean) as string[])
+              needsUsdsApproval && { label: t`Approve`, tokenSymbol: 'USDS' },
+              { label: t`Supply`, tokenSymbol: 'USDS' }
+            ].filter(Boolean) as TransactionStep[])
           : needsUsdsApproval
-            ? [t`Approve USDS`, t`Supply USDS`]
-            : [t`Supply USDS`];
+            ? [
+                { label: t`Approve`, tokenSymbol: 'USDS' },
+                { label: t`Supply`, tokenSymbol: 'USDS' }
+              ]
+            : [{ label: t`Supply`, tokenSymbol: 'USDS' }];
     }
-    return needsPsmWithdrawApproval ? [t`Approve`, t`Withdraw`] : [t`Withdraw`];
+    // The withdraw approval is for the sUSDS share token, not `originToken` —
+    // it keeps the bare label rather than a wrong chip.
+    return needsPsmWithdrawApproval
+      ? [t`Approve`, { label: t`Withdraw`, tokenSymbol: originToken.symbol }]
+      : [{ label: t`Withdraw`, tokenSymbol: originToken.symbol }];
   }, [
     isSupply,
     isL2,
@@ -271,7 +282,8 @@ export function useSavingsLaunch({
     needsPsmApproval,
     needsDaiApproval,
     needsUsdsApproval,
-    needsPsmWithdrawApproval
+    needsPsmWithdrawApproval,
+    originToken.symbol
   ]);
 
   const launch = useCallback(() => {
