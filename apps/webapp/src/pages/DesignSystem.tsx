@@ -90,6 +90,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { GainValue } from '@/components/ui/GainValue';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
+import { Steps, StepsItem } from '@/components/ui/steps';
 
 // Internal-only living style guide (route /design-system, hidden in production).
 // Shows every canonical components/ui primitive in its prop-reachable states;
@@ -106,6 +107,7 @@ const SECTIONS = [
   { id: 'cards', title: 'Cards' },
   { id: 'overlays', title: 'Overlays' },
   { id: 'tables', title: 'Tables' },
+  { id: 'steps', title: 'Steps' },
   { id: 'data', title: 'Data & misc' }
 ];
 
@@ -1535,6 +1537,144 @@ function DataSection() {
   );
 }
 
+// ─── Steps ────────────────────────────────────────────────────────────────────
+
+/** 14px chip icon for step specimens (chain overlay off — the chip is symbol-only). */
+function StepToken({ symbol }: { symbol: string }) {
+  return <TokenIcon token={{ symbol }} className="h-3.5 w-3.5" showChainIcon={false} />;
+}
+
+function StepsSection() {
+  return (
+    <Section
+      id="steps"
+      title="Steps"
+      note="Transaction-modal step list (Figma Patterns / Steps). Standard flows advance one step at a
+        time; Bundle flows (EIP-5792 batched) mark every step active while the single bundled
+        transaction is in flight, then complete together."
+    >
+      <SubSection title="Item states">
+        <ol className="flex max-w-xl flex-col gap-1">
+          <StepsItem
+            stepNumber={1}
+            label="Approve"
+            tokenSymbol="SKY"
+            tokenIcon={<StepToken symbol="SKY" />}
+            state="completed"
+            showConnector
+          />
+          <StepsItem
+            stepNumber={2}
+            label="Stake"
+            tokenSymbol="SKY"
+            tokenIcon={<StepToken symbol="SKY" />}
+            state="active"
+            showConnector
+          />
+          <StepsItem
+            stepNumber={3}
+            label="Borrow"
+            tokenSymbol="USDS"
+            tokenIcon={<StepToken symbol="USDS" />}
+            state="upcoming"
+            showConnector
+          />
+          <StepsItem stepNumber={4} label="Delegate voting power" state="upcoming" />
+        </ol>
+      </SubSection>
+
+      <SubSection title="Steps Standard — mid-flow, awaiting wallet">
+        <div className="max-w-xl">
+          <Steps badge="Confirm in the wallet">
+            <StepsItem
+              stepNumber={1}
+              label="Approve"
+              tokenSymbol="SKY"
+              tokenIcon={<StepToken symbol="SKY" />}
+              state="completed"
+              showConnector
+            />
+            <StepsItem
+              stepNumber={2}
+              label="Stake"
+              tokenSymbol="SKY"
+              tokenIcon={<StepToken symbol="SKY" />}
+              state="active"
+              showConnector
+            />
+            <StepsItem
+              stepNumber={3}
+              label="Borrow"
+              tokenSymbol="USDS"
+              tokenIcon={<StepToken symbol="USDS" />}
+              state="upcoming"
+            />
+          </Steps>
+        </div>
+      </SubSection>
+
+      <SubSection title="Steps Bundle — one confirmation covers every step">
+        <Row>
+          <Spec label="in flight — all active" className="w-96">
+            <Steps bundled badge="Confirm in the wallet">
+              <StepsItem
+                stepNumber={1}
+                label="Approve"
+                tokenSymbol="SKY"
+                tokenIcon={<StepToken symbol="SKY" />}
+                state="active"
+                showConnector
+              />
+              <StepsItem
+                stepNumber={2}
+                label="Stake"
+                tokenSymbol="SKY"
+                tokenIcon={<StepToken symbol="SKY" />}
+                state="active"
+                showConnector
+              />
+              <StepsItem
+                stepNumber={3}
+                label="Borrow"
+                tokenSymbol="USDS"
+                tokenIcon={<StepToken symbol="USDS" />}
+                state="active"
+              />
+            </Steps>
+          </Spec>
+          <Spec label="confirmed — all completed" className="w-96">
+            <Steps bundled>
+              <StepsItem
+                stepNumber={1}
+                label="Approve"
+                tokenSymbol="SKY"
+                tokenIcon={<StepToken symbol="SKY" />}
+                state="completed"
+                showConnector
+              />
+              <StepsItem
+                stepNumber={2}
+                label="Stake"
+                tokenSymbol="SKY"
+                tokenIcon={<StepToken symbol="SKY" />}
+                state="completed"
+                showConnector
+              />
+              <StepsItem
+                stepNumber={3}
+                label="Borrow"
+                tokenSymbol="USDS"
+                tokenIcon={<StepToken symbol="USDS" />}
+                state="completed"
+              />
+            </Steps>
+          </Spec>
+        </Row>
+      </SubSection>
+    </Section>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function DesignSystem() {
@@ -1593,6 +1733,7 @@ function DesignSystem() {
         <CardsSection />
         <OverlaysSection />
         <TablesSection />
+        <StepsSection />
         <DataSection />
       </main>
       <Toaster />

@@ -327,7 +327,10 @@ describe('useSavingsLaunch — launch() config', () => {
     );
     act(() => a.result.current.launch());
     // Figma 527:8273 — the supply steps name their token; step count is unchanged.
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Approve USDS', 'Supply USDS']);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Supply', tokenSymbol: 'USDS' }
+    ]);
     a.unmount();
     h.launchMock.mockClear();
 
@@ -336,7 +339,7 @@ describe('useSavingsLaunch — launch() config', () => {
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
     );
     act(() => b.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Supply USDS']);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDS' }]);
     b.unmount();
   });
 });

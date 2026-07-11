@@ -15,6 +15,7 @@ import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
@@ -38,13 +39,13 @@ export function buildStakeOpenSteps({
   needsSkyAllowance: boolean;
   hasBorrow: boolean;
   hasDelegate: boolean;
-}): string[] {
+}): TransactionStep[] {
   return [
-    needsSkyAllowance && t`Approve SKY`,
-    t`Stake SKY`,
-    hasBorrow && t`Borrow USDS`,
+    needsSkyAllowance && { label: t`Approve`, tokenSymbol: 'SKY' },
+    { label: t`Stake`, tokenSymbol: 'SKY' },
+    hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS' },
     hasDelegate && t`Delegate voting power`
-  ].filter(Boolean) as string[];
+  ].filter(Boolean) as TransactionStep[];
 }
 
 export interface UseStakeLaunchParams {

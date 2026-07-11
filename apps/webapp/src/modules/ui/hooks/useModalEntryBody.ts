@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import type { TransactionConfig } from '@/modules/ui/context/transactionContract';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 
 /**
  * The live fields an editable modal body keeps in sync after launch. `confirmDisabled`
@@ -13,8 +14,8 @@ type ModalEntryBodyLive = {
   confirmDisabled: boolean;
   /** Compact amount summary rendered on the wallet/status screen. */
   transactionScreenContent?: ReactNode;
-  /** Step labels for multi-step flows (e.g. ["Approve", "Supply"]). */
-  steps?: string[];
+  /** Steps for multi-step flows (labels or `{ label, tokenSymbol }` chips). */
+  steps?: TransactionStep[];
   /** Per-state minimized-toast titles. */
   toast?: TransactionConfig['toast'];
 };

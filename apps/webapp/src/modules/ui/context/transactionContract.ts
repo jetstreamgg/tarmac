@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
+import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import type { TxStatus } from '@/widgets';
 
 /**
@@ -111,8 +111,11 @@ export type TransactionConfig = {
   errorLabel?: string;
   onSuccess?: () => void;
   onError?: () => void;
-  /** Step labels for multi-step transactions (e.g. ["Approve", "Supply"]). */
-  steps?: string[];
+  /**
+   * Steps for multi-step transactions — a bare label or `{ label, tokenSymbol }`
+   * to render the DS token chip (e.g. `{ label: "Approve", tokenSymbol: "USDS" }`).
+   */
+  steps?: TransactionStep[];
   /** Analytics metadata for tracking transaction lifecycle events. */
   analytics?: TransactionAnalytics;
   /** Identity used to gate updateModalContent calls to the active session. */

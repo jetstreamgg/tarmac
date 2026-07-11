@@ -16,6 +16,7 @@ import {
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { parseStakeId, stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 // Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
@@ -39,12 +40,12 @@ export function buildStakeClaimSteps({
   needsSkyAllowance: boolean;
   claimSymbols: string[];
   restake: boolean;
-}): string[] {
+}): TransactionStep[] {
   return [
-    restake && needsSkyAllowance && t`Approve SKY`,
-    ...claimSymbols.map(symbol => t`Claim ${symbol}`),
-    restake && t`Restake SKY`
-  ].filter(Boolean) as string[];
+    restake && needsSkyAllowance && { label: t`Approve`, tokenSymbol: 'SKY' },
+    ...claimSymbols.map(symbol => ({ label: t`Claim`, tokenSymbol: symbol })),
+    restake && { label: t`Restake`, tokenSymbol: 'SKY' }
+  ].filter(Boolean) as TransactionStep[];
 }
 
 export interface UseStakeClaimLaunchParams {
