@@ -439,9 +439,6 @@ function ButtonsSection() {
           <Spec label="outline">
             <Button variant="outline">Outline</Button>
           </Spec>
-          <Spec label="connect">
-            <Button variant="connect">Connect</Button>
-          </Spec>
           <Spec label="connectPrimary">
             <Button variant="connectPrimary">Connect</Button>
           </Spec>
