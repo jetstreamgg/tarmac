@@ -101,6 +101,7 @@ import {
   IconboxStatus
 } from '@/components/ui/iconbox';
 import { Loader } from '@/components/ui/loader';
+import { ListWallet } from '@/components/ui/list';
 
 // Internal-only living style guide (route /design-system, hidden in production).
 // Shows every canonical components/ui primitive in its prop-reachable states;
@@ -1436,18 +1437,45 @@ function DataSection() {
       <SubSection title="Accordion">
         <Accordion type="single" collapsible className="max-w-2xl">
           <AccordionItem value="a">
-            <AccordionTrigger>What is the Sky Protocol?</AccordionTrigger>
-            <AccordionContent>
-              <Text variant="medium">A decentralized, non-custodial DeFi protocol.</Text>
-            </AccordionContent>
+            <AccordionTrigger>
+              <span className="flex items-center gap-3">
+                <IconboxAction>
+                  <Star className="size-4" />
+                </IconboxAction>
+                What is the Sky Protocol?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>A decentralized, non-custodial DeFi protocol.</AccordionContent>
           </AccordionItem>
           <AccordionItem value="b">
-            <AccordionTrigger>How do rewards work?</AccordionTrigger>
-            <AccordionContent>
-              <Text variant="medium">Rewards accrue per block and can be claimed at any time.</Text>
-            </AccordionContent>
+            <AccordionTrigger>
+              <span className="flex items-center gap-3">
+                <IconboxAction>
+                  <LineChart className="size-4" />
+                </IconboxAction>
+                How do rewards work?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>Rewards accrue per block and can be claimed at any time.</AccordionContent>
           </AccordionItem>
         </Accordion>
+      </SubSection>
+
+      <SubSection title="List / Wallet">
+        <div className="flex max-w-md flex-col gap-4">
+          <Spec label="default (hover for borderTertiary)">
+            <ListWallet icon={<Wallet className="text-fgPrimary size-6" />} name="Metamask" />
+          </Spec>
+          <Spec label="badge">
+            <ListWallet icon={<Wallet className="text-fgPrimary size-6" />} name="Metamask" badge="Recent" />
+          </Spec>
+          <Spec label="active (connecting)">
+            <ListWallet icon={<Wallet className="text-fgPrimary size-6" />} name="Coinbase Wallet" active />
+          </Spec>
+          <Spec label="disabled">
+            <ListWallet icon={<Wallet className="text-fgPrimary size-6" />} name="Safe" disabled />
+          </Spec>
+        </div>
       </SubSection>
 
       <SubSection title="Pagination">

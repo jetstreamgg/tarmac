@@ -1,6 +1,6 @@
 // Shim → @/components/ui/accordion (widget look = AccordionWidget*).
 export {
-  Accordion,
+  AccordionWidget as Accordion,
   AccordionWidgetItem as AccordionItem,
   AccordionWidgetTrigger as AccordionTrigger,
   AccordionWidgetContent as AccordionContent
