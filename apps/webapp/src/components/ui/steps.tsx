@@ -132,7 +132,12 @@ export function StepsItem({
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="font-circle text-fgPrimary flex h-[30px] items-center gap-1.5 text-base leading-4.5 font-medium tracking-[-0.32px]">
-          <span className="truncate">{label}</span>
+          {/* `step-indicator` is the e2e selector contract carried over from the
+              legacy StepIndicator: specs assert this element's text equals the
+              step label (`approveOrPerformAction` and friends). */}
+          <span className="truncate" data-testid="step-indicator">
+            {label}
+          </span>
           {tokenSymbol && (
             <span className="flex shrink-0 items-center gap-[3px]">
               {tokenIcon}

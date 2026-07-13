@@ -73,6 +73,30 @@ async function setEthBalancesInBulk(
 }
 
 /**
+ * A freshly forked VNet container can still be cloning when funding starts;
+ * admin RPC writes are rejected with -32006 "invalid vnet container status
+ * cloning." until the clone completes. Poll instead of failing the run.
+ */
+async function retryWhileCloning<T>(fn: () => Promise<T>, network: string): Promise<T> {
+  const maxAttempts = 12;
+  const delayMs = 10_000;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('cloning') || attempt >= maxAttempts) {
+        throw error;
+      }
+      console.log(
+        `  ⏳ ${network} vnet container still cloning, retrying in ${delayMs / 1000}s (${attempt}/${maxAttempts})...`
+      );
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
+/**
  * Set ERC20 token balances for multiple accounts using Tenderly's setErc20Balance
  */
 async function setTokenBalancesInBulk(
@@ -328,8 +352,9 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
       console.log(`  📡 Accounts need funding on ${network}, proceeding...`);
     }
 
-    // Set ETH balance for all accounts in bulk
-    await setEthBalancesInBulk(rpcUrl, addresses);
+    // Set ETH balance for all accounts in bulk. This is the first admin write
+    // on a fresh fork, so it absorbs the container-cloning window.
+    await retryWhileCloning(() => setEthBalancesInBulk(rpcUrl, addresses), network);
     console.log('  ✓ ETH funded');
 
     const tokensToLog: { address: string; name: string; decimals: number }[] = [];
