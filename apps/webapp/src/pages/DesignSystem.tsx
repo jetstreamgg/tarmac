@@ -91,6 +91,13 @@ import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { GainValue } from '@/components/ui/GainValue';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
 import { Steps, StepsItem } from '@/components/ui/steps';
+import {
+  Iconbox,
+  Iconbox2Tokens,
+  IconboxAction,
+  IconboxPosition,
+  IconboxStatus
+} from '@/components/ui/iconbox';
 
 // Internal-only living style guide (route /design-system, hidden in production).
 // Shows every canonical components/ui primitive in its prop-reachable states;
@@ -107,6 +114,7 @@ const SECTIONS = [
   { id: 'cards', title: 'Cards' },
   { id: 'overlays', title: 'Overlays' },
   { id: 'tables', title: 'Tables' },
+  { id: 'iconbox', title: 'Iconbox' },
   { id: 'steps', title: 'Steps' },
   { id: 'data', title: 'Data & misc' }
 ];
@@ -1537,6 +1545,91 @@ function DataSection() {
   );
 }
 
+// ─── Iconbox ──────────────────────────────────────────────────────────────────
+
+/** Token logo filling its iconbox slot (chain overlay off — the box owns the chip). */
+function BoxToken({ symbol, px, className }: { symbol: string; px: number; className?: string }) {
+  return (
+    <TokenIcon token={{ symbol }} width={px} className={className ?? 'h-full w-full'} showChainIcon={false} />
+  );
+}
+
+const ICONBOX_SIZES = ['l', 'm', 's', 'xs'] as const;
+const STATUS_SIZES = ['l', 'm', 's', 'xs', '2xs'] as const;
+// Inner logo per Status ring size (48/28/18/10/8px).
+const STATUS_LOGO: Record<(typeof STATUS_SIZES)[number], { px: number; className: string }> = {
+  l: { px: 48, className: 'size-12' },
+  m: { px: 28, className: 'size-7' },
+  s: { px: 18, className: 'size-[18px]' },
+  xs: { px: 10, className: 'size-2.5' },
+  '2xs': { px: 8, className: 'size-2' }
+};
+
+function IconboxSection() {
+  return (
+    <Section
+      id="iconbox"
+      title="Iconbox"
+      note="Components/Iconbox (H14): the circular icon containers shared by the table cells, position surfaces and activity rows. Figma names the Status ring types by product (Pendle/Morpho); code names them by system color (success/info)."
+    >
+      <SubSection title="Base — Token / Icon × L / M / S / XS, network chip">
+        <div className="flex items-end gap-6">
+          {ICONBOX_SIZES.map(size => (
+            <Iconbox key={size} size={size} network={<BaseChain className="h-full w-full" />}>
+              <BoxToken symbol="ETH" px={40} />
+            </Iconbox>
+          ))}
+          <Iconbox type="icon" size="l">
+            <Star className="size-6" />
+          </Iconbox>
+          <Iconbox type="icon" size="m" network={<BaseChain className="h-full w-full" />}>
+            <Star className="size-4" />
+          </Iconbox>
+        </div>
+      </SubSection>
+
+      <SubSection title="2 Tokens — 4px overlap pair, network chip on the back token">
+        <Iconbox2Tokens
+          front={<BoxToken symbol="USDS" px={28} />}
+          back={<BoxToken symbol="SKY" px={28} />}
+          network={<BaseChain className="h-full w-full" />}
+        />
+      </SubSection>
+
+      <SubSection title="Status — default / success / info × L / M / S / XS / 2XS, status dot">
+        <div className="flex flex-col gap-4">
+          {(['default', 'success', 'info'] as const).map(type => (
+            <div key={type} className="flex items-center gap-6">
+              {STATUS_SIZES.map(size => (
+                <IconboxStatus key={size} type={type} size={size} dot={type !== 'default'}>
+                  <BoxToken symbol="sUSDS" {...STATUS_LOGO[size]} />
+                </IconboxStatus>
+              ))}
+            </div>
+          ))}
+        </div>
+      </SubSection>
+
+      <SubSection title="Position — default / inactive">
+        <div className="flex items-center gap-6">
+          <IconboxPosition>
+            <Stake width={16} height={16} />
+          </IconboxPosition>
+          <IconboxPosition inactive>
+            <Stake width={16} height={16} />
+          </IconboxPosition>
+        </div>
+      </SubSection>
+
+      <SubSection title="Action">
+        <IconboxAction>
+          <ArrowDownToLine className="size-4" />
+        </IconboxAction>
+      </SubSection>
+    </Section>
+  );
+}
+
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
 /** 14px chip icon for step specimens (chain overlay off — the chip is symbol-only). */
@@ -1733,6 +1826,7 @@ function DesignSystem() {
         <CardsSection />
         <OverlaysSection />
         <TablesSection />
+        <IconboxSection />
         <StepsSection />
         <DataSection />
       </main>

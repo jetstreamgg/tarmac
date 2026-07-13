@@ -146,6 +146,15 @@
   --color-statusWarning: #ffc044;
   --color-statusBrand: #9ca9ff;
   --color-statusBrandBg: rgba(156, 160, 229, 0.1);
+  /* Iconbox status rings + info dot (Figma Components/Iconbox 5017:7858).
+     Figma types the rings by product — Pendle mint / Morpho blue — as raw
+     hexes (no variable); promoted here under the system color each pairs
+     with. statusInfoSolid is border-system-info-primary, the info dot
+     (statusSuccessSolid above doubles as the success dot). None are
+     overridden in the light scope yet (G2 owns light parity). */
+  --color-statusSuccessRing: #8bf1ca;
+  --color-statusInfoRing: #60a9ff;
+  --color-statusInfoSolid: #59b1ff;
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
