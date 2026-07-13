@@ -7,11 +7,11 @@ import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import { productNetworks, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
-import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { HeaderBadge } from '@/components/ui/page-header';
 import { RiskTierMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
-import { RING_PENDLE } from '@/components/product/productVisuals';
 import { PendleDetailChart } from './PendleDetailChart';
 import { PendlePositionCard } from './PendlePositionCard';
 import { PendleTransactionsTable } from './PendleTransactionsTable';
@@ -105,27 +105,27 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       backHref={ROUTES.EARN}
       token={{
         icon: (
-          <ProductTokenIcon
-            symbol={`PT-${market.underlyingSymbol}`}
-            ringColor={RING_PENDLE}
-            glowColor={RING_PENDLE}
+          <TokenIcon
+            token={{ symbol: `PT-${market.underlyingSymbol}` }}
             width={48}
             className="h-12 w-12"
+            showChainIcon={false}
           />
         )
       }}
       title={
         <span className="flex flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-3">
+          <span className="flex flex-wrap items-center gap-2">
             {market.name}
-            <span className="bg-surface text-textSecondary flex items-center gap-1 rounded-full py-1 pr-2 pl-1 text-xs font-medium">
-              {/* Brand-colored mark from the design system (a bitmap in Figma too) —
-                  the monochrome <Pendle /> glyph reads wrong at badge size. */}
-              <img src="/images/pendle_logo.png" alt="" className="h-4 w-4" />
+            {/* Brand-colored mark from the design system (a bitmap in Figma too) —
+                the monochrome <Pendle /> glyph reads wrong at badge size. */}
+            <HeaderBadge size="s" icon={<img src="/images/pendle_logo.png" alt="" className="size-4" />}>
               <Trans>Powered by Pendle</Trans>
-            </span>
+            </HeaderBadge>
           </span>
-          <span className="text-textSecondary text-sm font-normal">
+          {/* The DS date line under the title (5120:19542) is Body 6, so it
+              opts back out of the heading's Circular styling. */}
+          <span className="font-graphik text-fgSecondary text-xs leading-[18px] font-normal tracking-normal">
             {maturityDateLabel}
             {remainingSeconds > 0 && <> · {formatTimeLeft(remainingSeconds)}</>}
           </span>
