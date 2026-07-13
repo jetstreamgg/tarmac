@@ -34,9 +34,6 @@ export function SavingsTransactionsFilter({
   value: SavingsTxFilter;
   onChange: (next: SavingsTxFilter) => void;
 }): ReactNode {
-  const itemClasses =
-    'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
-
   return (
     <Select value={value} onValueChange={next => onChange(next as SavingsTxFilter)}>
       <SelectTrigger
@@ -48,15 +45,10 @@ export function SavingsTransactionsFilter({
           <FilterLabel value={value} />
         </SelectValue>
       </SelectTrigger>
-      <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
+      {/* Panel and rows are the DS Dropdown recipe (SelectContent/SelectItem defaults). */}
+      <SelectContent>
         {SAVINGS_TX_FILTERS.map(filter => (
-          <SelectItem
-            key={filter}
-            value={filter}
-            hideIndicator
-            data-testid={`savings-transactions-filter-${filter}`}
-            className={itemClasses}
-          >
+          <SelectItem key={filter} value={filter} data-testid={`savings-transactions-filter-${filter}`}>
             <FilterLabel value={filter} />
           </SelectItem>
         ))}

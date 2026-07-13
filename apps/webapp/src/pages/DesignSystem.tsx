@@ -4,9 +4,11 @@ import {
   ArrowDownToLine,
   ArrowRight,
   ArrowUpToLine,
+  Check,
   ChevronDown,
   Copy,
   LineChart,
+  Network,
   Settings2,
   Star,
   Wallet
@@ -98,6 +100,7 @@ import {
   IconboxPosition,
   IconboxStatus
 } from '@/components/ui/iconbox';
+import { Loader } from '@/components/ui/loader';
 
 // Internal-only living style guide (route /design-system, hidden in production).
 // Shows every canonical components/ui primitive in its prop-reachable states;
@@ -116,6 +119,7 @@ const SECTIONS = [
   { id: 'tables', title: 'Tables' },
   { id: 'iconbox', title: 'Iconbox' },
   { id: 'steps', title: 'Steps' },
+  { id: 'feedback', title: 'Feedback' },
   { id: 'data', title: 'Data & misc' }
 ];
 
@@ -713,7 +717,7 @@ function SelectSection() {
     <Section
       id="select"
       title="Select"
-      note="Known issue in dark: --background/--foreground are light-only tokens, so the trigger/content surfaces are transparent with dark text (THEMING.md, deferred bug 4). Shown as-is on purpose."
+      note="Panel and rows are the DS Dropdown recipe (H9): bg-tertiary glass, 16px radius, Label-5 rows, selected row tinted with a right-edge check. Known issue in dark: --background/--foreground are light-only tokens, so the trigger surface is transparent with dark text (THEMING.md, deferred bug 4). Shown as-is on purpose."
     >
       <Row>
         <Spec label="default">
@@ -1768,6 +1772,133 @@ function StepsSection() {
   );
 }
 
+// ─── Feedback (H9) ────────────────────────────────────────────────────────────
+
+// Static replica of the TooltipContent recipe so both themes can be inspected
+// without hovering (the live primitive portals to its trigger).
+function TooltipReplica({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      className={cn(
+        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[100px]',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+const DROPDOWN_REPLICA_ROWS = [
+  { label: 'All networks', icon: <Network className="size-4 shrink-0" />, selected: false },
+  { label: 'Ethereum', icon: <MainnetChain className="size-4 shrink-0" />, selected: true },
+  { label: 'Base', icon: <BaseChain className="size-4 shrink-0" />, selected: false },
+  { label: 'OP Mainnet', icon: <OptimismChain className="size-4 shrink-0" />, selected: false }
+];
+
+function FeedbackSection() {
+  return (
+    <Section
+      id="feedback"
+      title="Feedback"
+      note="Components/Tooltip, Toast, Dropdown and Loading (H9): the small feedback primitives share the bg-tertiary glass surface at 16px radius. Tooltips draw no arrow; the dropdown panel and rows are the SelectContent/SelectItem defaults (live in the Select section); the loader generalizes the H4 button glyph to six sizes."
+    >
+      <SubSection title="Tooltip — Simple / Default (titled) / Short">
+        <Row>
+          <Spec label="simple">
+            <TooltipReplica>
+              Tooltips are used to describe or identify an element. In most scenarios, tooltips help the user
+              understand meaning, function or alt-text.
+            </TooltipReplica>
+          </Spec>
+          <Spec label="default — titled">
+            <TooltipReplica>
+              <p className="font-circle text-fgPrimary mb-2 text-sm leading-4 font-medium tracking-[-0.28px]">
+                This is a tooltip
+              </p>
+              <p className="text-fgSecondary">
+                Tooltips are used to describe or identify an element. In most scenarios, tooltips help the
+                user understand meaning, function or alt-text.
+              </p>
+            </TooltipReplica>
+          </Spec>
+          <Spec label="short">
+            <TooltipReplica className="font-circle w-fit text-xs leading-[14px] font-medium tracking-[-0.24px]">
+              This is a tooltip
+            </TooltipReplica>
+          </Spec>
+          <Spec label="live (hover)">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="secondary" size="m">
+                    Hover me
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>This is a tooltip</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </Spec>
+        </Row>
+      </SubSection>
+
+      <SubSection title="Toast — success disc / description / error (pre-DS glyph)">
+        <Row>
+          <Spec label="simple success">
+            <Button variant="secondary" size="m" onClick={() => toast.success('Filters applied')}>
+              Fire success
+            </Button>
+          </Spec>
+          <Spec label="transaction — title + description">
+            <Button
+              variant="secondary"
+              size="m"
+              onClick={() => toast.success('10,000.00 USDC supplied!', { description: '0xff9s...dsa6' })}
+            >
+              Fire transaction
+            </Button>
+          </Spec>
+          <Spec label="error">
+            <Button variant="secondary" size="m" onClick={() => toast.error('Transaction failed')}>
+              Fire error
+            </Button>
+          </Spec>
+        </Row>
+      </SubSection>
+
+      <SubSection title="Dropdown — static panel replica (Networks type)">
+        <div className="bg-bgTertiary w-[220px] overflow-hidden rounded-2xl px-px py-1 backdrop-blur-[20px]">
+          {DROPDOWN_REPLICA_ROWS.map(row => (
+            <div
+              key={row.label}
+              className={cn(
+                'text-fgPrimary font-circle flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-sm leading-4 font-medium tracking-[-0.28px]',
+                row.selected && 'bg-bgSecondary'
+              )}
+            >
+              {row.icon}
+              {row.label}
+              {row.selected && <Check className="ml-auto size-4 shrink-0" />}
+            </div>
+          ))}
+        </div>
+      </SubSection>
+
+      <SubSection title="Loader — 2XS / XS / S / M / L / XL (12–40px, currentColor)">
+        <Row>
+          {(['2xs', 'xs', 's', 'm', 'l', 'xl'] as const).map(size => (
+            <Spec key={size} label={size.toUpperCase()}>
+              <span className="text-fgSecondary inline-flex">
+                <Loader size={size} />
+              </span>
+            </Spec>
+          ))}
+        </Row>
+      </SubSection>
+    </Section>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function DesignSystem() {
@@ -1828,6 +1959,7 @@ function DesignSystem() {
         <TablesSection />
         <IconboxSection />
         <StepsSection />
+        <FeedbackSection />
         <DataSection />
       </main>
       <Toaster />

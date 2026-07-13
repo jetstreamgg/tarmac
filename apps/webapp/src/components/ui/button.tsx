@@ -3,6 +3,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/cn';
+import { Loader } from './loader';
 
 // App look — canonical, unchanged.
 
@@ -113,34 +114,6 @@ const buttonVariants = cva(
   }
 );
 
-// Loading-state glyph (Figma "Loader"): the static Figma asset gives the
-// three-dot geometry; the staggered pulse makes it read as busy.
-const ButtonLoader = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-    className={className}
-  >
-    <circle cx="2.667" cy="8.667" r="1.333" fill="currentColor" className="animate-pulse" />
-    <circle
-      cx="8"
-      cy="6.667"
-      r="1.333"
-      fill="currentColor"
-      className="animate-pulse [animation-delay:200ms]"
-    />
-    <circle
-      cx="13.333"
-      cy="8.667"
-      r="1.333"
-      fill="currentColor"
-      className="animate-pulse [animation-delay:400ms]"
-    />
-  </svg>
-);
-
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
@@ -164,7 +137,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           <>
             {/* span wrapper keeps the loader out of the [&>svg] icon sizing rules (xl uses a 24px loader) */}
             <span className={cn('shrink-0', size === 's' ? '-ml-1' : '-ml-2')}>
-              <ButtonLoader className={size === 'xl' ? 'size-6' : 'size-4'} />
+              <Loader size={size === 'xl' ? 'm' : 'xs'} />
             </span>
             {children}
           </>
