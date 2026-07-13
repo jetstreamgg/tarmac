@@ -8,6 +8,8 @@ export const ROUTES = {
   EARN_SAVINGS: '/earn/savings',
   EARN_REWARDS: '/earn/rewards',
   EARN_VAULTS: '/earn/vaults',
+  // Bare index redirects to /earn (G6 — the overview was retired); markets
+  // live at /earn/fixed/:slug via intentToPath(FIXED_INTENT, slug).
   EARN_FIXED: '/earn/fixed',
   EARN_STUSDS: '/earn/stusds',
   STAKE: '/stake',

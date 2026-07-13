@@ -15,6 +15,7 @@ import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
 import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
+import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import { PortfolioStatistics } from './PortfolioStatistics';
@@ -144,6 +145,10 @@ export function ConnectedPortfolio() {
         tab={tab}
         onTabChange={setUserTab}
       />
+
+      {/* Matured PT redemption (G6): the marketplace filters matured markets out
+          of the supplied view, so this self-hiding section is their only surface. */}
+      <PendleReadyToRedeemList />
 
       {/* Sub-$10 users get the same Sky-wide statistics as disconnected visitors. */}
       {callout !== 'none' && <PortfolioStatistics />}

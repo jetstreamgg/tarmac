@@ -1,15 +1,15 @@
 import { Trans } from '@lingui/react/macro';
-import { motion } from 'motion/react';
-import { positionAnimations } from '@/widgets';
 import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { useConnection } from 'wagmi';
 import { Heading } from '@/modules/layout/components/Typography';
 import { PendleMaturedPositionCard } from './PendleMaturedPositionCard';
 
 /**
- * List-page "Ready to redeem" section. Renders only when the connected user
- * holds matured PT for at least one market — otherwise returns null so the
- * section disappears entirely (no empty state).
+ * Portfolio "Ready to redeem" section (G6 — matured redemption lives here now
+ * that the /earn/fixed overview is gone; the marketplace filters matured
+ * markets out, so these positions appear nowhere else). Renders only when the
+ * connected user holds matured PT for at least one market — otherwise returns
+ * null so the section disappears entirely (no empty state).
  */
 export const PendleReadyToRedeemList = () => {
   const { address } = useConnection();
@@ -29,13 +29,15 @@ export const PendleReadyToRedeemList = () => {
   if (maturedHeld.length === 0) return null;
 
   return (
-    <motion.div className="space-y-3" variants={positionAnimations}>
+    <section data-testid="pendle-ready-to-redeem">
       <Heading tag="h3" variant="medium">
         <Trans>Your matured positions</Trans>
       </Heading>
-      {maturedHeld.map(({ market, ptBalance }) => (
-        <PendleMaturedPositionCard key={market.marketAddress} market={market} ptBalance={ptBalance} />
-      ))}
-    </motion.div>
+      <div className="desktop:grid-cols-3 mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {maturedHeld.map(({ market, ptBalance }) => (
+          <PendleMaturedPositionCard key={market.marketAddress} market={market} ptBalance={ptBalance} />
+        ))}
+      </div>
+    </section>
   );
 };
