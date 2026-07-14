@@ -60,6 +60,7 @@ export default defineConfig({
         '**/stake.spec.ts',
         '**/stake-onchain.spec.ts',
         '**/landing.spec.ts',
+        '**/network-switching.spec.ts',
         '**/upgrade.spec.ts',
         '**/unstake-repay.spec.ts',
         '**/pane-visibility.spec.ts',

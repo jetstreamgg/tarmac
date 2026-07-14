@@ -30,9 +30,13 @@ const hoisted = vi.hoisted(() => ({
     underlyingDecimals: 6,
     expiry: 1700000000 // 2023 — matured
   },
-  // Mutable connection + balances. Tests reassign these before render.
+  // Mutable connection + balances + chain. Tests reassign these before render.
   userAddress: undefined as `0x${string}` | undefined,
-  ptBalances: undefined as Record<`0x${string}`, bigint> | undefined
+  ptBalances: undefined as Record<`0x${string}`, bigint> | undefined,
+  chainId: 1,
+  setSearchParamsMock: vi.fn(),
+  setIsSwitchingNetworkMock: vi.fn(),
+  setIsAutoSwitchingMock: vi.fn()
 }));
 
 vi.mock('@/hooks', async importOriginal => {
@@ -55,9 +59,34 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useConnection: () => ({ address: hoisted.userAddress })
+    useConnection: () => ({ address: hoisted.userAddress }),
+    useChainId: () => hoisted.chainId,
+    // Production-like chain list (no tenderly fork) so the L2 auto-switch
+    // targets ethereum; the fork-preferring variant is covered by the
+    // widget-network-map unit tests.
+    useChains: () => [
+      { id: 1, name: 'Ethereum' },
+      { id: 8453, name: 'Base' }
+    ]
   };
 });
+
+vi.mock('@/lib/navigation', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/navigation')>();
+  return {
+    ...actual,
+    useAppSearchParams: () => [new URLSearchParams(), hoisted.setSearchParamsMock]
+  };
+});
+
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({
+    isSwitchingNetwork: false,
+    setIsSwitchingNetwork: hoisted.setIsSwitchingNetworkMock,
+    isAutoSwitching: false,
+    setIsAutoSwitching: hoisted.setIsAutoSwitchingMock
+  })
+}));
 
 // The card pulls redeem previews/earnings/modal wiring — stub it; this suite
 // covers the list's own held-matured filter, not the card.
@@ -79,6 +108,10 @@ describe('PendleReadyToRedeemList', () => {
     root = createRoot(container);
     hoisted.userAddress = undefined;
     hoisted.ptBalances = undefined;
+    hoisted.chainId = 1;
+    hoisted.setSearchParamsMock.mockClear();
+    hoisted.setIsSwitchingNetworkMock.mockClear();
+    hoisted.setIsAutoSwitchingMock.mockClear();
   });
 
   afterEach(() => {
@@ -108,6 +141,52 @@ describe('PendleReadyToRedeemList', () => {
     hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 0n, [ACTIVE_MARKET_ADDRESS]: 5_000_000n };
     render();
     expect(container.querySelector('[data-testid="pendle-ready-to-redeem"]')).toBeNull();
+  });
+
+  it('auto-switches to Ethereum when holding matured PT on an L2 — once per mount, flagged automatic', () => {
+    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
+    hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
+    hoisted.chainId = 8453; // Base
+    render();
+    // The switch rides the ?network= param (the orchestration performs the
+    // wallet switch and the shell toast announces it), flagged as automatic.
+    expect(hoisted.setIsSwitchingNetworkMock).toHaveBeenCalledWith(true);
+    expect(hoisted.setIsAutoSwitchingMock).toHaveBeenCalledWith(true);
+    expect(hoisted.setSearchParamsMock).toHaveBeenCalledTimes(1);
+    const updater = hoisted.setSearchParamsMock.mock.calls[0][0] as (p: URLSearchParams) => URLSearchParams;
+    expect(updater(new URLSearchParams()).get('network')).toBe('ethereum');
+    // A declined prompt (chain unchanged) must not re-fire on re-render.
+    render();
+    expect(hoisted.setSearchParamsMock).toHaveBeenCalledTimes(1);
+    // The section stays visible with the network hint while off-chain.
+    expect(container.querySelector('[data-testid="pendle-ready-to-redeem"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="pendle-redeem-network-hint"]')).not.toBeNull();
+  });
+
+  it('does not switch on mainnet, and shows no hint', () => {
+    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
+    hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
+    render();
+    expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="pendle-redeem-network-hint"]')).toBeNull();
+  });
+
+  it('does not switch on a tenderly testnet — the fork session is valid for redemption', () => {
+    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
+    hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
+    hoisted.chainId = 314310; // tenderly vnet
+    render();
+    expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="pendle-ready-to-redeem"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="pendle-redeem-network-hint"]')).toBeNull();
+  });
+
+  it('does not switch off-chain when there is nothing to redeem', () => {
+    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
+    hoisted.ptBalances = { [ACTIVE_MARKET_ADDRESS]: 5_000_000n };
+    hoisted.chainId = 8453;
+    render();
+    expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
   });
 
   it('renders a redeem card per matured market the user holds PT for — active markets excluded', () => {
