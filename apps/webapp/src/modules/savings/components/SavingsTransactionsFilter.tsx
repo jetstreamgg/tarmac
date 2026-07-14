@@ -39,7 +39,7 @@ export function SavingsTransactionsFilter({
       <SelectTrigger
         data-testid="savings-transactions-filter"
         aria-label={t`Filter transactions`}
-        className="text-textSecondary hover:text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 text-sm font-medium transition-colors focus:ring-0 focus:ring-offset-0"
+        className="text-textSecondary hover:text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 text-sm font-medium transition-colors focus-visible:ring-0"
       >
         <SelectValue>
           <FilterLabel value={value} />

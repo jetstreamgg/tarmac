@@ -34,8 +34,13 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
       'inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary disabled:pointer-events-none disabled:opacity-50',
     cancelButton:
       'inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary disabled:pointer-events-none disabled:opacity-50',
+    // transform-none (not translate-none): sonner hangs its close button off
+    // the corner via `transform: translate(-35%,-35%)`, which the translate
+    // property doesn't reset. 24px box at 12px insets = a 16px visual gap on
+    // both sides (matching the toast's p-4) with the icon centered on the
+    // title line.
     closeButton:
-      'text-fgSecondary! hover:text-fgPrimary! absolute right-3! left-auto! top-3! translate-none! rounded-md bg-transparent! border-none! p-1.5 opacity-100 transition-colors hover:opacity-100 h-4! w-4!',
+      'text-fgSecondary! hover:text-fgPrimary! absolute right-3! left-auto! top-3! transform-none! flex items-center justify-center rounded-md bg-transparent! border-none! p-1! opacity-100 transition-colors hover:opacity-100 h-6! w-6!',
     content: ''
   };
 
