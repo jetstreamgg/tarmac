@@ -67,8 +67,9 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
  *
  * Drive it with a discrete `level` (fills to the end of that zone) or a
  * continuous `value` (0–1 fraction; the gradient follows whichever zone the
- * value lands in). With neither it renders the empty legend (track + labels).
- * Decorative unless `label` names the state for assistive tech.
+ * value lands in). Pass both to fill to `value` while tinting by `level`. With
+ * neither it renders the empty legend (track + labels). Decorative unless
+ * `label` names the state for assistive tech.
  */
 export function RiskScaleMeter({
   level,
@@ -89,9 +90,20 @@ export function RiskScaleMeter({
   const liquidationTick =
     (RISK_LEVEL_THRESHOLDS.find(t => t.level === RiskLevel.LIQUIDATION)?.threshold ?? 80) / 100;
 
-  // A continuous value wins; a discrete level fills to its zone's end, except
-  // Liquidation, which fills to the liquidation threshold tick — Figma 5246:24677
-  // leaves a tail past it rather than filling the whole bar.
+  // Zone/tint prefers an explicit `level`; otherwise the value's quarter. Fill
+  // length prefers a continuous `value`; otherwise the level's zone end
+  // (Liquidation → the real threshold tick — Figma 5246:24677 leaves a tail past
+  // it rather than filling the whole bar). Passing both fills to `value` but
+  // tints by `level`, e.g. the stake liquidation indicator (real proximity, real
+  // risk level, whose thresholds aren't evenly spaced).
+  const activeIndex =
+    levelIndex >= 0
+      ? levelIndex
+      : value !== undefined
+        ? Math.min(zoneCount - 1, Math.floor(clamp01(value) * zoneCount))
+        : -1;
+  const activeZone = activeIndex >= 0 ? RISK_ZONES[activeIndex] : undefined;
+
   const fillFraction =
     value !== undefined
       ? clamp01(value)
@@ -100,9 +112,6 @@ export function RiskScaleMeter({
         : levelIndex >= 0
           ? (levelIndex + 1) / zoneCount
           : 0;
-  const activeIndex =
-    value !== undefined ? Math.min(zoneCount - 1, Math.floor(clamp01(value) * zoneCount)) : levelIndex;
-  const activeZone = activeIndex >= 0 ? RISK_ZONES[activeIndex] : undefined;
 
   return (
     <div

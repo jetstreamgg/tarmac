@@ -42,4 +42,13 @@ describe('RiskScaleMeter', () => {
     // Liquidation threshold is 80%, so the fill stops there rather than at 100%.
     expect(screen.getByTestId('risk-scale-fill').style.width).toBe('80%');
   });
+
+  it('fills to the value while tinting by the level when given both', () => {
+    renderMeter({ value: 0.5, level: RiskLevel.HIGH });
+    const fill = screen.getByTestId('risk-scale-fill');
+    // Fill length follows the continuous value (50%), not the HIGH zone end (75%).
+    expect(fill.style.width).toBe('50%');
+    // The gradient tint still comes from the level.
+    expect(fill.style.backgroundImage).toContain('gradient');
+  });
 });

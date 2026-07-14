@@ -14,13 +14,14 @@ import {
   X,
   XCircle
 } from 'lucide-react';
-import { RISK_LEVEL_THRESHOLDS, RiskLevel, ZERO_ADDRESS } from '@/hooks';
+import { RiskLevel, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { RiskScaleMeter } from '@/components/product/RiskMeter';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
@@ -39,76 +40,11 @@ const RISK_PILL_COLOR: Record<RiskLevel, string> = {
   [RiskLevel.HIGH]: 'bg-error/15 text-error',
   [RiskLevel.LIQUIDATION]: 'bg-error/15 text-error'
 };
-const RISK_FILL_COLOR: Record<RiskLevel, string> = {
-  [RiskLevel.LOW]: 'bg-bullish',
-  [RiskLevel.MEDIUM]: 'bg-orange-400',
-  [RiskLevel.HIGH]: 'bg-error',
-  [RiskLevel.LIQUIDATION]: 'bg-error'
-};
-
 function StatCell({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-textSecondary text-sm">{label}</span>
       <span className="text-text flex items-center gap-1.5 text-sm font-medium">{children}</span>
-    </div>
-  );
-}
-
-/**
- * Read-only liquidation-zone indicator (hi-fi 486:32508): a full-width track
- * whose fill is the vault's liquidation proximity, tinted by risk level, with
- * the canonical zone thresholds (0/25/40/80) ticked and labeled beneath.
- * Non-interactive by design — the same scale the risk slider drags along.
- */
-function LiquidationZoneIndicator({
-  proximityPercentage,
-  riskLevel
-}: {
-  proximityPercentage: number | undefined;
-  riskLevel: RiskLevel | undefined;
-}) {
-  const fill = Math.min(100, Math.max(0, proximityPercentage ?? 0));
-  const zones = [...RISK_LEVEL_THRESHOLDS].sort((a, b) => a.threshold - b.threshold);
-  const zoneLabel: Record<RiskLevel, string> = {
-    [RiskLevel.LOW]: t`Low`,
-    [RiskLevel.MEDIUM]: t`Medium`,
-    [RiskLevel.HIGH]: t`High`,
-    [RiskLevel.LIQUIDATION]: t`Liquidation`
-  };
-
-  return (
-    <div data-testid="stake-position-risk-indicator" className="flex flex-col gap-2" aria-hidden>
-      <div className="bg-textSecondary/20 relative h-1 w-full rounded-full">
-        <div
-          className={cn('h-1 rounded-full', riskLevel ? RISK_FILL_COLOR[riskLevel] : 'bg-textSecondary/40')}
-          style={{ width: `${fill}%` }}
-        />
-        {zones
-          .filter(zone => zone.threshold > 0)
-          .map(zone => (
-            <span
-              key={zone.level}
-              className="bg-textSecondary/40 absolute top-1/2 h-3 w-px -translate-y-1/2"
-              style={{ left: `${zone.threshold}%` }}
-            />
-          ))}
-      </div>
-      <div className="relative h-4 w-full">
-        {zones.map(zone => (
-          <span
-            key={zone.level}
-            className="text-textSecondary absolute text-xs"
-            style={
-              zone.level === RiskLevel.LIQUIDATION
-                ? { right: 0 }
-                : { left: `${zone.threshold}%`, transform: zone.threshold > 0 ? 'translateX(-50%)' : 'none' }
-            }
-          >
-            {zoneLabel[zone.level]}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
@@ -365,7 +301,9 @@ export function PositionDetailsModal({
                   <Trans>No position</Trans>
                 </span>
                 {/* Grayed meter: no proximity, no risk tint (UX 1194:21273). */}
-                <LiquidationZoneIndicator proximityPercentage={undefined} riskLevel={undefined} />
+                <div data-testid="stake-position-risk-indicator">
+                  <RiskScaleMeter />
+                </div>
               </div>
 
               <p data-testid="stake-position-closed-copy" className="text-textSecondary text-sm">
@@ -409,10 +347,14 @@ export function PositionDetailsModal({
                 </span>
               </div>
 
-              <LiquidationZoneIndicator
-                proximityPercentage={vault?.liquidationProximityPercentage}
-                riskLevel={vault?.riskLevel}
-              />
+              {/* Real proximity fills the bar; the vault's risk level tints it
+                  (thresholds 0/25/40/80 aren't the bar's even quarters). */}
+              <div data-testid="stake-position-risk-indicator">
+                <RiskScaleMeter
+                  value={(vault?.liquidationProximityPercentage ?? 0) / 100}
+                  level={vault?.riskLevel}
+                />
+              </div>
 
               <p data-testid="stake-position-warning" className="text-textSecondary text-sm">
                 <Trans>
