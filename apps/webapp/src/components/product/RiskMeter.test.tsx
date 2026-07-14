@@ -36,4 +36,11 @@ describe('RiskScaleMeter', () => {
     renderMeter({ level: RiskLevel.LOW });
     expect(screen.queryByRole('img')).toBeNull();
   });
+
+  it('fills a discrete Liquidation level to the threshold tick, not the full bar', () => {
+    const { container } = renderMeter({ level: RiskLevel.LIQUIDATION });
+    const fill = container.querySelector('span[style*="background-image"]') as HTMLElement | null;
+    // Liquidation threshold is 80%, so the fill stops there rather than at 100%.
+    expect(fill?.style.width).toBe('80%');
+  });
 });

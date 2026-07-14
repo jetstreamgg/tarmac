@@ -1851,6 +1851,7 @@ function ChartsSection() {
       <SubSection title="Pie — donut">
         <div className="flex flex-wrap items-center gap-8">
           {[
+            { label: 'empty (No tokens)', segs: [] as { id: string; color: string; value: number }[] },
             { label: '1 segment', segs: [{ id: 'usds', color: '#E9B44C', value: 100 }] },
             {
               label: '2 segments',

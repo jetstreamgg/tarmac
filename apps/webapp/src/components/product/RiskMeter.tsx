@@ -84,18 +84,25 @@ export function RiskScaleMeter({
   const zoneCount = RISK_ZONES.length;
   const levelIndex = level ? RISK_ZONES.indexOf(level) : -1;
 
-  // A continuous value wins; a discrete level fills to its zone's end
-  // (🔶 Liquidation → full bar; pass `value` for a point within a zone).
-  const fillFraction =
-    value !== undefined ? clamp01(value) : levelIndex >= 0 ? (levelIndex + 1) / zoneCount : 0;
-  const activeIndex =
-    value !== undefined ? Math.min(zoneCount - 1, Math.floor(clamp01(value) * zoneCount)) : levelIndex;
-  const activeZone = activeIndex >= 0 ? RISK_ZONES[activeIndex] : undefined;
-
   // The liquidation threshold sits inside the last visual quarter, so the tick
   // marks its real position rather than the zone boundary.
   const liquidationTick =
     (RISK_LEVEL_THRESHOLDS.find(t => t.level === RiskLevel.LIQUIDATION)?.threshold ?? 80) / 100;
+
+  // A continuous value wins; a discrete level fills to its zone's end, except
+  // Liquidation, which fills to the liquidation threshold tick — Figma 5246:24677
+  // leaves a tail past it rather than filling the whole bar.
+  const fillFraction =
+    value !== undefined
+      ? clamp01(value)
+      : level === RiskLevel.LIQUIDATION
+        ? liquidationTick
+        : levelIndex >= 0
+          ? (levelIndex + 1) / zoneCount
+          : 0;
+  const activeIndex =
+    value !== undefined ? Math.min(zoneCount - 1, Math.floor(clamp01(value) * zoneCount)) : levelIndex;
+  const activeZone = activeIndex >= 0 ? RISK_ZONES[activeIndex] : undefined;
 
   return (
     <div
