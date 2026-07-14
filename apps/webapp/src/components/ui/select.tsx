@@ -17,7 +17,11 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'border-input placeholder:text-muted-foreground focus:ring-ring bg-background ring-offset-background flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+      // focusRing (DS token), not the shadcn `ring` slot: --color-ring is
+      // undefined in globals.css, so ring-ring painted in currentColor — a
+      // near-black outline in the light theme whenever Radix returns focus to
+      // the trigger after a selection. Matches the Button dropdown variants.
+      'border-input placeholder:text-muted-foreground bg-background focus-visible:ring-focusRing flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
       className
     )}
     {...props}

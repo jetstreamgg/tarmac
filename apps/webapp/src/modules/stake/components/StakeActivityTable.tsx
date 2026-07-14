@@ -275,7 +275,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
             <SelectTrigger
               data-testid="stake-activity-filter"
               aria-label={t`Filter activity by position`}
-              className="text-textSecondary hover:text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 text-sm font-medium transition-colors focus:ring-0 focus:ring-offset-0"
+              className="text-textSecondary hover:text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 text-sm font-medium transition-colors focus-visible:ring-0"
             >
               <SelectValue>
                 {filter === 'all' ? <Trans>All positions</Trans> : <Trans>Position {filter + 1}</Trans>}
