@@ -125,6 +125,7 @@ export function RiskScaleMeter({
         />
         {activeZone && fillFraction > 0 && (
           <span
+            data-testid="risk-scale-fill"
             className="absolute inset-y-0 left-0 rounded-full"
             style={{ width: `${fillFraction * 100}%`, backgroundImage: RISK_ZONE_GRADIENT[activeZone] }}
           />
