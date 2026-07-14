@@ -410,10 +410,14 @@ function ChartContent({
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
 
+  // Single source of truth for the plot height so the loading skeleton
+  // reserves the same space as the rendered chart (no layout shift on load).
+  const resolvedHeight = chartHeight ?? (isLarge ? 220 : 288);
+
   return (
     <LoadingErrorWrapper
       isLoading={isLoading}
-      loadingComponent={<ChartSkeleton />}
+      loadingComponent={<ChartSkeleton height={resolvedHeight} />}
       error={error ? error : null}
       errorComponent={
         <VStack className="items-center pt-16 lg:pt-8">
@@ -424,7 +428,7 @@ function ChartContent({
         </VStack>
       }
     >
-      <ResponsiveContainer width={'100%'} height={chartHeight ?? (isLarge ? 220 : 288)}>
+      <ResponsiveContainer width={'100%'} height={resolvedHeight}>
         <AreaChart
           data={data}
           margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isLarge ? 22 : 0, left: 0 }}
