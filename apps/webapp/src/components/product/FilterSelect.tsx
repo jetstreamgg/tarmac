@@ -16,17 +16,20 @@ export function FilterSelect({
   selected,
   onChange,
   allLabel,
-  testId
+  testId,
+  size = 's'
 }: {
   options: FilterOption[];
   selected: string;
   onChange: (value: string) => void;
   allLabel: ReactNode;
   testId: string;
+  /** DS Button / Dropdown size: `s` for table filter bars, `m` for page headers. */
+  size?: 's' | 'm';
 }) {
   return (
     <Select value={selected} onValueChange={onChange}>
-      {/* Design-system Button / Dropdown, size S (Figma 5019:4105). The
+      {/* Design-system Button / Dropdown, sizes S/M (Figma 5019:4105). The
           shadcn trigger's own h-10/w-full/bg and its 16px half-opacity chevron
           are overridden here rather than editing the vendored component; the
           [&>svg] rules only reach the trigger's direct chevron child, not
@@ -34,8 +37,9 @@ export function FilterSelect({
       <SelectTrigger
         data-testid={testId}
         className={cn(
-          buttonVariants({ variant: 'dropdown', size: 'dropdownS' }),
-          'h-auto w-auto bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
+          buttonVariants({ variant: 'dropdown', size: size === 'm' ? 'dropdownM' : 'dropdownS' }),
+          'h-auto w-auto bg-transparent [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180',
+          size === 'm' ? '[&>svg]:size-4' : '[&>svg]:size-3'
         )}
       >
         <SelectValue />

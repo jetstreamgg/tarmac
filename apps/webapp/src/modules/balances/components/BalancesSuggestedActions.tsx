@@ -7,7 +7,7 @@ import { Intent } from '@/lib/enums';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { ROUTES } from '@/lib/routes';
-import { isMultichain } from '@/lib/widget-network-map';
+import { getMainnetTargetName, isMultichain } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
@@ -33,7 +33,6 @@ import {
   formatDecimalPercentage,
   calculateApyFromStr,
   isTestnetId,
-  isMainnetId,
   chainId as chainIdConstants
 } from '@/utils';
 import {
@@ -405,9 +404,6 @@ export function BalancesSuggestedActions({
   const connectedChain = chains.find(c => c.id === chainId);
   const networkName = connectedChain ? normalizeUrlParam(connectedChain.name) : 'ethereum';
 
-  // Use current chain if it's mainnet or tenderly, otherwise default to mainnet
-  const mainnetChainId = isMainnetId(chainId) ? chainId : chainIdConstants.mainnet;
-
   // Determine the target network name based on module's network requirements
   const getTargetNetworkName = useCallback(
     (module: string | undefined): string => {
@@ -415,15 +411,16 @@ export function BalancesSuggestedActions({
 
       const targetIntent = mapQueryParamToIntent(module);
 
-      // For multichain intents, use current network; for mainnet-only, use mainnet
+      // For multichain intents, use current network; for mainnet-only, the
+      // shared mainnet-family target (the config's tenderly fork in non-prod
+      // builds, Ethereum in production).
       if (isMultichain(targetIntent)) {
         return networkName;
       }
 
-      const mainnetChain = chains.find(c => c.id === mainnetChainId);
-      return mainnetChain ? normalizeUrlParam(mainnetChain.name) : 'ethereum';
+      return normalizeUrlParam(getMainnetTargetName(chainId, chains));
     },
-    [networkName, chains, mainnetChainId]
+    [networkName, chains, chainId]
   );
 
   const { isModuleEnabled } = useGeoConfig();

@@ -117,6 +117,9 @@ const V2_REDIRECT_BY_MODULE: Record<string, V2Redirect> = {
       // The vault detail route needs both segments; a bare provider has no target.
       provider && vault && providerForVaultModule(provider) ? [provider.toLowerCase(), vault] : []
   },
+  // Market deep links keep their /earn/fixed/market/:address hop (that route
+  // forwards to the slug page); the bare path chains through /earn/fixed,
+  // whose index forwards to /earn (G6 — no overview screen, like rewards/D6).
   fixed: {
     to: ROUTES.EARN_FIXED,
     subpath: ([module, market]): string[] =>

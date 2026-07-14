@@ -24,9 +24,11 @@ test.describe('Pendle (scaffold — write actions stubbed)', () => {
     await expect(isolatedPage).toHaveURL(/\/earn\/fixed\/pt-susds/);
   });
 
-  test.skip('falls back to the fixed overview for an unknown slug', async ({ isolatedPage }) => {
+  test.skip('falls back to the Earn marketplace for an unknown slug (G6 — no overview)', async ({
+    isolatedPage
+  }) => {
     await isolatedPage.goto('/earn/fixed/pt-does-not-exist');
-    await expect(isolatedPage.getByText('All markets')).toBeVisible();
+    await expect(isolatedPage).toHaveURL(/\/earn(\?|$)/);
   });
 
   test.skip('supply modal opens with the slippage gear and persists a custom slippage', async ({
@@ -38,8 +40,9 @@ test.describe('Pendle (scaffold — write actions stubbed)', () => {
     // Custom slippage set here must survive a reload (pendle-buy-slippage).
   });
 
-  test.skip('matured markets never render a detail page', async () => {
+  test.skip('matured markets never render a detail page — they land on the Portfolio redeem section', async () => {
     // Requires Tenderly evm_increaseTime past PENDLE_MARKETS[0].expiry. Defer to
-    // the follow-up PR that ships matured-state coverage end-to-end.
+    // the follow-up PR that ships matured-state coverage end-to-end (G6 moved
+    // redemption to /portfolio's ready-to-redeem section).
   });
 });

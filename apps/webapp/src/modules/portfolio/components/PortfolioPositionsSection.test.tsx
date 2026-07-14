@@ -1,7 +1,8 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, within, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, within, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Intent } from '@/lib/enums';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import type { SuppliedPosition, SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
@@ -9,16 +10,37 @@ import type { IdleView } from '../helpers/idleView';
 i18n.load('en', {});
 i18n.activate('en');
 
-const h = vi.hoisted(() => ({ navigate: vi.fn(), openSupply: vi.fn(), openWithdraw: vi.fn(), chainId: 1 }));
+const h = vi.hoisted(() => ({
+  navigate: vi.fn(),
+  openSupply: vi.fn(),
+  openWithdraw: vi.fn(),
+  chainId: 1,
+  switchChainAsync: vi.fn(),
+  setIsAutoSwitching: vi.fn(),
+  setAutoSwitchIntent: vi.fn()
+}));
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => h.navigate }));
 
-// The resolver reads the connected chain to gate in-place supply; keep real wagmi
-// exports, override only useChainId.
+// The resolver reads the connected chain to place in-place supply and switches
+// when the position lives elsewhere; keep real wagmi exports, override only
+// the chain and switch hooks.
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
-  return { ...actual, useChainId: () => h.chainId };
+  return {
+    ...actual,
+    useChainId: () => h.chainId,
+    useChains: () => [{ id: 1 }, { id: 8453 }],
+    useSwitchChain: () => ({ switchChainAsync: h.switchChainAsync })
+  };
 });
+
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({
+    setIsAutoSwitching: h.setIsAutoSwitching,
+    setAutoSwitchIntent: h.setAutoSwitchIntent
+  })
+}));
 
 // The savings trigger under test — capture its opener.
 vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
@@ -56,6 +78,7 @@ const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   name: 'X',
   tokenSymbol: 'USDS',
   kind: 'vault',
+  intent: over.kind === 'savings' ? Intent.SAVINGS_INTENT : Intent.VAULTS_INTENT,
   amountUsd: 100,
   rate: 0.05,
   color: '#000',
@@ -104,6 +127,10 @@ describe('PortfolioPositionsSection — supply routing', () => {
     h.navigate.mockClear();
     h.openSupply.mockClear();
     h.openWithdraw.mockClear();
+    h.switchChainAsync.mockReset();
+    h.switchChainAsync.mockResolvedValue(undefined);
+    h.setIsAutoSwitching.mockClear();
+    h.setAutoSwitchIntent.mockClear();
     h.chainId = 1;
   });
   afterEach(() => cleanup());
@@ -140,9 +167,10 @@ describe('PortfolioPositionsSection — supply routing', () => {
     expect(h.navigate.mock.calls[0][0].to).toBe('/earn/savings');
   });
 
-  it('navigates (does not open the modal) when the savings card is on a non-connected chain', () => {
+  it('switches to the position chain, then opens the modal in place, for a wrong-chain card', async () => {
     h.chainId = 1; // wallet on mainnet
-    // Savings position scoped to Base — the in-place modal would supply on mainnet.
+    // Savings position scoped to Base — supply belongs there, so the Supply
+    // button moves the wallet first and opens the modal without navigating.
     const savingsOnBase = position({
       id: 'savings',
       name: 'Sky Savings Rate',
@@ -155,8 +183,29 @@ describe('PortfolioPositionsSection — supply routing', () => {
 
     fireEvent.click(within(savingsCard).getByTestId('position-card-supply'));
 
+    await waitFor(() => expect(h.openSupply).toHaveBeenCalledTimes(1));
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 8453 });
+    expect(h.setAutoSwitchIntent).toHaveBeenCalledWith(Intent.SAVINGS_INTENT);
+    expect(h.navigate).not.toHaveBeenCalled();
+  });
+
+  it('stays put (no modal, no navigation) when the wallet declines the wrong-chain switch', async () => {
+    h.chainId = 1;
+    h.switchChainAsync.mockRejectedValue(new Error('user rejected'));
+    const savingsOnBase = position({
+      id: 'savings',
+      name: 'Sky Savings Rate',
+      kind: 'savings',
+      detailPath: '/earn/savings',
+      chainIds: [8453]
+    });
+    renderSection([savingsOnBase]);
+    const savingsCard = screen.getAllByTestId('position-card')[0];
+
+    fireEvent.click(within(savingsCard).getByTestId('position-card-supply'));
+
+    await waitFor(() => expect(h.setIsAutoSwitching).toHaveBeenLastCalledWith(false));
     expect(h.openSupply).not.toHaveBeenCalled();
-    expect(h.navigate).toHaveBeenCalledTimes(1);
-    expect(h.navigate.mock.calls[0][0].to).toBe('/earn/savings');
+    expect(h.navigate).not.toHaveBeenCalled();
   });
 });

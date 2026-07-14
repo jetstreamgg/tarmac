@@ -1,5 +1,6 @@
 import { renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Intent } from '@/lib/enums';
 import { usePortfolioSupplyActions } from './usePortfolioSupplyActions';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
@@ -11,10 +12,26 @@ const h = vi.hoisted(() => ({
   // Far-future expiry so the market reads as active; the maturity test flips it.
   pendleMarket: { name: 'PT-sUSDS', slug: 'pt-susds', marketAddress: '0x9C5', expiry: 4102444800 },
   openRewardsSupply: vi.fn(),
-  chainId: 1
+  chainId: 1,
+  // Production-shaped chain list by default; the dev-build test adds the fork.
+  chains: [{ id: 1 }, { id: 8453 }, { id: 10 }] as { id: number }[],
+  switchChainAsync: vi.fn(),
+  setIsAutoSwitching: vi.fn(),
+  setAutoSwitchIntent: vi.fn()
 }));
 
-vi.mock('wagmi', () => ({ useChainId: () => h.chainId }));
+vi.mock('wagmi', () => ({
+  useChainId: () => h.chainId,
+  useChains: () => h.chains,
+  useSwitchChain: () => ({ switchChainAsync: h.switchChainAsync })
+}));
+
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({
+    setIsAutoSwitching: h.setIsAutoSwitching,
+    setAutoSwitchIntent: h.setAutoSwitchIntent
+  })
+}));
 
 vi.mock('@/hooks', () => ({
   TOKENS: { cle: { symbol: 'CLE' } },
@@ -30,22 +47,26 @@ vi.mock('@/hooks', () => ({
   getPendleMarketByAddress: (address: string) =>
     address.toLowerCase() === h.pendleMarket.marketAddress.toLowerCase() ? h.pendleMarket : undefined,
   isMarketMatured: (expiry: number) => expiry * 1000 <= Date.now(),
-  useAvailableTokenRewardContracts: () => [
-    {
-      contractAddress: '0xFA12',
-      chainId: 1,
-      name: 'With: USDS Get: SPK',
-      supplyToken: { symbol: 'USDS' },
-      rewardToken: { symbol: 'SPK' }
-    },
-    {
-      contractAddress: '0xC1E0',
-      chainId: 1,
-      name: 'Chronicle Points',
-      supplyToken: { symbol: 'USDS' },
-      rewardToken: { symbol: 'CLE' }
-    }
-  ]
+  // Farms live on mainnet only, like the real registry.
+  useAvailableTokenRewardContractsForChains: () => (chainId: number) =>
+    chainId === 1
+      ? [
+          {
+            contractAddress: '0xFA12',
+            chainId: 1,
+            name: 'With: USDS Get: SPK',
+            supplyToken: { symbol: 'USDS' },
+            rewardToken: { symbol: 'SPK' }
+          },
+          {
+            contractAddress: '0xC1E0',
+            chainId: 1,
+            name: 'Chronicle Points',
+            supplyToken: { symbol: 'USDS' },
+            rewardToken: { symbol: 'CLE' }
+          }
+        ]
+      : []
 }));
 
 vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
@@ -68,6 +89,14 @@ vi.mock('@/modules/rewards/hooks/useRewardsModal', () => ({
   useRewardsModal: () => ({ openSupply: h.openRewardsSupply, openWithdraw: vi.fn() })
 }));
 
+const KIND_INTENT: Record<SuppliedPosition['kind'], Intent> = {
+  savings: Intent.SAVINGS_INTENT,
+  rewards: Intent.REWARDS_INTENT,
+  vault: Intent.VAULTS_INTENT,
+  fixed: Intent.FIXED_INTENT,
+  stusds: Intent.EXPERT_INTENT
+};
+
 const position = (
   kind: SuppliedPosition['kind'],
   over: Partial<SuppliedPosition> = {}
@@ -76,6 +105,7 @@ const position = (
   name: kind,
   tokenSymbol: 'USDS',
   kind,
+  intent: KIND_INTENT[kind],
   amountUsd: 100,
   rate: 0.05,
   color: '#000',
@@ -92,7 +122,12 @@ describe('usePortfolioSupplyActions', () => {
     h.openVaultSupply.mockClear();
     h.openPendleSupply.mockClear();
     h.openRewardsSupply.mockClear();
+    h.switchChainAsync.mockReset();
+    h.switchChainAsync.mockResolvedValue(undefined);
+    h.setIsAutoSwitching.mockClear();
+    h.setAutoSwitchIntent.mockClear();
     h.chainId = 1;
+    h.chains = [{ id: 1 }, { id: 8453 }, { id: 10 }];
     h.pendleMarket.expiry = 4102444800;
   });
   afterEach(() => cleanup());
@@ -106,12 +141,52 @@ describe('usePortfolioSupplyActions', () => {
     expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
   });
 
-  it('returns undefined for a savings position not on the connected chain (caller navigates)', () => {
+  it('switches to the position chain first, then opens, for a savings position off the connected chain', async () => {
     const { result } = renderHook(() => usePortfolioSupplyActions());
 
-    // Card scoped to Base — the in-place modal would supply on mainnet, so don't open it.
-    expect(result.current(position('savings', { chainIds: [8453] }))).toBeUndefined();
-    expect(h.openSavingsSupply).not.toHaveBeenCalled();
+    // Card scoped to Base while the wallet sits on mainnet: supply belongs to
+    // the position's chain, so the handler moves the wallet there first.
+    const handler = result.current(position('savings', { chainIds: [8453] }));
+
+    expect(handler).toBeTypeOf('function');
+    await handler!();
+
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 8453 });
+    expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
+    expect(h.switchChainAsync.mock.invocationCallOrder[0]).toBeLessThan(
+      h.openSavingsSupply.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('prefers the connected chain for a position spanning several chains (no switch)', () => {
+    h.chainId = 8453;
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    result.current(position('savings', { chainIds: [1, 8453] }))!();
+
+    expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
+    expect(h.switchChainAsync).not.toHaveBeenCalled();
+  });
+
+  it('targets the config Tenderly fork, never real Ethereum, when the build carries one (dev/staging)', async () => {
+    h.chainId = 8453; // wallet on Base
+    h.chains = [{ id: 1 }, { id: 314310 }, { id: 8453 }]; // dev config: Ethereum + fork + L2s
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+
+    // Position read from real mainnet, but the auto-switch must land on the
+    // fork — landing a dev wallet on Ethereum means real fees.
+    await result.current(position('stusds', { chainIds: [1] }))!();
+
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 314310 });
+    expect(h.openStUsdsSupply).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefers the mainnet-family chain when a multi-chain position excludes the connected chain', async () => {
+    h.chainId = 10; // wallet on Optimism; position spans Base + mainnet
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    await result.current(position('savings', { chainIds: [8453, 1] }))!();
+
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 1 });
+    expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
   });
 
   it('resolves a Morpho vault position to an opener that launches the vault modal with its config', () => {
@@ -130,12 +205,23 @@ describe('usePortfolioSupplyActions', () => {
     });
   });
 
-  it('returns undefined for a vault position off the connected chain', () => {
+  it('resolves a Morpho vault from its own chain while the wallet is on an L2, switching first', async () => {
+    h.chainId = 8453; // wallet on Base; the vault lives on mainnet
     const { result } = renderHook(() => usePortfolioSupplyActions());
-    expect(
-      result.current(position('vault', { id: 'vault-morpho-0xabc', address: '0xABC', chainIds: [8453] }))
-    ).toBeUndefined();
-    expect(h.openVaultSupply).not.toHaveBeenCalled();
+    const handler = result.current(
+      position('vault', { id: 'vault-morpho-0xabc', address: '0xABC', rate: 0.0445 })
+    );
+
+    expect(handler).toBeTypeOf('function');
+    await handler!();
+
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 1 });
+    expect(h.openVaultSupply).toHaveBeenCalledWith({
+      vaultAddress: '0xABC', // resolved on the position's chain, not the wallet's
+      assetToken: { symbol: 'USDC' },
+      vaultName: 'USDC Risk Capital',
+      netRate: 0.0445
+    });
   });
 
   it('returns undefined for a Spark (non-Morpho) vault position (no in-place modal)', () => {
@@ -176,12 +262,29 @@ describe('usePortfolioSupplyActions', () => {
     });
   });
 
-  it('returns undefined for a rewards position off the connected chain or with no known contract', () => {
+  it('resolves a rewards position from its own chain registry while the wallet is on an L2', async () => {
+    h.chainId = 8453; // wallet on Base; the farm lives on mainnet
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(
+      position('rewards', { id: 'rewards-spk', address: '0xFA12', rate: 0.045 })
+    );
+
+    expect(handler).toBeTypeOf('function');
+    await handler!();
+
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 1 });
+    expect(h.openRewardsSupply).toHaveBeenCalledWith({
+      contractAddress: '0xFA12',
+      supplyToken: { symbol: 'USDS' },
+      displayName: 'SPK Rewards',
+      rewardTokenSymbol: 'SPK',
+      rate: 0.045
+    });
+  });
+
+  it('returns undefined for a rewards position with no known contract (caller navigates)', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions());
 
-    expect(
-      result.current(position('rewards', { id: 'rewards-spk', address: '0xFA12', chainIds: [8453] }))
-    ).toBeUndefined();
     expect(result.current(position('rewards', { id: 'rewards-spk', address: '0xBEEF' }))).toBeUndefined();
     expect(result.current(position('rewards', { id: 'rewards-spk' }))).toBeUndefined();
     expect(h.openRewardsSupply).not.toHaveBeenCalled();
@@ -196,10 +299,56 @@ describe('usePortfolioSupplyActions', () => {
     expect(h.openStUsdsSupply).toHaveBeenCalledTimes(1);
   });
 
-  it('returns undefined for a stUSDS position not on the connected chain (caller navigates)', () => {
+  it('switches to mainnet first, then opens, for a stUSDS position while the wallet is on an L2', async () => {
+    h.chainId = 8453; // wallet on Base; stUSDS position lives on mainnet
     const { result } = renderHook(() => usePortfolioSupplyActions());
-    expect(result.current(position('stusds', { chainIds: [8453] }))).toBeUndefined();
-    expect(h.openStUsdsSupply).not.toHaveBeenCalled();
+    const handler = result.current(position('stusds'));
+
+    expect(handler).toBeTypeOf('function');
+    await handler!();
+
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 1 });
+    expect(h.openStUsdsSupply).toHaveBeenCalledTimes(1);
+  });
+
+  it('records the causing module for the network toast before switching', async () => {
+    h.chainId = 8453;
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }));
+
+    await handler!();
+
+    // Flags first, switch second — the toast fires on the chain change and
+    // must find the reason already recorded. Left set on success: the toast
+    // consumes and clears them.
+    expect(h.setAutoSwitchIntent).toHaveBeenCalledExactlyOnceWith(Intent.FIXED_INTENT);
+    expect(h.setIsAutoSwitching).toHaveBeenCalledExactlyOnceWith(true);
+    expect(h.setAutoSwitchIntent.mock.invocationCallOrder[0]).toBeLessThan(
+      h.switchChainAsync.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('opens nothing and clears the auto flags when the wallet declines the switch', async () => {
+    h.chainId = 8453;
+    h.switchChainAsync.mockRejectedValue(new Error('user rejected'));
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }));
+
+    await handler!();
+
+    expect(h.openPendleSupply).not.toHaveBeenCalled();
+    expect(h.setIsAutoSwitching).toHaveBeenLastCalledWith(false);
+    expect(h.setAutoSwitchIntent).toHaveBeenLastCalledWith(null);
+  });
+
+  it('engages no switch machinery when the position is on the connected chain', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    result.current(position('savings'))!();
+
+    expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
+    expect(h.switchChainAsync).not.toHaveBeenCalled();
+    expect(h.setIsAutoSwitching).not.toHaveBeenCalled();
+    expect(h.setAutoSwitchIntent).not.toHaveBeenCalled();
   });
 
   it('resolves a fixed (Pendle) position to an opener that launches the supply modal with its market', () => {
@@ -211,12 +360,19 @@ describe('usePortfolioSupplyActions', () => {
     expect(h.openPendleSupply).toHaveBeenCalledWith(h.pendleMarket);
   });
 
-  it('returns undefined for a fixed position off the connected chain', () => {
+  it('switches to mainnet first, then opens the market modal, for a fixed position while on an L2', async () => {
+    h.chainId = 8453; // wallet on Base; the PT position lives on mainnet
     const { result } = renderHook(() => usePortfolioSupplyActions());
-    expect(
-      result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5', chainIds: [8453] }))
-    ).toBeUndefined();
-    expect(h.openPendleSupply).not.toHaveBeenCalled();
+    const handler = result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }));
+
+    expect(handler).toBeTypeOf('function');
+    await handler!();
+
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 1 });
+    expect(h.openPendleSupply).toHaveBeenCalledWith(h.pendleMarket);
+    expect(h.switchChainAsync.mock.invocationCallOrder[0]).toBeLessThan(
+      h.openPendleSupply.mock.invocationCallOrder[0]
+    );
   });
 
   it('returns undefined for a matured fixed market (redemption lives on the overview)', () => {

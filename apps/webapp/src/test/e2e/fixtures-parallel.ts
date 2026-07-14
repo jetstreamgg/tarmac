@@ -2,6 +2,7 @@ import { test as playwrightTest, expect, Browser, TestInfo, Page } from '@playwr
 import { accountPool } from './utils/accountPoolManager';
 import { mockRpcCalls } from './mock-rpc-call';
 import { mockVpnCheck } from './mock-vpn-check';
+import { mockGeoConfig } from './mock-geo-config';
 
 type TestFixtures = {
   testAccount: `0x${string}`;
@@ -77,6 +78,10 @@ export const test = playwrightTest.extend<TestFixtures>({
 
     // Set up VPN check mocking (from base fixtures)
     await page.route('https://vpnapi.io/**', mockVpnCheck);
+
+    // Serve an unrestricted geo config; the staging endpoint is unreachable
+    // from the test browser and the fetch fallback disables several modules.
+    await page.route('**/geo-config', mockGeoConfig);
 
     // Set environment variable for server-side access (if needed)
     process.env.VITE_TEST_ACCOUNT = testAccount;
