@@ -70,6 +70,18 @@ describe('buildSuppliedView', () => {
     expect(view.positions[2].color).toBe('#F17FBD'); // stUSDS pink
   });
 
+  it('carries the owning module intent onto each position', () => {
+    const view = buildSuppliedView(
+      [
+        makeRow({ id: 'savings', position: amount(100) }),
+        makeRow({ id: 'vault-usds', kind: 'vault', intent: Intent.VAULTS_INTENT, position: amount(50) })
+      ],
+      'all'
+    );
+    expect(view.positions.find(p => p.id === 'savings')?.intent).toBe(Intent.SAVINGS_INTENT);
+    expect(view.positions.find(p => p.id === 'vault-usds')?.intent).toBe(Intent.VAULTS_INTENT);
+  });
+
   it('carries the registry detailPath onto each position', () => {
     const view = buildSuppliedView(rows, 'all');
     expect(view.positions.map(p => p.detailPath)).toEqual([
