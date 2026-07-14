@@ -1,7 +1,9 @@
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Button } from '@/components/ui/button';
-import { Heading, Text } from '@/modules/layout/components/Typography';
+import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
+import { IllustrationStaked, IllustrationStakingLogomark } from '@/modules/icons';
+import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useConvertForm } from '../hooks/useConvertForm';
 import { useConvertLaunch } from '../hooks/useConvertLaunch';
@@ -29,14 +31,6 @@ const getDisabledReasonText = (reason?: PsmConversionDisabledReason, targetToken
   }
 };
 
-function HeroBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="bg-glassBadge rounded-full px-3 py-1.5 backdrop-blur-[20px]">
-      <Text className="text-text text-xs font-medium">{children}</Text>
-    </span>
-  );
-}
-
 /**
  * The /convert destination (E2): a full-width page-as-widget PSM swap surface
  * (Figma 486:31193). The form lives on the page; Review launches the shared
@@ -61,25 +55,27 @@ export function ConvertPage() {
 
   return (
     <div className="flex w-full flex-col items-center gap-8 py-4 md:py-14" data-testid="convert-page">
-      <div className="flex flex-col items-center gap-4 text-center">
-        <div className="flex items-center gap-2">
-          <HeroBadge>
-            <Trans>1:1 Exchange rate</Trans>
-          </HeroBadge>
-          <HeroBadge>
-            <Trans>$0.00 Fees paid</Trans>
-          </HeroBadge>
-        </div>
-        <Heading tag="h1" variant="large">
-          <Trans>Convert stablecoins</Trans>
-        </Heading>
-        <Text className="text-textSecondary max-w-md text-sm">
+      {/* Patterns/Headers, Convert type 5044:35419. */}
+      <PageHeaderHero
+        badges={
+          <>
+            <HeaderBadge icon={<IllustrationStakingLogomark boxSize={16} />}>
+              <Trans>1:1 Exchange rate</Trans>
+            </HeaderBadge>
+            <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
+              <Trans>$0.00 Fees paid</Trans>
+            </HeaderBadge>
+          </>
+        }
+        title={<Trans>Convert stablecoins</Trans>}
+        subtitle={
           <Trans>
             Move between stablecoins with confidence. Conversions settle at a fixed 1:1 rate, with no fees and
             no slippage.
           </Trans>
-        </Text>
-      </div>
+        }
+        subtitleClassName="max-w-[459px]"
+      />
 
       {/* Form column: the middle 6 columns of the design grid (624px @1280)
           minus 48px breathing room each side, per the Convert mock. */}

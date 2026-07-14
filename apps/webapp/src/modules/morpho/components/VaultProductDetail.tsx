@@ -12,10 +12,10 @@ import {
 } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { Morpho } from '@/widgets';
-import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { HeaderBadge } from '@/components/ui/page-header';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
-import { RING_MORPHO } from '@/components/product/productVisuals';
 import { VaultDetailChart } from './VaultDetailChart';
 import { VaultStrategy } from './VaultStrategy';
 import { VaultPositionCard } from './VaultPositionCard';
@@ -106,22 +106,20 @@ export function VaultProductDetail({
       backHref={ROUTES.EARN}
       token={{
         icon: (
-          <ProductTokenIcon
-            symbol={vault.assetToken.symbol}
-            ringColor={RING_MORPHO}
-            glowColor={RING_MORPHO}
+          <TokenIcon
+            token={{ symbol: vault.assetToken.symbol }}
             width={48}
             className="h-12 w-12"
+            showChainIcon={false}
           />
         )
       }}
       title={
-        <span className="flex flex-wrap items-center gap-3">
+        <span className="flex flex-wrap items-center gap-2">
           {vault.name}
-          <span className="bg-surface text-textSecondary flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
-            <Morpho className="h-3 w-3 rounded-sm" />
+          <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
             <Trans>Powered by Morpho</Trans>
-          </span>
+          </HeaderBadge>
         </span>
       }
       networkSelector={<ChainModal chainIds={networks} dataTestId="vault-detail-network" />}

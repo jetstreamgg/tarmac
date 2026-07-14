@@ -15,12 +15,10 @@ import {
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
-import { resolveTokenColor } from '@/widgets/shared/constants';
-import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
-import { RING_DEFAULT } from '@/components/product/productVisuals';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
 import { RewardsDetailChart } from './RewardsDetailChart';
 import { RewardsPositionCard } from './RewardsPositionCard';
@@ -165,12 +163,11 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
       backHref={ROUTES.EARN}
       token={{
         icon: (
-          <ProductTokenIcon
-            symbol={rewardSymbol}
-            ringColor={RING_DEFAULT}
-            glowColor={resolveTokenColor(rewardSymbol)}
+          <TokenIcon
+            token={{ symbol: rewardSymbol }}
             width={48}
             className="h-12 w-12"
+            showChainIcon={false}
           />
         )
       }}

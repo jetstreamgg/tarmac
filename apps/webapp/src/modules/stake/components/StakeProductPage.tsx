@@ -5,10 +5,10 @@ import { Intent } from '@/lib/enums';
 import { productNetworks } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import { resolveTokenColor } from '@/widgets/shared/constants';
-import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { RING_DEFAULT } from '@/components/product/productVisuals';
+import { IconboxStatus } from '@/components/ui/iconbox';
+import { PageHeading } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { StakeUserPosition, useStakeUserPositions } from '../hooks/useStakeUserPositions';
 import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
@@ -99,18 +99,19 @@ export function StakeProductPage() {
 
   return (
     <div data-testid="stake-product-page" className="flex flex-col gap-6">
+      {/* Header (Patterns/Headers, Stake type 5043:59183): the DS 64px
+          Iconbox / Status with the brand glow (5043:59189) beside a Heading 2
+          title; the DS 17px icon-title gap is normalized to 16. */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <ProductTokenIcon
-            symbol="SKY"
-            ringColor={RING_DEFAULT}
-            glowColor={resolveTokenColor('SKY')}
-            width={48}
-            className="h-12 w-12"
-          />
-          <h1 className="text-text text-3xl font-medium">
+        <div className="flex items-center gap-4">
+          <div className="shrink-0" data-testid="stake-header-icon">
+            <IconboxStatus size="l" className="shadow-brandGlow">
+              <TokenIcon token={{ symbol: 'SKY' }} width={48} className="h-12 w-12" showChainIcon={false} />
+            </IconboxStatus>
+          </div>
+          <PageHeading size="lg">
             <Trans>SKY Staking</Trans>
-          </h1>
+          </PageHeading>
         </div>
         <ChainModal chainIds={networks} dataTestId="stake-network" />
       </div>

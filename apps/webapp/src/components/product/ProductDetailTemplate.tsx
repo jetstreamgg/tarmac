@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { AppLink } from '@/lib/navigation';
+import { IconboxStatus } from '@/components/ui/iconbox';
+import { PageHeading } from '@/components/ui/page-header';
 
 /**
  * The reusable product-detail layout (Track C, C3 — "the gate"). Earn products
@@ -21,7 +23,7 @@ import { AppLink } from '@/lib/navigation';
  */
 
 export interface ProductDetailToken {
-  /** Token image node injected by the module — a ringed `<ProductTokenIcon/>`. */
+  /** Token image node injected by the module — a bare 48px `<TokenIcon/>`; the template supplies the DS ring. */
   icon: ReactNode;
 }
 
@@ -73,13 +75,14 @@ export interface ProductDetailTemplateProps {
 }
 
 /**
- * Token title-icon slot. The module injects a ringed `<ProductTokenIcon/>`
- * (product-family outline); the template just positions it.
+ * Token title-icon slot. The module injects a bare 48px token logo; the
+ * template rings it with the DS 64px Iconbox / Status (Headers pattern,
+ * Figma 5039:35306) so the header ring treatment never drifts per product.
  */
 function ProductTitleIcon({ token }: { token: ProductDetailToken }) {
   return (
     <div className="shrink-0" data-testid="product-detail-token-icon">
-      {token.icon}
+      <IconboxStatus size="l">{token.icon}</IconboxStatus>
     </div>
   );
 }
@@ -171,20 +174,22 @@ export function ProductDetailTemplate({
 }: ProductDetailTemplateProps) {
   return (
     <div className="flex w-full flex-col gap-8 py-4 md:py-10" data-testid={dataTestId}>
-      {/* Header: back-link, token title (+glow), per-product network selector. */}
-      <div className="flex flex-col gap-5">
+      {/* Header (Patterns/Headers, Savings type 5039:35173): Label 5 back-link
+          over the ringed-icon + Heading 3 title row, network pill right. The
+          DS 17px icon-title gap is normalized to 16. */}
+      <div className="flex flex-col gap-8">
         <AppLink
           to={backHref}
-          className="text-textSecondary hover:text-text flex w-fit items-center gap-1 text-sm transition-colors"
+          className="text-fgSecondary hover:text-fgPrimary font-circle flex w-fit items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors"
           data-testid="product-detail-back"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="size-4" />
           {backLabel ?? <Trans>Back to products</Trans>}
         </AppLink>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <ProductTitleIcon token={token} />
-            <h1 className="text-text font-circle text-3xl">{title}</h1>
+            <PageHeading size="md">{title}</PageHeading>
           </div>
           {networkSelector}
         </div>

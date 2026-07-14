@@ -15,12 +15,10 @@ import {
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
-import { resolveTokenColor } from '@/widgets/shared/constants';
-import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
-import { RING_DEFAULT } from '@/components/product/productVisuals';
 import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
@@ -133,19 +131,15 @@ export function StUsdsProductDetail() {
       backHref={ROUTES.EARN}
       token={{
         icon: (
-          <ProductTokenIcon
-            symbol="stUSDS"
-            ringColor={RING_DEFAULT}
-            glowColor={resolveTokenColor('stUSDS')}
-            width={48}
-            className="h-12 w-12"
-          />
+          <TokenIcon token={{ symbol: 'stUSDS' }} width={48} className="h-12 w-12" showChainIcon={false} />
         )
       }}
       title={
         <span className="flex flex-col gap-1">
           <span>stUSDS</span>
-          <span className="text-textSecondary text-sm font-normal">
+          {/* The DS line under the title (5120:19542) is Body 6, so it opts
+              back out of the heading's Circular styling. */}
+          <span className="font-graphik text-fgSecondary text-xs leading-[18px] font-normal tracking-normal">
             <Trans>Access a variable reward rate on USDS by participating in SKY-backed borrowing</Trans>
           </span>
         </span>

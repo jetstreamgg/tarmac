@@ -6,6 +6,7 @@ import {
   ArrowUpToLine,
   Check,
   ChevronDown,
+  ChevronLeft,
   Copy,
   LineChart,
   Network,
@@ -102,6 +103,8 @@ import {
 } from '@/components/ui/iconbox';
 import { Loader } from '@/components/ui/loader';
 import { ListWallet } from '@/components/ui/list';
+import { HeaderBadge, PageHeaderHero, PageHeading } from '@/components/ui/page-header';
+import { IllustrationStaked, IllustrationStakingLogomark } from '@/modules/icons';
 
 // Internal-only living style guide (route /design-system, hidden in production).
 // Shows every canonical components/ui primitive in its prop-reachable states;
@@ -119,6 +122,7 @@ const SECTIONS = [
   { id: 'overlays', title: 'Overlays' },
   { id: 'tables', title: 'Tables' },
   { id: 'iconbox', title: 'Iconbox' },
+  { id: 'headers', title: 'Headers' },
   { id: 'steps', title: 'Steps' },
   { id: 'feedback', title: 'Feedback' },
   { id: 'data', title: 'Data & misc' }
@@ -1659,6 +1663,108 @@ function IconboxSection() {
   );
 }
 
+// ─── Headers ──────────────────────────────────────────────────────────────────
+
+/** Static stand-in for the header network pill (ChainModal / FilterSelect at dropdownM). */
+function HeaderNetworkPill({ label }: { label: string }) {
+  return (
+    <Button variant="dropdown" size="dropdownM">
+      <MainnetChain className="h-6 w-6" />
+      {label}
+      <ChevronDown className="size-4" />
+    </Button>
+  );
+}
+
+function HeadersSection() {
+  return (
+    <Section
+      id="headers"
+      title="Headers"
+      note="Patterns/Headers (H11): the five destination-page header types. Earn and Convert share the centered hero (Heading 2 + Body 6 + stat badges); Portfolio, the product-detail pages and Stake are title rows on Heading 3/2 with the Iconbox/Status L ring and the dropdown-M network pill."
+    >
+      <SubSection title="Hero — Earn / Convert (5031:52345 / 5044:35419)">
+        <PageHeaderHero
+          badges={
+            <>
+              <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>$11.02B in circulation</HeaderBadge>
+              <HeaderBadge icon={<IllustrationStakingLogomark boxSize={16} />}>
+                Operating for 7 years
+              </HeaderBadge>
+            </>
+          }
+          title="Your stablecoins, earning more"
+          subtitle="Sky Protocol is where stablecoins go to work and where they've been going since 2017. $11B in circulation. Multiple strategies, one place."
+        />
+      </SubSection>
+
+      <SubSection title="Portfolio — eyebrow + Heading 3 + network dropdown (5034:20993)">
+        <div className="flex w-full flex-col gap-2">
+          <p className="font-circle text-fgSecondary text-sm leading-4 font-medium tracking-[-0.28px]">
+            Welcome back, bartoo.eth
+          </p>
+          <div className="flex items-center justify-between gap-4">
+            <PageHeading size="md" tag="h3">
+              Your Stablecoin Earnings
+            </PageHeading>
+            <HeaderNetworkPill label="All networks" />
+          </div>
+        </div>
+      </SubSection>
+
+      <SubSection title="Product detail — back link, Iconbox/Status L, title badge (5039:35173)">
+        <div className="flex w-full flex-col gap-8">
+          <span className="text-fgSecondary font-circle flex w-fit items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
+            <ChevronLeft className="size-4" />
+            Back to products
+          </span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <IconboxStatus size="l">
+                <BoxToken symbol="sUSDS" px={48} className="size-12" />
+              </IconboxStatus>
+              <PageHeading size="md" tag="h3" className="flex flex-wrap items-center gap-2">
+                Sky Savings
+                <HeaderBadge size="s" icon={<IllustrationStakingLogomark boxSize={16} />}>
+                  Powered by Morpho
+                </HeaderBadge>
+              </PageHeading>
+            </div>
+            <HeaderNetworkPill label="Ethereum" />
+          </div>
+        </div>
+      </SubSection>
+
+      <SubSection title="Stake — brand-glow Iconbox/Status L + Heading 2 (5043:59183)">
+        <div className="flex w-full items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <IconboxStatus size="l" className="shadow-brandGlow">
+              <BoxToken symbol="SKY" px={48} className="size-12" />
+            </IconboxStatus>
+            <PageHeading size="lg" tag="h3">
+              SKY Staking
+            </PageHeading>
+          </div>
+          <HeaderNetworkPill label="Ethereum" />
+        </div>
+      </SubSection>
+
+      <SubSection title="Badges / Illustration — m (Label 5) / s (Label 6)">
+        <Row>
+          <Spec label="m — hero stat badge">
+            <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>$11.02B in circulation</HeaderBadge>
+          </Spec>
+          <Spec label="s — title suffix badge">
+            <HeaderBadge size="s" icon={<IllustrationStakingLogomark boxSize={16} />}>
+              Powered by Morpho
+            </HeaderBadge>
+          </Spec>
+        </Row>
+      </SubSection>
+    </Section>
+  );
+}
+
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
 /** 14px chip icon for step specimens (chain overlay off — the chip is symbol-only). */
@@ -1983,6 +2089,7 @@ function DesignSystem() {
         <OverlaysSection />
         <TablesSection />
         <IconboxSection />
+        <HeadersSection />
         <StepsSection />
         <FeedbackSection />
         <DataSection />
