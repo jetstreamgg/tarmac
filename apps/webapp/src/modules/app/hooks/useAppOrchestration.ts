@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useAppSearchParams, useRouteIntent, useRouteEntityParams } from '@/lib/navigation';
-import { QueryParams, CHAIN_WIDGET_MAP, COMING_SOON_MAP } from '@/lib/constants';
+import { useRouterState } from '@tanstack/react-router';
+import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/navigation';
+import { QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
+import { getRouteChainAction } from '@/lib/widget-network-map';
+import { pathToIntent } from '@/lib/routes';
 
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
 import { useAvailableTokenRewardContracts } from '@/hooks';
@@ -29,7 +32,18 @@ export function useAppOrchestration(): { intent: Intent } {
   const [searchParams, setSearchParams] = useAppSearchParams();
   const navigate = useNavigate();
 
-  const intent = useRouteIntent();
+  // Intent derived from the location pathname rather than the matched route:
+  // the location (pathname + searchStr) updates a render before the route
+  // matches resolve, and the bookkeeping below needs the intent and the
+  // network param to move together. With the matched-route intent, a
+  // navigation briefly pairs the new search with the old intent — the switch
+  // fires under the old intent, and when the intent catches up the reset
+  // below wipes autoSwitchAttempted, granting a second wallet prompt after a
+  // failed switch and letting the network toast read the wrong module.
+  // pathToIntent agrees with the routes' staticData on every reachable path
+  // (the TRADE/UPGRADE alias routes redirect before rendering).
+  const pathname = useRouterState({ select: s => s.location.pathname });
+  const intent = pathToIntent(pathname) ?? Intent.BALANCES_INTENT;
   const { rewardContract } = useRouteEntityParams();
 
   const chainId = useChainId();
@@ -48,7 +62,16 @@ export function useAppOrchestration(): { intent: Intent } {
     }
   });
 
-  const { setIsSwitchingNetwork } = useNetworkSwitch();
+  const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
+
+  // One auto-switch chance per module visit, reset when the user navigates to
+  // a different module. Marked on an attempt, on a rejected wallet switch and
+  // on a manual wallet chain change, so route validation falls through to the
+  // home redirect instead of re-prompting against the user's choice.
+  const autoSwitchAttempted = useRef(false);
+  useEffect(() => {
+    autoSwitchAttempted.current = false;
+  }, [intent]);
 
   const { switchChain } = useSwitchChain({
     mutation: {
@@ -56,23 +79,28 @@ export function useAppOrchestration(): { intent: Intent } {
         // Clear switching state when network switch succeeds
         setIsSwitchingNetwork(false);
       },
-      onError: err => {
+      onError: () => {
         // Clear switching state when network switch fails
         setIsSwitchingNetwork(false);
+        setIsAutoSwitching(false);
 
-        // If the user rejects the network switch request, update the network query param to the current chain
-        if (err.name === 'UserRejectedRequestError') {
-          const chainName = chains.find(c => c.id === chainId)?.name;
-          if (chainName) {
-            const normalizedChainName = normalizeUrlParam(chainName);
-            const currentNetwork = searchParams.get(QueryParams.Network);
-            // Only update if the network actually changed (compare normalized to avoid case-only diffs)
-            if (normalizeUrlParam(currentNetwork || '') !== normalizedChainName) {
-              setSearchParams(params => {
-                params.set(QueryParams.Network, normalizedChainName);
-                return params;
-              });
-            }
+        // Whether the user rejected the request or the wallet failed to honor
+        // it (e.g. a pending-request error while a popup sits unanswered),
+        // sync the network param back to the actual chain so the URL never
+        // claims a network the wallet isn't on. Route validation then falls
+        // back home for mainnet-only modules — the visit already had its
+        // switch chance — instead of stranding a half-switched page.
+        autoSwitchAttempted.current = true;
+        const chainName = chains.find(c => c.id === chainId)?.name;
+        if (chainName) {
+          const normalizedChainName = normalizeUrlParam(chainName);
+          const currentNetwork = searchParams.get(QueryParams.Network);
+          // Only update if the network actually changed (compare normalized to avoid case-only diffs)
+          if (normalizeUrlParam(currentNetwork || '') !== normalizedChainName) {
+            setSearchParams(params => {
+              params.set(QueryParams.Network, normalizedChainName);
+              return params;
+            });
           }
         }
       }
@@ -115,11 +143,37 @@ export function useAppOrchestration(): { intent: Intent } {
   // Route validation: redirects that depend on chain or user state, replacing
   // the navigation-param stripping the legacy query-param validator did.
   useEffect(() => {
-    const allowedIntents = CHAIN_WIDGET_MAP[newChainId] ?? [];
-    const comingSoon = COMING_SOON_MAP[newChainId] ?? [];
+    const action = getRouteChainAction(intent, newChainId, {
+      switchAttempted: autoSwitchAttempted.current,
+      chains
+    });
+
+    // Mainnet-only module reached with an L2 network (in-app links retain the
+    // current network param; deep links can carry anything): switch on the
+    // user's behalf instead of bouncing home. Writing the param triggers the
+    // wallet switch below; the auto flags make the shell toast explain the
+    // change. The flags are skipped when the wallet is already on the target
+    // chain (param merely stale) — no switch would run to clear them, and
+    // TwoPane holds its switching state while isSwitchingNetwork is set.
+    if (action.kind === 'switch-network') {
+      autoSwitchAttempted.current = true;
+      const targetChainId = chains.find(c => normalizeUrlParam(c.name) === action.network)?.id;
+      if (targetChainId !== undefined && targetChainId !== chainId) {
+        setIsSwitchingNetwork(true);
+        setIsAutoSwitching(true);
+      }
+      setSearchParams(
+        params => {
+          params.set(QueryParams.Network, action.network);
+          return params;
+        },
+        { replace: true }
+      );
+      return;
+    }
 
     // Module not available (or coming soon) on the target chain → Balances.
-    if (!allowedIntents.includes(intent) || comingSoon.includes(intent)) {
+    if (action.kind === 'redirect-home') {
       void navigate({ to: '/', search: keepSearch, replace: true });
       return;
     }
@@ -169,6 +223,14 @@ export function useAppOrchestration(): { intent: Intent } {
   useEffect(() => {
     // If the user changes the network in their wallet, update the `network` query param
     const handleChainChange = ({ chainId: newChainId }: { chainId?: number | undefined }) => {
+      // The wallet's chain choice is explicit — never auto-revert it. Marking
+      // the visit as attempted makes route validation redirect home when the
+      // new chain doesn't offer the current module, instead of prompting the
+      // user to switch straight back. (The change event also fires for
+      // account-only changes, with no chainId.)
+      if (newChainId !== undefined) {
+        autoSwitchAttempted.current = true;
+      }
       const newChainName = chains.find(c => c.id === newChainId)?.name;
       if (newChainName) {
         const normalizedNewChainName = normalizeUrlParam(newChainName);

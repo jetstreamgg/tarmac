@@ -1,6 +1,6 @@
 import { ComponentType, MouseEvent, ReactNode, useCallback, useState } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { useChainId } from 'wagmi';
+import { useChainId, useChains } from 'wagmi';
 import { Menu, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
@@ -145,6 +145,7 @@ function MoreMenu() {
 export function TopNav() {
   const activePath = useActiveDestinationPath();
   const chainId = useChainId();
+  const chains = useChains();
   const { showNewDot } = useNewIntentDots();
   const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
 
@@ -153,11 +154,11 @@ export function TopNav() {
   const searchForIntent = useCallback(
     (targetIntent: Intent) => (prev: Record<string, string | undefined>) => {
       const retained = retainOnNavigate(prev);
-      const override = getNetworkOverrideForIntent(targetIntent, chainId);
+      const override = getNetworkOverrideForIntent(targetIntent, chainId, chains);
       if (override) retained[QueryParams.Network] = override;
       return retained;
     },
-    [chainId]
+    [chainId, chains]
   );
 
   // Modified clicks open a new tab; this tab doesn't navigate, so skip the
@@ -174,12 +175,12 @@ export function TopNav() {
       ) {
         return;
       }
-      if (getNetworkOverrideForIntent(targetIntent, chainId)) {
+      if (getNetworkOverrideForIntent(targetIntent, chainId, chains)) {
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
       }
     },
-    [chainId, setIsSwitchingNetwork, setIsAutoSwitching]
+    [chainId, chains, setIsSwitchingNetwork, setIsAutoSwitching]
   );
 
   return (

@@ -42,6 +42,8 @@ const getWidgetName = (intent: Intent): string => {
       return 'stUSDS';
     case Intent.VAULTS_INTENT:
       return 'Vaults';
+    case Intent.FIXED_INTENT:
+      return 'Fixed Yield';
     case Intent.CONVERT_INTENT:
       return 'Convert';
     default:

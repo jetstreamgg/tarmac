@@ -192,7 +192,7 @@ export {
   PendleConvertSide,
   PendleHistoryAction
 } from './pendle/constants';
-export { isMarketMatured, formatPendleAggregatorName } from './pendle/helpers';
+export { isMarketMatured, isPendleChain, formatPendleAggregatorName } from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleMarketChartData } from './pendle/usePendleMarketChartData';
 export type { PendleMarketChartPoint } from './pendle/usePendleMarketChartData';
