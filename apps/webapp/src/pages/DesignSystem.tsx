@@ -61,7 +61,8 @@ import {
   CellToken,
   CellTokenIdle
 } from '@/components/ui/table-cells';
-import { RiskMeter, RiskTierMeter } from '@/components/product/RiskMeter';
+import { RiskMeter, RiskTierMeter, RiskScaleMeter } from '@/components/product/RiskMeter';
+import { RiskLevel } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { BaseChain, MainnetChain, OptimismChain, Pendle, Stake } from '@/modules/icons';
@@ -119,6 +120,7 @@ const SECTIONS = [
   { id: 'overlays', title: 'Overlays' },
   { id: 'tables', title: 'Tables' },
   { id: 'iconbox', title: 'Iconbox' },
+  { id: 'charts', title: 'Charts' },
   { id: 'steps', title: 'Steps' },
   { id: 'feedback', title: 'Feedback' },
   { id: 'data', title: 'Data & misc' }
@@ -1666,6 +1668,39 @@ function StepToken({ symbol }: { symbol: string }) {
   return <TokenIcon token={{ symbol }} className="h-3.5 w-3.5" showChainIcon={false} />;
 }
 
+function ChartsSection() {
+  return (
+    <Section
+      id="charts"
+      title="Charts"
+      note="Plotted content of the DS chart set (H13). Progress Steps is the value-driven risk bar; Line/Pie/Progress Bar/Tokens Composition follow."
+    >
+      <SubSection title="Progress Steps — risk bar (Figma 5246:24677)">
+        <div className="flex max-w-md flex-col gap-6">
+          <Spec label="empty (legend)">
+            <RiskScaleMeter label="Risk scale" />
+          </Spec>
+          <Spec label="level=low">
+            <RiskScaleMeter level={RiskLevel.LOW} label="Low risk" />
+          </Spec>
+          <Spec label="level=medium">
+            <RiskScaleMeter level={RiskLevel.MEDIUM} label="Medium risk" />
+          </Spec>
+          <Spec label="level=high">
+            <RiskScaleMeter level={RiskLevel.HIGH} label="High risk" />
+          </Spec>
+          <Spec label="level=liquidation">
+            <RiskScaleMeter level={RiskLevel.LIQUIDATION} label="Liquidation risk" />
+          </Spec>
+          <Spec label="continuous value=0.88">
+            <RiskScaleMeter value={0.88} label="88% to liquidation" />
+          </Spec>
+        </div>
+      </SubSection>
+    </Section>
+  );
+}
+
 function StepsSection() {
   return (
     <Section
@@ -1983,6 +2018,7 @@ function DesignSystem() {
         <OverlaysSection />
         <TablesSection />
         <IconboxSection />
+        <ChartsSection />
         <StepsSection />
         <FeedbackSection />
         <DataSection />
