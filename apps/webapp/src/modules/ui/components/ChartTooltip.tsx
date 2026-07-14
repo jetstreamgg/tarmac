@@ -38,6 +38,7 @@ export function ChartTooltip({
   return (
     <div className="bg-container min-w-40 rounded-xl p-3 shadow-lg backdrop-blur-[50px]">
       <p className="text-textSecondary mb-2 text-xs">{labelFormatter(label)}</p>
+      {/* 🔶 the mock trails each row with an accent circle (green/amber) — omitted, semantics unclear. */}
       {payload.map((entry, i) => (
         <div key={`tooltip-value-item-${i}`} className="flex items-center gap-4">
           <span className="text-textSecondary flex items-center gap-2 text-xs">

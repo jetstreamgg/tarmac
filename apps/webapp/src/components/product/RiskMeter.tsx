@@ -38,10 +38,8 @@ export function RiskMeter({
   );
 }
 
-// The four risk zones, ascending, evenly spaced across the DS Progress Steps
-// bar (Figma 5246:24677). Each zone owns a 2-stop fill gradient (dev-mode
-// values); the gradient rides the fill element's own width, so a short Low
-// fill reads near-solid while a long Liquidation fill shows the full sweep.
+// The four risk zones, ascending and evenly spaced across the DS Progress
+// Steps bar (Figma 5246:24677), each with its own 2-stop fill gradient.
 const RISK_ZONES = [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.LIQUIDATION] as const;
 
 const RISK_ZONE_GRADIENT: Record<RiskLevel, string> = {
@@ -86,8 +84,8 @@ export function RiskScaleMeter({
   const zoneCount = RISK_ZONES.length;
   const levelIndex = level ? RISK_ZONES.indexOf(level) : -1;
 
-  // A continuous value wins; otherwise a discrete level fills to the end of
-  // its zone. `activeIndex` is the zone whose gradient the fill wears.
+  // A continuous value wins; a discrete level fills to its zone's end
+  // (🔶 Liquidation → full bar; pass `value` for a point within a zone).
   const fillFraction =
     value !== undefined ? clamp01(value) : levelIndex >= 0 ? (levelIndex + 1) / zoneCount : 0;
   const activeIndex =

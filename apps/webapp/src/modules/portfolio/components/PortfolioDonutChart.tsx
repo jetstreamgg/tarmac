@@ -137,7 +137,8 @@ export function PortfolioDonutChart({
       )}
 
       {/* Inner ring: mirrors the sectors (gaps + active highlight) or a plain
-          full circle when there are 0 or 1 segments. */}
+          full circle when there are 0 or 1 segments. 🔶 the DS "No tokens"
+          empty state is a gray band + label; this renders only the thin ring. */}
       <svg
         width={size}
         height={size}

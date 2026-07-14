@@ -466,6 +466,7 @@ function ChartContent({
             }
           />
 
+          {/* 🔶 the mock dims the area past the hover cursor; not implemented (Recharts split-area). */}
           <Area
             dataKey="value"
             stroke={color ?? '#1DD9BA'}
