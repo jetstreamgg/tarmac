@@ -1,13 +1,13 @@
 import { Trans } from '@lingui/react/macro';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Text } from '@/modules/layout/components/Typography';
+import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 
 /**
  * Top-of-page nudge shown when the user holds idle stablecoins but has no
  * significant earn position: how much those idle funds could earn at the Sky
- * Savings Rate, with a CTA into the Sky Savings product.
+ * Savings Rate, with a CTA into the Sky Savings product. The DS Banners
+ * "Yearly estimation" type (Figma 5273:45495).
  */
 export function AllocateStablecoinsBanner({
   idleUsd,
@@ -21,31 +21,33 @@ export function AllocateStablecoinsBanner({
   const yearly = projectAnnualEarnings(idleUsd, savingsRate);
 
   return (
-    <Card
-      className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between md:p-8"
-      data-testid="allocate-stablecoins-banner"
-    >
-      <div className="flex flex-col gap-2">
+    <PromoBanner
+      dataTestId="allocate-stablecoins-banner"
+      illustration={<img src="/illustrations/illustration-savings-1.png" alt="" className="size-full" />}
+      heading={
         <div className="flex items-baseline gap-1">
-          <span className="text-text font-circle text-3xl leading-none font-medium">{`$${formatNumber(yearly)}`}</span>
-          <Text variant="medium" tag="span" className="text-textSecondary">
+          <span className="font-circle text-fgPrimary text-[44px] leading-[48px] font-medium tracking-[-0.88px]">{`$${formatNumber(yearly)}`}</span>
+          <BannerAccent className="font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
             <Trans>/year</Trans>
-          </Text>
+          </BannerAccent>
         </div>
-        <Text variant="medium" className="text-textSecondary max-w-xl">
+      }
+      subtitle={
+        <p className="text-fgSecondary max-w-[248px] text-xs leading-[18px]">
           <Trans>
             That&apos;s what your idle stablecoins can earn at today&apos;s{' '}
-            <span className="text-text font-medium">
+            <span className="text-fgPrimary font-medium">
               {formatDecimalPercentage(savingsRate)} Sky Savings Rate
             </span>
             .
           </Trans>
-        </Text>
-      </div>
-
-      <Button variant="primary" size="l" className="shrink-0" onClick={onAllocate}>
-        <Trans>Allocate your stablecoins</Trans>
-      </Button>
-    </Card>
+        </p>
+      }
+      action={
+        <Button variant="primary" size="xl" className="shrink-0" onClick={onAllocate}>
+          <Trans>Allocate your stablecoins</Trans>
+        </Button>
+      }
+    />
   );
 }
