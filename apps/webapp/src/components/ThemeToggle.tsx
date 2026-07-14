@@ -1,6 +1,6 @@
 import { Moon, Sun } from 'lucide-react';
 import { Toggle } from './ui/toggle';
-import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useThemeToggle } from '@/modules/ui/hooks/useThemeToggle';
@@ -25,9 +25,8 @@ export function ThemeToggle() {
         </div>
       </TooltipTrigger>
       <TooltipPortal>
-        <TooltipContent arrowPadding={10} className="max-w-[220px]">
+        <TooltipContent className="max-w-[220px]">
           <Text variant="small">{isLight ? t`Switch to dark mode` : t`Switch to light mode`}</Text>
-          <TooltipArrow width={12} height={8} />
         </TooltipContent>
       </TooltipPortal>
     </Tooltip>

@@ -146,6 +146,29 @@
   --color-statusWarning: #ffc044;
   --color-statusBrand: #9ca9ff;
   --color-statusBrandBg: rgba(156, 160, 229, 0.1);
+  /* Iconbox status rings + info dot (Figma Components/Iconbox 5017:7858).
+     Figma types the rings by product — Pendle mint / Morpho blue — as raw
+     hexes (no variable); promoted here under the system color each pairs
+     with. statusInfoSolid is border-system-info-primary, the info dot
+     (statusSuccessSolid above doubles as the success dot). None are
+     overridden in the light scope yet (G2 owns light parity). */
+  --color-statusSuccessRing: #8bf1ca;
+  --color-statusInfoRing: #60a9ff;
+  --color-statusInfoSolid: #59b1ff;
+  /* Design-system list + accordion tokens (Figma Patterns/Lists 5209:36922 /
+     Patterns/Accordion 5386:66315): colors/border/border-primary (container,
+     item and wallet-row hairlines — the `border-borderPrimary` utility
+     predates this token, so until now it silently fell back to the preflight
+     border color), gradient-brand-border + the gradient-brand3 stops (the
+     selected wallet row) and the loader's brand gradient stops. borderPrimary
+     gets an interim light value (G2 owns full parity); the brand-tinted ones
+     read on white as-is. */
+  --color-borderPrimary: rgba(188, 182, 239, 0.1);
+  --color-brandBorder: #504dff;
+  --color-brand3-start: rgba(148, 154, 255, 0.1);
+  --color-brand3-end: rgba(80, 77, 255, 0.1);
+  --color-loader-brand-start: #949aff;
+  --color-loader-brand-end: #504dff;
   --color-border: var(--transparent-white-15);
   --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
@@ -499,6 +522,8 @@
 
     /* H5 tabs tokens (interim light values; G2 owns parity) */
     --color-borderTertiary: rgba(26, 24, 85, 0.3);
+    /* H15 list/accordion border (interim light value; G2 owns parity) */
+    --color-borderPrimary: rgba(26, 24, 85, 0.1);
     --color-fgSecondary: rgba(26, 24, 85, 0.62);
     --color-fgPrimary: #1a1855;
     --color-flipSurface: rgba(255, 255, 255, 0.9);

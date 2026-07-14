@@ -27,8 +27,10 @@ export function WalletChip() {
   const [showDrawer, setShowDrawer] = useState(false);
   const { isConnectedAndAcceptedTerms, isAuthorized, authData, vpnData } = useConnectedContext();
 
+  // Connect type of Navbar Item / Wallet Info (Figma 5069:27086): the DS
+  // primary button recipe at navbar height (40px, Label 5).
   const connectButton = (
-    <Button variant="connect" onClick={openConnectModal}>
+    <Button variant="primary" size="m" onClick={openConnectModal}>
       {t`Connect Wallet`}
     </Button>
   );

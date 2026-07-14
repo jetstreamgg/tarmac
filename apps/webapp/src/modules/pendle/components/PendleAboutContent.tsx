@@ -4,6 +4,7 @@ import { Activity, ArrowUpFromLine, AudioLines } from 'lucide-react';
 import { usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { IconboxAction } from '@/components/ui/iconbox';
 
 const SECONDS_PER_DAY = 86_400;
 const EXAMPLE_SUPPLY = 100;
@@ -99,30 +100,16 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
           </a>
         </Trans>
       </p>
-      <Accordion
-        type="multiple"
-        className="border-borderPrimary overflow-hidden rounded-xl border"
-        data-testid="pendle-detail-faq"
-      >
+      <Accordion type="multiple" data-testid="pendle-detail-faq">
         {items.map(item => (
-          <AccordionItem
-            key={item.id}
-            value={item.id}
-            className="border-borderPrimary border-b px-6 last:border-b-0"
-          >
-            <AccordionTrigger className="py-6 [&>svg]:h-4 [&>svg]:w-4">
+          <AccordionItem key={item.id} value={item.id}>
+            <AccordionTrigger>
               <span className="flex items-center gap-3">
-                <span className="border-borderPrimary flex h-9 w-9 items-center justify-center rounded-full border">
-                  <span className="bg-surface text-text flex h-[30px] w-[30px] items-center justify-center rounded-full">
-                    {item.icon}
-                  </span>
-                </span>
-                <span className="text-text text-base font-medium">{item.title}</span>
+                <IconboxAction>{item.icon}</IconboxAction>
+                {item.title}
               </span>
             </AccordionTrigger>
-            <AccordionContent className="text-textSecondary pb-6 text-xs leading-[18px]">
-              {item.body}
-            </AccordionContent>
+            <AccordionContent>{item.body}</AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>

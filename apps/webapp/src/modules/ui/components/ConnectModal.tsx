@@ -9,6 +9,7 @@ import {
 } from 'wagmi';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ListWallet } from '@/components/ui/list';
 import { Text } from '@/modules/layout/components/Typography';
 import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
@@ -189,6 +190,10 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     return false;
   });
 
+  // Rows are the design-system List / Wallet (Figma 5209:38238): the whole
+  // row is the connect button. The legacy "Connecting..." subtitle maps to the
+  // active (loader) state; "Connected" and "Connect via QR" move into the
+  // Label 6 badge slot ("Recent" in Figma — we don't track recency).
   const renderConnectorButton = (connector: Connector) => {
     const isConnecting =
       (connect.isPending && connect.variables?.connector === connector) ||
@@ -198,33 +203,25 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     const isCurrentConnectedConnector = connectedConnector?.uid === connector.uid;
 
     return (
-      <div key={connector.uid} className="flex items-center justify-between gap-3 px-3">
-        <div className="flex items-center gap-3">
-          <WalletIcon connector={connector} iconUrl={icons[connector.uid]} />
-          <div className="flex flex-col items-start">
-            <Text className="text-text text-base font-medium">{connector.name}</Text>
-            {isConnecting && <Text className="text-textSecondary text-sm">{t`Connecting...`}</Text>}
-            {!isReady && !isConnecting && alwaysAvailable.includes(connector.id) && (
-              <Text className="text-textSecondary text-sm">{t`Connect via QR`}</Text>
-            )}
-          </div>
-        </div>
-        <Button
-          key={connector.uid}
-          onClick={() =>
-            isConnectorConnected
-              ? switchConnection.switchConnection({ connector })
-              : connect.connect({ connector })
-          }
-          disabled={
-            !isReady || connect.isPending || switchConnection.isPending || isCurrentConnectedConnector
-          }
-          variant="pill"
-          size="xs"
-        >
-          {isCurrentConnectedConnector ? t`Connected` : t`Connect`}
-        </Button>
-      </div>
+      <ListWallet
+        key={connector.uid}
+        icon={<WalletIcon connector={connector} iconUrl={icons[connector.uid]} className="h-6 w-6" />}
+        name={connector.name}
+        badge={
+          isCurrentConnectedConnector
+            ? t`Connected`
+            : !isReady && !isConnecting && alwaysAvailable.includes(connector.id)
+              ? t`Connect via QR`
+              : undefined
+        }
+        active={isConnecting}
+        onClick={() =>
+          isConnectorConnected
+            ? switchConnection.switchConnection({ connector })
+            : connect.connect({ connector })
+        }
+        disabled={!isReady || connect.isPending || switchConnection.isPending || isCurrentConnectedConnector}
+      />
     );
   };
 
@@ -302,8 +299,11 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
         <div className="flex flex-col gap-6">
           {installedWallets.length > 0 && (
             <>
-              <Text className="text-textSecondary text-md font-medium uppercase">{t`Installed Wallets`}</Text>
-              <div className="flex flex-col gap-6">{installedWallets.map(renderConnectorButton)}</div>
+              {/* Section labels are the pattern's Body 6 fg-secondary list titles (Figma 5209:38849). */}
+              <div className="flex flex-col gap-2">
+                <Text className="text-fgSecondary text-xs leading-[18px]">{t`Installed Wallets`}</Text>
+                {installedWallets.map(renderConnectorButton)}
+              </div>
               <Text className="text-textSecondary text-center text-[13px] leading-4">
                 {t`By connecting, you agree to our Terms of Service`}
               </Text>
@@ -311,10 +311,10 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
           )}
 
           {suggestedWallets.length > 0 && (
-            <>
-              <Text className="text-textSecondary text-md font-medium uppercase">{t`Suggested Wallets`}</Text>
-              <div className="flex flex-col gap-6">{suggestedWallets.map(renderConnectorButton)}</div>
-            </>
+            <div className="flex flex-col gap-2">
+              <Text className="text-fgSecondary text-xs leading-[18px]">{t`Suggested Wallets`}</Text>
+              {suggestedWallets.map(renderConnectorButton)}
+            </div>
           )}
         </div>
 

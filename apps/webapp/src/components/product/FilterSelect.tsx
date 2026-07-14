@@ -24,10 +24,6 @@ export function FilterSelect({
   allLabel: ReactNode;
   testId: string;
 }) {
-  // Same surface/item treatment as the header's MoreMenu popover: container
-  // background, hover rows, selection shown by a prominent row background.
-  const itemClasses =
-    'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
   return (
     <Select value={selected} onValueChange={onChange}>
       {/* Design-system Button / Dropdown, size S (Figma 5019:4105). The
@@ -44,12 +40,11 @@ export function FilterSelect({
       >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
-        <SelectItem value="all" hideIndicator className={itemClasses}>
-          {allLabel}
-        </SelectItem>
+      {/* Panel and rows are the DS Dropdown recipe (SelectContent/SelectItem defaults). */}
+      <SelectContent>
+        <SelectItem value="all">{allLabel}</SelectItem>
         {options.map(option => (
-          <SelectItem key={option.value} value={option.value} hideIndicator className={itemClasses}>
+          <SelectItem key={option.value} value={option.value}>
             {option.label}
           </SelectItem>
         ))}
