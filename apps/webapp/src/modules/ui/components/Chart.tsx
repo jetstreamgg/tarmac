@@ -453,6 +453,8 @@ function ChartContent({
           <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
           {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
           <Tooltip
+            // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162).
+            cursor={{ stroke: 'var(--color-fgQuaternary)', strokeWidth: 1, strokeDasharray: '4 4' }}
             content={
               <ChartTooltip
                 symbol={symbol}
@@ -472,6 +474,8 @@ function ChartContent({
             fill={`url(#${gradientId})`}
             label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
             dot={<CustomizedDot data={data} stroke={color ?? '#1DD9BA'} />}
+            // Ringed hover dot at the cursor point (Figma 5273:12162).
+            activeDot={{ r: 5, fill: color ?? '#1DD9BA', stroke: 'var(--color-container)', strokeWidth: 3 }}
           />
         </AreaChart>
       </ResponsiveContainer>

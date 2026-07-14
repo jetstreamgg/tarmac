@@ -62,6 +62,7 @@ import {
   CellTokenIdle
 } from '@/components/ui/table-cells';
 import { RiskMeter, RiskTierMeter, RiskScaleMeter } from '@/components/product/RiskMeter';
+import { ChartTooltip } from '@/modules/ui/components/ChartTooltip';
 import { RiskLevel } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
@@ -1713,6 +1714,25 @@ function ChartsSection() {
             <span className="text-fgPrimary text-2xl font-medium">83.5%</span>
             <Progress value={83.5} className="h-2" />
           </div>
+        </div>
+      </SubSection>
+
+      <SubSection title="Line — tooltip (Figma 5273:12162)">
+        <div className="flex flex-wrap gap-6">
+          <ChartTooltip
+            active
+            label={new Date('2026-03-12T00:00:00Z')}
+            labelFormatter={() => 'Mar 12, 2026'}
+            tooltipLabel="Sky TVL"
+            payload={[{ color: '#02C2A1', value: 5774407, payload: {} }]}
+          />
+          <ChartTooltip
+            active
+            label={new Date('2026-03-12T00:00:00Z')}
+            labelFormatter={() => 'Mar 12, 2026'}
+            tooltipLabel="Total USDS"
+            payload={[{ color: '#757dff', value: 8238778407, payload: {} }]}
+          />
         </div>
       </SubSection>
     </Section>
