@@ -62,7 +62,9 @@ import {
   CellTokenIdle
 } from '@/components/ui/table-cells';
 import { RiskMeter, RiskTierMeter, RiskScaleMeter } from '@/components/product/RiskMeter';
+import { TokensComposition } from '@/components/product/TokensComposition';
 import { ChartTooltip } from '@/modules/ui/components/ChartTooltip';
+import { PortfolioDonutChart } from '@/modules/portfolio/components/PortfolioDonutChart';
 import { RiskLevel } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
@@ -1732,6 +1734,64 @@ function ChartsSection() {
             labelFormatter={() => 'Mar 12, 2026'}
             tooltipLabel="Total USDS"
             payload={[{ color: '#757dff', value: 8238778407, payload: {} }]}
+          />
+        </div>
+      </SubSection>
+
+      <SubSection title="Pie — donut (Figma 5051:133511)">
+        <div className="flex flex-wrap items-center gap-8">
+          {[
+            { label: '1 segment', segs: [{ id: 'usds', color: '#E9B44C', value: 100 }] },
+            {
+              label: '2 segments',
+              segs: [
+                { id: 'susds', color: '#59D6B8', value: 82 },
+                { id: 'usds', color: '#E9B44C', value: 18 }
+              ]
+            },
+            {
+              label: '4 segments',
+              segs: [
+                { id: 'susds', color: '#59D6B8', value: 55 },
+                { id: 'usds', color: '#E9B44C', value: 15 },
+                { id: 'spk', color: '#E96D9E', value: 18 },
+                { id: 'usdc', color: '#3B82F6', value: 12 }
+              ]
+            }
+          ].map(({ label, segs }) => (
+            <div key={label} className="flex flex-col items-center gap-2">
+              <PortfolioDonutChart segments={segs} activeId={null} onActiveChange={() => {}} size={140} />
+              <span className="text-fgSecondary text-xs">{label}</span>
+            </div>
+          ))}
+          <div className="flex flex-col items-center gap-2">
+            <PortfolioDonutChart
+              segments={[
+                { id: 'susds', color: '#59D6B8', value: 55 },
+                { id: 'usds', color: '#E9B44C', value: 15 },
+                { id: 'spk', color: '#E96D9E', value: 30 }
+              ]}
+              activeId="susds"
+              onActiveChange={() => {}}
+              size={140}
+              renderCenter={id => <span className="text-text text-sm font-medium">{id}</span>}
+            />
+            <span className="text-fgSecondary text-xs">active (hover)</span>
+          </div>
+        </div>
+      </SubSection>
+
+      <SubSection title="Tokens Composition (Figma 5270:15611)">
+        <div className="flex max-w-md flex-col gap-8">
+          <TokensComposition
+            title="Strategy"
+            total="$30.04M"
+            segments={[
+              { id: 'stusds', label: 'stUSDS', color: '#E7A6C4', value: 19.92, formattedValue: '$19.92M' },
+              { id: 'susds', label: 'sUSDS', color: '#59D6B8', value: 10.14, formattedValue: '$10.14M' },
+              { id: 'usds', label: 'USDS', color: '#E9B44C', value: 3.92, formattedValue: '$3.92M' },
+              { id: 'spk', label: 'SPK', color: '#F0704F', value: 2.47, formattedValue: '$2.47M' }
+            ]}
           />
         </div>
       </SubSection>
