@@ -1784,7 +1784,8 @@ function ChartsSection() {
       title="Charts"
       note="Plotted content of the DS chart set (H13). Progress Steps is the value-driven risk bar; Line/Pie/Progress Bar/Tokens Composition follow."
     >
-      <SubSection title="Progress Steps — risk bar (Figma 5246:24677)">
+      {/* Figma 5246:24677 */}
+      <SubSection title="Progress Steps — risk bar">
         <div className="flex max-w-md flex-col gap-6">
           <Spec label="empty (legend)">
             <RiskScaleMeter label="Risk scale" />
@@ -1807,7 +1808,8 @@ function ChartsSection() {
         </div>
       </SubSection>
 
-      <SubSection title="Progress Bar (Figma 5246:15689)">
+      {/* Figma 5246:15689 */}
+      <SubSection title="Progress Bar">
         <div className="flex max-w-md flex-col gap-6">
           <div className="flex flex-col gap-2">
             <div className="flex items-baseline justify-between">
@@ -1825,7 +1827,8 @@ function ChartsSection() {
         </div>
       </SubSection>
 
-      <SubSection title="Line — tooltip (Figma 5273:12162)">
+      {/* Figma 5273:12162 */}
+      <SubSection title="Line — tooltip">
         <div className="flex flex-wrap gap-6">
           <ChartTooltip
             active
@@ -1844,7 +1847,8 @@ function ChartsSection() {
         </div>
       </SubSection>
 
-      <SubSection title="Pie — donut (Figma 5051:133511)">
+      {/* Figma 5051:133511 */}
+      <SubSection title="Pie — donut">
         <div className="flex flex-wrap items-center gap-8">
           {[
             { label: '1 segment', segs: [{ id: 'usds', color: '#E9B44C', value: 100 }] },
@@ -1887,7 +1891,8 @@ function ChartsSection() {
         </div>
       </SubSection>
 
-      <SubSection title="Tokens Composition (Figma 5270:15611)">
+      {/* Figma 5270:15611 */}
+      <SubSection title="Tokens Composition">
         <div className="flex max-w-md flex-col gap-8">
           <TokensComposition
             title="Strategy"
