@@ -9,13 +9,7 @@ import {
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Tooltip,
-  TooltipArrow,
-  TooltipContent,
-  TooltipPortal,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { PairTokenIcons } from '@/widgets';
 import { useChainId } from 'wagmi';
@@ -405,8 +399,7 @@ export function MorphoVaultAllocationsDetails({
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <Text className="text-sm">Liquidation Loan-To-Value (LLTV)</Text>
-                        <TooltipArrow width={12} height={8} />
+                        <Text className="text-sm">Liquidation Loan-To-Value (LLTV)</Text>{' '}
                       </TooltipContent>
                     </Tooltip>
                     <Tooltip>
@@ -431,8 +424,7 @@ export function MorphoVaultAllocationsDetails({
                       <Text className="text-text text-sm">{market.formattedAssets}</Text>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <Text className="text-sm">{market.formattedAssetsUsd}</Text>
-                      <TooltipArrow width={12} height={8} />
+                      <Text className="text-sm">{market.formattedAssetsUsd}</Text>{' '}
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
@@ -450,8 +442,7 @@ export function MorphoVaultAllocationsDetails({
                       <TooltipContent>
                         <Text className="text-sm">
                           {(market.absoluteCapUtilization * 100).toFixed(2)}% filled
-                        </Text>
-                        <TooltipArrow width={12} height={8} />
+                        </Text>{' '}
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -467,8 +458,7 @@ export function MorphoVaultAllocationsDetails({
                     <TooltipContent>
                       <Text className="text-sm">
                         {(market.relativeCapUtilization * 100).toFixed(2)}% filled
-                      </Text>
-                      <TooltipArrow width={12} height={8} />
+                      </Text>{' '}
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>

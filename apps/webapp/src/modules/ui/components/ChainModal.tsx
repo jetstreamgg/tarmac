@@ -73,7 +73,8 @@ export function ChainModal({
   // Non-widget trigger = design-system Button / Dropdown, Network M (Figma
   // 5019:4105): 24px chain icon, 16px chevron that flips while open (Radix
   // DialogTrigger supplies data-state). The widget look keeps its legacy
-  // connect recipe untouched.
+  // recipe untouched — connectPrimary is just the text-color base; the
+  // className below overrides every gradient/border stop it sets.
   return (
     <Dialog open={open} onOpenChange={disabled ? undefined : setOpen}>
       <DialogTrigger asChild disabled={disabled}>
@@ -81,7 +82,7 @@ export function ChainModal({
           <button className="h-full w-full">{children}</button>
         ) : (
           <Button
-            variant={variant === ChainModalVariant.widget ? 'connect' : 'dropdown'}
+            variant={variant === ChainModalVariant.widget ? 'connectPrimary' : 'dropdown'}
             size={variant === ChainModalVariant.widget ? 'default' : 'dropdownM'}
             className={cn(
               variant === ChainModalVariant.widget

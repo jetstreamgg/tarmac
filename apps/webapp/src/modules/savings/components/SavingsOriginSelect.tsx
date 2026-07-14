@@ -65,9 +65,6 @@ export function SavingsOriginSelect({
     );
   }
 
-  const itemClasses =
-    'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
-
   return (
     <Select value={value} onValueChange={next => onChange(next as OriginSymbol)} disabled={disabled}>
       {/* Design-system Button / Dropdown, size S (Figma 5019:4105); same
@@ -84,15 +81,10 @@ export function SavingsOriginSelect({
           <OriginOption symbol={value} />
         </SelectValue>
       </SelectTrigger>
-      <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
+      {/* Panel and rows are the DS Dropdown recipe (SelectContent/SelectItem defaults). */}
+      <SelectContent>
         {options.map(symbol => (
-          <SelectItem
-            key={symbol}
-            value={symbol}
-            hideIndicator
-            data-testid={`savings-origin-${symbol.toLowerCase()}`}
-            className={itemClasses}
-          >
+          <SelectItem key={symbol} value={symbol} data-testid={`savings-origin-${symbol.toLowerCase()}`}>
             <OriginOption symbol={symbol} />
           </SelectItem>
         ))}

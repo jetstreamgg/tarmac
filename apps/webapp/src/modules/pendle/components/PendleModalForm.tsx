@@ -52,10 +52,6 @@ export type PendleModalFlow = 'supply' | 'withdraw';
 
 const NO_VALUE = '–';
 
-// Same option-row treatment as FilterSelect / the header MoreMenu popover.
-const selectItemClasses =
-  'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
-
 function Row({ label, value, dataTestId }: { label: ReactNode; value: ReactNode; dataTestId?: string }) {
   return (
     <div className="flex items-center justify-between" data-testid={dataTestId}>
@@ -399,14 +395,10 @@ export function PendleModalForm({
                   </span>
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
+              {/* Panel and rows are the DS Dropdown recipe (SelectContent/SelectItem defaults). */}
+              <SelectContent>
                 {tokenOptions.map(option => (
-                  <SelectItem
-                    key={option.symbol}
-                    value={option.symbol}
-                    hideIndicator
-                    className={selectItemClasses}
-                  >
+                  <SelectItem key={option.symbol} value={option.symbol}>
                     <span className="flex items-center gap-1.5">
                       <TokenIcon
                         token={{ symbol: option.symbol }}
@@ -494,14 +486,10 @@ export function PendleModalForm({
                     </span>
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
+                {/* Panel and rows are the DS Dropdown recipe (SelectContent/SelectItem defaults). */}
+                <SelectContent>
                   {tokenOptions.map(option => (
-                    <SelectItem
-                      key={option.symbol}
-                      value={option.symbol}
-                      hideIndicator
-                      className={selectItemClasses}
-                    >
+                    <SelectItem key={option.symbol} value={option.symbol}>
                       <span className="flex items-center gap-1.5">
                         <TokenIcon
                           token={{ symbol: option.symbol }}

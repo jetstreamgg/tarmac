@@ -261,9 +261,6 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
     return filtered.map(group => ({ ...group, skyPrice, chainId }));
   }, [stakeHistory, filter, skyPrice, chainId]);
 
-  const itemClasses =
-    'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
@@ -278,28 +275,22 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
             <SelectTrigger
               data-testid="stake-activity-filter"
               aria-label={t`Filter activity by position`}
-              className="text-textSecondary hover:text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 text-sm font-medium transition-colors focus:ring-0 focus:ring-offset-0"
+              className="text-textSecondary hover:text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 text-sm font-medium transition-colors focus-visible:ring-0"
             >
               <SelectValue>
                 {filter === 'all' ? <Trans>All positions</Trans> : <Trans>Position {filter + 1}</Trans>}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
-              <SelectItem
-                value="all"
-                hideIndicator
-                data-testid="stake-activity-filter-all"
-                className={itemClasses}
-              >
+            {/* Panel and rows are the DS Dropdown recipe (SelectContent/SelectItem defaults). */}
+            <SelectContent>
+              <SelectItem value="all" data-testid="stake-activity-filter-all">
                 <Trans>All positions</Trans>
               </SelectItem>
               {(positions ?? []).map(position => (
                 <SelectItem
                   key={position.index}
                   value={String(position.index)}
-                  hideIndicator
                   data-testid={`stake-activity-filter-${position.index}`}
-                  className={itemClasses}
                 >
                   <Trans>Position {position.index + 1}</Trans>
                 </SelectItem>

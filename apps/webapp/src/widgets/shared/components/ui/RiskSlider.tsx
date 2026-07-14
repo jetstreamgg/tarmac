@@ -327,7 +327,7 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                 </SliderPrimitive.Thumb>
               </TooltipTrigger>
               <TooltipPortal>
-                <TooltipContent arrowPadding={10} className="max-w-75">
+                <TooltipContent className="max-w-75">
                   {isRepayMode ? riskSliderRepayTooltip?.tooltip : riskSliderBorrowTooltip?.tooltip}
                 </TooltipContent>
               </TooltipPortal>

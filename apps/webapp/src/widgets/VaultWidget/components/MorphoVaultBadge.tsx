@@ -1,11 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import {
-  Tooltip,
-  TooltipArrow,
-  TooltipContent,
-  TooltipPortal,
-  TooltipTrigger
-} from '@/widgets/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/widgets/components/ui/tooltip';
 import { cn } from '@/widgets/lib/utils';
 import { Morpho as MorphoIcon } from '@/widgets/shared/components/icons/Morpho';
 import { Sky as SkyIcon } from '@/widgets/shared/components/icons/Sky';
@@ -31,11 +25,10 @@ export const VaultPoweredByBadge = ({ provider, className }: VaultPoweredByBadge
             <SkyIcon className={cn('h-4.5 w-4.5 rounded-full', className)} />
           </TooltipTrigger>
           <TooltipPortal>
-            <TooltipContent arrowPadding={10} className="max-w-[260px]">
+            <TooltipContent className="max-w-[260px]">
               <Text variant="small">
                 <Trans>Vault powered by Sky</Trans>
               </Text>
-              <TooltipArrow width={12} height={8} />
             </TooltipContent>
           </TooltipPortal>
         </Tooltip>
@@ -48,11 +41,10 @@ export const VaultPoweredByBadge = ({ provider, className }: VaultPoweredByBadge
             <MorphoIcon className={cn('h-4.5 w-4.5 rounded-sm', className)} />
           </TooltipTrigger>
           <TooltipPortal>
-            <TooltipContent arrowPadding={10} className="max-w-[260px]">
+            <TooltipContent className="max-w-[260px]">
               <Text variant="small">
                 <Trans>Vault powered by Morpho</Trans>
               </Text>
-              <TooltipArrow width={12} height={8} />
             </TooltipContent>
           </TooltipPortal>
         </Tooltip>
