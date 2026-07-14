@@ -1697,6 +1697,24 @@ function ChartsSection() {
           </Spec>
         </div>
       </SubSection>
+
+      <SubSection title="Progress Bar (Figma 5246:15689)">
+        <div className="flex max-w-md flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-fgSecondary text-sm">Maturity</span>
+              <span className="text-fgSecondary text-sm">18 Jun 2026</span>
+            </div>
+            <span className="text-fgPrimary text-2xl font-medium">85%</span>
+            <Progress value={85} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-fgSecondary text-sm">Borrow Utilization</span>
+            <span className="text-fgPrimary text-2xl font-medium">83.5%</span>
+            <Progress value={83.5} className="h-2" />
+          </div>
+        </div>
+      </SubSection>
     </Section>
   );
 }

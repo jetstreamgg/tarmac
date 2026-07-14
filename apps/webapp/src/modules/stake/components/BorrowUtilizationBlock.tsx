@@ -3,18 +3,17 @@ import { Trans } from '@lingui/react/macro';
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useBorrowCapacityData } from '@/hooks';
-import { UtilizationBar } from '@/widgets';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const NO_VALUE = '–';
 
 // Hi-fi 486:31955 binds the utilized fill (and the Borrowed legend dot) to
-// `fg-brand-primary` (#757dff); no theme token maps to it yet, so the raw
-// value follows the module precedent set by StakeRateChart (token-mapping
-// decision pending, DR-0).
-const UTILIZED_COLOR = 'bg-[#757dff]';
+// fg-brand-primary — the `fgBrand` token (#757dff), which is also the DS
+// Progress Bar's default fill.
+const UTILIZED_COLOR = 'bg-fgBrand';
 
 function LegendRow({
   label,
@@ -71,14 +70,7 @@ export function BorrowUtilizationBlock() {
         {isLoading ? <Skeleton className="h-8 w-24" /> : error ? NO_VALUE : `${utilization.toFixed(1)}%`}
       </div>
 
-      <UtilizationBar
-        utilizationRate={utilization}
-        isLoading={isLoading}
-        showLabel={false}
-        barHeight="h-2"
-        barColor={UTILIZED_COLOR}
-        className="mb-4"
-      />
+      <Progress value={isLoading ? 0 : Math.min(100, utilization)} className="mb-4 h-2" />
 
       <div className="flex flex-col gap-3">
         <LegendRow
