@@ -4,6 +4,7 @@ import { createAppRouter } from '@/pages/router';
 import { Intent } from '@/lib/enums';
 import { ROUTES } from '@/lib/routes';
 import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
+import { MORPHO_VAULTS } from '@/hooks/morpho/constants';
 
 // Boots the app's real router (route tree + redirects + not-found config)
 // against a path without rendering, so a missing destination route or broken
@@ -28,7 +29,6 @@ describe('target-IA destination routes', () => {
 
   it.each([
     [ROUTES.EARN_SAVINGS, '/_shell/earn/savings'],
-    [ROUTES.EARN_VAULTS, '/_shell/earn/vaults'],
     [ROUTES.EARN_STUSDS, '/_shell/earn/stusds']
   ])('boots the %s module under the Earn destination', async (path, routeId) => {
     expect(matchedRouteIds(await routerAt(path))).toContain(routeId);
@@ -48,6 +48,11 @@ describe('target-IA destination routes', () => {
 
   it('redirects the bare /earn/fixed index to the Earn marketplace (G6 — no overview screen)', async () => {
     const router = await routerAt(ROUTES.EARN_FIXED);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+  });
+
+  it('redirects the bare /earn/vaults index to the Earn marketplace (G6 — no overview screen)', async () => {
+    const router = await routerAt(ROUTES.EARN_VAULTS);
     expect(router.state.location.pathname).toBe(ROUTES.EARN);
   });
 
@@ -109,10 +114,10 @@ describe('root path', () => {
 describe('pre-flip module path redirects', () => {
   it.each([
     ['/savings', ROUTES.EARN_SAVINGS],
-    // /rewards and /fixed chain through their /earn/* module paths, whose
-    // indexes forward to /earn (D6 / G6).
+    // /rewards, /vaults and /fixed chain through their /earn/* module paths,
+    // whose indexes forward to /earn (D6 / G6).
     ['/rewards', ROUTES.EARN],
-    ['/vaults', ROUTES.EARN_VAULTS],
+    ['/vaults', ROUTES.EARN],
     ['/fixed', ROUTES.EARN],
     ['/expert', ROUTES.EARN_STUSDS],
     ['/expert/stusds', ROUTES.EARN_STUSDS]
@@ -175,6 +180,30 @@ describe('fixed (Pendle) market detail routes', () => {
     const router = await routerAt(`${ROUTES.EARN_FIXED}/market/${market.marketAddress}?network=ethereum`);
     expect(router.state.location.pathname).toBe(`${ROUTES.EARN_FIXED}/${market.slug}`);
     expect(router.state.location.search).toEqual({ network: 'ethereum' });
+  });
+});
+
+describe('vault detail routes', () => {
+  const vault = MORPHO_VAULTS[0];
+  const vaultAddress = Object.values(vault.vaultAddress)[0]!;
+
+  it('boots /earn/vaults/morpho/:address full-width for a known vault', async () => {
+    const router = await routerAt(`${ROUTES.EARN_VAULTS}/morpho/${vaultAddress}`);
+    const match = router.state.matches.find(
+      m => (m.routeId as string) === '/_shell/earn/vaults/$provider/$vaultAddress'
+    );
+    expect(match).toBeDefined();
+    expect(match?.staticData?.fullWidth).toBe(true);
+  });
+
+  it('falls back to the Earn marketplace for an unknown vault address', async () => {
+    const router = await routerAt(`${ROUTES.EARN_VAULTS}/morpho/0x000000000000000000000000000000000000dEaD`);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+  });
+
+  it('falls back to the Earn marketplace for an unrecognised provider segment', async () => {
+    const router = await routerAt(`${ROUTES.EARN_VAULTS}/bogus/${vaultAddress}`);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
   });
 });
 

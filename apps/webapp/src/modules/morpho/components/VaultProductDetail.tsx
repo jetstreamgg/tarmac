@@ -28,7 +28,7 @@ const NO_VALUE = '–';
  * Morpho-vault product-detail page (D4) — composes the reusable
  * ProductDetailTemplate, mirroring SavingsProductDetail. Serves every Morpho
  * vault at /earn/vaults/morpho/:address (USDC Risk Capital is the design proof).
- * `vaultAddress` is resolved for the active chain by the caller (VaultsPanes).
+ * `vaultAddress` is resolved for the active chain by the caller (VaultDetailPage).
  */
 export function VaultProductDetail({
   vault,

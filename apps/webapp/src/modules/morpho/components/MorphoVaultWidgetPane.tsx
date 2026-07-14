@@ -52,7 +52,7 @@ export function MorphoVaultWidgetPane({
   };
 
   const handleBack = () => {
-    void navigate({ to: '/earn/vaults', search: keepSearch });
+    void navigate({ to: '/earn', search: keepSearch });
   };
 
   if (!currentVaultAddress || !currentAssetAddress) {
