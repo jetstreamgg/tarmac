@@ -1,4 +1,5 @@
 import type { EarnProductKind, EarnProductRow } from '@/hooks';
+import type { Intent } from '@/lib/enums';
 import { projectAnnualEarnings } from '@/utils';
 import { resolveTokenColor } from '@/widgets/shared/constants';
 
@@ -9,6 +10,8 @@ export type SuppliedPosition = {
   name: string;
   tokenSymbol: string;
   kind: EarnProductKind;
+  /** Module that owns the product (from the registry) — network rules, toast copy. */
+  intent: Intent;
   /** Contract address for address-bound products (vaults/rewards/markets); undefined otherwise. */
   address?: `0x${string}`;
   amountUsd: number;
@@ -102,6 +105,7 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     name: row.name,
     tokenSymbol: row.tokenSymbol,
     kind: row.kind,
+    intent: row.intent,
     address: row.address,
     amountUsd,
     rate: row.rate.value,

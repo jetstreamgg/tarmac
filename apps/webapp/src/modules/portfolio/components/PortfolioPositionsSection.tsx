@@ -50,8 +50,9 @@ export function PortfolioPositionsSection({
   onTabChange: (tab: PortfolioTab) => void;
 }) {
   const navigate = useNavigate();
-  // Products with an in-place supply modal (savings today) open it without
-  // navigating; everything else — and all Manage buttons — route to the product page.
+  // Products with an in-place supply modal open it without navigating —
+  // switching the wallet to the position's chain first when needed; products
+  // without one — and all Manage buttons — route to the product page.
   const resolveSupplyAction = usePortfolioSupplyActions();
   const goToProduct = (detailPath: string) =>
     void navigate({ to: detailPath as '/', search: retainOnNavigate });

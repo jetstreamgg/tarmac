@@ -37,7 +37,9 @@ export const ToastCloseAll = () => {
   return (
     <div
       className={cn(
-        'animate-in fade-in slide-in-from-bottom-2 fixed z-[41] duration-200',
+        // One above the toaster's z-[60] (set at the App mount) so the
+        // close-all control never sinks below the stack it clears.
+        'animate-in fade-in slide-in-from-bottom-2 fixed z-[61] duration-200',
         bannerHeight > 0 ? 'right-10 pb-1' : 'right-10 bottom-8 pb-1 md:right-8 md:bottom-2 md:pb-0'
       )}
       style={

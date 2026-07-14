@@ -44,10 +44,8 @@ export { useMerklClaimRewards } from './useMerklClaimRewards';
 export { useMorphoVaultHistory } from './useMorphoVaultHistory';
 export {
   useMorphoVaultChartInfo,
-  useMorphoVaultMultipleChartInfo,
   type MorphoVaultChartDataPoint,
-  type MorphoVaultChartInfoHook,
-  type MorphoVaultMultipleChartInfoHook
+  type MorphoVaultChartInfoHook
 } from './useMorphoVaultChartInfo';
 export {
   useMorphoVaultSupplierAddresses,

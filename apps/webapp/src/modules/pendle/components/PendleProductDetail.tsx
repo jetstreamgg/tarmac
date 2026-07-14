@@ -30,7 +30,7 @@ export type PendleProductDetailProps = {
  * Pendle market detail page (E1) — composes the reusable ProductDetailTemplate,
  * mirroring SavingsProductDetail/VaultProductDetail. Serves every live market
  * at /earn/fixed/:slug (PT-sUSDS is the design proof, Figma 486:33806/33942);
- * PendlePanes resolves the slug and guards maturity before mounting this.
+ * the $slug route resolves the slug and guards maturity before mounting this.
  */
 export function PendleProductDetail({ market }: PendleProductDetailProps) {
   const chains = useChains();

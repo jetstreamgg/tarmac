@@ -1,5 +1,5 @@
-import { http, WalletRpcSchema, EIP1193Parameters } from 'viem';
-import { createConfig, createConnector, createStorage, noopStorage } from 'wagmi';
+import { http, WalletRpcSchema, EIP1193Parameters, UserRejectedRequestError } from 'viem';
+import { createConfig, createConnector, createStorage, noopStorage, CreateConnectorFn } from 'wagmi';
 import { getTestTenderlyChains, TENDERLY_CHAIN_ID } from './testTenderlyChain';
 import { mock, MockParameters } from 'wagmi/connectors';
 import { TEST_WALLET_ADDRESSES, getTestWalletAddress } from '@/test/e2e/utils/testWallets';
@@ -107,6 +107,43 @@ function extendedMock(params: MockParameters) {
   });
 }
 
+declare global {
+  interface Window {
+    __MOCK_SWITCH_CHAIN_ERROR__?: 'reject' | 'error';
+  }
+}
+
+/**
+ * Playwright hook for the wallet-doesn't-honor-the-switch paths: a test sets
+ * `window.__MOCK_SWITCH_CHAIN_ERROR__` and the next switchChain call fails
+ * the way a real wallet can — 'reject' throws viem's UserRejectedRequestError
+ * (user dismissed the prompt), 'error' throws a -32002-style wallet failure
+ * (request already pending). The flag is consumed by that failure, so a
+ * retried switch on the same page succeeds without test cleanup.
+ */
+function consumeSwitchChainTestError(): Error | undefined {
+  const mode = typeof window !== 'undefined' ? window.__MOCK_SWITCH_CHAIN_ERROR__ : undefined;
+  if (!mode) return undefined;
+  delete window.__MOCK_SWITCH_CHAIN_ERROR__;
+  return mode === 'reject'
+    ? new UserRejectedRequestError(new Error('Mock wallet: switch rejected by test hook.'))
+    : Object.assign(new Error('Mock wallet: request already pending (test hook).'), { code: -32002 });
+}
+
+function withSwitchChainTestHook(createConnectorFn: CreateConnectorFn): CreateConnectorFn {
+  return config => {
+    const connector = createConnectorFn(config);
+    return {
+      ...connector,
+      async switchChain(parameters) {
+        const error = consumeSwitchChainTestError();
+        if (error) throw error;
+        return connector.switchChain!(parameters);
+      }
+    };
+  };
+}
+
 // Get worker index from environment variable or window object
 function getWorkerAccounts(): [`0x${string}`, ...`0x${string}`[]] {
   // First check if we have a specific account injected by the test
@@ -143,19 +180,23 @@ const workerAccounts = getWorkerAccounts();
 export const mockWagmiConfig = createConfig({
   chains: [tenderlyMainnet, tenderlyBase, tenderlyArbitrum, tenderlyOptimism, tenderlyUnichain],
   connectors: [
-    mock({
-      accounts: workerAccounts,
-      features: {
-        reconnect: false // Disable reconnect to prevent using old cached accounts
-      }
-    }),
+    withSwitchChainTestHook(
+      mock({
+        accounts: workerAccounts,
+        features: {
+          reconnect: false // Disable reconnect to prevent using old cached accounts
+        }
+      })
+    ),
     // Mock connector that adds suport for batch transactions
-    extendedMock({
-      accounts: workerAccounts,
-      features: {
-        reconnect: false // Disable reconnect to prevent using old cached accounts
-      }
-    })
+    withSwitchChainTestHook(
+      extendedMock({
+        accounts: workerAccounts,
+        features: {
+          reconnect: false // Disable reconnect to prevent using old cached accounts
+        }
+      })
+    )
   ],
   transports: {
     [tenderlyMainnet.id]: http(),

@@ -55,7 +55,13 @@ const AppContent = () => {
                 <NetworkSwitchProvider>
                   <TransactionProvider>
                     <ExternalLinkModal />
-                    <Toaster />
+                    {/* Toast tier above the dialog tier (z-50): network/tx
+                        toasts must stay readable over a modal's blurred
+                        overlay (e.g. the auto-switch toast fires as a supply
+                        modal opens). Below the popover (z-100) and tooltip
+                        (z-101) tiers. ToastCloseAll rides one step above the
+                        stack it controls. */}
+                    <Toaster className="!z-[60]" />
                     <ToastCloseAll />
                     <RouterProvider router={router} />
                   </TransactionProvider>
