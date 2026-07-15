@@ -9,7 +9,7 @@ import { Area, AreaChart, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'rec
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
-import { BP, useBreakpointIndex } from '../hooks/useBreakpointIndex';
+import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Select,
   SelectContent,

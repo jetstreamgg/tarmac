@@ -4,7 +4,7 @@ import { Intent } from '@/lib/enums';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { TwoPane } from '@/modules/app/components/TwoPane';
 import { DetailsLayout } from '@/modules/app/components/DetailsLayout';
-import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { useBreakpointIndex } from '@/hooks';
 import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
 import { VAULTS } from '@/hooks';
 import { VaultsWidgetPane } from './VaultsWidgetPane';

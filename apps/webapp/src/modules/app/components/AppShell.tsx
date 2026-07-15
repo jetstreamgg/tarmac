@@ -9,7 +9,7 @@ import { useAppOrchestration } from '../hooks/useAppOrchestration';
 import { useWidgetItems } from '../hooks/useWidgetItems';
 import { useDeeplinkAnalytics } from '../hooks/useDeeplinkAnalytics';
 import { useNetworkChangeToast } from '../hooks/useNetworkChangeToast';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { BP, useBreakpointIndex } from '@/hooks';
 import { BalancesPanes } from '@/modules/balances/components/BalancesPanes';
 
 /** Height of the website header above the container on mobile. */
