@@ -24,4 +24,15 @@ describe('ChartTooltip', () => {
     render(<ChartTooltip {...base} active={false} />);
     expect(screen.queryByText('Sky TVL')).toBeNull();
   });
+
+  it('accepts a ReactNode series label (Trans elements from metric pills)', () => {
+    render(<ChartTooltip {...base} tooltipLabel={<span>Rate</span>} />);
+    expect(screen.getByText('Rate')).toBeTruthy();
+  });
+
+  it('omits the series-label cell entirely when no label resolves (no empty gap)', () => {
+    render(<ChartTooltip {...base} tooltipLabel={undefined} />);
+    expect(screen.queryByTestId('chart-tooltip-series-label')).toBeNull();
+    expect(screen.getByText('5,774,407')).toBeTruthy();
+  });
 });

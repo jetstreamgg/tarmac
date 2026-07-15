@@ -230,6 +230,19 @@ function SegmentedPills<T extends string>({
   );
 }
 
+/**
+ * The tooltip's series label: the explicit chart-level label when given,
+ * otherwise the active metric's pill label (detail variant) — so a Rate|TVL
+ * chart never renders the DS tooltip row with an empty label cell.
+ */
+export function resolveTooltipLabel(
+  tooltipLabel: React.ReactNode,
+  metrics?: { value: string; label: React.ReactNode }[],
+  activeMetric?: string
+): React.ReactNode {
+  return tooltipLabel ?? metrics?.find(metric => metric.value === activeMetric)?.label;
+}
+
 interface ChartProps {
   data: Data[];
   symbol?: string;
@@ -241,7 +254,7 @@ interface ChartProps {
   error?: Error | null;
   dataTestId?: string;
   displayValue?: number;
-  tooltipLabel?: string;
+  tooltipLabel?: React.ReactNode;
   icons?: React.ReactNode;
   /** 'detail' switches to the product-detail header (label + value + Rate|TVL toggle). */
   variant?: 'default' | 'detail';
@@ -403,7 +416,7 @@ function ChartContent({
   isLoading: boolean;
   activeTimeframe: TimeFrame;
   error?: Error | null;
-  tooltipLabel?: string;
+  tooltipLabel?: React.ReactNode;
   chartHeight?: number;
   color?: string;
 }) {
@@ -632,7 +645,7 @@ export function Chart({
           isLoading={isLoading}
           error={error}
           chartHeight={isDetail ? 280 : undefined}
-          tooltipLabel={tooltipLabel}
+          tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
           color={color}
         />
       </Card>

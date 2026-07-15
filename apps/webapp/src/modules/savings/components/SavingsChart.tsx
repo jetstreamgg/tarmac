@@ -38,6 +38,7 @@ export function SavingsChart() {
           isLoading={isLoading}
           error={error}
           symbol={'sUSDS'}
+          tooltipLabel={<Trans>TVL</Trans>}
           onTimeFrameChange={tf => {
             setTimeFrame(tf);
           }}

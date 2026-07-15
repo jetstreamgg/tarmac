@@ -12,7 +12,7 @@ interface CustomTooltipProps {
   isPercentage?: boolean;
   labelFormatter: (tickItem: Date) => string;
   prefix?: string;
-  tooltipLabel?: string;
+  tooltipLabel?: React.ReactNode;
 }
 
 export function ChartTooltip({
@@ -41,14 +41,19 @@ export function ChartTooltip({
       {/* 🔶 the mock trails each row with an accent circle (green/amber) — omitted, semantics unclear. */}
       {payload.map((entry, i) => (
         <div key={`tooltip-value-item-${i}`} className="flex items-center gap-4">
-          <span className="text-textSecondary flex items-center gap-2 text-xs">
+          {seriesLabel != null && (
             <span
-              className="size-2 shrink-0 rounded-full"
-              style={{ backgroundColor: entry.color }}
-              aria-hidden
-            />
-            {seriesLabel}
-          </span>
+              className="text-textSecondary flex items-center gap-2 text-xs"
+              data-testid="chart-tooltip-series-label"
+            >
+              <span
+                className="size-2 shrink-0 rounded-full"
+                style={{ backgroundColor: entry.color }}
+                aria-hidden
+              />
+              {seriesLabel}
+            </span>
+          )}
           <span className="text-text ml-auto text-sm font-medium">
             {prefix || ''}
             {`${formatNumber(entry.value)}${symbol && !isPercentage ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
