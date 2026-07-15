@@ -170,6 +170,26 @@ describe('MobileNavbar network override', () => {
   });
 });
 
+// The active-state gradient is one shared element (motion layoutId) so it
+// slides between destinations on tab switch instead of popping.
+describe('MobileNavbar active pill', () => {
+  it('renders exactly one pill, inside the active destination, and it follows navigation', async () => {
+    renderMobileNavbar(ROUTES.PORTFOLIO);
+    await screen.findByTestId('mobile-nav-portfolio');
+
+    let pills = screen.getAllByTestId('mobile-nav-active-pill');
+    expect(pills).toHaveLength(1);
+    expect(screen.getByTestId('mobile-nav-portfolio').contains(pills[0])).toBe(true);
+
+    fireEvent.click(screen.getByTestId('mobile-nav-stake'));
+    await screen.findByTestId('mobile-nav-stake');
+
+    pills = screen.getAllByTestId('mobile-nav-active-pill');
+    expect(pills).toHaveLength(1);
+    expect(screen.getByTestId('mobile-nav-stake').contains(pills[0])).toBe(true);
+  });
+});
+
 // M2.1 (APP-379): the bar slides away while scrolling down and returns on
 // scroll up; data-state carries the current phase for styling and tests.
 describe('MobileNavbar hide-on-scroll', () => {

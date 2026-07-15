@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router';
+import { motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
@@ -11,14 +12,20 @@ const mobileNavTestId = (path: string) => `mobile-nav-${path.slice(1)}`;
  * Bottom navigation bar for the mobile tiers (DS Mobile / Navbar, Figma
  * 5153:25322 — in situ at Sky App: UI 536:26374). Fixed to the bottom edge on
  * a fade-to-background gradient; hidden at the desktop tier where TopNav's
- * pill group takes over. The active recipe reuses the navbar button variant
- * (aria-current="page" → brand2 gradient + dim border), same as desktop.
+ * pill group takes over.
+ *
+ * The active recipe (brand2 gradient + dim border, same tokens as the desktop
+ * navbar variant) is painted by one shared motion element instead of the
+ * variant's aria-current styles, so on tab switch it slides from the old
+ * destination to the new one. Not design-specced — engineering default, like
+ * the M2.1 scroll behavior.
  */
 export function MobileNavbar() {
   const activePath = useActiveDestinationPath();
   const { showNewDot } = useNewIntentDots();
   const { searchForIntent, handleNavClick } = useDestinationLinkProps();
   const isHidden = useHideOnScroll();
+  const reducedMotion = useReducedMotion();
 
   return (
     <nav
@@ -47,16 +54,44 @@ export function MobileNavbar() {
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 buttonVariants({ variant: 'navbar' }),
-                // Inactive items are borderless icon-only pills sharing the row
-                // equally; the variant's aria-current recipe restores the
-                // border + gradient on the active one.
-                'font-circle relative h-full min-w-0 flex-1 gap-1 rounded-full border-transparent px-2 text-xs leading-[14px] font-medium tracking-[-0.24px]'
+                'font-circle relative h-full min-w-0 flex-1 gap-1 rounded-full border-transparent px-2 text-xs leading-[14px] font-medium tracking-[-0.24px]',
+                // The shared pill supplies the active fill/border, so the
+                // variant's own aria-current recipe is switched off (it would
+                // double-paint and can't animate between items).
+                'aria-[current=page]:border-transparent aria-[current=page]:bg-none'
               )}
             >
-              <Icon className="nav-icon h-4 w-4 shrink-0" />
+              {isActive && (
+                <motion.span
+                  aria-hidden
+                  data-testid="mobile-nav-active-pill"
+                  // One layoutId across the four links: when the active link
+                  // changes, the pill glides to its new home. First child +
+                  // positioned siblings keep it under the icon/label without
+                  // z-index games.
+                  layoutId="mobile-nav-active-pill"
+                  transition={
+                    reducedMotion ? { duration: 0 } : { type: 'spring', duration: 0.45, bounce: 0.15 }
+                  }
+                  className="border-borderBrandDim from-brand2-start to-brand2-end absolute inset-0 rounded-full border bg-linear-to-b"
+                />
+              )}
+              <Icon className="nav-icon relative h-4 w-4 shrink-0" />
               {/* DS shows the label on the active pill only; sr-only keeps the
-                  icon-only items accessibly named. */}
-              <span className={isActive ? undefined : 'sr-only'}>{destination.label}</span>
+                  icon-only items accessibly named. The reveal trails the pill
+                  so the text fades in where the pill lands. */}
+              {isActive ? (
+                <motion.span
+                  className="relative"
+                  initial={reducedMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.15 }}
+                >
+                  {destination.label}
+                </motion.span>
+              ) : (
+                <span className="sr-only">{destination.label}</span>
+              )}
               {destination.intents.some(showNewDot) && (
                 <span
                   data-testid={`${mobileNavTestId(destination.path)}-new-dot`}
