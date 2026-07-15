@@ -28,7 +28,9 @@ export function MobileNavbar() {
         'from-pageBackground/0 to-pageBackground desktop:hidden fixed inset-x-0 bottom-0 z-30 flex bg-gradient-to-b px-3 pt-4 pb-[max(16px,env(safe-area-inset-bottom))]',
         // M2.1: slide out while scrolling down, back in on scroll up. The bar
         // is fixed, so the transform doesn't reflow the page.
-        'ease-out-expo transition-transform duration-300 data-[state=hidden]:translate-y-full motion-reduce:transition-none'
+        // in-out rather than the app's ease-out-expo: expo front-loads ~80% of
+        // the travel into the first 100ms, which reads as a snap, not a slide.
+        'transition-transform duration-500 ease-in-out data-[state=hidden]:translate-y-full motion-reduce:transition-none'
       )}
     >
       <div className="bg-glassSurface mx-auto flex h-[60px] w-full max-w-md flex-1 rounded-full p-1 backdrop-blur-[20px]">
