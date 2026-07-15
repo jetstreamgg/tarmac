@@ -63,6 +63,7 @@ export function RewardsDetailChart({
         error={error}
         isPercentage={isRate}
         symbol={isRate ? undefined : contract.supplyToken.symbol}
+        tokenSymbols={isRate ? undefined : [contract.supplyToken.symbol]}
         label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
         // Headline reads the canonical current rate (matches the Details grid),
         // not the last historic point.

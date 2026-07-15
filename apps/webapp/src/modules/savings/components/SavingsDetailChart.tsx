@@ -78,6 +78,7 @@ export function SavingsDetailChart() {
         error={isRate ? rateError : tvlError}
         isPercentage={isRate}
         symbol={isRate ? undefined : 'sUSDS'}
+        tokenSymbols={isRate ? undefined : ['sUSDS']}
         label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
         displayValue={isRate ? currentRate : undefined}
         metrics={[

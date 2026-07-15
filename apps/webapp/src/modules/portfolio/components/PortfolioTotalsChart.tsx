@@ -80,6 +80,7 @@ export function PortfolioTotalsChart() {
         isLoading={isUsds ? usdsLoading : ssrLoading}
         error={isUsds ? usdsError : ssrError}
         symbol="USDS"
+        tokenSymbols={isUsds ? ['USDS', 'DAI'] : ['USDS']}
         label={isUsds ? <Trans>Total USDS and DAI</Trans> : <Trans>Total Sky Savings Supply</Trans>}
         // Metric pills read "USDS"/"Savings" — too terse next to the value, so
         // the tooltip names the series like the header does.
