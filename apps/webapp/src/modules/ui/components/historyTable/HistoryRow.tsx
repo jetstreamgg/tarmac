@@ -12,13 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { LoadingErrorWrapper } from '../LoadingErrorWrapper';
 import { Fragment, useMemo } from 'react';
-import {
-  Tooltip,
-  TooltipArrow,
-  TooltipContent,
-  TooltipPortal,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
 
 type HistoryRowProps = {
   row?: HistoryRowType;
@@ -144,7 +138,7 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
               />
             </TooltipTrigger>
             <TooltipPortal>
-              <TooltipContent arrowPadding={10}>
+              <TooltipContent>
                 <Text variant="small">
                   {row?.useCowExplorer ? (
                     <Trans>View transaction on CoW Explorer</Trans>
@@ -152,7 +146,6 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
                     t`View transaction on ${explorerName}`
                   )}
                 </Text>
-                <TooltipArrow width={12} height={8} />
               </TooltipContent>
             </TooltipPortal>
           </Tooltip>
@@ -161,11 +154,10 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
               <CopyToClipboard text={row?.transactionHash || ''} />
             </TooltipTrigger>
             <TooltipPortal>
-              <TooltipContent arrowPadding={10}>
+              <TooltipContent>
                 <Text variant="small">
                   <Trans>Copy transaction hash</Trans>
                 </Text>
-                <TooltipArrow width={12} height={8} />
               </TooltipContent>
             </TooltipPortal>
           </Tooltip>

@@ -17,16 +17,16 @@ export const useModuleUrls = () => {
   const supportedChainIds = getSupportedChainIds(chainId);
   const chains = useChains();
 
-  const rewardsUrl = getRewardsUrl(searchParams, chainId);
+  const rewardsUrl = getRewardsUrl(searchParams, chainId, chains);
   const savingsUrlMap: Record<number, string> = {};
   for (const chainId of supportedChainIds) {
     savingsUrlMap[chainId] = getSavingsUrl(searchParams, chainId, chains);
   }
-  const stakeUrl = getStakeUrl(searchParams, chainId);
-  const stusdsUrl = getStUsdsUrl(searchParams, chainId);
-  const vaultsUrl = getVaultsOverviewUrl(searchParams, chainId);
+  const stakeUrl = getStakeUrl(searchParams, chainId, chains);
+  const stusdsUrl = getStUsdsUrl(searchParams, chainId, chains);
+  const vaultsUrl = getVaultsOverviewUrl(searchParams, chainId, chains);
   const convertUrl = getConvertUrl(searchParams, chainId);
-  const fixedYieldUrl = getFixedYieldUrl(searchParams, chainId);
+  const fixedYieldUrl = getFixedYieldUrl(searchParams, chainId, chains);
 
   return {
     rewardsUrl,

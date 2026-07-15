@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
+import { Progress } from '@/components/ui/progress';
 import { usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
 import { computeMaturityWindow } from '../utils/maturityWindow';
@@ -26,18 +27,7 @@ export function PendleMaturityProgress({ market }: { market: PendleMarketConfig 
   return (
     <div className="flex flex-col gap-3" data-testid="pendle-maturity-progress">
       <span className="text-text font-circle text-3xl">{Math.round(pct)}%</span>
-      <div
-        className="bg-surface h-1.5 w-full overflow-hidden rounded-full"
-        role="progressbar"
-        aria-valuenow={Math.round(pct)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-400 transition-[width]"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <Progress value={Math.min(100, Math.max(0, pct))} />
       <div className="flex items-center justify-between text-sm">
         <span className="text-textSecondary flex items-center gap-2">
           <span className="bg-bullish h-1 w-1 rounded-full" />

@@ -4,9 +4,12 @@ import {
   ArrowDownToLine,
   ArrowRight,
   ArrowUpToLine,
+  Check,
   ChevronDown,
+  ChevronLeft,
   Copy,
   LineChart,
+  Network,
   Settings2,
   Star,
   Wallet
@@ -59,7 +62,12 @@ import {
   CellToken,
   CellTokenIdle
 } from '@/components/ui/table-cells';
-import { RiskMeter, RiskTierMeter } from '@/components/product/RiskMeter';
+import { RiskMeter, RiskTierMeter, RiskScaleMeter } from '@/components/product/RiskMeter';
+import { TokensComposition } from '@/components/product/TokensComposition';
+import { ChartTooltip } from '@/modules/ui/components/ChartTooltip';
+import { PortfolioDonutChart } from '@/modules/portfolio/components/PortfolioDonutChart';
+import { RiskLevel } from '@/hooks';
+import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { BaseChain, MainnetChain, OptimismChain, Pendle, Stake } from '@/modules/icons';
@@ -91,6 +99,17 @@ import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { GainValue } from '@/components/ui/GainValue';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
 import { Steps, StepsItem } from '@/components/ui/steps';
+import {
+  Iconbox,
+  Iconbox2Tokens,
+  IconboxAction,
+  IconboxPosition,
+  IconboxStatus
+} from '@/components/ui/iconbox';
+import { Loader } from '@/components/ui/loader';
+import { ListWallet } from '@/components/ui/list';
+import { HeaderBadge, PageHeaderHero, PageHeading } from '@/components/ui/page-header';
+import { IllustrationStaked, IllustrationStakingLogomark } from '@/modules/icons';
 
 // Internal-only living style guide (route /design-system, hidden in production).
 // Shows every canonical components/ui primitive in its prop-reachable states;
@@ -107,7 +126,12 @@ const SECTIONS = [
   { id: 'cards', title: 'Cards' },
   { id: 'overlays', title: 'Overlays' },
   { id: 'tables', title: 'Tables' },
+  { id: 'iconbox', title: 'Iconbox' },
+  { id: 'charts', title: 'Charts' },
+  { id: 'headers', title: 'Headers' },
+  { id: 'banners', title: 'Banners' },
   { id: 'steps', title: 'Steps' },
+  { id: 'feedback', title: 'Feedback' },
   { id: 'data', title: 'Data & misc' }
 ];
 
@@ -427,9 +451,6 @@ function ButtonsSection() {
           <Spec label="outline">
             <Button variant="outline">Outline</Button>
           </Spec>
-          <Spec label="connect">
-            <Button variant="connect">Connect</Button>
-          </Spec>
           <Spec label="connectPrimary">
             <Button variant="connectPrimary">Connect</Button>
           </Spec>
@@ -705,7 +726,7 @@ function SelectSection() {
     <Section
       id="select"
       title="Select"
-      note="Known issue in dark: --background/--foreground are light-only tokens, so the trigger/content surfaces are transparent with dark text (THEMING.md, deferred bug 4). Shown as-is on purpose."
+      note="Panel and rows are the DS Dropdown recipe (H9): bg-tertiary glass, 16px radius, Label-5 rows, selected row tinted with a right-edge check. Known issue in dark: --background/--foreground are light-only tokens, so the trigger surface is transparent with dark text (THEMING.md, deferred bug 4). Shown as-is on purpose."
     >
       <Row>
         <Spec label="default">
@@ -1427,18 +1448,45 @@ function DataSection() {
       <SubSection title="Accordion">
         <Accordion type="single" collapsible className="max-w-2xl">
           <AccordionItem value="a">
-            <AccordionTrigger>What is the Sky Protocol?</AccordionTrigger>
-            <AccordionContent>
-              <Text variant="medium">A decentralized, non-custodial DeFi protocol.</Text>
-            </AccordionContent>
+            <AccordionTrigger>
+              <span className="flex items-center gap-3">
+                <IconboxAction>
+                  <Star className="size-4" />
+                </IconboxAction>
+                What is the Sky Protocol?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>A decentralized, non-custodial DeFi protocol.</AccordionContent>
           </AccordionItem>
           <AccordionItem value="b">
-            <AccordionTrigger>How do rewards work?</AccordionTrigger>
-            <AccordionContent>
-              <Text variant="medium">Rewards accrue per block and can be claimed at any time.</Text>
-            </AccordionContent>
+            <AccordionTrigger>
+              <span className="flex items-center gap-3">
+                <IconboxAction>
+                  <LineChart className="size-4" />
+                </IconboxAction>
+                How do rewards work?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>Rewards accrue per block and can be claimed at any time.</AccordionContent>
           </AccordionItem>
         </Accordion>
+      </SubSection>
+
+      <SubSection title="List / Wallet">
+        <div className="flex max-w-md flex-col gap-4">
+          <Spec label="default (hover for borderTertiary)">
+            <ListWallet icon={<Wallet className="text-fgPrimary size-6" />} name="Metamask" />
+          </Spec>
+          <Spec label="badge">
+            <ListWallet icon={<Wallet className="text-fgPrimary size-6" />} name="Metamask" badge="Recent" />
+          </Spec>
+          <Spec label="active (connecting)">
+            <ListWallet icon={<Wallet className="text-fgPrimary size-6" />} name="Coinbase Wallet" active />
+          </Spec>
+          <Spec label="disabled">
+            <ListWallet icon={<Wallet className="text-fgPrimary size-6" />} name="Safe" disabled />
+          </Spec>
+        </div>
       </SubSection>
 
       <SubSection title="Pagination">
@@ -1537,11 +1585,411 @@ function DataSection() {
   );
 }
 
+// ─── Iconbox ──────────────────────────────────────────────────────────────────
+
+/** Token logo filling its iconbox slot (chain overlay off — the box owns the chip). */
+function BoxToken({ symbol, px, className }: { symbol: string; px: number; className?: string }) {
+  return (
+    <TokenIcon token={{ symbol }} width={px} className={className ?? 'h-full w-full'} showChainIcon={false} />
+  );
+}
+
+const ICONBOX_SIZES = ['l', 'm', 's', 'xs'] as const;
+const STATUS_SIZES = ['l', 'm', 's', 'xs', '2xs'] as const;
+// Inner logo per Status ring size (48/28/18/10/8px).
+const STATUS_LOGO: Record<(typeof STATUS_SIZES)[number], { px: number; className: string }> = {
+  l: { px: 48, className: 'size-12' },
+  m: { px: 28, className: 'size-7' },
+  s: { px: 18, className: 'size-[18px]' },
+  xs: { px: 10, className: 'size-2.5' },
+  '2xs': { px: 8, className: 'size-2' }
+};
+
+function IconboxSection() {
+  return (
+    <Section
+      id="iconbox"
+      title="Iconbox"
+      note="Components/Iconbox (H14): the circular icon containers shared by the table cells, position surfaces and activity rows. Figma names the Status ring types by product (Pendle/Morpho); code names them by system color (success/info)."
+    >
+      <SubSection title="Base — Token / Icon × L / M / S / XS, network chip">
+        <div className="flex items-end gap-6">
+          {ICONBOX_SIZES.map(size => (
+            <Iconbox key={size} size={size} network={<BaseChain className="h-full w-full" />}>
+              <BoxToken symbol="ETH" px={40} />
+            </Iconbox>
+          ))}
+          <Iconbox type="icon" size="l">
+            <Star className="size-6" />
+          </Iconbox>
+          <Iconbox type="icon" size="m" network={<BaseChain className="h-full w-full" />}>
+            <Star className="size-4" />
+          </Iconbox>
+        </div>
+      </SubSection>
+
+      <SubSection title="2 Tokens — 4px overlap pair, network chip on the back token">
+        <Iconbox2Tokens
+          front={<BoxToken symbol="USDS" px={28} />}
+          back={<BoxToken symbol="SKY" px={28} />}
+          network={<BaseChain className="h-full w-full" />}
+        />
+      </SubSection>
+
+      <SubSection title="Status — default / success / info × L / M / S / XS / 2XS, status dot">
+        <div className="flex flex-col gap-4">
+          {(['default', 'success', 'info'] as const).map(type => (
+            <div key={type} className="flex items-center gap-6">
+              {STATUS_SIZES.map(size => (
+                <IconboxStatus key={size} type={type} size={size} dot={type !== 'default'}>
+                  <BoxToken symbol="sUSDS" {...STATUS_LOGO[size]} />
+                </IconboxStatus>
+              ))}
+            </div>
+          ))}
+        </div>
+      </SubSection>
+
+      <SubSection title="Position — default / inactive">
+        <div className="flex items-center gap-6">
+          <IconboxPosition>
+            <Stake width={16} height={16} />
+          </IconboxPosition>
+          <IconboxPosition inactive>
+            <Stake width={16} height={16} />
+          </IconboxPosition>
+        </div>
+      </SubSection>
+
+      <SubSection title="Action">
+        <IconboxAction>
+          <ArrowDownToLine className="size-4" />
+        </IconboxAction>
+      </SubSection>
+    </Section>
+  );
+}
+
+// ─── Headers ──────────────────────────────────────────────────────────────────
+
+/** Static stand-in for the header network pill (ChainModal / FilterSelect at dropdownM). */
+function HeaderNetworkPill({ label }: { label: string }) {
+  return (
+    <Button variant="dropdown" size="dropdownM">
+      <MainnetChain className="h-6 w-6" />
+      {label}
+      <ChevronDown className="size-4" />
+    </Button>
+  );
+}
+
+function HeadersSection() {
+  return (
+    <Section
+      id="headers"
+      title="Headers"
+      note="Patterns/Headers (H11): the five destination-page header types. Earn and Convert share the centered hero (Heading 2 + Body 6 + stat badges); Portfolio, the product-detail pages and Stake are title rows on Heading 3/2 with the Iconbox/Status L ring and the dropdown-M network pill."
+    >
+      <SubSection title="Hero — Earn / Convert (5031:52345 / 5044:35419)">
+        <PageHeaderHero
+          badges={
+            <>
+              <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>$11.02B in circulation</HeaderBadge>
+              <HeaderBadge icon={<IllustrationStakingLogomark boxSize={16} />}>
+                Operating for 7 years
+              </HeaderBadge>
+            </>
+          }
+          title="Your stablecoins, earning more"
+          subtitle="Sky Protocol is where stablecoins go to work and where they've been going since 2017. $11B in circulation. Multiple strategies, one place."
+        />
+      </SubSection>
+
+      <SubSection title="Portfolio — eyebrow + Heading 3 + network dropdown (5034:20993)">
+        <div className="flex w-full flex-col gap-2">
+          <p className="font-circle text-fgSecondary text-sm leading-4 font-medium tracking-[-0.28px]">
+            Welcome back, bartoo.eth
+          </p>
+          <div className="flex items-center justify-between gap-4">
+            <PageHeading size="md" tag="h3">
+              Your Stablecoin Earnings
+            </PageHeading>
+            <HeaderNetworkPill label="All networks" />
+          </div>
+        </div>
+      </SubSection>
+
+      <SubSection title="Product detail — back link, Iconbox/Status L, title badge (5039:35173)">
+        <div className="flex w-full flex-col gap-8">
+          <span className="text-fgSecondary font-circle flex w-fit items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
+            <ChevronLeft className="size-4" />
+            Back to products
+          </span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <IconboxStatus size="l">
+                <BoxToken symbol="sUSDS" px={48} className="size-12" />
+              </IconboxStatus>
+              <PageHeading size="md" tag="h3" className="flex flex-wrap items-center gap-2">
+                Sky Savings
+                <HeaderBadge size="s" icon={<IllustrationStakingLogomark boxSize={16} />}>
+                  Powered by Morpho
+                </HeaderBadge>
+              </PageHeading>
+            </div>
+            <HeaderNetworkPill label="Ethereum" />
+          </div>
+        </div>
+      </SubSection>
+
+      <SubSection title="Stake — brand-glow Iconbox/Status L + Heading 2 (5043:59183)">
+        <div className="flex w-full items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <IconboxStatus size="l" className="shadow-brandGlow">
+              <BoxToken symbol="SKY" px={48} className="size-12" />
+            </IconboxStatus>
+            <PageHeading size="lg" tag="h3">
+              SKY Staking
+            </PageHeading>
+          </div>
+          <HeaderNetworkPill label="Ethereum" />
+        </div>
+      </SubSection>
+
+      <SubSection title="Badges / Illustration — m (Label 5) / s (Label 6)">
+        <Row>
+          <Spec label="m — hero stat badge">
+            <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>$11.02B in circulation</HeaderBadge>
+          </Spec>
+          <Spec label="s — title suffix badge">
+            <HeaderBadge size="s" icon={<IllustrationStakingLogomark boxSize={16} />}>
+              Powered by Morpho
+            </HeaderBadge>
+          </Spec>
+        </Row>
+      </SubSection>
+    </Section>
+  );
+}
+
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
 /** 14px chip icon for step specimens (chain overlay off — the chip is symbol-only). */
 function StepToken({ symbol }: { symbol: string }) {
   return <TokenIcon token={{ symbol }} className="h-3.5 w-3.5" showChainIcon={false} />;
+}
+
+function ChartsSection() {
+  return (
+    <Section
+      id="charts"
+      title="Charts"
+      note="Plotted content of the DS chart set (H13). Progress Steps is the value-driven risk bar; Line/Pie/Progress Bar/Tokens Composition follow."
+    >
+      {/* Figma 5246:24677 */}
+      <SubSection title="Progress Steps — risk bar">
+        <div className="flex max-w-md flex-col gap-6">
+          <Spec label="empty (legend)">
+            <RiskScaleMeter label="Risk scale" />
+          </Spec>
+          <Spec label="level=low">
+            <RiskScaleMeter level={RiskLevel.LOW} label="Low risk" />
+          </Spec>
+          <Spec label="level=medium">
+            <RiskScaleMeter level={RiskLevel.MEDIUM} label="Medium risk" />
+          </Spec>
+          <Spec label="level=high">
+            <RiskScaleMeter level={RiskLevel.HIGH} label="High risk" />
+          </Spec>
+          <Spec label="level=liquidation">
+            <RiskScaleMeter level={RiskLevel.LIQUIDATION} label="Liquidation risk" />
+          </Spec>
+          <Spec label="continuous value=0.88">
+            <RiskScaleMeter value={0.88} label="88% to liquidation" />
+          </Spec>
+        </div>
+      </SubSection>
+
+      {/* Figma 5246:15689 */}
+      <SubSection title="Progress Bar">
+        <div className="flex max-w-md flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-fgSecondary text-sm">Maturity</span>
+              <span className="text-fgSecondary text-sm">18 Jun 2026</span>
+            </div>
+            <span className="text-fgPrimary text-2xl font-medium">85%</span>
+            <Progress value={85} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-fgSecondary text-sm">Borrow Utilization</span>
+            <span className="text-fgPrimary text-2xl font-medium">83.5%</span>
+            <Progress value={83.5} className="h-2" />
+          </div>
+        </div>
+      </SubSection>
+
+      {/* Figma 5273:12162 */}
+      <SubSection title="Line — tooltip">
+        <div className="flex flex-wrap gap-6">
+          <ChartTooltip
+            active
+            label={new Date('2026-03-12T00:00:00Z')}
+            labelFormatter={() => 'Mar 12, 2026'}
+            tooltipLabel="Sky TVL"
+            payload={[{ color: '#02C2A1', value: 5774407, payload: {} }]}
+          />
+          <ChartTooltip
+            active
+            label={new Date('2026-03-12T00:00:00Z')}
+            labelFormatter={() => 'Mar 12, 2026'}
+            tooltipLabel="Total USDS"
+            payload={[{ color: '#757dff', value: 8238778407, payload: {} }]}
+          />
+        </div>
+      </SubSection>
+
+      {/* Figma 5051:133511 */}
+      <SubSection title="Pie — donut">
+        <div className="flex flex-wrap items-center gap-8">
+          {[
+            { label: 'empty (No tokens)', segs: [] as { id: string; color: string; value: number }[] },
+            { label: '1 segment', segs: [{ id: 'usds', color: '#E9B44C', value: 100 }] },
+            {
+              label: '2 segments',
+              segs: [
+                { id: 'susds', color: '#59D6B8', value: 82 },
+                { id: 'usds', color: '#E9B44C', value: 18 }
+              ]
+            },
+            {
+              label: '4 segments',
+              segs: [
+                { id: 'susds', color: '#59D6B8', value: 55 },
+                { id: 'usds', color: '#E9B44C', value: 15 },
+                { id: 'spk', color: '#E96D9E', value: 18 },
+                { id: 'usdc', color: '#3B82F6', value: 12 }
+              ]
+            }
+          ].map(({ label, segs }) => (
+            <div key={label} className="flex flex-col items-center gap-2">
+              <PortfolioDonutChart segments={segs} activeId={null} onActiveChange={() => {}} size={140} />
+              <span className="text-fgSecondary text-xs">{label}</span>
+            </div>
+          ))}
+          <div className="flex flex-col items-center gap-2">
+            <PortfolioDonutChart
+              segments={[
+                { id: 'susds', color: '#59D6B8', value: 55 },
+                { id: 'usds', color: '#E9B44C', value: 15 },
+                { id: 'spk', color: '#E96D9E', value: 30 }
+              ]}
+              activeId="susds"
+              onActiveChange={() => {}}
+              size={140}
+              renderCenter={id => <span className="text-text text-sm font-medium">{id}</span>}
+            />
+            <span className="text-fgSecondary text-xs">active (hover)</span>
+          </div>
+        </div>
+      </SubSection>
+
+      {/* Figma 5270:15611 */}
+      <SubSection title="Tokens Composition">
+        <div className="flex max-w-md flex-col gap-8">
+          <TokensComposition
+            title="Strategy"
+            total="$30.04M"
+            segments={[
+              { id: 'stusds', label: 'stUSDS', color: '#E7A6C4', value: 19.92, formattedValue: '$19.92M' },
+              { id: 'susds', label: 'sUSDS', color: '#59D6B8', value: 10.14, formattedValue: '$10.14M' },
+              { id: 'usds', label: 'USDS', color: '#E9B44C', value: 3.92, formattedValue: '$3.92M' },
+              { id: 'spk', label: 'SPK', color: '#F0704F', value: 2.47, formattedValue: '$2.47M' }
+            ]}
+          />
+        </div>
+      </SubSection>
+    </Section>
+  );
+}
+
+function BannersSection() {
+  return (
+    <Section
+      id="banners"
+      title="Banners"
+      note="DS Patterns/Banners (Figma 5273:45498). Wallet + Yearly estimation are adopted live (portfolio); Earning has no consumer yet — documented here, not wired up."
+    >
+      <div className="flex max-w-[1032px] flex-col gap-6">
+        <PromoBanner
+          illustration={
+            <img src="/illustrations/illustration-connect-wallet.png" alt="" className="size-full" />
+          }
+          heading={
+            <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
+              <BannerAccent>Connect your wallet</BannerAccent> to see your balances and start earning
+            </p>
+          }
+          subtitle={
+            <p className="text-fgSecondary text-xs leading-[18px]">
+              Your portfolio, active positions, and available assets will appear here once connected.
+            </p>
+          }
+          action={
+            <Button variant="primary" size="xl">
+              Connect wallet
+            </Button>
+          }
+        />
+
+        <PromoBanner
+          illustration={<img src="/illustrations/illustration-savings-1.png" alt="" className="size-full" />}
+          heading={
+            <div className="flex items-baseline gap-1">
+              <span className="font-circle text-fgPrimary text-[44px] leading-[48px] font-medium tracking-[-0.88px]">
+                $14,000
+              </span>
+              <BannerAccent className="font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+                /year
+              </BannerAccent>
+            </div>
+          }
+          subtitle={
+            <p className="text-fgSecondary max-w-[248px] text-xs leading-[18px]">
+              That&apos;s what your idle stablecoins can earn at today&apos;s{' '}
+              <span className="text-fgPrimary font-medium">3.75%</span> Sky Savings Rate.
+            </p>
+          }
+          action={
+            <Button variant="primary" size="xl">
+              Allocate your stablecoins
+            </Button>
+          }
+        />
+
+        {/* Earning — no live consumer (per APP-356, documented not invented). */}
+        <PromoBanner
+          illustration={<img src="/illustrations/illustration-savings-2.png" alt="" className="size-full" />}
+          heading={
+            <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
+              <BannerAccent>$5.93b in stablecoins</BannerAccent> already earning the Sky Savings Rate
+            </p>
+          }
+          subtitle={
+            <p className="text-fgSecondary max-w-[439px] text-xs leading-[18px]">
+              Projections assume current rate held constant. Sky Savings Rate is variable and set by Sky
+              Ecosystem governance. Not financial advice.
+            </p>
+          }
+          action={
+            <Button variant="primary" size="xl">
+              Simulate earnings
+            </Button>
+          }
+        />
+      </div>
+    </Section>
+  );
 }
 
 function StepsSection() {
@@ -1675,6 +2123,133 @@ function StepsSection() {
   );
 }
 
+// ─── Feedback (H9) ────────────────────────────────────────────────────────────
+
+// Static replica of the TooltipContent recipe so both themes can be inspected
+// without hovering (the live primitive portals to its trigger).
+function TooltipReplica({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      className={cn(
+        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[100px]',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+const DROPDOWN_REPLICA_ROWS = [
+  { label: 'All networks', icon: <Network className="size-4 shrink-0" />, selected: false },
+  { label: 'Ethereum', icon: <MainnetChain className="size-4 shrink-0" />, selected: true },
+  { label: 'Base', icon: <BaseChain className="size-4 shrink-0" />, selected: false },
+  { label: 'OP Mainnet', icon: <OptimismChain className="size-4 shrink-0" />, selected: false }
+];
+
+function FeedbackSection() {
+  return (
+    <Section
+      id="feedback"
+      title="Feedback"
+      note="Components/Tooltip, Toast, Dropdown and Loading (H9): the small feedback primitives share the bg-tertiary glass surface at 16px radius. Tooltips draw no arrow; the dropdown panel and rows are the SelectContent/SelectItem defaults (live in the Select section); the loader generalizes the H4 button glyph to six sizes."
+    >
+      <SubSection title="Tooltip — Simple / Default (titled) / Short">
+        <Row>
+          <Spec label="simple">
+            <TooltipReplica>
+              Tooltips are used to describe or identify an element. In most scenarios, tooltips help the user
+              understand meaning, function or alt-text.
+            </TooltipReplica>
+          </Spec>
+          <Spec label="default — titled">
+            <TooltipReplica>
+              <p className="font-circle text-fgPrimary mb-2 text-sm leading-4 font-medium tracking-[-0.28px]">
+                This is a tooltip
+              </p>
+              <p className="text-fgSecondary">
+                Tooltips are used to describe or identify an element. In most scenarios, tooltips help the
+                user understand meaning, function or alt-text.
+              </p>
+            </TooltipReplica>
+          </Spec>
+          <Spec label="short">
+            <TooltipReplica className="font-circle w-fit text-xs leading-[14px] font-medium tracking-[-0.24px]">
+              This is a tooltip
+            </TooltipReplica>
+          </Spec>
+          <Spec label="live (hover)">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="secondary" size="m">
+                    Hover me
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>This is a tooltip</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </Spec>
+        </Row>
+      </SubSection>
+
+      <SubSection title="Toast — success disc / description / error (pre-DS glyph)">
+        <Row>
+          <Spec label="simple success">
+            <Button variant="secondary" size="m" onClick={() => toast.success('Filters applied')}>
+              Fire success
+            </Button>
+          </Spec>
+          <Spec label="transaction — title + description">
+            <Button
+              variant="secondary"
+              size="m"
+              onClick={() => toast.success('10,000.00 USDC supplied!', { description: '0xff9s...dsa6' })}
+            >
+              Fire transaction
+            </Button>
+          </Spec>
+          <Spec label="error">
+            <Button variant="secondary" size="m" onClick={() => toast.error('Transaction failed')}>
+              Fire error
+            </Button>
+          </Spec>
+        </Row>
+      </SubSection>
+
+      <SubSection title="Dropdown — static panel replica (Networks type)">
+        <div className="bg-bgTertiary w-[220px] overflow-hidden rounded-2xl px-px py-1 backdrop-blur-[20px]">
+          {DROPDOWN_REPLICA_ROWS.map(row => (
+            <div
+              key={row.label}
+              className={cn(
+                'text-fgPrimary font-circle flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-sm leading-4 font-medium tracking-[-0.28px]',
+                row.selected && 'bg-bgSecondary'
+              )}
+            >
+              {row.icon}
+              {row.label}
+              {row.selected && <Check className="ml-auto size-4 shrink-0" />}
+            </div>
+          ))}
+        </div>
+      </SubSection>
+
+      <SubSection title="Loader — 2XS / XS / S / M / L / XL (12–40px, currentColor)">
+        <Row>
+          {(['2xs', 'xs', 's', 'm', 'l', 'xl'] as const).map(size => (
+            <Spec key={size} label={size.toUpperCase()}>
+              <span className="text-fgSecondary inline-flex">
+                <Loader size={size} />
+              </span>
+            </Spec>
+          ))}
+        </Row>
+      </SubSection>
+    </Section>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function DesignSystem() {
@@ -1733,7 +2308,12 @@ function DesignSystem() {
         <CardsSection />
         <OverlaysSection />
         <TablesSection />
+        <IconboxSection />
+        <ChartsSection />
+        <HeadersSection />
+        <BannersSection />
         <StepsSection />
+        <FeedbackSection />
         <DataSection />
       </main>
       <Toaster />

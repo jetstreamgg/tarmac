@@ -45,6 +45,8 @@ import { ConvertArrows } from './ConvertArrows';
 import { Wallet } from './Wallet';
 import { Pendle } from './Pendle';
 import { Merkl } from './Merkl';
+import { IllustrationStaked } from './IllustrationStaked';
+import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
 
 export {
   ArrowDown,
@@ -93,5 +95,7 @@ export {
   ConvertArrows,
   Wallet,
   Pendle,
-  Merkl
+  Merkl,
+  IllustrationStaked,
+  IllustrationStakingLogomark
 };

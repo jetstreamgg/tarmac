@@ -3,6 +3,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/cn';
+import { Loader } from './loader';
 
 // App look — canonical, unchanged.
 
@@ -31,8 +32,6 @@ const buttonVariants = cva(
           'bg-radial-(--gradient-position) from-primary-alt-start/100 to-primary-alt-end/100 border text-text hover:from-primary-alt-start/60 hover:to-primary-alt-end/60 active:from-primary-alt-start/45 active:to-primary-alt-end/45 focus:from-primary-alt-start/45 focus:to-primary-alt-end/45 disabled:from-primary-alt-start/35 disabled:to-primary-alt-end/35',
         connectPrimary:
           'bg-radial-(--gradient-position) text-text border border-[rgb(127,92,246)] from-primary-start/100 to-primary-end/100 hover:from-primary-start/60 hover:to-primary-end/60 hover:border-[rgb(101,70,222)] focus:from-primary-start/40 focus:to-primary-end/40 focus:border-[rgb(92,62,209)]',
-        connect:
-          'bg-radial-(--gradient-position) text-text border border-[rgb(127,92,246)] from-primary-bright-start/100 to-primary-bright-end/100 hover:from-primary-bright-start/60 hover:to-primary-bright-end/60 hover:border-[rgb(101,70,222)] focus:from-primary-bright-start/40 focus:to-primary-bright-end/40 focus:border-[rgb(92,62,209)]',
         secondary:
           'rounded-full border border-glassBadge bg-origin-border bg-linear-to-b from-white/0 to-white/8 text-text hover:from-glassBadge hover:to-glassBadge active:from-glassBorder active:to-glassBorder focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary',
         pill: 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text rounded-full hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 bg-blend-overlay hover:bg-white/10 focus:border-transparent focus:bg-white/15 active:bg-white/15',
@@ -113,34 +112,6 @@ const buttonVariants = cva(
   }
 );
 
-// Loading-state glyph (Figma "Loader"): the static Figma asset gives the
-// three-dot geometry; the staggered pulse makes it read as busy.
-const ButtonLoader = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-    className={className}
-  >
-    <circle cx="2.667" cy="8.667" r="1.333" fill="currentColor" className="animate-pulse" />
-    <circle
-      cx="8"
-      cy="6.667"
-      r="1.333"
-      fill="currentColor"
-      className="animate-pulse [animation-delay:200ms]"
-    />
-    <circle
-      cx="13.333"
-      cy="8.667"
-      r="1.333"
-      fill="currentColor"
-      className="animate-pulse [animation-delay:400ms]"
-    />
-  </svg>
-);
-
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
@@ -164,7 +135,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           <>
             {/* span wrapper keeps the loader out of the [&>svg] icon sizing rules (xl uses a 24px loader) */}
             <span className={cn('shrink-0', size === 's' ? '-ml-1' : '-ml-2')}>
-              <ButtonLoader className={size === 'xl' ? 'size-6' : 'size-4'} />
+              <Loader size={size === 'xl' ? 'm' : 'xs'} />
             </span>
             {children}
           </>

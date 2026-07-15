@@ -9,12 +9,13 @@ import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
 import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
-import { Heading, Text } from '@/modules/layout/components/Typography';
+import { PageHeading } from '@/components/ui/page-header';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
 import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
+import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import { PortfolioStatistics } from './PortfolioStatistics';
@@ -71,11 +72,13 @@ export function ConnectedPortfolio() {
   const supportedChainIds = getSupportedChainIds(connectedChainId);
   const chainName = (id: number) => chains.find(chain => chain.id === id)?.name ?? `Chain ${id}`;
 
+  // 24px chain icons: the header filter is the DS Button / Dropdown at size M
+  // (Patterns/Headers 5034:21316), unlike the S-sized table filter bars.
   const networkOptions: FilterOption[] = supportedChainIds.map(id => ({
     value: String(id),
     label: (
       <span className="flex items-center gap-2">
-        {getChainIcon(id, 'h-4 w-4')}
+        {getChainIcon(id, 'h-6 w-6')}
         {chainName(id)}
       </span>
     )
@@ -83,7 +86,7 @@ export function ConnectedPortfolio() {
 
   const allNetworksLabel = (
     <span className="flex items-center gap-2">
-      <IconStack size={16}>{supportedChainIds.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>
+      <IconStack size={24}>{supportedChainIds.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>
       <Trans>All networks</Trans>
     </span>
   );
@@ -97,24 +100,27 @@ export function ConnectedPortfolio() {
       className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:py-10"
       data-testid="portfolio-page"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          {displayName && (
-            <Text variant="medium" className="text-textSecondary">
-              <Trans>Welcome back, {displayName}</Trans>
-            </Text>
-          )}
-          <Heading tag="h1" variant="large" className="text-4xl leading-tight">
+      {/* Header (Patterns/Headers, Portfolio type 5034:20993): Label 5
+          eyebrow over the Heading 3 + network-dropdown row. */}
+      <div className="flex flex-col gap-2">
+        {displayName && (
+          <p className="font-circle text-fgSecondary text-sm leading-4 font-medium tracking-[-0.28px]">
+            <Trans>Welcome back, {displayName}</Trans>
+          </p>
+        )}
+        <div className="flex items-center justify-between gap-4">
+          <PageHeading size="md">
             <Trans>Your Stablecoin Earnings</Trans>
-          </Heading>
+          </PageHeading>
+          <FilterSelect
+            options={networkOptions}
+            selected={selectedNetwork}
+            onChange={setSelectedNetwork}
+            allLabel={allNetworksLabel}
+            testId="portfolio-network-filter"
+            size="m"
+          />
         </div>
-        <FilterSelect
-          options={networkOptions}
-          selected={selectedNetwork}
-          onChange={setSelectedNetwork}
-          allLabel={allNetworksLabel}
-          testId="portfolio-network-filter"
-        />
       </div>
 
       {callout === 'simulate' && <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />}
@@ -144,6 +150,10 @@ export function ConnectedPortfolio() {
         tab={tab}
         onTabChange={setUserTab}
       />
+
+      {/* Matured PT redemption (G6): the marketplace filters matured markets out
+          of the supplied view, so this self-hiding section is their only surface. */}
+      <PendleReadyToRedeemList />
 
       {/* Sub-$10 users get the same Sky-wide statistics as disconnected visitors. */}
       {callout !== 'none' && <PortfolioStatistics />}

@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
+import { IconboxAction, IconboxPosition, IconboxStatus } from './iconbox';
 
 // Design-system typed table cells (Figma Table Cell 5032:9625, 17 types).
 // These are cell *contents*: the surface, height and padding live on the
@@ -25,62 +26,10 @@ const label7 = 'font-circle text-[11px] leading-3 font-medium tracking-[-0.22px]
 const body6 = 'font-graphik text-xs leading-[18px] font-normal';
 
 // --- Small shared pieces ---------------------------------------------------
-
-/**
- * The 36px circled-icon boxes the Token/Position/Action cells share
- * (Figma Iconbox). `token` holds a 28px logo; `action`/`position` draw an
- * inner 30px disc around a 16px glyph.
- */
-export function TableIconBox({
-  variant = 'token',
-  active = false,
-  children,
-  className
-}: {
-  variant?: 'token' | 'action' | 'position';
-  /** Token-box "has a position" state: mint border + success status dot. */
-  active?: boolean;
-  children: ReactNode;
-  className?: string;
-}) {
-  if (variant === 'token') {
-    return (
-      <span
-        className={cn(
-          'relative flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]',
-          // The active border is a hardcoded hex in Figma too (no variable).
-          active ? 'border-[#8bf1ca]' : 'border-borderTertiary',
-          className
-        )}
-      >
-        {children}
-        {active && (
-          <span className="bg-statusSuccessSolid ring-pageBackground absolute top-0 right-0 size-2 rounded-full ring-2" />
-        )}
-      </span>
-    );
-  }
-  return (
-    <span
-      className={cn(
-        'flex size-9 shrink-0 items-center justify-center rounded-full',
-        variant === 'action'
-          ? 'border-glassBorder border p-[2px]'
-          : 'border-statusSuccessBorder border-[1.5px] p-px',
-        className
-      )}
-    >
-      <span
-        className={cn(
-          'flex size-full items-center justify-center rounded-full',
-          variant === 'action' ? 'bg-bgSecondary text-fgPrimary' : 'bg-statusSuccessBg text-statusSuccess'
-        )}
-      >
-        {children}
-      </span>
-    </span>
-  );
-}
+// The 36px circled-icon boxes the Token/Position/Action cells share come from
+// the design-system Iconbox family (ui/iconbox): IconboxStatus holds the 28px
+// token logo, IconboxAction/IconboxPosition draw an inner 30px disc around a
+// 16px glyph.
 
 /** Title-row chip of the Token Idle cell (rate / 1:1-parity badges). */
 export function CellBadge({
@@ -213,9 +162,9 @@ export function CellToken({
 }) {
   return (
     <span className="flex items-center gap-3">
-      <TableIconBox variant="token" active={active}>
+      <IconboxStatus type={active ? 'success' : 'default'} dot={active}>
         {icon}
-      </TableIconBox>
+      </IconboxStatus>
       <span className="flex flex-col gap-0.5">
         <span className={cn(label4, 'text-fgPrimary flex items-center gap-1')}>
           {title}
@@ -247,7 +196,7 @@ export function CellTokenIdle({
 }) {
   return (
     <span className="flex items-center gap-3">
-      <TableIconBox variant="token">{icon}</TableIconBox>
+      <IconboxStatus>{icon}</IconboxStatus>
       <span className="flex flex-col gap-0.5">
         <span className={cn(label4, 'text-fgPrimary flex items-center gap-1')}>
           {symbol}
@@ -263,7 +212,7 @@ export function CellTokenIdle({
 export function CellPosition({ icon, label }: { icon: ReactNode; label: ReactNode }) {
   return (
     <span className="flex items-center gap-3">
-      <TableIconBox variant="position">{icon}</TableIconBox>
+      <IconboxPosition>{icon}</IconboxPosition>
       <span className={cn(label5, 'text-fgPrimary')}>{label}</span>
     </span>
   );
@@ -288,7 +237,7 @@ export function CellAction({
 }) {
   return (
     <span className="flex items-center gap-3">
-      <TableIconBox variant="action">{icon}</TableIconBox>
+      <IconboxAction>{icon}</IconboxAction>
       <span className="flex flex-col gap-0.5">
         <span className={cn(compact ? label5 : label4, 'text-fgPrimary')}>{label}</span>
         {sublabel != null && (

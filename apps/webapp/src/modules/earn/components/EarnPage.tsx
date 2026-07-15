@@ -8,7 +8,8 @@ import { formatNumber, getChainIcon } from '@/utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { QueryParams } from '@/lib/constants';
 import { retainOnNavigate, useAppSearchParams } from '@/lib/navigation';
-import { Heading } from '@/modules/layout/components/Typography';
+import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
+import { IllustrationStaked } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
@@ -147,9 +148,30 @@ export function EarnPage() {
       className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-5 py-4 md:py-10"
       data-testid="earn-opportunities"
     >
-      <Heading tag="h1" variant="large">
-        <Trans>Earn Opportunities</Trans>
-      </Heading>
+      {/* Patterns/Headers, Earn hero type 5031:52345. The badge stats are
+          static marketing copy, straight from the DS mock (same call as the
+          Convert hero's "$0.00 Fees paid") — revisit if a live-stats source
+          gets wired up. */}
+      <PageHeaderHero
+        className="py-4 md:py-10"
+        badges={
+          <>
+            <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
+              <Trans>$11.02B in circulation</Trans>
+            </HeaderBadge>
+            <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
+              <Trans>Operating for 7 years</Trans>
+            </HeaderBadge>
+          </>
+        }
+        title={<Trans>Your stablecoins, earning more</Trans>}
+        subtitle={
+          <Trans>
+            Sky Protocol is where stablecoins go to work and where they&apos;ve been going since 2017. $11B in
+            circulation. Multiple strategies, one place.
+          </Trans>
+        }
+      />
       <EarnTableFilters
         selectedRiskTiers={filters.risk}
         onRiskTierToggle={toggleRiskTier}

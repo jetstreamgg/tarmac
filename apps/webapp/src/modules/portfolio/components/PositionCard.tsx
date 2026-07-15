@@ -14,8 +14,9 @@ import { ProductGlyph } from './ProductGlyph';
 /**
  * One supplied position in the Portfolio carousel: ringed token icon, stacked
  * network badge, a 2×2 stats block and Supply/Manage actions. Presentational —
- * the caller owns each action (e.g. the savings card opens the supply modal in
- * place via `onSupply`; others route to the product page).
+ * the caller owns each action (`onSupply` opens the product's supply modal in
+ * place, switching networks first when needed; products without a modal route
+ * to the product page).
  */
 export function PositionCard({
   position,

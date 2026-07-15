@@ -97,7 +97,6 @@ export {
   useMerklClaimRewards,
   useMorphoVaultHistory,
   useMorphoVaultChartInfo,
-  useMorphoVaultMultipleChartInfo,
   useMorphoVaultSupplierAddresses,
   useMorphoVaultsCombinedTvl,
   useAllMorphoVaultsUserAssets,
@@ -125,7 +124,6 @@ export type {
   MerklRewardsHook,
   MorphoVaultChartDataPoint,
   MorphoVaultChartInfoHook,
-  MorphoVaultMultipleChartInfoHook,
   MorphoVaultSupplierAddressesHook,
   MorphoVaultsCombinedTvl,
   MorphoVaultBalance,
@@ -194,7 +192,7 @@ export {
   PendleConvertSide,
   PendleHistoryAction
 } from './pendle/constants';
-export { isMarketMatured, formatPendleAggregatorName } from './pendle/helpers';
+export { isMarketMatured, isPendleChain, formatPendleAggregatorName } from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleMarketChartData } from './pendle/usePendleMarketChartData';
 export type { PendleMarketChartPoint } from './pendle/usePendleMarketChartData';

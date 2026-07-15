@@ -1,7 +1,7 @@
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { Toggle } from './ui/toggle';
 import { Zap } from '@/modules/icons/Zap';
-import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useIsBatchSupported } from '@/hooks';
@@ -38,7 +38,7 @@ export function BatchTransactionsToggle() {
         </div>
       </TooltipTrigger>
       <TooltipPortal>
-        <TooltipContent arrowPadding={10} className="max-w-[260px]">
+        <TooltipContent className="max-w-[260px]">
           <Text variant="small">
             {batchNotSupported ? (
               <>
@@ -64,7 +64,6 @@ export function BatchTransactionsToggle() {
               <Trans>Legal Notice</Trans>
             </ExternalLink>
           </Text>
-          <TooltipArrow width={12} height={8} />
         </TooltipContent>
       </TooltipPortal>
     </Tooltip>

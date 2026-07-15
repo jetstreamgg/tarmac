@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Trans } from '@lingui/react/macro';
 import { Pie, PieChart, Sector } from 'recharts';
 import type { PieSectorShapeProps } from 'recharts';
 
@@ -83,6 +84,7 @@ export function PortfolioDonutChart({
 }: PortfolioDonutChartProps) {
   const chartSegments = segments.filter(s => s.value > 0);
   const sectors = computeSectors(chartSegments);
+  const isEmpty = chartSegments.length === 0;
 
   const cx = size / 2;
   const cy = size / 2;
@@ -137,7 +139,8 @@ export function PortfolioDonutChart({
       )}
 
       {/* Inner ring: mirrors the sectors (gaps + active highlight) or a plain
-          full circle when there are 0 or 1 segments. */}
+          full circle when there are 0 or 1 segments. The empty state renders a
+          muted ring + "No tokens" label per the DS Pie (Figma 5051:133511). */}
       <svg
         width={size}
         height={size}
@@ -151,7 +154,9 @@ export function PortfolioDonutChart({
             r={ringRadius}
             fill="none"
             strokeWidth={RING_STROKE}
-            className={ringClass(singleFullRing && activeId === sectors[0]?.id)}
+            className={
+              isEmpty ? 'stroke-textSecondary/25' : ringClass(singleFullRing && activeId === sectors[0]?.id)
+            }
           />
         ) : (
           sectors.map(sector => (
@@ -171,6 +176,12 @@ export function PortfolioDonutChart({
       {activeId && renderCenter && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           {renderCenter(activeId)}
+        </div>
+      )}
+
+      {isEmpty && (
+        <div className="text-textSecondary pointer-events-none absolute inset-0 flex items-center justify-center text-sm">
+          <Trans>No tokens</Trans>
         </div>
       )}
     </div>

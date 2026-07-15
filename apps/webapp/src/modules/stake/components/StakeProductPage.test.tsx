@@ -146,7 +146,7 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(screen.getByTestId('stake-tab-content-positions')).toBeTruthy();
     expect(screen.getByTestId('stake-tab-content-statistics')).toBeTruthy();
     expect(screen.getByTestId('stake-tab-content-about')).toBeTruthy();
-    expect(screen.getByTestId('product-token-icon')).toBeTruthy();
+    expect(screen.getByTestId('stake-header-icon')).toBeTruthy();
     expect(screen.getByTestId('chain-modal-stub')).toBeTruthy();
     expect(screen.getByText('SKY Staking')).toBeTruthy();
   });

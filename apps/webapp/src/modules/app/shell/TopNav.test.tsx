@@ -16,6 +16,12 @@ import { TopNav } from './TopNav';
 
 const mocks = vi.hoisted(() => ({
   chainId: 1,
+  // Production-like by default (no tenderly fork); tests override to a
+  // dev-like list to exercise the fork-preferring switch target.
+  chains: [
+    { id: 1, name: 'Ethereum' },
+    { id: 8453, name: 'Base' }
+  ] as { id: number; name: string }[],
   showBanner: vi.fn(),
   setIsSwitchingNetwork: vi.fn(),
   setIsAutoSwitching: vi.fn()
@@ -25,7 +31,8 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => mocks.chainId
+    useChainId: () => mocks.chainId,
+    useChains: () => mocks.chains
   };
 });
 
@@ -82,6 +89,10 @@ vi.mock('@/modules/analytics/context/CookieConsentContext', async importOriginal
 
 beforeEach(() => {
   mocks.chainId = mainnet.id;
+  mocks.chains = [
+    { id: 1, name: 'Ethereum' },
+    { id: 8453, name: 'Base' }
+  ];
   mocks.showBanner.mockClear();
   mocks.setIsSwitchingNetwork.mockClear();
   mocks.setIsAutoSwitching.mockClear();
@@ -229,6 +240,20 @@ describe('TopNav network override', () => {
   it('links Stake plainly from mainnet', async () => {
     renderTopNav();
     expect((await screen.findByTestId('nav-stake')).getAttribute('href')).toBe(ROUTES.STAKE);
+  });
+
+  it('targets the tenderly fork instead when the config carries one (non-production builds)', async () => {
+    mocks.chainId = base.id;
+    mocks.chains = [
+      { id: 1, name: 'Ethereum' },
+      { id: 314310, name: 'Tenderly' },
+      { id: 8453, name: 'Base' }
+    ];
+    renderTopNav();
+
+    expect((await screen.findByTestId('nav-stake')).getAttribute('href')).toBe(
+      `${ROUTES.STAKE}?network=tenderly`
+    );
   });
 });
 

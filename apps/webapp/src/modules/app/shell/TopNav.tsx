@@ -1,6 +1,6 @@
 import { ComponentType, MouseEvent, ReactNode, useCallback, useState } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { useChainId } from 'wagmi';
+import { useChainId, useChains } from 'wagmi';
 import { Menu, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
@@ -83,8 +83,10 @@ function useActiveDestinationPath(): RoutePath | null {
 // styling keys off the link's aria-current="page".
 const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'relative');
 
+// Design-system Dropdown row (Figma Components/Dropdown 5075:17292): Label 5
+// on fg-primary, 16/12 padding, hover rows tint bg-secondary.
 const moreItemClasses =
-  'text-textSecondary hover:text-text hover:bg-bgHover rounded-md px-3 py-2 text-left text-sm transition-colors';
+  'text-fgPrimary hover:bg-bgSecondary font-circle px-4 py-3 text-left text-sm leading-4 font-medium tracking-[-0.28px] transition-colors';
 
 /** Secondary actions that don't earn a destination: batch toggle, legal links. */
 function MoreMenu() {
@@ -104,8 +106,12 @@ function MoreMenu() {
       >
         {isOpen ? <X size={16} className="nav-menu-icon" /> : <Menu size={16} className="nav-menu-icon" />}
       </PopoverTrigger>
-      <PopoverContent align="end" className="flex w-60 flex-col gap-1 p-2">
-        <div className="flex items-center gap-1 px-1">
+      {/* DS Dropdown panel chrome (bg-tertiary glass, 16px radius, 1/4px inset). */}
+      <PopoverContent
+        align="end"
+        className="bg-bgTertiary flex w-60 flex-col rounded-2xl px-px py-1 shadow-none backdrop-blur-[20px]"
+      >
+        <div className="flex items-center gap-1 px-3 py-1">
           <ThemeToggle />
           {BATCH_TX_ENABLED && <BatchTransactionsToggle />}
         </div>
@@ -139,6 +145,7 @@ function MoreMenu() {
 export function TopNav() {
   const activePath = useActiveDestinationPath();
   const chainId = useChainId();
+  const chains = useChains();
   const { showNewDot } = useNewIntentDots();
   const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
 
@@ -147,11 +154,11 @@ export function TopNav() {
   const searchForIntent = useCallback(
     (targetIntent: Intent) => (prev: Record<string, string | undefined>) => {
       const retained = retainOnNavigate(prev);
-      const override = getNetworkOverrideForIntent(targetIntent, chainId);
+      const override = getNetworkOverrideForIntent(targetIntent, chainId, chains);
       if (override) retained[QueryParams.Network] = override;
       return retained;
     },
-    [chainId]
+    [chainId, chains]
   );
 
   // Modified clicks open a new tab; this tab doesn't navigate, so skip the
@@ -168,12 +175,12 @@ export function TopNav() {
       ) {
         return;
       }
-      if (getNetworkOverrideForIntent(targetIntent, chainId)) {
+      if (getNetworkOverrideForIntent(targetIntent, chainId, chains)) {
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
       }
     },
-    [chainId, setIsSwitchingNetwork, setIsAutoSwitching]
+    [chainId, chains, setIsSwitchingNetwork, setIsAutoSwitching]
   );
 
   return (

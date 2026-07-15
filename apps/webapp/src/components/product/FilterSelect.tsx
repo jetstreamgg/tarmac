@@ -16,21 +16,20 @@ export function FilterSelect({
   selected,
   onChange,
   allLabel,
-  testId
+  testId,
+  size = 's'
 }: {
   options: FilterOption[];
   selected: string;
   onChange: (value: string) => void;
   allLabel: ReactNode;
   testId: string;
+  /** DS Button / Dropdown size: `s` for table filter bars, `m` for page headers. */
+  size?: 's' | 'm';
 }) {
-  // Same surface/item treatment as the header's MoreMenu popover: container
-  // background, hover rows, selection shown by a prominent row background.
-  const itemClasses =
-    'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
   return (
     <Select value={selected} onValueChange={onChange}>
-      {/* Design-system Button / Dropdown, size S (Figma 5019:4105). The
+      {/* Design-system Button / Dropdown, sizes S/M (Figma 5019:4105). The
           shadcn trigger's own h-10/w-full/bg and its 16px half-opacity chevron
           are overridden here rather than editing the vendored component; the
           [&>svg] rules only reach the trigger's direct chevron child, not
@@ -38,18 +37,18 @@ export function FilterSelect({
       <SelectTrigger
         data-testid={testId}
         className={cn(
-          buttonVariants({ variant: 'dropdown', size: 'dropdownS' }),
-          'h-auto w-auto bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
+          buttonVariants({ variant: 'dropdown', size: size === 'm' ? 'dropdownM' : 'dropdownS' }),
+          'h-auto w-auto bg-transparent [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180',
+          size === 'm' ? '[&>svg]:size-4' : '[&>svg]:size-3'
         )}
       >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
-        <SelectItem value="all" hideIndicator className={itemClasses}>
-          {allLabel}
-        </SelectItem>
+      {/* Panel and rows are the DS Dropdown recipe (SelectContent/SelectItem defaults). */}
+      <SelectContent>
+        <SelectItem value="all">{allLabel}</SelectItem>
         {options.map(option => (
-          <SelectItem key={option.value} value={option.value} hideIndicator className={itemClasses}>
+          <SelectItem key={option.value} value={option.value}>
             {option.label}
           </SelectItem>
         ))}

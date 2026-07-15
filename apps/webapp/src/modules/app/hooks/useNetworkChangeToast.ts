@@ -14,8 +14,14 @@ export function useNetworkChangeToast(intent: Intent) {
   const chainId = useChainId();
   const chains = useChains();
   const { isConnected } = useAccount();
-  const { isSwitchingNetwork, setIsSwitchingNetwork, isAutoSwitching, setIsAutoSwitching } =
-    useNetworkSwitch();
+  const {
+    isSwitchingNetwork,
+    setIsSwitchingNetwork,
+    isAutoSwitching,
+    setIsAutoSwitching,
+    autoSwitchIntent,
+    setAutoSwitchIntent
+  } = useNetworkSwitch();
   const { showNetworkToast } = useEnhancedNetworkToast();
   const [previousChainId, setPreviousChainId] = useState<number | undefined>(chainId);
 
@@ -34,8 +40,9 @@ export function useNetworkChangeToast(intent: Intent) {
     if (!isConnected && isSwitchingNetwork) {
       setIsSwitchingNetwork(false);
       setIsAutoSwitching(false);
+      setAutoSwitchIntent(null);
     }
-  }, [isConnected, isSwitchingNetwork, setIsSwitchingNetwork, setIsAutoSwitching]);
+  }, [isConnected, isSwitchingNetwork, setIsSwitchingNetwork, setIsAutoSwitching, setAutoSwitchIntent]);
 
   // Track network changes and show the enhanced toast
   useEffect(() => {
@@ -50,11 +57,15 @@ export function useNetworkChangeToast(intent: Intent) {
         showNetworkToast({
           previousChain: { id: prevChain.id, name: prevChain.name },
           currentChain: { id: currChain.id, name: currChain.name },
-          currentIntent: intent,
+          // An in-place action (e.g. a Portfolio card's Supply) switches the
+          // chain without navigating, so the route intent can't explain the
+          // change — the recorded reason wins when a flow left one.
+          currentIntent: autoSwitchIntent ?? intent,
           previousIntent: intentHistory.previous,
           isAutoSwitch: isAutoSwitching
         });
         setIsAutoSwitching(false);
+        setAutoSwitchIntent(null);
       }
     }
     setPreviousChainId(chainId);
@@ -67,6 +78,8 @@ export function useNetworkChangeToast(intent: Intent) {
     showNetworkToast,
     setIsSwitchingNetwork,
     isAutoSwitching,
-    setIsAutoSwitching
+    setIsAutoSwitching,
+    autoSwitchIntent,
+    setAutoSwitchIntent
   ]);
 }
