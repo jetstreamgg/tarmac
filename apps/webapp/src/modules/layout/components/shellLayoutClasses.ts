@@ -24,7 +24,9 @@ export const shellSurfaceClasses = (fullWidth: boolean) =>
 /** The shell header bar (full-bleed; the row content lives in the inner div). */
 export const shellHeaderClasses = (fullWidth: boolean) =>
   cn(
-    'w-full py-2 md:mb-1',
+    // Mobile tiers get the DS Mobile / Topbar vertical rhythm (16px, 68px bar
+    // with the 36px chip row); the desktop tier keeps the legacy 8px.
+    'w-full py-3.5 desktop:py-2 desktop:mb-1',
     // Full-width routes scroll on the document, so the header pins as a sticky,
     // see-through frosted bar (Figma: transparent + blur(7px), no opaque fill).
     fullWidth && 'sticky top-0 z-30',
@@ -44,5 +46,7 @@ export const shellHeaderContentClasses = (fullWidth: boolean) =>
     // Full-width routes align the header content with the design-system page
     // container (12 columns / 1280 + 20px gutters — same geometry as the bare
     // AppContainer); boxed routes keep the legacy full-bleed padding.
-    fullWidth ? 'mx-auto w-full max-w-[1320px] px-5' : 'w-full px-3 sm:px-10'
+    // 20px side padding is also the DS Mobile / Topbar gutter, so both modes
+    // share it below the tablet tier.
+    fullWidth ? 'mx-auto w-full max-w-[1320px] px-5' : 'w-full px-5 sm:px-10'
   );

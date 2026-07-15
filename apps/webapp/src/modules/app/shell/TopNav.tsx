@@ -1,19 +1,12 @@
-import { ComponentType, MouseEvent, ReactNode, useCallback, useState } from 'react';
-import { Link, useRouterState } from '@tanstack/react-router';
-import { useChainId, useChains } from 'wagmi';
+import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { Menu, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
-import { Convert, Earn, StakeSky, Wallet } from '@/modules/icons';
-import { Intent } from '@/lib/enums';
-import { BATCH_TX_ENABLED, QueryParams } from '@/lib/constants';
-import { intentToPath, ROUTES, RoutePath } from '@/lib/routes';
-import { AppRoutePath, retainOnNavigate, useRouteIntent } from '@/lib/navigation';
-import { getNetworkOverrideForIntent } from '@/lib/widget-network-map';
+import { BATCH_TX_ENABLED } from '@/lib/constants';
 import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
-import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -22,62 +15,7 @@ import { MockConnectButton } from '@/modules/layout/components/MockConnectButton
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { useCookieConsent } from '@/modules/analytics/context/CookieConsentContext';
 import { POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
-
-// Destination paths must be in the route map AND mounted as routes (B1 placeholders guarantee it).
-type DestinationPath = Extract<AppRoutePath, RoutePath>;
-
-type Destination = {
-  path: DestinationPath;
-  label: ReactNode;
-  icon: ComponentType<{ className?: string }>;
-  // Modules the destination covers; the first is its landing module and
-  // decides the network override for the link.
-  intents: Intent[];
-};
-
-// The 4 target-IA destinations (plan §4.2). Paths come from ROUTES, never hardcoded.
-const DESTINATIONS: Destination[] = [
-  {
-    path: ROUTES.PORTFOLIO,
-    label: <Trans>Portfolio</Trans>,
-    icon: Wallet,
-    intents: [Intent.BALANCES_INTENT]
-  },
-  {
-    path: ROUTES.EARN,
-    label: <Trans>Earn</Trans>,
-    icon: Earn,
-    intents: [
-      Intent.SAVINGS_INTENT,
-      Intent.REWARDS_INTENT,
-      Intent.VAULTS_INTENT,
-      Intent.FIXED_INTENT,
-      Intent.EXPERT_INTENT
-    ]
-  },
-  { path: ROUTES.STAKE, label: <Trans>Stake SKY</Trans>, icon: StakeSky, intents: [Intent.STAKE_INTENT] },
-  {
-    path: ROUTES.CONVERT,
-    label: <Trans>Convert</Trans>,
-    icon: Convert,
-    intents: [Intent.CONVERT_INTENT, Intent.TRADE_INTENT, Intent.UPGRADE_INTENT]
-  }
-];
-
-const navTestId = (path: RoutePath) => `nav-${path.slice(1)}`;
-
-const isUnderDestination = (path: string, base: RoutePath) => path === base || path.startsWith(`${base}/`);
-
-// Active destination: the current path when it sits under a destination, else
-// the destination owning the route's intent (covers Balances at / → Portfolio).
-function useActiveDestinationPath(): RoutePath | null {
-  const pathname = useRouterState({ select: s => s.location.pathname });
-  const routeIntent = useRouteIntent();
-  const byPath = DESTINATIONS.find(d => isUnderDestination(pathname, d.path));
-  if (byPath) return byPath.path;
-  const intentPath = intentToPath(routeIntent);
-  return DESTINATIONS.find(d => isUnderDestination(intentPath, d.path))?.path ?? null;
-}
+import { DESTINATIONS, navTestId, useActiveDestinationPath, useDestinationLinkProps } from './destinations';
 
 // Design-system Button / Navbar (Figma 5010:29059, Default type); active
 // styling keys off the link's aria-current="page".
@@ -144,44 +82,8 @@ function MoreMenu() {
 /** Final 4-destination top navigation. */
 export function TopNav() {
   const activePath = useActiveDestinationPath();
-  const chainId = useChainId();
-  const chains = useChains();
   const { showNewDot } = useNewIntentDots();
-  const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
-
-  // Same semantics as the legacy nav: mainnet-only destinations carry the
-  // network switch in the href itself (cmd-click and copy-link included).
-  const searchForIntent = useCallback(
-    (targetIntent: Intent) => (prev: Record<string, string | undefined>) => {
-      const retained = retainOnNavigate(prev);
-      const override = getNetworkOverrideForIntent(targetIntent, chainId, chains);
-      if (override) retained[QueryParams.Network] = override;
-      return retained;
-    },
-    [chainId, chains]
-  );
-
-  // Modified clicks open a new tab; this tab doesn't navigate, so skip the
-  // switching feedback. No analytics here: nav events are pending sign-off (B1 ships none).
-  const handleNavClick = useCallback(
-    (targetIntent: Intent) => (event: MouseEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      ) {
-        return;
-      }
-      if (getNetworkOverrideForIntent(targetIntent, chainId, chains)) {
-        setIsSwitchingNetwork(true);
-        setIsAutoSwitching(true);
-      }
-    },
-    [chainId, chains, setIsSwitchingNetwork, setIsAutoSwitching]
-  );
+  const { searchForIntent, handleNavClick } = useDestinationLinkProps();
 
   return (
     <nav className="flex w-full items-center gap-3" data-testid="top-nav">
@@ -198,8 +100,10 @@ export function TopNav() {
           </linearGradient>
         </defs>
       </svg>
-      {/* mx-auto centers the pill group between the logo (left, in Layout) and the chip cluster. */}
-      <div className="mx-auto flex items-center gap-2">
+      {/* mx-auto centers the pill group between the logo (left, in Layout) and
+          the chip cluster. Below the desktop tier the destinations live in the
+          bottom MobileNavbar instead (M2), so the pill group hides. */}
+      <div className="desktop:flex mx-auto hidden items-center gap-2">
         {DESTINATIONS.map(destination => {
           const isActive = activePath === destination.path;
           const Icon = destination.icon;
@@ -225,9 +129,13 @@ export function TopNav() {
           );
         })}
       </div>
-      <WalletChip />
-      {import.meta.env.VITE_USE_MOCK_WALLET === 'true' && <MockConnectButton />}
-      <MoreMenu />
+      {/* With the pill group hidden on mobile, ml-auto keeps the chip cluster
+          pinned right (the DS Mobile / Topbar layout: logo · wallet · menu). */}
+      <div className="desktop:ml-0 ml-auto flex items-center gap-3">
+        <WalletChip />
+        {import.meta.env.VITE_USE_MOCK_WALLET === 'true' && <MockConnectButton />}
+        <MoreMenu />
+      </div>
     </nav>
   );
 }

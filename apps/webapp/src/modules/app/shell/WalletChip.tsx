@@ -57,7 +57,9 @@ export function WalletChip() {
             onClick={() => setShowDrawer(true)}
           >
             <CustomAvatar address={address} size={24} />
-            <Text className="hidden sm:inline">{`${isSafeWallet ? 'safe:' : ''}${ensName || formatAddress(address)}`}</Text>
+            {/* DS Mobile / Topbar keeps the name at phone width; the cap stops
+                long ENS names from squeezing the logo out at 360px. */}
+            <Text className="max-w-24 truncate sm:max-w-none">{`${isSafeWallet ? 'safe:' : ''}${ensName || formatAddress(address)}`}</Text>
             <ChevronDown className={cn('h-4 w-4 transition-transform', showDrawer && 'rotate-180')} />
           </Button>
           <WalletPreviewDrawer
