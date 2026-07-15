@@ -67,6 +67,7 @@ import { TokensComposition } from '@/components/product/TokensComposition';
 import { ChartTooltip } from '@/modules/ui/components/ChartTooltip';
 import { PortfolioDonutChart } from '@/modules/portfolio/components/PortfolioDonutChart';
 import { RiskLevel } from '@/hooks';
+import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { BaseChain, MainnetChain, OptimismChain, Pendle, Stake } from '@/modules/icons';
@@ -128,6 +129,7 @@ const SECTIONS = [
   { id: 'iconbox', title: 'Iconbox' },
   { id: 'charts', title: 'Charts' },
   { id: 'headers', title: 'Headers' },
+  { id: 'banners', title: 'Banners' },
   { id: 'steps', title: 'Steps' },
   { id: 'feedback', title: 'Feedback' },
   { id: 'data', title: 'Data & misc' }
@@ -1911,6 +1913,85 @@ function ChartsSection() {
   );
 }
 
+function BannersSection() {
+  return (
+    <Section
+      id="banners"
+      title="Banners"
+      note="DS Patterns/Banners (Figma 5273:45498). Wallet + Yearly estimation are adopted live (portfolio); Earning has no consumer yet — documented here, not wired up."
+    >
+      <div className="flex max-w-[1032px] flex-col gap-6">
+        <PromoBanner
+          illustration={
+            <img src="/illustrations/illustration-connect-wallet.png" alt="" className="size-full" />
+          }
+          heading={
+            <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
+              <BannerAccent>Connect your wallet</BannerAccent> to see your balances and start earning
+            </p>
+          }
+          subtitle={
+            <p className="text-fgSecondary text-xs leading-[18px]">
+              Your portfolio, active positions, and available assets will appear here once connected.
+            </p>
+          }
+          action={
+            <Button variant="primary" size="xl">
+              Connect wallet
+            </Button>
+          }
+        />
+
+        <PromoBanner
+          illustration={<img src="/illustrations/illustration-savings-1.png" alt="" className="size-full" />}
+          heading={
+            <div className="flex items-baseline gap-1">
+              <span className="font-circle text-fgPrimary text-[44px] leading-[48px] font-medium tracking-[-0.88px]">
+                $14,000
+              </span>
+              <BannerAccent className="font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+                /year
+              </BannerAccent>
+            </div>
+          }
+          subtitle={
+            <p className="text-fgSecondary max-w-[248px] text-xs leading-[18px]">
+              That&apos;s what your idle stablecoins can earn at today&apos;s{' '}
+              <span className="text-fgPrimary font-medium">3.75%</span> Sky Savings Rate.
+            </p>
+          }
+          action={
+            <Button variant="primary" size="xl">
+              Allocate your stablecoins
+            </Button>
+          }
+        />
+
+        {/* Earning — no live consumer (per APP-356, documented not invented). */}
+        <PromoBanner
+          illustration={<img src="/illustrations/illustration-savings-2.png" alt="" className="size-full" />}
+          heading={
+            <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
+              <BannerAccent>$5.93b in stablecoins</BannerAccent> already earning the Sky Savings Rate
+            </p>
+          }
+          subtitle={
+            <p className="text-fgSecondary max-w-[439px] text-xs leading-[18px]">
+              Projections assume current rate held constant. Sky Savings Rate is variable and set by Sky
+              Ecosystem governance. Not financial advice.
+            </p>
+          }
+          action={
+            <Button variant="primary" size="xl">
+              Simulate earnings
+            </Button>
+          }
+        />
+      </div>
+    </Section>
+  );
+}
+
 function StepsSection() {
   return (
     <Section
@@ -2230,6 +2311,7 @@ function DesignSystem() {
         <IconboxSection />
         <ChartsSection />
         <HeadersSection />
+        <BannersSection />
         <StepsSection />
         <FeedbackSection />
         <DataSection />
