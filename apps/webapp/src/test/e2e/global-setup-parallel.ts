@@ -11,6 +11,7 @@ import {
   skyAddress,
   wethAddress,
   sUsdsAddress,
+  usdtAddress,
   usdsL2Address,
   usdcL2Address,
   sUsdsL2Address
@@ -369,7 +370,9 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
         { token: mkrAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'MKR' },
         { token: skyAddress[TENDERLY_CHAIN_ID], amount: '100000000', decimals: 18, name: 'SKY' },
         { token: wethAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'WETH' },
-        { token: sUsdsAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'sUSDS' }
+        { token: sUsdsAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'sUSDS' },
+        // USDT feeds the Spark Tether Savings vault spec (vaults-spark.spec.ts)
+        { token: usdtAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 6, name: 'USDT' }
       ];
 
       // Fund each token type in bulk

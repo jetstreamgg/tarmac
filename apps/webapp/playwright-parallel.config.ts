@@ -50,9 +50,13 @@ export default defineConfig({
         '**/stake.spec.ts',
         '**/stake-onchain.spec.ts',
         '**/unstake-repay.spec.ts',
-        '**/capped-osm-unstake.spec.ts'
-        // blocked-on-nav-rewrite (navigate via chrome B4 removed; re-enable per
-        // spec as it is rewritten — owner: QA, see e2e-migration.md):
+        '**/capped-osm-unstake.spec.ts',
+        '**/landing.spec.ts'
+        // '**/vaults-spark.spec.ts' — nav already fixed, but the mainnet fork
+        // container predates the sUSDT vault deployment (no code on-chain);
+        // re-enable once the container is refreshed.
+        // needs-V2-rewrite / parked (see e2e-migration.md; re-enable per spec
+        // as it is rewritten — owner: QA):
         // '**/mainnet-savings.spec.ts',
         // '**/base-savings.spec.ts',
         // '**/arbitrum-savings.spec.ts',
@@ -67,10 +71,8 @@ export default defineConfig({
         // '**/arbitrum-psm.spec.ts',
         // '**/optimism-psm.spec.ts',
         // '**/unichain-psm.spec.ts',
-        // '**/landing.spec.ts',
         // '**/sequential-tx.spec.ts',
-        // '**/upgrade.spec.ts',
-        // '**/vaults-spark.spec.ts'
+        // '**/upgrade.spec.ts'
       ]
     }
     // {
@@ -86,7 +88,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `VITE_PARALLEL_TEST=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
+    // VITE_SUSDT_VAULT_ENABLED unhides the Spark Tether Savings vault so
+    // vaults-spark.spec.ts has a surface to drive.
+    command: `VITE_PARALLEL_TEST=true VITE_SUSDT_VAULT_ENABLED=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,
