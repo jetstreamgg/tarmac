@@ -230,6 +230,19 @@ function SegmentedPills<T extends string>({
   );
 }
 
+/**
+ * The tooltip's series label: the explicit chart-level label when given,
+ * otherwise the active metric's pill label (detail variant) — so a Rate|TVL
+ * chart never renders the DS tooltip row with an empty label cell.
+ */
+export function resolveTooltipLabel(
+  tooltipLabel: React.ReactNode,
+  metrics?: { value: string; label: React.ReactNode }[],
+  activeMetric?: string
+): React.ReactNode {
+  return tooltipLabel ?? metrics?.find(metric => metric.value === activeMetric)?.label;
+}
+
 interface ChartProps {
   data: Data[];
   symbol?: string;
@@ -241,7 +254,7 @@ interface ChartProps {
   error?: Error | null;
   dataTestId?: string;
   displayValue?: number;
-  tooltipLabel?: string;
+  tooltipLabel?: React.ReactNode;
   icons?: React.ReactNode;
   /** 'detail' switches to the product-detail header (label + value + Rate|TVL toggle). */
   variant?: 'default' | 'detail';
@@ -403,17 +416,21 @@ function ChartContent({
   isLoading: boolean;
   activeTimeframe: TimeFrame;
   error?: Error | null;
-  tooltipLabel?: string;
+  tooltipLabel?: React.ReactNode;
   chartHeight?: number;
   color?: string;
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
 
+  // Single source of truth for the plot height so the loading skeleton
+  // reserves the same space as the rendered chart (no layout shift on load).
+  const resolvedHeight = chartHeight ?? (isLarge ? 220 : 288);
+
   return (
     <LoadingErrorWrapper
       isLoading={isLoading}
-      loadingComponent={<ChartSkeleton />}
+      loadingComponent={<ChartSkeleton height={resolvedHeight} />}
       error={error ? error : null}
       errorComponent={
         <VStack className="items-center pt-16 lg:pt-8">
@@ -424,7 +441,7 @@ function ChartContent({
         </VStack>
       }
     >
-      <ResponsiveContainer width={'100%'} height={chartHeight ?? (isLarge ? 220 : 288)}>
+      <ResponsiveContainer width={'100%'} height={resolvedHeight}>
         <AreaChart
           data={data}
           margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isLarge ? 22 : 0, left: 0 }}
@@ -449,6 +466,8 @@ function ChartContent({
           <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
           {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
           <Tooltip
+            // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162).
+            cursor={{ stroke: 'var(--color-fgQuaternary)', strokeWidth: 1, strokeDasharray: '4 4' }}
             content={
               <ChartTooltip
                 symbol={symbol}
@@ -460,6 +479,7 @@ function ChartContent({
             }
           />
 
+          {/* 🔶 the mock dims the area past the hover cursor; not implemented (Recharts split-area). */}
           <Area
             dataKey="value"
             stroke={color ?? '#1DD9BA'}
@@ -468,6 +488,8 @@ function ChartContent({
             fill={`url(#${gradientId})`}
             label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
             dot={<CustomizedDot data={data} stroke={color ?? '#1DD9BA'} />}
+            // Ringed hover dot at the cursor point (Figma 5273:12162).
+            activeDot={{ r: 5, fill: color ?? '#1DD9BA', stroke: 'var(--color-container)', strokeWidth: 3 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -623,7 +645,7 @@ export function Chart({
           isLoading={isLoading}
           error={error}
           chartHeight={isDetail ? 280 : undefined}
-          tooltipLabel={tooltipLabel}
+          tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
           color={color}
         />
       </Card>

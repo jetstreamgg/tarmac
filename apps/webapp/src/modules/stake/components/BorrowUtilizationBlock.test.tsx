@@ -45,7 +45,7 @@ describe('BorrowUtilizationBlock', () => {
 
     expect(screen.getByTestId('stake-borrow-utilization')).toBeTruthy();
     expect(screen.getByText('25.0%')).toBeTruthy();
-    expect(screen.getByTestId('utilization-bar')).toBeTruthy();
+    expect(screen.getByRole('progressbar')).toBeTruthy();
   });
 
   it('renders both legend rows with formatted USDS values', () => {
@@ -61,9 +61,9 @@ describe('BorrowUtilizationBlock', () => {
     renderBlock();
 
     const dot = (label: string) => screen.getByText(label).parentElement!.querySelector('span[aria-hidden]')!;
-    expect(dot('Borrowed (USDS)').className).toContain('bg-[#757dff]');
+    expect(dot('Borrowed (USDS)').className).toContain('bg-fgBrand');
     expect(dot('Available (USDS)').className).toContain('bg-textSecondary/50');
-    const bar = screen.getByTestId('utilization-bar');
-    expect(bar.querySelector('.bg-\\[\\#757dff\\]')).toBeTruthy();
+    const bar = screen.getByRole('progressbar');
+    expect(bar.querySelector('.bg-fgBrand')).toBeTruthy();
   });
 });
