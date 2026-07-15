@@ -131,7 +131,13 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
           </span>
         </span>
       }
-      networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
+      networkSelector={
+        <ChainModal
+          chainIds={networks}
+          labelClassName="hidden sm:block"
+          dataTestId="product-detail-network"
+        />
+      }
       chart={<PendleDetailChart market={market} />}
       position={<PendlePositionCard market={market} />}
       details={details}

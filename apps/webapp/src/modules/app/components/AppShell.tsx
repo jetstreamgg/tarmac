@@ -12,8 +12,14 @@ import { useNetworkChangeToast } from '../hooks/useNetworkChangeToast';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { BalancesPanes } from '@/modules/balances/components/BalancesPanes';
 
-/** Height of the website header above the container on mobile. */
-const MOBILE_HEADER_HEIGHT = 56;
+/**
+ * Height of the website header above the container on mobile: the DS Mobile /
+ * Topbar bar — 40px chip row + 2×14px padding (shellHeaderClasses py-3.5).
+ * Only feeds the boxed module branch below, which no live route reaches today
+ * (the legacy module URLs all redirect); the flag-gated sUSDT vault detail is
+ * the remaining TwoPane consumer and takes the default (undefined) paneStyle.
+ */
+const MOBILE_HEADER_HEIGHT = 68;
 
 /**
  * Component of the pathless shell route: the app chrome shared by every

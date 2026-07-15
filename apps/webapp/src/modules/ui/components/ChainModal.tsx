@@ -39,6 +39,7 @@ const getChainIcon = (chainId: number, className?: string) =>
 
 export function ChainModal({
   showLabel = true,
+  labelClassName,
   showDropdownIcon = true,
   variant = 'default',
   dataTestId = 'chain-modal-trigger',
@@ -48,6 +49,8 @@ export function ChainModal({
   chainIds
 }: {
   showLabel?: boolean;
+  /** Extra classes on the chain-name label, e.g. to hide it per tier. */
+  labelClassName?: string;
   showDropdownIcon?: boolean;
   variant?: 'default' | 'widget' | 'wrapper';
   dataTestId?: string;
@@ -92,7 +95,9 @@ export function ChainModal({
             data-testid={dataTestId}
           >
             {getChainIcon(chainId, variant === ChainModalVariant.widget ? 'h-5 w-5' : 'h-6 w-6')}
-            {showLabel && <Text className="text-text">{client?.chain.name || 'Ethereum'}</Text>}
+            {showLabel && (
+              <Text className={cn('text-text', labelClassName)}>{client?.chain.name || 'Ethereum'}</Text>
+            )}
             {showDropdownIcon &&
               (variant === ChainModalVariant.widget ? (
                 <ChevronDown width={14} height={14} />
