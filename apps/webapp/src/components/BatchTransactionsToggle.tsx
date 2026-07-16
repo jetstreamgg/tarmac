@@ -27,7 +27,9 @@ export function BatchTransactionsToggle() {
   return (
     <div className="flex w-full flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-fgPrimary font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
+        {/* Label 4 (16/18) in the M4.5 mobile panel, Label 5 (14/16) in the
+            desktop dropdown — md is also where the menu surface swaps. */}
+        <span className="text-fgPrimary font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:text-sm md:leading-4 md:tracking-[-0.28px]">
           <Zap size={16} className="text-fgBrand shrink-0" />
           <Trans>Bundle transactions</Trans>
         </span>
@@ -40,7 +42,9 @@ export function BatchTransactionsToggle() {
           data-testid="batch-transactions-switch"
         />
       </div>
-      <p className="text-fgSecondary max-w-[216px] text-[11px] leading-4">
+      {/* Width cap is the desktop dropdown's 216px explainer column; the M4.5
+          mobile panel (Figma 536:26429) lets it run the full panel width. */}
+      <p className="text-fgSecondary text-[11px] leading-4 md:max-w-[216px]">
         {batchNotSupported ? (
           <>
             <Trans>Your wallet does not currently support bundled transactions.</Trans>{' '}

@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Cookie, FileText, FileWarning, Menu, Shield, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 import { cn } from '@/lib/cn';
+import { BP, useBreakpointIndex } from '@/hooks';
 import { buttonVariants } from '@/components/ui/button';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
 import { BATCH_TX_ENABLED } from '@/lib/constants';
 import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { WalletChip } from './WalletChip';
@@ -21,10 +24,12 @@ import { DESTINATIONS, navTestId, useActiveDestinationPath, useDestinationLinkPr
 // styling keys off the link's aria-current="page".
 const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'relative');
 
-// Menu dropdown row (Figma 5069:27509): 16px glyph + Label 5 on fg-primary,
-// 8px apart; rows sit bare on the panel (no pill/tint), 20px between them.
+// Menu dropdown row (Figma 5069:27509): 16px glyph + label on fg-primary,
+// 8px apart; rows sit bare on the panel (no pill/tint). The M4.5 mobile panel
+// (536:26429) steps the label up to 16/18 (Label 4); the desktop popover
+// keeps 14/16 (Label 5) from md up — the same cutoff that swaps the surface.
 const moreItemClasses =
-  'text-fgPrimary hover:text-fgSecondary font-circle flex items-center gap-2 text-left text-sm leading-4 font-medium tracking-[-0.28px] transition-colors';
+  'text-fgPrimary hover:text-fgSecondary font-circle flex items-center gap-2 text-left text-base leading-[18px] font-medium tracking-[-0.32px] transition-colors md:text-sm md:leading-4 md:tracking-[-0.28px]';
 
 // Env-driven legal links pick their DS glyph by name (User Risk Documentation /
 // Terms of Use / Privacy Policy in the comp); anything else gets the document glyph.
@@ -35,23 +40,115 @@ function linkIcon(name: string) {
   return FileText;
 }
 
+/**
+ * Shared body of the More menu: bundling toggle + hairline, then the theme
+ * toggle, legal links and cookie row. `mobile` swaps the desktop row rhythm
+ * (20px gaps) for the comp's 40px touch rows with 2px gaps (Figma 536:26429).
+ */
+function MoreMenuContent({ mobile, closeMenu }: { mobile?: boolean; closeMenu: () => void }) {
+  const { showBanner } = useCookieConsent();
+  const footerLinks = getFooterLinks();
+
+  return (
+    <>
+      {BATCH_TX_ENABLED && (
+        <>
+          <BatchTransactionsToggle />
+          <div className="bg-glassBorder h-px w-full" />
+        </>
+      )}
+      <div className={cn('flex flex-col', mobile ? 'gap-0.5 *:min-h-10' : 'gap-5')}>
+        <ThemeToggle />
+        {footerLinks.map(link => {
+          const url = sanitizeUrl(link.url);
+          if (!url) return null;
+          const Icon = linkIcon(link.name);
+          return (
+            <ExternalLink key={url} href={url} showIcon={false} className={moreItemClasses}>
+              {/* Single child: ExternalLink HStack-wraps element children, which
+                  would swallow the anchor's gap and leave the glyph flush. */}
+              <span className="flex items-center gap-2">
+                <Icon size={16} className="text-fgBrand shrink-0" />
+                {link.name}
+              </span>
+            </ExternalLink>
+          );
+        })}
+        {POSTHOG_ENABLED && (
+          <button
+            data-testid="nav-more-cookie-settings"
+            onClick={() => {
+              closeMenu();
+              showBanner();
+            }}
+            className={moreItemClasses}
+          >
+            <Cookie size={16} className="text-fgBrand shrink-0" />
+            <Trans>Cookie settings</Trans>
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
 /** Secondary actions that don't earn a destination: toggles, legal links. */
 function MoreMenu() {
   const [isOpen, setIsOpen] = useState(false);
-  const { showBanner } = useCookieConsent();
-  const footerLinks = getFooterLinks();
   const closeMenu = () => setIsOpen(false);
+  const { bpi } = useBreakpointIndex();
+
+  // Menu type of Button / Navbar: Radix supplies data-state=open for the
+  // active recipe, and the glyph flips hamburger → X while open.
+  const trigger = isOpen ? (
+    <X size={16} className="nav-menu-icon" />
+  ) : (
+    <Menu size={16} className="nav-menu-icon" />
+  );
+  const triggerClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'w-10 px-0');
+
+  // M4.5 (Figma 536:26429): below md the popover becomes a bottom-anchored
+  // floating panel — 12px viewport insets (the DS in-situ inset), 24px radius,
+  // its own More heading + 32px circular close. Same rows as the desktop
+  // menu; the comp's Upgrade DAI/MKR row stays omitted (E2 parked) and the
+  // Dark mode row stays included (content parity — flagged on APP-388).
+  if (bpi < BP.md) {
+    return (
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger data-testid="nav-more" aria-label="More" className={triggerClasses}>
+          {trigger}
+        </SheetTrigger>
+        {/* light:bg-container — the 5% lavender surface disappears over the
+            overlay-dimmed page, so the panel takes the opaque light container
+            token (the "popovers read on the light page" elevation). */}
+        <SheetContent
+          side="bottom"
+          hideCloseButton
+          aria-describedby={undefined}
+          className="bg-bgSecondary light:bg-container inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] flex flex-col gap-6 rounded-[24px] border-0 px-5 py-6 shadow-none backdrop-blur-[100px]"
+        >
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-fgPrimary font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
+              <Trans>More</Trans>
+            </SheetTitle>
+            <SheetClose
+              data-testid="nav-more-close"
+              aria-label={t`Close menu`}
+              className={cn(buttonVariants({ variant: 'secondary', size: 'iconS' }))}
+            >
+              <X aria-hidden />
+            </SheetClose>
+          </div>
+          <MoreMenuContent mobile closeMenu={closeMenu} />
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      {/* Menu type of Button / Navbar: Radix supplies data-state=open for the
-          active recipe, and the glyph flips hamburger → X while open. */}
-      <PopoverTrigger
-        data-testid="nav-more"
-        aria-label="More"
-        className={cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'w-10 px-0')}
-      >
-        {isOpen ? <X size={16} className="nav-menu-icon" /> : <Menu size={16} className="nav-menu-icon" />}
+      <PopoverTrigger data-testid="nav-more" aria-label="More" className={triggerClasses}>
+        {trigger}
       </PopoverTrigger>
       {/* Menu dropdown panel (Figma 5069:27495): 274px glass panel — bg-secondary
           over a 100px backdrop blur, 24px radius, 20px padding, 24px between
@@ -61,43 +158,7 @@ function MoreMenu() {
         align="end"
         className="bg-bgSecondary flex w-[274px] flex-col gap-6 rounded-3xl p-5 shadow-none backdrop-blur-[100px]"
       >
-        {BATCH_TX_ENABLED && (
-          <>
-            <BatchTransactionsToggle />
-            <div className="bg-glassBorder h-px w-full" />
-          </>
-        )}
-        <div className="flex flex-col gap-5">
-          <ThemeToggle />
-          {footerLinks.map(link => {
-            const url = sanitizeUrl(link.url);
-            if (!url) return null;
-            const Icon = linkIcon(link.name);
-            return (
-              <ExternalLink key={url} href={url} showIcon={false} className={moreItemClasses}>
-                {/* Single child: ExternalLink HStack-wraps element children, which
-                    would swallow the anchor's gap and leave the glyph flush. */}
-                <span className="flex items-center gap-2">
-                  <Icon size={16} className="text-fgBrand shrink-0" />
-                  {link.name}
-                </span>
-              </ExternalLink>
-            );
-          })}
-          {POSTHOG_ENABLED && (
-            <button
-              data-testid="nav-more-cookie-settings"
-              onClick={() => {
-                closeMenu();
-                showBanner();
-              }}
-              className={moreItemClasses}
-            >
-              <Cookie size={16} className="text-fgBrand shrink-0" />
-              <Trans>Cookie settings</Trans>
-            </button>
-          )}
-        </div>
+        <MoreMenuContent closeMenu={closeMenu} />
       </PopoverContent>
     </Popover>
   );

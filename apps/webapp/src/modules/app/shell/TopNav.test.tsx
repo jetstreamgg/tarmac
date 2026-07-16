@@ -27,6 +27,16 @@ const mocks = vi.hoisted(() => ({
   setIsAutoSwitching: vi.fn()
 }));
 
+// Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop popover).
+const breakpoint = vi.hoisted(() => ({ isMobile: false }));
+vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
+  return {
+    ...actual,
+    useBreakpointIndex: () => ({ bpi: breakpoint.isMobile ? actual.BP.sm : actual.BP.desktop })
+  };
+});
+
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
@@ -223,6 +233,51 @@ describe('TopNav More menu', () => {
 
     fireEvent.click(screen.getByTestId('nav-more-cookie-settings'));
     expect(mocks.showBanner).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TopNav More menu — mobile bottom panel (M4.5)', () => {
+  beforeEach(() => {
+    breakpoint.isMobile = true;
+  });
+  afterEach(() => {
+    breakpoint.isMobile = false;
+  });
+
+  it('opens the comp bottom panel (dialog with More heading + close) instead of the popover', async () => {
+    vi.stubEnv('VITE_FOOTER_LINKS', JSON.stringify([{ url: 'https://sky.money/terms', name: 'Terms' }]));
+    renderTopNav();
+
+    fireEvent.click(await screen.findByTestId('nav-more'));
+
+    const panel = await screen.findByRole('dialog');
+    expect(panel).toBeTruthy();
+    expect(screen.getByText('More')).toBeTruthy();
+    // Same rows as the desktop menu (content parity; comp omits Dark mode — kept deliberately).
+    expect(screen.getByTestId('batch-transactions-toggle-stub')).toBeTruthy();
+    expect(screen.getByTestId('theme-toggle-stub')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Terms/ })).toBeTruthy();
+    expect(screen.getByTestId('nav-more-cookie-settings')).toBeTruthy();
+  });
+
+  it('closes through the panel close button', async () => {
+    renderTopNav();
+
+    fireEvent.click(await screen.findByTestId('nav-more'));
+    fireEvent.click(await screen.findByTestId('nav-more-close'));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('still opens the cookie banner from the panel', async () => {
+    renderTopNav();
+
+    fireEvent.click(await screen.findByTestId('nav-more'));
+    fireEvent.click(await screen.findByTestId('nav-more-cookie-settings'));
+
+    expect(mocks.showBanner).toHaveBeenCalledTimes(1);
+    // The row closes the panel like the desktop menu does.
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 
