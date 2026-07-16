@@ -1836,7 +1836,8 @@ function ChartsSection() {
             active
             label={new Date('2026-03-12T00:00:00Z')}
             labelFormatter={() => 'Mar 12, 2026'}
-            tooltipLabel="Sky TVL"
+            tooltipLabel="sUSDS TVL"
+            tokenSymbols={['sUSDS']}
             payload={[{ color: '#02C2A1', value: 5774407, payload: {} }]}
           />
           <ChartTooltip
@@ -1844,6 +1845,15 @@ function ChartsSection() {
             label={new Date('2026-03-12T00:00:00Z')}
             labelFormatter={() => 'Mar 12, 2026'}
             tooltipLabel="Total USDS"
+            tokenSymbols={['USDS']}
+            payload={[{ color: '#757dff', value: 8238778407, payload: {} }]}
+          />
+          <ChartTooltip
+            active
+            label={new Date('2026-03-12T00:00:00Z')}
+            labelFormatter={() => 'Mar 12, 2026'}
+            tooltipLabel="Total USDS and DAI"
+            tokenSymbols={['USDS', 'DAI']}
             payload={[{ color: '#757dff', value: 8238778407, payload: {} }]}
           />
         </div>

@@ -53,6 +53,7 @@ export function StUsdsDetailChart() {
         isPercentage={isRate}
         hidePercentChange={isRate}
         symbol={isRate ? undefined : 'USDS'}
+        tokenSymbols={isRate ? undefined : ['USDS']}
         label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
         displayValue={isRate ? liveRate : liveTvl}
         tooltipLabel="Daily average"
