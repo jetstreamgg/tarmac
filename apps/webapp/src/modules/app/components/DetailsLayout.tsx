@@ -7,7 +7,7 @@ import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
 import { FooterLinks } from '@/modules/layout/components/FooterLinks';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { BP, useBreakpointIndex } from '@/hooks';
 
 type DetailsLayoutProps = {
   /** Module the details belong to, for the connect-card gating and copy. */

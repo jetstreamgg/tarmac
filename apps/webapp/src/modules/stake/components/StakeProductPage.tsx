@@ -113,7 +113,9 @@ export function StakeProductPage() {
             <Trans>SKY Staking</Trans>
           </PageHeading>
         </div>
-        <ChainModal chainIds={networks} dataTestId="stake-network" />
+        {/* Phone tier: icon-only — the full chain name doesn't fit beside the
+            title (M3; same treatment as the product detail pages). */}
+        <ChainModal chainIds={networks} labelClassName="hidden sm:block" dataTestId="stake-network" />
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>

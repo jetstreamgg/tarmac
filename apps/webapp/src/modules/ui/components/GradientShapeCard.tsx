@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { BP, useBreakpointIndex } from '../hooks/useBreakpointIndex';
+import { BP, useBreakpointIndex } from '@/hooks';
 
 export function GradientShapeCard({
   children,

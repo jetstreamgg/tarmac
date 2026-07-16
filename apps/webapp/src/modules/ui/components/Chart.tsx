@@ -20,7 +20,7 @@ import {
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
-import { BP, useBreakpointIndex } from '../hooks/useBreakpointIndex';
+import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Select,
   SelectContent,
@@ -313,6 +313,9 @@ interface ChartProps {
   displayValue?: number;
   tooltipLabel?: React.ReactNode;
   icons?: React.ReactNode;
+  /** Token(s) the series represents; drives the tooltip's trailing token
+   * icon(s). Omit for non-token series (e.g. a Rate/% metric). */
+  tokenSymbols?: string[];
   /** 'detail' switches to the product-detail header (label + value + Rate|TVL toggle). */
   variant?: 'default' | 'detail';
   /** detail variant: small label above the value (e.g. "Current Rate"). */
@@ -462,6 +465,7 @@ function ChartContent({
   isLoading,
   error,
   tooltipLabel,
+  tokenSymbols,
   chartHeight,
   color
 }: {
@@ -474,6 +478,7 @@ function ChartContent({
   activeTimeframe: TimeFrame;
   error?: Error | null;
   tooltipLabel?: React.ReactNode;
+  tokenSymbols?: string[];
   chartHeight?: number;
   color?: string;
 }) {
@@ -534,6 +539,7 @@ function ChartContent({
                 labelFormatter={date => formatDate(date, activeTimeframe)}
                 prefix={prefix}
                 tooltipLabel={tooltipLabel}
+                tokenSymbols={tokenSymbols}
               />
             }
           />
@@ -571,6 +577,7 @@ export function Chart({
   displayValue,
   tooltipLabel,
   icons,
+  tokenSymbols,
   variant = 'default',
   label,
   metrics,
@@ -707,6 +714,7 @@ export function Chart({
           error={error}
           chartHeight={isDetail ? 280 : undefined}
           tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
+          tokenSymbols={tokenSymbols}
           color={color}
         />
       </Card>

@@ -76,6 +76,7 @@ export function VaultDetailChart({
         isPercentage={isRate}
         hidePercentChange={isRate}
         symbol={isRate ? undefined : assetToken.symbol}
+        tokenSymbols={isRate ? undefined : [assetToken.symbol]}
         label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
         displayValue={isRate ? liveRate : liveTvl}
         tooltipLabel={useHourlyInterval ? 'Hourly average' : 'Daily average'}
