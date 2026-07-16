@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { cn } from '@/lib/cn';
 import { AppLink } from '@/lib/navigation';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
@@ -82,30 +83,42 @@ export interface ProductDetailTemplateProps {
 function ProductTitleIcon({ token }: { token: ProductDetailToken }) {
   return (
     <div className="shrink-0" data-testid="product-detail-token-icon">
-      <IconboxStatus size="l">{token.icon}</IconboxStatus>
+      {/* M6.3 mobile header ring is 56px (486:20720); 64 from md. */}
+      <IconboxStatus size="l" className="size-14 md:size-16">
+        {token.icon}
+      </IconboxStatus>
     </div>
   );
 }
 
-function SectionHeading({ children }: { children: ReactNode }) {
-  return <h2 className="text-text font-circle text-lg">{children}</h2>;
+function SectionHeading({ className, children }: { className?: string; children: ReactNode }) {
+  return <h2 className={cn('text-text font-circle text-lg', className)}>{children}</h2>;
 }
+
+/* M6.3 section-heading scale (486:20706): Details/About step down to Label 4,
+   Transactions steps up to Heading 6; both return to the shared 18px at md. */
+const minorHeadingClasses =
+  'text-base leading-[18px] tracking-[-0.32px] md:text-lg md:leading-normal md:tracking-normal';
+const majorHeadingClasses =
+  'text-xl leading-[22px] tracking-[-0.4px] md:text-lg md:leading-normal md:tracking-normal';
 
 function DetailsSection({ title, details }: { title?: ReactNode; details: ProductDetailRow[] }) {
   return (
     <section className="flex flex-col gap-4" data-testid="product-detail-details">
-      <SectionHeading>{title ?? <Trans>Details</Trans>}</SectionHeading>
+      <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>Details</Trans>}</SectionHeading>
       <div className="grid grid-cols-1 gap-x-12 sm:grid-cols-2">
         {details.map(row => (
           <div
             key={row.id}
             className="border-borderPrimary flex items-center justify-between gap-4 border-b py-4"
           >
-            <span className="text-textSecondary flex items-center gap-2 text-sm">
+            <span className="text-textSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-normal">
               {row.icon}
               {row.label}
             </span>
-            <span className="text-text text-right font-medium">{row.value}</span>
+            <span className="text-text font-circle md:font-graphik text-right text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-normal md:tracking-normal">
+              {row.value}
+            </span>
           </div>
         ))}
       </div>
@@ -116,7 +129,7 @@ function DetailsSection({ title, details }: { title?: ReactNode; details: Produc
 function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetailAbout }) {
   return (
     <section className="flex flex-col gap-4" data-testid="product-detail-about">
-      <SectionHeading>{title ?? <Trans>About</Trans>}</SectionHeading>
+      <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>About</Trans>}</SectionHeading>
       <div className="text-textSecondary text-sm leading-relaxed">
         {about.body}
         {about.learnMoreHref && (
@@ -144,9 +157,13 @@ function TransactionsSection({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-4" data-testid="product-detail-transactions">
-      <div className="flex items-center justify-between">
-        <SectionHeading>{title ?? <Trans>Transactions</Trans>}</SectionHeading>
+    // M6.3 (486:20827): on mobile the action drops under the heading as its
+    // own full-width row (24px below the heading, 32px above the cards).
+    <section className="flex flex-col gap-8 md:gap-4" data-testid="product-detail-transactions">
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <SectionHeading className={majorHeadingClasses}>
+          {title ?? <Trans>Transactions</Trans>}
+        </SectionHeading>
         {action}
       </div>
       {children}
@@ -173,23 +190,30 @@ export function ProductDetailTemplate({
   dataTestId = 'product-detail'
 }: ProductDetailTemplateProps) {
   return (
-    <div className="flex w-full flex-col gap-8 py-4 md:py-10" data-testid={dataTestId}>
+    <div className="flex w-full flex-col gap-8 py-6 md:py-10" data-testid={dataTestId}>
       {/* Header (Patterns/Headers, Savings type 5039:35173): Label 5 back-link
           over the ringed-icon + Heading 3 title row, network pill right. The
-          DS 17px icon-title gap is normalized to 16. */}
-      <div className="flex flex-col gap-8">
+          DS 17px icon-title gap is normalized to 16. M6.3 mobile (486:20720):
+          Label 6 back-link, 56px ring + Heading 5 title, and the network
+          selector drops to its own full-width row 32px under the title. */}
+      <div className="flex flex-col gap-4 md:gap-8">
         <AppLink
           to={backHref}
-          className="text-fgSecondary hover:text-fgPrimary font-circle flex w-fit items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors"
+          className="text-fgSecondary hover:text-fgPrimary font-circle flex w-fit items-center gap-1.5 text-xs leading-[14px] font-medium tracking-[-0.24px] transition-colors md:text-sm md:leading-4 md:tracking-[-0.28px]"
           data-testid="product-detail-back"
         >
           <ChevronLeft className="size-4" />
           {backLabel ?? <Trans>Back to products</Trans>}
         </AppLink>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col items-stretch gap-8 md:flex-row md:items-center md:justify-between md:gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
             <ProductTitleIcon token={token} />
-            <PageHeading size="md">{title}</PageHeading>
+            <PageHeading
+              size="md"
+              className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
+            >
+              {title}
+            </PageHeading>
           </div>
           {networkSelector}
         </div>
@@ -201,22 +225,23 @@ export function ProductDetailTemplate({
           chart → details → about → transactions; the right pane (4 cols,
           self-start) holds the position card at its own height. Below desktop
           the left pane dissolves (`contents`) and every block spans the full
-          row, so all four stack, with `order` slotting the card between chart
-          and details: chart → position → details → …. */}
+          row, so all four stack, with `order` slotting the card first (M6.3,
+          486:20706 — the position/hero card leads on phones): position →
+          chart → details → …. Stacked rows sit 40px apart per the comp. */}
       <div
-        className="desktop:grid-cols-12 desktop:gap-8 grid grid-cols-4 gap-5 sm:grid-cols-8"
+        className="desktop:grid-cols-12 desktop:gap-8 grid grid-cols-4 gap-x-5 gap-y-10 sm:grid-cols-8"
         data-testid="product-detail-body"
       >
         <div
           className="desktop:col-span-8 desktop:flex desktop:flex-col desktop:gap-8 contents"
           data-testid="product-detail-left-pane"
         >
-          <div className="order-1 col-span-full">{chart}</div>
-          <div className="order-3 col-span-full flex flex-col gap-10">
+          <div className="order-2 col-span-full">{chart}</div>
+          <div className="order-3 col-span-full flex flex-col gap-12 md:gap-10">
             <DetailsSection title={detailsTitle} details={details} />
             {afterDetails && (
               <section className="flex flex-col gap-4" data-testid="product-detail-after-details">
-                <SectionHeading>{afterDetails.title}</SectionHeading>
+                <SectionHeading className={minorHeadingClasses}>{afterDetails.title}</SectionHeading>
                 {afterDetails.body}
               </section>
             )}
@@ -227,7 +252,7 @@ export function ProductDetailTemplate({
           </div>
         </div>
         <div
-          className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-2 col-span-full"
+          className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-1 col-span-full"
           data-testid="product-detail-right-pane"
         >
           {position}
