@@ -144,7 +144,13 @@ export function StUsdsProductDetail() {
           </span>
         </span>
       }
-      networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
+      networkSelector={
+        <ChainModal
+          chainIds={networks}
+          labelClassName="hidden sm:block"
+          dataTestId="product-detail-network"
+        />
+      }
       chart={<StUsdsDetailChart />}
       position={<StUsdsPositionCard />}
       details={details}

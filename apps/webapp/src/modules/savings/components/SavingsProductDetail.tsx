@@ -109,7 +109,13 @@ export function SavingsProductDetail() {
         icon: <TokenIcon token={{ symbol: 'sUSDS' }} width={48} className="h-12 w-12" showChainIcon={false} />
       }}
       title={<Trans>Sky Savings</Trans>}
-      networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
+      networkSelector={
+        <ChainModal
+          chainIds={networks}
+          labelClassName="hidden sm:block"
+          dataTestId="product-detail-network"
+        />
+      }
       chart={<SavingsDetailChart />}
       position={<SavingsPositionCard />}
       details={details}

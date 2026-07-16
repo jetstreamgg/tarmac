@@ -122,7 +122,9 @@ export function VaultProductDetail({
           </HeaderBadge>
         </span>
       }
-      networkSelector={<ChainModal chainIds={networks} dataTestId="vault-detail-network" />}
+      networkSelector={
+        <ChainModal chainIds={networks} labelClassName="hidden sm:block" dataTestId="vault-detail-network" />
+      }
       chart={<VaultDetailChart vaultAddress={vaultAddress} assetToken={vault.assetToken} />}
       position={
         <VaultPositionCard vaultAddress={vaultAddress} assetToken={vault.assetToken} vaultName={vault.name} />

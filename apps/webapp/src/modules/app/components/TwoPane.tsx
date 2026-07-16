@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/utils';
 import { Text } from '@/modules/layout/components/Typography';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { BP, useBreakpointIndex } from '@/hooks';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { cardAnimations } from '@/modules/ui/animation/presets';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
