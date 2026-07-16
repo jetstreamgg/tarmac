@@ -2,7 +2,11 @@ import { useState, useCallback, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus, Clock, InProgress, SuccessCheck, FailedX, Cancel } from '@/widgets';
 import { ChevronLeft } from 'lucide-react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalTitle
+} from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Steps, StepsItem, type StepState } from '@/components/ui/steps';
 import { Switch } from '@/components/ui/switch';
@@ -232,8 +236,8 @@ export function TransactionModal({
   }, [isFirstScreen, handleClose, handleBack]);
 
   return (
-    <Dialog open={open} onOpenChange={val => !val && handleDismiss()}>
-      <DialogContent
+    <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
+      <ResponsiveModalContent
         aria-describedby={undefined}
         className="bg-containerDark flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5"
         onOpenAutoFocus={e => e.preventDefault()}
@@ -251,7 +255,7 @@ export function TransactionModal({
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <DialogTitle className="text-text text-2xl">{displayTitle}</DialogTitle>
+            <ResponsiveModalTitle className="text-text text-2xl">{displayTitle}</ResponsiveModalTitle>
             {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
                 the wallet/status screen relabels the title. */}
             {isFirstScreen && titleBadge}
@@ -438,8 +442,8 @@ export function TransactionModal({
             )}
           </AnimatePresence>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModalContent>
+    </ResponsiveModal>
   );
 }
 

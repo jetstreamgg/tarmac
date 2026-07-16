@@ -42,6 +42,15 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
+import {
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+  ResponsiveModalTrigger
+} from '@/components/ui/responsive-modal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -853,6 +862,28 @@ function OverlaysSection() {
               </SheetHeader>
             </SheetContent>
           </Sheet>
+        </Spec>
+        <Spec label="responsive modal (dialog ≥768px / bottom sheet below)">
+          <ResponsiveModal>
+            <ResponsiveModalTrigger asChild>
+              <Button variant="secondary" size="m">
+                Open responsive modal
+              </Button>
+            </ResponsiveModalTrigger>
+            <ResponsiveModalContent showCloseButton>
+              <ResponsiveModalHeader>
+                <ResponsiveModalTitle>Responsive modal title</ResponsiveModalTitle>
+                <ResponsiveModalDescription>
+                  Renders as a Dialog on desktop and a bottom Sheet on mobile — resize below 768px to switch.
+                </ResponsiveModalDescription>
+              </ResponsiveModalHeader>
+              <ResponsiveModalFooter>
+                <Button variant="primary" size="m">
+                  Confirm
+                </Button>
+              </ResponsiveModalFooter>
+            </ResponsiveModalContent>
+          </ResponsiveModal>
         </Spec>
         <Spec label="popover">
           <Popover>
