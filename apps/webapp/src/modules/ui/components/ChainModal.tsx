@@ -79,7 +79,11 @@ export function ChainModal({
     <Dialog open={open} onOpenChange={disabled ? undefined : setOpen}>
       <DialogTrigger asChild disabled={disabled}>
         {variant === ChainModalVariant.wrapper ? (
-          <button className="h-full w-full">{children}</button>
+          // The testid must render on the wrapper too — e2e drives the network
+          // dialog through it (e.g. `convert-network`).
+          <button className="h-full w-full" data-testid={dataTestId}>
+            {children}
+          </button>
         ) : (
           <Button
             variant={variant === ChainModalVariant.widget ? 'connectPrimary' : 'dropdown'}
