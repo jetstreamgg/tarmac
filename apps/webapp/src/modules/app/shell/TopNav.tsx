@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Menu, X } from 'lucide-react';
+import { Cookie, FileText, FileWarning, Menu, Shield, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
@@ -21,12 +21,21 @@ import { DESTINATIONS, navTestId, useActiveDestinationPath, useDestinationLinkPr
 // styling keys off the link's aria-current="page".
 const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'relative');
 
-// Design-system Dropdown row (Figma Components/Dropdown 5075:17292): Label 5
-// on fg-primary, 16/12 padding, hover rows tint bg-secondary.
+// Menu dropdown row (Figma 5069:27509): 16px glyph + Label 5 on fg-primary,
+// 8px apart; rows sit bare on the panel (no pill/tint), 20px between them.
 const moreItemClasses =
-  'text-fgPrimary hover:bg-bgSecondary font-circle px-4 py-3 text-left text-sm leading-4 font-medium tracking-[-0.28px] transition-colors';
+  'text-fgPrimary hover:text-fgSecondary font-circle flex items-center gap-2 text-left text-sm leading-4 font-medium tracking-[-0.28px] transition-colors';
 
-/** Secondary actions that don't earn a destination: batch toggle, legal links. */
+// Env-driven legal links pick their DS glyph by name (User Risk Documentation /
+// Terms of Use / Privacy Policy in the comp); anything else gets the document glyph.
+function linkIcon(name: string) {
+  const lower = name.toLowerCase();
+  if (lower.includes('risk')) return FileWarning;
+  if (lower.includes('privacy')) return Shield;
+  return FileText;
+}
+
+/** Secondary actions that don't earn a destination: toggles, legal links. */
 function MoreMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const { showBanner } = useCookieConsent();
@@ -44,36 +53,51 @@ function MoreMenu() {
       >
         {isOpen ? <X size={16} className="nav-menu-icon" /> : <Menu size={16} className="nav-menu-icon" />}
       </PopoverTrigger>
-      {/* DS Dropdown panel chrome (bg-tertiary glass, 16px radius, 1/4px inset). */}
+      {/* Menu dropdown panel (Figma 5069:27495): 274px glass panel — bg-secondary
+          over a 100px backdrop blur, 24px radius, 20px padding, 24px between
+          sections with a hairline divider after the bundling block. The comp's
+          Upgrade DAI/MKR row is omitted: the upgrade surface is parked (E2). */}
       <PopoverContent
         align="end"
-        className="bg-bgTertiary flex w-60 flex-col rounded-2xl px-px py-1 shadow-none backdrop-blur-[20px]"
+        className="bg-bgSecondary flex w-[274px] flex-col gap-6 rounded-3xl p-5 shadow-none backdrop-blur-[100px]"
       >
-        <div className="flex items-center gap-1 px-3 py-1">
-          <ThemeToggle />
-          {BATCH_TX_ENABLED && <BatchTransactionsToggle />}
-        </div>
-        {footerLinks.map(link => {
-          const url = sanitizeUrl(link.url);
-          if (!url) return null;
-          return (
-            <ExternalLink key={url} href={url} showIcon={false} className={moreItemClasses}>
-              {link.name}
-            </ExternalLink>
-          );
-        })}
-        {POSTHOG_ENABLED && (
-          <button
-            data-testid="nav-more-cookie-settings"
-            onClick={() => {
-              closeMenu();
-              showBanner();
-            }}
-            className={moreItemClasses}
-          >
-            <Trans>Cookie settings</Trans>
-          </button>
+        {BATCH_TX_ENABLED && (
+          <>
+            <BatchTransactionsToggle />
+            <div className="bg-glassBorder h-px w-full" />
+          </>
         )}
+        <div className="flex flex-col gap-5">
+          <ThemeToggle />
+          {footerLinks.map(link => {
+            const url = sanitizeUrl(link.url);
+            if (!url) return null;
+            const Icon = linkIcon(link.name);
+            return (
+              <ExternalLink key={url} href={url} showIcon={false} className={moreItemClasses}>
+                {/* Single child: ExternalLink HStack-wraps element children, which
+                    would swallow the anchor's gap and leave the glyph flush. */}
+                <span className="flex items-center gap-2">
+                  <Icon size={16} className="text-fgBrand shrink-0" />
+                  {link.name}
+                </span>
+              </ExternalLink>
+            );
+          })}
+          {POSTHOG_ENABLED && (
+            <button
+              data-testid="nav-more-cookie-settings"
+              onClick={() => {
+                closeMenu();
+                showBanner();
+              }}
+              className={moreItemClasses}
+            >
+              <Cookie size={16} className="text-fgBrand shrink-0" />
+              <Trans>Cookie settings</Trans>
+            </button>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );
