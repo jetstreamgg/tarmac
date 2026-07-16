@@ -40,6 +40,7 @@ const getChainIcon = (chainId: number, className?: string) =>
 export function ChainModal({
   showLabel = true,
   labelClassName,
+  triggerClassName,
   showDropdownIcon = true,
   variant = 'default',
   size = 'm',
@@ -52,6 +53,8 @@ export function ChainModal({
   showLabel?: boolean;
   /** Extra classes on the chain-name label, e.g. to hide it per tier. */
   labelClassName?: string;
+  /** Extra classes on the trigger button, e.g. `w-full justify-between` for the M6.3 full-width row. */
+  triggerClassName?: string;
   showDropdownIcon?: boolean;
   variant?: 'default' | 'widget' | 'wrapper';
   /** DS Button / Dropdown recipe: Network M (24px icon) or Network XS (16px icon). */
@@ -95,7 +98,8 @@ export function ChainModal({
             className={cn(
               variant === ChainModalVariant.widget
                 ? 'from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 flex items-center gap-1.5 border-transparent bg-radial-(--gradient-position) px-[9px] py-2 bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
-                : 'group'
+                : 'group',
+              triggerClassName
             )}
             data-testid={dataTestId}
           >

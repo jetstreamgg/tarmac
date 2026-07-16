@@ -263,22 +263,28 @@ function SegmentedPills<T extends string>({
   options,
   value,
   onChange,
-  dataTestId
+  dataTestId,
+  className,
+  itemClassName
 }: {
   options: { value: T; label: React.ReactNode }[];
   value: T;
   onChange: (value: T) => void;
   dataTestId?: string;
+  /** Extra classes on the pill group (e.g. `w-full` for the M6.3 mobile bars). */
+  className?: string;
+  /** Extra classes on each pill (e.g. `flex-1` to split the width evenly). */
+  itemClassName?: string;
 }) {
   return (
-    <div className={cn(tabsListVariants({ variant: 'segmented' }))} data-testid={dataTestId}>
+    <div className={cn(tabsListVariants({ variant: 'segmented' }), className)} data-testid={dataTestId}>
       {options.map(option => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
           data-state={value === option.value ? 'active' : 'inactive'}
-          className={cn(tabsTriggerVariants({ variant: 'segmented' }))}
+          className={cn(tabsTriggerVariants({ variant: 'segmented' }), itemClassName)}
         >
           {option.label}
         </button>
@@ -436,7 +442,8 @@ function DetailHeaderValue({
   isPercentage,
   symbol,
   prefix,
-  isLoading
+  isLoading,
+  mobile = false
 }: {
   data: Data[];
   displayValue?: number;
@@ -444,6 +451,8 @@ function DetailHeaderValue({
   symbol?: string;
   prefix?: string;
   isLoading: boolean;
+  /** M6.3 mobile figure: Heading 5 (24/26, Circular Medium). */
+  mobile?: boolean;
 }) {
   if (isLoading) {
     return <Skeleton className="h-9 w-32" />;
@@ -452,7 +461,17 @@ function DetailHeaderValue({
   const formatted = `${prefix || ''}${formatNumber(value, { maxDecimals: 2, compact: true })}${
     isPercentage ? '%' : symbol ? ` ${symbol}` : ''
   }`;
-  return <span className="text-text text-2xl font-semibold lg:text-[28px]">{formatted}</span>;
+  return (
+    <span
+      data-testid="chart-detail-value"
+      className={cn(
+        'text-text text-2xl',
+        mobile ? 'font-circle leading-[26px] font-medium tracking-[-0.48px]' : 'font-semibold lg:text-[28px]'
+      )}
+    >
+      {formatted}
+    </span>
+  );
 }
 
 function ChartContent({
@@ -589,6 +608,10 @@ export function Chart({
   const containerRef = useRef<HTMLDivElement>(null);
   const { bpi } = useBreakpointIndex();
   const isLarge = bpi >= BP.lg;
+  // M6.3 (Figma 486:20761): below md the detail card re-stacks — full-width
+  // metric bar on top, label/value under it, inset 203px plot, full-width
+  // timeframe bar at the bottom.
+  const isMobileDetail = isDetail && bpi < BP.md;
   const percentage = useMemo(() => {
     if (data[0]?.value === undefined || data[data.length - 1]?.value === undefined) {
       return 0;
@@ -632,12 +655,37 @@ export function Chart({
         data-testid={dataTestId}
         className={cn(
           'relative overflow-hidden p-0',
-          isDetail ? 'pb-3' : 'bg-cardLight h-[288px] lg:h-[220px] lg:p-0'
+          isDetail ? (isMobileDetail ? 'pb-5' : 'pb-3') : 'bg-cardLight h-[288px] lg:h-[220px] lg:p-0'
         )}
         ref={containerRef}
       >
         <CardHeader className="p-5 pb-0">
-          {isDetail ? (
+          {isMobileDetail ? (
+            <div className="flex w-full flex-col gap-5">
+              {metrics && activeMetric !== undefined && onMetricChange && (
+                <SegmentedPills
+                  options={metrics}
+                  value={activeMetric}
+                  onChange={onMetricChange}
+                  dataTestId="chart-metric-toggle"
+                  className="w-full"
+                  itemClassName="flex-1"
+                />
+              )}
+              <div className="flex flex-col gap-0.5">
+                {label && <span className="text-textSecondary text-xs leading-[18px]">{label}</span>}
+                <DetailHeaderValue
+                  mobile
+                  data={data}
+                  displayValue={displayValue}
+                  isPercentage={isPercentage}
+                  symbol={symbol}
+                  prefix={prefix}
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
+          ) : isDetail ? (
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex flex-col gap-1">
                 {label && (
@@ -703,20 +751,40 @@ export function Chart({
             </HStack>
           )}
         </CardHeader>
-        <ChartContent
-          data={data}
-          isLarge={isLarge}
-          symbol={symbol}
-          prefix={prefix}
-          isPercentage={isPercentage}
-          activeTimeframe={activeTimeframe}
-          isLoading={isLoading}
-          error={error}
-          chartHeight={isDetail ? 280 : undefined}
-          tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
-          tokenSymbols={tokenSymbols}
-          color={color}
-        />
+        <div
+          data-testid={dataTestId ? `${dataTestId}-plot` : undefined}
+          className={cn(isMobileDetail && 'px-5')}
+        >
+          <ChartContent
+            data={data}
+            isLarge={isLarge}
+            symbol={symbol}
+            prefix={prefix}
+            isPercentage={isPercentage}
+            activeTimeframe={activeTimeframe}
+            isLoading={isLoading}
+            error={error}
+            chartHeight={isDetail ? (isMobileDetail ? 203 : 280) : undefined}
+            tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
+            tokenSymbols={tokenSymbols}
+            color={color}
+          />
+        </div>
+        {isMobileDetail && (
+          <div className="px-5 pt-5">
+            <SegmentedPills
+              options={TIMEFRAME_OPTIONS}
+              value={activeTimeframe}
+              onChange={tf => {
+                setActiveTimeframe(tf);
+                onTimeFrameChange?.(tf);
+              }}
+              dataTestId="chart-timeframe-toggle"
+              className="w-full"
+              itemClassName="flex-1"
+            />
+          </div>
+        )}
       </Card>
       {/* Detail variant drops the x-axis date labels (Figma). */}
       {!isDetail && (
