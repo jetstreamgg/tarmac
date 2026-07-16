@@ -10,6 +10,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { TransactionCard } from '@/components/product/TransactionCard';
 import { CellAction, CellAmount, CellHash } from '@/components/ui/table-cells';
 
 export type VaultTxFilter = 'all' | 'supply' | 'withdraw';
@@ -27,37 +28,40 @@ type VaultTxRow = {
 
 // The vault design's columns: Transaction / Amount / Txn hash / Time (no Status,
 // absolute Time column). Column-driven, so it diverges from Savings freely.
+const actionCell = (row: VaultTxRow, sublabel?: string) => (
+  <CellAction
+    icon={
+      row.isSupply ? (
+        <SavingsSupply width={16} height={15} />
+      ) : (
+        <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
+      )
+    }
+    label={row.isSupply ? <Trans>Supply</Trans> : <Trans>Withdrawal</Trans>}
+    sublabel={sublabel}
+  />
+);
+
+const amountCell = (row: VaultTxRow) => (
+  <CellAmount
+    icon={<TokenIcon token={{ symbol: row.symbol }} width={12} showChainIcon={false} className="h-3 w-3" />}
+    amount={`${row.amount} ${row.symbol}`}
+    usd={row.usd}
+  />
+);
+
 const COLUMNS: ProductTransactionColumn<VaultTxRow>[] = [
   {
     id: 'action',
     header: <Trans>Transaction</Trans>,
     width: '1.5fr',
-    cell: row => (
-      <CellAction
-        icon={
-          row.isSupply ? (
-            <SavingsSupply width={16} height={15} />
-          ) : (
-            <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
-          )
-        }
-        label={row.isSupply ? <Trans>Supply</Trans> : <Trans>Withdrawal</Trans>}
-      />
-    )
+    cell: row => actionCell(row)
   },
   {
     id: 'amount',
     header: <Trans>Amount</Trans>,
     width: '1.5fr',
-    cell: row => (
-      <CellAmount
-        icon={
-          <TokenIcon token={{ symbol: row.symbol }} width={12} showChainIcon={false} className="h-3 w-3" />
-        }
-        amount={`${row.amount} ${row.symbol}`}
-        usd={row.usd}
-      />
-    )
+    cell: amountCell
   },
   {
     id: 'hash',
@@ -72,6 +76,16 @@ const COLUMNS: ProductTransactionColumn<VaultTxRow>[] = [
     cell: row => <span className="text-textSecondary text-sm">{row.time}</span>
   }
 ];
+
+// M5 mobile card (Figma 486:20827 pattern): the Time column folds into the
+// header subline, the hash becomes the View transaction button.
+const renderCard = (row: VaultTxRow) => (
+  <TransactionCard
+    header={actionCell(row, row.time)}
+    fields={[{ label: <Trans>Amount</Trans>, value: amountCell(row) }]}
+    link={{ label: <Trans>View transaction</Trans>, href: row.txHref }}
+  />
+);
 
 /**
  * Morpho vault deposit/withdraw history mapped onto the shared (column-driven)
@@ -123,6 +137,7 @@ export function VaultTransactionsTable({
       rowKey={row => row.id}
       isLoading={isLoading}
       error={error}
+      renderCard={renderCard}
     />
   );
 }

@@ -9,6 +9,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { TransactionCard } from '@/components/product/TransactionCard';
 import { CellAction, CellAmount, CellHash } from '@/components/ui/table-cells';
 
 type PendleTxRow = {
@@ -29,29 +30,36 @@ const ACTION_LABEL: Record<PendleHistoryAction, React.ReactNode> = {
 };
 
 // Same column shape as the vault table: Transaction / Amount / Txn hash / Time.
+const actionCell = (row: PendleTxRow, sublabel?: string) => (
+  <CellAction
+    icon={
+      row.action === PendleHistoryAction.BUY_PT ? (
+        <SavingsSupply width={16} height={15} />
+      ) : (
+        <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
+      )
+    }
+    label={ACTION_LABEL[row.action]}
+    sublabel={sublabel}
+  />
+);
+
+const amountCell = (row: PendleTxRow) => (
+  <CellAmount amount={`${row.amount} ${row.marketName}`} usd={row.usd} />
+);
+
 const COLUMNS: ProductTransactionColumn<PendleTxRow>[] = [
   {
     id: 'action',
     header: <Trans>Transaction</Trans>,
     width: '1.5fr',
-    cell: row => (
-      <CellAction
-        icon={
-          row.action === PendleHistoryAction.BUY_PT ? (
-            <SavingsSupply width={16} height={15} />
-          ) : (
-            <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
-          )
-        }
-        label={ACTION_LABEL[row.action]}
-      />
-    )
+    cell: row => actionCell(row)
   },
   {
     id: 'amount',
     header: <Trans>Amount</Trans>,
     width: '1.5fr',
-    cell: row => <CellAmount amount={`${row.amount} ${row.marketName}`} usd={row.usd} />
+    cell: amountCell
   },
   {
     id: 'hash',
@@ -66,6 +74,16 @@ const COLUMNS: ProductTransactionColumn<PendleTxRow>[] = [
     cell: row => <span className="text-textSecondary text-sm">{row.time}</span>
   }
 ];
+
+// M5 mobile card (Figma 486:20827 pattern): the Time column folds into the
+// header subline, the hash becomes the View transaction button.
+const renderCard = (row: PendleTxRow) => (
+  <TransactionCard
+    header={actionCell(row, row.time)}
+    fields={[{ label: <Trans>Amount</Trans>, value: amountCell(row) }]}
+    link={{ label: <Trans>View transaction</Trans>, href: row.txHref }}
+  />
+);
 
 /**
  * Per-market Pendle trade history (buy/sell/redeem) mapped onto the shared
@@ -98,6 +116,7 @@ export function PendleTransactionsTable({ market }: { market: PendleMarketConfig
       rowKey={row => row.id}
       isLoading={isLoading}
       error={error}
+      renderCard={renderCard}
     />
   );
 }

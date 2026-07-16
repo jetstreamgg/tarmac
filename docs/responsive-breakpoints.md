@@ -59,6 +59,27 @@ ordinal mirrors the legacy Tailwind scale (`sm 0 … 2xl 5`); for new code
 compare against `BP.md` (mobile cutoff) or `BP.desktop` only, matching the
 three-tier strategy above.
 
+## Tables on narrow viewports (M5, APP-371)
+
+Redesigned tables never squish or overflow the page on phones. Below `BP.md`
+(768 — the same JS cutoff `ResponsiveModal` uses for Dialog → bottom sheet)
+they reflow; from 768 up the `<table>` renders unchanged. Per-table pattern:
+
+| Table                                                                                     | Pattern below 768                                                                                                                                                          |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Earn marketplace (`EarnTable`)                                                            | Accordion cards (Figma 486:22119): token + Rate collapsed, field grid + Supply/View details expanded. Sort headers are desktop-only.                                       |
+| Product transactions (Savings/Vault/Pendle/Rewards/StUsds via `ProductTransactionsTable`) | `TransactionCard` list (Figma 486:20827): action header (+status badge), label/value field grid, "View transaction" button. A `time` column folds into the header subline. |
+| Stake activity + positions                                                                | Same `TransactionCard` collapse (no stake mobile comp yet — inferred; positions keep tap-to-manage and the liquidation banner).                                            |
+| Portfolio Idle (`IdleStablecoinsTable`)                                                   | `TransactionCard` with a Balance field and the Supply CTA (inferred, no comp).                                                                                             |
+| Morpho vault allocations (legacy surface)                                                 | Horizontal scroll with `scrollbar-thin-always` — dense analytical grid, no comp; the redesigned vault page uses `VaultStrategy` instead.                                   |
+
+Mechanics: `ProductTransactionsTable` accepts `renderCard` — when provided and
+`bpi < BP.md`, the table swaps for a card list with the same pagination,
+loading/empty/error states, `onRowClick` and `renderBelowRow`. Cards stack
+flush with 2px gaps and round only the list's outer corners (20px), mirroring
+the desktop table surface. Shared primitives live in
+`components/product/TransactionCard.tsx`.
+
 ## Viewport height units (`dvh` / `svh`)
 
 On mobile browsers the URL bar and toolbars collapse as you scroll, so the
