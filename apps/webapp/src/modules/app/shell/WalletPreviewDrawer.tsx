@@ -3,6 +3,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { ChevronsRight } from 'lucide-react';
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { t } from '@lingui/core/macro';
+import { BP, useBreakpointIndex } from '@/hooks';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { WalletPreviewHeader } from './WalletPreviewHeader';
 import { WalletDrawerTabs } from './WalletDrawerTabs';
@@ -16,9 +17,11 @@ interface WalletPreviewDrawerProps {
 }
 
 /**
- * V2 right slide-out wallet preview opened from the wallet chip: a floating
- * rounded panel with a collapse rail, gradient identity header and
- * Assets/Activity tabs.
+ * V2 wallet preview opened from the wallet chip. At md+ it's the right
+ * slide-out drawer: a floating rounded panel with a collapse rail, gradient
+ * identity header and Assets/Activity tabs. Below md (Figma 536:26681, M4.6)
+ * the same content presents as a bottom-anchored panel with 12px viewport
+ * insets and a close button in the header instead of the rail.
  */
 export function WalletPreviewDrawer({
   isOpen,
@@ -29,6 +32,8 @@ export function WalletPreviewDrawer({
 }: WalletPreviewDrawerProps) {
   const locationHref = useRouterState({ select: s => s.location.href });
   const { openConnectModal } = useConnectModal();
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
 
   useEffect(() => {
     // Any navigation closes the preview.
@@ -39,6 +44,39 @@ export function WalletPreviewDrawer({
     onOpenChange(false);
     openConnectModal();
   };
+
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        {/* The comp's panel hugs its content above a 12px bottom inset; the
+            max-height (68px topbar + 12px inset each side) only bites when the
+            Activity tab grows past the viewport and the tab panel scrolls. */}
+        <SheetContent
+          side="bottom"
+          data-testid="wallet-drawer"
+          aria-describedby={undefined}
+          hideCloseButton
+          className="light:border-[#1a1855]/10 bg-containerDark inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] h-auto max-h-[calc(100dvh-92px)] gap-0 overflow-hidden rounded-[28px] border border-[#bcb6ef]/10 p-0 backdrop-blur-sm"
+          onOpenAutoFocus={e => e.preventDefault()}
+          onCloseAutoFocus={e => e.preventDefault()}
+        >
+          <SheetTitle className="sr-only">{t`Account`}</SheetTitle>
+          <WalletPreviewHeader
+            mobile
+            ensName={ensName}
+            ensAvatar={ensAvatar}
+            onSwitchAccountClick={onSwitchAccountClick}
+            onDisconnect={onDisconnect}
+          />
+          {/* pr compensates the 10px scrollbar gutter reserved inside the tab
+              panels; pl-3 + the panels' px-2 lands the comp's 20px inset. */}
+          <div className="flex min-h-0 flex-1 flex-col pt-6 pr-0.5 pb-3 pl-3">
+            <WalletDrawerTabs />
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>

@@ -39,7 +39,7 @@ export function WalletDrawerAssets() {
 
   if (isLoading && assets.every(asset => asset.amountUsd === 0)) {
     return (
-      <div className="flex flex-col gap-2 p-4" data-testid="wallet-drawer-assets">
+      <div className="flex flex-col gap-2 px-2 py-3 md:p-4" data-testid="wallet-drawer-assets">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton key={index} className="h-16 rounded-2xl" />
         ))}
@@ -72,7 +72,7 @@ function AssetRow({
 }) {
   return (
     <div
-      className="group light:focus-within:bg-[#1a1855]/5 light:hover:bg-[#1a1855]/5 rounded-2xl p-4 transition-colors focus-within:bg-[#bcb6ef]/5 hover:bg-[#bcb6ef]/5"
+      className="group light:focus-within:bg-[#1a1855]/5 light:hover:bg-[#1a1855]/5 rounded-2xl px-2 py-3 transition-colors focus-within:bg-[#bcb6ef]/5 hover:bg-[#bcb6ef]/5 md:p-4"
       data-testid={`wallet-drawer-asset-${asset.symbol.toLowerCase()}`}
     >
       <div className="flex items-center justify-between">
@@ -82,7 +82,10 @@ function AssetRow({
           </span>
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-2">
-              <Text tag="span" className="font-circle text-text text-lg leading-[22px] tracking-tight">
+              <Text
+                tag="span"
+                className="font-circle text-text text-base leading-[18px] tracking-tight md:text-lg md:leading-[22px]"
+              >
                 {asset.symbol}
               </Text>
               {showEarnActions && asset.bestRate !== undefined && asset.bestRate > 0 && (
@@ -95,16 +98,27 @@ function AssetRow({
                 </RateBadge>
               )}
             </div>
-            <Text tag="span" variant="captionSm" className="text-textSecondary">
+            <Text
+              tag="span"
+              variant="captionSm"
+              className="text-textSecondary text-[11px] leading-4 md:text-xs"
+            >
               {asset.name}
             </Text>
           </div>
         </div>
         <div className="flex flex-col items-end gap-0.5">
-          <Text tag="span" className="font-circle text-text text-lg leading-[22px] tracking-tight">
+          <Text
+            tag="span"
+            className="font-circle text-text text-base leading-[18px] tracking-tight md:text-lg md:leading-[22px]"
+          >
             {formatNumber(asset.amount)}
           </Text>
-          <Text tag="span" variant="captionSm" className="text-textSecondary">
+          <Text
+            tag="span"
+            variant="captionSm"
+            className="text-textSecondary text-[11px] leading-4 md:text-xs"
+          >
             {formatUsd(asset.amountUsd)}
           </Text>
         </div>
@@ -131,7 +145,7 @@ function AssetRow({
 function RateBadge({ children }: { children: ReactNode }) {
   return (
     <span className="inline-flex items-center rounded-full border-[0.5px] border-[#02c2a1] bg-gradient-to-b from-[#02c2a1]/10 to-[#9fde88]/10 px-1.5 py-[3px]">
-      <span className="font-circle bg-gradient-to-b from-[#02c2a1] to-[#9fde88] bg-clip-text text-xs leading-[14px] font-medium text-transparent">
+      <span className="font-circle bg-gradient-to-b from-[#02c2a1] to-[#9fde88] bg-clip-text text-[11px] leading-3 font-medium text-transparent md:text-xs md:leading-[14px]">
         {children}
       </span>
     </span>

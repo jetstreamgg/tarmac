@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     connector: undefined
   },
   chainId: 1,
+  isMobile: false,
   isSafeWallet: false,
   isRegionRestricted: false,
   walletAssets: {
@@ -71,7 +72,13 @@ vi.mock('wagmi', async importOriginal => {
 
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
-  return { ...actual, useIsSafeWallet: () => mocks.isSafeWallet };
+  return {
+    ...actual,
+    useIsSafeWallet: () => mocks.isSafeWallet,
+    // happy-dom evaluates matchMedia at its 1024px default, so the real hook
+    // always lands on the desktop drawer; the flag drives the M4.6 mobile panel.
+    useBreakpointIndex: () => ({ bpi: mocks.isMobile ? actual.BP.sm : actual.BP.desktop })
+  };
 });
 
 vi.mock('@/modules/ui/context/ConnectModalContext', async importOriginal => {
@@ -110,6 +117,7 @@ vi.mock('@/modules/geo-config', async importOriginal => {
 beforeEach(() => {
   mocks.connection = { isConnected: true, address: ADDRESS, connector: undefined };
   mocks.chainId = 1;
+  mocks.isMobile = false;
   mocks.isSafeWallet = false;
   mocks.isRegionRestricted = false;
   mocks.disconnect.mockClear();
@@ -287,5 +295,62 @@ describe('WalletPreviewDrawer', () => {
     });
 
     expect(screen.queryByTestId('wallet-drawer')).toBeNull();
+  });
+
+  it('keeps the desktop collapse rail and no header close button at md+', async () => {
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    expect(drawer.querySelector('[data-testid="wallet-drawer-collapse"]')).toBeTruthy();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-close"]')).toBeNull();
+  });
+});
+
+describe('WalletPreviewDrawer — mobile panel (M4.6)', () => {
+  beforeEach(() => {
+    mocks.isMobile = true;
+  });
+
+  it('presents the full panel with a header close button instead of the collapse rail', async () => {
+    renderDrawer({ ensName: 'bartoo.eth' });
+    const drawer = await openDrawer();
+
+    expect(drawer.querySelector('[data-testid="wallet-drawer-close"]')).toBeTruthy();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-collapse"]')).toBeNull();
+    // Same content contract as the desktop drawer.
+    expect(drawer.textContent).toContain('bartoo.eth');
+    expect(drawer.querySelector('[data-testid="wallet-drawer-total"]')?.textContent).toContain('2,000');
+    expect(drawer.querySelector('[data-testid="wallet-drawer-network"]')).toBeTruthy();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-assets"]')).toBeTruthy();
+  });
+
+  it('dismisses via the header close button', async () => {
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    fireEvent.click(drawer.querySelector('[data-testid="wallet-drawer-close"]')!);
+    expect(screen.queryByTestId('wallet-drawer')).toBeNull();
+  });
+
+  it('keeps switch-account and disconnect working in the mobile header', async () => {
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    fireEvent.click(drawer.querySelector('[data-testid="wallet-drawer-disconnect"]')!);
+    expect(mocks.disconnect).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(drawer.querySelector('[data-testid="wallet-drawer-switch-account"]')!);
+    expect(mocks.openConnectModal).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('wallet-drawer')).toBeNull();
+  });
+
+  it('still shows the close button for Safe wallets while hiding the account actions', async () => {
+    mocks.isSafeWallet = true;
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    expect(drawer.querySelector('[data-testid="wallet-drawer-close"]')).toBeTruthy();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-switch-account"]')).toBeNull();
+    expect(drawer.querySelector('[data-testid="wallet-drawer-disconnect"]')).toBeNull();
   });
 });
