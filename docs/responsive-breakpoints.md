@@ -59,6 +59,13 @@ ordinal mirrors the legacy Tailwind scale (`sm 0 … 2xl 5`); for new code
 compare against `BP.md` (mobile cutoff) or `BP.desktop` only, matching the
 three-tier strategy above.
 
+Overlays follow the same seam. `ResponsiveModal` (M4.2) and the wallet
+preview drawer (M4.6, `WalletPreviewDrawer`) branch presentation at
+`bpi < BP.md` — bottom/full panel on phones, dialog or side drawer at md+ —
+while their shared children reflow with plain `md:` variants, which sit on
+the same 768px line. Unit tests exercise the mobile branch by mocking
+`useBreakpointIndex` (happy-dom's 1024px default always lands on desktop).
+
 ## Viewport height units (`dvh` / `svh`)
 
 On mobile browsers the URL bar and toolbars collapse as you scroll, so the

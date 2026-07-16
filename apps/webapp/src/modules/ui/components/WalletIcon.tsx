@@ -55,8 +55,12 @@ export const WalletIcon = ({ connector, iconUrl, className }: WalletIconProps) =
   return (
     <div
       className={cn(
-        'flex h-10 w-10 items-center justify-center rounded-lg font-semibold text-white',
-        getBackgroundColor()
+        // className must merge here too — callers size this badge (h-3/h-6) and
+        // the fixed 40px fallback used to swallow small avatars for icon-less
+        // connectors (e.g. the mock wallet).
+        'flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg font-semibold text-white',
+        getBackgroundColor(),
+        className
       )}
     >
       {getInitials()}

@@ -15,7 +15,9 @@ export function WalletDrawerTabs() {
 
   return (
     <Tabs defaultValue={WalletDrawerTab.ASSETS} className="flex min-h-0 flex-1 flex-col">
-      <TabsList variant="pills" className="mb-6 px-4">
+      {/* Base = the M4.6 mobile panel (20px content inset via the body's pl-3
+          + px-2 here); md: restores the desktop drawer's 28px inset. */}
+      <TabsList variant="pills" className="mb-4 px-2 md:mb-6 md:px-4">
         <TabsTrigger value={WalletDrawerTab.ASSETS} variant="pill" data-testid="wallet-drawer-tab-assets">
           <Trans>Assets</Trans>
         </TabsTrigger>
@@ -31,7 +33,7 @@ export function WalletDrawerTabs() {
       </TabsContent>
       <TabsContent
         value={WalletDrawerTab.ACTIVITY}
-        className="scrollbar-thin-always min-h-0 flex-1 overflow-auto px-4"
+        className="scrollbar-thin-always min-h-0 flex-1 overflow-auto px-2 md:px-4"
       >
         <BalancesHistory
           onExternalLinkClicked={onExternalLinkClicked}
