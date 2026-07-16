@@ -5,7 +5,18 @@ import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@/utils';
 import { useMemo, useState, useRef, useEffect, useId } from 'react';
-import { Area, AreaChart, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
+import {
+  Area,
+  AreaChart,
+  XAxis,
+  ResponsiveContainer,
+  Tooltip,
+  YAxis,
+  useActiveTooltipCoordinate,
+  useChartHeight,
+  useChartWidth,
+  useIsTooltipActive
+} from 'recharts';
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
@@ -154,6 +165,52 @@ const CustomizedDot = ({
   // Only return a label for the max and min
   return <circle cx={cx} cy={cy} r="4" stroke={stroke} fillOpacity={1} strokeWidth="2" fill={stroke} />;
 };
+
+/** How much of the series' alpha survives past the hover cursor (DS Line hover). */
+const POST_CURSOR_ALPHA = 0.4;
+
+/**
+ * DS Line hover (Figma 5273:12162): the plotted series keeps full strength up
+ * to the hover cursor and dims past it. Implemented as a luminance mask on the
+ * Area — white keeps the series, gray fades stroke+fill together — so the
+ * dimming can't veil the glass card background the way an overlay rect would.
+ * Rendered inside the AreaChart, where recharts' chart-context hooks resolve.
+ */
+export function HoverDimMask({ id }: { id: string }) {
+  const isActive = useIsTooltipActive();
+  const coordinate = useActiveTooltipCoordinate();
+  const width = useChartWidth();
+  const height = useChartHeight();
+  // Pre-layout the chart has no dimensions (and no hover); fall back to a
+  // full-coverage white mask so the series never flashes hidden.
+  const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
+
+  return (
+    <defs>
+      <mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={width ?? '100%'} height={height ?? '100%'}>
+        <rect
+          data-testid="chart-dim-mask-lit"
+          x={0}
+          y={0}
+          width={cursorX ?? width ?? '100%'}
+          height={height ?? '100%'}
+          fill="white"
+        />
+        {cursorX != null && width != null && (
+          <rect
+            data-testid="chart-dim-mask-dimmed"
+            x={cursorX}
+            y={0}
+            width={Math.max(width - cursorX, 0)}
+            height={height ?? '100%'}
+            fill="white"
+            opacity={POST_CURSOR_ALPHA}
+          />
+        )}
+      </mask>
+    </defs>
+  );
+}
 
 const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP) => {
   if (!data.length) {
@@ -422,6 +479,7 @@ function ChartContent({
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
+  const dimMaskId = useId();
 
   // Single source of truth for the plot height so the loading skeleton
   // reserves the same space as the rendered chart (no layout shift on load).
@@ -461,6 +519,7 @@ function ChartContent({
               )}
             </linearGradient>
           </defs>
+          <HoverDimMask id={dimMaskId} />
           <YAxis domain={['dataMin', 'dataMax']} padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }} hide />
           {/* We can't extract the XAxis component outside of the chart as in the designs */}
           <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
@@ -479,13 +538,15 @@ function ChartContent({
             }
           />
 
-          {/* 🔶 the mock dims the area past the hover cursor; not implemented (Recharts split-area). */}
           <Area
             dataKey="value"
             stroke={color ?? '#1DD9BA'}
             strokeWidth={2.5}
             type="monotone"
             fill={`url(#${gradientId})`}
+            // Dim the series past the hover cursor (mask above); the active dot
+            // and tooltip render outside the masked layer, so they stay lit.
+            mask={`url(#${dimMaskId})`}
             label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
             dot={<CustomizedDot data={data} stroke={color ?? '#1DD9BA'} />}
             // Ringed hover dot at the cursor point (Figma 5273:12162).
