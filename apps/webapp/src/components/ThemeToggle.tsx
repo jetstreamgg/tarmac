@@ -5,7 +5,7 @@ import { Switch } from './ui/switch';
 import { useThemeToggle } from '@/modules/ui/hooks/useThemeToggle';
 
 /**
- * "Dark mode" row of the nav Menu dropdown (Figma 5233:10233): 12px moon
+ * "Dark mode" row of the nav Menu dropdown (Figma 5233:10233): 16px moon
  * glyph + Label 5 text left, S-size switch right — on while dark mode is.
  */
 export function ThemeToggle() {
