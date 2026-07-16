@@ -24,6 +24,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { TransactionCard } from '@/components/product/TransactionCard';
 import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 
@@ -176,25 +177,43 @@ function verbIcon(verb: StakeActivityVerb) {
 
 type ActivityRow = StakeActivityGroup & { skyPrice: number | null; chainId: number };
 
+// Figma Type=Action and Position (Transaction Stake): Label 5 title.
+const actionCell = (row: ActivityRow) => (
+  <CellAction
+    compact
+    icon={verbIcon(row.verb)}
+    label={verbLabel(row.verb)}
+    sublabel={
+      <>
+        {formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
+        {row.urnIndex !== undefined && <> · Position {row.urnIndex + 1}</>}
+      </>
+    }
+  />
+);
+
+const skyCell = (row: ActivityRow) => (
+  <CellAmount
+    icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+    amount={formatStakeAmount(row.skyAmount)}
+    usd={row.skyPrice !== null ? formatUsd(Number(formatUnits(row.skyAmount, 18)) * row.skyPrice) : undefined}
+  />
+);
+
+const usdsCell = (row: ActivityRow) => (
+  <CellAmount
+    icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+    amount={formatStakeAmount(row.usdsAmount)}
+    usd={formatUsd(Number(formatUnits(row.usdsAmount, 18)))}
+  />
+);
+
 const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
   {
     id: 'action',
     header: <Trans>Action</Trans>,
     width: '1.6fr',
-    cell: row => (
-      // Figma Type=Action and Position (Transaction Stake): Label 5 title.
-      <CellAction
-        compact
-        icon={verbIcon(row.verb)}
-        label={verbLabel(row.verb)}
-        sublabel={
-          <>
-            {formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
-            {row.urnIndex !== undefined && <> · Position {row.urnIndex + 1}</>}
-          </>
-        }
-      />
-    )
+    cell: actionCell
   },
   {
     id: 'status',
@@ -208,27 +227,13 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
     id: 'sky',
     header: <Trans>Stake/unstake</Trans>,
     width: '1.2fr',
-    cell: row => (
-      <CellAmount
-        icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
-        amount={formatStakeAmount(row.skyAmount)}
-        usd={
-          row.skyPrice !== null ? formatUsd(Number(formatUnits(row.skyAmount, 18)) * row.skyPrice) : undefined
-        }
-      />
-    )
+    cell: skyCell
   },
   {
     id: 'usds',
     header: <Trans>Borrow/repay</Trans>,
     width: '1.2fr',
-    cell: row => (
-      <CellAmount
-        icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
-        amount={formatStakeAmount(row.usdsAmount)}
-        usd={formatUsd(Number(formatUnits(row.usdsAmount, 18)))}
-      />
-    )
+    cell: usdsCell
   },
   {
     id: 'hash',
@@ -242,6 +247,23 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
     )
   }
 ];
+
+// M5 mobile card (Figma 486:20827 pattern, no stake-specific comp yet —
+// flagged on APP-371 for design review): both amount columns become fields.
+const renderCard = (row: ActivityRow) => (
+  <TransactionCard
+    header={actionCell(row)}
+    badge={<CellStatus status="completed" />}
+    fields={[
+      { label: <Trans>Stake/unstake</Trans>, value: skyCell(row) },
+      { label: <Trans>Borrow/repay</Trans>, value: usdsCell(row) }
+    ]}
+    link={{
+      label: <Trans>View transaction</Trans>,
+      href: getEtherscanLink(row.chainId, row.transactionHash, 'tx')
+    }}
+  />
+);
 
 /**
  * "My activity" table (hi-fi 486:31830): stake history grouped per transaction
@@ -310,6 +332,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         isLoading={isLoading}
         error={error}
         minWidth={720}
+        renderCard={renderCard}
         emptyLabel={
           <span data-testid="stake-activity-empty" className="flex flex-col items-center gap-4 py-8">
             <span className="bg-textSecondary/20 h-10 w-10 rounded-full" aria-hidden />
