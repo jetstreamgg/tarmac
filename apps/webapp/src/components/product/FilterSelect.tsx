@@ -17,7 +17,8 @@ export function FilterSelect({
   onChange,
   allLabel,
   testId,
-  size = 's'
+  size = 's',
+  triggerClassName
 }: {
   options: FilterOption[];
   selected: string;
@@ -26,6 +27,8 @@ export function FilterSelect({
   testId: string;
   /** DS Button / Dropdown size: `s` for table filter bars, `m` for page headers. */
   size?: 's' | 'm';
+  /** Extra classes on the trigger button, e.g. `w-full` for the M6.1 mobile header row. */
+  triggerClassName?: string;
 }) {
   return (
     <Select value={selected} onValueChange={onChange}>
@@ -39,7 +42,8 @@ export function FilterSelect({
         className={cn(
           buttonVariants({ variant: 'dropdown', size: size === 'm' ? 'dropdownM' : 'dropdownS' }),
           'h-auto w-auto bg-transparent [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180',
-          size === 'm' ? '[&>svg]:size-4' : '[&>svg]:size-3'
+          size === 'm' ? '[&>svg]:size-4' : '[&>svg]:size-3',
+          triggerClassName
         )}
       >
         <SelectValue />

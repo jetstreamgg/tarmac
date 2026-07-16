@@ -108,7 +108,10 @@ export function ConnectedPortfolio() {
             <Trans>Welcome back, {displayName}</Trans>
           </p>
         )}
-        <div className="flex items-center justify-between gap-4">
+        {/* M6.1 (486:20118): below md the title and the network dropdown stack,
+            the dropdown going full-width 24px under the heading; from md the
+            comp's desktop row (heading left, dropdown right) returns. */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-4">
           <PageHeading size="md">
             <Trans>Your Stablecoin Earnings</Trans>
           </PageHeading>
@@ -119,6 +122,7 @@ export function ConnectedPortfolio() {
             allLabel={allNetworksLabel}
             testId="portfolio-network-filter"
             size="m"
+            triggerClassName="w-full justify-between md:w-auto"
           />
         </div>
       </div>
