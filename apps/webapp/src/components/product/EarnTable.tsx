@@ -1,11 +1,14 @@
-import { KeyboardEvent, ReactNode } from 'react';
+import { KeyboardEvent, ReactNode, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
+import { BP, useBreakpointIndex } from '@/hooks';
+import type { EarnRiskTier } from '@/hooks';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CellEmpty, CellPercent, CellToken } from '@/components/ui/table-cells';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { EarnRiskTier } from '@/hooks';
+import { TransactionCardFieldGrid } from './TransactionCard';
 import { RiskTierMeter } from './RiskMeter';
 
 export type EarnTableColumn = 'token' | 'network' | 'risk' | 'rate' | 'rate30d' | 'tvl' | 'position';
@@ -64,18 +67,142 @@ export type EarnTableProps = {
   onRowSelect?: (id: string) => void;
 };
 
+/** The Type=Token cell / accordion-card header: iconbox, name, Supply: subline. */
+function TokenCell({ row }: { row: EarnTableRowItem }) {
+  return (
+    <CellToken
+      icon={row.icon}
+      title={row.name}
+      titleSuffix={row.nameSuffix}
+      subtitle={
+        <>
+          <Trans>Supply:</Trans>
+          {row.supply}
+          {row.maturityLabel && (
+            <>
+              <span aria-hidden>·</span>
+              {row.maturityLabel}
+            </>
+          )}
+        </>
+      }
+    />
+  );
+}
+
+/**
+ * M5 mobile rendering (Figma mobile Table Section 486:22119): one accordion
+ * card per opportunity — collapsed shows the token cell + Rate + chevron,
+ * expanded adds the remaining columns as a field grid and the Supply / View
+ * details actions. Both actions report through onRowSelect (the product page
+ * hosts the supply widget); a dedicated supply deep-link is a design/product
+ * follow-up flagged on APP-371. Sorting has no mobile affordance in the comp,
+ * so the sort headers are desktop-only.
+ */
+function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRowSelect'>) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <div data-testid="earn-opportunities-table" className="flex w-full flex-col gap-0.5">
+      {rows.map((row, index) => {
+        const isExpanded = expandedId === row.id;
+        return (
+          <div
+            key={row.id}
+            data-testid={`earn-row-${row.id}`}
+            className={cn(
+              'bg-bgSecondary flex flex-col gap-6 p-5 backdrop-blur-[20px]',
+              index === 0 && 'rounded-t-[20px]',
+              index === rows.length - 1 && 'rounded-b-[20px]'
+            )}
+          >
+            <button
+              type="button"
+              data-testid={`earn-card-toggle-${row.id}`}
+              aria-expanded={isExpanded}
+              onClick={() => setExpandedId(isExpanded ? null : row.id)}
+              className="flex w-full items-center justify-between gap-3 text-left"
+            >
+              <TokenCell row={row} />
+              <span className="flex shrink-0 items-center gap-3">
+                <span className="flex flex-col items-end gap-1">
+                  <span className="font-graphik text-fgSecondary text-xs leading-[18px]">
+                    <Trans>Rate</Trans>
+                  </span>
+                  <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
+                    <NumericValue value={row.rate} isLoading={row.isLoading} />
+                  </span>
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={cn('text-fgSecondary transition-transform', isExpanded && 'rotate-180')}
+                  aria-hidden
+                />
+              </span>
+            </button>
+            {isExpanded && (
+              <>
+                <TransactionCardFieldGrid
+                  fields={[
+                    ...(row.network ? [{ label: <Trans>Network</Trans>, value: row.network }] : []),
+                    { label: <Trans>Risk</Trans>, value: <RiskTierMeter tier={row.risk} /> },
+                    {
+                      label: <Trans>Rate</Trans>,
+                      value: <NumericValue value={row.rate} isLoading={row.isLoading} />
+                    },
+                    {
+                      label: <Trans>30D Rate</Trans>,
+                      value: <NumericValue value={row.rate30d} isLoading={row.isLoading} />
+                    },
+                    {
+                      label: <Trans>TVL</Trans>,
+                      value: <NumericValue value={row.tvl} isLoading={row.isLoading} />
+                    },
+                    {
+                      label: <Trans>My position</Trans>,
+                      value: <NumericValue value={row.position} isLoading={row.isLoading} />
+                    }
+                  ]}
+                />
+                <div className="flex w-full items-center gap-3">
+                  <Button variant="primary" size="m" className="flex-1" onClick={() => onRowSelect?.(row.id)}>
+                    <Trans>Supply</Trans>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="m"
+                    className="flex-1"
+                    onClick={() => onRowSelect?.(row.id)}
+                  >
+                    <Trans>View details</Trans>
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * The Earn Opportunities table (Figma Table/Earn 5178:37463): layout only —
  * rows arrive filtered, sorted and formatted; sorting/selection intent is
  * reported via callbacks. Surface, header and hover come from ui/table.
+ * Below the md tier it reflows into accordion cards (EarnCardList).
  */
 export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTableProps) {
+  const { bpi } = useBreakpointIndex();
+
   const handleRowKeyDown = (event: KeyboardEvent, id: string) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       onRowSelect?.(id);
     }
   };
+
+  if (bpi < BP.md) return <EarnCardList rows={rows} onRowSelect={onRowSelect} />;
 
   return (
     <Table data-testid="earn-opportunities-table">
@@ -127,23 +254,7 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
                 wired here on purpose: its trigger follows product logic that
                 is not part of the H8 batch. */}
             <TableCell>
-              <CellToken
-                icon={row.icon}
-                title={row.name}
-                titleSuffix={row.nameSuffix}
-                subtitle={
-                  <>
-                    <Trans>Supply:</Trans>
-                    {row.supply}
-                    {row.maturityLabel && (
-                      <>
-                        <span aria-hidden>·</span>
-                        {row.maturityLabel}
-                      </>
-                    )}
-                  </>
-                }
-              />
+              <TokenCell row={row} />
             </TableCell>
             <TableCell>{row.network}</TableCell>
             <TableCell>

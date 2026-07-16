@@ -1,6 +1,7 @@
 import { Fragment, ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
+import { BP, useBreakpointIndex } from '@/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CustomPagination } from '@/modules/ui/components/CustomPagination';
@@ -13,6 +14,10 @@ import { paginate } from './paginate';
  * differ — while the shared chrome (ui/table surface, loading/empty/error
  * states, pagination) lives here. Cell contents come from the design-system
  * typed cells (ui/table-cells) via the column `cell` renderers.
+ *
+ * M5: below the md tier (768, the ResponsiveModal switch) a consumer-supplied
+ * `renderCard` swaps the <table> for a stacked card list (Figma mobile Table
+ * Sections, e.g. 486:20827) — same rows, loading/empty/error and pagination.
  */
 
 export type ProductTransactionStatus = 'pending' | 'completed';
@@ -43,6 +48,8 @@ export interface ProductTransactionsTableProps<T> {
   rowTestId?: (row: T) => string;
   /** Full-width content rendered as a sibling right after a matching row, outside its click/hover surface. */
   renderBelowRow?: (row: T) => ReactNode;
+  /** Mobile card for a row; providing it swaps the table for a card list below the md tier. */
+  renderCard?: (row: T) => ReactNode;
 }
 
 // The legacy grid API declared tracks ('1.5fr', '140px'); a <table> wants
@@ -67,6 +74,15 @@ function StateRow({ colSpan, children }: { colSpan: number; children: ReactNode 
   );
 }
 
+/** Card-mode stand-in for StateRow: the message on a single card surface. */
+function StateCard({ children }: { children: ReactNode }) {
+  return (
+    <div className="bg-bgSecondary text-fgSecondary font-graphik rounded-[20px] p-5 text-center text-sm">
+      {children}
+    </div>
+  );
+}
+
 export function ProductTransactionsTable<T>({
   columns,
   rows,
@@ -79,13 +95,79 @@ export function ProductTransactionsTable<T>({
   pageSize = 7,
   onRowClick,
   rowTestId,
-  renderBelowRow
+  renderBelowRow,
+  renderCard
 }: ProductTransactionsTableProps<T>) {
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
   const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
   const showPagination = !isLoading && !error && totalPages > 1;
   const widths = columnWidths(columns);
+  const { bpi } = useBreakpointIndex();
+
+  if (renderCard && bpi < BP.md) {
+    return (
+      <>
+        {/* 2px gaps + outer-corners-only rounding mirror the desktop table
+            surface (border-spacing-y + first/last cell radii). */}
+        <div data-testid={dataTestId} className="flex w-full flex-col gap-0.5">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className={cn(
+                  'bg-bgSecondary p-5',
+                  index === 0 && 'rounded-t-[20px]',
+                  index === 3 && 'rounded-b-[20px]'
+                )}
+              >
+                <Skeleton className="h-5 w-1/3" />
+              </div>
+            ))
+          ) : error ? (
+            <StateCard>
+              <Trans>Unable to load transactions, please try again later.</Trans>
+            </StateCard>
+          ) : allRows.length === 0 ? (
+            <StateCard>{emptyLabel ?? <Trans>No transactions yet.</Trans>}</StateCard>
+          ) : (
+            pageRows.map((row, index) => (
+              <Fragment key={rowKey(row)}>
+                <div
+                  data-testid={rowTestId?.(row)}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? event => {
+                          if (event.target !== event.currentTarget) return;
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            onRowClick(row);
+                          }
+                        }
+                      : undefined
+                  }
+                  className={cn(
+                    'overflow-hidden',
+                    index === 0 && 'rounded-t-[20px]',
+                    index === pageRows.length - 1 && 'rounded-b-[20px]',
+                    onRowClick && 'cursor-pointer'
+                  )}
+                >
+                  {renderCard(row)}
+                </div>
+                {renderBelowRow?.(row)}
+              </Fragment>
+            ))
+          )}
+        </div>
+        {showPagination && (
+          <CustomPagination dataLength={allRows.length} itemsPerPage={pageSize} onPageChange={setPage} />
+        )}
+      </>
+    );
+  }
 
   return (
     <>

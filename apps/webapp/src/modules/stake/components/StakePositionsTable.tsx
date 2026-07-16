@@ -28,6 +28,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { TransactionCard } from '@/components/product/TransactionCard';
 import { CellAmount, CellAmountWithToken, CellChevron, CellPosition } from '@/components/ui/table-cells';
 import {
   StakeUserPosition,
@@ -160,6 +161,13 @@ function PositionIdCell({ position }: { position: StakeUserPosition }) {
   );
 }
 
+const stakedCell = (position: StakeUserPosition) => (
+  <CellAmount
+    icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+    amount={formatStakeAmount(position.skyLocked)}
+  />
+);
+
 const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
   {
     id: 'position',
@@ -171,12 +179,7 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     id: 'staked',
     header: <Trans>Total staked (SKY)</Trans>,
     width: '1.2fr',
-    cell: position => (
-      <CellAmount
-        icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
-        amount={formatStakeAmount(position.skyLocked)}
-      />
-    )
+    cell: stakedCell
   },
   {
     id: 'borrowed',
@@ -207,6 +210,23 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     )
   }
 ];
+
+// M5 mobile card (Figma 486:20827 pattern, no stake-specific comp yet —
+// flagged on APP-371 for design review). The card keeps the row's tap-to-
+// manage behavior (the engine wires onRowClick to the card wrapper), so the
+// chevron moves into the header as the affordance.
+const renderCard = (position: StakeUserPosition) => (
+  <TransactionCard
+    header={<PositionIdCell position={position} />}
+    badge={<CellChevron />}
+    fields={[
+      { label: <Trans>Total staked (SKY)</Trans>, value: stakedCell(position) },
+      { label: <Trans>Total borrowed (USDS)</Trans>, value: <PositionBorrowedCell position={position} /> },
+      { label: <Trans>Liquidation risk</Trans>, value: <PositionRiskCell position={position} /> },
+      { label: <Trans>Claimable rewards</Trans>, value: <PositionClaimableCell position={position} /> }
+    ]}
+  />
+);
 
 /**
  * Active-positions table (hi-fi 486:31830 / component 486:32084): one row per
@@ -295,6 +315,7 @@ export function StakePositionsTable({
           error={error}
           emptyLabel={<Trans>No active positions.</Trans>}
           minWidth={720}
+          renderCard={renderCard}
           renderBelowRow={position => (
             <StakePositionRowBanner
               position={position}

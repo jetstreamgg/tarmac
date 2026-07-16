@@ -12,6 +12,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { TransactionCard } from '@/components/product/TransactionCard';
 import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
 import { SavingsTxFilter } from './SavingsTransactionsFilter';
 
@@ -28,24 +29,34 @@ type SavingsTxRow = {
 
 // Savings' columns. Other modules define their own — the table is column-driven.
 // Single USDS Amount column for now (no historical share data — see APP-300).
+const actionCell = (row: SavingsTxRow) => (
+  <CellAction
+    icon={
+      row.isSupply ? (
+        <SavingsSupply width={16} height={15} />
+      ) : (
+        <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
+      )
+    }
+    label={row.isSupply ? <Trans>Supply</Trans> : <Trans>Withdraw</Trans>}
+    sublabel={row.timeAgo}
+  />
+);
+
+const amountCell = (row: SavingsTxRow) => (
+  <CellAmount
+    icon={<TokenIcon token={{ symbol: row.symbol }} width={12} showChainIcon={false} className="h-3 w-3" />}
+    amount={row.amount}
+    usd={row.usd}
+  />
+);
+
 const COLUMNS: ProductTransactionColumn<SavingsTxRow>[] = [
   {
     id: 'action',
     header: <Trans>Action</Trans>,
     width: '1.5fr',
-    cell: row => (
-      <CellAction
-        icon={
-          row.isSupply ? (
-            <SavingsSupply width={16} height={15} />
-          ) : (
-            <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
-          )
-        }
-        label={row.isSupply ? <Trans>Supply</Trans> : <Trans>Withdraw</Trans>}
-        sublabel={row.timeAgo}
-      />
-    )
+    cell: actionCell
   },
   {
     id: 'status',
@@ -58,15 +69,7 @@ const COLUMNS: ProductTransactionColumn<SavingsTxRow>[] = [
     id: 'amount',
     header: <Trans>Amount</Trans>,
     width: '1.5fr',
-    cell: row => (
-      <CellAmount
-        icon={
-          <TokenIcon token={{ symbol: row.symbol }} width={12} showChainIcon={false} className="h-3 w-3" />
-        }
-        amount={row.amount}
-        usd={row.usd}
-      />
-    )
+    cell: amountCell
   },
   {
     id: 'hash',
@@ -75,6 +78,19 @@ const COLUMNS: ProductTransactionColumn<SavingsTxRow>[] = [
     cell: row => <CellHash label={row.txHashLabel} href={row.txHref} />
   }
 ];
+
+// M5 mobile card of the same row (Figma 486:20827): action cell as the
+// header, status as the header badge, hash as the View transaction button.
+// The comp's From/To amount pair needs the historical share data we don't
+// have yet (APP-300), so the single Amount field stands in.
+const renderCard = (row: SavingsTxRow) => (
+  <TransactionCard
+    header={actionCell(row)}
+    badge={<CellStatus status="completed" />}
+    fields={[{ label: <Trans>Amount</Trans>, value: amountCell(row) }]}
+    link={{ label: <Trans>View transaction</Trans>, href: row.txHref }}
+  />
+);
 
 /**
  * Savings history mapped onto the shared (column-driven) ProductTransactionsTable
@@ -123,6 +139,7 @@ export function SavingsTransactionsTable({ filter = 'all' }: { filter?: SavingsT
       rowKey={row => row.id}
       isLoading={isLoading}
       error={error}
+      renderCard={renderCard}
     />
   );
 }
