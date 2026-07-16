@@ -130,7 +130,10 @@ export function WalletPreviewHeader({
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between gap-2">
+      {/* flex-wrap: a hundreds-of-millions total (formatUsd never compacts)
+          otherwise shoves the network pill past the panel's overflow-hidden
+          edge; wrapped, the pill drops under the figure instead. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         {totalLoading && totalUsd === 0 ? (
           <Skeleton className={cn(mobile ? 'h-9 w-32' : 'h-12 w-40')} />
         ) : (
