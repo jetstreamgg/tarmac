@@ -3,7 +3,7 @@ import { Intent } from '@/lib/enums';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { TwoPane } from '@/modules/app/components/TwoPane';
 import { DetailsLayout } from '@/modules/app/components/DetailsLayout';
-import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { useBreakpointIndex } from '@/hooks';
 import { useGeoConfig } from '@/modules/geo-config';
 import { useModuleUrls } from '@/modules/app/hooks/useModuleUrls';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';

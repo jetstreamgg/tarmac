@@ -1,19 +1,12 @@
-import { ComponentType, MouseEvent, ReactNode, useCallback, useState } from 'react';
-import { Link, useRouterState } from '@tanstack/react-router';
-import { useChainId, useChains } from 'wagmi';
-import { Menu, X } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import { Cookie, FileText, FileWarning, Menu, Shield, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
-import { Convert, Earn, StakeSky, Wallet } from '@/modules/icons';
-import { Intent } from '@/lib/enums';
-import { BATCH_TX_ENABLED, QueryParams } from '@/lib/constants';
-import { intentToPath, ROUTES, RoutePath } from '@/lib/routes';
-import { AppRoutePath, retainOnNavigate, useRouteIntent } from '@/lib/navigation';
-import { getNetworkOverrideForIntent } from '@/lib/widget-network-map';
+import { BATCH_TX_ENABLED } from '@/lib/constants';
 import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
-import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -22,73 +15,27 @@ import { MockConnectButton } from '@/modules/layout/components/MockConnectButton
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { useCookieConsent } from '@/modules/analytics/context/CookieConsentContext';
 import { POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
-
-// Destination paths must be in the route map AND mounted as routes (B1 placeholders guarantee it).
-type DestinationPath = Extract<AppRoutePath, RoutePath>;
-
-type Destination = {
-  path: DestinationPath;
-  label: ReactNode;
-  icon: ComponentType<{ className?: string }>;
-  // Modules the destination covers; the first is its landing module and
-  // decides the network override for the link.
-  intents: Intent[];
-};
-
-// The 4 target-IA destinations (plan §4.2). Paths come from ROUTES, never hardcoded.
-const DESTINATIONS: Destination[] = [
-  {
-    path: ROUTES.PORTFOLIO,
-    label: <Trans>Portfolio</Trans>,
-    icon: Wallet,
-    intents: [Intent.BALANCES_INTENT]
-  },
-  {
-    path: ROUTES.EARN,
-    label: <Trans>Earn</Trans>,
-    icon: Earn,
-    intents: [
-      Intent.SAVINGS_INTENT,
-      Intent.REWARDS_INTENT,
-      Intent.VAULTS_INTENT,
-      Intent.FIXED_INTENT,
-      Intent.EXPERT_INTENT
-    ]
-  },
-  { path: ROUTES.STAKE, label: <Trans>Stake SKY</Trans>, icon: StakeSky, intents: [Intent.STAKE_INTENT] },
-  {
-    path: ROUTES.CONVERT,
-    label: <Trans>Convert</Trans>,
-    icon: Convert,
-    intents: [Intent.CONVERT_INTENT, Intent.TRADE_INTENT, Intent.UPGRADE_INTENT]
-  }
-];
-
-const navTestId = (path: RoutePath) => `nav-${path.slice(1)}`;
-
-const isUnderDestination = (path: string, base: RoutePath) => path === base || path.startsWith(`${base}/`);
-
-// Active destination: the current path when it sits under a destination, else
-// the destination owning the route's intent (covers Balances at / → Portfolio).
-function useActiveDestinationPath(): RoutePath | null {
-  const pathname = useRouterState({ select: s => s.location.pathname });
-  const routeIntent = useRouteIntent();
-  const byPath = DESTINATIONS.find(d => isUnderDestination(pathname, d.path));
-  if (byPath) return byPath.path;
-  const intentPath = intentToPath(routeIntent);
-  return DESTINATIONS.find(d => isUnderDestination(intentPath, d.path))?.path ?? null;
-}
+import { DESTINATIONS, navTestId, useActiveDestinationPath, useDestinationLinkProps } from './destinations';
 
 // Design-system Button / Navbar (Figma 5010:29059, Default type); active
 // styling keys off the link's aria-current="page".
 const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'relative');
 
-// Design-system Dropdown row (Figma Components/Dropdown 5075:17292): Label 5
-// on fg-primary, 16/12 padding, hover rows tint bg-secondary.
+// Menu dropdown row (Figma 5069:27509): 16px glyph + Label 5 on fg-primary,
+// 8px apart; rows sit bare on the panel (no pill/tint), 20px between them.
 const moreItemClasses =
-  'text-fgPrimary hover:bg-bgSecondary font-circle px-4 py-3 text-left text-sm leading-4 font-medium tracking-[-0.28px] transition-colors';
+  'text-fgPrimary hover:text-fgSecondary font-circle flex items-center gap-2 text-left text-sm leading-4 font-medium tracking-[-0.28px] transition-colors';
 
-/** Secondary actions that don't earn a destination: batch toggle, legal links. */
+// Env-driven legal links pick their DS glyph by name (User Risk Documentation /
+// Terms of Use / Privacy Policy in the comp); anything else gets the document glyph.
+function linkIcon(name: string) {
+  const lower = name.toLowerCase();
+  if (lower.includes('risk')) return FileWarning;
+  if (lower.includes('privacy')) return Shield;
+  return FileText;
+}
+
+/** Secondary actions that don't earn a destination: toggles, legal links. */
 function MoreMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const { showBanner } = useCookieConsent();
@@ -106,36 +53,51 @@ function MoreMenu() {
       >
         {isOpen ? <X size={16} className="nav-menu-icon" /> : <Menu size={16} className="nav-menu-icon" />}
       </PopoverTrigger>
-      {/* DS Dropdown panel chrome (bg-tertiary glass, 16px radius, 1/4px inset). */}
+      {/* Menu dropdown panel (Figma 5069:27495): 274px glass panel — bg-secondary
+          over a 100px backdrop blur, 24px radius, 20px padding, 24px between
+          sections with a hairline divider after the bundling block. The comp's
+          Upgrade DAI/MKR row is omitted: the upgrade surface is parked (E2). */}
       <PopoverContent
         align="end"
-        className="bg-bgTertiary flex w-60 flex-col rounded-2xl px-px py-1 shadow-none backdrop-blur-[20px]"
+        className="bg-bgSecondary flex w-[274px] flex-col gap-6 rounded-3xl p-5 shadow-none backdrop-blur-[100px]"
       >
-        <div className="flex items-center gap-1 px-3 py-1">
-          <ThemeToggle />
-          {BATCH_TX_ENABLED && <BatchTransactionsToggle />}
-        </div>
-        {footerLinks.map(link => {
-          const url = sanitizeUrl(link.url);
-          if (!url) return null;
-          return (
-            <ExternalLink key={url} href={url} showIcon={false} className={moreItemClasses}>
-              {link.name}
-            </ExternalLink>
-          );
-        })}
-        {POSTHOG_ENABLED && (
-          <button
-            data-testid="nav-more-cookie-settings"
-            onClick={() => {
-              closeMenu();
-              showBanner();
-            }}
-            className={moreItemClasses}
-          >
-            <Trans>Cookie settings</Trans>
-          </button>
+        {BATCH_TX_ENABLED && (
+          <>
+            <BatchTransactionsToggle />
+            <div className="bg-glassBorder h-px w-full" />
+          </>
         )}
+        <div className="flex flex-col gap-5">
+          <ThemeToggle />
+          {footerLinks.map(link => {
+            const url = sanitizeUrl(link.url);
+            if (!url) return null;
+            const Icon = linkIcon(link.name);
+            return (
+              <ExternalLink key={url} href={url} showIcon={false} className={moreItemClasses}>
+                {/* Single child: ExternalLink HStack-wraps element children, which
+                    would swallow the anchor's gap and leave the glyph flush. */}
+                <span className="flex items-center gap-2">
+                  <Icon size={16} className="text-fgBrand shrink-0" />
+                  {link.name}
+                </span>
+              </ExternalLink>
+            );
+          })}
+          {POSTHOG_ENABLED && (
+            <button
+              data-testid="nav-more-cookie-settings"
+              onClick={() => {
+                closeMenu();
+                showBanner();
+              }}
+              className={moreItemClasses}
+            >
+              <Cookie size={16} className="text-fgBrand shrink-0" />
+              <Trans>Cookie settings</Trans>
+            </button>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -144,44 +106,8 @@ function MoreMenu() {
 /** Final 4-destination top navigation. */
 export function TopNav() {
   const activePath = useActiveDestinationPath();
-  const chainId = useChainId();
-  const chains = useChains();
   const { showNewDot } = useNewIntentDots();
-  const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
-
-  // Same semantics as the legacy nav: mainnet-only destinations carry the
-  // network switch in the href itself (cmd-click and copy-link included).
-  const searchForIntent = useCallback(
-    (targetIntent: Intent) => (prev: Record<string, string | undefined>) => {
-      const retained = retainOnNavigate(prev);
-      const override = getNetworkOverrideForIntent(targetIntent, chainId, chains);
-      if (override) retained[QueryParams.Network] = override;
-      return retained;
-    },
-    [chainId, chains]
-  );
-
-  // Modified clicks open a new tab; this tab doesn't navigate, so skip the
-  // switching feedback. No analytics here: nav events are pending sign-off (B1 ships none).
-  const handleNavClick = useCallback(
-    (targetIntent: Intent) => (event: MouseEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      ) {
-        return;
-      }
-      if (getNetworkOverrideForIntent(targetIntent, chainId, chains)) {
-        setIsSwitchingNetwork(true);
-        setIsAutoSwitching(true);
-      }
-    },
-    [chainId, chains, setIsSwitchingNetwork, setIsAutoSwitching]
-  );
+  const { searchForIntent, handleNavClick } = useDestinationLinkProps();
 
   return (
     <nav className="flex w-full items-center gap-3" data-testid="top-nav">
@@ -198,8 +124,10 @@ export function TopNav() {
           </linearGradient>
         </defs>
       </svg>
-      {/* mx-auto centers the pill group between the logo (left, in Layout) and the chip cluster. */}
-      <div className="mx-auto flex items-center gap-2">
+      {/* mx-auto centers the pill group between the logo (left, in Layout) and
+          the chip cluster. Below the desktop tier the destinations live in the
+          bottom MobileNavbar instead (M2), so the pill group hides. */}
+      <div className="desktop:flex mx-auto hidden items-center gap-2">
         {DESTINATIONS.map(destination => {
           const isActive = activePath === destination.path;
           const Icon = destination.icon;
@@ -225,9 +153,13 @@ export function TopNav() {
           );
         })}
       </div>
-      <WalletChip />
-      {import.meta.env.VITE_USE_MOCK_WALLET === 'true' && <MockConnectButton />}
-      <MoreMenu />
+      {/* With the pill group hidden on mobile, ml-auto keeps the chip cluster
+          pinned right (the DS Mobile / Topbar layout: logo · wallet · menu). */}
+      <div className="desktop:ml-0 ml-auto flex items-center gap-3">
+        <WalletChip />
+        {import.meta.env.VITE_USE_MOCK_WALLET === 'true' && <MockConnectButton />}
+        <MoreMenu />
+      </div>
     </nav>
   );
 }

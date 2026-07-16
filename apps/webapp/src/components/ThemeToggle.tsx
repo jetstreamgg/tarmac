@@ -1,34 +1,29 @@
-import { Moon, Sun } from 'lucide-react';
-import { Toggle } from './ui/toggle';
-import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
-import { Text } from '@/modules/layout/components/Typography';
+import { Moon } from 'lucide-react';
+import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { Switch } from './ui/switch';
 import { useThemeToggle } from '@/modules/ui/hooks/useThemeToggle';
 
+/**
+ * "Dark mode" row of the nav Menu dropdown (Figma 5233:10233): 16px moon
+ * glyph + Label 5 text left, S-size switch right — on while dark mode is.
+ */
 export function ThemeToggle() {
   const { theme, toggleTheme } = useThemeToggle();
-  const isLight = theme === 'light';
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div>
-          <Toggle
-            variant="singleSwitcherBright"
-            className="hidden h-10 w-10 rounded-xl p-0 md:flex"
-            pressed={isLight}
-            onPressedChange={toggleTheme}
-            aria-label={t`Toggle light and dark theme`}
-          >
-            {isLight ? <Sun width={20} height={20} /> : <Moon width={20} height={20} />}
-          </Toggle>
-        </div>
-      </TooltipTrigger>
-      <TooltipPortal>
-        <TooltipContent className="max-w-[220px]">
-          <Text variant="small">{isLight ? t`Switch to dark mode` : t`Switch to light mode`}</Text>
-        </TooltipContent>
-      </TooltipPortal>
-    </Tooltip>
+    <div className="flex w-full items-center justify-between">
+      <span className="text-fgPrimary font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
+        <Moon size={16} className="text-fgBrand shrink-0" />
+        <Trans>Dark mode</Trans>
+      </span>
+      <Switch
+        size="sm"
+        checked={theme === 'dark'}
+        onCheckedChange={toggleTheme}
+        aria-label={t`Toggle light and dark theme`}
+        data-testid="dark-mode-switch"
+      />
+    </div>
   );
 }
