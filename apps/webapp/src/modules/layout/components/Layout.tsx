@@ -11,6 +11,7 @@ import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
 import { Banner } from '@/components/extensible';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
 import { TopNav } from '@/modules/app/shell/TopNav';
+import { MobileNavbar } from '@/modules/app/shell/MobileNavbar';
 import { AppLink } from '@/lib/navigation';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { defaultConfig } from '../../config/default-config';
@@ -74,7 +75,20 @@ export function Layout({
             <AuthWrapper>{children}</AuthWrapper>
           )}
         </ErrorBoundary>
+
+        {/* Clearance for the fixed bottom MobileNavbar (60px pill + 16px top
+            pad + max(16px, safe-area) bottom pad) so the end of the content can
+            scroll out from under it. A spacer instead of padding utilities so
+            it can't collide with the boxed mode's md:pb-2. */}
+        <div
+          aria-hidden
+          className="desktop:hidden h-[calc(92px+env(safe-area-inset-bottom,0px))] w-full shrink-0"
+        />
       </VStack>
+
+      <ErrorBoundary>
+        <MobileNavbar />
+      </ErrorBoundary>
       <Banner />
       {showEnvInfo && (
         <div className="absolute bottom-0 left-2">

@@ -195,19 +195,24 @@ export function ProductDetailTemplate({
         </div>
       </div>
 
-      {/* Body on the 12-col design grid (desktop tier): two panes side by side.
-          The left pane (8 cols) flows chart → details → about → transactions;
-          the right pane (4 cols, self-start) holds the position card at its own
-          height. Below desktop the left pane dissolves (`contents`) so all four
-          blocks stack in the single column, with `order` slotting the card
-          between chart and details: chart → position → details → …. */}
-      <div className="desktop:grid-cols-12 desktop:gap-8 grid gap-5" data-testid="product-detail-body">
+      {/* Body on the design grid at every tier (M3): 4 columns on mobile,
+          8 on tablet, 12 at desktop — 20px gaps below desktop, 32px at it.
+          Desktop places two panes side by side: the left pane (8 cols) flows
+          chart → details → about → transactions; the right pane (4 cols,
+          self-start) holds the position card at its own height. Below desktop
+          the left pane dissolves (`contents`) and every block spans the full
+          row, so all four stack, with `order` slotting the card between chart
+          and details: chart → position → details → …. */}
+      <div
+        className="desktop:grid-cols-12 desktop:gap-8 grid grid-cols-4 gap-5 sm:grid-cols-8"
+        data-testid="product-detail-body"
+      >
         <div
           className="desktop:col-span-8 desktop:flex desktop:flex-col desktop:gap-8 contents"
           data-testid="product-detail-left-pane"
         >
-          <div className="order-1">{chart}</div>
-          <div className="order-3 flex flex-col gap-10">
+          <div className="order-1 col-span-full">{chart}</div>
+          <div className="order-3 col-span-full flex flex-col gap-10">
             <DetailsSection title={detailsTitle} details={details} />
             {afterDetails && (
               <section className="flex flex-col gap-4" data-testid="product-detail-after-details">
@@ -222,7 +227,7 @@ export function ProductDetailTemplate({
           </div>
         </div>
         <div
-          className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-2"
+          className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-2 col-span-full"
           data-testid="product-detail-right-pane"
         >
           {position}

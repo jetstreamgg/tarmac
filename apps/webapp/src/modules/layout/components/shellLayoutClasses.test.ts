@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { shellHeaderClasses, shellSurfaceClasses } from './shellLayoutClasses';
+import {
+  pageGutterClasses,
+  shellHeaderClasses,
+  shellHeaderContentClasses,
+  shellSurfaceClasses
+} from './shellLayoutClasses';
 
 // B6: full-width destination routes scroll on the document instead of inside the
 // legacy viewport-capped box, and the header pins as a sticky, see-through
@@ -21,6 +26,34 @@ describe('shellHeaderClasses', () => {
     expect(cls).not.toContain('sticky');
     expect(cls).not.toContain('backdrop-blur');
     expect(cls).not.toContain('mask-image');
+  });
+});
+
+// M3 (APP-369): the page gutter follows the DS grid tiers — 20px on the mobile
+// tier (per the mobile screen comps), 24px on the tablet tier (DS "S" row),
+// back to 20px at the desktop tier where the 1280 container cap takes over.
+describe('pageGutterClasses', () => {
+  it('steps the side gutter 20px → 24px (tablet) → 20px (desktop)', () => {
+    expect(pageGutterClasses).toContain('px-5');
+    expect(pageGutterClasses).toContain('sm:px-6');
+    expect(pageGutterClasses).toContain('desktop:px-5');
+  });
+});
+
+describe('shellHeaderContentClasses', () => {
+  it('aligns the full-width header row with the page container at every tier', () => {
+    const cls = shellHeaderContentClasses(true);
+    expect(cls).toContain('max-w-[1320px]');
+    // Same gutter tiers as the container, or the logo drifts off the content edge.
+    expect(cls).toContain('px-5');
+    expect(cls).toContain('sm:px-6');
+    expect(cls).toContain('desktop:px-5');
+  });
+
+  it('keeps the legacy full-bleed padding on boxed routes', () => {
+    const cls = shellHeaderContentClasses(false);
+    expect(cls).not.toContain('max-w-[1320px]');
+    expect(cls).toContain('sm:px-10');
   });
 });
 

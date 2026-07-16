@@ -172,7 +172,13 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
         )
       }}
       title={rewardContractDisplayName(contract)}
-      networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
+      networkSelector={
+        <ChainModal
+          chainIds={networks}
+          labelClassName="hidden sm:block"
+          dataTestId="product-detail-network"
+        />
+      }
       chart={<RewardsDetailChart contract={contract} currentRate={rateValue} />}
       position={<RewardsPositionCard contract={contract} isPointsFarm={isPointsFarm} rate={rateValue} />}
       details={details}

@@ -10,6 +10,17 @@ import { cn } from '@/lib/utils';
  *   the surface drops its height cap and the header pins as a sticky frosted bar.
  */
 
+/**
+ * Side gutter of the design-system page container, per the DS grid tiers
+ * (Foundations / Grids & Spacing 5176:33992): 24px on the tablet tier (640 to
+ * 1200), 20px elsewhere. The DS table lists 12px for the mobile tier, but the
+ * mobile screen comps (Sky App: UI, 🟠 Mobile canvas, 393px frames) all place
+ * page content at 20px — the 12px margin only shows up as the bottom Navbar's
+ * in-situ inset. Shared by the bare AppContainer and the full-width header row
+ * so the header content stays aligned with the page content at every tier.
+ */
+export const pageGutterClasses = 'px-5 sm:px-6 desktop:px-5';
+
 /** The shell surface (the VStack wrapping the header + content). */
 export const shellSurfaceClasses = (fullWidth: boolean) =>
   cn(
@@ -24,7 +35,9 @@ export const shellSurfaceClasses = (fullWidth: boolean) =>
 /** The shell header bar (full-bleed; the row content lives in the inner div). */
 export const shellHeaderClasses = (fullWidth: boolean) =>
   cn(
-    'w-full py-2 md:mb-1',
+    // Mobile tiers get the DS Mobile / Topbar vertical rhythm (16px, 68px bar
+    // with the 36px chip row); the desktop tier keeps the legacy 8px.
+    'w-full py-3.5 desktop:py-2 desktop:mb-1',
     // Full-width routes scroll on the document, so the header pins as a sticky,
     // see-through frosted bar (Figma: transparent + blur(7px), no opaque fill).
     fullWidth && 'sticky top-0 z-30',
@@ -42,7 +55,9 @@ export const shellHeaderContentClasses = (fullWidth: boolean) =>
   cn(
     'flex items-center gap-4',
     // Full-width routes align the header content with the design-system page
-    // container (12 columns / 1280 + 20px gutters — same geometry as the bare
-    // AppContainer); boxed routes keep the legacy full-bleed padding.
-    fullWidth ? 'mx-auto w-full max-w-[1320px] px-5' : 'w-full px-3 sm:px-10'
+    // container (same max-width + gutter tiers as the bare AppContainer);
+    // boxed routes keep the legacy full-bleed padding. 20px side padding is
+    // also the DS Mobile / Topbar gutter, so both modes share it on the
+    // mobile tier.
+    fullWidth ? cn('mx-auto w-full max-w-[1320px]', pageGutterClasses) : 'w-full px-5 sm:px-10'
   );

@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/cn';
+import { pageGutterClasses } from '@/modules/layout/components/shellLayoutClasses';
 
 /**
  * The shell's content box. `card` draws the classic rounded container card — a
@@ -25,10 +26,11 @@ export function AppContainer({
             'scrollbar-hidden bg-container h-dvh max-w-[480px] min-w-[375px] gap-1.5 overflow-y-auto rounded-t-3xl border bg-blend-overlay backdrop-blur-[50px] md:my-auto md:h-[calc(100dvh-70px)] md:max-w-[1150px] md:flex-row md:overflow-hidden md:rounded-3xl md:p-3 md:pl-[10px] lg:pl-3 xl:max-h-[1080px] xl:max-w-[calc(100vw-128px)] 2xl:max-w-[1570px]'
           : // Bare: the design-system container (Figma: Foundations / Grids &
             // Spacing 5176:33992) — content capped at 1280 and centered, with a
-            // uniform 20px side gutter (1320 = 1280 + 2×20). Below the 1200 tier
-            // the spec is full-width + 20px paddings, which the same rule yields.
-            // Pages own only their vertical padding; horizontal lives here.
-            'max-w-[1320px] px-5'
+            // 20px side gutter at the desktop tier (1320 = 1280 + 2×20). Below
+            // it the container is full-width and the gutter follows the DS grid
+            // tiers (pageGutterClasses, shared with the header row). Pages own
+            // only their vertical padding; horizontal lives here.
+            cn('max-w-[1320px]', pageGutterClasses)
       )}
     >
       {children}
