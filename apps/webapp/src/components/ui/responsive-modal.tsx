@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { cn } from '@/lib/cn';
-import { useMediaQuery } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Dialog,
   DialogClose,
@@ -23,17 +23,16 @@ import {
   SheetTrigger
 } from '@/components/ui/sheet';
 
-// Below this width the modal renders as a bottom Sheet; at/above it, a Dialog.
-const MOBILE_QUERY = '(max-width: 767px)';
-
 const ResponsiveModalContext = React.createContext(false);
 
 const useIsBottomSheet = () => React.useContext(ResponsiveModalContext);
 
 function ResponsiveModal(props: React.ComponentProps<typeof Dialog>) {
-  // TODO(M1/#1730): swap to useBreakpoint tier — the single switch site for the
-  // Dialog (≥768px) ↔ bottom Sheet (<768px) composition.
-  const isBottomSheet = useMediaQuery(MOBILE_QUERY);
+  // The single switch site for the Dialog (md+, ≥768px) ↔ bottom Sheet (sm,
+  // <768px) composition. sm is the only sub-768 tier, so `bpi < BP.md` is exactly
+  // the mobile range.
+  const { bpi } = useBreakpointIndex();
+  const isBottomSheet = bpi < BP.md;
   const Root = isBottomSheet ? Sheet : Dialog;
 
   return (

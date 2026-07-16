@@ -3,11 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({ isBottomSheet: false }));
 
-// The single Dialog ↔ Sheet switch reads useMediaQuery; drive it directly so a
-// test can pin the modal to either tier without a real matchMedia viewport.
-vi.mock('@/hooks/ui/useMediaQuery', () => ({
-  useMediaQuery: () => h.isBottomSheet
-}));
+// The single Dialog ↔ Sheet switch reads the breakpoint tier; drive it directly
+// so a test can pin the modal to either tier without a real matchMedia viewport.
+vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
+  return {
+    ...actual,
+    useBreakpointIndex: () => ({ bpi: h.isBottomSheet ? actual.BP.sm : actual.BP.md })
+  };
+});
 
 import {
   ResponsiveModal,
