@@ -59,7 +59,7 @@
   --color-card: rgba(128, 117, 255, 0.07);
   --color-cardLight: rgba(64, 60, 113, 0.207);
   /* B5 chrome-surface tokens — dark values are production parity (don't change);
-     light values are interim (G2 owns full light parity). These replace magic hex
+     G2 filled the light scope from the DS light mode. These replace magic hex
      in CookieConsentBanner + TermsDialog so those surfaces render on tokens. */
   --color-cookieSurface: #1a1a2e;
   --color-cookieToggleOn: #5116cc;
@@ -68,20 +68,32 @@
   --color-termsBtnActive: rgb(34, 32, 66);
   /* E2 convert glass tokens — dark values are the Figma source values
      (colors/bg/bg-secondary, components/badges/bg-secondary,
-     colors/border/border-secondary, and the flip control's literal fills);
-     light values are interim (G2 owns full light parity). */
+     colors/border/border-secondary, and the flip control's literal fills, which
+     the DS types as components/modals/bg-item + border-item); G2 filled the
+     light scope from the same variables' light mode. */
   --color-glassSurface: rgba(188, 182, 239, 0.05);
   --color-glassBadge: rgba(188, 182, 239, 0.1);
   --color-glassBorder: rgba(188, 182, 239, 0.2);
   --color-flipSurface: #1b1735;
   --color-flipRing: #140f2b;
+  /* Dialog/Sheet scrim (Figma components/modals/bg-overlay). Was a hardcoded
+     `bg-black/50` on both overlays, so light inherited dark's black scrim —
+     the light comps (1030:59384) show a pale indigo wash over the blurred page
+     instead. This dark value is the incumbent black/50 kept byte-for-byte for
+     parity, NOT the DS value: the DS types dark as #05041199, a deliberate
+     unapplied delta because dark is frozen (see THEMING.md). The light scope
+     takes the real DS value. */
+  --color-modalOverlay: rgba(0, 0, 0, 0.5);
   /* Design-system button tokens (Figma 5010:7958): dark values are the Figma
      source values — colors/bg/bg-brand-primary + bg-brand-secondary (primary
      hover/pressed fills), colors/border/border-focus (focus ring),
      colors/fg/fg-tertiary (disabled/loading text) and the primary gradient
-     stops. None are overridden in the light scope: fgConsistent
-     (colors/fg/fg-text-consistent-light) stays light on the brand gradient in
-     both themes by design; the rest are interim (G2 owns full light parity). */
+     stops. None are overridden in the light scope, and G2 confirmed that is
+     correct rather than incidental: every one of these DS variables resolves to
+     the same value in both modes — fgConsistent
+     (colors/fg/fg-text-consistent-light) stays light on the brand gradient by
+     design, and bg-brand-primary/secondary, border-focus and fg-tertiary are
+     theme-invariant. */
   --color-brandHover: #504dff;
   --color-brandPressed: #4836f5;
   --color-focusRing: #c2ccff;
@@ -95,9 +107,9 @@
      colors/border/border-brand-dim-quaternary (active border),
      colors/fg/fg-secondary (Tabs2 resting text), colors/fg/fg-brand-primary
      (Tabs3 hover text) and the gradient-brand2 stops (the active-tab fill all
-     three families share). borderTertiary/fgSecondary get interim light values
-     in the light scope (G2 owns full parity); the brand-tinted ones read on
-     white as-is. */
+     three families share). G2 filled borderTertiary/fgSecondary/fgBrand in the
+     light scope from the DS light mode; borderBrandDim and the gradient-brand2
+     stops are theme-invariant and stay on these values. */
   --color-borderTertiary: rgba(188, 182, 239, 0.3);
   --color-borderBrandDim: rgba(156, 160, 229, 0.4);
   --color-fgSecondary: #a1a6c4;
@@ -112,7 +124,9 @@
      colors/border/border-quarternary (disabled radio center), the
      gradient-slider stops and the components/slider palette (thumb center
      dot + ring, max-marker line, min/next-step marker, filled range thumb).
-     None are overridden in the light scope yet (G2 owns light parity). */
+     G2 filled fgQuaternary, borderQuarternary and the slider dot/ring/line from
+     the DS light mode; brandQuaternary, borderBrandDimTertiary, the gradient
+     stops and the raw-hex marker/amber are theme-invariant. */
   --color-fgQuaternary: #4d4d6e;
   --color-brandQuaternary: #3325ae;
   --color-borderBrandDimTertiary: rgba(156, 160, 229, 0.3);
@@ -127,7 +141,8 @@
   --color-sliderMarker: #fe8b5b;
   --color-sliderAmber: #ffc23b;
   /* colors/fg/fg-primary (navbar label + hovered nav icon, Figma 5010:29059).
-     Interim light value mirrors --color-text (G2 owns full parity). */
+     G2 filled the light value from the same variable; it still equals
+     --color-text, which is also fg-primary. */
   --color-fgPrimary: #f2f3f7;
   /* Design-system table tokens (Figma Patterns/Tables 5178:37455): dark values
      are the Figma source values — colors/bg/bg-secondary (row/cell surface),
@@ -135,8 +150,9 @@
      shared by the Status/Risk/Token-Idle cells: fg/bg/border-success,
      fg-warning (risk Medium segments) and fg/bg-brand (Pending badge).
      statusSuccessSolid is colors/system/success (#02c2a1), the active-position
-     dot; statusSuccessBorder doubles as the position-iconbox ring. None are
-     overridden in the light scope yet (G2 owns light parity). */
+     dot; statusSuccessBorder doubles as the position-iconbox ring. G2 filled the
+     row surfaces and the fg/bg status pairs from the DS light mode;
+     statusSuccessBorder and statusSuccessSolid are theme-invariant. */
   --color-bgSecondary: rgba(188, 182, 239, 0.05);
   --color-bgTertiary: rgba(188, 182, 239, 0.1);
   --color-statusSuccess: #40e3c8;
@@ -150,8 +166,9 @@
      Figma types the rings by product — Pendle mint / Morpho blue — as raw
      hexes (no variable); promoted here under the system color each pairs
      with. statusInfoSolid is border-system-info-primary, the info dot
-     (statusSuccessSolid above doubles as the success dot). None are
-     overridden in the light scope yet (G2 owns light parity). */
+     (statusSuccessSolid above doubles as the success dot). None are overridden
+     in the light scope: the product rings are raw hexes with no mode dimension,
+     and border-system-info-primary is theme-invariant. */
   --color-statusSuccessRing: #8bf1ca;
   --color-statusInfoRing: #60a9ff;
   --color-statusInfoSolid: #59b1ff;
@@ -160,9 +177,9 @@
      item and wallet-row hairlines — the `border-borderPrimary` utility
      predates this token, so until now it silently fell back to the preflight
      border color), gradient-brand-border + the gradient-brand3 stops (the
-     selected wallet row) and the loader's brand gradient stops. borderPrimary
-     gets an interim light value (G2 owns full parity); the brand-tinted ones
-     read on white as-is. */
+     selected wallet row) and the loader's brand gradient stops. G2 filled
+     borderPrimary in the light scope from border-primary's light mode; the
+     brand-tinted ones are theme-invariant and read on white as-is. */
   --color-borderPrimary: rgba(188, 182, 239, 0.1);
   --color-brandBorder: #504dff;
   --color-brand3-start: rgba(148, 154, 255, 0.1);
@@ -462,85 +479,135 @@
    * Tailwind v4 emits the @theme --color-* tokens as live CSS vars, so overriding
    * the semantic tokens here re-themes the app at runtime (base --primary-white /
    * --transparent-* vars are left alone so white overlays/gradients stay intact).
-   * Interim palette — the official Sky light theme is gated on Figma.
+   *
+   * G2: values are the design system's `1. Color modes` collection, `Light Mode`
+   * (Figma yQTfE5x7NDhjj4vPMoQoEJ), resolved through their alias chains to final
+   * hex; each line cites the DS variable it fills. Parity references are the
+   * `🟢 Lightmode` page in Sky App: UI (1030:58446).
+   *
+   * Two things here carry no DS citation, for different reasons — see the
+   * `primary-*` gradient stops at the bottom of this block (legacy widget-look
+   * surfaces the DS doesn't type), and the `.nav-icon` light rules further down
+   * the file (a deliberate deviation where the DS contradicts itself).
+   *
+   * Only tokens whose DS light value DIFFERS from its dark value appear here —
+   * 48 of the 117 do. The rest are theme-invariant by design (brand ramps, the
+   * system color scale, border-focus, fg-tertiary, fg-text-consistent-*) and are
+   * deliberately left to the @theme dark default rather than restated.
+   *
+   * Light inverts the dark elevation stack: surfaces get LIGHTER as they rise, so
+   * the raised tokens land on white-alpha (bg-secondary/tertiary/quarternary)
+   * while dark's rise on lilac-alpha. Hairlines and low tints likewise move from
+   * dark's lilac (#bcb6ef) to light's periwinkle (#9ca0e5).
    */
   :root[data-theme='light'] {
-    /* body base */
-    --background: 240 60% 98%;
-    --foreground: 242 56% 22%;
+    /* body base — colors/bg/bg-primary #ecf0ff, colors/fg/fg-primary #2f2d40 */
+    --background: 227 100% 96%;
+    --foreground: 246 17% 21%;
 
-    /* text */
-    --color-text: #1a1855; /* deep indigo headline text */
-    --color-textSecondary: rgba(26, 24, 85, 0.62);
-    --color-textMuted: rgba(26, 24, 85, 0.62);
-    --color-textEmphasis: #6b3fe4; /* pink fails contrast on white -> readable purple */
-    --color-textDimmed: rgba(26, 24, 85, 0.45);
-    --color-textDesaturated: rgba(26, 24, 85, 0.55);
-    --color-error: #dc4c4c; /* deeper red for white-bg contrast */
-    --color-bullish: #00a167; /* deeper green for white-bg contrast */
+    /* Text ramp — colors/fg/fg-{primary,secondary,tertiary,quaternary}. The app's
+       four text tokens keep their dark ordering (text > textSecondary >
+       textDesaturated > textDimmed) and map onto the DS ramp in that order. */
+    --color-text: #2f2d40; /* fg-primary */
+    --color-textSecondary: #3b3952; /* fg-secondary */
+    --color-textMuted: #3b3952; /* fg-secondary — mirrors textSecondary, as in dark */
+    --color-textEmphasis: #4836f5; /* fg-brand-primary */
+    --color-textDesaturated: #636685; /* fg-tertiary */
+    --color-textDimmed: #a1a6c4; /* fg-quaternary */
+    --color-error: #e51f1d; /* components/status/fg-error */
+    --color-bullish: #00a186; /* components/status/fg-success */
 
-    /* Elevation levels so nested components separate:
-       page gradient (lilac) < container panel (periwinkle) < card (white).
-       container stays opaque so popovers/tooltips/banners read on the light page. */
-    --color-container: rgba(223, 228, 247, 0.95);
-    --color-containerDark: rgba(232, 235, 250, 0.94);
-    --color-surface: rgba(108, 104, 255, 0.12);
-    --color-surfaceHover: rgba(108, 104, 255, 0.2);
-    --color-bgHover: rgba(26, 24, 85, 0.06); /* TopNav MoreMenu row hover */
-    --color-surfaceAlt: rgba(26, 24, 85, 0.06);
-    --color-panel: rgba(255, 255, 255, 0.45);
-    --color-card: rgba(255, 255, 255, 0.96);
-    --color-cardLight: rgba(255, 255, 255, 1);
-    --color-selectBackground: rgba(26, 24, 85, 0.05);
-    --color-selectActive: rgba(26, 24, 85, 0.1);
-    --color-chartSelect: rgba(235, 232, 255, 1);
+    /* Elevation: page (bg-primary lilac) < panel < card (white glass). */
+    --color-container: #ffffff; /* components/tooltip/bg-primary — opaque so popovers/tooltips/banners read on the lilac page */
+    --color-containerDark: #ecf0ff; /* components/modals/bg-item */
+    --color-surface: #bcb6ef1a; /* components/cards/bg-secondary */
+    --color-surfaceHover: #bcb6ef4d; /* components/modals/bg-subsection */
+    --color-bgHover: #9ca0e533; /* components/badges/bg-secondary — TopNav MoreMenu row hover */
+    --color-surfaceAlt: #9ca0e533; /* components/badges/bg-secondary */
+    --color-panel: #ffffff33; /* colors/bg/bg-quarternary */
+    --color-card: #ffffff99; /* colors/bg/bg-secondary */
+    --color-cardLight: #ffffff; /* utilities/bg-section */
+    --color-selectBackground: #9ca0e533; /* components/badges/bg-secondary */
+    --color-selectActive: #9ca0e54d; /* components/badges/bg-primary */
+    --color-chartSelect: #ecf0ff; /* components/modals/bg-item */
 
-    /* B5 chrome-surface tokens — light values mirror the prior light: overrides.
+    /* B5 chrome-surface tokens — each mirrors the token it replaced magic hex for.
        cookieToggleOn has no light value: the toggle track's light:bg-surfaceAlt
        wins by source order in light, so the accent only shows in dark (parity). */
-    --color-cookieSurface: rgba(232, 235, 250, 0.94); /* was light:bg-containerDark */
-    --color-termsCard: rgba(255, 255, 255, 0.96); /* was light:bg-card */
-    --color-termsBtnHover: rgba(108, 104, 255, 0.2); /* was light:hover:bg-surfaceHover */
-    --color-termsBtnActive: rgba(26, 24, 85, 0.06); /* was light:active:bg-surfaceAlt */
+    --color-cookieSurface: #ecf0ff; /* components/modals/bg-item — mirrors containerDark */
+    --color-termsCard: #ffffff99; /* colors/bg/bg-secondary — mirrors card */
+    --color-termsBtnHover: #bcb6ef4d; /* components/modals/bg-subsection — mirrors surfaceHover */
+    --color-termsBtnActive: #9ca0e533; /* components/badges/bg-secondary — mirrors surfaceAlt */
 
-    /* secondary buttons */
-    --color-secondary: rgba(26, 24, 85, 0.05);
-    --color-secondaryHover: rgba(26, 24, 85, 0.08);
-    --color-secondaryActive: rgba(26, 24, 85, 0.1);
-    --color-secondaryFocus: rgba(26, 24, 85, 0.08);
-    --color-secondaryDisabled: rgba(26, 24, 85, 0.03);
+    /* Secondary buttons — the DS gives the hairline
+       (components/buttons/secondary/border-default, on --color-glassBorder below)
+       but no per-state fills, so the states step through the periwinkle tint scale
+       badges/bg-secondary -> badges/bg-primary -> border-secondary, preserving the
+       dark theme's rest < hover < active ordering. */
+    --color-secondary: #9ca0e533; /* components/badges/bg-secondary */
+    --color-secondaryHover: #9ca0e54d; /* components/badges/bg-primary */
+    --color-secondaryActive: #9ca0e566; /* colors/border/border-secondary */
+    --color-secondaryFocus: #9ca0e54d; /* components/badges/bg-primary */
+    --color-secondaryDisabled: #bcb6ef1a; /* components/cards/bg-secondary */
 
     /* tabs */
-    --color-tab: rgba(26, 24, 85, 0.55);
-    --color-tabPrimary: rgba(26, 24, 85, 0.1);
+    --color-tab: #3b3952; /* fg-secondary — resting tab label */
+    --color-tabPrimary: #9ca0e54d; /* components/badges/bg-primary */
 
     /* borders */
-    --color-border: rgba(26, 24, 85, 0.12);
-    --color-borderActive: rgba(26, 24, 85, 0.25);
-    --color-borderPurple: #b9a8ff;
+    --color-border: #9ca0e54d; /* colors/border/border-primary */
+    --color-borderActive: #9ca0e5bf; /* colors/border/border-tertiary */
+    --color-borderPurple: #4836f5; /* colors/border/border-brand-secondary */
 
-    /* E2 convert glass tokens (interim light values; G2 owns parity) */
-    --color-glassSurface: rgba(255, 255, 255, 0.5);
-    --color-glassBadge: rgba(26, 24, 85, 0.06);
-    --color-glassBorder: rgba(26, 24, 85, 0.2);
+    /* E2 convert glass tokens */
+    --color-glassSurface: #ffffff99; /* colors/bg/bg-secondary */
+    --color-glassBadge: #9ca0e533; /* components/badges/bg-secondary */
+    --color-glassBorder: #9ca0e566; /* colors/border/border-secondary */
 
-    /* H5 tabs tokens (interim light values; G2 owns parity) */
-    --color-borderTertiary: rgba(26, 24, 85, 0.3);
-    /* H15 list/accordion border (interim light value; G2 owns parity) */
-    --color-borderPrimary: rgba(26, 24, 85, 0.1);
-    --color-fgSecondary: rgba(26, 24, 85, 0.62);
-    --color-fgPrimary: #1a1855;
-    --color-flipSurface: rgba(255, 255, 255, 0.9);
-    --color-flipRing: #e8ebfa;
+    /* H5 tabs / H15 list + accordion / navbar foreground */
+    --color-borderTertiary: #9ca0e5bf; /* colors/border/border-tertiary */
+    --color-borderPrimary: #9ca0e54d; /* colors/border/border-primary */
+    --color-fgSecondary: #3b3952; /* colors/fg/fg-secondary */
+    --color-fgPrimary: #2f2d40; /* colors/fg/fg-primary */
+    --color-fgQuaternary: #a1a6c4; /* colors/fg/fg-quaternary */
+    --color-fgBrand: #4836f5; /* colors/fg/fg-brand-primary */
+    --color-borderQuarternary: #9ca0e5bf; /* colors/border/border-quarternary */
+    --color-flipSurface: #ecf0ff; /* components/modals/bg-item */
+    --color-flipRing: #cdd9ff; /* components/modals/border-item */
+    --color-modalOverlay: #504dff33; /* components/modals/bg-overlay */
 
-    /* Lighter purple for active nav tabs / toggles (primary) and connect/chain
-       buttons (primary-bright); dark keeps the deep indigo from :root. */
+    /* H8 table surfaces + the components/status palette the Status/Risk/Token-Idle
+       cells share. statusSuccessBorder/statusSuccessSolid/statusInfoSolid are
+       theme-invariant in the DS and stay on the @theme default. */
+    --color-bgSecondary: #ffffff99; /* colors/bg/bg-secondary */
+    --color-bgTertiary: #ffffff66; /* colors/bg/bg-tertiary */
+    --color-statusSuccess: #00a186; /* components/status/fg-success */
+    --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */
+    --color-statusWarning: #dd6102; /* components/status/fg-warning */
+    --color-statusBrand: #4836f5; /* components/status/fg-brand */
+    --color-statusBrandBg: #9ca0e54d; /* components/status/bg-brand */
+
+    /* H7 slider palette (components/slider) */
+    --color-sliderDot: #e8ebfe; /* fg-dot */
+    --color-sliderRing: #09042033; /* fg-pointer */
+    --color-sliderLine: #c9cdf4; /* fg-line */
+
+    /* Lighter purple for the legacy widget-look surfaces; dark keeps the deep
+       indigo from :root. No DS citation because these have no DS counterpart and
+       never will: their only consumers are pre-redesign variants the design
+       system doesn't type — Button `connectPrimary`/`pill`/`pagination`/
+       `paginationActive`, the Tabs `icons` variant, Toggle, and the interactive
+       Card hover. Per the Track H convention those die with the widget tree, so
+       these stops are deleted rather than replaced. The DS-adopted variants
+       (Button `primary`/`secondary`, Tabs `segmented`/`nav`) already run on the
+       button-gradient, brandHover and brand2 tokens instead. Nothing to revisit
+       here — when the widget tree goes, these go with it. */
     --color-primary-start: rgba(125, 108, 242);
     --color-primary-end: rgba(143, 126, 246);
     --color-primary-bright-start: rgba(130, 112, 245);
     --color-primary-bright-end: rgba(148, 131, 248);
 
-    --color-pageBackground: #f7fbff;
+    --color-pageBackground: #ecf0ff; /* colors/bg/bg-primary */
     /* Light page background (Figma 5124:25430): bottom fade + daytime sky
        image over a pale blue base gradient (visible only while the image
        loads, since the image is opaque and covers the layer). */
@@ -662,7 +729,13 @@
 
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
    selected-icon gradient fill (dark) / indigo tint (light) don't map to
-   utilities, so they stay here, keyed off the link's [aria-current]. */
+   utilities, so they stay here, keyed off the link's [aria-current].
+
+   Dark's #9ca9ff is components/buttons/navbar/fg-active, which the DS types as
+   theme-invariant — but light does NOT reuse it: sampling the light comp's
+   navbar (Sky App: UI 1030:58491) gives #2f2d40 for the glyph and label, i.e.
+   colors/fg/fg-primary. So light takes fg-primary via the token, and fg-active
+   is a dark-only value in practice despite carrying no mode dimension. */
 .nav-icon {
   color: #9ca9ff;
   transition: color 250ms var(--ease-out-expo);
@@ -677,14 +750,14 @@
   fill: url(#nav-icon-gradient);
 }
 [data-theme='light'] .nav-icon {
-  color: #2d2689;
+  color: var(--color-fgPrimary);
   opacity: 0.5;
 }
 [data-theme='light'] [aria-current='page'] > .nav-icon {
   opacity: 1;
 }
 [data-theme='light'] [aria-current='page'] > .nav-icon :where(path) {
-  fill: #2d2689;
+  fill: var(--color-fgPrimary);
 }
 /* Menu trigger glyph (lucide, stroke-based): open gets the brand gradient
    (Figma Type=Menu State=Active); rest/hover stay fg-primary via
@@ -693,5 +766,5 @@
   stroke: url(#nav-icon-gradient);
 }
 [data-theme='light'] [data-state='open'] > .nav-menu-icon {
-  stroke: #2d2689;
+  stroke: var(--color-fgPrimary);
 }
