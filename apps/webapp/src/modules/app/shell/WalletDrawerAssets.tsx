@@ -72,12 +72,12 @@ function AssetRow({
 }) {
   return (
     <div
-      className="group light:focus-within:bg-[#1a1855]/5 light:hover:bg-[#1a1855]/5 rounded-2xl px-2 py-3 transition-colors focus-within:bg-[#bcb6ef]/5 hover:bg-[#bcb6ef]/5 md:p-4"
+      className="group focus-within:bg-glassSurface hover:bg-glassSurface rounded-2xl px-2 py-3 transition-colors md:p-4"
       data-testid={`wallet-drawer-asset-${asset.symbol.toLowerCase()}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="light:border-[#1a1855]/20 flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#bcb6ef]/30">
+          <span className="border-borderTertiary flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]">
             <TokenIcon token={{ symbol: asset.symbol }} width={28} showChainIcon={false} className="size-7" />
           </span>
           <div className="flex flex-col gap-0.5">
