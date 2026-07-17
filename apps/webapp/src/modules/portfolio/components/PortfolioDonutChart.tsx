@@ -22,11 +22,16 @@ type PortfolioDonutChartProps = {
   className?: string;
 };
 
+// Radial dimensions are tuned against the 320 box and scale with `size`: the DS
+// pie keeps the band at ~5% of the diameter at every size (Figma 486:20138 is
+// 160 with an ~8px band), so holding them constant would double the band's
+// relative thickness on the mobile 160.
+const BASE_SIZE = 320;
 const PAD = 4; // breathing room from the box edge
 const THICKNESS = 18; // colored band width
-const PADDING_ANGLE = 3; // gap between segments, degrees
+const PADDING_ANGLE = 3; // gap between segments, degrees — angular, so unscaled
 const RING_GAP = 10; // distance from the colored band's inner edge to the gray ring
-const RING_STROKE = 1.5;
+const RING_STROKE = 1.5; // hairline at every size
 const CORNER_RADIUS = 4; // subtle rounding on the bar ends
 const START_ANGLE = 90; // 12 o'clock
 const END_ANGLE = -270; // full sweep, clockwise
@@ -86,11 +91,12 @@ export function PortfolioDonutChart({
   const sectors = computeSectors(chartSegments);
   const isEmpty = chartSegments.length === 0;
 
+  const scale = size / BASE_SIZE;
   const cx = size / 2;
   const cy = size / 2;
-  const outerRadius = size / 2 - PAD;
-  const innerRadius = outerRadius - THICKNESS;
-  const ringRadius = innerRadius - RING_GAP;
+  const outerRadius = size / 2 - PAD * scale;
+  const innerRadius = outerRadius - THICKNESS * scale;
+  const ringRadius = innerRadius - RING_GAP * scale;
   const isSingle = chartSegments.length === 1;
   const singleFullRing =
     sectors.length === 1 && Math.abs(sectors[0].startAngle - sectors[0].endAngle) >= FULL_CIRCLE_EPS;
@@ -100,6 +106,7 @@ export function PortfolioDonutChart({
       className={className}
       style={{ position: 'relative', width: size, height: size }}
       onMouseLeave={() => onActiveChange(null)}
+      data-testid="portfolio-donut"
     >
       {chartSegments.length > 0 && (
         <div className="absolute inset-0">
@@ -115,7 +122,7 @@ export function PortfolioDonutChart({
               innerRadius={innerRadius}
               outerRadius={outerRadius}
               paddingAngle={isSingle ? 0 : PADDING_ANGLE}
-              cornerRadius={isSingle ? 0 : CORNER_RADIUS}
+              cornerRadius={isSingle ? 0 : CORNER_RADIUS * scale}
               stroke="none"
               isAnimationActive={false}
               onMouseEnter={(_, index) => onActiveChange(chartSegments[index]?.id ?? null)}
