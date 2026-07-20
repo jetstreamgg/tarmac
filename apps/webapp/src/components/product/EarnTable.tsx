@@ -18,6 +18,8 @@ export type EarnTableSort = { column: EarnTableColumn; direction: 'asc' | 'desc'
 export type EarnTableRowItem = {
   id: string;
   name: string;
+  /** Editorial "NEW" marker on the token cell (1036:201322, APP-395). */
+  isNew?: boolean;
   /** 28px product logo for the token iconbox (the caller injects its TokenIcon). */
   icon?: ReactNode;
   /** Optional glyph rendered after the name (e.g. a provider logo). */
@@ -73,7 +75,19 @@ function TokenCell({ row }: { row: EarnTableRowItem }) {
     <CellToken
       icon={row.icon}
       title={row.name}
-      titleSuffix={row.nameSuffix}
+      titleSuffix={
+        <>
+          {row.nameSuffix}
+          {row.isNew && (
+            <span
+              data-testid={`earn-new-badge-${row.id}`}
+              className="bg-brand font-circle rounded-full px-1.5 py-0.5 text-[10px] leading-3 font-medium text-white"
+            >
+              <Trans>NEW</Trans>
+            </span>
+          )}
+        </>
+      }
       // Comp 486:22051: the accordion header title is Label 5; the desktop
       // table cell keeps Label 4 from md up.
       titleClassName="text-sm leading-4 tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]"

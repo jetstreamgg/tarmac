@@ -21,6 +21,7 @@ const ROWS: EarnTableRowItem[] = [
   {
     id: 'savings',
     name: 'Sky Savings',
+    isNew: true,
     risk: 'low',
     rate: '3.75%',
     rate30d: '3.70%',
@@ -126,5 +127,21 @@ describe('EarnTable — desktop table unchanged', () => {
 
     expect(screen.getByRole('table')).toBeTruthy();
     expect(screen.getByTestId('earn-sort-rate')).toBeTruthy();
+  });
+});
+
+describe('EarnTable — NEW badge (APP-395, 1036:201322)', () => {
+  afterEach(cleanup);
+
+  it('marks only rows flagged isNew, on desktop and in the mobile cards', () => {
+    renderEarn();
+    expect(screen.getAllByText('NEW')).toHaveLength(1);
+    expect(screen.getByTestId('earn-new-badge-savings')).toBeTruthy();
+    cleanup();
+
+    breakpoint.isMobile = true;
+    renderEarn();
+    expect(screen.getByTestId('earn-new-badge-savings')).toBeTruthy();
+    breakpoint.isMobile = false;
   });
 });
