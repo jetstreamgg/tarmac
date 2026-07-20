@@ -71,10 +71,13 @@ describe('buildEarnProducts', () => {
     expect(ids).toContain('stusds');
   });
 
-  // TODO(BL-07): update when risk ratings get a real source.
-  it('hardcodes risk tiers: advanced for stUSDS, moderate elsewhere', () => {
+  // TODO(BL-07): update when risk ratings get a real source. The savings 'low'
+  // is a TESTING-ONLY placeholder (see SAVINGS_RISK_TIER), not an assessment.
+  it('hardcodes risk tiers: advanced for stUSDS, low for savings (testing only), moderate elsewhere', () => {
     for (const product of products) {
-      expect(product.risk).toBe(product.kind === 'stusds' ? 'advanced' : 'moderate');
+      expect(product.risk).toBe(
+        product.kind === 'stusds' ? 'advanced' : product.kind === 'savings' ? 'low' : 'moderate'
+      );
     }
   });
 

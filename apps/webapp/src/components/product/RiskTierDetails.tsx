@@ -2,7 +2,7 @@ import type { MouseEvent, ReactNode } from 'react';
 import { BadgeCheck, MoveUpRight, X } from 'lucide-react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex, type EarnRiskTier } from '@/hooks';
+import { BP, useBreakpointIndex, type EarnProductKind, type EarnRiskTier } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -19,43 +19,69 @@ import { RiskTierMeter } from './RiskMeter';
 // decision — the comp treats it as editorial content, not product data.
 export const RISK_LEARN_MORE_URL = 'https://docs.sky.money';
 
-type RiskTierDetails = {
-  /** Display name (1036:201215): the tier ids read Conservative/Moderate/Aggressive. */
-  title: ReactNode;
-  description: ReactNode;
-  liquidationRisk: ReactNode;
-  withdrawals: ReactNode;
-  /** Lit segments on the 3-step scale and their tier color. */
-  litSegments: number;
-  segmentClass: string;
+/**
+ * The severity presentation per tier (1036:201215): display name + scale.
+ * The comp frame reads "Aggresive" — corrected spelling here.
+ */
+const RISK_TIER_DETAILS: Record<
+  EarnRiskTier,
+  { title: ReactNode; litSegments: number; segmentClass: string }
+> = {
+  low: { title: <Trans>Conservative</Trans>, litSegments: 1, segmentClass: 'bg-statusSuccessSolid' },
+  moderate: { title: <Trans>Moderate</Trans>, litSegments: 2, segmentClass: 'bg-statusWarning' },
+  advanced: { title: <Trans>Aggressive</Trans>, litSegments: 3, segmentClass: 'bg-error' }
 };
 
-const RISK_TIER_DETAILS: Record<EarnRiskTier, RiskTierDetails> = {
-  low: {
-    title: <Trans>Conservative</Trans>,
+/**
+ * The explanatory copy per product family. The comp writes one blurb per tier,
+ * but each was clearly authored for the single product family occupying that
+ * tier (Conservative → Savings, Moderate → Morpho vaults, Aggressive →
+ * stUSDS) — reusing the Morpho blurb on a Pendle market would be wrong, so
+ * the copy keys off the product kind while the tier keeps the severity
+ * presentation. The savings/vault/stusds texts are verbatim from 1036:201215;
+ * the rewards/fixed texts are PLACEHOLDER copy in the same voice, pending
+ * product sign-off (flagged on APP-396).
+ */
+const RISK_KIND_DETAILS: Record<
+  EarnProductKind,
+  { description: ReactNode; liquidationRisk: ReactNode; withdrawals: ReactNode }
+> = {
+  savings: {
     description: (
       <Trans>
         Funds secured directly by Sky Protocol. A fixed rate determined by governance, with instant liquidity.
       </Trans>
     ),
     liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Instant</Trans>,
-    litSegments: 1,
-    segmentClass: 'bg-statusSuccessSolid'
+    withdrawals: <Trans>Instant</Trans>
   },
-  moderate: {
-    title: <Trans>Moderate</Trans>,
+  rewards: {
+    // Deliberately reward-agnostic: most Rewards contracts pay a second token,
+    // but Chronicle Points pays points — don't promise a token here.
+    description: (
+      <Trans>Supply directly to Sky Protocol and earn rewards. Reward rates vary with emissions.</Trans>
+    ),
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Instant</Trans>
+  },
+  vault: {
     description: (
       <Trans>Third-party strategies deployed by Morpho. Returns vary depending on market utilization.</Trans>
     ),
     liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Active management</Trans>,
-    litSegments: 2,
-    segmentClass: 'bg-statusWarning'
+    withdrawals: <Trans>Active management</Trans>
   },
-  advanced: {
-    // The comp frame reads "Aggresive" — corrected spelling here.
-    title: <Trans>Aggressive</Trans>,
+  fixed: {
+    description: (
+      <Trans>
+        Fixed-yield markets powered by Pendle. The rate is locked when you enter and realized at market
+        maturity.
+      </Trans>
+    ),
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>At maturity</Trans>
+  },
+  stusds: {
     description: (
       <Trans>
         For advanced users. Higher yield with utilization-dependent variable returns and liquidation risk on
@@ -63,9 +89,7 @@ const RISK_TIER_DETAILS: Record<EarnRiskTier, RiskTierDetails> = {
       </Trans>
     ),
     liquidationRisk: <Trans>Yes</Trans>,
-    withdrawals: <Trans>Yes</Trans>,
-    litSegments: 3,
-    segmentClass: 'bg-error'
+    withdrawals: <Trans>Yes</Trans>
   }
 };
 
@@ -81,8 +105,9 @@ function FactRow({ label, value }: { label: ReactNode; value: ReactNode }) {
 }
 
 /** Scale + description + divider + fact rows — shared by the tooltip card and the bottom sheet. */
-function RiskTierDetailsBody({ tier }: { tier: EarnRiskTier }) {
-  const details = RISK_TIER_DETAILS[tier];
+function RiskTierDetailsBody({ tier, kind }: { tier: EarnRiskTier; kind: EarnProductKind }) {
+  const severity = RISK_TIER_DETAILS[tier];
+  const details = RISK_KIND_DETAILS[kind];
 
   return (
     <>
@@ -93,7 +118,7 @@ function RiskTierDetailsBody({ tier }: { tier: EarnRiskTier }) {
             data-testid="risk-details-segment"
             className={cn(
               'h-1 flex-1 rounded-full',
-              index < details.litSegments ? details.segmentClass : 'bg-bgTertiary'
+              index < severity.litSegments ? severity.segmentClass : 'bg-bgTertiary'
             )}
           />
         ))}
@@ -124,7 +149,15 @@ function RiskTierDetailsBody({ tier }: { tier: EarnRiskTier }) {
  * "Learn more about risk" external link. Pure content — the host surface
  * (tooltip on md+, bottom sheet below) supplies chrome and behavior.
  */
-export function RiskTierDetailsCard({ tier, className }: { tier: EarnRiskTier; className?: string }) {
+export function RiskTierDetailsCard({
+  tier,
+  kind,
+  className
+}: {
+  tier: EarnRiskTier;
+  kind: EarnProductKind;
+  className?: string;
+}) {
   return (
     <div className={cn('flex w-full flex-col gap-4', className)}>
       <div className="flex flex-col gap-px">
@@ -135,7 +168,7 @@ export function RiskTierDetailsCard({ tier, className }: { tier: EarnRiskTier; c
           {RISK_TIER_DETAILS[tier].title}
         </span>
       </div>
-      <RiskTierDetailsBody tier={tier} />
+      <RiskTierDetailsBody tier={tier} kind={kind} />
       <div className="border-borderPrimary w-full border-b" />
       <a
         href={RISK_LEARN_MORE_URL}
@@ -157,7 +190,15 @@ export function RiskTierDetailsCard({ tier, className }: { tier: EarnRiskTier; c
  * (486:21797). Clicks never bubble — the pill lives inside clickable
  * table rows and accordion cards.
  */
-export function RiskTierDetailsTrigger({ tier, className }: { tier: EarnRiskTier; className?: string }) {
+export function RiskTierDetailsTrigger({
+  tier,
+  kind,
+  className
+}: {
+  tier: EarnRiskTier;
+  kind: EarnProductKind;
+  className?: string;
+}) {
   const { bpi } = useBreakpointIndex();
   const { t } = useLingui();
 
@@ -215,7 +256,7 @@ export function RiskTierDetailsTrigger({ tier, className }: { tier: EarnRiskTier
                 </Button>
               </ResponsiveModalClose>
             </div>
-            <RiskTierDetailsBody tier={tier} />
+            <RiskTierDetailsBody tier={tier} kind={kind} />
             <Button variant="secondary" size="m" className="mt-1 w-full" asChild>
               <a href={RISK_LEARN_MORE_URL} target="_blank" rel="noopener noreferrer">
                 <Trans>Learn more about risk</Trans>
@@ -242,7 +283,7 @@ export function RiskTierDetailsTrigger({ tier, className }: { tier: EarnRiskTier
       </TooltipTrigger>
       <TooltipPortal>
         <TooltipContent onClick={stopRowClick}>
-          <RiskTierDetailsCard tier={tier} className="w-[228px]" />
+          <RiskTierDetailsCard tier={tier} kind={kind} className="w-[228px]" />
         </TooltipContent>
       </TooltipPortal>
     </Tooltip>

@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { EarnRiskTier } from '@/hooks';
+import type { EarnProductKind, EarnRiskTier } from '@/hooks';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { RiskTierDetailsCard, RiskTierDetailsTrigger } from './RiskTierDetails';
 
@@ -19,18 +19,18 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
 i18n.load('en', {});
 i18n.activate('en');
 
-const renderCard = (tier: EarnRiskTier) =>
+const renderCard = (tier: EarnRiskTier, kind: EarnProductKind) =>
   render(
     <I18nProvider i18n={i18n}>
-      <RiskTierDetailsCard tier={tier} />
+      <RiskTierDetailsCard tier={tier} kind={kind} />
     </I18nProvider>
   );
 
-describe('RiskTierDetailsCard — per-tier content (1036:201215)', () => {
+describe('RiskTierDetailsCard — tier presentation + per-product copy (1036:201215)', () => {
   afterEach(cleanup);
 
-  it('renders the Conservative profile for the low tier', () => {
-    renderCard('low');
+  it('renders the Conservative profile with savings copy for low-tier savings', () => {
+    renderCard('low', 'savings');
 
     expect(screen.getByText('Risk profile')).toBeTruthy();
     expect(screen.getByText('Conservative')).toBeTruthy();
@@ -48,7 +48,7 @@ describe('RiskTierDetailsCard — per-tier content (1036:201215)', () => {
   });
 
   it('lights one success segment on the scale for the low tier', () => {
-    renderCard('low');
+    renderCard('low', 'savings');
 
     const segments = screen.getAllByTestId('risk-details-segment');
     expect(segments).toHaveLength(3);
@@ -57,8 +57,8 @@ describe('RiskTierDetailsCard — per-tier content (1036:201215)', () => {
     expect(segments[2].className).toContain('bg-bgTertiary');
   });
 
-  it('renders the Moderate profile with two warning segments', () => {
-    renderCard('moderate');
+  it('renders Morpho copy for moderate vaults, with two warning segments', () => {
+    renderCard('moderate', 'vault');
 
     expect(screen.getByText('Moderate')).toBeTruthy();
     expect(screen.getByText(/Third-party strategies deployed by Morpho/)).toBeTruthy();
@@ -70,8 +70,24 @@ describe('RiskTierDetailsCard — per-tier content (1036:201215)', () => {
     expect(segments[2].className).toContain('bg-bgTertiary');
   });
 
-  it('renders the Aggressive profile with three error segments and Yes/Yes facts', () => {
-    renderCard('advanced');
+  it('renders Pendle copy for moderate fixed-yield — same tier, different product message', () => {
+    renderCard('moderate', 'fixed');
+
+    expect(screen.getByText('Moderate')).toBeTruthy();
+    expect(screen.getByText(/powered by Pendle/)).toBeTruthy();
+    expect(screen.queryByText(/Morpho/)).toBeNull();
+    expect(screen.getByText('At maturity')).toBeTruthy();
+  });
+
+  it('renders Sky rewards copy for moderate rewards', () => {
+    renderCard('moderate', 'rewards');
+
+    expect(screen.queryByText(/Morpho/)).toBeNull();
+    expect(screen.getByText('Instant')).toBeTruthy();
+  });
+
+  it('renders the Aggressive profile with stUSDS copy, three error segments and Yes/Yes facts', () => {
+    renderCard('advanced', 'stusds');
 
     expect(screen.getByText('Aggressive')).toBeTruthy();
     expect(screen.getByText(/For advanced users/)).toBeTruthy();
@@ -82,11 +98,11 @@ describe('RiskTierDetailsCard — per-tier content (1036:201215)', () => {
   });
 });
 
-const renderTrigger = (tier: EarnRiskTier = 'low') =>
+const renderTrigger = (tier: EarnRiskTier = 'low', kind: EarnProductKind = 'savings') =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider delayDuration={0}>
-        <RiskTierDetailsTrigger tier={tier} />
+        <RiskTierDetailsTrigger tier={tier} kind={kind} />
       </TooltipProvider>
     </I18nProvider>
   );
@@ -121,7 +137,7 @@ describe('RiskTierDetailsTrigger — desktop tooltip (1036:201215)', () => {
   afterEach(cleanup);
 
   it('renders a focusable pill trigger with the details hidden until opened', () => {
-    renderTrigger('moderate');
+    renderTrigger('moderate', 'vault');
 
     const trigger = screen.getByRole('button', { name: 'Risk profile' });
     expect(trigger).toBeTruthy();

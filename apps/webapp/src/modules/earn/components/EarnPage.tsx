@@ -117,6 +117,7 @@ export function EarnPage() {
       visibleRows.map(row => ({
         id: row.id,
         name: row.name,
+        kind: row.kind,
         isNew: NEW_PRODUCT_IDS.includes(row.id),
         icon: <TokenIcon token={{ symbol: productIconSymbol(row) }} width={28} className="h-7 w-7" />,
         nameSuffix:

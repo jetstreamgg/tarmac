@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
-import type { EarnRiskTier } from '@/hooks';
+import type { EarnProductKind, EarnRiskTier } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CellEmpty, CellPercent, CellToken } from '@/components/ui/table-cells';
@@ -31,6 +31,8 @@ export type EarnTableRowItem = {
   /** Stacked network icons slot. */
   network?: ReactNode;
   risk: EarnRiskTier;
+  /** Product family — selects the risk-details copy (APP-396). */
+  kind: EarnProductKind;
   rate: string;
   rate30d: string;
   tvl: string;
@@ -168,7 +170,10 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
                   valueClassName="text-xs leading-3.5 tracking-[-0.24px]"
                   fields={[
                     ...(row.network ? [{ label: <Trans>Network</Trans>, value: row.network }] : []),
-                    { label: <Trans>Risk</Trans>, value: <RiskTierDetailsTrigger tier={row.risk} /> },
+                    {
+                      label: <Trans>Risk</Trans>,
+                      value: <RiskTierDetailsTrigger tier={row.risk} kind={row.kind} />
+                    },
                     {
                       label: <Trans>Rate</Trans>,
                       value: <NumericValue value={row.rate} isLoading={row.isLoading} />
@@ -281,7 +286,7 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
             </TableCell>
             <TableCell>{row.network}</TableCell>
             <TableCell>
-              <RiskTierDetailsTrigger tier={row.risk} />
+              <RiskTierDetailsTrigger tier={row.risk} kind={row.kind} />
             </TableCell>
             <TableCell>
               <NumericValue value={row.rate} isLoading={row.isLoading} />

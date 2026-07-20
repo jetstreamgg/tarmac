@@ -11,6 +11,11 @@ import type { EarnProductDescriptor, EarnRiskTier } from './types';
 // TODO(BL-07): hardcoded risk tiers — see EarnRiskTier in ./types.ts.
 const DEFAULT_RISK_TIER: EarnRiskTier = 'moderate';
 const STUSDS_RISK_TIER: EarnRiskTier = 'advanced';
+// TESTING ONLY — NOT a risk assessment. 'low' makes the Conservative details
+// surface (APP-396) reachable in the app, matching the comps that show Sky
+// Savings as Conservative. The real tier assignment is a product/risk
+// decision owned by BL-07, not engineering; revisit before this ships.
+const SAVINGS_RISK_TIER: EarnRiskTier = 'low';
 
 /**
  * Chains within `familyChainIds` where a product is live: its owning module
@@ -54,7 +59,7 @@ export function buildEarnProducts(
     // (mainnet); USDC swaps through the PSM (L2). The union across the family is
     // listed here — the supply surface offers the chain-appropriate subset.
     supplyTokens: [TOKENS.usds.symbol, TOKENS.dai.symbol, TOKENS.usdc.symbol],
-    risk: DEFAULT_RISK_TIER,
+    risk: SAVINGS_RISK_TIER,
     networks: productNetworks(Intent.SAVINGS_INTENT, familyChainIds, TOKENS.susds.address),
     detailPath: intentToPath(Intent.SAVINGS_INTENT)
   };

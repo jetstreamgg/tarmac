@@ -154,7 +154,7 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
             <span className="text-fgSecondary text-xs leading-[18px]">
               <Trans>Risk</Trans>
             </span>
-            <RiskTierDetailsTrigger tier={row.risk} />
+            <RiskTierDetailsTrigger tier={row.risk} kind={row.kind} />
           </div>
         </div>
         <Button variant="primary" size="l" className="w-28" onClick={onSupply}>
@@ -210,7 +210,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
         <Stat label={<RateLabel />}>{row.rate.formatted}</Stat>
         <StatDivider />
         <Stat label={<Trans>Risk</Trans>}>
-          <RiskTierDetailsTrigger tier={row.risk} />
+          <RiskTierDetailsTrigger tier={row.risk} kind={row.kind} />
         </Stat>
       </>
     ),
@@ -263,7 +263,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
           </>
         )}
         <Stat label={<Trans>Risk</Trans>}>
-          <RiskTierDetailsTrigger tier={row.risk} />
+          <RiskTierDetailsTrigger tier={row.risk} kind={row.kind} />
         </Stat>
       </>
     )
