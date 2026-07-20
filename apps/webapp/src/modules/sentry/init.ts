@@ -55,11 +55,15 @@ export function initSentry(): void {
       // deep-link to wallets from those WebViews anyway (WEBAPP-1Z).
       /Can't find variable: indexedDB/,
       /indexedDB is not defined/,
-      // Stale-chunk after deploy: a long-lived tab has the previous build's
-      // hashed chunk URLs baked into its module graph; the next __vitePreload
-      // 404s. User just needs to refresh — not actionable.
+      // Chunk load failures: either a stale tab after deploy (previous build's
+      // hashed chunk URLs baked into its module graph, next __vitePreload 404s)
+      // or a transient client-side fetch failure (network flap, extension
+      // interference) on a chunk that's still live. User just needs to
+      // refresh/retry — not actionable. One regex per browser wording:
+      // Chromium / Safari / Firefox respectively (WEBAPP-17).
       /Failed to fetch dynamically imported module.*\/assets\/.+\.js/,
       /Importing a module script failed.*\/assets\/.+\.js/,
+      /error loading dynamically imported module.*\/assets\/.+\.js/,
       // MetaMask multichain SDK transport handshake timeout during wallet
       // connect (@metamask/connect-multichain throws TransportTimeoutError).
       // A client-side network timeout — common on high-latency / filtered
