@@ -12,22 +12,25 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { IconboxStatus } from '@/components/ui/iconbox';
-import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 import { ProductGlyph } from './ProductGlyph';
 
-// DS card comp (486:20195 mobile / 486:20044 desktop): stat value is the Label 5
-// variable = 12/14 Circular medium (the ticket table approximated it as 14/16;
-// following the Figma variable, which is authoritative where the two diverge).
-const statValue = 'font-circle text-text text-xs leading-[14px] font-medium tracking-[-0.24px]';
+// DS type tokens, resolved per the comps (mobile 486:20195 → desktop 486:20044).
+// Every one is responsive, so the card is NOT tier-agnostic. Color comes from the
+// consumer: values are fg-primary, labels/network name are fg-secondary.
 
-// DS Badges/Illustration network name label (Label 6), muted.
-const networkName = 'font-circle text-textSecondary text-xs leading-[14px] font-medium tracking-[-0.24px]';
-
-// DS Badges/Illustration pill: glass badge fill (Components/Badges/bg-secondary),
-// rounded-full, icon + label — the chrome the comp draws around the network chip.
+// Label 5 stat value: 12/14 → 14/16, Circular medium.
+const statValue =
+  'font-circle text-xs leading-[14px] font-medium tracking-[-0.24px] md:text-sm md:leading-4 md:tracking-[-0.28px]';
+// Body 6 stat label: 11/16 → 12/18, Graphik regular.
+const statLabel =
+  'font-graphik text-fgSecondary text-[11px] leading-4 font-normal md:text-xs md:leading-[18px]';
+// Label 6 network name: 11/12 → 12/14, Circular medium.
+const networkName =
+  'font-circle text-fgSecondary text-[11px] leading-3 font-medium tracking-[-0.22px] md:text-xs md:leading-[14px] md:tracking-[-0.24px]';
+// DS Badges/Illustration pill: glass badge fill (Components/Badges/bg-secondary).
 const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-full py-1 pr-2 pl-1';
 
 /**
@@ -64,9 +67,8 @@ export function PositionCard({
       </div>
 
       <div className="flex items-center gap-1.5">
-        {/* DS Heading 5 (Circular medium) — responsive per the comps, not
-            tier-agnostic: 20/22 on mobile (486:20195), 24/26 from md (486:20044). */}
-        <span className="text-text font-circle text-xl leading-[22px] font-medium tracking-[-0.4px] md:text-2xl md:leading-[26px] md:tracking-[-0.48px]">
+        {/* DS Heading 5 (Circular medium), responsive: 20/22 mobile → 24/26 desktop. */}
+        <span className="text-fgPrimary font-circle text-xl leading-[22px] font-medium tracking-[-0.4px] md:text-2xl md:leading-[26px] md:tracking-[-0.48px]">
           {position.name}
         </span>
         <ProductGlyph id={position.id} kind={position.kind} />
@@ -79,13 +81,17 @@ export function PositionCard({
           <Stat
             className="w-[112px]"
             label={<Trans>My position</Trans>}
-            value={<span className={statValue}>{formatUsd(position.amountUsd)}</span>}
+            value={<span className={cn(statValue, 'text-fgPrimary')}>{formatUsd(position.amountUsd)}</span>}
           />
           <StatDivider />
           <Stat
             className="flex-1"
             label={<Trans>Rate</Trans>}
-            value={<span className={statValue}>{formatDecimalPercentage(position.rate ?? 0)}</span>}
+            value={
+              <span className={cn(statValue, 'text-fgPrimary')}>
+                {formatDecimalPercentage(position.rate ?? 0)}
+              </span>
+            }
           />
         </div>
         <div className="flex">
@@ -93,15 +99,15 @@ export function PositionCard({
           <Stat
             className="w-[112px]"
             label={<Trans>Already earned</Trans>}
-            value={<span className={cn(statValue, 'text-textSecondary')}>TODO</span>}
+            value={<span className={cn(statValue, 'text-fgSecondary')}>TODO</span>}
           />
           <StatDivider />
           <Stat
             className="flex-1"
             label={<Trans>1Y projected earnings</Trans>}
             value={
-              <span className={cn(statValue, 'flex items-center gap-1')}>
-                <TrendingUp className="text-bullish h-4 w-4 shrink-0" />
+              <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>
+                <TrendingUp className="text-bullish h-3 w-3 shrink-0 md:h-4 md:w-4" />
                 {formatUsd(projected)}
               </span>
             }
@@ -162,9 +168,7 @@ function NetworkBadge({ chainIds }: { chainIds: number[] }) {
 function Stat({ label, value, className }: { label: ReactNode; value: ReactNode; className?: string }) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <Text variant="medium" className="text-textSecondary">
-        {label}
-      </Text>
+      <span className={statLabel}>{label}</span>
       {value}
     </div>
   );
