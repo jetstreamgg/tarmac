@@ -83,7 +83,7 @@ describe('EarnFeaturedCards — mobile featured products (M6.2, comp 486:22051)'
   });
 
   it('renders the single highlighted Sky Savings card with the live rate and a working Supply CTA', () => {
-    const onSelect = renderCards();
+    const onSelect = renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: false }));
 
     expect(screen.getByText('Sky Savings')).toBeTruthy();
     expect(screen.getByText('3.75%')).toBeTruthy();
@@ -92,8 +92,8 @@ describe('EarnFeaturedCards — mobile featured products (M6.2, comp 486:22051)'
     expect(onSelect).toHaveBeenCalledWith('savings');
   });
 
-  it('hides products whose descriptor is not visible — no Pendle card by default (1036:201301)', () => {
-    renderCards();
+  it('hides products whose descriptor is not visible (1036:201301)', () => {
+    renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: false }));
 
     expect(screen.queryByText('Pendle sUSDS')).toBeNull();
     expect(screen.getAllByRole('button', { name: 'Supply' })).toHaveLength(1);
@@ -128,7 +128,7 @@ describe('EarnFeaturedCards — mobile featured products (M6.2, comp 486:22051)'
   });
 
   it('renders nothing when no visible product has a row', () => {
-    renderCards([fixedRow]);
+    renderCards([fixedRow], vi.fn(), withVisibility({ fixed: false }));
 
     expect(screen.queryByTestId('earn-featured-cards')).toBeNull();
   });
@@ -138,7 +138,7 @@ describe('EarnFeaturedCards — desktop (APP-395)', () => {
   afterEach(cleanup);
 
   it('renders the full-width horizontal savings card with an Earn CTA when it is the only visible card (1036:201301)', () => {
-    const onSelect = renderCards();
+    const onSelect = renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: false }));
 
     expect(screen.getByTestId('earn-featured-savings-wide')).toBeTruthy();
     // The rate renders inside the "Supply … and earn {rate} APY" headline.

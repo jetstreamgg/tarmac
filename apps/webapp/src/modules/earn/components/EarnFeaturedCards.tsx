@@ -218,7 +218,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
   },
   {
     id: 'fixed',
-    visible: false,
+    visible: true,
     findRow: rows => rows.find(row => row.kind === 'fixed'),
     badges: row => (
       <>
