@@ -17,6 +17,8 @@ import {
 
 import { applyTheme } from '@/lib/theme';
 import { cn } from '@/lib/cn';
+import { AppLink } from '@/lib/navigation';
+import { defaultConfig } from '@/modules/config/default-config';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -2321,6 +2323,12 @@ function DesignSystem() {
       <div aria-hidden className="app-background" />
       <header className="border-glassBorder bg-pageBackground/80 sticky top-0 z-10 border-b backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-6 py-3">
+          {/* Same theme-swapped logo link as the app shell (Layout.tsx) — the DS
+              page renders outside it, so the way back home lives here. */}
+          <AppLink to="/" title="Home page" className="min-w-[96px]">
+            <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
+            <img src={defaultConfig.logoLight} alt="logo" width={96} className="light:block hidden" />
+          </AppLink>
           <Heading tag="h1" variant="small" className="mr-auto">
             Design system preview
           </Heading>
