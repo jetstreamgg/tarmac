@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { i18n } from '@lingui/core';
 import { ModuleEnum, TransactionTypeEnum, type CombinedHistoryItem } from '@/hooks';
-import { OrderStatus } from '@/hooks/trade/constants';
 import { toPortfolioTxRow } from './transactionRow';
 
 i18n.load('en', {});
@@ -59,7 +58,7 @@ describe('toPortfolioTxRow', () => {
         type: TransactionTypeEnum.TRADE,
         fromAmount: 10n * 10n ** 18n,
         fromToken: { symbol: 'USDS', decimals: 18 },
-        cowOrderStatus: OrderStatus.open
+        cowOrderStatus: 'Open' // formatOrderStatus string, not the enum
       }),
       0
     );
@@ -68,8 +67,8 @@ describe('toPortfolioTxRow', () => {
     expect(row.status).toBe('pending');
   });
 
-  it('marks a fulfilled trade completed and a cancelled trade failed', () => {
-    const mk = (s: OrderStatus) =>
+  it('marks a fulfilled trade completed and a cancelled/expired trade failed', () => {
+    const mk = (s: string) =>
       toPortfolioTxRow(
         asItem({
           ...base,
@@ -81,9 +80,9 @@ describe('toPortfolioTxRow', () => {
         }),
         0
       ).status;
-    expect(mk(OrderStatus.fulfilled)).toBe('completed');
-    expect(mk(OrderStatus.cancelled)).toBe('failed');
-    expect(mk(OrderStatus.expired)).toBe('failed');
+    expect(mk('Fulfilled')).toBe('completed');
+    expect(mk('Cancelled')).toBe('failed');
+    expect(mk('Expired')).toBe('failed');
   });
 
   it('handles a token-less upgrade row (SKY, no USD column)', () => {

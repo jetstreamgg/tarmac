@@ -75,6 +75,12 @@ describe('PortfolioTransactionsView', () => {
     expect(within(table).getAllByText('Trade').length).toBeGreaterThan(0);
   });
 
+  it('shows a Failed pill for a cancelled/expired order', () => {
+    renderView([row({ id: 'f', status: 'failed', module: ModuleEnum.TRADE, action: 'Trade' })]);
+    const table = screen.getByTestId('portfolio-transactions-table');
+    expect(within(table).queryByText('Failed')).not.toBeNull();
+  });
+
   it('shows the empty state when there are no transactions', () => {
     renderView([]);
     expect(screen.queryByText('No transactions yet')).not.toBeNull();

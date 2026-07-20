@@ -1,6 +1,5 @@
 import { t } from '@lingui/core/macro';
 import { CombinedHistoryItem, ModuleEnum, TransactionTypeEnum, getTokenDecimals } from '@/hooks';
-import { OrderStatus } from '@/hooks/trade/constants';
 import { formatBigInt } from '@/utils';
 
 // The history items carry a `Token` shaped slightly differently from the one
@@ -163,20 +162,21 @@ function isPositive(type: TransactionTypeEnum): boolean | undefined {
   }
 }
 
-// Only CoW trades carry a real lifecycle status; every other row comes from the
-// subgraph and is therefore an indexed, confirmed transaction.
+// Only CoW trades carry a lifecycle status; every other row is an indexed,
+// confirmed subgraph transaction. `cowOrderStatus` holds the *formatted* string
+// from `formatOrderStatus` (Fulfilled / Open / Signature Pending / Cancelled /
+// Expired) — not the OrderStatus enum, despite the field's declared type.
 function txStatus(item: CombinedHistoryItem): PortfolioTxStatus {
   if (!('cowOrderStatus' in item)) return 'completed';
-  switch (item.cowOrderStatus) {
-    case OrderStatus.fulfilled:
-      return 'completed';
-    case OrderStatus.open:
-    case OrderStatus.presignaturePending:
-      return 'pending';
-    case OrderStatus.cancelled:
-    case OrderStatus.expired:
+  switch (String(item.cowOrderStatus)) {
+    case 'Cancelled':
+    case 'Expired':
       return 'failed';
+    case 'Open':
+    case 'Signature Pending':
+      return 'pending';
     default:
+      // 'Fulfilled' + any settled/unknown historical order.
       return 'completed';
   }
 }

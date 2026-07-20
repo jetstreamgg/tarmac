@@ -71,6 +71,14 @@ function CheckIcon() {
   );
 }
 
+function XIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+      <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // Icons/General/move-up-right — the hash cell's external-link arrow.
 function MoveUpRightIcon() {
   return (
@@ -107,29 +115,29 @@ export function CellChevron() {
   return <ChevronRight className="text-fgTertiary size-4" aria-hidden />;
 }
 
-export type CellStatusValue = 'pending' | 'completed';
+export type CellStatusValue = 'pending' | 'completed' | 'failed';
 
-/** Type=Status: the Pending (brand) / Completed (success) pill. */
+const statusStyles: Record<CellStatusValue, { className: string; icon: ReactNode; label: ReactNode }> = {
+  pending: {
+    className: 'bg-statusBrandBg text-statusBrand',
+    icon: <DotsIcon />,
+    label: <Trans>Pending</Trans>
+  },
+  completed: {
+    className: 'bg-statusSuccessBg text-statusSuccess',
+    icon: <CheckIcon />,
+    label: <Trans>Completed</Trans>
+  },
+  failed: { className: 'bg-error/10 text-error', icon: <XIcon />, label: <Trans>Failed</Trans> }
+};
+
+/** Type=Status: the Pending (brand) / Completed (success) / Failed (error) pill. */
 export function CellStatus({ status }: { status: CellStatusValue }) {
+  const { className, icon, label } = statusStyles[status];
   return (
-    <span
-      className={cn(
-        label6,
-        'inline-flex h-6 items-center gap-1 rounded-full px-2',
-        status === 'pending' ? 'bg-statusBrandBg text-statusBrand' : 'bg-statusSuccessBg text-statusSuccess'
-      )}
-    >
-      {status === 'pending' ? (
-        <>
-          <DotsIcon />
-          <Trans>Pending</Trans>
-        </>
-      ) : (
-        <>
-          <CheckIcon />
-          <Trans>Completed</Trans>
-        </>
-      )}
+    <span className={cn(label6, 'inline-flex h-6 items-center gap-1 rounded-full px-2', className)}>
+      {icon}
+      {label}
     </span>
   );
 }

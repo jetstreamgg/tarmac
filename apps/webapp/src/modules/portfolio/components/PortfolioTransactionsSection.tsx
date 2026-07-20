@@ -79,11 +79,7 @@ const networkCell = (row: PortfolioTxRow) => (
   <CellNetworks>{getChainIcon(row.chainId, 'h-full w-full')}</CellNetworks>
 );
 
-// The DS CellStatus only models pending / completed; a failed CoW order (rare,
-// and generally absent from confirmed history) folds into completed for display.
-const statusCell = (row: PortfolioTxRow) => (
-  <CellStatus status={row.status === 'pending' ? 'pending' : 'completed'} />
-);
+const statusCell = (row: PortfolioTxRow) => <CellStatus status={row.status} />;
 
 const productCell = (row: PortfolioTxRow) => (
   <CellProduct icon={tokenIcon(row.symbol)} label={productName(row.module)} />
