@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
   formatDecimalPercentage,
@@ -11,19 +12,23 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { IconboxStatus } from '@/components/ui/iconbox';
-import { GainValue } from '@/components/ui/GainValue';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 import { ProductGlyph } from './ProductGlyph';
 
-// DS card comp (486:20195 mobile / 486:20044 desktop): the stat value is the
-// Label 5 type (14/16, Circular medium) — shared with table cells and pills.
-const statValue = 'font-circle text-text text-sm leading-4 font-medium tracking-[-0.28px]';
+// DS card comp (486:20195 mobile / 486:20044 desktop): stat value is the Label 5
+// variable = 12/14 Circular medium (the ticket table approximated it as 14/16;
+// following the Figma variable, which is authoritative where the two diverge).
+const statValue = 'font-circle text-text text-xs leading-[14px] font-medium tracking-[-0.24px]';
 
-// Label 6 (12/14) network name, muted — the DS Badges/Illustration label.
+// DS Badges/Illustration network name label (Label 6), muted.
 const networkName = 'font-circle text-textSecondary text-xs leading-[14px] font-medium tracking-[-0.24px]';
+
+// DS Badges/Illustration pill: glass badge fill (Components/Badges/bg-secondary),
+// rounded-full, icon + label — the chrome the comp draws around the network chip.
+const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-full py-1 pr-2 pl-1';
 
 /**
  * One supplied position in the Portfolio carousel: a 64px ringed status iconbox,
@@ -93,10 +98,10 @@ export function PositionCard({
             className="flex-1"
             label={<Trans>1Y projected earnings</Trans>}
             value={
-              <GainValue
-                value={projected}
-                className="font-circle text-sm leading-4 font-medium tracking-[-0.28px]"
-              />
+              <span className={cn(statValue, 'flex items-center gap-1')}>
+                <TrendingUp className="text-bullish h-4 w-4 shrink-0" />
+                {formatUsd(projected)}
+              </span>
             }
           />
         </div>
@@ -134,14 +139,14 @@ export function PositionCard({
 function NetworkBadge({ chainIds }: { chainIds: number[] }) {
   if (chainIds.length === 1) {
     return (
-      <span className="flex items-center gap-1" data-testid="position-card-networks">
+      <span className={badgePill} data-testid="position-card-networks">
         <span className="flex h-4 w-4 shrink-0">{getChainIcon(chainIds[0], 'h-full w-full')}</span>
         <span className={networkName}>{getChainName(chainIds[0])}</span>
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1.5" data-testid="position-card-networks">
+    <span className={cn(badgePill, 'gap-1.5')} data-testid="position-card-networks">
       <IconStack size={16}>{chainIds.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>
       {/* Always ≥2 chains here (the single-chain case returns above), so the
           label is always plural — no ICU pluralization needed. */}
