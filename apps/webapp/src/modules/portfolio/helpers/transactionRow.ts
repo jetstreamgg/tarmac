@@ -1,20 +1,16 @@
 import { t } from '@lingui/core/macro';
 import { CombinedHistoryItem, ModuleEnum, TransactionTypeEnum, getTokenDecimals } from '@/hooks';
-import { formatBigInt } from '@/utils';
-
-// The history items carry a `Token` shaped slightly differently from the one
-// `getTokenDecimals` expects (a second Token type in the codebase); bridge them
-// the same way the widget helpers do.
-type TokenArg = Parameters<typeof getTokenDecimals>[0];
+import { capitalizeFirstLetter, formatBigInt, getCowExplorerLink, getEtherscanLink } from '@/utils';
 
 /**
  * Flat, display-ready row for the Portfolio Transactions table (D8/APP-391),
  * normalized from the `CombinedHistoryItem` discriminated union returned by
- * `useAllNetworksCombinedHistory`. The union-narrowing here mirrors the wallet
- * activity modal's `getTitle`/`getAmount`/`getToken`/`getPositive`
- * (`widgets/BalancesWidget/lib`); it is re-implemented in the module layer on
- * purpose so this feature doesn't couple to the widget tree that is being
- * retired. Keep the two in sync until the widget history is removed.
+ * `useAllNetworksCombinedHistory`. The union-narrowing here is a faithful port
+ * of the wallet activity modal's `getTitle` / `getAmount` / `getToken` and its
+ * CoW-vs-Etherscan link branch (`widgets/BalancesWidget/lib` +
+ * `BalancesHistoryItem`); it is re-implemented in the module layer on purpose
+ * so this feature doesn't couple to the widget tree that is being retired.
+ * Keep the two in sync until the widget history is removed.
  */
 export type PortfolioTxStatus = 'pending' | 'completed' | 'failed';
 
@@ -30,23 +26,43 @@ export interface PortfolioTxRow {
   action: string;
   /** Token symbol for the amount/product cells. */
   symbol: string;
-  /** Formatted token amount (compact, absolute). */
+  /** Formatted token amount (compact, absolute); empty for admin/no-value events. */
   amount: string;
   /** `$`-prefixed USD, present only for $1-pegged tokens. */
   usd?: string;
   status: PortfolioTxStatus;
-  /** Amount sign for the bullish/bearish treatment; undefined = no sign. */
+  /** Deposit-style (true) vs withdraw-style (false) — drives the action icon only. */
   positive?: boolean;
+  /** Explorer link: the CoW explorer for CoW orders (whose `txHash` is an order UID), Etherscan otherwise. */
+  explorerHref: string;
 }
 
-// $1-pegged tokens whose formatted amount doubles as its USD value, matching
-// the per-product tables (e.g. VaultTransactionsTable: `usd: '$' + amount`).
-const STABLES = new Set(['USDS', 'SUSDS', 'USDC', 'USDT', 'SUSDT', 'DAI', 'USDL']);
+// The history items carry a `Token` shaped slightly differently from the one
+// `getTokenDecimals` expects (a second Token type in the codebase); bridge them
+// the same way the widget helpers do.
+type TokenArg = Parameters<typeof getTokenDecimals>[0];
+
+// True $1-pegged tokens whose formatted amount doubles as its USD value. sUSDS /
+// sUSDT are yield-bearing shares worth more than $1, so they are excluded (a
+// Pendle row carries `underlyingSymbol: 'sUSDS'`, which must not read as $1).
+const STABLES = new Set(['USDS', 'USDC', 'USDT', 'DAI', 'USDL']);
+
+// Administrative events (open position, pick a delegate/reward) record no value
+// movement, so they carry no amount — mirrors getAmount's select-guard.
+const NO_VALUE_TYPES = new Set<TransactionTypeEnum>([
+  TransactionTypeEnum.OPEN,
+  TransactionTypeEnum.STAKE_OPEN,
+  TransactionTypeEnum.SELECT_DELEGATE,
+  TransactionTypeEnum.SELECT_REWARD,
+  TransactionTypeEnum.STAKE_SELECT_DELEGATE,
+  TransactionTypeEnum.STAKE_SELECT_REWARD
+]);
 
 const absBigInt = (v: bigint): bigint => (v < 0n ? -v : v);
 
 function actionLabel(item: CombinedHistoryItem): string {
-  switch (item.type) {
+  const { type, module } = item;
+  switch (type) {
     case TransactionTypeEnum.DAI_TO_USDS:
     case TransactionTypeEnum.MKR_TO_SKY:
       return t`Upgrade`;
@@ -56,16 +72,16 @@ function actionLabel(item: CombinedHistoryItem): string {
     case TransactionTypeEnum.TRADE:
       return t`Trade`;
     case TransactionTypeEnum.SUPPLY:
-      if (item.module === ModuleEnum.REWARDS) return t`Rewards Supply`;
-      if (item.module === ModuleEnum.SAVINGS) return t`Savings Supply`;
-      if (item.module === ModuleEnum.STUSDS) return t`stUSDS Supply`;
-      if (item.module === ModuleEnum.MORPHO || item.module === ModuleEnum.SUSDT) return t`Vault Supply`;
+      if (module === ModuleEnum.REWARDS) return t`Rewards Supply`;
+      if (module === ModuleEnum.SAVINGS) return t`Savings Supply`;
+      if (module === ModuleEnum.STUSDS) return t`stUSDS Supply`;
+      if (module === ModuleEnum.MORPHO || module === ModuleEnum.SUSDT) return t`Vault Supply`;
       return t`Supply`;
     case TransactionTypeEnum.WITHDRAW:
-      if (item.module === ModuleEnum.REWARDS) return t`Rewards Withdraw`;
-      if (item.module === ModuleEnum.SAVINGS) return t`Savings Withdraw`;
-      if (item.module === ModuleEnum.STUSDS) return t`stUSDS Withdraw`;
-      if (item.module === ModuleEnum.MORPHO || item.module === ModuleEnum.SUSDT) return t`Vault Withdraw`;
+      if (module === ModuleEnum.REWARDS) return t`Rewards Withdraw`;
+      if (module === ModuleEnum.SAVINGS) return t`Savings Withdraw`;
+      if (module === ModuleEnum.STUSDS) return t`stUSDS Withdraw`;
+      if (module === ModuleEnum.MORPHO || module === ModuleEnum.SUSDT) return t`Vault Withdraw`;
       return t`Withdraw`;
     case TransactionTypeEnum.REWARD:
     case TransactionTypeEnum.STAKE_REWARD:
@@ -80,6 +96,10 @@ function actionLabel(item: CombinedHistoryItem): string {
       return t`Borrow`;
     case TransactionTypeEnum.STAKE_REPAY:
       return t`Repay`;
+    case TransactionTypeEnum.STAKE_SELECT_DELEGATE:
+      return t`Select delegate`;
+    case TransactionTypeEnum.STAKE_SELECT_REWARD:
+      return t`Select reward`;
     case TransactionTypeEnum.UNSTAKE_KICK:
       return t`Liquidation`;
     case TransactionTypeEnum.PENDLE_BUY:
@@ -89,7 +109,8 @@ function actionLabel(item: CombinedHistoryItem): string {
     case TransactionTypeEnum.PENDLE_REDEEM:
       return t`Fixed Yield Redeem`;
     default:
-      return t`Transaction`;
+      // Same fallback as getTitle: humanize the enum value.
+      return capitalizeFirstLetter((type || module).toLowerCase().replace('_', ' '));
   }
 }
 
@@ -102,6 +123,7 @@ function tokenSymbol(item: CombinedHistoryItem): string {
     case TransactionTypeEnum.SKY_TO_MKR:
     case TransactionTypeEnum.STAKE:
     case TransactionTypeEnum.UNSTAKE:
+    case TransactionTypeEnum.UNSTAKE_KICK:
       return 'SKY';
     default:
       return 'USDS';
@@ -109,6 +131,7 @@ function tokenSymbol(item: CombinedHistoryItem): string {
 }
 
 function amountString(item: CombinedHistoryItem, chainId: number): string {
+  if (NO_VALUE_TYPES.has(item.type)) return '';
   switch (item.module) {
     case ModuleEnum.TRADE:
       return formatBigInt(absBigInt('fromAmount' in item ? item.fromAmount : 0n), {
@@ -141,12 +164,17 @@ function amountString(item: CombinedHistoryItem, chainId: number): string {
   }
 }
 
-// Sign for the amount's bullish (+) / bearish (−) treatment; undefined = no sign
-// (e.g. open-position / select-delegate rows that carry no value).
+// Deposit-style (true) vs withdraw-style (false); undefined = no direction. Drives
+// only the action icon (in/out), not the amount color.
 function isPositive(type: TransactionTypeEnum): boolean | undefined {
   switch (type) {
     case TransactionTypeEnum.STAKE_OPEN:
     case TransactionTypeEnum.UNSTAKE_KICK:
+    case TransactionTypeEnum.OPEN:
+    case TransactionTypeEnum.SELECT_DELEGATE:
+    case TransactionTypeEnum.SELECT_REWARD:
+    case TransactionTypeEnum.STAKE_SELECT_DELEGATE:
+    case TransactionTypeEnum.STAKE_SELECT_REWARD:
       return undefined;
     case TransactionTypeEnum.SUPPLY:
     case TransactionTypeEnum.STAKE:
@@ -182,10 +210,18 @@ function txStatus(item: CombinedHistoryItem): PortfolioTxStatus {
 }
 
 export function toPortfolioTxRow(item: CombinedHistoryItem, index: number): PortfolioTxRow {
-  // Trade rows (ParsedTradeRecord) don't carry chainId; CoW trades are mainnet.
+  // ParsedTradeRecord omits chainId in its *type*, but every runtime producer
+  // (cowswap / psm / hybrid) attaches it, so `'chainId' in item` reads it; the
+  // `: 1` is only a defensive default.
   const chainId = 'chainId' in item ? item.chainId : 1;
   const symbol = tokenSymbol(item);
   const amount = amountString(item, chainId);
+  // CoW orders store an order UID in `transactionHash`, which resolves on the
+  // CoW explorer, not Etherscan (mirrors BalancesHistoryItem).
+  const explorerHref =
+    'cowOrderStatus' in item
+      ? getCowExplorerLink(chainId, item.transactionHash)
+      : getEtherscanLink(chainId, item.transactionHash, 'tx');
   return {
     id: `${item.transactionHash}-${item.module}-${item.type}-${index}`,
     txHash: item.transactionHash,
@@ -198,6 +234,7 @@ export function toPortfolioTxRow(item: CombinedHistoryItem, index: number): Port
     amount,
     usd: amount && STABLES.has(symbol.toUpperCase()) ? `$${amount}` : undefined,
     status: txStatus(item),
-    positive: isPositive(item.type)
+    positive: isPositive(item.type),
+    explorerHref
   };
 }

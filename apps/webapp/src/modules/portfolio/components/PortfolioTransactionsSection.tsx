@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useChains } from 'wagmi';
 import { BP, ModuleEnum, useAllNetworksCombinedHistory, useBreakpointIndex } from '@/hooks';
-import { formatAddress, getChainIcon, getEtherscanLink } from '@/utils';
+import { formatAddress, getChainIcon } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Heading } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -62,7 +62,12 @@ function actionIcon(row: PortfolioTxRow): ReactNode {
 }
 
 const tokenIcon = (symbol: string, width = 12) => (
-  <TokenIcon token={{ symbol }} width={width} showChainIcon={false} className="h-3 w-3" />
+  <TokenIcon
+    token={{ symbol }}
+    width={width}
+    showChainIcon={false}
+    className={width >= 16 ? 'h-4 w-4' : 'h-3 w-3'}
+  />
 );
 
 // Header action cell (icon + verb + relative time), shared by the desktop row
@@ -90,7 +95,7 @@ const suppliedCell = (row: PortfolioTxRow) => (
 );
 
 const hashCell = (row: PortfolioTxRow) => (
-  <CellHash label={formatAddress(row.txHash, 6, 4)} href={getEtherscanLink(row.chainId, row.txHash, 'tx')} />
+  <CellHash label={formatAddress(row.txHash, 6, 4)} href={row.explorerHref} />
 );
 
 const COLUMNS: ProductTransactionColumn<PortfolioTxRow>[] = [
@@ -115,7 +120,7 @@ const renderCard = (row: PortfolioTxRow) => (
       { label: <Trans>Product</Trans>, value: productCell(row) },
       { label: <Trans>Supplied</Trans>, value: suppliedCell(row) }
     ]}
-    link={{ label: <Trans>View transaction</Trans>, href: getEtherscanLink(row.chainId, row.txHash, 'tx') }}
+    link={{ label: <Trans>View transaction</Trans>, href: row.explorerHref }}
   />
 );
 

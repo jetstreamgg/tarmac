@@ -40,6 +40,7 @@ const row = (o: Partial<PortfolioTxRow>): PortfolioTxRow => ({
   usd: '$1,000.00',
   status: 'completed',
   positive: true,
+  explorerHref: 'https://etherscan.io/tx/0x1234567890abcdef',
   ...o
 });
 
