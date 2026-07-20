@@ -27,11 +27,12 @@ const statValue =
 // Body 6 stat label: 11/16 → 12/18, Graphik regular.
 const statLabel =
   'font-graphik text-fgSecondary text-[11px] leading-4 font-normal md:text-xs md:leading-[18px]';
-// Label 6 network name: 11/12 → 12/14, Circular medium.
+// Label 6 network name: 11/12 → 12/14, Circular medium, fg-primary.
 const networkName =
-  'font-circle text-fgSecondary text-[11px] leading-3 font-medium tracking-[-0.22px] md:text-xs md:leading-[14px] md:tracking-[-0.24px]';
-// DS Badges/Illustration pill: glass badge fill (Components/Badges/bg-secondary).
-const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-full py-1 pr-2 pl-1';
+  'font-circle text-fgPrimary text-[11px] leading-3 font-medium tracking-[-0.22px] md:text-xs md:leading-[14px] md:tracking-[-0.24px]';
+// DS Badges/Illustration pill: glass badge fill (Components/Badges/bg-secondary),
+// 20px radius, 4px/8px/4px/4px padding, 4px gap — per the comp.
+const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-[20px] py-1 pr-2 pl-1';
 
 /**
  * One supplied position in the Portfolio carousel: a 64px ringed status iconbox,
