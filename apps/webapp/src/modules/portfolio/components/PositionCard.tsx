@@ -64,9 +64,11 @@ export function PositionCard({
       </div>
 
       <div className="flex items-center gap-1.5">
-        <Text variant="large" tag="span" className="text-text text-2xl font-medium">
+        {/* DS Heading 5 (Circular medium) — responsive per the comps, not
+            tier-agnostic: 20/22 on mobile (486:20195), 24/26 from md (486:20044). */}
+        <span className="text-text font-circle text-xl leading-[22px] font-medium tracking-[-0.4px] md:text-2xl md:leading-[26px] md:tracking-[-0.48px]">
           {position.name}
-        </Text>
+        </span>
         <ProductGlyph id={position.id} kind={position.kind} />
       </div>
 
