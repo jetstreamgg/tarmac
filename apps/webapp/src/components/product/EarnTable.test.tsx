@@ -92,6 +92,19 @@ describe('EarnTable — mobile accordion cards (M5)', () => {
     expect(screen.queryByText('TVL')).toBeNull();
   });
 
+  it('applies the M6.2 comp scale: 24px list corners, Label 5 title, Label 6 rate value', () => {
+    renderEarn();
+
+    expect(screen.getByTestId('earn-row-savings').className).toContain('rounded-t-3xl');
+    expect(screen.getByTestId('earn-row-spk').className).toContain('rounded-b-3xl');
+
+    const title = screen.getByText('Sky Savings');
+    expect(title.className).toContain('text-sm');
+    expect(title.className).toContain('md:text-base');
+
+    expect(screen.getByTestId('earn-card-rate-savings').className).toContain('text-xs');
+  });
+
   it('reports the row through onRowSelect from both expanded buttons', () => {
     const onRowSelect = renderEarn();
 

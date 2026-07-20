@@ -17,7 +17,9 @@ import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
 import { productIconSymbol } from '@/components/product/productVisuals';
 import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
+import { formatMaturity } from '../helpers/formatMaturity';
 import { useEarnTableState } from '../hooks/useEarnTableState';
+import { EarnFeaturedCards } from './EarnFeaturedCards';
 
 const NO_VALUE = '–';
 
@@ -30,12 +32,6 @@ const PRODUCT_LABELS: Record<EarnProductKind, React.ReactNode> = {
   fixed: <Trans>Fixed yield</Trans>,
   stusds: <Trans>Expert</Trans>
 };
-
-const maturityFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric'
-});
 
 /** The /earn destination: the Earn Opportunities marketplace section (C2). */
 export function EarnPage() {
@@ -123,7 +119,7 @@ export function EarnPage() {
             <Morpho className="h-4 w-4 rounded-sm" />
           ) : undefined,
         supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
-        maturityLabel: row.maturity ? maturityFormatter.format(new Date(row.maturity * 1000)) : undefined,
+        maturityLabel: row.maturity ? formatMaturity(row.maturity) : undefined,
         network: <CellNetworks>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</CellNetworks>,
         risk: row.risk,
         rate: row.rate.formatted,
@@ -145,7 +141,10 @@ export function EarnPage() {
   // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
   return (
     <div
-      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-5 py-4 md:py-10"
+      // Mobile rhythm per 486:22051: 24px base stack gap (the heading and list
+      // margins below stretch the seams the comp draws wider); C2's 20px gap
+      // returns at md.
+      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:gap-5 md:py-10"
       data-testid="earn-opportunities"
     >
       {/* Patterns/Headers, Earn hero type 5031:52345. The badge stats are
@@ -153,7 +152,7 @@ export function EarnPage() {
           Convert hero's "$0.00 Fees paid") — revisit if a live-stats source
           gets wired up. */}
       <PageHeaderHero
-        className="py-4 md:py-10"
+        className="py-8 md:py-10"
         badges={
           <>
             <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
@@ -165,6 +164,7 @@ export function EarnPage() {
           </>
         }
         title={<Trans>Your stablecoins, earning more</Trans>}
+        subtitleClassName="max-w-[271px] md:max-w-[513px]"
         subtitle={
           <Trans>
             Sky Protocol is where stablecoins go to work and where they&apos;ve been going since 2017. $11B in
@@ -172,6 +172,12 @@ export function EarnPage() {
           </Trans>
         }
       />
+      <EarnFeaturedCards rows={rows} onSelect={handleRowSelect} />
+      {/* Section heading exists only in the mobile comp (486:22121); the
+          desktop page ships without it until the newer desktop pass lands. */}
+      <h2 className="text-fgPrimary font-circle mt-6 text-xl leading-[22px] font-medium tracking-[-0.4px] md:hidden">
+        <Trans>Earn Opportunities</Trans>
+      </h2>
       <EarnTableFilters
         selectedRiskTiers={filters.risk}
         onRiskTierToggle={toggleRiskTier}
@@ -185,8 +191,12 @@ export function EarnPage() {
         selectedProduct={filters.product}
         onProductChange={product => updateFilters({ product })}
       />
-      <div className="border-borderPrimary border-b" />
-      <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
+      {/* The mobile comp runs filters straight into the card list — divider is desktop-only. */}
+      <div className="border-borderPrimary hidden border-b md:block" />
+      {/* Comp runs 32px from the filters into the card list (24 gap + 8). */}
+      <div className="mt-2 md:mt-0">
+        <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
+      </div>
     </div>
   );
 }

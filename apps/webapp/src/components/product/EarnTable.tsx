@@ -74,6 +74,9 @@ function TokenCell({ row }: { row: EarnTableRowItem }) {
       icon={row.icon}
       title={row.name}
       titleSuffix={row.nameSuffix}
+      // Comp 486:22051: the accordion header title is Label 5; the desktop
+      // table cell keeps Label 4 from md up.
+      titleClassName="text-sm leading-4 tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]"
       subtitle={
         <>
           <Trans>Supply:</Trans>
@@ -112,8 +115,8 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
             data-testid={`earn-row-${row.id}`}
             className={cn(
               'bg-bgSecondary flex flex-col gap-6 p-5 backdrop-blur-[20px]',
-              index === 0 && 'rounded-t-[20px]',
-              index === rows.length - 1 && 'rounded-b-[20px]'
+              index === 0 && 'rounded-t-3xl',
+              index === rows.length - 1 && 'rounded-b-3xl'
             )}
           >
             <button
@@ -129,7 +132,10 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
                   <span className="font-graphik text-fgSecondary text-xs leading-[18px]">
                     <Trans>Rate</Trans>
                   </span>
-                  <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
+                  <span
+                    data-testid={`earn-card-rate-${row.id}`}
+                    className="font-circle text-fgPrimary text-xs leading-3.5 font-medium tracking-[-0.24px]"
+                  >
                     <NumericValue value={row.rate} isLoading={row.isLoading} />
                   </span>
                 </span>
@@ -143,6 +149,9 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
             {isExpanded && (
               <>
                 <TransactionCardFieldGrid
+                  // Comp 486:22051 expanded grid: Label 6 values (the M5
+                  // transaction cards keep their Label 5 default).
+                  valueClassName="text-xs leading-3.5 tracking-[-0.24px]"
                   fields={[
                     ...(row.network ? [{ label: <Trans>Network</Trans>, value: row.network }] : []),
                     { label: <Trans>Risk</Trans>, value: <RiskTierMeter tier={row.risk} /> },
