@@ -992,13 +992,16 @@ function TablesSection() {
                 <RiskTierMeter tier="advanced" />
               </span>
             </CellSpecimenRow>
-            <CellSpecimenRow name="Risk details trigger, per kind (hover/focus md+ · tap sheet below md)">
-              <span className="flex items-center gap-2">
-                <RiskTierDetailsTrigger kind="savings" />
-                <RiskTierDetailsTrigger kind="rewards" />
-                <RiskTierDetailsTrigger kind="vault" />
-                <RiskTierDetailsTrigger kind="fixed" />
-                <RiskTierDetailsTrigger kind="stusds" />
+            <CellSpecimenRow name="Risk details trigger, per profile (hover/focus md+ · tap sheet below md)">
+              <span className="flex flex-wrap items-center gap-2">
+                <RiskTierDetailsTrigger profile="savings" />
+                <RiskTierDetailsTrigger profile="rewards-spk" />
+                <RiskTierDetailsTrigger profile="rewards-cle" />
+                <RiskTierDetailsTrigger profile="vault-flagship" />
+                <RiskTierDetailsTrigger profile="vault-usdt-savings" />
+                <RiskTierDetailsTrigger profile="vault-risk-capital" />
+                <RiskTierDetailsTrigger profile="fixed" />
+                <RiskTierDetailsTrigger profile="stusds" />
               </span>
             </CellSpecimenRow>
             <CellSpecimenRow name="Status">

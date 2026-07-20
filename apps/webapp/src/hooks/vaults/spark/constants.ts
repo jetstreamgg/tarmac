@@ -35,6 +35,9 @@ export const SPARK_VAULTS: VaultConfig[] = [
     name: 'Tether Savings',
     symbol: 'sUSDT',
     vaultAddress: sparkUsdtVaultAddress,
-    assetToken: TOKENS.usdt
+    assetToken: TOKENS.usdt,
+    // Not covered by the APP-396 risk sheet (the sheet's "USDT Savings Vault"
+    // is the Morpho vault); placeholder profile pending a product assessment.
+    riskProfile: 'vault-tether-savings'
   }
 ];

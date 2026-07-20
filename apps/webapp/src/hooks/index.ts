@@ -290,11 +290,17 @@ export { useOverallSkyData } from './shared/useOverallSkyData';
 
 // Earn marketplace (C1 registry + aggregator)
 export { useEarnMarketplace } from './earn/useEarnMarketplace';
-export { buildEarnProducts, productNetworks, RISK_TIER_BY_KIND } from './earn/earnProducts';
+export {
+  buildEarnProducts,
+  productNetworks,
+  rewardsRiskProfile,
+  RISK_TIER_BY_PROFILE
+} from './earn/earnProducts';
 export type {
   EarnMarketplaceResult,
   EarnProductDescriptor,
   EarnProductKind,
+  EarnRiskProfileId,
   EarnProductRow,
   EarnRate,
   EarnRiskTier,

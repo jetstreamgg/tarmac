@@ -117,7 +117,7 @@ export function EarnPage() {
       visibleRows.map(row => ({
         id: row.id,
         name: row.name,
-        kind: row.kind,
+        riskProfile: row.riskProfile,
         isNew: NEW_PRODUCT_IDS.includes(row.id),
         icon: <TokenIcon token={{ symbol: productIconSymbol(row) }} width={28} className="h-7 w-7" />,
         nameSuffix:
@@ -127,7 +127,6 @@ export function EarnPage() {
         supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
         maturityLabel: row.maturity ? formatMaturity(row.maturity) : undefined,
         network: <CellNetworks>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</CellNetworks>,
-        risk: row.risk,
         rate: row.rate.formatted,
         rate30d: row.rate30d?.formatted ?? NO_VALUE,
         tvl: formatUsd(row.tvl?.totalUsd),

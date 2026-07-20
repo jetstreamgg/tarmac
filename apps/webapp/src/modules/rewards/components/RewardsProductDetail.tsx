@@ -8,6 +8,7 @@ import { Intent } from '@/lib/enums';
 import {
   TOKENS,
   productNetworks,
+  rewardsRiskProfile,
   useRewardContractInfo,
   useRewardsChartInfo,
   type RewardContract
@@ -138,9 +139,9 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
       id: 'risk',
       icon: <Asterisk className="h-3 w-3" />,
       label: <Trans>Risk scale</Trans>,
-      // Tier comes from the registry map (RISK_TIER_BY_KIND, BL-07) via the
-      // trigger's default, so the marketplace and this page can't diverge.
-      value: <RiskTierDetailsTrigger kind="rewards" />
+      // Each farm resolves its own profile (SKY/SPK/GROVE/Chronicle copy differ)
+      // through the same registry the marketplace uses, so they can't diverge.
+      value: <RiskTierDetailsTrigger profile={rewardsRiskProfile(contract.rewardToken.symbol)} />
     },
     { id: 'tvl', icon: <Vault className="h-3 w-3" />, label: <Trans>TVL</Trans>, value: tvl },
     {

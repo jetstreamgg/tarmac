@@ -3,13 +3,34 @@ import type { Intent } from '@/lib/enums';
 /**
  * Risk tier vocabulary from the V2 Figma ("Earn Opportunities" filter pills).
  * TODO(BL-07): tiers are HARDCODED pending the risk-rating source decision
- * (editorial config vs endpoint). Per product decision 2026-06-12: 'moderate'
- * for every product, 'advanced' for stUSDS. 'low' is currently unassigned —
- * Sky Savings is the natural candidate once ratings get a real source.
+ * (editorial config vs endpoint). Assignments follow the risk sheet Kacper
+ * posted on APP-396 (initial draft, 2026-07-20) — see RISK_TIER_BY_PROFILE.
  */
 export type EarnRiskTier = 'low' | 'moderate' | 'advanced';
 
 export type EarnProductKind = 'savings' | 'rewards' | 'vault' | 'fixed' | 'stusds';
+
+/**
+ * Key into the per-product risk content (tier + description + exposure facts,
+ * APP-396). Finer-grained than `EarnProductKind` because products within a
+ * family carry different assessments — the Flagship and Risk Capital Morpho
+ * vaults sit in different tiers, and each rewards farm names its own reward.
+ * 'rewards' is the generic fallback for a reward token without a profile of
+ * its own yet.
+ */
+export type EarnRiskProfileId =
+  | 'savings'
+  | 'rewards'
+  | 'rewards-sky'
+  | 'rewards-spk'
+  | 'rewards-grove'
+  | 'rewards-cle'
+  | 'vault-flagship'
+  | 'vault-usdt-savings'
+  | 'vault-tether-savings'
+  | 'vault-risk-capital'
+  | 'fixed'
+  | 'stusds';
 
 /**
  * USD-denominated amount aggregated across the active chain family, with a
@@ -48,6 +69,8 @@ export type EarnProductDescriptor = {
   /** Symbols the user can supply into the product ("Supply:" icons, stablecoin filter). */
   supplyTokens: string[];
   risk: EarnRiskTier;
+  /** Selects the product's risk tier + details copy (APP-396); `risk` above is derived from it. */
+  riskProfile: EarnRiskProfileId;
   /**
    * Chains within the active family the product is live on. Derived from
    * static config (CHAIN_WIDGET_MAP ∩ per-product address maps) — never from

@@ -30,30 +30,35 @@ export const MORPHO_VAULTS: MorphoVaultConfig[] = [
     provider: 'morpho',
     name: 'USDT Savings',
     vaultAddress: usdtSavingsVaultAddress,
+    riskProfile: 'vault-usdt-savings',
     assetToken: TOKENS.usdt
   },
   {
     provider: 'morpho',
     name: 'USDS Flagship',
     vaultAddress: usdsFlagshipVaultAddress,
+    riskProfile: 'vault-flagship',
     assetToken: TOKENS.usds
   },
   {
     provider: 'morpho',
     name: 'USDS Risk Capital',
     vaultAddress: usdsRiskCapitalVaultAddress,
+    riskProfile: 'vault-risk-capital',
     assetToken: TOKENS.usds
   },
   {
     provider: 'morpho',
     name: 'USDT Risk Capital',
     vaultAddress: usdtRiskCapitalVaultAddress,
+    riskProfile: 'vault-risk-capital',
     assetToken: TOKENS.usdt
   },
   {
     provider: 'morpho',
     name: 'USDC Risk Capital',
     vaultAddress: usdcRiskCapitalVaultAddress,
+    riskProfile: 'vault-risk-capital',
     assetToken: TOKENS.usdc
   }
 ];

@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { EarnProductKind, EarnRiskTier } from '@/hooks';
+import type { EarnRiskProfileId, EarnRiskTier } from '@/hooks';
 import { RiskTierDetailsCard, RiskTierDetailsTrigger } from './RiskTierDetails';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).
@@ -15,27 +15,31 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
   };
 });
 
+// TokenIcon reaches for wagmi config (chain badges); the exposure stack only
+// needs the wrapper spans, so stub the icon itself.
+vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+
 i18n.load('en', {});
 i18n.activate('en');
 
-const renderCard = (tier: EarnRiskTier, kind: EarnProductKind) =>
+const renderCard = (tier: EarnRiskTier, profile: EarnRiskProfileId) =>
   render(
     <I18nProvider i18n={i18n}>
-      <RiskTierDetailsCard tier={tier} kind={kind} />
+      <RiskTierDetailsCard tier={tier} profile={profile} />
     </I18nProvider>
   );
 
-describe('RiskTierDetailsCard — tier presentation + per-product copy (1036:201215)', () => {
+describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 risk sheet)', () => {
   afterEach(cleanup);
 
-  it('renders the Conservative profile with savings copy for low-tier savings', () => {
+  it('renders the Conservative profile with the savings sheet copy and facts', () => {
     renderCard('low', 'savings');
 
     expect(screen.getByText('Risk profile')).toBeTruthy();
     expect(screen.getByText('Conservative')).toBeTruthy();
-    expect(screen.getByText(/Funds secured directly by Sky Protocol/)).toBeTruthy();
-    expect(screen.getByText('Smart contract')).toBeTruthy();
-    expect(screen.getByText('Audited')).toBeTruthy();
+    expect(screen.getByText(/Funds secured by Sky Protocol/)).toBeTruthy();
+    expect(screen.getByText('Exposure')).toBeTruthy();
+    expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe('USDS');
     expect(screen.getByText('Liquidation risk')).toBeTruthy();
     expect(screen.getByText('None')).toBeTruthy();
     expect(screen.getByText('Withdrawals')).toBeTruthy();
@@ -56,12 +60,15 @@ describe('RiskTierDetailsCard — tier presentation + per-product copy (1036:201
     expect(segments[2].className).toContain('bg-bgTertiary');
   });
 
-  it('renders Morpho copy for moderate vaults, with two warning segments', () => {
-    renderCard('moderate', 'vault');
+  it('renders the Flagship vault profile with its multi-asset exposure, with two warning segments', () => {
+    renderCard('moderate', 'vault-flagship');
 
     expect(screen.getByText('Moderate')).toBeTruthy();
-    expect(screen.getByText(/Third-party strategies deployed by Morpho/)).toBeTruthy();
-    expect(screen.getByText('Active management')).toBeTruthy();
+    expect(screen.getByText(/conservative allocation and around 80% of liquidity/)).toBeTruthy();
+    expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe(
+      'cbBTC, wstETH, WETH, PT-sUSDS'
+    );
+    expect(screen.getByText('Liquidity based')).toBeTruthy();
 
     const segments = screen.getAllByTestId('risk-details-segment');
     expect(segments[0].className).toContain('bg-statusWarning');
@@ -69,38 +76,51 @@ describe('RiskTierDetailsCard — tier presentation + per-product copy (1036:201
     expect(segments[2].className).toContain('bg-bgTertiary');
   });
 
-  it('renders Pendle copy for moderate fixed-yield — same tier, different product message', () => {
+  it('renders the Risk Capital vault profile as Aggressive — same provider, different assessment', () => {
+    renderCard('advanced', 'vault-risk-capital');
+
+    expect(screen.getByText('Aggressive')).toBeTruthy();
+    expect(screen.getByText(/single exposure to stUSDS collateral/)).toBeTruthy();
+    expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe('stUSDS, SKY');
+  });
+
+  it('renders Pendle copy for moderate fixed-yield with the market-sell withdrawal fact', () => {
     renderCard('moderate', 'fixed');
 
     expect(screen.getByText('Moderate')).toBeTruthy();
     expect(screen.getByText(/powered by Pendle/)).toBeTruthy();
     expect(screen.queryByText(/Morpho/)).toBeNull();
-    expect(screen.getByText('At maturity')).toBeTruthy();
+    expect(screen.getByText('At maturity or via market sell')).toBeTruthy();
   });
 
-  it('renders Sky rewards copy for moderate rewards', () => {
-    renderCard('moderate', 'rewards');
-
-    expect(screen.queryByText(/Morpho/)).toBeNull();
+  it('names the reward per farm: SPK farm promises SPK tokens, Chronicle promises points', () => {
+    renderCard('low', 'rewards-spk');
+    expect(screen.getByText(/earn SPK tokens/)).toBeTruthy();
     expect(screen.getByText('Instant')).toBeTruthy();
+    cleanup();
+
+    renderCard('low', 'rewards-cle');
+    expect(screen.getByText(/earn Chronicle Points/)).toBeTruthy();
+    expect(screen.queryByText(/tokens/)).toBeNull();
   });
 
-  it('renders the Aggressive profile with stUSDS copy, three error segments and Yes/Yes facts', () => {
+  it('renders the Aggressive stUSDS profile with SKY exposure and three error segments', () => {
     renderCard('advanced', 'stusds');
 
     expect(screen.getByText('Aggressive')).toBeTruthy();
-    expect(screen.getByText(/For advanced users/)).toBeTruthy();
-    expect(screen.getAllByText('Yes')).toHaveLength(2);
+    expect(screen.getByText(/SKY token-collateralized loans/)).toBeTruthy();
+    expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe('SKY');
+    expect(screen.getByText('Liquidity based')).toBeTruthy();
 
     const segments = screen.getAllByTestId('risk-details-segment');
     segments.forEach(segment => expect(segment.className).toContain('bg-error'));
   });
 });
 
-const renderTrigger = (tier: EarnRiskTier = 'low', kind: EarnProductKind = 'savings') =>
+const renderTrigger = (profile: EarnRiskProfileId = 'savings') =>
   render(
     <I18nProvider i18n={i18n}>
-      <RiskTierDetailsTrigger tier={tier} kind={kind} />
+      <RiskTierDetailsTrigger profile={profile} />
     </I18nProvider>
   );
 
@@ -114,7 +134,7 @@ describe('RiskTierDetailsTrigger — mobile bottom panel (486:21797)', () => {
   });
 
   it('opens the details sheet from the pill and dismisses via the close button', () => {
-    renderTrigger('low');
+    renderTrigger('savings');
 
     expect(screen.queryByText('Conservative')).toBeNull();
 
@@ -128,21 +148,33 @@ describe('RiskTierDetailsTrigger — mobile bottom panel (486:21797)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Close/ }));
     expect(screen.queryByText('Conservative')).toBeNull();
   });
+
+  it('reveals the exposure token names on tap — the sheet has no hover for the native title', () => {
+    renderTrigger('vault-flagship');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Risk profile' }));
+    expect(screen.queryByText('cbBTC, wstETH, WETH, PT-sUSDS')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('risk-details-exposure'));
+    expect(screen.getByText('cbBTC, wstETH, WETH, PT-sUSDS')).toBeTruthy();
+  });
 });
 
 describe('RiskTierDetailsTrigger — desktop tooltip (1036:201215)', () => {
   afterEach(cleanup);
 
-  it('renders a focusable pill trigger with the details hidden until opened', () => {
-    renderTrigger('moderate', 'vault');
+  it('resolves the tier from the profile registry and opens the details on focus', () => {
+    renderTrigger('vault-flagship');
 
     const trigger = screen.getByRole('button', { name: 'Risk profile' });
     expect(trigger).toBeTruthy();
-    expect(screen.queryByText(/Third-party strategies/)).toBeNull();
+    expect(screen.queryByText(/conservative allocation/)).toBeNull();
 
     // Radix opens the tooltip on keyboard-visible focus.
     fireEvent.keyDown(document.body, { key: 'Tab' });
     fireEvent.focus(trigger);
-    expect(screen.getAllByText(/Third-party strategies/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/conservative allocation/).length).toBeGreaterThan(0);
+    // 'vault-flagship' is Moderate per the sheet — the trigger derived it itself.
+    expect(screen.getAllByText('Moderate').length).toBeGreaterThan(0);
   });
 });

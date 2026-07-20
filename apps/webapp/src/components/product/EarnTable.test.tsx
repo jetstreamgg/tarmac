@@ -14,6 +14,10 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
   };
 });
 
+// TokenIcon reaches for wagmi config (chain badges); the exposure stack only
+// needs the wrapper spans, so stub the icon itself.
+vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+
 i18n.load('en', {});
 i18n.activate('en');
 
@@ -22,8 +26,7 @@ const ROWS: EarnTableRowItem[] = [
     id: 'savings',
     name: 'Sky Savings',
     isNew: true,
-    risk: 'low',
-    kind: 'savings',
+    riskProfile: 'savings',
     rate: '3.75%',
     rate30d: '3.70%',
     tvl: '$4.23b',
@@ -32,8 +35,7 @@ const ROWS: EarnTableRowItem[] = [
   {
     id: 'spk',
     name: 'Earn SPK',
-    risk: 'moderate',
-    kind: 'rewards',
+    riskProfile: 'rewards-spk',
     rate: '5.00%',
     rate30d: '4.90%',
     tvl: '$1.00b',

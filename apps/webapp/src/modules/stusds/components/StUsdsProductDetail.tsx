@@ -93,9 +93,9 @@ export function StUsdsProductDetail() {
       id: 'risk',
       icon: <Asterisk className="h-3 w-3" />,
       label: <Trans>Risk profile</Trans>,
-      // Tier comes from the registry map (RISK_TIER_BY_KIND, BL-07) via the
-      // trigger's default, so the marketplace and this page can't diverge.
-      value: <RiskTierDetailsTrigger kind="stusds" />
+      // Tier + copy resolve through the profile registry (RISK_TIER_BY_PROFILE,
+      // BL-07), so the marketplace and this page can't diverge.
+      value: <RiskTierDetailsTrigger profile="stusds" />
     },
     {
       id: 'tvl',

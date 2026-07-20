@@ -1,9 +1,16 @@
 import type { MouseEvent, ReactNode } from 'react';
-import { BadgeCheck, MoveUpRight, X } from 'lucide-react';
+import { MoveUpRight, X } from 'lucide-react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { BP, RISK_TIER_BY_KIND, useBreakpointIndex, type EarnProductKind, type EarnRiskTier } from '@/hooks';
+import {
+  BP,
+  RISK_TIER_BY_PROFILE,
+  useBreakpointIndex,
+  type EarnRiskProfileId,
+  type EarnRiskTier
+} from '@/hooks';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Tooltip,
   TooltipContent,
@@ -18,6 +25,7 @@ import {
   ResponsiveModalTitle,
   ResponsiveModalTrigger
 } from '@/components/ui/responsive-modal';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { RiskTierMeter } from './RiskMeter';
 
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
@@ -39,43 +47,129 @@ const RISK_TIER_DETAILS: Record<
 };
 
 /**
- * The explanatory copy per product family. The comp writes one blurb per tier,
- * but each was clearly authored for the single product family occupying that
- * tier (Conservative → Savings, Moderate → Morpho vaults, Aggressive →
- * stUSDS) — reusing the Morpho blurb on a Pendle market would be wrong, so
- * the copy keys off the product kind while the tier keeps the severity
- * presentation. The savings/vault/stusds texts are verbatim from 1036:201215;
- * the rewards/fixed texts are PLACEHOLDER copy in the same voice, pending
- * product sign-off (flagged on APP-396).
+ * The explanatory copy + facts per risk profile, from the risk sheet Kacper
+ * posted on APP-396 (initial draft, 2026-07-20). Per that comment the
+ * "Smart contract: Audited" fact is replaced by "Exposure" — Audited would be
+ * true of every product, so it carried no signal. Descriptions are verbatim
+ * from the sheet except:
+ * - 'rewards-sky' extrapolates the sheet's SPK/GROVE farm pattern (the SKY
+ *   farm has no sheet row);
+ * - 'rewards' is the generic fallback for reward tokens with no profile yet
+ *   (deliberately reward-agnostic — points farms don't pay a second token);
+ * - 'vault-tether-savings' (flag-gated sUSDT, absent from the sheet) is
+ *   PLACEHOLDER copy pending a product assessment.
  */
-const RISK_KIND_DETAILS: Record<
-  EarnProductKind,
-  { description: ReactNode; liquidationRisk: ReactNode; withdrawals: ReactNode }
+const RISK_PROFILE_DETAILS: Record<
+  EarnRiskProfileId,
+  { description: ReactNode; exposureTokens: string[]; liquidationRisk: ReactNode; withdrawals: ReactNode }
 > = {
   savings: {
     description: (
       <Trans>
-        Funds secured directly by Sky Protocol. A fixed rate determined by governance, with instant liquidity.
+        Funds secured by Sky Protocol, with instant liquidity and zero fees on access and exit. The Sky
+        Savings Rate is determined by governance through a DAO vote.
       </Trans>
     ),
+    exposureTokens: ['USDS'],
     liquidationRisk: <Trans>None</Trans>,
     withdrawals: <Trans>Instant</Trans>
   },
   rewards: {
-    // Deliberately reward-agnostic: most Rewards contracts pay a second token,
-    // but Chronicle Points pays points — don't promise a token here.
     description: (
       <Trans>Supply directly to Sky Protocol and earn rewards. Reward rates vary with emissions.</Trans>
     ),
+    exposureTokens: ['USDS'],
     liquidationRisk: <Trans>None</Trans>,
     withdrawals: <Trans>Instant</Trans>
   },
-  vault: {
+  'rewards-sky': {
     description: (
-      <Trans>Third-party strategies deployed by Morpho. Returns vary depending on market utilization.</Trans>
+      <Trans>
+        Supply to Sky Protocol and earn SKY tokens. The reward rate is set by Sky Protocol governance and
+        distributed proportionally to the supplied USDS.
+      </Trans>
     ),
+    exposureTokens: ['USDS'],
     liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Active management</Trans>
+    withdrawals: <Trans>Instant</Trans>
+  },
+  'rewards-spk': {
+    description: (
+      <Trans>
+        Supply to Sky Protocol and earn SPK tokens. The reward rate is set by Sky Protocol governance and
+        distributed proportionally to the supplied USDS.
+      </Trans>
+    ),
+    exposureTokens: ['USDS'],
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Instant</Trans>
+  },
+  'rewards-grove': {
+    description: (
+      <Trans>
+        Supply to Sky Protocol and earn GROVE tokens. The reward rate is set by Sky Protocol governance and
+        distributed proportionally to the supplied USDS.
+      </Trans>
+    ),
+    exposureTokens: ['USDS'],
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Instant</Trans>
+  },
+  'rewards-cle': {
+    description: (
+      <Trans>
+        Supply to Sky Protocol and earn Chronicle Points. Point distribution and related opportunities are
+        managed by Chronicle.
+      </Trans>
+    ),
+    exposureTokens: ['USDS'],
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Instant</Trans>
+  },
+  'vault-flagship': {
+    description: (
+      <Trans>
+        Deployed on Morpho, with a conservative allocation and around 80% of liquidity available for instant
+        withdrawal. Returns vary depending on market utilization.
+      </Trans>
+    ),
+    exposureTokens: ['cbBTC', 'wstETH', 'WETH', 'PT-sUSDS'],
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Liquidity based</Trans>
+  },
+  'vault-usdt-savings': {
+    description: (
+      <Trans>
+        Deployed on Morpho with a single exposure to sUSDS collateralized debt. Returns vary depending on
+        market utilization.
+      </Trans>
+    ),
+    exposureTokens: ['sUSDS'],
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Liquidity based</Trans>
+  },
+  'vault-tether-savings': {
+    // PLACEHOLDER — this vault has no row in the APP-396 risk sheet.
+    description: (
+      <Trans>
+        Supply USDT and earn savings powered by Sky Protocol, with instant liquidity. Returns vary with the
+        Sky Savings Rate.
+      </Trans>
+    ),
+    exposureTokens: ['sUSDS'],
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Instant</Trans>
+  },
+  'vault-risk-capital': {
+    description: (
+      <Trans>
+        Deployed on Morpho, with a single exposure to stUSDS collateral. Note stUSDS risks, including SKY
+        price volatility and potential bad debt. Returns vary depending on market utilization.
+      </Trans>
+    ),
+    exposureTokens: ['stUSDS', 'SKY'],
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Liquidity based</Trans>
   },
   fixed: {
     description: (
@@ -84,26 +178,73 @@ const RISK_KIND_DETAILS: Record<
         maturity.
       </Trans>
     ),
+    exposureTokens: ['USDS'],
     liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>At maturity</Trans>
+    withdrawals: <Trans>At maturity or via market sell</Trans>
   },
   stusds: {
     description: (
       <Trans>
-        For advanced users. Higher yield with utilization-dependent variable returns and liquidation risk on
-        staked positions.
+        Access variable rates with SKY token-collateralized loans. Exposed to SKY price volatility and
+        potential bad debt. Returns vary depending on market utilization.
       </Trans>
     ),
-    liquidationRisk: <Trans>Yes</Trans>,
-    withdrawals: <Trans>Yes</Trans>
+    exposureTokens: ['SKY'],
+    liquidationRisk: <Trans>None</Trans>,
+    withdrawals: <Trans>Liquidity based</Trans>
   }
 };
 
+/**
+ * The exposure fact renders as an overlapping token-icon stack — long token
+ * lists read badly as text. Symbols must match /public/tokens/*.svg. On md+
+ * hover reveals the names via the native title tooltip; below md (the
+ * bottom-sheet surface) there is no hover, so tapping the stack opens a small
+ * popover with the same names (PopoverContent is z-100, clearing the sheet's
+ * z-50 layer).
+ */
+function ExposureFactValue({ symbols }: { symbols: string[] }) {
+  const { bpi } = useBreakpointIndex();
+  const names = symbols.join(', ');
+  const stack = (
+    <TokenIconStack
+      symbols={symbols}
+      size={16}
+      data-testid="risk-details-exposure"
+      title={names}
+      aria-label={names}
+    />
+  );
+
+  if (bpi >= BP.md) return stack;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="focus-visible:ring-ring inline-flex rounded-full focus-visible:ring-1 focus-visible:outline-hidden"
+        >
+          {stack}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        className="font-graphik text-fgPrimary bg-bgTertiary w-auto rounded-2xl px-3 py-2 text-[11px] leading-4 backdrop-blur-[100px]"
+      >
+        {names}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function FactRow({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
-    <div className="flex w-full items-center justify-between">
-      <span className="font-graphik text-fgSecondary text-[11px] leading-4">{label}</span>
-      <span className="font-circle text-fgPrimary flex items-center gap-1 text-xs leading-3.5 font-medium tracking-[-0.24px]">
+    // items-start + right-aligned value: exposure token lists ("cbBTC, wstETH,
+    // WETH and PT-sUSDS") wrap inside the 228px tooltip card.
+    <div className="flex w-full items-start justify-between gap-3">
+      <span className="font-graphik text-fgSecondary shrink-0 text-[11px] leading-4">{label}</span>
+      <span className="font-circle text-fgPrimary text-right text-xs leading-3.5 font-medium tracking-[-0.24px]">
         {value}
       </span>
     </div>
@@ -111,9 +252,9 @@ function FactRow({ label, value }: { label: ReactNode; value: ReactNode }) {
 }
 
 /** Scale + description + divider + fact rows — shared by the tooltip card and the bottom sheet. */
-function RiskTierDetailsBody({ tier, kind }: { tier: EarnRiskTier; kind: EarnProductKind }) {
+function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: EarnRiskProfileId }) {
   const severity = RISK_TIER_DETAILS[tier];
-  const details = RISK_KIND_DETAILS[kind];
+  const details = RISK_PROFILE_DETAILS[profile];
 
   return (
     <>
@@ -133,13 +274,8 @@ function RiskTierDetailsBody({ tier, kind }: { tier: EarnRiskTier; kind: EarnPro
       <div className="border-borderPrimary w-full border-b" />
       <div className="flex w-full flex-col gap-1.5">
         <FactRow
-          label={<Trans>Smart contract</Trans>}
-          value={
-            <>
-              <BadgeCheck size={12} className="text-statusSuccess" aria-hidden />
-              <Trans>Audited</Trans>
-            </>
-          }
+          label={<Trans>Exposure</Trans>}
+          value={<ExposureFactValue symbols={details.exposureTokens} />}
         />
         <FactRow label={<Trans>Liquidation risk</Trans>} value={details.liquidationRisk} />
         <FactRow label={<Trans>Withdrawals</Trans>} value={details.withdrawals} />
@@ -157,11 +293,11 @@ function RiskTierDetailsBody({ tier, kind }: { tier: EarnRiskTier; kind: EarnPro
  */
 export function RiskTierDetailsCard({
   tier,
-  kind,
+  profile,
   className
 }: {
   tier: EarnRiskTier;
-  kind: EarnProductKind;
+  profile: EarnRiskProfileId;
   className?: string;
 }) {
   return (
@@ -174,7 +310,7 @@ export function RiskTierDetailsCard({
           {RISK_TIER_DETAILS[tier].title}
         </span>
       </div>
-      <RiskTierDetailsBody tier={tier} kind={kind} />
+      <RiskTierDetailsBody tier={tier} profile={profile} />
       <div className="border-borderPrimary w-full border-b" />
       <a
         href={RISK_LEARN_MORE_URL}
@@ -197,17 +333,15 @@ export function RiskTierDetailsCard({
  * table rows and accordion cards.
  */
 export function RiskTierDetailsTrigger({
-  // The registry map is the default so standalone surfaces (detail pages,
-  // portfolio cards) only pass `kind` and can never drift from the
-  // marketplace; pass `tier` explicitly where a live row supplies it.
-  kind,
-  tier = RISK_TIER_BY_KIND[kind],
+  profile,
   className
 }: {
-  tier?: EarnRiskTier;
-  kind: EarnProductKind;
+  profile: EarnRiskProfileId;
   className?: string;
 }) {
+  // The tier always resolves through the registry map so no surface (row,
+  // detail page, portfolio card) can drift from the marketplace assignment.
+  const tier = RISK_TIER_BY_PROFILE[profile];
   const { bpi } = useBreakpointIndex();
   const { t } = useLingui();
 
@@ -265,7 +399,7 @@ export function RiskTierDetailsTrigger({
                 </Button>
               </ResponsiveModalClose>
             </div>
-            <RiskTierDetailsBody tier={tier} kind={kind} />
+            <RiskTierDetailsBody tier={tier} profile={profile} />
             <Button variant="secondary" size="m" className="mt-1 w-full" asChild>
               <a href={RISK_LEARN_MORE_URL} target="_blank" rel="noopener noreferrer">
                 <Trans>Learn more about risk</Trans>
@@ -295,7 +429,7 @@ export function RiskTierDetailsTrigger({
         </TooltipTrigger>
         <TooltipPortal>
           <TooltipContent onClick={stopRowClick}>
-            <RiskTierDetailsCard tier={tier} kind={kind} className="w-[228px]" />
+            <RiskTierDetailsCard tier={tier} profile={profile} className="w-[228px]" />
           </TooltipContent>
         </TooltipPortal>
       </Tooltip>

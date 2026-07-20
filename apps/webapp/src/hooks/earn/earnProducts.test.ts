@@ -71,14 +71,24 @@ describe('buildEarnProducts', () => {
     expect(ids).toContain('stusds');
   });
 
-  // TODO(BL-07): update when risk ratings get a real source. The savings 'low'
-  // is a TESTING-ONLY placeholder (see SAVINGS_RISK_TIER), not an assessment.
-  it('hardcodes risk tiers: advanced for stUSDS, low for savings (testing only), moderate elsewhere', () => {
-    for (const product of products) {
-      expect(product.risk).toBe(
-        product.kind === 'stusds' ? 'advanced' : product.kind === 'savings' ? 'low' : 'moderate'
-      );
+  // Tiers per the APP-396 risk sheet (Kacper's initial draft, 2026-07-20).
+  it('assigns per-profile risk tiers from the sheet: savings and rewards Conservative, Risk Capital vaults and stUSDS Aggressive', () => {
+    const byId = Object.fromEntries(products.map(p => [p.id, p]));
+    expect(byId['savings'].riskProfile).toBe('savings');
+    expect(byId['savings'].risk).toBe('low');
+    expect(byId['rewards-spk'].riskProfile).toBe('rewards-spk');
+    expect(byId['rewards-spk'].risk).toBe('low');
+    expect(byId['rewards-cle'].riskProfile).toBe('rewards-cle');
+    expect(byId['stusds'].risk).toBe('advanced');
+    for (const product of products.filter(p => p.kind === 'fixed')) {
+      expect(product.riskProfile).toBe('fixed');
+      expect(product.risk).toBe('moderate');
     }
+    // Vaults split by profile: Flagship/USDT Savings Moderate, Risk Capital Aggressive.
+    for (const product of products.filter(p => p.kind === 'vault')) {
+      expect(product.risk).toBe(product.riskProfile === 'vault-risk-capital' ? 'advanced' : 'moderate');
+    }
+    expect(products.filter(p => p.riskProfile === 'vault-risk-capital').length).toBeGreaterThan(0);
   });
 
   it('builds detail paths from the route contract', () => {

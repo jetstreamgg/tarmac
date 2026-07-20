@@ -49,7 +49,7 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
       <div className="mt-auto grid grid-cols-2 gap-4">
         <Stat label={<Trans>Risk</Trans>}>
           <div className="flex items-center gap-2">
-            <RiskTierDetailsTrigger tier={row.risk} kind={row.kind} />
+            <RiskTierDetailsTrigger profile={row.riskProfile} />
             <span className="text-text text-sm font-medium">{RISK_LABEL[row.risk]}</span>
           </div>
         </Stat>
