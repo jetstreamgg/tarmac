@@ -72,6 +72,7 @@ import {
   CellTokenIdle
 } from '@/components/ui/table-cells';
 import { RiskMeter, RiskTierMeter, RiskScaleMeter } from '@/components/product/RiskMeter';
+import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { TokensComposition } from '@/components/product/TokensComposition';
 import { ChartTooltip } from '@/modules/ui/components/ChartTooltip';
 import { PortfolioDonutChart } from '@/modules/portfolio/components/PortfolioDonutChart';
@@ -987,6 +988,15 @@ function TablesSection() {
                 <RiskTierMeter tier="low" />
                 <RiskTierMeter tier="moderate" />
                 <RiskTierMeter tier="advanced" />
+              </span>
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Risk details trigger, per kind (hover/focus md+ · tap sheet below md)">
+              <span className="flex items-center gap-2">
+                <RiskTierDetailsTrigger kind="savings" />
+                <RiskTierDetailsTrigger kind="rewards" />
+                <RiskTierDetailsTrigger kind="vault" />
+                <RiskTierDetailsTrigger kind="fixed" />
+                <RiskTierDetailsTrigger kind="stusds" />
               </span>
             </CellSpecimenRow>
             <CellSpecimenRow name="Status">

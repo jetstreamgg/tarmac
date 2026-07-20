@@ -18,6 +18,20 @@ const STUSDS_RISK_TIER: EarnRiskTier = 'advanced';
 const SAVINGS_RISK_TIER: EarnRiskTier = 'low';
 
 /**
+ * The single source of truth for the (BL-07 hardcoded) tier per product
+ * family — the marketplace registry below and every standalone risk surface
+ * (product detail pages, portfolio cards) read from here, so the list and the
+ * detail page can never diverge for the same product.
+ */
+export const RISK_TIER_BY_KIND: Record<EarnProductDescriptor['kind'], EarnRiskTier> = {
+  savings: SAVINGS_RISK_TIER,
+  rewards: DEFAULT_RISK_TIER,
+  vault: DEFAULT_RISK_TIER,
+  fixed: DEFAULT_RISK_TIER,
+  stusds: STUSDS_RISK_TIER
+};
+
+/**
  * Chains within `familyChainIds` where a product is live: its owning module
  * must be enabled for the chain (the existing availability config, reused
  * unchanged) and, when the product is address-bound, the address map must
@@ -59,7 +73,7 @@ export function buildEarnProducts(
     // (mainnet); USDC swaps through the PSM (L2). The union across the family is
     // listed here — the supply surface offers the chain-appropriate subset.
     supplyTokens: [TOKENS.usds.symbol, TOKENS.dai.symbol, TOKENS.usdc.symbol],
-    risk: SAVINGS_RISK_TIER,
+    risk: RISK_TIER_BY_KIND.savings,
     networks: productNetworks(Intent.SAVINGS_INTENT, familyChainIds, TOKENS.susds.address),
     detailPath: intentToPath(Intent.SAVINGS_INTENT)
   };
@@ -71,7 +85,7 @@ export function buildEarnProducts(
     name: contract.name,
     tokenSymbol: contract.supplyToken.symbol,
     supplyTokens: [contract.supplyToken.symbol],
-    risk: DEFAULT_RISK_TIER,
+    risk: RISK_TIER_BY_KIND.rewards,
     networks: productNetworks(Intent.REWARDS_INTENT, familyChainIds),
     detailPath: intentToPath(Intent.REWARDS_INTENT, contract.contractAddress),
     // RewardContract types its address as plain string; the values come from
@@ -88,7 +102,7 @@ export function buildEarnProducts(
       name: vault.name,
       tokenSymbol: vault.assetToken.symbol,
       supplyTokens: [vault.assetToken.symbol],
-      risk: DEFAULT_RISK_TIER,
+      risk: RISK_TIER_BY_KIND.vault,
       networks: productNetworks(Intent.VAULTS_INTENT, familyChainIds, vault.vaultAddress),
       detailPath: intentToPath(Intent.VAULTS_INTENT, `${vaultModuleForProvider(vault.provider)}/${address}`),
       address
@@ -104,7 +118,7 @@ export function buildEarnProducts(
     // The Pendle buy flow accepts these input tokens (direct or via the SY
     // aggregator route).
     supplyTokens: [TOKENS.usds.symbol, TOKENS.usdc.symbol, TOKENS.susds.symbol],
-    risk: DEFAULT_RISK_TIER,
+    risk: RISK_TIER_BY_KIND.fixed,
     networks: productNetworks(Intent.FIXED_INTENT, familyChainIds),
     detailPath: intentToPath(Intent.FIXED_INTENT, market.slug),
     maturity: market.expiry,
@@ -118,7 +132,7 @@ export function buildEarnProducts(
     name: 'stUSDS',
     tokenSymbol: TOKENS.stusds.symbol,
     supplyTokens: [TOKENS.usds.symbol],
-    risk: STUSDS_RISK_TIER,
+    risk: RISK_TIER_BY_KIND.stusds,
     networks: productNetworks(Intent.EXPERT_INTENT, familyChainIds),
     // The Expert module flattened into its single product at /earn/stusds (D7).
     detailPath: intentToPath(Intent.EXPERT_INTENT)

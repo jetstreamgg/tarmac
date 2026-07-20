@@ -2,7 +2,6 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { EarnTable, EarnTableRowItem } from './EarnTable';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = table mode).
@@ -45,14 +44,12 @@ const ROWS: EarnTableRowItem[] = [
 const renderEarn = (onRowSelect = vi.fn()) => {
   render(
     <I18nProvider i18n={i18n}>
-      <TooltipProvider delayDuration={0}>
-        <EarnTable
-          rows={ROWS}
-          sort={{ column: 'rate', direction: 'desc' }}
-          onSortChange={vi.fn()}
-          onRowSelect={onRowSelect}
-        />
-      </TooltipProvider>
+      <EarnTable
+        rows={ROWS}
+        sort={{ column: 'rate', direction: 'desc' }}
+        onSortChange={vi.fn()}
+        onRowSelect={onRowSelect}
+      />
     </I18nProvider>
   );
   return onRowSelect;

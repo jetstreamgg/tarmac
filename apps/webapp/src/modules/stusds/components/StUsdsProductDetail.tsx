@@ -17,7 +17,7 @@ import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { RiskTierMeter } from '@/components/product/RiskMeter';
+import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
@@ -93,10 +93,9 @@ export function StUsdsProductDetail() {
       id: 'risk',
       icon: <Asterisk className="h-3 w-3" />,
       label: <Trans>Risk profile</Trans>,
-      // Mirrors the marketplace's hardcoded tier (earnProducts.ts
-      // STUSDS_RISK_TIER = 'advanced', BL-07) so the table and detail page
-      // never diverge.
-      value: <RiskTierMeter tier="advanced" />
+      // Tier comes from the registry map (RISK_TIER_BY_KIND, BL-07) via the
+      // trigger's default, so the marketplace and this page can't diverge.
+      value: <RiskTierDetailsTrigger kind="stusds" />
     },
     {
       id: 'tvl',

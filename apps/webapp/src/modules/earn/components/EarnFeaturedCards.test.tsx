@@ -4,7 +4,6 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
 import type { EarnProductRow } from '@/hooks';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { EarnFeaturedCards, HIGHLIGHTED_PRODUCTS } from './EarnFeaturedCards';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).
@@ -68,9 +67,7 @@ const renderCards = (
 ) => {
   render(
     <I18nProvider i18n={i18n}>
-      <TooltipProvider delayDuration={0}>
-        <EarnFeaturedCards rows={rows} onSelect={onSelect} products={products} />
-      </TooltipProvider>
+      <EarnFeaturedCards rows={rows} onSelect={onSelect} products={products} />
     </I18nProvider>
   );
   return onSelect;

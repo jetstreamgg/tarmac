@@ -17,7 +17,7 @@ import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { RiskTierMeter } from '@/components/product/RiskMeter';
+import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
@@ -94,11 +94,9 @@ export function SavingsProductDetail() {
       id: 'risk',
       icon: <Asterisk className="h-3 w-3" />,
       label: <Trans>Risk scale</Trans>,
-      // Mirrors the marketplace's hardcoded tier (earnProducts.ts
-      // DEFAULT_RISK_TIER = 'moderate', BL-07) so the table and detail page
-      // never diverge for the same product. 🔶 the C3 design meter showed 'low'
-      // — confirm with design; updating the registry constant flips both.
-      value: <RiskTierMeter tier="moderate" />
+      // Tier comes from the registry map (RISK_TIER_BY_KIND, BL-07) via the
+      // trigger's default, so the marketplace and this page can't diverge.
+      value: <RiskTierDetailsTrigger kind="savings" />
     },
     { id: 'tvl', icon: <Vault className="h-3 w-3" />, label: <Trans>TVL</Trans>, value: tvl },
     {

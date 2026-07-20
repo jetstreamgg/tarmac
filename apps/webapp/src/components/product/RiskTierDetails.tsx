@@ -2,9 +2,15 @@ import type { MouseEvent, ReactNode } from 'react';
 import { BadgeCheck, MoveUpRight, X } from 'lucide-react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex, type EarnProductKind, type EarnRiskTier } from '@/hooks';
+import { BP, RISK_TIER_BY_KIND, useBreakpointIndex, type EarnProductKind, type EarnRiskTier } from '@/hooks';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipPortal,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 import {
   ResponsiveModal,
   ResponsiveModalClose,
@@ -191,11 +197,14 @@ export function RiskTierDetailsCard({
  * table rows and accordion cards.
  */
 export function RiskTierDetailsTrigger({
-  tier,
+  // The registry map is the default so standalone surfaces (detail pages,
+  // portfolio cards) only pass `kind` and can never drift from the
+  // marketplace; pass `tier` explicitly where a live row supplies it.
   kind,
+  tier = RISK_TIER_BY_KIND[kind],
   className
 }: {
-  tier: EarnRiskTier;
+  tier?: EarnRiskTier;
   kind: EarnProductKind;
   className?: string;
 }) {
@@ -270,22 +279,26 @@ export function RiskTierDetailsTrigger({
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label={t`Risk profile`}
-          onClick={stopRowClick}
-          className={triggerClassName}
-        >
-          {pill}
-        </button>
-      </TooltipTrigger>
-      <TooltipPortal>
-        <TooltipContent onClick={stopRowClick}>
-          <RiskTierDetailsCard tier={tier} kind={kind} className="w-[228px]" />
-        </TooltipContent>
-      </TooltipPortal>
-    </Tooltip>
+    // Own provider (same 300ms delay as the app root's) so the trigger is
+    // self-contained on any surface — pages, cards, tests — with no host setup.
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={t`Risk profile`}
+            onClick={stopRowClick}
+            className={triggerClassName}
+          >
+            {pill}
+          </button>
+        </TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent onClick={stopRowClick}>
+            <RiskTierDetailsCard tier={tier} kind={kind} className="w-[228px]" />
+          </TooltipContent>
+        </TooltipPortal>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

@@ -3,7 +3,6 @@ import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EarnProductKind, EarnRiskTier } from '@/hooks';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { RiskTierDetailsCard, RiskTierDetailsTrigger } from './RiskTierDetails';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).
@@ -101,9 +100,7 @@ describe('RiskTierDetailsCard — tier presentation + per-product copy (1036:201
 const renderTrigger = (tier: EarnRiskTier = 'low', kind: EarnProductKind = 'savings') =>
   render(
     <I18nProvider i18n={i18n}>
-      <TooltipProvider delayDuration={0}>
-        <RiskTierDetailsTrigger tier={tier} kind={kind} />
-      </TooltipProvider>
+      <RiskTierDetailsTrigger tier={tier} kind={kind} />
     </I18nProvider>
   );
 
