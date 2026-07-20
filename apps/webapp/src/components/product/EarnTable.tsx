@@ -3,13 +3,13 @@ import { ChevronDown } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
-import type { EarnRiskTier } from '@/hooks';
+import type { EarnRiskProfileId } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CellEmpty, CellPercent, CellToken } from '@/components/ui/table-cells';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TransactionCardFieldGrid } from './TransactionCard';
-import { RiskTierMeter } from './RiskMeter';
+import { RiskTierDetailsTrigger } from './RiskTierDetails';
 
 export type EarnTableColumn = 'token' | 'network' | 'risk' | 'rate' | 'rate30d' | 'tvl' | 'position';
 
@@ -18,6 +18,8 @@ export type EarnTableSort = { column: EarnTableColumn; direction: 'asc' | 'desc'
 export type EarnTableRowItem = {
   id: string;
   name: string;
+  /** Editorial "NEW" marker on the token cell (1036:201322, APP-395). */
+  isNew?: boolean;
   /** 28px product logo for the token iconbox (the caller injects its TokenIcon). */
   icon?: ReactNode;
   /** Optional glyph rendered after the name (e.g. a provider logo). */
@@ -28,7 +30,8 @@ export type EarnTableRowItem = {
   maturityLabel?: string;
   /** Stacked network icons slot. */
   network?: ReactNode;
-  risk: EarnRiskTier;
+  /** Selects the risk tier + details copy (APP-396) — the Risk cell derives everything from it. */
+  riskProfile: EarnRiskProfileId;
   rate: string;
   rate30d: string;
   tvl: string;
@@ -73,7 +76,22 @@ function TokenCell({ row }: { row: EarnTableRowItem }) {
     <CellToken
       icon={row.icon}
       title={row.name}
-      titleSuffix={row.nameSuffix}
+      titleSuffix={
+        <>
+          {row.nameSuffix}
+          {row.isNew && (
+            <span
+              data-testid={`earn-new-badge-${row.id}`}
+              className="bg-brand font-circle rounded-full px-1.5 py-0.5 text-[10px] leading-3 font-medium text-white"
+            >
+              <Trans>NEW</Trans>
+            </span>
+          )}
+        </>
+      }
+      // Comp 486:22051: the accordion header title is Label 5; the desktop
+      // table cell keeps Label 4 from md up.
+      titleClassName="text-sm leading-4 tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]"
       subtitle={
         <>
           <Trans>Supply:</Trans>
@@ -112,8 +130,8 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
             data-testid={`earn-row-${row.id}`}
             className={cn(
               'bg-bgSecondary flex flex-col gap-6 p-5 backdrop-blur-[20px]',
-              index === 0 && 'rounded-t-[20px]',
-              index === rows.length - 1 && 'rounded-b-[20px]'
+              index === 0 && 'rounded-t-3xl',
+              index === rows.length - 1 && 'rounded-b-3xl'
             )}
           >
             <button
@@ -129,7 +147,10 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
                   <span className="font-graphik text-fgSecondary text-xs leading-[18px]">
                     <Trans>Rate</Trans>
                   </span>
-                  <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
+                  <span
+                    data-testid={`earn-card-rate-${row.id}`}
+                    className="font-circle text-fgPrimary text-xs leading-3.5 font-medium tracking-[-0.24px]"
+                  >
                     <NumericValue value={row.rate} isLoading={row.isLoading} />
                   </span>
                 </span>
@@ -143,9 +164,15 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
             {isExpanded && (
               <>
                 <TransactionCardFieldGrid
+                  // Comp 486:22051 expanded grid: Label 6 values (the M5
+                  // transaction cards keep their Label 5 default).
+                  valueClassName="text-xs leading-3.5 tracking-[-0.24px]"
                   fields={[
                     ...(row.network ? [{ label: <Trans>Network</Trans>, value: row.network }] : []),
-                    { label: <Trans>Risk</Trans>, value: <RiskTierMeter tier={row.risk} /> },
+                    {
+                      label: <Trans>Risk</Trans>,
+                      value: <RiskTierDetailsTrigger profile={row.riskProfile} />
+                    },
                     {
                       label: <Trans>Rate</Trans>,
                       value: <NumericValue value={row.rate} isLoading={row.isLoading} />
@@ -258,7 +285,7 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
             </TableCell>
             <TableCell>{row.network}</TableCell>
             <TableCell>
-              <RiskTierMeter tier={row.risk} />
+              <RiskTierDetailsTrigger profile={row.riskProfile} />
             </TableCell>
             <TableCell>
               <NumericValue value={row.rate} isLoading={row.isLoading} />

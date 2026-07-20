@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EarnTable, EarnTableRowItem } from './EarnTable';
 
@@ -14,6 +14,10 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
   };
 });
 
+// TokenIcon reaches for wagmi config (chain badges); the exposure stack only
+// needs the wrapper spans, so stub the icon itself.
+vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+
 i18n.load('en', {});
 i18n.activate('en');
 
@@ -21,7 +25,8 @@ const ROWS: EarnTableRowItem[] = [
   {
     id: 'savings',
     name: 'Sky Savings',
-    risk: 'low',
+    isNew: true,
+    riskProfile: 'savings',
     rate: '3.75%',
     rate30d: '3.70%',
     tvl: '$4.23b',
@@ -30,7 +35,7 @@ const ROWS: EarnTableRowItem[] = [
   {
     id: 'spk',
     name: 'Earn SPK',
-    risk: 'moderate',
+    riskProfile: 'rewards-spk',
     rate: '5.00%',
     rate30d: '4.90%',
     tvl: '$1.00b',
@@ -92,6 +97,19 @@ describe('EarnTable — mobile accordion cards (M5)', () => {
     expect(screen.queryByText('TVL')).toBeNull();
   });
 
+  it('applies the M6.2 comp scale: 24px list corners, Label 5 title, Label 6 rate value', () => {
+    renderEarn();
+
+    expect(screen.getByTestId('earn-row-savings').className).toContain('rounded-t-3xl');
+    expect(screen.getByTestId('earn-row-spk').className).toContain('rounded-b-3xl');
+
+    const title = screen.getByText('Sky Savings');
+    expect(title.className).toContain('text-sm');
+    expect(title.className).toContain('md:text-base');
+
+    expect(screen.getByTestId('earn-card-rate-savings').className).toContain('text-xs');
+  });
+
   it('reports the row through onRowSelect from both expanded buttons', () => {
     const onRowSelect = renderEarn();
 
@@ -113,5 +131,52 @@ describe('EarnTable — desktop table unchanged', () => {
 
     expect(screen.getByRole('table')).toBeTruthy();
     expect(screen.getByTestId('earn-sort-rate')).toBeTruthy();
+  });
+});
+
+describe('EarnTable — interactive risk profile (APP-396)', () => {
+  afterEach(() => {
+    breakpoint.isMobile = false;
+    cleanup();
+  });
+
+  it('renders a risk details trigger per desktop row without hijacking row navigation', () => {
+    const onRowSelect = renderEarn();
+
+    // Scoped per row — the sortable column header answers to the same name.
+    for (const row of ROWS) {
+      const trigger = within(screen.getByTestId(`earn-row-${row.id}`)).getByRole('button', {
+        name: 'Risk profile'
+      });
+      fireEvent.click(trigger);
+    }
+    expect(onRowSelect).not.toHaveBeenCalled();
+  });
+
+  it('opens the risk details sheet from the expanded mobile card grid', () => {
+    breakpoint.isMobile = true;
+    renderEarn();
+
+    fireEvent.click(screen.getByTestId('earn-card-toggle-savings'));
+    fireEvent.click(screen.getByRole('button', { name: 'Risk profile' }));
+
+    expect(screen.getByText('Conservative')).toBeTruthy();
+    expect(screen.getByText('Withdrawals')).toBeTruthy();
+  });
+});
+
+describe('EarnTable — NEW badge (APP-395, 1036:201322)', () => {
+  afterEach(cleanup);
+
+  it('marks only rows flagged isNew, on desktop and in the mobile cards', () => {
+    renderEarn();
+    expect(screen.getAllByText('NEW')).toHaveLength(1);
+    expect(screen.getByTestId('earn-new-badge-savings')).toBeTruthy();
+    cleanup();
+
+    breakpoint.isMobile = true;
+    renderEarn();
+    expect(screen.getByTestId('earn-new-badge-savings')).toBeTruthy();
+    breakpoint.isMobile = false;
   });
 });

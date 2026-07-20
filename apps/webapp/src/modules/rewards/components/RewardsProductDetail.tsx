@@ -8,6 +8,7 @@ import { Intent } from '@/lib/enums';
 import {
   TOKENS,
   productNetworks,
+  rewardsRiskProfile,
   useRewardContractInfo,
   useRewardsChartInfo,
   type RewardContract
@@ -17,7 +18,7 @@ import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { RiskTierMeter } from '@/components/product/RiskMeter';
+import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
 import { RewardsDetailChart } from './RewardsDetailChart';
@@ -138,10 +139,9 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
       id: 'risk',
       icon: <Asterisk className="h-3 w-3" />,
       label: <Trans>Risk scale</Trans>,
-      // Mirrors the marketplace's hardcoded tier (earnProducts.ts
-      // DEFAULT_RISK_TIER = 'moderate', BL-07) so the table and detail page
-      // never diverge for the same product.
-      value: <RiskTierMeter tier="moderate" />
+      // Each farm resolves its own profile (SKY/SPK/GROVE/Chronicle copy differ)
+      // through the same registry the marketplace uses, so they can't diverge.
+      value: <RiskTierDetailsTrigger profile={rewardsRiskProfile(contract.rewardToken.symbol)} />
     },
     { id: 'tvl', icon: <Vault className="h-3 w-3" />, label: <Trans>TVL</Trans>, value: tvl },
     {

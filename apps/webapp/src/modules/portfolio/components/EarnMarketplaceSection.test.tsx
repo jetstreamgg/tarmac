@@ -28,6 +28,7 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 const row = (over: Partial<EarnProductRow>): EarnProductRow => ({
   id: 'x',
   kind: 'savings',
+  riskProfile: 'savings',
   intent: Intent.SAVINGS_INTENT,
   name: 'X',
   tokenSymbol: 'USDS',

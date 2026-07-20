@@ -66,6 +66,7 @@ const makeRow = (overrides: Partial<EarnProductRow> & Pick<EarnProductRow, 'id'>
   tokenSymbol: 'sUSDS',
   supplyTokens: ['USDS'],
   risk: 'moderate',
+  riskProfile: 'savings',
   networks: [1],
   detailPath: '/earn/savings',
   rate: { formatted: '0.00%' },
