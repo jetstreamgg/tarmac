@@ -1,7 +1,8 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { EarnTable, EarnTableRowItem } from './EarnTable';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = table mode).
@@ -42,12 +43,14 @@ const ROWS: EarnTableRowItem[] = [
 const renderEarn = (onRowSelect = vi.fn()) => {
   render(
     <I18nProvider i18n={i18n}>
-      <EarnTable
-        rows={ROWS}
-        sort={{ column: 'rate', direction: 'desc' }}
-        onSortChange={vi.fn()}
-        onRowSelect={onRowSelect}
-      />
+      <TooltipProvider delayDuration={0}>
+        <EarnTable
+          rows={ROWS}
+          sort={{ column: 'rate', direction: 'desc' }}
+          onSortChange={vi.fn()}
+          onRowSelect={onRowSelect}
+        />
+      </TooltipProvider>
     </I18nProvider>
   );
   return onRowSelect;
@@ -127,6 +130,37 @@ describe('EarnTable — desktop table unchanged', () => {
 
     expect(screen.getByRole('table')).toBeTruthy();
     expect(screen.getByTestId('earn-sort-rate')).toBeTruthy();
+  });
+});
+
+describe('EarnTable — interactive risk profile (APP-396)', () => {
+  afterEach(() => {
+    breakpoint.isMobile = false;
+    cleanup();
+  });
+
+  it('renders a risk details trigger per desktop row without hijacking row navigation', () => {
+    const onRowSelect = renderEarn();
+
+    // Scoped per row — the sortable column header answers to the same name.
+    for (const row of ROWS) {
+      const trigger = within(screen.getByTestId(`earn-row-${row.id}`)).getByRole('button', {
+        name: 'Risk profile'
+      });
+      fireEvent.click(trigger);
+    }
+    expect(onRowSelect).not.toHaveBeenCalled();
+  });
+
+  it('opens the risk details sheet from the expanded mobile card grid', () => {
+    breakpoint.isMobile = true;
+    renderEarn();
+
+    fireEvent.click(screen.getByTestId('earn-card-toggle-savings'));
+    fireEvent.click(screen.getByRole('button', { name: 'Risk profile' }));
+
+    expect(screen.getByText('Conservative')).toBeTruthy();
+    expect(screen.getByText('Withdrawals')).toBeTruthy();
   });
 });
 

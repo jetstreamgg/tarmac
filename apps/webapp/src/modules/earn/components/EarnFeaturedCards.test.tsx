@@ -4,6 +4,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
 import type { EarnProductRow } from '@/hooks';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { EarnFeaturedCards, HIGHLIGHTED_PRODUCTS } from './EarnFeaturedCards';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).
@@ -67,7 +68,9 @@ const renderCards = (
 ) => {
   render(
     <I18nProvider i18n={i18n}>
-      <EarnFeaturedCards rows={rows} onSelect={onSelect} products={products} />
+      <TooltipProvider delayDuration={0}>
+        <EarnFeaturedCards rows={rows} onSelect={onSelect} products={products} />
+      </TooltipProvider>
     </I18nProvider>
   );
   return onSelect;
@@ -160,6 +163,18 @@ describe('EarnFeaturedCards — desktop (APP-395)', () => {
     expect(earnButtons).toHaveLength(2);
     fireEvent.click(earnButtons[1]);
     expect(onSelect).toHaveBeenCalledWith('fixed-0xabc');
+  });
+
+  it('exposes the risk stat as an interactive details trigger on every card treatment (APP-396)', () => {
+    renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: true }));
+    // Two vertical cards → one trigger each.
+    expect(screen.getAllByRole('button', { name: 'Risk profile' })).toHaveLength(2);
+    cleanup();
+
+    renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: false }));
+    // Wide savings card → its Risk stat is the trigger.
+    expect(screen.getByTestId('earn-featured-savings-wide')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Risk profile' })).toBeTruthy();
   });
 
   it('falls back to the vertical card when the only visible product has no wide treatment', () => {

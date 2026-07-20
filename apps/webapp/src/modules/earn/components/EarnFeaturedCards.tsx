@@ -6,7 +6,7 @@ import { getChainIcon } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { IconboxStatus } from '@/components/ui/iconbox';
-import { RiskTierMeter } from '@/components/product/RiskMeter';
+import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { Pendle } from '@/widgets';
@@ -154,7 +154,7 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
             <span className="text-fgSecondary text-xs leading-[18px]">
               <Trans>Risk</Trans>
             </span>
-            <RiskTierMeter tier={row.risk} />
+            <RiskTierDetailsTrigger tier={row.risk} />
           </div>
         </div>
         <Button variant="primary" size="l" className="w-28" onClick={onSupply}>
@@ -210,7 +210,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
         <Stat label={<RateLabel />}>{row.rate.formatted}</Stat>
         <StatDivider />
         <Stat label={<Trans>Risk</Trans>}>
-          <RiskTierMeter tier={row.risk} />
+          <RiskTierDetailsTrigger tier={row.risk} />
         </Stat>
       </>
     ),
@@ -263,7 +263,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
           </>
         )}
         <Stat label={<Trans>Risk</Trans>}>
-          <RiskTierMeter tier={row.risk} />
+          <RiskTierDetailsTrigger tier={row.risk} />
         </Stat>
       </>
     )

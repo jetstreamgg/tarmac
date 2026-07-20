@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CellEmpty, CellPercent, CellToken } from '@/components/ui/table-cells';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TransactionCardFieldGrid } from './TransactionCard';
-import { RiskTierMeter } from './RiskMeter';
+import { RiskTierDetailsTrigger } from './RiskTierDetails';
 
 export type EarnTableColumn = 'token' | 'network' | 'risk' | 'rate' | 'rate30d' | 'tvl' | 'position';
 
@@ -168,7 +168,7 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
                   valueClassName="text-xs leading-3.5 tracking-[-0.24px]"
                   fields={[
                     ...(row.network ? [{ label: <Trans>Network</Trans>, value: row.network }] : []),
-                    { label: <Trans>Risk</Trans>, value: <RiskTierMeter tier={row.risk} /> },
+                    { label: <Trans>Risk</Trans>, value: <RiskTierDetailsTrigger tier={row.risk} /> },
                     {
                       label: <Trans>Rate</Trans>,
                       value: <NumericValue value={row.rate} isLoading={row.isLoading} />
@@ -281,7 +281,7 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
             </TableCell>
             <TableCell>{row.network}</TableCell>
             <TableCell>
-              <RiskTierMeter tier={row.risk} />
+              <RiskTierDetailsTrigger tier={row.risk} />
             </TableCell>
             <TableCell>
               <NumericValue value={row.rate} isLoading={row.isLoading} />
