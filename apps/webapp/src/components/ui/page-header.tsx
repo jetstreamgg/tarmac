@@ -38,8 +38,9 @@ export function PageHeading({
 }
 
 const HEADER_BADGE_SIZES = {
-  /** Hero stat badge (5031:52321): 8px padding, Label 5 text. */
-  m: 'gap-1 p-2 text-sm leading-4 tracking-[-0.28px]',
+  /** Hero stat badge (5031:52321): 8px padding, Label 5 text; 6px vertical
+      below md (mobile comp 486:22051 pins the pill at 28px). */
+  m: 'gap-1 px-2 py-1.5 text-sm leading-4 tracking-[-0.28px] md:p-2',
   /** Title suffix badge (5119:24064): tucked padding, Label 6 text. */
   s: 'gap-1 py-1 pr-2 pl-1 text-xs leading-3.5 tracking-[-0.24px]'
 } as const;
@@ -96,7 +97,12 @@ export function PageHeaderHero({
   return (
     <header className={cn('flex w-full flex-col items-center gap-5 text-center', className)}>
       {badges && <div className="flex flex-wrap items-center justify-center gap-2">{badges}</div>}
-      <PageHeading size="lg" className="max-w-[685px]">
+      {/* Mobile comps (Earn 486:22051) step the hero one rung down the ramp;
+          Heading 2 returns at md. */}
+      <PageHeading
+        size="lg"
+        className="max-w-[685px] text-[32px] leading-[35px] tracking-[-0.64px] text-balance md:text-[44px] md:leading-[48px] md:tracking-[-0.88px] md:text-wrap"
+      >
         {title}
       </PageHeading>
       <p className={cn('text-fgSecondary max-w-[513px] text-xs leading-[18px]', subtitleClassName)}>

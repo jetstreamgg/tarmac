@@ -4,7 +4,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho } from '@/widgets';
 import { useEarnMarketplace, EarnProductKind } from '@/hooks';
-import { formatNumber, getChainIcon } from '@/utils';
+import { getChainIcon } from '@/utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { QueryParams } from '@/lib/constants';
 import { retainOnNavigate, useAppSearchParams } from '@/lib/navigation';
@@ -17,11 +17,17 @@ import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
 import { productIconSymbol } from '@/components/product/productVisuals';
 import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
+import { formatMaturity } from '../helpers/formatMaturity';
+import { formatUsdCompact } from '../helpers/formatUsdCompact';
 import { useEarnTableState } from '../hooks/useEarnTableState';
+import { EarnFeaturedCards } from './EarnFeaturedCards';
 
 const NO_VALUE = '–';
 
-const formatUsd = (totalUsd?: number) => (totalUsd !== undefined ? `$${formatNumber(totalUsd)}` : NO_VALUE);
+const formatUsd = (totalUsd?: number) => (totalUsd !== undefined ? formatUsdCompact(totalUsd) : NO_VALUE);
+
+/** Products carrying the editorial "NEW" marker in the list (1036:201322). */
+const NEW_PRODUCT_IDS = ['savings'];
 
 const PRODUCT_LABELS: Record<EarnProductKind, React.ReactNode> = {
   savings: <Trans>Savings</Trans>,
@@ -30,12 +36,6 @@ const PRODUCT_LABELS: Record<EarnProductKind, React.ReactNode> = {
   fixed: <Trans>Fixed yield</Trans>,
   stusds: <Trans>Expert</Trans>
 };
-
-const maturityFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric'
-});
 
 /** The /earn destination: the Earn Opportunities marketplace section (C2). */
 export function EarnPage() {
@@ -117,15 +117,16 @@ export function EarnPage() {
       visibleRows.map(row => ({
         id: row.id,
         name: row.name,
+        riskProfile: row.riskProfile,
+        isNew: NEW_PRODUCT_IDS.includes(row.id),
         icon: <TokenIcon token={{ symbol: productIconSymbol(row) }} width={28} className="h-7 w-7" />,
         nameSuffix:
           row.kind === 'vault' && row.id.startsWith('vault-morpho') ? (
             <Morpho className="h-4 w-4 rounded-sm" />
           ) : undefined,
         supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
-        maturityLabel: row.maturity ? maturityFormatter.format(new Date(row.maturity * 1000)) : undefined,
+        maturityLabel: row.maturity ? formatMaturity(row.maturity) : undefined,
         network: <CellNetworks>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</CellNetworks>,
-        risk: row.risk,
         rate: row.rate.formatted,
         rate30d: row.rate30d?.formatted ?? NO_VALUE,
         tvl: formatUsd(row.tvl?.totalUsd),
@@ -145,7 +146,10 @@ export function EarnPage() {
   // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
   return (
     <div
-      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-5 py-4 md:py-10"
+      // Mobile rhythm per 486:22051: 24px base stack gap (the heading and list
+      // margins below stretch the seams the comp draws wider); C2's 20px gap
+      // returns at md.
+      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:gap-5 md:py-10"
       data-testid="earn-opportunities"
     >
       {/* Patterns/Headers, Earn hero type 5031:52345. The badge stats are
@@ -153,7 +157,7 @@ export function EarnPage() {
           Convert hero's "$0.00 Fees paid") — revisit if a live-stats source
           gets wired up. */}
       <PageHeaderHero
-        className="py-4 md:py-10"
+        className="py-8 md:py-10"
         badges={
           <>
             <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
@@ -164,14 +168,20 @@ export function EarnPage() {
             </HeaderBadge>
           </>
         }
-        title={<Trans>Your stablecoins, earning more</Trans>}
+        title={<Trans>Only the best ways to put your stablecoins to work</Trans>}
+        subtitleClassName="max-w-[271px] md:max-w-[513px]"
         subtitle={
           <Trans>
-            Sky Protocol is where stablecoins go to work and where they&apos;ve been going since 2017. $11B in
-            circulation. Multiple strategies, one place.
+            Sky Protocol is where stablecoins go to work — and where they&apos;ve been going since 2017. $11B
+            in circulation. Multiple strategies, one place.
           </Trans>
         }
       />
+      <EarnFeaturedCards rows={rows} onSelect={handleRowSelect} />
+      {/* Heading 6 on mobile (486:22121), Heading 5 on desktop (1036:201309, APP-395). */}
+      <h2 className="text-fgPrimary font-circle mt-6 text-xl leading-[22px] font-medium tracking-[-0.4px] md:mt-14 md:text-2xl md:leading-[26px] md:tracking-[-0.48px]">
+        <Trans>Earn Opportunities</Trans>
+      </h2>
       <EarnTableFilters
         selectedRiskTiers={filters.risk}
         onRiskTierToggle={toggleRiskTier}
@@ -185,8 +195,12 @@ export function EarnPage() {
         selectedProduct={filters.product}
         onProductChange={product => updateFilters({ product })}
       />
-      <div className="border-borderPrimary border-b" />
-      <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
+      {/* The mobile comp runs filters straight into the card list — divider is desktop-only. */}
+      <div className="border-borderPrimary hidden border-b md:block" />
+      {/* Comp runs 32px from the filters into the card list (24 gap + 8). */}
+      <div className="mt-2 md:mt-0">
+        <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
+      </div>
     </div>
   );
 }
