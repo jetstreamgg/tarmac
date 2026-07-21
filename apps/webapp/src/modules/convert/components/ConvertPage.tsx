@@ -54,7 +54,7 @@ export function ConvertPage() {
     form.isConnected && (form.isZero || form.insufficient || !!conversion.disabledReason);
 
   return (
-    <div className="flex w-full flex-col items-center gap-8 py-4 md:py-14" data-testid="convert-page">
+    <div className="flex w-full flex-col items-center gap-8 py-4 md:py-10" data-testid="convert-page">
       {/* Patterns/Headers, Convert type 5044:35419. */}
       <PageHeaderHero
         badges={

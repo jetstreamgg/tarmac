@@ -98,7 +98,7 @@ export function StakeProductPage() {
   const onInitialSheetInitConsumed = useCallback(() => setPendingSheetInit(null), []);
 
   return (
-    <div data-testid="stake-product-page" className="flex flex-col gap-6">
+    <div data-testid="stake-product-page" className="flex flex-col gap-6 py-4 md:py-10">
       {/* Header (Patterns/Headers, Stake type 5043:59183): the DS 64px
           Iconbox / Status with the brand glow (5043:59189) beside a Heading 2
           title; the DS 17px icon-title gap is normalized to 16. */}
