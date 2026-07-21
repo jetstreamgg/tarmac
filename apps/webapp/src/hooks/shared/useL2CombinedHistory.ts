@@ -2,11 +2,12 @@ import { useL2SavingsHistory } from '../psm/useL2SavingsHistory';
 import { useTradeHistory } from '../trade/useTradeHistory';
 import { useMemo } from 'react';
 
-export function useL2CombinedHistory(chainId?: number) {
-  const savingsHistory = useL2SavingsHistory({ chainId });
+export function useL2CombinedHistory(chainId?: number, { enabled = true }: { enabled?: boolean } = {}) {
+  const savingsHistory = useL2SavingsHistory({ chainId, enabled });
   const tradeHistory = useTradeHistory({
     chainId,
-    excludeSUsds: true
+    excludeSUsds: true,
+    enabled
   });
 
   const combinedData = useMemo(() => {

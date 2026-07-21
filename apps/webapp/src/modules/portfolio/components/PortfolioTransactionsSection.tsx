@@ -3,7 +3,13 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useChains } from 'wagmi';
-import { BP, ModuleEnum, useAllNetworksCombinedHistory, useBreakpointIndex } from '@/hooks';
+import {
+  BP,
+  ModuleEnum,
+  useAllNetworksCombinedHistory,
+  useBreakpointIndex,
+  useFilteredPortfolioHistory
+} from '@/hooks';
 import { formatAddress, getChainIcon } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Heading } from '@/modules/layout/components/Typography';
@@ -126,8 +132,16 @@ const renderCard = (row: PortfolioTxRow) => (
 
 export interface PortfolioTransactionsViewProps {
   rows: PortfolioTxRow[];
+  /**
+   * Rows to derive the filter dropdown options from. Defaults to `rows`; the
+   * section passes the unfiltered aggregate here so a server-scoped `rows` set
+   * (e.g. only staking history) doesn't collapse the other filter choices.
+   */
+  optionRows?: PortfolioTxRow[];
   isLoading?: boolean;
   error?: Error | null;
+  /** Notifies the data container so it can swap in a filter-scoped query. */
+  onFiltersChange?: (filters: { network: string; stablecoin: string; product: string }) => void;
   /** Whether older history can be fetched from the server. */
   hasNextPage?: boolean;
   /** Fetches the next keyset page; called when the user lands on the last loaded page. */
@@ -142,8 +156,10 @@ export interface PortfolioTransactionsViewProps {
  */
 export function PortfolioTransactionsView({
   rows,
+  optionRows,
   isLoading,
   error,
+  onFiltersChange,
   hasNextPage,
   fetchNextPage
 }: PortfolioTransactionsViewProps) {
@@ -156,13 +172,21 @@ export function PortfolioTransactionsView({
   const [stablecoin, setStablecoin] = useState(ALL);
   const [product, setProduct] = useState(ALL);
 
+  const changeFilters = (next: { network?: string; stablecoin?: string; product?: string }) => {
+    const merged = { network, stablecoin, product, ...next };
+    setNetwork(merged.network);
+    setStablecoin(merged.stablecoin);
+    setProduct(merged.product);
+    onFiltersChange?.(merged);
+  };
+
   // Filter options derived from what's actually present, so we never offer an
   // empty filter. Stablecoins are limited to rows that carry a USD value.
   const { networks, stablecoins, products } = useMemo(() => {
     const net = new Map<string, ReactNode>();
     const stable = new Map<string, ReactNode>();
     const prod = new Map<string, ReactNode>();
-    for (const row of rows) {
+    for (const row of optionRows ?? rows) {
       net.set(
         String(row.chainId),
         <span className="flex items-center gap-1.5">
@@ -186,7 +210,7 @@ export function PortfolioTransactionsView({
       stablecoins: [...stable].map(([value, label]) => ({ value, label })),
       products: [...prod].map(([value, label]) => ({ value, label }))
     };
-  }, [rows, chainName]);
+  }, [optionRows, rows, chainName]);
 
   const filtered = useMemo(
     () =>
@@ -213,7 +237,7 @@ export function PortfolioTransactionsView({
             testId="portfolio-tx-filter-network"
             options={networks}
             selected={network}
-            onChange={setNetwork}
+            onChange={value => changeFilters({ network: value })}
             allLabel={<Trans>All networks</Trans>}
             triggerClassName={triggerClassName}
           />
@@ -221,7 +245,7 @@ export function PortfolioTransactionsView({
             testId="portfolio-tx-filter-stablecoin"
             options={stablecoins}
             selected={stablecoin}
-            onChange={setStablecoin}
+            onChange={value => changeFilters({ stablecoin: value })}
             allLabel={<Trans>All stablecoins</Trans>}
             triggerClassName={triggerClassName}
           />
@@ -229,7 +253,7 @@ export function PortfolioTransactionsView({
             testId="portfolio-tx-filter-product"
             options={products}
             selected={product}
-            onChange={setProduct}
+            onChange={value => changeFilters({ product: value })}
             allLabel={<Trans>All products</Trans>}
             triggerClassName={triggerClassName}
           />
@@ -256,19 +280,38 @@ export function PortfolioTransactionsView({
 }
 
 /**
- * Portfolio-wide Transactions section (D8/APP-391): the aggregated
- * `useAllNetworksCombinedHistory` feed rendered as the DS Table/Transactions
- * (486:20055 desktop / 486:20198 mobile). Read-only over the existing
- * aggregate — no engine hooks touched.
+ * Portfolio-wide Transactions section (D8/APP-391): the DS Table/Transactions
+ * (486:20055 desktop / 486:20198 mobile) over `useFilteredPortfolioHistory` —
+ * the 2-document all-networks aggregate by default, or a query scoped to the
+ * active network/product filter so sparse categories paginate through their
+ * own full history. Dropdown options always derive from the aggregate.
  */
 export function PortfolioTransactionsSection() {
-  const { data, isLoading, error, hasNextPage, fetchNextPage } = useAllNetworksCombinedHistory();
+  const [network, setNetwork] = useState(ALL);
+  const [product, setProduct] = useState(ALL);
+
+  const aggregate = useAllNetworksCombinedHistory();
+  const { data, isLoading, error, hasNextPage, fetchNextPage } = useFilteredPortfolioHistory({
+    network: network === ALL ? undefined : Number(network),
+    product: product === ALL ? undefined : (product as ModuleEnum)
+  });
+
+  const optionRows = useMemo(
+    () => (aggregate.data ?? []).map((item, i) => toPortfolioTxRow(item, i)),
+    [aggregate.data]
+  );
   const rows = useMemo(() => (data ?? []).map((item, i) => toPortfolioTxRow(item, i)), [data]);
+
   return (
     <PortfolioTransactionsView
       rows={rows}
+      optionRows={optionRows}
       isLoading={isLoading}
       error={error}
+      onFiltersChange={filters => {
+        setNetwork(filters.network);
+        setProduct(filters.product);
+      }}
       hasNextPage={hasNextPage}
       fetchNextPage={fetchNextPage}
     />

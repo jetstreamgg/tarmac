@@ -7,11 +7,13 @@ import { useChainId } from 'wagmi';
 export function useTradeHistory({
   indexerUrl,
   chainId: providedChainId,
-  excludeSUsds = false
+  excludeSUsds = false,
+  enabled = true
 }: {
   indexerUrl?: string;
   chainId?: number;
   excludeSUsds?: boolean;
+  enabled?: boolean;
 } = {}) {
   const currentChainId = useChainId();
   const chainId = providedChainId ?? currentChainId;
@@ -23,17 +25,17 @@ export function useTradeHistory({
     chainId,
     excludeSUsds,
     indexerUrl,
-    enabled: shouldUseHybrid
+    enabled: enabled && shouldUseHybrid
   });
 
   const cowswapTradeHistory = useCowswapTradeHistory({
-    enabled: !shouldUseHybrid && isCowSupportedChainId(chainId),
+    enabled: enabled && !shouldUseHybrid && isCowSupportedChainId(chainId),
     chainId
   });
 
   const psmTradeHistory = usePsmTradeHistory({
     indexerUrl,
-    enabled: !shouldUseHybrid && !isCowSupportedChainId(chainId),
+    enabled: enabled && !shouldUseHybrid && !isCowSupportedChainId(chainId),
     chainId,
     excludeSUsds
   });

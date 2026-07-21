@@ -14,9 +14,14 @@ import { chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
 // The chains whose PSM `Swap` history feeds the all-networks views. All of
 // them live in the indexer's single multichain database, so one document
 // serves every chain; hybrid chains cap PSM trades at their CowSwap cutoff.
-const L2_HISTORY_CHAIN_IDS = [chainIdMap.base, chainIdMap.arbitrum, chainIdMap.optimism, chainIdMap.unichain];
+export const L2_HISTORY_CHAIN_IDS = [
+  chainIdMap.base,
+  chainIdMap.arbitrum,
+  chainIdMap.optimism,
+  chainIdMap.unichain
+];
 
-function cutoffTimestamp(chainId: number): number | undefined {
+export function tradeCutoffTimestamp(chainId: number): number | undefined {
   const cutoff = TRADE_CUTOFF_DATES[chainId];
   return cutoff ? Math.floor(cutoff.getTime() / 1000) : undefined;
 }
@@ -38,7 +43,7 @@ async function fetchL2sIndexerHistoryPage(
             wallet,
             chainId,
             excludeSUsds: true,
-            maxBlockTimestamp: cutoffTimestamp(chainId),
+            maxBlockTimestamp: tradeCutoffTimestamp(chainId),
             beforeTimestamp
           })}
         `
