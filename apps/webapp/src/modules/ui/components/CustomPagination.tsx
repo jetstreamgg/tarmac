@@ -14,146 +14,55 @@ type CustomPaginationProps = {
   itemsPerPage?: number;
 };
 
-export const CustomPagination = ({ dataLength, onPageChange, itemsPerPage = 5 }: CustomPaginationProps) => {
-  const maxPageButtons = 5;
-  const [currentPage, setCurrentPage] = useState(1);
-  const [ellipsisAtEnd, setEllipsisAtEnd] = useState(true);
-  const [middlePage, setMiddlePage] = useState(3); //assumes max 5 page buttons
-  const [offset, setOffset] = useState(0);
-  const totalPages = Math.ceil(dataLength / itemsPerPage);
+/**
+ * The button window is derived from (currentPage, totalPages) on every render —
+ * never stored — because totalPages is live: keyset-paginated sources append
+ * rows (totalPages grows mid-interaction) and filtered sources shrink it.
+ */
+function pageWindow(currentPage: number, totalPages: number): (number | 'ellipsis')[] {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+  if (currentPage <= 3) {
+    return [1, 2, 3, 'ellipsis', totalPages];
+  }
+  if (currentPage >= totalPages - 2) {
+    return [1, 'ellipsis', totalPages - 2, totalPages - 1, totalPages];
+  }
+  return [1, 'ellipsis', currentPage, 'ellipsis', totalPages];
+}
 
-  // Handle page change
-  const handlePageClick = (page: number) => {
-    onPageChange(page);
-    setCurrentPage(page);
-    if (page === 1) {
-      setOffset(0);
-      setEllipsisAtEnd(true);
-      setMiddlePage(1 + 2);
-      return;
-    }
-    if (!ellipsisAtEnd && middlePage === 1 + 2 && page <= middlePage) {
-      setOffset(0);
-      setEllipsisAtEnd(true);
-      return;
-    }
-    if (page === totalPages) {
-      setOffset(0);
-      setEllipsisAtEnd(false);
-      setMiddlePage(totalPages - 2);
-      return;
-    }
-    if (ellipsisAtEnd && middlePage === totalPages - 2 && page >= middlePage) {
-      setOffset(0);
-      setEllipsisAtEnd(false);
-      setMiddlePage(totalPages - 2);
-      return;
-    }
-    if (page > middlePage && ellipsisAtEnd) {
-      setOffset(offset + 1);
-      setMiddlePage(middlePage + 1);
-      return;
-    }
-    if (page < middlePage && !ellipsisAtEnd) {
-      setOffset(offset + 1);
-      setMiddlePage(middlePage - 1);
-      return;
-    }
-    if (page > middlePage + 2) {
-      setOffset(offset - 1);
-      setMiddlePage(middlePage + 1);
-    }
-    if (page < middlePage - 2) {
-      setOffset(offset - 1);
-      setMiddlePage(middlePage - 1);
-    }
+export const CustomPagination = ({ dataLength, onPageChange, itemsPerPage = 5 }: CustomPaginationProps) => {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(dataLength / itemsPerPage));
+  // Data can shrink between renders; keep the effective page in range.
+  const currentPage = Math.min(page, totalPages);
+
+  const goTo = (next: number) => {
+    const clamped = Math.min(Math.max(next, 1), totalPages);
+    setPage(clamped);
+    onPageChange(clamped);
   };
 
-  const pageButtonsSimple = Array.from({ length: totalPages }, (_, index) => (
-    <PaginationItem key={index}>
-      <PaginationLink isActive={index + 1 === currentPage} onClick={() => handlePageClick(index + 1)}>
-        {index + 1}
-      </PaginationLink>
-    </PaginationItem>
-  ));
-
-  const pageButtonsWithEllipsisAtEnd = [
-    <PaginationItem key={0}>
-      <PaginationLink isActive={1 + offset === currentPage} onClick={() => handlePageClick(1 + offset)}>
-        {1 + offset}
-      </PaginationLink>
-    </PaginationItem>,
-    <PaginationItem key={1}>
-      <PaginationLink isActive={2 + offset === currentPage} onClick={() => handlePageClick(2 + offset)}>
-        {2 + offset}
-      </PaginationLink>
-    </PaginationItem>,
-    <PaginationItem key={2}>
-      <PaginationLink isActive={3 + offset === currentPage} onClick={() => handlePageClick(3 + offset)}>
-        {3 + offset}
-      </PaginationLink>
-    </PaginationItem>,
-    <PaginationItem key={3}>
-      <PaginationEllipsis />
-    </PaginationItem>,
-    <PaginationItem key={4}>
-      <PaginationLink isActive={totalPages === currentPage} onClick={() => handlePageClick(totalPages)}>
-        {totalPages}
-      </PaginationLink>
-    </PaginationItem>
-  ];
-
-  const pageButtonsWithEllipsisAtBeginning = [
-    <PaginationItem key={0}>
-      <PaginationLink isActive={1 === currentPage} onClick={() => handlePageClick(1)}>
-        1
-      </PaginationLink>
-    </PaginationItem>,
-    <PaginationItem key={1}>
-      <PaginationEllipsis />
-    </PaginationItem>,
-    <PaginationItem key={2}>
-      <PaginationLink
-        isActive={totalPages - 2 - offset === currentPage}
-        onClick={() => handlePageClick(totalPages - 2 - offset)}
-      >
-        {totalPages - 2 - offset}
-      </PaginationLink>
-    </PaginationItem>,
-    <PaginationItem key={3}>
-      <PaginationLink
-        isActive={totalPages - 1 - offset === currentPage}
-        onClick={() => handlePageClick(totalPages - 1 - offset)}
-      >
-        {totalPages - 1 - offset}
-      </PaginationLink>
-    </PaginationItem>,
-    <PaginationItem key={4}>
-      <PaginationLink
-        isActive={totalPages - offset === currentPage}
-        onClick={() => handlePageClick(totalPages - offset)}
-      >
-        {totalPages - offset}
-      </PaginationLink>
-    </PaginationItem>
-  ];
+  if (totalPages <= 1) return null;
 
   return (
-    <>
-      {totalPages > 1 && (
-        <Pagination>
-          <PaginationPrevious onClick={() => handlePageClick(currentPage - 1)} disabled={currentPage === 1} />
-          {totalPages <= maxPageButtons
-            ? pageButtonsSimple
-            : ellipsisAtEnd
-              ? pageButtonsWithEllipsisAtEnd
-              : pageButtonsWithEllipsisAtBeginning}
-          <PaginationNext
-            onClick={() => handlePageClick(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          />
-        </Pagination>
+    <Pagination>
+      <PaginationPrevious onClick={() => goTo(currentPage - 1)} disabled={currentPage === 1} />
+      {pageWindow(currentPage, totalPages).map((entry, index) =>
+        entry === 'ellipsis' ? (
+          <PaginationItem key={`ellipsis-${index}`}>
+            <PaginationEllipsis />
+          </PaginationItem>
+        ) : (
+          <PaginationItem key={entry}>
+            <PaginationLink isActive={entry === currentPage} onClick={() => goTo(entry)}>
+              {entry}
+            </PaginationLink>
+          </PaginationItem>
+        )
       )}
-    </>
+      <PaginationNext onClick={() => goTo(currentPage + 1)} disabled={currentPage === totalPages} />
+    </Pagination>
   );
 };
