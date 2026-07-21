@@ -5,10 +5,10 @@ import {
   TrustLevelEnum,
   ModuleEnum,
   TransactionTypeEnum,
-  HISTORY_QUERY_LIMIT,
   HISTORY_STALE_TIME
 } from '../../constants';
 import { getIndexerUrl } from '../../helpers/getIndexerUrl';
+import { historyQueryArgs } from '../../shared/historyQueryHelpers';
 import {
   SusdtVaultSupply,
   SusdtVaultWithdrawal,
@@ -22,29 +22,31 @@ import { TOKENS } from '../../tokens/tokens.constants';
 import { isTestnetId } from '@/utils';
 import { chainId as chainIdMap } from '@/utils';
 
-async function fetchSusdtVaultHistory(
-  urlIndexer: string,
-  chainId: number,
-  address?: string
-): Promise<SusdtVaultHistory | undefined> {
-  if (!address) return [];
-  const ownerClause = `(where: { owner: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT})`;
-  const query = gql`
-    {
-      susdtDeposits: SusdtDeposit${ownerClause} {
+export function susdtHistoryFragments({
+  owner,
+  chainId,
+  beforeTimestamp
+}: {
+  owner: string;
+  chainId: number;
+  beforeTimestamp?: number;
+}): string {
+  const args = historyQueryArgs(`owner: { _eq: "${owner}" }, chainId: { _eq: ${chainId} }`, beforeTimestamp);
+  return `
+      susdtDeposits: SusdtDeposit${args} {
         assets
         blockTimestamp
         transactionHash
       }
-      susdtWithdraws: SusdtWithdraw${ownerClause} {
+      susdtWithdraws: SusdtWithdraw${args} {
         assets
         blockTimestamp
         transactionHash
       }
-    }
   `;
+}
 
-  const response = (await request(urlIndexer, query)) as any;
+export function mapSusdtHistoryResponse(response: any, chainId: number): SusdtVaultHistory {
   const supplies: SusdtVaultSupply[] = response.susdtDeposits.map((d: SusdtVaultSupplyResponse) => ({
     assets: BigInt(d.assets),
     blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
@@ -67,6 +69,21 @@ async function fetchSusdtVaultHistory(
 
   const combined = [...supplies, ...withdraws];
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
+}
+
+async function fetchSusdtVaultHistory(
+  urlIndexer: string,
+  chainId: number,
+  address?: string
+): Promise<SusdtVaultHistory | undefined> {
+  if (!address) return [];
+  const query = gql`
+    {
+      ${susdtHistoryFragments({ owner: address.toLowerCase(), chainId })}
+    }
+  `;
+  const response = (await request(urlIndexer, query)) as any;
+  return mapSusdtHistoryResponse(response, chainId);
 }
 
 export function useSusdtVaultHistory({

@@ -22,6 +22,11 @@ export function useL2CombinedHistory(chainId?: number) {
     mutate: () => {
       savingsHistory.mutate();
       tradeHistory.mutate();
-    }
+    },
+    // Single-chain L2 history is bounded per entity and not paginated; inert
+    // pagination fields keep the shape interchangeable with the mainnet side.
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    fetchNextPage: () => {}
   };
 }

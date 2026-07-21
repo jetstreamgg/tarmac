@@ -5,38 +5,17 @@ import {
   TrustLevelEnum,
   ModuleEnum,
   TransactionTypeEnum,
-  HISTORY_QUERY_LIMIT,
   HISTORY_STALE_TIME
 } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
+import { historyQueryArgs } from '../shared/historyQueryHelpers';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
-import { SavingsHistory, SavingsHistoryItem } from '../savings/savings';
+import { SavingsHistory } from '../savings/savings';
 
-async function fetchL2SavingsHistory(
-  urlIndexer: string,
-  chainId: number,
-  address?: string,
-  tokenAddressMap?: Record<string, { symbol: string }>
-): Promise<SavingsHistory | undefined> {
-  if (!address) return [];
-
-  if (!tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
-    return [];
-  }
-
-  const sUsdsAddressForChain = TOKENS.susds.address[chainId];
-  const wallet = address.toLowerCase();
-  const query = gql`
-  {
-    usdsIn: Swap(where: {
-      sender: { _eq: "${wallet}" },
-      receiver: { _eq: "${wallet}" },
-      assetIn: { _eq: "${sUsdsAddressForChain.toLowerCase()}" },
-      chainId: { _eq: ${chainId} }
-    }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
+const SWAP_FIELDS = `
       transactionHash
       assetIn
       assetOut
@@ -44,27 +23,46 @@ async function fetchL2SavingsHistory(
       amountIn
       amountOut
       blockTimestamp
-    }
-    usdsOut: Swap(where: {
-      sender: { _eq: "${wallet}" },
-      receiver: { _eq: "${wallet}" },
-      assetOut: { _eq: "${sUsdsAddressForChain.toLowerCase()}" },
-      chainId: { _eq: ${chainId} }
-    }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
-      transactionHash
-      assetIn
-      assetOut
-      sender
-      amountIn
-      amountOut
-      blockTimestamp
-    }
-  }
+`;
+
+/**
+ * sUSDS swaps on an L2 PSM read as savings supplies/withdrawals. `aliasSuffix`
+ * keeps aliases unique when several chains share one document.
+ */
+export function l2SavingsHistoryFragments({
+  wallet,
+  chainId,
+  aliasSuffix = '',
+  beforeTimestamp
+}: {
+  wallet: string;
+  chainId: number;
+  aliasSuffix?: string;
+  beforeTimestamp?: number;
+}): string {
+  const sUsdsAddress = TOKENS.susds.address[chainId].toLowerCase();
+  const walletFilter = `sender: { _eq: "${wallet}" }, receiver: { _eq: "${wallet}" }`;
+  const inArgs = historyQueryArgs(
+    `${walletFilter}, assetIn: { _eq: "${sUsdsAddress}" }, chainId: { _eq: ${chainId} }`,
+    beforeTimestamp
+  );
+  const outArgs = historyQueryArgs(
+    `${walletFilter}, assetOut: { _eq: "${sUsdsAddress}" }, chainId: { _eq: ${chainId} }`,
+    beforeTimestamp
+  );
+  return `
+    usdsIn${aliasSuffix}: Swap${inArgs} {${SWAP_FIELDS}}
+    usdsOut${aliasSuffix}: Swap${outArgs} {${SWAP_FIELDS}}
   `;
+}
 
-  const response = (await request(urlIndexer, query)) as any;
-
-  const swapsInParsed: SavingsHistory = response.usdsIn
+export function mapL2SavingsRows(
+  usdsIn: any[],
+  usdsOut: any[],
+  chainId: number,
+  tokenAddressMap: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] }
+): SavingsHistory {
+  const swapsInParsed: SavingsHistory = usdsIn
     .map((e: any) => {
       const tokenAddress = e.assetOut.toLowerCase();
       const token = tokenAddressMap[tokenAddress];
@@ -89,9 +87,9 @@ async function fetchL2SavingsHistory(
         chainId
       };
     })
-    .filter((swap: SavingsHistoryItem | null) => swap !== null);
+    .filter((swap): swap is NonNullable<typeof swap> => swap !== null);
 
-  const swapsOutParsed: SavingsHistory = response.usdsOut
+  const swapsOutParsed: SavingsHistory = usdsOut
     .map((e: any) => {
       const tokenAddress = e.assetIn.toLowerCase();
       const token = tokenAddressMap[tokenAddress];
@@ -116,11 +114,33 @@ async function fetchL2SavingsHistory(
         chainId
       };
     })
-    .filter((swap: SavingsHistoryItem | null) => swap !== null);
+    .filter((swap): swap is NonNullable<typeof swap> => swap !== null);
 
   return [...swapsInParsed, ...swapsOutParsed].sort(
     (a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
   );
+}
+
+async function fetchL2SavingsHistory(
+  urlIndexer: string,
+  chainId: number,
+  address?: string,
+  tokenAddressMap?: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] }
+): Promise<SavingsHistory | undefined> {
+  if (!address) return [];
+
+  if (!tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
+    return [];
+  }
+
+  const query = gql`
+  {
+    ${l2SavingsHistoryFragments({ wallet: address.toLowerCase(), chainId })}
+  }
+  `;
+
+  const response = (await request(urlIndexer, query)) as any;
+  return mapL2SavingsRows(response.usdsIn, response.usdsOut, chainId, tokenAddressMap);
 }
 
 export function useL2SavingsHistory({

@@ -5,10 +5,10 @@ import {
   TrustLevelEnum,
   ModuleEnum,
   TransactionTypeEnum,
-  HISTORY_QUERY_LIMIT,
   HISTORY_STALE_TIME
 } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
+import { historyQueryArgs } from '../shared/historyQueryHelpers';
 import {
   SavingsSupply,
   SavingsHistory,
@@ -22,29 +22,31 @@ import { TOKENS } from '../tokens/tokens.constants';
 import { isTestnetId } from '@/utils';
 import { chainId as chainIdMap } from '@/utils';
 
-async function fetchEthereumSavingsHistory(
-  urlIndexer: string,
-  chainId: number,
-  address?: string
-): Promise<SavingsHistory | undefined> {
-  if (!address) return [];
-  const owner = address.toLowerCase();
-  const query = gql`
-    {
-      savingsSupplies: SavingsSupply(where: { owner: { _eq: "${owner}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
+export function savingsHistoryFragments({
+  owner,
+  chainId,
+  beforeTimestamp
+}: {
+  owner: string;
+  chainId: number;
+  beforeTimestamp?: number;
+}): string {
+  const args = historyQueryArgs(`owner: { _eq: "${owner}" }, chainId: { _eq: ${chainId} }`, beforeTimestamp);
+  return `
+      savingsSupplies: SavingsSupply${args} {
         assets
         blockTimestamp
         transactionHash
       }
-      savingsWithdraws: SavingsWithdraw(where: { owner: { _eq: "${owner}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
+      savingsWithdraws: SavingsWithdraw${args} {
         blockTimestamp
         assets
         transactionHash
       }
-    }
   `;
+}
 
-  const response = (await request(urlIndexer, query)) as any;
+export function mapSavingsHistoryResponse(response: any, chainId: number): SavingsHistory {
   const supplies: SavingsSupply[] = response.savingsSupplies.map((d: SavingsSupplyResponse) => ({
     assets: BigInt(d.assets),
     blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
@@ -67,6 +69,21 @@ async function fetchEthereumSavingsHistory(
 
   const combined = [...supplies, ...withdraws];
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
+}
+
+async function fetchEthereumSavingsHistory(
+  urlIndexer: string,
+  chainId: number,
+  address?: string
+): Promise<SavingsHistory | undefined> {
+  if (!address) return [];
+  const query = gql`
+    {
+      ${savingsHistoryFragments({ owner: address.toLowerCase(), chainId })}
+    }
+  `;
+  const response = (await request(urlIndexer, query)) as any;
+  return mapSavingsHistoryResponse(response, chainId);
 }
 
 export function useEthereumSavingsHistory({

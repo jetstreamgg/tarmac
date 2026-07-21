@@ -284,6 +284,8 @@ export { useCombinedHistory } from './shared/useCombinedHistory';
 export { useAllNetworksCombinedHistory } from './shared/useAllNetworksCombinedHistory';
 export { useL2CombinedHistory } from './shared/useL2CombinedHistory';
 export { useEthereumCombinedHistory } from './shared/useEthereumCombinedHistory';
+export { useEthereumIndexerHistory } from './shared/useEthereumIndexerHistory';
+export { useL2sIndexerHistory } from './shared/useL2sIndexerHistory';
 export { useUsdsDaiData } from './shared/useUsdsDaiData';
 export { useOverallSkyData } from './shared/useOverallSkyData';
 

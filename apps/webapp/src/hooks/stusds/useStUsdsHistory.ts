@@ -2,9 +2,10 @@ import { useConnection, useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { StUsdsHistoryItem } from './stusds';
 import { request, gql } from 'graphql-request';
-import { ModuleEnum, TransactionTypeEnum, HISTORY_QUERY_LIMIT, HISTORY_STALE_TIME } from '../constants';
+import { ModuleEnum, TransactionTypeEnum, HISTORY_STALE_TIME } from '../constants';
 import { TOKENS } from '../tokens/tokens.constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
+import { historyQueryArgs } from '../shared/historyQueryHelpers';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { isTestnetId } from '@/utils';
@@ -12,26 +13,47 @@ import { chainId as chainIdMap } from '@/utils';
 import { CURVE_POOL_TOKEN_INDICES } from './providers/constants';
 import { StUsdsProviderType } from './providers/types';
 
-// Fetch native stUSDS history (deposits and withdrawals)
-async function fetchNativeStusdsHistory(urlIndexer: string, chainId: number, address: string) {
-  const ownerClause = `(where: { owner: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT})`;
-  const query = gql`
-    {
-      stusdsDeposits: StusdsDeposit${ownerClause} {
+// Native stUSDS deposits/withdrawals plus Curve pool swaps in/out of stUSDS.
+export function stusdsHistoryFragments({
+  owner,
+  chainId,
+  beforeTimestamp
+}: {
+  owner: string;
+  chainId: number;
+  beforeTimestamp?: number;
+}): string {
+  const ownerArgs = historyQueryArgs(
+    `owner: { _eq: "${owner}" }, chainId: { _eq: ${chainId} }`,
+    beforeTimestamp
+  );
+  const buyerArgs = historyQueryArgs(
+    `buyer: { _eq: "${owner}" }, chainId: { _eq: ${chainId} }`,
+    beforeTimestamp
+  );
+  return `
+      stusdsDeposits: StusdsDeposit${ownerArgs} {
         assets
         blockTimestamp
         transactionHash
       }
-      stusdsWithdraws: StusdsWithdraw${ownerClause} {
+      stusdsWithdraws: StusdsWithdraw${ownerArgs} {
         assets
         blockTimestamp
         transactionHash
       }
-    }
+      curveTokenExchanges: CurveTokenExchange${buyerArgs} {
+        soldId
+        amountSold
+        boughtId
+        amountBought
+        blockTimestamp
+        transactionHash
+      }
   `;
+}
 
-  const response = (await request(urlIndexer, query)) as any;
-
+export function mapStusdsHistoryResponse(response: any, chainId: number) {
   const supplies = (response.stusdsDeposits || []).map((d: any) => ({
     assets: BigInt(d.assets),
     blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
@@ -54,27 +76,7 @@ async function fetchNativeStusdsHistory(urlIndexer: string, chainId: number, add
     provider: StUsdsProviderType.NATIVE
   }));
 
-  return [...supplies, ...withdraws];
-}
-
-// Fetch Curve pool swap history (optional, may not exist in indexer yet)
-async function fetchCurveStusdsHistory(urlIndexer: string, chainId: number, address: string) {
-  const query = gql`
-    {
-      curveTokenExchanges: CurveTokenExchange(where: { buyer: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
-        soldId
-        amountSold
-        boughtId
-        amountBought
-        blockTimestamp
-        transactionHash
-      }
-    }
-  `;
-
-  const response = (await request(urlIndexer, query)) as any;
-
-  return (response.curveTokenExchanges || []).map((c: any) => {
+  const curveSwaps = (response.curveTokenExchanges || []).map((c: any) => {
     const soldId = parseInt(c.soldId);
     // If user sold USDS (index 0), it's a supply (USDS → stUSDS)
     // If user sold stUSDS (index 1), it's a withdraw (stUSDS → USDS)
@@ -93,30 +95,23 @@ async function fetchCurveStusdsHistory(urlIndexer: string, chainId: number, addr
       provider: StUsdsProviderType.CURVE
     };
   });
+
+  const combined = [...supplies, ...withdraws, ...curveSwaps];
+  return combined.sort(
+    (a: { blockTimestamp: Date }, b: { blockTimestamp: Date }) =>
+      b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
+  );
 }
 
 async function fetchStusdsHistory(urlIndexer: string, chainId: number, address?: string) {
   if (!address) return [];
-
-  // Fetch native history first (required)
-  let nativeHistory: any[] = [];
-  try {
-    nativeHistory = await fetchNativeStusdsHistory(urlIndexer, chainId, address);
-  } catch (err) {
-    console.error('Error fetching native stUSDS history:', err);
-  }
-
-  // Try to fetch Curve history (optional - graceful degradation if not available)
-  let curveHistory: any[] = [];
-  try {
-    curveHistory = await fetchCurveStusdsHistory(urlIndexer, chainId, address);
-  } catch (err) {
-    // Curve history not available yet in indexer, continue with just native history
-    console.debug('Curve history not available in indexer:', err);
-  }
-
-  const combined = [...nativeHistory, ...curveHistory];
-  return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
+  const query = gql`
+    {
+      ${stusdsHistoryFragments({ owner: address.toLowerCase(), chainId })}
+    }
+  `;
+  const response = (await request(urlIndexer, query)) as any;
+  return mapStusdsHistoryResponse(response, chainId);
 }
 
 export type StUsdsHistoryHook = ReadHook & {

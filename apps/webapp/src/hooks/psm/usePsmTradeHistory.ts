@@ -5,10 +5,10 @@ import {
   TrustLevelEnum,
   ModuleEnum,
   TransactionTypeEnum,
-  HISTORY_QUERY_LIMIT,
   HISTORY_STALE_TIME
 } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
+import { historyQueryArgs } from '../shared/historyQueryHelpers';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { HistoryItem } from '../shared/shared';
@@ -26,43 +26,48 @@ type PsmTradeHistoryItem = HistoryItem & {
 
 type PsmTradeHistory = PsmTradeHistoryItem[];
 
-async function fetchPsmTradeHistory(
-  urlIndexer: string,
-  chainId: number,
-  tokenAddressMap: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] },
-  address?: string,
-  excludeSUsds: boolean = false,
-  maxBlockTimestamp?: number
-): Promise<PsmTradeHistory | undefined> {
-  if (!address) return [];
-
-  if (!tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
-    return [];
-  }
-
-  const sUsdsAddressForChain = TOKENS.susds.address[chainId];
-
-  const wallet = address.toLowerCase();
-  const whereConditions: Record<string, any> = {
-    sender: { _eq: wallet },
-    receiver: { _eq: wallet },
-    chainId: { _eq: chainId }
-  };
+/**
+ * PSM swaps read as trades. The cutoff (`maxBlockTimestamp`, hybrid chains) and
+ * the keyset cursor (`beforeTimestamp`) both constrain `blockTimestamp`, so
+ * they are merged into one comparison object here rather than passed through
+ * `historyQueryArgs` (a duplicated input field is invalid GraphQL).
+ */
+export function psmTradeFragment({
+  alias,
+  wallet,
+  chainId,
+  excludeSUsds = false,
+  maxBlockTimestamp,
+  beforeTimestamp
+}: {
+  alias: string;
+  wallet: string;
+  chainId: number;
+  excludeSUsds?: boolean;
+  maxBlockTimestamp?: number;
+  beforeTimestamp?: number;
+}): string {
+  const conditions = [
+    `sender: { _eq: "${wallet}" }`,
+    `receiver: { _eq: "${wallet}" }`,
+    `chainId: { _eq: ${chainId} }`
+  ];
 
   if (excludeSUsds) {
-    whereConditions.assetIn = { _neq: sUsdsAddressForChain.toLowerCase() };
-    whereConditions.assetOut = { _neq: sUsdsAddressForChain.toLowerCase() };
+    const sUsdsAddress = TOKENS.susds.address[chainId].toLowerCase();
+    conditions.push(`assetIn: { _neq: "${sUsdsAddress}" }`, `assetOut: { _neq: "${sUsdsAddress}" }`);
   }
 
-  if (maxBlockTimestamp) {
-    whereConditions.blockTimestamp = { _lte: String(maxBlockTimestamp) };
+  const timestampConditions = [
+    ...(maxBlockTimestamp ? [`_lte: "${maxBlockTimestamp}"`] : []),
+    ...(beforeTimestamp ? [`_lt: "${beforeTimestamp}"`] : [])
+  ];
+  if (timestampConditions.length > 0) {
+    conditions.push(`blockTimestamp: { ${timestampConditions.join(', ')} }`);
   }
 
-  const whereClause = JSON.stringify(whereConditions).replace(/"([^"]+)":/g, '$1:');
-
-  const query = gql`
-  {
-    swaps: Swap(where: ${whereClause}, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
+  return `
+    ${alias}: Swap${historyQueryArgs(conditions.join(', '))} {
       transactionHash
       assetIn
       assetOut
@@ -71,12 +76,15 @@ async function fetchPsmTradeHistory(
       amountOut
       blockTimestamp
     }
-  }
   `;
+}
 
-  const response = (await request(urlIndexer, query)) as any;
-
-  const swaps: PsmTradeHistory = response.swaps
+export function mapPsmTradeRows(
+  rows: any[],
+  chainId: number,
+  tokenAddressMap: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] }
+): PsmTradeHistory {
+  return rows
     .map((e: any) => {
       const fromTokenAddress = e.assetIn.toLowerCase();
       const toTokenAddress = e.assetOut.toLowerCase();
@@ -107,9 +115,38 @@ async function fetchPsmTradeHistory(
       };
     })
     .filter((swap: PsmTradeHistoryItem | null) => swap !== null);
+}
+
+async function fetchPsmTradeHistory(
+  urlIndexer: string,
+  chainId: number,
+  tokenAddressMap: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] },
+  address?: string,
+  excludeSUsds: boolean = false,
+  maxBlockTimestamp?: number
+): Promise<PsmTradeHistory | undefined> {
+  if (!address) return [];
+
+  if (!tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
+    return [];
+  }
+
+  const query = gql`
+  {
+    ${psmTradeFragment({
+      alias: 'swaps',
+      wallet: address.toLowerCase(),
+      chainId,
+      excludeSUsds,
+      maxBlockTimestamp
+    })}
+  }
+  `;
+
+  const response = (await request(urlIndexer, query)) as any;
 
   // Already ordered blockTimestamp desc by the indexer.
-  return swaps;
+  return mapPsmTradeRows(response.swaps, chainId, tokenAddressMap);
 }
 
 export function usePsmTradeHistory({

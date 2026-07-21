@@ -128,6 +128,10 @@ export interface PortfolioTransactionsViewProps {
   rows: PortfolioTxRow[];
   isLoading?: boolean;
   error?: Error | null;
+  /** Whether older history can be fetched from the server. */
+  hasNextPage?: boolean;
+  /** Fetches the next keyset page; called when the user lands on the last loaded page. */
+  fetchNextPage?: () => void;
 }
 
 /**
@@ -136,7 +140,13 @@ export interface PortfolioTransactionsViewProps {
  * rows. Split from the data container so it can be unit-tested and previewed
  * with fixture rows (the aggregate hook needs a funded wallet).
  */
-export function PortfolioTransactionsView({ rows, isLoading, error }: PortfolioTransactionsViewProps) {
+export function PortfolioTransactionsView({
+  rows,
+  isLoading,
+  error,
+  hasNextPage,
+  fetchNextPage
+}: PortfolioTransactionsViewProps) {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const chains = useChains();
@@ -236,6 +246,10 @@ export function PortfolioTransactionsView({ rows, isLoading, error }: PortfolioT
         error={error}
         emptyLabel={<Trans>No transactions yet</Trans>}
         renderCard={renderCard}
+        onPageChange={(page, totalPages) => {
+          // Last loaded page reached while older history exists server-side.
+          if (hasNextPage && page >= totalPages) fetchNextPage?.();
+        }}
       />
     </section>
   );
@@ -248,7 +262,15 @@ export function PortfolioTransactionsView({ rows, isLoading, error }: PortfolioT
  * aggregate — no engine hooks touched.
  */
 export function PortfolioTransactionsSection() {
-  const { data, isLoading, error } = useAllNetworksCombinedHistory();
+  const { data, isLoading, error, hasNextPage, fetchNextPage } = useAllNetworksCombinedHistory();
   const rows = useMemo(() => (data ?? []).map((item, i) => toPortfolioTxRow(item, i)), [data]);
-  return <PortfolioTransactionsView rows={rows} isLoading={isLoading} error={error} />;
+  return (
+    <PortfolioTransactionsView
+      rows={rows}
+      isLoading={isLoading}
+      error={error}
+      hasNextPage={hasNextPage}
+      fetchNextPage={fetchNextPage}
+    />
+  );
 }

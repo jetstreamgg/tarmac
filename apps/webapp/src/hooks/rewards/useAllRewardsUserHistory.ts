@@ -5,50 +5,57 @@ import {
   TrustLevelEnum,
   ModuleEnum,
   TransactionTypeEnum,
-  HISTORY_QUERY_LIMIT,
   HISTORY_STALE_TIME
 } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
+import { historyQueryArgs } from '../shared/historyQueryHelpers';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
 import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@/utils';
 
-async function fetchAllRewardsUserHistory(
-  urlIndexer: string,
-  userAddress: string,
-  rewardContracts: RewardContract[],
-  chainId: number
-): Promise<RewardUserHistoryItem[] | undefined> {
+export function rewardsHistoryFragments({
+  user,
+  rewardContracts,
+  chainId,
+  beforeTimestamp
+}: {
+  user: string;
+  rewardContracts: RewardContract[];
+  chainId: number;
+  beforeTimestamp?: number;
+}): string {
   const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress.toLowerCase()}"`);
-  const userFilter = `where: { user: { _eq: "${userAddress.toLowerCase()}" } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}`;
+  // historyQueryArgs wraps in parens for a top-level entity; nested lists take the same args.
+  const userArgs = historyQueryArgs(`user: { _eq: "${user}" }`, beforeTimestamp);
 
-  const query = gql`
-    {
+  return `
       rewards: Reward(where: { id: { _in: [${rewardContractAddresses}] }, chainId: { _eq: ${chainId} } }) {
         address
-        supplyInstances(${userFilter}) {
+        supplyInstances${userArgs} {
           blockTimestamp
           transactionHash
           amount
         }
-        withdrawals(${userFilter}) {
+        withdrawals${userArgs} {
           blockTimestamp
           transactionHash
           amount
         }
-        rewardClaims(${userFilter}) {
+        rewardClaims${userArgs} {
           blockTimestamp
           transactionHash
           amount
         }
       }
-    }
   `;
+}
 
-  const response = (await request(urlIndexer, query)) as AllRewardsUserHistoryResponse;
-
+export function mapRewardsHistoryResponse(
+  response: AllRewardsUserHistoryResponse,
+  chainId: number
+): RewardUserHistoryItem[] | undefined {
   const rewardsData = response.rewards;
 
   if (!rewardsData) {
@@ -94,6 +101,21 @@ async function fetchAllRewardsUserHistory(
   });
 
   return allRewardsHistoryItems.flat();
+}
+
+async function fetchAllRewardsUserHistory(
+  urlIndexer: string,
+  userAddress: string,
+  rewardContracts: RewardContract[],
+  chainId: number
+): Promise<RewardUserHistoryItem[] | undefined> {
+  const query = gql`
+    {
+      ${rewardsHistoryFragments({ user: userAddress.toLowerCase(), rewardContracts, chainId })}
+    }
+  `;
+  const response = (await request(urlIndexer, query)) as AllRewardsUserHistoryResponse;
+  return mapRewardsHistoryResponse(response, chainId);
 }
 
 export function useAllRewardsUserHistory({
