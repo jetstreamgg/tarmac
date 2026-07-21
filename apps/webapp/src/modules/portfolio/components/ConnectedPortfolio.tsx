@@ -18,6 +18,7 @@ import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
+import { PortfolioTransactionsSection } from './PortfolioTransactionsSection';
 import { PortfolioStatistics } from './PortfolioStatistics';
 import { SavingsTvlCallout } from './SavingsTvlCallout';
 import { AllocateStablecoinsBanner } from './AllocateStablecoinsBanner';
@@ -154,6 +155,9 @@ export function ConnectedPortfolio() {
         tab={tab}
         onTabChange={setUserTab}
       />
+
+      {/* Portfolio-wide transactions (D8), after the position cards per the comp. */}
+      <PortfolioTransactionsSection />
 
       {/* Matured PT redemption (G6): the marketplace filters matured markets out
           of the supplied view, so this self-hiding section is their only surface. */}
