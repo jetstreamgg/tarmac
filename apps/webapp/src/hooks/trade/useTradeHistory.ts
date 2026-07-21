@@ -45,7 +45,15 @@ export function useTradeHistory({
   }
 
   if (isCowSupportedChainId(chainId)) {
-    return cowswapTradeHistory;
+    // The CoW REST feed is a bounded one-shot list, not keyset-paginated;
+    // inert pagination fields keep the branches interchangeable.
+    return {
+      ...cowswapTradeHistory,
+      nextCursor: undefined,
+      hasNextPage: false,
+      fetchNextPage: () => {},
+      isFetchingNextPage: false
+    };
   }
 
   return psmTradeHistory;

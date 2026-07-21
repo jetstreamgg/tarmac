@@ -1,8 +1,5 @@
-import { useMemo } from 'react';
 import { request, gql } from 'graphql-request';
-import { useInfiniteQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
-import { HISTORY_STALE_TIME } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { savingsHistoryFragments, mapSavingsHistoryResponse } from '../savings/useEthereumSavingsHistory';
 import { upgradeHistoryFragments, mapUpgradeHistoryResponse } from '../upgrade/useUpgradeHistory';
@@ -13,6 +10,7 @@ import { susdtHistoryFragments, mapSusdtHistoryResponse } from '../vaults/spark/
 import { useAvailableTokenRewardContracts } from '../rewards/useAvailableTokenRewardContracts';
 import { RewardContract } from '../rewards/rewards';
 import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQueryHelpers';
+import { useHistoryPagination } from './useHistoryPagination';
 import { CombinedHistoryItem } from './shared';
 import { isTestnetId, chainId as chainIdMap } from '@/utils';
 
@@ -66,31 +64,16 @@ export function useEthereumIndexerHistory({ enabled = true }: { enabled?: boolea
   const urlIndexer = getIndexerUrl(chainIdToUse) || '';
   const rewardContracts = useAvailableTokenRewardContracts(chainIdToUse);
 
-  const { data, error, refetch, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      enabled: Boolean(urlIndexer && address) && enabled,
-      staleTime: HISTORY_STALE_TIME,
-      queryKey: ['ethereum-indexer-history', urlIndexer, address, chainIdToUse],
-      initialPageParam: undefined as number | undefined,
-      queryFn: ({ pageParam }) =>
-        fetchEthereumIndexerHistoryPage(urlIndexer, chainIdToUse, address || '', rewardContracts, pageParam),
-      getNextPageParam: lastPage => lastPage.nextCursor
-    });
-
-  // Pages are non-overlapping, each internally sorted desc and strictly older
-  // than the previous one, so concatenation preserves global order.
-  const items = useMemo(() => data?.pages.flatMap(page => page.items) ?? [], [data]);
-  const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor;
-
-  return {
-    data: data ? items : undefined,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
-    mutate: refetch,
-    /** Completeness floor (seconds); undefined once history is fully loaded. */
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage
-  };
+  return useHistoryPagination({
+    enabled: Boolean(urlIndexer && address) && enabled,
+    queryKey: ['ethereum-indexer-history', urlIndexer, address, chainIdToUse],
+    fetchPage: beforeTimestamp =>
+      fetchEthereumIndexerHistoryPage(
+        urlIndexer,
+        chainIdToUse,
+        address || '',
+        rewardContracts,
+        beforeTimestamp
+      )
+  });
 }

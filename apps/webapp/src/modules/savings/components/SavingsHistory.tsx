@@ -13,7 +13,13 @@ import { useChainId } from 'wagmi';
 
 export function SavingsHistory() {
   const indexerUrl = useIndexerUrl();
-  const { data: savingsHistory, isLoading: savingsHistoryLoading, error } = useSavingsHistory(indexerUrl);
+  const {
+    data: savingsHistory,
+    isLoading: savingsHistoryLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useSavingsHistory(indexerUrl);
 
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -46,6 +52,9 @@ export function SavingsHistory() {
       isLoading={savingsHistoryLoading}
       transactionHeader={t`Amount`}
       typeColumn
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

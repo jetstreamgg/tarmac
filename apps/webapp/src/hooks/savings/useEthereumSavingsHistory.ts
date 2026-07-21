@@ -1,14 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import {
-  TRUST_LEVELS,
-  TrustLevelEnum,
-  ModuleEnum,
-  TransactionTypeEnum,
-  HISTORY_STALE_TIME
-} from '../constants';
+import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import { historyQueryArgs } from '../shared/historyQueryHelpers';
+import {
+  historyQueryArgs,
+  historyPageBoundary,
+  clampHistoryPage,
+  HistoryPage
+} from '../shared/historyQueryHelpers';
+import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
 import {
   SavingsSupply,
   SavingsHistory,
@@ -16,7 +16,6 @@ import {
   SavingsSupplyResponse,
   SavingsWithdrawalResponse
 } from './savings';
-import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
 import { isTestnetId } from '@/utils';
@@ -71,19 +70,21 @@ export function mapSavingsHistoryResponse(response: any, chainId: number): Savin
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
 }
 
-async function fetchEthereumSavingsHistory(
+async function fetchEthereumSavingsHistoryPage(
   urlIndexer: string,
   chainId: number,
-  address?: string
-): Promise<SavingsHistory | undefined> {
-  if (!address) return [];
+  address?: string,
+  beforeTimestamp?: number
+): Promise<HistoryPage<SavingsHistory[number]>> {
+  if (!address) return { items: [], nextCursor: undefined };
   const query = gql`
     {
-      ${savingsHistoryFragments({ owner: address.toLowerCase(), chainId })}
+      ${savingsHistoryFragments({ owner: address.toLowerCase(), chainId, beforeTimestamp })}
     }
   `;
   const response = (await request(urlIndexer, query)) as any;
-  return mapSavingsHistoryResponse(response, chainId);
+  const nextCursor = historyPageBoundary(response);
+  return { items: clampHistoryPage(mapSavingsHistoryResponse(response, chainId), nextCursor), nextCursor };
 }
 
 export function useEthereumSavingsHistory({
@@ -92,29 +93,29 @@ export function useEthereumSavingsHistory({
 }: {
   indexerUrl?: string;
   enabled?: boolean;
-} = {}): ReadHook & { data?: SavingsHistory } {
+} = {}): ReadHook & PaginatedHistory & { data?: SavingsHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(urlIndexer) && enabled,
-    staleTime: HISTORY_STALE_TIME,
-    queryKey: ['savings-history', urlIndexer, address, chainIdToUse],
-    queryFn: () => fetchEthereumSavingsHistory(urlIndexer, chainIdToUse, address)
-  });
+  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useHistoryPagination({
+      enabled: Boolean(urlIndexer) && enabled,
+      queryKey: ['savings-history', urlIndexer, address, chainIdToUse],
+      fetchPage: beforeTimestamp =>
+        fetchEthereumSavingsHistoryPage(urlIndexer, chainIdToUse, address, beforeTimestamp)
+    });
 
   return {
     data,
-    isLoading: !data && isLoading,
+    isLoading,
     error: error as Error,
     mutate,
+    nextCursor,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
     dataSources: [
       {
         title: 'Sky Ecosystem indexer',

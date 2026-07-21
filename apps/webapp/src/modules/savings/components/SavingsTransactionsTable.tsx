@@ -102,7 +102,13 @@ const renderCard = (row: SavingsTxRow) => (
  */
 export function SavingsTransactionsTable({ filter = 'all' }: { filter?: SavingsTxFilter }) {
   const indexerUrl = useIndexerUrl();
-  const { data: savingsHistory, isLoading, error } = useSavingsHistory(indexerUrl);
+  const {
+    data: savingsHistory,
+    isLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useSavingsHistory(indexerUrl);
   const chainId = useChainId();
 
   const rows = useMemo<SavingsTxRow[]>(() => {
@@ -140,6 +146,9 @@ export function SavingsTransactionsTable({ filter = 'all' }: { filter?: SavingsT
       isLoading={isLoading}
       error={error}
       renderCard={renderCard}
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

@@ -107,7 +107,7 @@ export function useFilteredPortfolioHistory({
   // No product filter → the network-scoped (or full) aggregates.
   if (product === undefined) {
     if (isMainnetNetwork) return ethereumCombined;
-    if (isL2Network) return { ...l2Combined, ...INERT_PAGINATION };
+    if (isL2Network) return l2Combined;
     return aggregate;
   }
 

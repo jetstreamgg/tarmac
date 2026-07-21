@@ -2,11 +2,16 @@ import { useConnection, useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { StUsdsHistoryItem } from './stusds';
 import { request, gql } from 'graphql-request';
-import { ModuleEnum, TransactionTypeEnum, HISTORY_STALE_TIME } from '../constants';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { TOKENS } from '../tokens/tokens.constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import { historyQueryArgs } from '../shared/historyQueryHelpers';
-import { useQuery } from '@tanstack/react-query';
+import {
+  historyQueryArgs,
+  historyPageBoundary,
+  clampHistoryPage,
+  HistoryPage
+} from '../shared/historyQueryHelpers';
+import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { isTestnetId } from '@/utils';
 import { chainId as chainIdMap } from '@/utils';
@@ -103,20 +108,27 @@ export function mapStusdsHistoryResponse(response: any, chainId: number) {
   );
 }
 
-async function fetchStusdsHistory(urlIndexer: string, chainId: number, address?: string) {
-  if (!address) return [];
+async function fetchStusdsHistoryPage(
+  urlIndexer: string,
+  chainId: number,
+  address?: string,
+  beforeTimestamp?: number
+): Promise<HistoryPage<StUsdsHistoryItem>> {
+  if (!address) return { items: [], nextCursor: undefined };
   const query = gql`
     {
-      ${stusdsHistoryFragments({ owner: address.toLowerCase(), chainId })}
+      ${stusdsHistoryFragments({ owner: address.toLowerCase(), chainId, beforeTimestamp })}
     }
   `;
   const response = (await request(urlIndexer, query)) as any;
-  return mapStusdsHistoryResponse(response, chainId);
+  const nextCursor = historyPageBoundary(response);
+  return { items: clampHistoryPage(mapStusdsHistoryResponse(response, chainId), nextCursor), nextCursor };
 }
 
-export type StUsdsHistoryHook = ReadHook & {
-  data?: StUsdsHistoryItem[];
-};
+export type StUsdsHistoryHook = ReadHook &
+  PaginatedHistory & {
+    data?: StUsdsHistoryItem[];
+  };
 
 export function useStUsdsHistory({
   indexerUrl,
@@ -130,23 +142,22 @@ export function useStUsdsHistory({
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(urlIndexer) && enabled,
-    staleTime: HISTORY_STALE_TIME,
-    queryKey: ['stusds-history', urlIndexer, address, chainIdToUse],
-    queryFn: () => fetchStusdsHistory(urlIndexer, chainIdToUse, address)
-  });
+  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useHistoryPagination({
+      enabled: Boolean(urlIndexer) && enabled,
+      queryKey: ['stusds-history', urlIndexer, address, chainIdToUse],
+      fetchPage: beforeTimestamp => fetchStusdsHistoryPage(urlIndexer, chainIdToUse, address, beforeTimestamp)
+    });
 
   return {
     data,
-    isLoading: !data && isLoading,
+    isLoading,
     error: error as Error,
     mutate,
+    nextCursor,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
     dataSources: [
       {
         title: 'Sky Ecosystem indexer',

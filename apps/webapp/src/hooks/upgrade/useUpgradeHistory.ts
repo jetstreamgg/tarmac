@@ -1,16 +1,15 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import {
-  TRUST_LEVELS,
-  TrustLevelEnum,
-  ModuleEnum,
-  TransactionTypeEnum,
-  HISTORY_STALE_TIME
-} from '../constants';
+import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import { historyQueryArgs } from '../shared/historyQueryHelpers';
+import {
+  historyQueryArgs,
+  historyPageBoundary,
+  clampHistoryPage,
+  HistoryPage
+} from '../shared/historyQueryHelpers';
+import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
 import { DaiUsdsRow, MkrSkyRow, UpgradeHistory, UpgradeResponse, UpgradeResponses } from './upgrade';
-import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@/utils';
 
@@ -129,48 +128,50 @@ export function mapUpgradeHistoryResponse(
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
 }
 
-async function fetchUpgradeHistory(
+async function fetchUpgradeHistoryPage(
   urlIndexer: string,
   chainId: number,
-  address?: string
-): Promise<UpgradeHistory | undefined> {
-  if (!address) return [];
+  address?: string,
+  beforeTimestamp?: number
+): Promise<HistoryPage<UpgradeHistory[number]>> {
+  if (!address) return { items: [], nextCursor: undefined };
   const query = gql`
     {
-      ${upgradeHistoryFragments({ usr: address.toLowerCase(), chainId })}
+      ${upgradeHistoryFragments({ usr: address.toLowerCase(), chainId, beforeTimestamp })}
     }
   `;
   const response = await request<Parameters<typeof mapUpgradeHistoryResponse>[0]>(urlIndexer, query);
-  return mapUpgradeHistoryResponse(response, chainId);
+  const nextCursor = historyPageBoundary(response);
+  return { items: clampHistoryPage(mapUpgradeHistoryResponse(response, chainId), nextCursor), nextCursor };
 }
 
 export function useUpgradeHistory({
   indexerUrl
 }: {
   indexerUrl?: string;
-} = {}): ReadHook & { data?: UpgradeHistory } {
+} = {}): ReadHook & PaginatedHistory & { data?: UpgradeHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(urlIndexer && address),
-    staleTime: HISTORY_STALE_TIME,
-    queryKey: ['upgrade-history', urlIndexer, address, chainIdToUse],
-    queryFn: () => fetchUpgradeHistory(urlIndexer, chainIdToUse, address)
-  });
+  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useHistoryPagination({
+      enabled: Boolean(urlIndexer && address),
+      queryKey: ['upgrade-history', urlIndexer, address, chainIdToUse],
+      fetchPage: beforeTimestamp =>
+        fetchUpgradeHistoryPage(urlIndexer, chainIdToUse, address, beforeTimestamp)
+    });
 
   return {
     data,
-    isLoading: isLoading,
+    isLoading,
     error: error as Error,
     mutate,
+    nextCursor,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
     dataSources: [
       {
         title: 'Sky Ecosystem indexer',

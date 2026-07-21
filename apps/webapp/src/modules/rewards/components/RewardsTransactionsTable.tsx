@@ -108,7 +108,15 @@ const renderCard = (row: RewardsTxRow) => (
  */
 export function RewardsTransactionsTable({ contract }: { contract: RewardContract }) {
   const indexerUrl = useIndexerUrl();
-  const { data: allHistory, isLoading, error } = useAllRewardsUserHistory({ indexerUrl });
+  const {
+    data: allHistory,
+    isLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useAllRewardsUserHistory({
+    indexerUrl
+  });
 
   const rows = useMemo<RewardsTxRow[]>(() => {
     if (!allHistory) return [];
@@ -148,6 +156,9 @@ export function RewardsTransactionsTable({ contract }: { contract: RewardContrac
       isLoading={isLoading}
       error={error}
       renderCard={renderCard}
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

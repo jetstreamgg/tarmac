@@ -1,15 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import {
-  TRUST_LEVELS,
-  TrustLevelEnum,
-  ModuleEnum,
-  TransactionTypeEnum,
-  HISTORY_STALE_TIME
-} from '../constants';
+import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import { historyQueryArgs } from '../shared/historyQueryHelpers';
-import { useQuery } from '@tanstack/react-query';
+import {
+  historyQueryArgs,
+  historyPageBoundary,
+  clampHistoryPage,
+  HistoryPage
+} from '../shared/historyQueryHelpers';
+import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
 import { useConnection, useChainId } from 'wagmi';
 import { HistoryItem } from '../shared/shared';
 import { TOKENS } from '../tokens/tokens.constants';
@@ -117,18 +116,17 @@ export function mapPsmTradeRows(
     .filter((swap: PsmTradeHistoryItem | null) => swap !== null);
 }
 
-async function fetchPsmTradeHistory(
+async function fetchPsmTradeHistoryPage(
   urlIndexer: string,
   chainId: number,
   tokenAddressMap: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] },
   address?: string,
   excludeSUsds: boolean = false,
-  maxBlockTimestamp?: number
-): Promise<PsmTradeHistory | undefined> {
-  if (!address) return [];
-
-  if (!tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
-    return [];
+  maxBlockTimestamp?: number,
+  beforeTimestamp?: number
+): Promise<HistoryPage<PsmTradeHistoryItem>> {
+  if (!address || !tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
+    return { items: [], nextCursor: undefined };
   }
 
   const query = gql`
@@ -138,15 +136,20 @@ async function fetchPsmTradeHistory(
       wallet: address.toLowerCase(),
       chainId,
       excludeSUsds,
-      maxBlockTimestamp
+      maxBlockTimestamp,
+      beforeTimestamp
     })}
   }
   `;
 
   const response = (await request(urlIndexer, query)) as any;
 
+  const nextCursor = historyPageBoundary(response);
   // Already ordered blockTimestamp desc by the indexer.
-  return mapPsmTradeRows(response.swaps, chainId, tokenAddressMap);
+  return {
+    items: clampHistoryPage(mapPsmTradeRows(response.swaps, chainId, tokenAddressMap), nextCursor),
+    nextCursor
+  };
 }
 
 export function usePsmTradeHistory({
@@ -161,38 +164,38 @@ export function usePsmTradeHistory({
   excludeSUsds?: boolean;
   chainId?: number;
   maxBlockTimestamp?: number;
-} = {}): ReadHook & { data?: PsmTradeHistory } {
+} = {}): ReadHook & PaginatedHistory & { data?: PsmTradeHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId || currentChainId;
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainIdToUse) || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(urlIndexer) && enabledProp && Boolean(tokenAddressMap) && Boolean(address),
-    staleTime: HISTORY_STALE_TIME,
-    queryKey: ['psm-trade-history', urlIndexer, address, excludeSUsds, chainIdToUse, maxBlockTimestamp],
-    queryFn: () =>
-      fetchPsmTradeHistory(
-        urlIndexer,
-        chainIdToUse,
-        tokenAddressMap,
-        address,
-        excludeSUsds,
-        maxBlockTimestamp
-      )
-  });
+  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useHistoryPagination({
+      enabled: Boolean(urlIndexer) && enabledProp && Boolean(tokenAddressMap) && Boolean(address),
+      queryKey: ['psm-trade-history', urlIndexer, address, excludeSUsds, chainIdToUse, maxBlockTimestamp],
+      fetchPage: beforeTimestamp =>
+        fetchPsmTradeHistoryPage(
+          urlIndexer,
+          chainIdToUse,
+          tokenAddressMap,
+          address,
+          excludeSUsds,
+          maxBlockTimestamp,
+          beforeTimestamp
+        )
+    });
 
   return {
     data,
-    isLoading: !data && isLoading,
+    isLoading,
     error: error as Error,
     mutate,
+    nextCursor,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
     dataSources: [
       {
         title: 'Sky Ecosystem indexer',

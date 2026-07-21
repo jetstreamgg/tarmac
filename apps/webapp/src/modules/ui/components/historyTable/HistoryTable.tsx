@@ -22,7 +22,8 @@ function HistoryTableUiComponents({
   typeColumn = false,
   typeHeader,
   statusColumn = false,
-  dataTestId
+  dataTestId,
+  onPageChange: onExternalPageChange
 }: HistoryTableProps) {
   const { address } = useConnection();
   const chainId = useChainId();
@@ -56,6 +57,7 @@ function HistoryTableUiComponents({
 
   const onPageChange = (page: number) => {
     setStartIndex((page - 1) * itemsPerPage);
+    onExternalPageChange?.(page, Math.ceil(sortedHistory.length / itemsPerPage));
   };
 
   const shouldShowError = !isLoading && (!address || (address && !rowsToShow.length));

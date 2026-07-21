@@ -1,14 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import {
-  TRUST_LEVELS,
-  TrustLevelEnum,
-  ModuleEnum,
-  TransactionTypeEnum,
-  HISTORY_STALE_TIME
-} from '../constants';
+import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import { historyQueryArgs } from '../shared/historyQueryHelpers';
+import {
+  historyQueryArgs,
+  historyPageBoundary,
+  clampHistoryPage,
+  HistoryPage
+} from '../shared/historyQueryHelpers';
+import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
 import {
   BaseStakeHistoryItem,
   StakeHistoryItemWithAmount,
@@ -21,7 +21,6 @@ import {
   StakeSelectRewardResponse,
   StakeHistoryKick
 } from './stakeModule';
-import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@/utils';
 
@@ -230,20 +229,22 @@ export function mapStakeHistoryResponse(response: any, chainId: number): StakeHi
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
 }
 
-async function fetchStakeHistory(
+async function fetchStakeHistoryPage(
   urlIndexer: string,
   chainId: number,
   address?: string,
-  index?: number
-): Promise<StakeHistory | undefined> {
-  if (!address) return [];
+  index?: number,
+  beforeTimestamp?: number
+): Promise<HistoryPage<StakeHistory[number]>> {
+  if (!address) return { items: [], nextCursor: undefined };
   const query = gql`
     {
-      ${stakeHistoryFragments({ owner: address.toLowerCase(), chainId, index })}
+      ${stakeHistoryFragments({ owner: address.toLowerCase(), chainId, index, beforeTimestamp })}
     }
   `;
   const response = (await request(urlIndexer, query)) as any;
-  return mapStakeHistoryResponse(response, chainId);
+  const nextCursor = historyPageBoundary(response);
+  return { items: clampHistoryPage(mapStakeHistoryResponse(response, chainId), nextCursor), nextCursor };
 }
 
 export function useStakeHistory({
@@ -252,29 +253,29 @@ export function useStakeHistory({
 }: {
   indexerUrl?: string;
   index?: number;
-} = {}): ReadHook & { data?: StakeHistory } {
+} = {}): ReadHook & PaginatedHistory & { data?: StakeHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(urlIndexer),
-    staleTime: HISTORY_STALE_TIME,
-    queryKey: ['stake-history', urlIndexer, address, index, chainIdToUse],
-    queryFn: () => fetchStakeHistory(urlIndexer, chainIdToUse, address, index)
-  });
+  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useHistoryPagination({
+      enabled: Boolean(urlIndexer),
+      queryKey: ['stake-history', urlIndexer, address, index, chainIdToUse],
+      fetchPage: beforeTimestamp =>
+        fetchStakeHistoryPage(urlIndexer, chainIdToUse, address, index, beforeTimestamp)
+    });
 
   return {
     data,
-    isLoading: !data && isLoading,
+    isLoading,
     error: error as Error,
     mutate,
+    nextCursor,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
     dataSources: [
       {
         title: 'Sky Ecosystem indexer',

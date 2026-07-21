@@ -1,14 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../../hooks';
-import {
-  TRUST_LEVELS,
-  TrustLevelEnum,
-  ModuleEnum,
-  TransactionTypeEnum,
-  HISTORY_STALE_TIME
-} from '../../constants';
+import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../../constants';
 import { getIndexerUrl } from '../../helpers/getIndexerUrl';
-import { historyQueryArgs } from '../../shared/historyQueryHelpers';
+import {
+  historyQueryArgs,
+  historyPageBoundary,
+  clampHistoryPage,
+  HistoryPage
+} from '../../shared/historyQueryHelpers';
+import { useHistoryPagination, PaginatedHistory } from '../../shared/useHistoryPagination';
 import {
   SusdtVaultSupply,
   SusdtVaultWithdrawal,
@@ -16,7 +16,6 @@ import {
   SusdtVaultSupplyResponse,
   SusdtVaultWithdrawResponse
 } from './susdtVaultHistory';
-import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../../tokens/tokens.constants';
 import { isTestnetId } from '@/utils';
@@ -71,19 +70,21 @@ export function mapSusdtHistoryResponse(response: any, chainId: number): SusdtVa
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
 }
 
-async function fetchSusdtVaultHistory(
+async function fetchSusdtVaultHistoryPage(
   urlIndexer: string,
   chainId: number,
-  address?: string
-): Promise<SusdtVaultHistory | undefined> {
-  if (!address) return [];
+  address?: string,
+  beforeTimestamp?: number
+): Promise<HistoryPage<SusdtVaultHistory[number]>> {
+  if (!address) return { items: [], nextCursor: undefined };
   const query = gql`
     {
-      ${susdtHistoryFragments({ owner: address.toLowerCase(), chainId })}
+      ${susdtHistoryFragments({ owner: address.toLowerCase(), chainId, beforeTimestamp })}
     }
   `;
   const response = (await request(urlIndexer, query)) as any;
-  return mapSusdtHistoryResponse(response, chainId);
+  const nextCursor = historyPageBoundary(response);
+  return { items: clampHistoryPage(mapSusdtHistoryResponse(response, chainId), nextCursor), nextCursor };
 }
 
 export function useSusdtVaultHistory({
@@ -92,29 +93,29 @@ export function useSusdtVaultHistory({
 }: {
   indexerUrl?: string;
   enabled?: boolean;
-} = {}): ReadHook & { data?: SusdtVaultHistory } {
+} = {}): ReadHook & PaginatedHistory & { data?: SusdtVaultHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(urlIndexer) && enabled,
-    staleTime: HISTORY_STALE_TIME,
-    queryKey: ['susdt-vault-history', urlIndexer, address, chainIdToUse],
-    queryFn: () => fetchSusdtVaultHistory(urlIndexer, chainIdToUse, address)
-  });
+  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useHistoryPagination({
+      enabled: Boolean(urlIndexer) && enabled,
+      queryKey: ['susdt-vault-history', urlIndexer, address, chainIdToUse],
+      fetchPage: beforeTimestamp =>
+        fetchSusdtVaultHistoryPage(urlIndexer, chainIdToUse, address, beforeTimestamp)
+    });
 
   return {
     data,
-    isLoading: !data && isLoading,
+    isLoading,
     error: error as Error,
     mutate,
+    nextCursor,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
     dataSources: [
       {
         title: 'Sky Ecosystem indexer',

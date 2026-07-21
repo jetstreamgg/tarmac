@@ -12,7 +12,15 @@ import { useChainId } from 'wagmi';
 
 export function SusdtVaultHistory() {
   const indexerUrl = useIndexerUrl();
-  const { data: vaultHistory, isLoading, error } = useSusdtVaultHistory({ indexerUrl });
+  const {
+    data: vaultHistory,
+    isLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useSusdtVaultHistory({
+    indexerUrl
+  });
 
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -44,6 +52,9 @@ export function SusdtVaultHistory() {
       isLoading={isLoading}
       transactionHeader={t`Amount`}
       typeColumn
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

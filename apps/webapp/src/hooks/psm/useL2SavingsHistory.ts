@@ -1,15 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import {
-  TRUST_LEVELS,
-  TrustLevelEnum,
-  ModuleEnum,
-  TransactionTypeEnum,
-  HISTORY_STALE_TIME
-} from '../constants';
+import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import { historyQueryArgs } from '../shared/historyQueryHelpers';
-import { useQuery } from '@tanstack/react-query';
+import {
+  historyQueryArgs,
+  historyPageBoundary,
+  clampHistoryPage,
+  HistoryPage
+} from '../shared/historyQueryHelpers';
+import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
 import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
@@ -121,26 +120,32 @@ export function mapL2SavingsRows(
   );
 }
 
-async function fetchL2SavingsHistory(
+async function fetchL2SavingsHistoryPage(
   urlIndexer: string,
   chainId: number,
   address?: string,
-  tokenAddressMap?: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] }
-): Promise<SavingsHistory | undefined> {
-  if (!address) return [];
-
-  if (!tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
-    return [];
+  tokenAddressMap?: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] },
+  beforeTimestamp?: number
+): Promise<HistoryPage<SavingsHistory[number]>> {
+  if (!address || !tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
+    return { items: [], nextCursor: undefined };
   }
 
   const query = gql`
   {
-    ${l2SavingsHistoryFragments({ wallet: address.toLowerCase(), chainId })}
+    ${l2SavingsHistoryFragments({ wallet: address.toLowerCase(), chainId, beforeTimestamp })}
   }
   `;
 
   const response = (await request(urlIndexer, query)) as any;
-  return mapL2SavingsRows(response.usdsIn, response.usdsOut, chainId, tokenAddressMap);
+  const nextCursor = historyPageBoundary(response);
+  return {
+    items: clampHistoryPage(
+      mapL2SavingsRows(response.usdsIn, response.usdsOut, chainId, tokenAddressMap),
+      nextCursor
+    ),
+    nextCursor
+  };
 }
 
 export function useL2SavingsHistory({
@@ -151,29 +156,29 @@ export function useL2SavingsHistory({
   indexerUrl?: string;
   enabled?: boolean;
   chainId?: number;
-} = {}): ReadHook & { data?: SavingsHistory } {
+} = {}): ReadHook & PaginatedHistory & { data?: SavingsHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId ?? currentChainId;
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainIdToUse) || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(urlIndexer) && enabled && Boolean(tokenAddressMap) && Boolean(address),
-    staleTime: HISTORY_STALE_TIME,
-    queryKey: ['L2-savings-history', urlIndexer, address, chainIdToUse],
-    queryFn: () => fetchL2SavingsHistory(urlIndexer, chainIdToUse, address, tokenAddressMap)
-  });
+  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useHistoryPagination({
+      enabled: Boolean(urlIndexer) && enabled && Boolean(tokenAddressMap) && Boolean(address),
+      queryKey: ['L2-savings-history', urlIndexer, address, chainIdToUse],
+      fetchPage: beforeTimestamp =>
+        fetchL2SavingsHistoryPage(urlIndexer, chainIdToUse, address, tokenAddressMap, beforeTimestamp)
+    });
 
   return {
     data,
-    isLoading: !data && isLoading,
+    isLoading,
     error: error as Error,
     mutate,
+    nextCursor,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
     dataSources: [
       {
         title: 'Sky Ecosystem indexer',
