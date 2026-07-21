@@ -209,3 +209,36 @@ describe('PortfolioPositionsSection — supply routing', () => {
     expect(h.navigate).not.toHaveBeenCalled();
   });
 });
+
+// D9 (APP-392): the PositionCard was conformed to the DS card comp (486:20195 /
+// 486:20044). These lock the visible deltas — label copy, stat order, and the
+// network badge — that the routing tests above don't cover.
+describe('PositionCard — DS comp conformance', () => {
+  afterEach(() => cleanup());
+
+  it('labels the rate stat "Rate", not "APY"', () => {
+    renderSection([VAULT]);
+    const card = screen.getAllByTestId('position-card')[0];
+    expect(within(card).queryByText('Rate')).not.toBeNull();
+    expect(within(card).queryByText('APY')).toBeNull();
+  });
+
+  it('orders the stats My position → Rate → Already earned → 1Y projected earnings', () => {
+    renderSection([VAULT]);
+    const text = screen.getAllByTestId('position-card')[0].textContent ?? '';
+    expect(text.indexOf('My position')).toBeLessThan(text.indexOf('Already earned'));
+    expect(text.indexOf('Already earned')).toBeLessThan(text.indexOf('1Y projected earnings'));
+  });
+
+  it('shows a single-chain network badge with the chain name', () => {
+    renderSection([VAULT]); // chainIds: [1]
+    const card = screen.getAllByTestId('position-card')[0];
+    expect(within(card).getByTestId('position-card-networks').textContent).toContain('Ethereum');
+  });
+
+  it('falls back to an "N networks" badge for a multi-chain position', () => {
+    renderSection([position({ id: 'multi', name: 'Multi', chainIds: [1, 8453] })]);
+    const card = screen.getAllByTestId('position-card')[0];
+    expect(within(card).getByTestId('position-card-networks').textContent).toContain('2 networks');
+  });
+});

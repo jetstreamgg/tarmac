@@ -30,5 +30,6 @@ export * from './localization';
 export * from './math.constants';
 export * from './collection';
 export * from './getChainIcon';
+export * from './getChainName';
 export * from './i18n';
 export { copyToClipboard } from './clipboard';
