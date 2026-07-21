@@ -6,14 +6,14 @@ import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import { useSavingsHistory } from '@/hooks';
 import { getTokenDecimals, TransactionTypeEnum } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export function SavingsHistory() {
-  const subgraphUrl = useSubgraphUrl();
-  const { data: savingsHistory, isLoading: savingsHistoryLoading, error } = useSavingsHistory(subgraphUrl);
+  const indexerUrl = useIndexerUrl();
+  const { data: savingsHistory, isLoading: savingsHistoryLoading, error } = useSavingsHistory(indexerUrl);
 
   const chainId = useChainId();
   const { i18n } = useLingui();

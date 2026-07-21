@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 
 /**
  * One historical liquidation event ("bark") of a staking urn, as indexed by
@@ -130,11 +130,13 @@ export function lastStakeUrnBark(position: Pick<StakeUserPosition, 'barks'>): St
 export function isLiquidatedStakePosition(position: StakeUserPosition): boolean {
   const lastBark = lastStakeUrnBark(position);
   if (!lastBark) return false;
-  return position.lastMutationTimestamp === undefined || position.lastMutationTimestamp <= lastBark.blockTimestamp;
+  return (
+    position.lastMutationTimestamp === undefined || position.lastMutationTimestamp <= lastBark.blockTimestamp
+  );
 }
 
 async function fetchStakeUserPositions(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   address: string
 ): Promise<StakeUserPosition[]> {
@@ -163,7 +165,7 @@ async function fetchStakeUserPositions(
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as StakeUserPositionsResponse;
+  const response = (await request(urlIndexer, query)) as StakeUserPositionsResponse;
   return parseStakeUserPositions(response);
 }
 
@@ -177,7 +179,7 @@ async function fetchStakeUserPositions(
 export function useStakeUserPositions() {
   const { address } = useConnection();
   const chainId = useChainId();
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
 
   const {
     data,
@@ -185,9 +187,9 @@ export function useStakeUserPositions() {
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(subgraphUrl && address),
-    queryKey: ['stake-user-positions', subgraphUrl, address, chainId],
-    queryFn: () => fetchStakeUserPositions(subgraphUrl, chainId, address!)
+    enabled: Boolean(indexerUrl && address),
+    queryKey: ['stake-user-positions', indexerUrl, address, chainId],
+    queryFn: () => fetchStakeUserPositions(indexerUrl, chainId, address!)
   });
 
   return {

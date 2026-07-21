@@ -1,7 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../../constants';
-import { getSubgraphUrl } from '../../helpers/getSubgraphUrl';
+import {
+  TRUST_LEVELS,
+  TrustLevelEnum,
+  ModuleEnum,
+  TransactionTypeEnum,
+  HISTORY_QUERY_LIMIT,
+  HISTORY_STALE_TIME
+} from '../../constants';
+import { getIndexerUrl } from '../../helpers/getIndexerUrl';
 import {
   SusdtVaultSupply,
   SusdtVaultWithdrawal,
@@ -16,19 +23,20 @@ import { isTestnetId } from '@/utils';
 import { chainId as chainIdMap } from '@/utils';
 
 async function fetchSusdtVaultHistory(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   address?: string
 ): Promise<SusdtVaultHistory | undefined> {
   if (!address) return [];
+  const ownerClause = `(where: { owner: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT})`;
   const query = gql`
     {
-      susdtDeposits: SusdtDeposit(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      susdtDeposits: SusdtDeposit${ownerClause} {
         assets
         blockTimestamp
         transactionHash
       }
-      susdtWithdraws: SusdtWithdraw(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      susdtWithdraws: SusdtWithdraw${ownerClause} {
         assets
         blockTimestamp
         transactionHash
@@ -36,7 +44,7 @@ async function fetchSusdtVaultHistory(
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as any;
+  const response = (await request(urlIndexer, query)) as any;
   const supplies: SusdtVaultSupply[] = response.susdtDeposits.map((d: SusdtVaultSupplyResponse) => ({
     assets: BigInt(d.assets),
     blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
@@ -62,15 +70,15 @@ async function fetchSusdtVaultHistory(
 }
 
 export function useSusdtVaultHistory({
-  subgraphUrl,
+  indexerUrl,
   enabled = true
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   enabled?: boolean;
 } = {}): ReadHook & { data?: SusdtVaultHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(currentChainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
@@ -79,9 +87,10 @@ export function useSusdtVaultHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph) && enabled,
-    queryKey: ['susdt-vault-history', urlSubgraph, address, chainIdToUse],
-    queryFn: () => fetchSusdtVaultHistory(urlSubgraph, chainIdToUse, address)
+    enabled: Boolean(urlIndexer) && enabled,
+    staleTime: HISTORY_STALE_TIME,
+    queryKey: ['susdt-vault-history', urlIndexer, address, chainIdToUse],
+    queryFn: () => fetchSusdtVaultHistory(urlIndexer, chainIdToUse, address)
   });
 
   return {
@@ -91,8 +100,8 @@ export function useSusdtVaultHistory({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

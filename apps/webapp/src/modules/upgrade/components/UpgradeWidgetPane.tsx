@@ -11,13 +11,13 @@ import {
   upgradeTokens
 } from '@/widgets';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
 
 export function UpgradeWidgetPane() {
-  const subgraphUrl = useSubgraphUrl();
-  const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ subgraphUrl });
+  const indexerUrl = useIndexerUrl();
+  const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ indexerUrl });
 
   const [searchParams, setSearchParams] = useAppSearchParams();
 

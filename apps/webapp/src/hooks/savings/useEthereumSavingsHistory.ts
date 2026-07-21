@@ -1,7 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import {
+  TRUST_LEVELS,
+  TrustLevelEnum,
+  ModuleEnum,
+  TransactionTypeEnum,
+  HISTORY_QUERY_LIMIT,
+  HISTORY_STALE_TIME
+} from '../constants';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import {
   SavingsSupply,
   SavingsHistory,
@@ -16,19 +23,20 @@ import { isTestnetId } from '@/utils';
 import { chainId as chainIdMap } from '@/utils';
 
 async function fetchEthereumSavingsHistory(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   address?: string
 ): Promise<SavingsHistory | undefined> {
   if (!address) return [];
+  const owner = address.toLowerCase();
   const query = gql`
     {
-      savingsSupplies: SavingsSupply(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      savingsSupplies: SavingsSupply(where: { owner: { _eq: "${owner}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
         assets
         blockTimestamp
         transactionHash
       }
-      savingsWithdraws: SavingsWithdraw(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      savingsWithdraws: SavingsWithdraw(where: { owner: { _eq: "${owner}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
         blockTimestamp
         assets
         transactionHash
@@ -36,7 +44,7 @@ async function fetchEthereumSavingsHistory(
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as any;
+  const response = (await request(urlIndexer, query)) as any;
   const supplies: SavingsSupply[] = response.savingsSupplies.map((d: SavingsSupplyResponse) => ({
     assets: BigInt(d.assets),
     blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
@@ -62,15 +70,15 @@ async function fetchEthereumSavingsHistory(
 }
 
 export function useEthereumSavingsHistory({
-  subgraphUrl,
+  indexerUrl,
   enabled = true
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   enabled?: boolean;
 } = {}): ReadHook & { data?: SavingsHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(currentChainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
@@ -79,9 +87,10 @@ export function useEthereumSavingsHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph) && enabled,
-    queryKey: ['savings-history', urlSubgraph, address, chainIdToUse],
-    queryFn: () => fetchEthereumSavingsHistory(urlSubgraph, chainIdToUse, address)
+    enabled: Boolean(urlIndexer) && enabled,
+    staleTime: HISTORY_STALE_TIME,
+    queryKey: ['savings-history', urlIndexer, address, chainIdToUse],
+    queryFn: () => fetchEthereumSavingsHistory(urlIndexer, chainIdToUse, address)
   });
 
   return {
@@ -91,8 +100,8 @@ export function useEthereumSavingsHistory({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

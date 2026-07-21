@@ -1,7 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import {
+  TRUST_LEVELS,
+  TrustLevelEnum,
+  ModuleEnum,
+  TransactionTypeEnum,
+  HISTORY_QUERY_LIMIT,
+  HISTORY_STALE_TIME
+} from '../constants';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { HistoryItem } from '../shared/shared';
@@ -12,7 +19,6 @@ import { Token } from '../tokens/types';
 type PsmTradeHistoryItem = HistoryItem & {
   fromAmount: bigint;
   toAmount: bigint;
-  referralCode: string;
   fromToken: Token;
   toToken: Token;
   address: string;
@@ -21,7 +27,7 @@ type PsmTradeHistoryItem = HistoryItem & {
 type PsmTradeHistory = PsmTradeHistoryItem[];
 
 async function fetchPsmTradeHistory(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   tokenAddressMap: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] },
   address?: string,
@@ -36,9 +42,10 @@ async function fetchPsmTradeHistory(
 
   const sUsdsAddressForChain = TOKENS.susds.address[chainId];
 
+  const wallet = address.toLowerCase();
   const whereConditions: Record<string, any> = {
-    sender: { _ilike: address },
-    receiver: { _ilike: address },
+    sender: { _eq: wallet },
+    receiver: { _eq: wallet },
     chainId: { _eq: chainId }
   };
 
@@ -55,22 +62,19 @@ async function fetchPsmTradeHistory(
 
   const query = gql`
   {
-    swaps: Swap(where: ${whereClause}) {
-      id
+    swaps: Swap(where: ${whereClause}, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}) {
       transactionHash
       assetIn
       assetOut
       sender
-      receiver
       amountIn
       amountOut
-      referralCode
       blockTimestamp
     }
   }
   `;
 
-  const response = (await request(urlSubgraph, query)) as any;
+  const response = (await request(urlIndexer, query)) as any;
 
   const swaps: PsmTradeHistory = response.swaps
     .map((e: any) => {
@@ -98,27 +102,24 @@ async function fetchPsmTradeHistory(
         toToken,
         fromAmount: BigInt(e.amountIn),
         toAmount: BigInt(e.amountOut),
-        referralCode: e.referralCode,
         address: e.sender,
         chainId
       };
     })
     .filter((swap: PsmTradeHistoryItem | null) => swap !== null);
 
-  return swaps.sort(
-    (a: PsmTradeHistoryItem, b: PsmTradeHistoryItem) =>
-      b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
-  );
+  // Already ordered blockTimestamp desc by the indexer.
+  return swaps;
 }
 
 export function usePsmTradeHistory({
-  subgraphUrl,
+  indexerUrl,
   enabled: enabledProp = true,
   excludeSUsds = false,
   chainId,
   maxBlockTimestamp
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   enabled?: boolean;
   excludeSUsds?: boolean;
   chainId?: number;
@@ -127,7 +128,7 @@ export function usePsmTradeHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId || currentChainId;
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainIdToUse) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainIdToUse) || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
 
   const {
@@ -136,11 +137,12 @@ export function usePsmTradeHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph) && enabledProp && Boolean(tokenAddressMap) && Boolean(address),
-    queryKey: ['psm-trade-history', urlSubgraph, address, excludeSUsds, chainIdToUse, maxBlockTimestamp],
+    enabled: Boolean(urlIndexer) && enabledProp && Boolean(tokenAddressMap) && Boolean(address),
+    staleTime: HISTORY_STALE_TIME,
+    queryKey: ['psm-trade-history', urlIndexer, address, excludeSUsds, chainIdToUse, maxBlockTimestamp],
     queryFn: () =>
       fetchPsmTradeHistory(
-        urlSubgraph,
+        urlIndexer,
         chainIdToUse,
         tokenAddressMap,
         address,
@@ -156,8 +158,8 @@ export function usePsmTradeHistory({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

@@ -222,27 +222,21 @@ describe('isLiquidatedStakePosition', () => {
   it('is true with a bark and an older mutation', () => {
     const theBark = makeBark({ blockTimestamp: 1_700_000_000 });
     expect(
-      isLiquidatedStakePosition(
-        makePosition({ barks: [theBark], lastMutationTimestamp: 1_600_000_000 })
-      )
+      isLiquidatedStakePosition(makePosition({ barks: [theBark], lastMutationTimestamp: 1_600_000_000 }))
     ).toBe(true);
   });
 
   it('is false with a bark and a strictly newer mutation (a recovery free)', () => {
     const theBark = makeBark({ blockTimestamp: 1_700_000_000 });
     expect(
-      isLiquidatedStakePosition(
-        makePosition({ barks: [theBark], lastMutationTimestamp: 1_700_000_100 })
-      )
+      isLiquidatedStakePosition(makePosition({ barks: [theBark], lastMutationTimestamp: 1_700_000_100 }))
     ).toBe(false);
   });
 
   it('is true when the mutation timestamp equals the bark timestamp (strictly-newer rule)', () => {
     const theBark = makeBark({ blockTimestamp: 1_700_000_000 });
     expect(
-      isLiquidatedStakePosition(
-        makePosition({ barks: [theBark], lastMutationTimestamp: 1_700_000_000 })
-      )
+      isLiquidatedStakePosition(makePosition({ barks: [theBark], lastMutationTimestamp: 1_700_000_000 }))
     ).toBe(true);
   });
 

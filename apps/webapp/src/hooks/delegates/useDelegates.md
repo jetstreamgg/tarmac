@@ -20,7 +20,7 @@ function App() {
     pageSize: 10,
     random: false,
     search: 'delegateName',
-    subgraphUrl: 'https://custom-subgraph-url.com'
+    indexerUrl: 'https://custom-indexer-url.com'
   });
 
   if (isLoading) return <div>Loading...</div>;
@@ -54,7 +54,7 @@ type Props = ReadHookParams<DelegateInfo[]> & {
   pageSize?: number;
   random?: boolean;
   search?: string;
-  subgraphUrl?: string;
+  indexerUrl?: string;
 };
 ```
 
@@ -68,8 +68,8 @@ type Props = ReadHookParams<DelegateInfo[]> & {
   - Whether to fetch delegates in random order. Defaults to false.
 - `search`: `string | undefined`
   - A search term to filter delegates by name.
-- `subgraphUrl`: `string | undefined`
-  - Optional. A custom subgraph URL to use for fetching data. If not provided, the default URL for the given chainId will be used.
+- `indexerUrl`: `string | undefined`
+  - Optional. A custom indexer URL to use for fetching data. If not provided, the default URL for the given chainId will be used.
 
 ## Return Type
 

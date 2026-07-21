@@ -1,6 +1,6 @@
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useUserDelegates } from '../delegates/useUserDelegates';
 import { useDelegates } from '../delegates/useDelegates';
 import { DelegateInfo } from '../delegates/delegate';
@@ -37,7 +37,7 @@ const sortDelegatesWithSelectedFirst = (
 };
 
 export function useStakeUserDelegates({
-  subgraphUrl,
+  indexerUrl,
   chainId,
   user,
   page = 1,
@@ -48,7 +48,7 @@ export function useStakeUserDelegates({
   shouldSortDelegates,
   sortType = 'aligned'
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   chainId: number;
   user: `0x${string}`;
   page?: number;
@@ -60,7 +60,7 @@ export function useStakeUserDelegates({
   sortType?: 'totalDelegated' | 'aligned';
 }): ReadHook & { data?: DelegateInfoWithTotal[] } {
   const hasInitiallyOrdered = useRef(false);
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   const {
     data: userDelegatesData,
@@ -147,8 +147,8 @@ export function useStakeUserDelegates({
     },
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

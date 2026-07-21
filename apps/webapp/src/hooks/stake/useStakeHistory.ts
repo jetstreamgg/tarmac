@@ -1,7 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import {
+  TRUST_LEVELS,
+  TrustLevelEnum,
+  ModuleEnum,
+  TransactionTypeEnum,
+  HISTORY_QUERY_LIMIT,
+  HISTORY_STALE_TIME
+} from '../constants';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import {
   BaseStakeHistoryItem,
   StakeHistoryItemWithAmount,
@@ -19,23 +26,24 @@ import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@/utils';
 
 async function fetchStakeHistory(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   address?: string,
   index?: number
 ): Promise<StakeHistory | undefined> {
   if (!address) return [];
+  const owner = address.toLowerCase();
   const indexFilter = index !== undefined ? `, index: { _eq: "${index}" }` : '';
-  const urnFilter = `{ urn: { owner: { _ilike: "${address}" }${indexFilter} }, chainId: { _eq: ${chainId} } }`;
-  const ownerFilter = `{ owner: { _ilike: "${address}" }${indexFilter}, chainId: { _eq: ${chainId} } }`;
+  const urnFilter = `where: { urn: { owner: { _eq: "${owner}" }${indexFilter} }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}`;
+  const ownerFilter = `where: { owner: { _eq: "${owner}" }${indexFilter}, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }, limit: ${HISTORY_QUERY_LIMIT}`;
   const query = gql`
     {
-      stakingOpens: StakingOpen(where: ${ownerFilter}) {
+      stakingOpens: StakingOpen(${ownerFilter}) {
         index
         blockTimestamp
         transactionHash
       }
-      stakingSelectVoteDelegates: StakingSelectVoteDelegate(where: ${urnFilter}) {
+      stakingSelectVoteDelegates: StakingSelectVoteDelegate(${urnFilter}) {
         index
         voteDelegate {
           address
@@ -43,7 +51,7 @@ async function fetchStakeHistory(
         blockTimestamp
         transactionHash
       }
-      stakingSelectRewards: StakingSelectReward(where: ${urnFilter}) {
+      stakingSelectRewards: StakingSelectReward(${urnFilter}) {
         index
         reward {
           address
@@ -51,38 +59,38 @@ async function fetchStakeHistory(
         blockTimestamp
         transactionHash
       }
-      stakingLocks: StakingLock(where: ${urnFilter}) {
+      stakingLocks: StakingLock(${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      stakingFrees: StakingFree(where: ${urnFilter}) {
+      stakingFrees: StakingFree(${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      stakingDraws: StakingDraw(where: ${urnFilter}) {
+      stakingDraws: StakingDraw(${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      stakingWipes: StakingWipe(where: ${urnFilter}) {
+      stakingWipes: StakingWipe(${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      stakingGetRewards: StakingGetReward(where: ${urnFilter}) {
+      stakingGetRewards: StakingGetReward(${urnFilter}) {
         index
         reward
         amt
         blockTimestamp
         transactionHash
       }
-      stakingOnKicks: StakingOnKick(where: ${urnFilter}) {
+      stakingOnKicks: StakingOnKick(${urnFilter}) {
         wad
         blockTimestamp
         transactionHash
@@ -93,7 +101,7 @@ async function fetchStakeHistory(
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as any;
+  const response = (await request(urlIndexer, query)) as any;
 
   const opens: BaseStakeHistoryItem[] = response.stakingOpens.map((e: BaseStakeHistoryItemResponse) => ({
     urnIndex: +e.index,
@@ -216,15 +224,15 @@ async function fetchStakeHistory(
 }
 
 export function useStakeHistory({
-  subgraphUrl,
+  indexerUrl,
   index
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   index?: number;
 } = {}): ReadHook & { data?: StakeHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(currentChainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
@@ -233,9 +241,10 @@ export function useStakeHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph),
-    queryKey: ['stake-history', urlSubgraph, address, index, chainIdToUse],
-    queryFn: () => fetchStakeHistory(urlSubgraph, chainIdToUse, address, index)
+    enabled: Boolean(urlIndexer),
+    staleTime: HISTORY_STALE_TIME,
+    queryKey: ['stake-history', urlIndexer, address, index, chainIdToUse],
+    queryFn: () => fetchStakeHistory(urlIndexer, chainIdToUse, address, index)
   });
 
   return {
@@ -245,8 +254,8 @@ export function useStakeHistory({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { Bark, StakePosition } from './stakeModule';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
@@ -22,7 +22,7 @@ type StakePositionResponse = {
 };
 
 async function fetchStakePosition(
-  urlSubgraph: string,
+  urlIndexer: string,
   urnIndex: number,
   chainId: number,
   address?: string
@@ -47,7 +47,7 @@ async function fetchStakePosition(
     }
   `;
 
-  const response: StakePositionResponse = await request(urlSubgraph, query);
+  const response: StakePositionResponse = await request(urlIndexer, query);
 
   if (!response.stakingUrns || response.stakingUrns.length === 0) return;
   const { skyLocked, usdsDebt, voteDelegate, reward } = response.stakingUrns[0];
@@ -64,15 +64,15 @@ async function fetchStakePosition(
 }
 
 export function useStakePosition({
-  subgraphUrl,
+  indexerUrl,
   urnIndex
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   urnIndex: number;
 }): ReadHook & { data?: StakePosition } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   const {
     data,
@@ -80,9 +80,9 @@ export function useStakePosition({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph),
-    queryKey: ['stake-position-details', urlSubgraph, address, urnIndex, chainId],
-    queryFn: () => fetchStakePosition(urlSubgraph, urnIndex, chainId, address)
+    enabled: Boolean(urlIndexer),
+    queryKey: ['stake-position-details', urlIndexer, address, urnIndex, chainId],
+    queryFn: () => fetchStakePosition(urlIndexer, urnIndex, chainId, address)
   });
 
   return {
@@ -92,8 +92,8 @@ export function useStakePosition({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }
