@@ -43,6 +43,10 @@ import { Warning } from '@/modules/icons/Warning';
 const dateFormat = 'MMM d';
 const monthFormat = 'MMM y';
 
+// Recharts' default entrance duration, made explicit so the once-only gate in
+// ChartContent knows when the draw has finished.
+const ENTRANCE_DRAW_MS = 1500;
+
 export type TimeFrame = 'w' | 'm' | 'y' | 'all';
 
 const TimeframeControls = ({
@@ -509,6 +513,17 @@ function ChartContent({
   // reserves the same space as the rendered chart (no layout shift on load).
   const resolvedHeight = chartHeight ?? (isLarge ? 220 : 288);
 
+  // The left-to-right entrance draw plays once, on the first data render.
+  // Re-enabling it for timeframe/metric switches replays the full draw on
+  // every click (APP-399 #6), so it's switched off after the initial pass —
+  // after the draw completes, or later data changes would cut it short.
+  const [hasEntered, setHasEntered] = useState(false);
+  useEffect(() => {
+    if (hasEntered || isLoading || error || data.length === 0) return;
+    const timer = setTimeout(() => setHasEntered(true), ENTRANCE_DRAW_MS + 100);
+    return () => clearTimeout(timer);
+  }, [hasEntered, isLoading, error, data.length]);
+
   return (
     <LoadingErrorWrapper
       isLoading={isLoading}
@@ -523,62 +538,83 @@ function ChartContent({
         </VStack>
       }
     >
-      <ResponsiveContainer width={'100%'} height={resolvedHeight}>
-        <AreaChart
-          data={data}
-          margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isLarge ? 22 : 0, left: 0 }}
-        >
-          <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="100%" gradientUnits="objectBoundingBox">
-              {color ? (
-                <>
-                  <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-                  <stop offset="75%" stopColor={color} stopOpacity="0" />
-                </>
-              ) : (
-                <>
-                  <stop offset="5%" stopColor="#1DD9BA" stopOpacity={0.25} />
-                  <stop offset="75%" stopColor="#00A167" stopOpacity="0" />
-                </>
-              )}
-            </linearGradient>
-          </defs>
-          <HoverDimMask id={dimMaskId} />
-          <YAxis domain={['dataMin', 'dataMax']} padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }} hide />
-          {/* We can't extract the XAxis component outside of the chart as in the designs */}
-          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
-          {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
-          <Tooltip
-            // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162).
-            cursor={{ stroke: 'var(--color-fgQuaternary)', strokeWidth: 1, strokeDasharray: '4 4' }}
-            content={
-              <ChartTooltip
-                symbol={symbol}
-                isPercentage={isPercentage}
-                labelFormatter={date => formatDate(date, activeTimeframe)}
-                prefix={prefix}
-                tooltipLabel={tooltipLabel}
-                tokenSymbols={tokenSymbols}
-              />
-            }
-          />
+      {/* Fade the plot in over the skeleton's last frame so the swap reads as
+          one transition instead of a hard cut (APP-399 #6). */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+      >
+        <ResponsiveContainer width={'100%'} height={resolvedHeight}>
+          <AreaChart
+            data={data}
+            margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isLarge ? 22 : 0, left: 0 }}
+          >
+            <defs>
+              <linearGradient
+                id={gradientId}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="100%"
+                gradientUnits="objectBoundingBox"
+              >
+                {color ? (
+                  <>
+                    <stop offset="5%" stopColor={color} stopOpacity={0.25} />
+                    <stop offset="75%" stopColor={color} stopOpacity="0" />
+                  </>
+                ) : (
+                  <>
+                    <stop offset="5%" stopColor="#1DD9BA" stopOpacity={0.25} />
+                    <stop offset="75%" stopColor="#00A167" stopOpacity="0" />
+                  </>
+                )}
+              </linearGradient>
+            </defs>
+            <HoverDimMask id={dimMaskId} />
+            <YAxis
+              domain={['dataMin', 'dataMax']}
+              padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }}
+              hide
+            />
+            {/* We can't extract the XAxis component outside of the chart as in the designs */}
+            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
+            {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
+            <Tooltip
+              // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162).
+              cursor={{ stroke: 'var(--color-fgQuaternary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+              content={
+                <ChartTooltip
+                  symbol={symbol}
+                  isPercentage={isPercentage}
+                  labelFormatter={date => formatDate(date, activeTimeframe)}
+                  prefix={prefix}
+                  tooltipLabel={tooltipLabel}
+                  tokenSymbols={tokenSymbols}
+                />
+              }
+            />
 
-          <Area
-            dataKey="value"
-            stroke={color ?? '#1DD9BA'}
-            strokeWidth={2.5}
-            type="monotone"
-            fill={`url(#${gradientId})`}
-            // Dim the series past the hover cursor (mask above); the active dot
-            // and tooltip render outside the masked layer, so they stay lit.
-            mask={`url(#${dimMaskId})`}
-            label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
-            dot={<CustomizedDot data={data} stroke={color ?? '#1DD9BA'} />}
-            // Ringed hover dot at the cursor point (Figma 5273:12162).
-            activeDot={{ r: 5, fill: color ?? '#1DD9BA', stroke: 'var(--color-container)', strokeWidth: 3 }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+            <Area
+              dataKey="value"
+              stroke={color ?? '#1DD9BA'}
+              strokeWidth={2.5}
+              type="monotone"
+              isAnimationActive={!hasEntered}
+              animationDuration={ENTRANCE_DRAW_MS}
+              fill={`url(#${gradientId})`}
+              // Dim the series past the hover cursor (mask above); the active dot
+              // and tooltip render outside the masked layer, so they stay lit.
+              mask={`url(#${dimMaskId})`}
+              label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
+              dot={<CustomizedDot data={data} stroke={color ?? '#1DD9BA'} />}
+              // Ringed hover dot at the cursor point (Figma 5273:12162).
+              activeDot={{ r: 5, fill: color ?? '#1DD9BA', stroke: 'var(--color-container)', strokeWidth: 3 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </motion.div>
     </LoadingErrorWrapper>
   );
 }

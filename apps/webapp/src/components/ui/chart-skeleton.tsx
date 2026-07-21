@@ -26,12 +26,14 @@ function ChartSkeleton({ height = 167 }: { height?: number }) {
       <motion.path
         d={path}
         stroke="url(#paint1_linear_5613_46096)"
-        strokeOpacity="0.9"
+        strokeOpacity="0.6"
         strokeWidth="2"
         style={{ mixBlendMode: 'overlay' }}
         initial={{ pathLength: 0.5, pathOffset: 1 }}
         animate={{ pathLength: 0.5, pathOffset: -0.5 }}
-        transition={skeletonTransition}
+        // No repeatDelay: the shared preset's pause between sweeps reads as a
+        // pulse on the chart-sized canvas (APP-399 #6) — sweep continuously.
+        transition={{ ...skeletonTransition, repeatDelay: 0 }}
       />
       <defs>
         <linearGradient
