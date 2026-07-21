@@ -28,7 +28,7 @@ export function TermsModal() {
   const [isChecked, setIsChecked] = useState(false);
   const [signStatus, setSignStatus] = useState<'idle' | 'loading' | 'signing' | 'error'>('idle');
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
-  const { address, chainId } = useConnection();
+  const { address, chainId, connector } = useConnection();
   const { disconnect } = useDisconnect();
   const [termsMarkdown] = useState<string>(getTermsContent());
 
@@ -53,12 +53,19 @@ export function TermsModal() {
         setHasAcceptedTerms(true);
         closeModal();
       } else {
+        // A 403 body names which gate refused — location/network vs address screening —
+        // and both are fixed server strings. Other statuses can echo the address back,
+        // so their bodies stay out of Sentry.
+        const deniedReason =
+          response.status === 403 ? await response.text().catch(() => '<unreadable>') : undefined;
+
         reportError(new Error(`Failed to send signature: ${response.status}`), {
           module: 'auth',
           flow: 'terms-signature',
           action: 'submit',
           type: 'http_error',
-          statusCode: response.status
+          statusCode: response.status,
+          extra: { deniedReason, chainId, connector: connector?.name }
         });
         setSignStatus('error');
         // TODO show error message to user
@@ -68,7 +75,8 @@ export function TermsModal() {
         module: 'auth',
         flow: 'terms-signature',
         action: 'submit',
-        type: 'request_error'
+        type: 'request_error',
+        extra: { chainId, connector: connector?.name }
       });
       setSignStatus('error');
       // TODO show error message to user
@@ -89,7 +97,8 @@ export function TermsModal() {
           module: 'auth',
           flow: 'terms-signature',
           action: 'sign',
-          type: 'wallet_signature_error'
+          type: 'wallet_signature_error',
+          extra: { chainId, connector: connector?.name }
         });
       }
     }
