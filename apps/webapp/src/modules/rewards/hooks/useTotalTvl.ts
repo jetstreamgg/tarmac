@@ -1,16 +1,16 @@
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import { RewardContractInfo, useAvailableTokenRewardContracts, useRewardContractsInfo } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export const useTotalTvl = () => {
   const chainId = useChainId();
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const {
     data: rewardContractsInfo,
     isLoading,
     error
-  } = useRewardContractsInfo({ chainId, rewardContracts, subgraphUrl });
+  } = useRewardContractsInfo({ chainId, rewardContracts, indexerUrl });
 
   const totalTvl = extractTvl(rewardContractsInfo as RewardContractInfo[]);
 

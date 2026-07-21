@@ -39,7 +39,7 @@ import { type ReadHookParams } from '@/hooks';
 ```ts
 type Props = ReadHookParams<RewardContract> & {
   rewardContractAddress: `0x${string}`;
-  subgraphUrl?: string;
+  indexerUrl?: string;
 };
 ```
 
@@ -47,8 +47,8 @@ type Props = ReadHookParams<RewardContract> & {
   - The address of the reward contract to fetch information for.
 - `options`: `ReadHookParams<RewardContract>`
   - Additional options for the query.
-- `subgraphUrl`: `string | undefined`
-  - Optional. A custom subgraph URL to use for fetching data. If not provided, the default URL will be used.
+- `indexerUrl`: `string | undefined`
+  - Optional. A custom indexer URL to use for fetching data. If not provided, the default URL will be used.
 
 ## Return Type
 

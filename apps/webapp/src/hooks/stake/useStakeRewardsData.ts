@@ -3,7 +3,7 @@ import { ReadHook } from '../hooks';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { formatBaLabsUrl } from '../helpers';
-import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
+import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 
 type ApiStakeRewardsData = {
   address: string;

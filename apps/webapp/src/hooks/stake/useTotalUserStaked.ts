@@ -1,11 +1,11 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 
-async function fetchTotalUserStaked(urlSubgraph: string, chainId: number, address: string): Promise<bigint> {
+async function fetchTotalUserStaked(urlIndexer: string, chainId: number, address: string): Promise<bigint> {
   const query = gql`
     {
       stakingUrns: StakingUrn(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
@@ -14,7 +14,7 @@ async function fetchTotalUserStaked(urlSubgraph: string, chainId: number, addres
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as { stakingUrns: { skyLocked: string }[] };
+  const response = (await request(urlIndexer, query)) as { stakingUrns: { skyLocked: string }[] };
 
   if (!response.stakingUrns || response.stakingUrns.length === 0) {
     return 0n;
@@ -26,13 +26,13 @@ async function fetchTotalUserStaked(urlSubgraph: string, chainId: number, addres
 }
 
 export function useTotalUserStaked({
-  subgraphUrl
+  indexerUrl
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
 } = {}): ReadHook & { data?: bigint } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   const {
     data,
@@ -40,9 +40,9 @@ export function useTotalUserStaked({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph && address),
-    queryKey: ['user-total-staked', urlSubgraph, address, chainId],
-    queryFn: () => fetchTotalUserStaked(urlSubgraph, chainId, address!)
+    enabled: Boolean(urlIndexer && address),
+    queryKey: ['user-total-staked', urlIndexer, address, chainId],
+    queryFn: () => fetchTotalUserStaked(urlIndexer, chainId, address!)
   });
 
   return {
@@ -52,8 +52,8 @@ export function useTotalUserStaked({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }
