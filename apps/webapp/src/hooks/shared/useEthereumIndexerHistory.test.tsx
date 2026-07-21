@@ -5,7 +5,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { HISTORY_QUERY_LIMIT, ModuleEnum, TransactionTypeEnum } from '../constants';
 
 // Reconstruct the interpolated query string so assertions can inspect it.
 vi.mock('graphql-request', () => ({
@@ -125,6 +125,48 @@ describe('useEthereumIndexerHistory — merged mainnet indexer document', () => 
     ]);
     expect(result.current.data![0].type).toBe(TransactionTypeEnum.SUPPLY);
     expect(result.current.hasNextPage).toBe(false);
+    expect(result.current.nextCursor).toBeUndefined();
+  });
+
+  it('clamps at the densest family and pages older items in with _lt', async () => {
+    const newest = 1700000000;
+    const frontier = newest - HISTORY_QUERY_LIMIT + 1;
+    vi.mocked(request).mockResolvedValueOnce({
+      ...EMPTY_RESPONSE,
+      // Savings hits the limit → its oldest row is the page boundary.
+      savingsSupplies: Array.from({ length: HISTORY_QUERY_LIMIT }, (_, i) => ({
+        assets: '100',
+        blockTimestamp: String(newest - i),
+        transactionHash: `0xsupply${i}`
+      })),
+      // A stake event older than the boundary is withheld from page 1.
+      stakingLocks: [
+        { index: '0', wad: '50', blockTimestamp: String(frontier - 10), transactionHash: '0xoldlock' }
+      ]
+    });
+    vi.mocked(request).mockResolvedValueOnce({
+      ...EMPTY_RESPONSE,
+      stakingLocks: [
+        { index: '0', wad: '50', blockTimestamp: String(frontier - 10), transactionHash: '0xoldlock' }
+      ]
+    });
+
+    const { result } = renderHook(() => useEthereumIndexerHistory(), { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data).toHaveLength(HISTORY_QUERY_LIMIT);
+    expect(result.current.data!.some(item => item.transactionHash === '0xoldlock')).toBe(false);
+    expect(result.current.nextCursor).toBe(frontier);
+    expect(result.current.hasNextPage).toBe(true);
+
+    result.current.fetchNextPage();
+    await waitFor(() => expect(result.current.hasNextPage).toBe(false));
+
+    const secondQuery = vi.mocked(request).mock.calls[1][1] as string;
+    expect(secondQuery).toContain(`blockTimestamp: { _lt: "${frontier}" }`);
+    // The withheld stake event lands appended after the page-1 items.
+    expect(result.current.data).toHaveLength(HISTORY_QUERY_LIMIT + 1);
+    expect(result.current.data![HISTORY_QUERY_LIMIT].transactionHash).toBe('0xoldlock');
     expect(result.current.nextCursor).toBeUndefined();
   });
 });

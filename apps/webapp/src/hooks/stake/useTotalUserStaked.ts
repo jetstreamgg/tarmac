@@ -8,7 +8,7 @@ import { useConnection, useChainId } from 'wagmi';
 async function fetchTotalUserStaked(urlIndexer: string, chainId: number, address: string): Promise<bigint> {
   const query = gql`
     {
-      stakingUrns: StakingUrn(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      stakingUrns: StakingUrn(where: { owner: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }) {
         skyLocked
       }
     }

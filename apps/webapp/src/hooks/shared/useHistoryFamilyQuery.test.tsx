@@ -124,7 +124,7 @@ describe('useHistoryFamilyQuery — filter-scoped history documents', () => {
         }
       ];
       return Promise.resolve(response);
-    }) as typeof request);
+    }) as unknown as typeof request);
 
     const { result } = renderHook(() => useHistoryFamilyQuery({ family: 'savings' }), {
       wrapper: makeWrapper()
