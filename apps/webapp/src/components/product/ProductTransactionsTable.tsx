@@ -42,6 +42,8 @@ export interface ProductTransactionsTableProps<T> {
   dataTestId?: string;
   /** Rows per page; the control appears once the set exceeds it (C4). */
   pageSize?: number;
+  /** Called after the page changes — e.g. to fetch more rows when the user lands on the last page. */
+  onPageChange?: (page: number, totalPages: number) => void;
   /** Makes rows interactive (button semantics + pointer cursor). */
   onRowClick?: (row: T) => void;
   /** Per-row test id, e.g. for row-click specs. */
@@ -93,6 +95,7 @@ export function ProductTransactionsTable<T>({
   minWidth = 560,
   dataTestId = 'product-transactions',
   pageSize = 7,
+  onPageChange,
   onRowClick,
   rowTestId,
   renderBelowRow,
@@ -101,6 +104,10 @@ export function ProductTransactionsTable<T>({
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
   const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
+  const handlePageChange = (nextPage: number) => {
+    setPage(nextPage);
+    onPageChange?.(nextPage, totalPages);
+  };
   const showPagination = !isLoading && !error && totalPages > 1;
   const widths = columnWidths(columns);
   const { bpi } = useBreakpointIndex();
@@ -163,7 +170,11 @@ export function ProductTransactionsTable<T>({
           )}
         </div>
         {showPagination && (
-          <CustomPagination dataLength={allRows.length} itemsPerPage={pageSize} onPageChange={setPage} />
+          <CustomPagination
+            dataLength={allRows.length}
+            itemsPerPage={pageSize}
+            onPageChange={handlePageChange}
+          />
         )}
       </>
     );
@@ -249,7 +260,11 @@ export function ProductTransactionsTable<T>({
         </TableBody>
       </Table>
       {showPagination && (
-        <CustomPagination dataLength={allRows.length} itemsPerPage={pageSize} onPageChange={setPage} />
+        <CustomPagination
+          dataLength={allRows.length}
+          itemsPerPage={pageSize}
+          onPageChange={handlePageChange}
+        />
       )}
     </>
   );

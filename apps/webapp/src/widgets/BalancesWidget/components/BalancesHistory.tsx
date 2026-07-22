@@ -26,20 +26,12 @@ export const BalancesHistory = ({
   itemsPerPage?: number;
   useInfiniteScroll?: boolean;
 }) => {
-  const {
-    data: singleNetworkData,
-    isLoading: singleNetworkLoading,
-    error: singleNetworkError
-  } = useCombinedHistory();
-  const {
-    data: allNetworksData,
-    isLoading: allNetworksLoading,
-    error: allNetworksError
-  } = useAllNetworksCombinedHistory();
+  const singleNetworkHistory = useCombinedHistory();
+  const allNetworksHistory = useAllNetworksCombinedHistory();
 
-  const data = showAllNetworks ? allNetworksData : singleNetworkData;
-  const isLoading = showAllNetworks ? allNetworksLoading : singleNetworkLoading;
-  const error = showAllNetworks ? allNetworksError : singleNetworkError;
+  const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } = showAllNetworks
+    ? allNetworksHistory
+    : singleNetworkHistory;
 
   const { i18n } = useLingui();
   const memoizedDates = useMemo(() => data?.map(s => s.blockTimestamp), [data]);
@@ -50,6 +42,11 @@ export const BalancesHistory = ({
 
   const onPageChange = (page: number) => {
     setStartIndex((page - 1) * itemsPerPage);
+    // Landing on the last loaded page while the server holds older history →
+    // fetch the next keyset page so a further page appears.
+    if (hasNextPage && !isFetchingNextPage && page >= Math.ceil(data.length / itemsPerPage)) {
+      fetchNextPage();
+    }
   };
 
   const loadMore = useCallback(() => {
@@ -58,9 +55,14 @@ export const BalancesHistory = ({
 
   // Derived from `data` rather than synced through an effect so background
   // refetches never reset the visible window (which read as flashes).
+  // The offset is clamped because the row set can shrink under a stale one
+  // (e.g. a wallet switch re-keys the hooks): an out-of-range slice would
+  // render the empty state while data exists, with no pagination to recover.
+  const lastPageStartIndex = Math.max(0, Math.ceil(data.length / itemsPerPage) - 1) * itemsPerPage;
+  const effectiveStartIndex = Math.min(startIndex, lastPageStartIndex);
   const itemsToDisplay = useMemo(
-    () => data.slice(startIndex, startIndex + itemsPerPage),
-    [data, startIndex, itemsPerPage]
+    () => data.slice(effectiveStartIndex, effectiveStartIndex + itemsPerPage),
+    [data, effectiveStartIndex, itemsPerPage]
   );
 
   useEffect(() => {
@@ -68,8 +70,12 @@ export const BalancesHistory = ({
 
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && visibleCount < data.length) {
+        if (!entries[0].isIntersecting) return;
+        if (visibleCount < data.length) {
           loadMore();
+        } else if (hasNextPage && !isFetchingNextPage) {
+          // Local buffer exhausted but the server holds older history.
+          fetchNextPage();
         }
       },
       { threshold: 0.1 }
@@ -85,10 +91,18 @@ export const BalancesHistory = ({
         observer.unobserve(currentTarget);
       }
     };
-  }, [useInfiniteScroll, visibleCount, data.length, loadMore]);
+  }, [
+    useInfiniteScroll,
+    visibleCount,
+    data.length,
+    loadMore,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage
+  ]);
 
   const infiniteScrollItems = useMemo(() => data.slice(0, visibleCount), [data, visibleCount]);
-  const hasMore = visibleCount < data.length;
+  const hasMore = visibleCount < data.length || hasNextPage;
 
   const loadingCards = (
     <VStack gap={2} className={cn('mt-6', className)}>
@@ -99,7 +113,7 @@ export const BalancesHistory = ({
   );
 
   const displayItems = useInfiniteScroll ? infiniteScrollItems : itemsToDisplay;
-  const getGlobalIndex = (index: number) => (useInfiniteScroll ? index : startIndex + index);
+  const getGlobalIndex = (index: number) => (useInfiniteScroll ? index : effectiveStartIndex + index);
 
   // Dozens of per-module/per-network queries feed `data`; rendering before
   // they all settle makes rows re-sort under the user as each one lands.
@@ -123,11 +137,11 @@ export const BalancesHistory = ({
                 savingsToken={'token' in item ? item.token?.symbol : undefined}
                 tradeFromToken={'fromToken' in item ? item.fromToken?.symbol : undefined}
                 rewardContract={
-                  'rewardContractAddress' in item && item.rewardContractAddress
+                  ('rewardContractAddress' in item && item.rewardContractAddress
                     ? item.rewardContractAddress
                     : 'rewardContract' in item && item.rewardContract
                       ? item.rewardContract
-                      : undefined
+                      : undefined) as `0x${string}` | undefined
                 }
                 item={item}
                 onExternalLinkClicked={onExternalLinkClicked}

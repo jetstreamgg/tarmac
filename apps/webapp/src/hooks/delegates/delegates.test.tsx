@@ -263,10 +263,10 @@ describe('useUserDelegates', async () => {
     expect(request).toHaveBeenCalled();
     const [[, query]] = (request as Mock).mock.calls;
 
-    expect(query).toContain('{ delegations: { delegator: { _ilike: "%0xabc%" }, amount: { _gt: "0" } } }');
+    expect(query).toContain('{ delegations: { delegator: { _eq: "0xabc" }, amount: { _gt: "0" } } }');
     expect(query).toContain(`delegations(
           limit: 1
-          where: { delegator: { _ilike: "%0xabc%" } }`);
+          where: { delegator: { _eq: "0xabc" } }`);
   });
 
   it('Should build the correct query with search parameter', async () => {
@@ -284,10 +284,10 @@ describe('useUserDelegates', async () => {
     const [[, query]] = (request as Mock).mock.calls;
 
     expect(query).toContain('{ address: { _ilike: "%delegate%" } }');
-    expect(query).toContain('{ delegations: { delegator: { _ilike: "%0xabc%" }, amount: { _gt: "0" } } }');
+    expect(query).toContain('{ delegations: { delegator: { _eq: "0xabc" }, amount: { _gt: "0" } } }');
     expect(query).toContain(`delegations(
           limit: 1
-          where: { delegator: { _ilike: "%0xabc%" } }`);
+          where: { delegator: { _eq: "0xabc" } }`);
   });
 });
 

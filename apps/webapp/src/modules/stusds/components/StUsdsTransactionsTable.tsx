@@ -102,7 +102,7 @@ const renderCard = (row: StUsdsTxRow) => (
  * `transactions` slot.
  */
 export function StUsdsTransactionsTable() {
-  const { data: history, isLoading, error } = useStUsdsHistory();
+  const { data: history, isLoading, error, hasNextPage, fetchNextPage } = useStUsdsHistory();
 
   const rows = useMemo<StUsdsTxRow[]>(() => {
     if (!history) return [];
@@ -130,6 +130,9 @@ export function StUsdsTransactionsTable() {
       isLoading={isLoading}
       error={error}
       renderCard={renderCard}
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

@@ -1,6 +1,6 @@
 import request, { gql } from 'graphql-request';
 import { useChainId, useConfig } from 'wagmi';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TENDERLY_CHAIN_ID, TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
@@ -43,7 +43,7 @@ function getHardcodedRewardContracts(chainId: number): { contractAddress: `0x${s
   return contracts;
 }
 
-async function fetchStakeRewardContracts(urlSubgraph: string, chainId: number) {
+async function fetchStakeRewardContracts(urlIndexer: string, chainId: number) {
   const query = gql`
     {
       rewards: Reward(where: { stakingEngineActive: { _eq: true }, chainId: { _eq: ${chainId} } }) {
@@ -52,7 +52,7 @@ async function fetchStakeRewardContracts(urlSubgraph: string, chainId: number) {
     }
   `;
 
-  const response = await request<{ rewards: { address: string }[] }>(urlSubgraph, query);
+  const response = await request<{ rewards: { address: string }[] }>(urlIndexer, query);
   const parsedRewardContracts = response.rewards;
   if (!parsedRewardContracts) {
     return [];
@@ -90,14 +90,14 @@ async function validateHardcodedContracts(config: Config, chainId: number) {
 }
 
 export function useStakeRewardContracts({
-  subgraphUrl
+  indexerUrl
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
 } = {}): ReadHook & { data: { contractAddress: `0x${string}` }[] | undefined } {
   const walletChainId = useChainId();
   const chainId = walletChainId === TENDERLY_CHAIN_ID ? walletChainId : mainnet.id;
   const config = useConfig();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   // Get chainId-specific hardcoded contracts for placeholder
   const hardcodedContracts = getHardcodedRewardContracts(chainId);
@@ -109,9 +109,9 @@ export function useStakeRewardContracts({
     refetch: mutate,
     isLoading: isGraphqlLoading
   } = useQuery({
-    queryKey: ['stakeRewardContracts', urlSubgraph, chainId],
-    queryFn: () => fetchStakeRewardContracts(urlSubgraph, chainId),
-    enabled: !!urlSubgraph,
+    queryKey: ['stakeRewardContracts', urlIndexer, chainId],
+    queryFn: () => fetchStakeRewardContracts(urlIndexer, chainId),
+    enabled: !!urlIndexer,
     placeholderData: hardcodedContracts
   });
 
@@ -134,8 +134,8 @@ export function useStakeRewardContracts({
   // Build data sources
   const dataSources = [
     {
-      title: 'Sky Ecosystem subgraph',
-      href: urlSubgraph,
+      title: 'Sky Ecosystem indexer',
+      href: urlIndexer,
       onChain: false,
       trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
     }

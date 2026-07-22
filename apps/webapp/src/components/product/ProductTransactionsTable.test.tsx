@@ -58,6 +58,26 @@ describe('ProductTransactionsTable — pagination', () => {
     expect(visibleRows()).toHaveLength(7);
     expect(screen.queryByRole('navigation', { name: 'pagination' })).toBeNull();
   });
+
+  it('reports page changes with the page and total so consumers can fetch more', () => {
+    const onPageChange = vi.fn();
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable
+          columns={COLUMNS}
+          rows={makeRows(15)}
+          rowKey={row => row.id}
+          onPageChange={onPageChange}
+        />
+      </I18nProvider>
+    );
+    fireEvent.click(screen.getByLabelText('Go to next page'));
+    expect(onPageChange).toHaveBeenCalledWith(2, 3);
+
+    fireEvent.click(screen.getByLabelText('Go to next page'));
+    // Landing on the last page (3 of 3) is the fetch-more trigger.
+    expect(onPageChange).toHaveBeenCalledWith(3, 3);
+  });
 });
 
 describe('ProductTransactionsTable — renderBelowRow', () => {

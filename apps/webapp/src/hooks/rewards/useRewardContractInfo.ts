@@ -2,11 +2,11 @@ import { request, gql } from 'graphql-request';
 import { RewardContractInfo, RewardContractInfoRaw } from './rewards';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 
 async function fetchRewardContractInfo(
-  urlSubgraph: string,
+  urlIndexer: string,
   rewardContractId: string,
   chainId: number
 ): Promise<RewardContractInfo | null> {
@@ -19,7 +19,7 @@ async function fetchRewardContractInfo(
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as any;
+  const response = (await request(urlIndexer, query)) as any;
 
   const reward = response.reward as RewardContractInfoRaw;
 
@@ -37,15 +37,15 @@ async function fetchRewardContractInfo(
 }
 
 export function useRewardContractInfo({
-  subgraphUrl,
+  indexerUrl,
   chainId,
   rewardContractAddress
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   chainId: number;
   rewardContractAddress: string;
 }): ReadHook & { data?: RewardContractInfo | null } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   const {
     data,
@@ -53,9 +53,9 @@ export function useRewardContractInfo({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph && rewardContractAddress),
-    queryKey: ['reward-contract-info', urlSubgraph, rewardContractAddress, chainId],
-    queryFn: () => fetchRewardContractInfo(urlSubgraph, rewardContractAddress, chainId)
+    enabled: Boolean(urlIndexer && rewardContractAddress),
+    queryKey: ['reward-contract-info', urlIndexer, rewardContractAddress, chainId],
+    queryFn: () => fetchRewardContractInfo(urlIndexer, rewardContractAddress, chainId)
   });
 
   return {
@@ -65,8 +65,8 @@ export function useRewardContractInfo({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

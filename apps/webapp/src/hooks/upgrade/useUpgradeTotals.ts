@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { UpgradeTotals } from './upgrade';
 import { useChainId } from 'wagmi';
@@ -10,7 +10,7 @@ type GraphQLUpgradeTotalResponse = {
   total: string;
 };
 
-async function fetchUpgradeTotals(urlSubgraph: string, chainId: number): Promise<UpgradeTotals | undefined> {
+async function fetchUpgradeTotals(urlIndexer: string, chainId: number): Promise<UpgradeTotals | undefined> {
   const query = gql`
     {
       mkrTotal: Total_by_pk(id: "${chainId}-mkrUpgraded") {
@@ -31,7 +31,7 @@ async function fetchUpgradeTotals(urlSubgraph: string, chainId: number): Promise
   const response: Record<
     'mkrTotal' | 'daiTotal' | 'skyUpgraded' | 'skyUpgradeFees',
     GraphQLUpgradeTotalResponse
-  > = await request(urlSubgraph, query);
+  > = await request(urlIndexer, query);
 
   const totalDaiUpgraded = BigInt(response?.daiTotal?.total ?? '0');
   const totalMkrUpgraded = BigInt(response?.mkrTotal?.total ?? '0');
@@ -42,12 +42,12 @@ async function fetchUpgradeTotals(urlSubgraph: string, chainId: number): Promise
 }
 
 export function useUpgradeTotals({
-  subgraphUrl
+  indexerUrl
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
 } = {}): ReadHook & { data?: UpgradeTotals } {
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   const {
     data,
@@ -55,9 +55,9 @@ export function useUpgradeTotals({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph),
-    queryKey: ['upgrade-totals', urlSubgraph, chainId],
-    queryFn: () => fetchUpgradeTotals(urlSubgraph, chainId)
+    enabled: Boolean(urlIndexer),
+    queryKey: ['upgrade-totals', urlIndexer, chainId],
+    queryFn: () => fetchUpgradeTotals(urlIndexer, chainId)
   });
 
   return {
@@ -67,8 +67,8 @@ export function useUpgradeTotals({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }
