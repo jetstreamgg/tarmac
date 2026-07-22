@@ -9,6 +9,9 @@ export const useCombinedHistory = (): {
   isLoading: boolean;
   error: Error | null;
   mutate: () => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => void;
 } => {
   const chainId = useChainId();
   const l2History = useL2CombinedHistory();

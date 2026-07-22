@@ -87,6 +87,15 @@ describe('PortfolioTransactionsView', () => {
     expect(screen.queryByText('No transactions yet')).not.toBeNull();
   });
 
+  it('renders table rows from `rows` while `optionRows` only feeds the filters', () => {
+    renderView([row({ id: 'scoped', action: 'Scoped Row' })], {
+      optionRows: [row({ id: 'agg', action: 'Aggregate Row', module: ModuleEnum.STAKE })]
+    });
+    const table = screen.getByTestId('portfolio-transactions-table');
+    expect(within(table).queryByText('Scoped Row')).not.toBeNull();
+    expect(within(table).queryByText('Aggregate Row')).toBeNull();
+  });
+
   it('renders across products (distinct action labels + product names)', () => {
     renderView([
       row({ id: 'a', module: ModuleEnum.SAVINGS, action: 'Savings Supply' }),

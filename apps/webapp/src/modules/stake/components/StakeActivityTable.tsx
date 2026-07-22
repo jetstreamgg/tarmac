@@ -273,7 +273,7 @@ const renderCard = (row: ActivityRow) => (
 export function StakeActivityTable({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
   const [filter, setFilter] = useState<'all' | number>('all');
-  const { data: stakeHistory, isLoading, error } = useStakeHistory();
+  const { data: stakeHistory, isLoading, error, hasNextPage, fetchNextPage } = useStakeHistory();
   const { priceString: skyPriceString } = useSkyPrice();
   const skyPrice = skyPriceString ? parseFloat(skyPriceString) : null;
 
@@ -333,6 +333,9 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         error={error}
         minWidth={720}
         renderCard={renderCard}
+        onPageChange={(page, totalPages) => {
+          if (hasNextPage && page >= totalPages) fetchNextPage();
+        }}
         emptyLabel={
           <span data-testid="stake-activity-empty" className="flex flex-col items-center gap-4 py-8">
             <span className="bg-textSecondary/20 h-10 w-10 rounded-full" aria-hidden />
