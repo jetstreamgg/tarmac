@@ -52,6 +52,26 @@ describe('HistoryTable — pagination callback', () => {
     expect(onPageChange).toHaveBeenCalledWith(3, 3);
   });
 
+  it('keeps rendering rows when the row set shrinks under a stale page (APP-401)', () => {
+    // 12 rows / 5 per page → 3 pages; walk to the last one.
+    const { rerender } = renderTable(makeRows(12));
+    fireEvent.click(screen.getByLabelText('Go to next page'));
+    fireEvent.click(screen.getByLabelText('Go to next page'));
+    expect(screen.getByText('row-10')).toBeTruthy();
+
+    // A smaller history arrives without a remount (e.g. wallet switch): the
+    // stale offset must clamp to a real page, not the "no transactions" state.
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <TooltipProvider>
+          <HistoryTable history={makeRows(4)} isLoading={false} />
+        </TooltipProvider>
+      </I18nProvider>
+    );
+    expect(screen.getByText('row-0')).toBeTruthy();
+    expect(screen.queryByText('No transactions found')).toBeNull();
+  });
+
   it('renders without pagination (and never calls back) when rows fit one page', () => {
     const onPageChange = vi.fn();
     renderTable(makeRows(3), onPageChange);

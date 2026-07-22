@@ -142,7 +142,7 @@ async function fetchStakeUserPositions(
 ): Promise<StakeUserPosition[]> {
   const query = gql`
     {
-      stakingUrns: StakingUrn(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      stakingUrns: StakingUrn(where: { owner: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }) {
         index
         skyLocked
         usdsDebt

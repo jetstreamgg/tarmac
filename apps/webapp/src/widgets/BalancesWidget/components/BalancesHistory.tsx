@@ -55,9 +55,14 @@ export const BalancesHistory = ({
 
   // Derived from `data` rather than synced through an effect so background
   // refetches never reset the visible window (which read as flashes).
+  // The offset is clamped because the row set can shrink under a stale one
+  // (e.g. a wallet switch re-keys the hooks): an out-of-range slice would
+  // render the empty state while data exists, with no pagination to recover.
+  const lastPageStartIndex = Math.max(0, Math.ceil(data.length / itemsPerPage) - 1) * itemsPerPage;
+  const effectiveStartIndex = Math.min(startIndex, lastPageStartIndex);
   const itemsToDisplay = useMemo(
-    () => data.slice(startIndex, startIndex + itemsPerPage),
-    [data, startIndex, itemsPerPage]
+    () => data.slice(effectiveStartIndex, effectiveStartIndex + itemsPerPage),
+    [data, effectiveStartIndex, itemsPerPage]
   );
 
   useEffect(() => {
@@ -108,7 +113,7 @@ export const BalancesHistory = ({
   );
 
   const displayItems = useInfiniteScroll ? infiniteScrollItems : itemsToDisplay;
-  const getGlobalIndex = (index: number) => (useInfiniteScroll ? index : startIndex + index);
+  const getGlobalIndex = (index: number) => (useInfiniteScroll ? index : effectiveStartIndex + index);
 
   // Dozens of per-module/per-network queries feed `data`; rendering before
   // they all settle makes rows re-sort under the user as each one lands.

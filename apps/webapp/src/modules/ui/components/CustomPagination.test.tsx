@@ -23,10 +23,11 @@ describe('CustomPagination — derived window over a live dataLength', () => {
     expect(onPageChange).toHaveBeenCalledWith(5);
 
     // A keyset source appends rows: 65 rows → 13 pages. The window must
-    // re-derive around the page the user is on, not keep a stale layout.
+    // re-derive around the page the user is on (with its neighbors, matching
+    // the production run of adjacent pages), not keep a stale layout.
     rerender(<CustomPagination dataLength={65} onPageChange={onPageChange} />);
     expect(activePage()).toBe('5');
-    expect(pageButtons()).toEqual(['1', '5', '13']);
+    expect(pageButtons()).toEqual(['1', '4', '5', '6', '13']);
   });
 
   it('never renders page numbers beyond the total', () => {
@@ -62,6 +63,6 @@ describe('CustomPagination — derived window over a live dataLength', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Go to next page' }));
     expect(onPageChange).toHaveBeenLastCalledWith(6);
     expect(activePage()).toBe('6');
-    expect(pageButtons()).toEqual(['1', '6', '13']);
+    expect(pageButtons()).toEqual(['1', '5', '6', '7', '13']);
   });
 });
