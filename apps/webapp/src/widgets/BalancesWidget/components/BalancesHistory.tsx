@@ -44,27 +44,33 @@ export const BalancesHistory = ({
   const { i18n } = useLingui();
   const memoizedDates = useMemo(() => data?.map(s => s.blockTimestamp), [data]);
   const formattedDates = useFormatDates(memoizedDates, i18n.locale, 'MMM d, h:mm a');
-  const [itemsToDisplay, setItemsToDisplay] = useState(data ? data.slice(0, itemsPerPage) : []);
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(itemsPerPage);
   const observerTarget = useRef<HTMLDivElement>(null);
 
   const onPageChange = (page: number) => {
-    const newStartIndex = (page - 1) * itemsPerPage;
-    setStartIndex(newStartIndex);
-    const endIndex = newStartIndex + itemsPerPage;
-    setItemsToDisplay(data.slice(newStartIndex, endIndex));
+    setStartIndex((page - 1) * itemsPerPage);
   };
 
   const loadMore = useCallback(() => {
     setVisibleCount(prev => Math.min(prev + itemsPerPage, data.length));
   }, [data.length, itemsPerPage]);
 
+  // Derived from `data` rather than synced through an effect so background
+  // refetches never reset the visible window (which read as flashes).
+  // The offset is clamped because the row set can shrink under a stale one
+  // (e.g. a wallet switch re-keys the hooks): an out-of-range slice would
+  // render the empty state while data exists, with no pagination to recover.
+  const lastPageStartIndex = Math.max(0, Math.ceil(data.length / itemsPerPage) - 1) * itemsPerPage;
+  const effectiveStartIndex = Math.min(startIndex, lastPageStartIndex);
+  const itemsToDisplay = useMemo(
+    () => data.slice(effectiveStartIndex, effectiveStartIndex + itemsPerPage),
+    [data, effectiveStartIndex, itemsPerPage]
+  );
+
   useEffect(() => {
     if (useInfiniteScroll) {
       setVisibleCount(itemsPerPage);
-    } else {
-      setItemsToDisplay(data.slice(0, itemsPerPage));
     }
   }, [data, itemsPerPage, useInfiniteScroll]);
 
@@ -104,7 +110,7 @@ export const BalancesHistory = ({
   );
 
   const displayItems = useInfiniteScroll ? infiniteScrollItems : itemsToDisplay;
-  const getGlobalIndex = (index: number) => (useInfiniteScroll ? index : startIndex + index);
+  const getGlobalIndex = (index: number) => (useInfiniteScroll ? index : effectiveStartIndex + index);
 
   return data.length > 0 ? (
     <>
