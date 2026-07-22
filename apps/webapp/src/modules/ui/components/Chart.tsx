@@ -43,10 +43,6 @@ import { Warning } from '@/modules/icons/Warning';
 const dateFormat = 'MMM d';
 const monthFormat = 'MMM y';
 
-// Recharts' default entrance duration, made explicit so the once-only gate in
-// ChartContent knows when the draw has finished.
-const ENTRANCE_DRAW_MS = 1500;
-
 export type TimeFrame = 'w' | 'm' | 'y' | 'all';
 
 const TimeframeControls = ({
@@ -513,17 +509,6 @@ function ChartContent({
   // reserves the same space as the rendered chart (no layout shift on load).
   const resolvedHeight = chartHeight ?? (isLarge ? 220 : 288);
 
-  // The left-to-right entrance draw plays once, on the first data render.
-  // Re-enabling it for timeframe/metric switches replays the full draw on
-  // every click (APP-399 #6), so it's switched off after the initial pass —
-  // after the draw completes, or later data changes would cut it short.
-  const [hasEntered, setHasEntered] = useState(false);
-  useEffect(() => {
-    if (hasEntered || isLoading || error || data.length === 0) return;
-    const timer = setTimeout(() => setHasEntered(true), ENTRANCE_DRAW_MS + 100);
-    return () => clearTimeout(timer);
-  }, [hasEntered, isLoading, error, data.length]);
-
   return (
     <LoadingErrorWrapper
       isLoading={isLoading}
@@ -601,8 +586,6 @@ function ChartContent({
               stroke={color ?? '#1DD9BA'}
               strokeWidth={2.5}
               type="monotone"
-              isAnimationActive={!hasEntered}
-              animationDuration={ENTRANCE_DRAW_MS}
               fill={`url(#${gradientId})`}
               // Dim the series past the hover cursor (mask above); the active dot
               // and tooltip render outside the masked layer, so they stay lit.

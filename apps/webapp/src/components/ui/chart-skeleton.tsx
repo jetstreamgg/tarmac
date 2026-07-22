@@ -6,15 +6,21 @@ const path =
 
 // Matching the chart's height keeps the skeleton→chart swap from shifting
 // layout; preserveAspectRatio="none" stretches the fixed viewBox to fill.
+// The quick fade-in doubles as a flash suppressor: a fetch that resolves
+// before it finishes swaps the skeleton out while it's still mostly
+// transparent, so fast timeframe switches barely show it (APP-399 #6).
 function ChartSkeleton({ height = 167 }: { height?: number }) {
   return (
-    <svg
+    <motion.svg
       data-testid="chart-skeleton"
       width="100%"
       height={height}
       viewBox="0 0 876 167"
       fill="none"
       preserveAspectRatio="none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <path
         d={path}
@@ -60,7 +66,7 @@ function ChartSkeleton({ height = 167 }: { height?: number }) {
           <stop offset="1" stopColor="rgb(76,61,158)" stopOpacity="0" />
         </linearGradient>
       </defs>
-    </svg>
+    </motion.svg>
   );
 }
 
