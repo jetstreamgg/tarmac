@@ -14,18 +14,29 @@ import { StakeEngineCard } from './StakeEngineCard';
 // corpus wins.
 const ABOUT_BANNER_ID = 'about-the-staking-engine';
 
+// Mobile comp 1222:17233 drops the card chrome — sections sit flat on the page
+// background with Label 3 headings; the desktop card look returns at md.
 function Card({ children, testId }: { children: React.ReactNode; testId: string }) {
   return (
-    <CardSurface data-testid={testId} className="flex flex-col gap-4 p-6">
+    <CardSurface
+      data-testid={testId}
+      className="md:bg-glassSurface flex flex-col gap-4 rounded-none bg-transparent p-0 backdrop-blur-none md:rounded-[28px] md:p-6 md:backdrop-blur-[20px]"
+    >
       {children}
     </CardSurface>
   );
 }
 
+// Section headings: Label 3 (16/18, -0.32) on the phone tier, the desktop
+// 24px title at md.
+const sectionHeading =
+  'text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px] md:font-sans md:text-2xl md:leading-normal md:tracking-normal';
+
 /**
- * About tab body (hi-fi 486:32043): the corpus-fed "About the Staking Engine"
- * copy, a numbered How-it-works list, and a Links row — with the shared Sky
- * Staking Engine promo card in the right rail. Read-only.
+ * About tab body (hi-fi 486:32043, mobile 1222:17233): the corpus-fed "About
+ * the Staking Engine" copy, a numbered How-it-works list, and a Links block —
+ * with the shared Sky Staking Engine promo card in the right rail (first on
+ * the phone tier per the mobile comp). Read-only.
  */
 export function StakeAboutTab() {
   const banner = getBannerById(ABOUT_BANNER_ID);
@@ -51,18 +62,22 @@ export function StakeAboutTab() {
   ];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="flex flex-col gap-6 lg:col-span-2">
+    <div className="grid gap-10 lg:grid-cols-3 lg:gap-6">
+      <div className="order-2 flex flex-col gap-10 lg:order-none lg:col-span-2 lg:gap-6">
         <Card testId="stake-about-copy">
-          {banner?.title && <h3 className="text-text text-2xl font-medium">{banner.title}</h3>}
-          <div className="text-textSecondary">{parseBannerContent(banner?.description)}</div>
+          {banner?.title && <h3 className={sectionHeading}>{banner.title}</h3>}
+          <div className="text-textSecondary text-sm leading-[22px] md:text-base md:leading-normal">
+            {parseBannerContent(banner?.description)}
+          </div>
         </Card>
 
         <Card testId="stake-how-it-works">
-          <h3 className="text-text text-2xl font-medium">
+          <h3 className={sectionHeading}>
             <Trans>How it works?</Trans>
           </h3>
-          <ol className="flex flex-col">
+          {/* Phone tier: the rows live in their own bordered 24px surface
+              (comp 1222:17233); at md the parent card supplies the chrome. */}
+          <ol className="border-borderPrimary flex flex-col rounded-3xl border md:rounded-none md:border-none">
             <HowItWorksRow n={1}>
               <Trans>Stake SKY & earn rewards</Trans>
             </HowItWorksRow>
@@ -75,19 +90,24 @@ export function StakeAboutTab() {
           </ol>
         </Card>
 
-        <div data-testid="stake-about-links" className="grid grid-cols-3 gap-4">
-          {links.map(({ label, href, icon }, i) => (
-            <Button key={i} variant="secondary" size="l" className="w-full" asChild>
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                {icon}
-                {label}
-              </a>
-            </Button>
-          ))}
+        <div data-testid="stake-about-links" className="flex flex-col gap-4">
+          <h3 className={`${sectionHeading} md:hidden`}>
+            <Trans>Links</Trans>
+          </h3>
+          <div className="flex flex-col gap-2 md:grid md:grid-cols-3 md:gap-4">
+            {links.map(({ label, href, icon }, i) => (
+              <Button key={i} variant="secondary" size="l" className="w-full" asChild>
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                  {icon}
+                  {label}
+                </a>
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="lg:col-span-1">
+      <div className="order-1 lg:order-none lg:col-span-1">
         <StakeEngineCard />
       </div>
     </div>
@@ -104,15 +124,17 @@ function HowItWorksRow({
   children: React.ReactNode;
 }) {
   return (
-    <li className="border-textSecondary/10 flex items-center justify-between gap-3 border-b py-4 last:border-b-0">
-      <span className="flex items-center gap-3">
-        <span className="bg-surface text-text flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium">
+    <li className="border-borderPrimary md:border-textSecondary/10 flex items-center justify-between gap-3 border-b p-4 last:border-b-0 md:px-0 md:py-4">
+      <span className="flex items-center gap-2 md:gap-3">
+        <span className="bg-glassSurface md:bg-surface text-text font-circle flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-normal md:tracking-normal">
           {n}
         </span>
-        <span className="text-text">{children}</span>
+        <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:text-base md:leading-normal md:font-normal md:tracking-normal">
+          {children}
+        </span>
       </span>
       {optional && (
-        <span className="text-textSecondary text-sm">
+        <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
           <Trans>(Optional)</Trans>
         </span>
       )}

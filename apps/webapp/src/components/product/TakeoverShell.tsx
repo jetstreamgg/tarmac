@@ -9,8 +9,10 @@ const FOCUSABLE_SELECTOR =
  * Full-screen takeover chrome (hi-fi 486:32657): header row with title + badge
  * and a close button, a scrollable centered card column, and a sticky footer.
  * The one sanctioned ProductDetailTemplate exception (Migration Mechanics §5) —
- * layout + slots only, no data fetching. Sits at z-40 so the transaction modal
- * (z-50) stacks above it.
+ * layout + slots only, no data fetching. Sits at z-[46]: above the bottom-
+ * anchored app overlays (cookie banner z-40, extensible Banner z-[45]) that
+ * would otherwise cover the sticky footer on phones, below the transaction
+ * modal (z-50).
  */
 export function TakeoverShell({
   title,
@@ -94,7 +96,7 @@ export function TakeoverShell({
       // Same page-background recipe as the shell surface (shellLayoutClasses):
       // `bg-background` is undefined in the dark scope (known token gap) and
       // would leave the overlay transparent.
-      className="bg-app-background light:bg-blend-normal fixed inset-0 z-40 flex flex-col [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity"
+      className="bg-app-background light:bg-blend-normal fixed inset-0 z-[46] flex flex-col [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity"
     >
       <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:border-b-0 md:px-8 md:py-6 lg:px-16">
         <div className="flex items-center gap-2 md:gap-3">

@@ -20,9 +20,12 @@ export function StakePositionsTab({
   const { data: positions, isLoading, error } = useStakeUserPositions();
   const hasPositions = (positions?.length ?? 0) > 0;
 
+  // Mobile comp 1222:16771 leads with the rail content (summary hero / promo
+  // card) before the tables, so the phone tier reorders via `order-*` while
+  // the lg grid keeps its DOM placement.
   return (
-    <div data-testid="stake-positions-tab" className="grid items-start gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-2">
+    <div data-testid="stake-positions-tab" className="grid items-start gap-10 lg:grid-cols-3 lg:gap-6">
+      <div className="order-2 lg:order-none lg:col-span-2">
         <StakePositionsTable
           positions={positions}
           isLoading={isLoading}
@@ -30,7 +33,7 @@ export function StakePositionsTab({
           onRemediate={onRemediate}
         />
       </div>
-      <div className="lg:col-span-1">
+      <div className="order-1 lg:order-none lg:col-span-1">
         {isLoading ? (
           <Skeleton className="rounded-card h-[420px]" />
         ) : hasPositions ? (
@@ -39,7 +42,7 @@ export function StakePositionsTab({
           <StakeEngineCard />
         )}
       </div>
-      <div className="lg:col-span-2">
+      <div className="order-3 lg:order-none lg:col-span-2">
         <StakeActivityTable positions={positions} />
       </div>
     </div>

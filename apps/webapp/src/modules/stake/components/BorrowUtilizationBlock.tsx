@@ -28,20 +28,27 @@ function LegendRow({
   dotColor?: string;
   children: ReactNode;
 }) {
+  // Phone tier (comp 1222:17089): borderPrimary hairlines under BOTH rows,
+  // 12px token icon, Label 4 values; md restores the desktop legend.
   return (
-    <div className="border-textSecondary/10 flex items-center justify-between gap-4 border-b py-3 last:border-b-0">
-      <span className="text-textSecondary flex items-center gap-2 text-sm">
+    <div className="border-borderPrimary md:border-textSecondary/10 flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3 md:last:border-b-0">
+      <span className="text-textSecondary flex items-center gap-1.5 text-sm leading-[22px] md:gap-2 md:leading-normal">
         <span className={cn('h-1 w-1 shrink-0 rounded-full', dotColor)} aria-hidden />
         {label}
       </span>
-      <span className="text-text flex items-center gap-1.5 text-sm font-medium">
+      <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px] md:gap-1.5 md:font-sans md:leading-normal md:tracking-normal">
         {isLoading ? (
           <Skeleton className="h-4 w-16" />
         ) : error ? (
           NO_VALUE
         ) : (
           <>
-            <TokenIcon token={{ symbol: 'USDS' }} width={16} className="h-4 w-4" showChainIcon={false} />
+            <TokenIcon
+              token={{ symbol: 'USDS' }}
+              width={16}
+              className="h-3 w-3 md:h-4 md:w-4"
+              showChainIcon={false}
+            />
             {children}
           </>
         )}
@@ -61,18 +68,18 @@ export function BorrowUtilizationBlock() {
 
   return (
     <div data-testid="stake-borrow-utilization" className="flex flex-col">
-      <h3 className="text-text mb-4 flex items-center gap-1.5 text-lg font-medium">
+      <h3 className="text-text font-circle mb-4 flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:gap-1.5 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
         <Trans>Borrow Utilization</Trans>
-        <Info className="text-textSecondary h-4 w-4" aria-hidden />
+        <Info className="text-textSecondary h-3 w-3 md:h-4 md:w-4" aria-hidden />
       </h3>
 
-      <div className="text-text mb-3 text-2xl font-semibold">
+      <div className="text-text font-circle mb-5 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:mb-3 md:font-sans md:leading-normal md:font-semibold md:tracking-normal">
         {isLoading ? <Skeleton className="h-8 w-24" /> : error ? NO_VALUE : `${utilization.toFixed(1)}%`}
       </div>
 
-      <Progress value={isLoading ? 0 : Math.min(100, utilization)} className="mb-4 h-2" />
+      <Progress value={isLoading ? 0 : Math.min(100, utilization)} className="mb-5 h-1.5 md:mb-4 md:h-2" />
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col md:gap-3">
         <LegendRow
           label={<Trans>Borrowed (USDS)</Trans>}
           isLoading={isLoading}

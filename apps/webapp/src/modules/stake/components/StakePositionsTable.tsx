@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { ReactNode, useCallback, useState } from 'react';
 import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
@@ -20,7 +20,9 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { Stake, Liquidated } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { IconboxPosition } from '@/components/ui/iconbox';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RiskMeter } from '@/components/product/RiskMeter';
@@ -211,20 +213,71 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
   }
 ];
 
-// M5 mobile card (Figma 486:20827 pattern, no stake-specific comp yet —
-// flagged on APP-371 for design review). The card keeps the row's tap-to-
-// manage behavior (the engine wires onRowClick to the card wrapper), so the
-// chevron moves into the header as the affordance.
+// Mobile position card (comp 1222:16771 / 1295:21684): 36px position iconbox
+// with a Label 4 title, equal-column field pairs split by centered hairlines,
+// and a full-width secondary "View more" footer. The card wrapper still owns
+// the tap-to-manage behavior (the engine wires onRowClick to it); the button
+// simply bubbles into that same handler. The field trio is shared with the
+// activity card (StakeActivityTable), which uses the same centered geometry.
+export function CardField({ label, children }: { label: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="font-graphik text-fgSecondary text-xs leading-[18px]">{label}</span>
+      <span className="font-circle text-fgPrimary flex min-h-4 items-center text-sm leading-4 font-medium tracking-[-0.28px]">
+        {children}
+      </span>
+    </div>
+  );
+}
+
+export function CardFieldRow({ children }: { children: ReactNode }) {
+  return <div className="flex w-full items-center gap-4">{children}</div>;
+}
+
+export const CardFieldDivider = ({ className }: { className?: string }) => (
+  <span className={cn('bg-glassBorder h-9 w-px shrink-0', className)} aria-hidden />
+);
+
 const renderCard = (position: StakeUserPosition) => (
   <TransactionCard
-    header={<PositionIdCell position={position} />}
-    badge={<CellChevron />}
-    fields={[
-      { label: <Trans>Total staked (SKY)</Trans>, value: stakedCell(position) },
-      { label: <Trans>Total borrowed (USDS)</Trans>, value: <PositionBorrowedCell position={position} /> },
-      { label: <Trans>Liquidation risk</Trans>, value: <PositionRiskCell position={position} /> },
-      { label: <Trans>Claimable rewards</Trans>, value: <PositionClaimableCell position={position} /> }
-    ]}
+    header={
+      <span
+        className={cn('flex items-center gap-3', isInactiveStakePosition(position) && 'opacity-50')}
+        data-testid={`stake-position-id-${position.index}`}
+      >
+        <IconboxPosition>
+          <Stake width={16} height={16} />
+        </IconboxPosition>
+        <span className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
+          <Trans>Position {position.index + 1}</Trans>
+        </span>
+      </span>
+    }
+    footer={
+      <>
+        <div className="flex w-full flex-col gap-6">
+          <CardFieldRow>
+            <CardField label={<Trans>Total staked (SKY)</Trans>}>{stakedCell(position)}</CardField>
+            <CardFieldDivider />
+            <CardField label={<Trans>Total borrowed (USDS)</Trans>}>
+              <PositionBorrowedCell position={position} />
+            </CardField>
+          </CardFieldRow>
+          <CardFieldRow>
+            <CardField label={<Trans>Liquidation risk</Trans>}>
+              <PositionRiskCell position={position} />
+            </CardField>
+            <CardFieldDivider />
+            <CardField label={<Trans>Claimable rewards</Trans>}>
+              <PositionClaimableCell position={position} />
+            </CardField>
+          </CardFieldRow>
+        </div>
+        <Button variant="secondary" size="m" className="w-full">
+          <Trans>View more</Trans>
+        </Button>
+      </>
+    }
   />
 );
 
@@ -275,12 +328,18 @@ export function StakePositionsTable({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="text-text text-lg font-medium">
+        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px] md:font-sans md:leading-normal md:tracking-normal">
           <Trans>Active positions</Trans>
         </h3>
         {allPositions.length > 0 && (
           <label className="text-textSecondary flex cursor-pointer items-center gap-2 text-sm">
-            <Trans>Hide inactive positions</Trans>
+            {/* Comp 1222:16843 shortens the label at the phone tier. */}
+            <span className="md:hidden">
+              <Trans>Hide inactive</Trans>
+            </span>
+            <span className="hidden md:inline">
+              <Trans>Hide inactive positions</Trans>
+            </span>
             <Switch
               checked={hideInactive}
               onCheckedChange={setHideInactive}

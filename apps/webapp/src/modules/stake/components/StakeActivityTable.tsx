@@ -18,7 +18,9 @@ import {
   Repaid,
   SelectRewards
 } from '@/modules/icons';
+import { ExternalLink } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ProductTransactionsTable,
@@ -27,6 +29,7 @@ import {
 import { TransactionCard } from '@/components/product/TransactionCard';
 import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
+import { CardField, CardFieldDivider, CardFieldRow } from './StakePositionsTable';
 
 /**
  * The verb taxonomy of the hi-fi activity table (486:31830). The subgraph
@@ -248,20 +251,49 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
   }
 ];
 
-// M5 mobile card (Figma 486:20827 pattern, no stake-specific comp yet —
-// flagged on APP-371 for design review): both amount columns become fields.
+// Mobile activity card (comp 1222:16770): the header verb steps UP to
+// Label 4 (16/18) — the non-compact CellAction — while the desktop table
+// keeps the compact Label 5 row; both amount columns become fields.
 const renderCard = (row: ActivityRow) => (
   <TransactionCard
-    header={actionCell(row)}
+    header={
+      <CellAction
+        icon={verbIcon(row.verb)}
+        label={verbLabel(row.verb)}
+        sublabel={
+          <>
+            {formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
+            {row.urnIndex !== undefined && <> · Position {row.urnIndex + 1}</>}
+          </>
+        }
+      />
+    }
     badge={<CellStatus status="completed" />}
-    fields={[
-      { label: <Trans>Stake/unstake</Trans>, value: skyCell(row) },
-      { label: <Trans>Borrow/repay</Trans>, value: usdsCell(row) }
-    ]}
-    link={{
-      label: <Trans>View transaction</Trans>,
-      href: getEtherscanLink(row.chainId, row.transactionHash, 'tx')
-    }}
+    // Equal columns with the hairline dead-center — the same geometry as the
+    // position cards above (design call on the M6.6 review: the comp's fixed
+    // 128px left column reads lopsided with short values).
+    footer={
+      <>
+        <CardFieldRow>
+          <CardField label={<Trans>Stake/unstake</Trans>}>{skyCell(row)}</CardField>
+          <CardFieldDivider className="h-[30px]" />
+          <CardField label={<Trans>Borrow/repay</Trans>}>{usdsCell(row)}</CardField>
+        </CardFieldRow>
+        <Button asChild variant="secondary" size="m" className="w-full">
+          <a
+            href={getEtherscanLink(row.chainId, row.transactionHash, 'tx')}
+            target="_blank"
+            rel="noreferrer"
+            onClick={event => event.stopPropagation()}
+          >
+            <span>
+              <Trans>View transaction</Trans>
+            </span>
+            <ExternalLink aria-hidden />
+          </a>
+        </Button>
+      </>
+    }
   />
 );
 
@@ -285,8 +317,10 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <h3 className="text-text text-lg font-medium">
+      {/* Phone tier (comp 1222:16962): heading above a full-width pill filter;
+          md restores the heading row with the inline borderless trigger. */}
+      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-4">
+        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px] md:font-sans md:leading-normal md:tracking-normal">
           <Trans>My activity</Trans>
         </h3>
         {(positions?.length ?? 0) > 0 && (
@@ -297,7 +331,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
             <SelectTrigger
               data-testid="stake-activity-filter"
               aria-label={t`Filter activity by position`}
-              className="text-textSecondary hover:text-text h-auto w-auto shrink-0 gap-1.5 rounded-full border-none bg-transparent p-0 text-sm font-medium transition-colors focus-visible:ring-0"
+              className="border-glassBorder text-text font-circle md:text-textSecondary md:hover:text-text h-11 w-full justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors focus-visible:ring-0 md:h-auto md:w-auto md:shrink-0 md:justify-normal md:gap-1.5 md:border-none md:p-0 md:font-sans md:leading-normal md:tracking-normal"
             >
               <SelectValue>
                 {filter === 'all' ? <Trans>All positions</Trans> : <Trans>Position {filter + 1}</Trans>}
