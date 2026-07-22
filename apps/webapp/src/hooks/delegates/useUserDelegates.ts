@@ -16,7 +16,7 @@ async function fetchUserDelegates(
 ): Promise<DelegateInfo[] | undefined> {
   const whereConditions = [
     `{ chainId: { _eq: ${chainId} } }`,
-    `{ delegations: { delegator: { _ilike: "%${user}%" }, amount: { _gt: "0" } } }`
+    `{ delegations: { delegator: { _eq: "${user.toLowerCase()}" }, amount: { _gt: "0" } } }`
   ];
   if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
   if (search) {
@@ -36,7 +36,7 @@ async function fetchUserDelegates(
         totalDelegated
         delegations(
           limit: 1
-          where: { delegator: { _ilike: "%${user}%" } }
+          where: { delegator: { _eq: "${user.toLowerCase()}" } }
         ) {
           id
           delegator
