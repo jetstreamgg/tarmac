@@ -214,9 +214,31 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   await isolatedPage.getByTestId('stake-hide-inactive-toggle').click();
 
   // Tapping View more opens the manage flow for that urn (bubbles to the
-  // card's row handler).
+  // card's row handler). At the phone tier the details modal hides the menu
+  // panel behind a pinned footer pair (comp 1292:63278); Manage position
+  // raises the menu as a bottom sheet (comp 1222:16239) whose close returns
+  // to the details view underneath.
   await viewMore.first().click();
-  await expect(isolatedPage.getByTestId('stake-position-details')).toBeVisible({ timeout: 30_000 });
+  const details = isolatedPage.getByTestId('stake-position-details');
+  await expect(details).toBeVisible({ timeout: 30_000 });
+  // The stubbed urns are subgraph-only, so the on-chain reads decide whether
+  // the urn resolves active or inactive here — assert the footer-pair shape,
+  // not the specific primary verb.
+  const footerPrimary = isolatedPage
+    .getByTestId('stake-details-cta-stake')
+    .or(isolatedPage.getByTestId('stake-details-cta-reopen'));
+  await expect(footerPrimary).toBeVisible({ timeout: 30_000 });
+  await isolatedPage.getByTestId('stake-details-cta-manage').click();
+  const sheet = isolatedPage.getByTestId('stake-manage-sheet');
+  await expect(sheet).toBeVisible();
+  await expect(isolatedPage.getByTestId('stake-manage-menu-withdraw-sheet')).toBeVisible();
+  const sheetPrimary = isolatedPage
+    .getByTestId('stake-manage-cta-stake-sheet')
+    .or(isolatedPage.getByTestId('stake-manage-cta-reopen-sheet'));
+  await expect(sheetPrimary).toBeVisible();
+  await isolatedPage.getByTestId('stake-manage-sheet-close').click();
+  await expect(sheet).not.toBeVisible();
+  await expect(details).toBeVisible();
   await isolatedPage.getByTestId('stake-position-details-close').click();
 
   // Activity: full-width pill filter under the heading, grouped verbs as
