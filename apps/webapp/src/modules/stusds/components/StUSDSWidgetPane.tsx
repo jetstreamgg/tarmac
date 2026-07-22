@@ -1,5 +1,5 @@
 import { StUSDSWidget, TxStatus, StUSDSAction, WidgetStateChangeParams, StUSDSFlow } from '@/widgets';
-import { useSavingsHistory } from '@/hooks';
+import { useStUsdsHistory } from '@/hooks';
 import { ExpertIntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -13,7 +13,7 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
   const indexerUrl = useIndexerUrl();
   const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedExpertOption } =
     useConfigContext();
-  const { mutate: refreshSavingsHistory } = useSavingsHistory(indexerUrl);
+  const { mutate: refreshStUsdsHistory } = useStUsdsHistory({ indexerUrl });
   const [searchParams, setSearchParams] = useSearchParams();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as StUSDSFlow | undefined;
@@ -89,7 +89,7 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
       [StUSDSAction.SUPPLY, StUSDSAction.WITHDRAW].includes(widgetState.action as StUSDSAction)
     ) {
       setTimeout(() => {
-        refreshSavingsHistory();
+        refreshStUsdsHistory();
       }, REFRESH_DELAY);
     }
   };

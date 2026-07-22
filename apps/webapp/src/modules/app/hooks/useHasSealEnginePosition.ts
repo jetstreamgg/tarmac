@@ -10,7 +10,7 @@ import { isMainnetId, chainId as chainIdMap } from '@/utils';
  * for any MKR the connected wallet still has sealed, so we can surface a withdrawal notification that
  * links to the static /seal-engine instructions page.
  *
- * Seal Engine only ever existed on mainnet, so we always query the mainnet subgraph.
+ * Seal Engine only ever existed on mainnet, so we always query the mainnet indexer.
  */
 async function fetchSealedMkr(urlIndexer: string, chainId: number, address: string): Promise<bigint> {
   const query = gql`
