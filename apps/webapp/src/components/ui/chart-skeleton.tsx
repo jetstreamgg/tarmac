@@ -6,21 +6,15 @@ const path =
 
 // Matching the chart's height keeps the skeleton→chart swap from shifting
 // layout; preserveAspectRatio="none" stretches the fixed viewBox to fill.
-// The quick fade-in doubles as a flash suppressor: a fetch that resolves
-// before it finishes swaps the skeleton out while it's still mostly
-// transparent, so fast timeframe switches barely show it (APP-399 #6).
 function ChartSkeleton({ height = 167 }: { height?: number }) {
   return (
-    <motion.svg
+    <svg
       data-testid="chart-skeleton"
       width="100%"
       height={height}
       viewBox="0 0 876 167"
       fill="none"
       preserveAspectRatio="none"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <path
         d={path}
@@ -32,14 +26,12 @@ function ChartSkeleton({ height = 167 }: { height?: number }) {
       <motion.path
         d={path}
         stroke="url(#paint1_linear_5613_46096)"
-        strokeOpacity="0.6"
+        strokeOpacity="0.9"
         strokeWidth="2"
         style={{ mixBlendMode: 'overlay' }}
         initial={{ pathLength: 0.5, pathOffset: 1 }}
         animate={{ pathLength: 0.5, pathOffset: -0.5 }}
-        // No repeatDelay: the shared preset's pause between sweeps reads as a
-        // pulse on the chart-sized canvas (APP-399 #6) — sweep continuously.
-        transition={{ ...skeletonTransition, repeatDelay: 0 }}
+        transition={skeletonTransition}
       />
       <defs>
         <linearGradient
@@ -66,7 +58,7 @@ function ChartSkeleton({ height = 167 }: { height?: number }) {
           <stop offset="1" stopColor="rgb(76,61,158)" stopOpacity="0" />
         </linearGradient>
       </defs>
-    </motion.svg>
+    </svg>
   );
 }
 
