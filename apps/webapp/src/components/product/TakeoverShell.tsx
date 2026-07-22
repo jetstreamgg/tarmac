@@ -96,8 +96,8 @@ export function TakeoverShell({
       // would leave the overlay transparent.
       className="bg-app-background light:bg-blend-normal fixed inset-0 z-40 flex flex-col [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity"
     >
-      <div className="flex items-center justify-between gap-4 px-8 py-6 lg:px-16">
-        <div className="flex items-center gap-3">
+      <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:border-b-0 md:px-8 md:py-6 lg:px-16">
+        <div className="flex items-center gap-2 md:gap-3">
           {onBack && (
             <Button
               variant="secondary"
@@ -109,11 +109,14 @@ export function TakeoverShell({
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
-          <h2 id={titleId} className="text-text text-lg font-medium">
+          <h2
+            id={titleId}
+            className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px] md:font-sans md:text-lg md:leading-normal md:tracking-normal"
+          >
             {title}
           </h2>
           {badge && (
-            <span className="bg-surfaceAlt text-textSecondary flex h-6 items-center gap-1 rounded-full px-2 text-xs font-medium">
+            <span className="bg-surfaceAlt text-text md:text-textSecondary font-circle flex h-6 items-center gap-1 rounded-full py-1 pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px] md:px-2 md:font-sans md:leading-4 md:tracking-normal">
               {badge}
             </span>
           )}
@@ -129,13 +132,17 @@ export function TakeoverShell({
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4">
-        <div className="mx-auto flex w-full max-w-[660px] flex-col gap-6 pb-8">{children}</div>
+      <div className="scrollbar-hidden md:scrollbar-thin-always flex-1 overflow-y-auto px-3 md:px-4">
+        <div className="mx-auto flex w-full max-w-[660px] flex-col gap-3 pt-3 pb-4 md:gap-6 md:pt-0 md:pb-8">
+          {children}
+        </div>
       </div>
 
       {footer && (
-        <div className="px-4 py-6">
-          <div className="mx-auto flex w-full max-w-[660px] items-center justify-between gap-6">{footer}</div>
+        <div className="px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] md:px-4 md:py-6">
+          <div className="mx-auto flex w-full max-w-[660px] items-center justify-between gap-4 md:gap-6">
+            {footer}
+          </div>
         </div>
       )}
     </div>

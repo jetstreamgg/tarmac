@@ -3,7 +3,7 @@ import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ExternalLink, Search } from 'lucide-react';
-import { useStakeUserDelegates, useDebounce, ZERO_ADDRESS } from '@/hooks';
+import { BP, useBreakpointIndex, useStakeUserDelegates, useDebounce, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { cn } from '@/lib/cn';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
@@ -33,6 +33,8 @@ export function DelegateList({
   const chainId = useChainId();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
 
   // Legacy SelectDelegate arguments, verbatim (pageSize 100, random, sorted).
   const { data: delegates, isLoading } = useStakeUserDelegates({
@@ -47,8 +49,8 @@ export function DelegateList({
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="border-textSecondary/20 flex items-center gap-2 border-b pb-2">
+    <div className="flex flex-col gap-6 md:gap-4">
+      <div className="border-textSecondary/20 flex items-center gap-2 border-b pb-3 md:pb-2">
         <Search className="text-textSecondary h-4 w-4 shrink-0" aria-hidden />
         <input
           type="text"
@@ -56,14 +58,14 @@ export function DelegateList({
           placeholder={t`Search`}
           onChange={event => setSearch(event.target.value)}
           data-testid={`${dataTestIdPrefix}-search`}
-          className="text-text placeholder:text-textSecondary w-full bg-transparent text-sm outline-none"
+          className="text-text placeholder:text-fgTertiary md:placeholder:text-textSecondary w-full bg-transparent text-sm leading-[22px] outline-none md:leading-5"
         />
       </div>
 
       {isLoading ? (
         <div className="flex flex-col gap-2">
           {[0, 1, 2].map(row => (
-            <Skeleton key={row} className="h-16 w-full rounded-xl" />
+            <Skeleton key={row} className="h-16 w-full rounded-2xl md:rounded-xl" />
           ))}
         </div>
       ) : !delegates || delegates.length === 0 ? (
@@ -71,7 +73,10 @@ export function DelegateList({
           <Trans>No delegates found</Trans>
         </p>
       ) : (
-        <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto" data-testid={`${dataTestIdPrefix}-list`}>
+        <ul
+          className="scrollbar-hidden md:scrollbar-thin-always flex max-h-96 flex-col gap-2 overflow-y-auto"
+          data-testid={`${dataTestIdPrefix}-list`}
+        >
           {delegates.map(delegate => {
             const isSelected = selectedDelegate?.toLowerCase() === delegate.id.toLowerCase();
             return (
@@ -82,13 +87,19 @@ export function DelegateList({
                   data-testid={`${dataTestIdPrefix}-${delegate.id.toLowerCase()}`}
                   aria-pressed={isSelected}
                   className={cn(
-                    'bg-surfaceAlt/40 flex w-full items-center justify-between gap-4 rounded-xl border border-transparent p-4 text-left transition-colors',
-                    isSelected && 'border-primary bg-primary/10'
+                    'flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition-colors md:rounded-xl md:p-4',
+                    // Comp 1222:19936: #504dff ring over the 10% brand gradient.
+                    // Applied at every tier — the previous border-primary/
+                    // bg-primary pair resolves to transparent in the dark scope,
+                    // leaving desktop's selected row invisible.
+                    isSelected
+                      ? 'border-[#504dff] bg-linear-to-b from-[#949aff]/10 to-[#504dff]/10'
+                      : 'border-borderPrimary md:bg-surfaceAlt/40 bg-transparent md:border-transparent'
                   )}
                 >
                   <span className="flex min-w-0 items-center gap-3">
-                    <CustomAvatar address={delegate.ownerAddress ?? delegate.id} size={32} />
-                    <span className="text-text flex items-center gap-1.5 text-sm font-medium">
+                    <CustomAvatar address={delegate.ownerAddress ?? delegate.id} size={isMobile ? 24 : 32} />
+                    <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-5 md:tracking-normal">
                       {delegate.metadata?.name || shortenAddress(delegate.id)}
                       <a
                         href={delegateProfileUrl(delegate.metadata?.externalProfileURL, delegate.id)}
@@ -98,20 +109,20 @@ export function DelegateList({
                         aria-label={t`View delegate profile`}
                         className="text-textSecondary hover:text-text"
                       >
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                        <ExternalLink className="h-3 w-3 md:h-3.5 md:w-3.5" aria-hidden />
                       </a>
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5">
-                    <span className="text-textSecondary text-xs">
+                    <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:leading-4">
                       <Trans>Total delegated</Trans>
                     </span>
-                    <span className="text-text flex items-center gap-1.5 text-sm font-medium">
+                    <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px] md:gap-1.5 md:font-sans md:leading-5 md:tracking-normal">
                       {formatBigInt(delegate.totalDelegated ?? 0n, { maxDecimals: 0 })}
                       <TokenIcon
                         token={{ symbol: 'SKY' }}
                         width={16}
-                        className="h-4 w-4"
+                        className="h-3 w-3 md:h-4 md:w-4"
                         showChainIcon={false}
                       />
                     </span>
