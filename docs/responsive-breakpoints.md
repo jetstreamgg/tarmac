@@ -87,6 +87,37 @@ flush with 2px gaps and round only the list's outer corners (20px), mirroring
 the desktop table surface. Shared primitives live in
 `components/product/TransactionCard.tsx`.
 
+## Widgets & transaction flows (M7, APP-374)
+
+Transaction forms are fluid inside every container they mount in: the mobile
+bottom sheet (< 768, full width), the desktop dialog (`TransactionModal`,
+490px), and the legacy widget pane (352–440px). Verified empirically at
+320/360/393px across the live flows (savings supply, stake open/manage with
+borrow, convert, portfolio) — no widget-owned element overflows its container.
+
+What guarantees it, so it stays true:
+
+- **Portalled overlays are clamped at the primitive.** Both popover recipes in
+  `components/ui/popover.tsx` carry
+  `max-w-[min(var(--radix-popover-content-available-width),calc(100vw_-_2rem))]`
+  plus `collisionPadding` (M4.4). Consumer `w-[…]`/`w-80` idioms set an ideal
+  width under that cap and are fine; **don't pass `max-w-*` overrides** — they
+  replace the clamp (tailwind-merge groups them together). Pinned by
+  `popover.test.tsx`.
+- **Tooltips never open on touch** (`components/ui/tooltip.tsx`; the touch
+  affordance is M4.3). `InfoTooltip`'s touch fallback renders through the
+  clamped popover. Tooltip `max-w-*` values stay ≤ 320px.
+- **In-flow widget widths are content-sized.** The widest fixed value in
+  `src/widgets/` is `max-w-[160px]` (`TokenSelector` truncation cap); the rest
+  are icon/skeleton dimensions. Keep it that way — new widget UI takes its
+  width from the container, fixed values only as `max-w` truncation caps well
+  under 280px (the sheet's content width at a 320px viewport).
+
+Widget inventory note: the V2 modal forms live in `modules/*` and only reuse
+`widgets/shared` pieces; `TradeWidget`, `L2TradeWidget` and `UpgradeWidget`
+are parked pending E3 (no live consumers), `VaultWidget` and `BalancesWidget`
+still render in the legacy pane (M8 routes).
+
 ## Viewport height units (`dvh` / `svh`)
 
 On mobile browsers the URL bar and toolbars collapse as you scroll, so the
