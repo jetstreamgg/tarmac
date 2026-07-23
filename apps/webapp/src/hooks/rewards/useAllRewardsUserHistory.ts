@@ -1,7 +1,13 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import {
+  TRUST_LEVELS,
+  TrustLevelEnum,
+  ModuleEnum,
+  TransactionTypeEnum,
+  HISTORY_STALE_TIME
+} from '../constants';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
@@ -9,28 +15,29 @@ import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@/utils';
 
 async function fetchAllRewardsUserHistory(
-  urlSubgraph: string,
+  urlIndexer: string,
   userAddress: string,
   rewardContracts: RewardContract[],
   chainId: number
 ): Promise<RewardUserHistoryItem[] | undefined> {
   const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress.toLowerCase()}"`);
+  const userFilter = `where: { user: { _eq: "${userAddress.toLowerCase()}" } }, order_by: { blockTimestamp: desc }`;
 
   const query = gql`
     {
       rewards: Reward(where: { id: { _in: [${rewardContractAddresses}] }, chainId: { _eq: ${chainId} } }) {
         address
-        supplyInstances(where: { user: { _ilike: "${userAddress}" } }) {
+        supplyInstances(${userFilter}) {
           blockTimestamp
           transactionHash
           amount
         }
-        withdrawals(where: { user: { _ilike: "${userAddress}" } }) {
+        withdrawals(${userFilter}) {
           blockTimestamp
           transactionHash
           amount
         }
-        rewardClaims(where: { user: { _ilike: "${userAddress}" } }) {
+        rewardClaims(${userFilter}) {
           blockTimestamp
           transactionHash
           amount
@@ -39,7 +46,7 @@ async function fetchAllRewardsUserHistory(
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as AllRewardsUserHistoryResponse;
+  const response = (await request(urlIndexer, query)) as AllRewardsUserHistoryResponse;
 
   const rewardsData = response.rewards;
 
@@ -89,13 +96,13 @@ async function fetchAllRewardsUserHistory(
 }
 
 export function useAllRewardsUserHistory({
-  subgraphUrl
+  indexerUrl
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
 } = {}): ReadHook & { data?: RewardUserHistoryItem[] } {
   const { address: userAddress } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(currentChainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   //this hook is only used for mainnet, update this if this ever changes
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
   const rewardContracts = useAvailableTokenRewardContracts(chainIdToUse);
@@ -105,9 +112,10 @@ export function useAllRewardsUserHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph && userAddress),
-    queryKey: ['all-rewards-user-history', urlSubgraph, userAddress, chainIdToUse],
-    queryFn: () => fetchAllRewardsUserHistory(urlSubgraph, userAddress || '', rewardContracts, chainIdToUse)
+    enabled: Boolean(urlIndexer && userAddress),
+    staleTime: HISTORY_STALE_TIME,
+    queryKey: ['all-rewards-user-history', urlIndexer, userAddress, chainIdToUse],
+    queryFn: () => fetchAllRewardsUserHistory(urlIndexer, userAddress || '', rewardContracts, chainIdToUse)
   });
 
   return {
@@ -117,8 +125,8 @@ export function useAllRewardsUserHistory({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

@@ -14,14 +14,14 @@ import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';
 
 export function SavingsWidgetPane(sharedProps: SharedProps) {
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
   const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode } = useConfigContext();
-  const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
+  const { mutate: refreshSavingsHistory } = useSavingsHistory(indexerUrl);
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
 

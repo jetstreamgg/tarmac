@@ -6,10 +6,10 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { formatDecimalPercentage } from '@/utils';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 
 export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardContract }) {
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
   const {
     data: rewardContractInfoData,
     isLoading: rewardContractInfoIsLoading,
@@ -17,7 +17,7 @@ export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardCon
   } = useRewardContractInfo({
     chainId: rewardContract.chainId,
     rewardContractAddress: rewardContract.contractAddress,
-    subgraphUrl
+    indexerUrl
   });
 
   // for CLE points, we need the data from the chart data, not the contract

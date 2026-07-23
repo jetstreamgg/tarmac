@@ -18,7 +18,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomNavigation } from '@/modules/ui/hooks/useCustomNavigation';
 import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTransaction';
 import { capitalizeFirstLetter } from '@/lib/helpers/string/capitalizeFirstLetter';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
@@ -30,10 +30,10 @@ const targetTokenFromSourceToken = (sourceToken?: string) => {
 };
 
 export function UpgradeWidgetPane(sharedProps: SharedProps) {
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
   const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedConvertOption } =
     useConfigContext();
-  const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ subgraphUrl });
+  const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ indexerUrl });
 
   const wagmiConfig = useWagmiConfig();
   const [searchParams, setSearchParams] = useSearchParams();

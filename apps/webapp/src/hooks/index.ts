@@ -253,7 +253,6 @@ export { useAvailableTokenRewardContracts } from './rewards/useAvailableTokenRew
 export { useAvailableTokenRewardContractsForChains } from './rewards/useAvailableTokenRewardContracts';
 export { useRewardContractInfo } from './rewards/useRewardContractInfo';
 export { useRewardContractsInfo } from './rewards/useRewardContractsInfo';
-export { useRewardsUserHistory } from './rewards/useRewardsUserHistory';
 export { useAllRewardsUserHistory } from './rewards/useAllRewardsUserHistory';
 export { useRewardsChartInfo } from './rewards/useRewardsChartInfo';
 export { useMultipleRewardsChartInfo } from './rewards/useMultipleRewardsChartInfo';
@@ -398,7 +397,7 @@ export {
   ModuleEnum,
   TransactionTypeEnum,
   TRUST_LEVELS,
-  URL_SKY_SUBGRAPH,
+  URL_SKY_INDEXER,
   ZERO_ADDRESS,
   ZERO_BYTES32,
   TENDERLY_CHAIN_ID

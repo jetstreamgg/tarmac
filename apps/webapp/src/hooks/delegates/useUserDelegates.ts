@@ -1,14 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
 import { parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchUserDelegates(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   user: `0x${string}`,
   search?: string,
@@ -16,7 +16,7 @@ async function fetchUserDelegates(
 ): Promise<DelegateInfo[] | undefined> {
   const whereConditions = [
     `{ chainId: { _eq: ${chainId} } }`,
-    `{ delegations: { delegator: { _ilike: "%${user}%" }, amount: { _gt: "0" } } }`
+    `{ delegations: { delegator: { _eq: "${user.toLowerCase()}" }, amount: { _gt: "0" } } }`
   ];
   if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
   if (search) {
@@ -36,7 +36,7 @@ async function fetchUserDelegates(
         totalDelegated
         delegations(
           limit: 1
-          where: { delegator: { _ilike: "%${user}%" } }
+          where: { delegator: { _eq: "${user.toLowerCase()}" } }
         ) {
           id
           delegator
@@ -47,7 +47,7 @@ async function fetchUserDelegates(
     }
   `;
 
-  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlSubgraph, query);
+  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlIndexer, query);
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
     id: d.address as `0x${string}`
@@ -73,19 +73,19 @@ async function fetchUserDelegates(
 }
 
 export function useUserDelegates({
-  subgraphUrl,
+  indexerUrl,
   chainId,
   user,
   search,
   version
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   chainId: number;
   user: `0x${string}`;
   search?: string;
   version?: 1 | 2 | 3;
 }): ReadHook & { data?: DelegateInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   const {
     data: subgraphDelegates,
@@ -93,9 +93,9 @@ export function useUserDelegates({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph && user.length > 0 && user !== ZERO_ADDRESS),
-    queryKey: ['user-delegates', urlSubgraph, chainId, user, search, version],
-    queryFn: () => fetchUserDelegates(urlSubgraph, chainId, user, search, version)
+    enabled: Boolean(urlIndexer && user.length > 0 && user !== ZERO_ADDRESS),
+    queryKey: ['user-delegates', urlIndexer, chainId, user, search, version],
+    queryFn: () => fetchUserDelegates(urlIndexer, chainId, user, search, version)
   });
 
   const { data: metadataMapping } = useDelegateMetadataMapping();
@@ -110,8 +110,8 @@ export function useUserDelegates({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

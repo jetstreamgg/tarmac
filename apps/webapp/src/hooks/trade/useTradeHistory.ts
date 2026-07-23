@@ -5,11 +5,11 @@ import { isCowSupportedChainId, TRADE_CUTOFF_DATES } from '@/utils';
 import { useChainId } from 'wagmi';
 
 export function useTradeHistory({
-  subgraphUrl,
+  indexerUrl,
   chainId: providedChainId,
   excludeSUsds = false
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   chainId?: number;
   excludeSUsds?: boolean;
 } = {}) {
@@ -22,7 +22,7 @@ export function useTradeHistory({
   const hybridTradeHistory = useHybridTradeHistory({
     chainId,
     excludeSUsds,
-    subgraphUrl,
+    indexerUrl,
     enabled: shouldUseHybrid
   });
 
@@ -32,7 +32,7 @@ export function useTradeHistory({
   });
 
   const psmTradeHistory = usePsmTradeHistory({
-    subgraphUrl,
+    indexerUrl,
     enabled: !shouldUseHybrid && !isCowSupportedChainId(chainId),
     chainId,
     excludeSUsds
