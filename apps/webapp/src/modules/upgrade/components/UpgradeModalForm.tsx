@@ -140,12 +140,18 @@ function RateValue({ source, target, targetRate }: { source: string; target: str
  * amount, so the preview math (`math.calculateConversion`) is display-only.
  * Analytics-free by design, following the stUSDS-modal precedent.
  */
-export function UpgradeModalForm({ sessionId }: { sessionId: string }) {
+export function UpgradeModalForm({
+  sessionId,
+  initialToken = 'DAI'
+}: {
+  sessionId: string;
+  initialToken?: UpgradeSourceToken;
+}) {
   const { address, isConnected } = useConnection();
   const chainId = useChainId();
   const chains = useChains();
 
-  const [token, setToken] = useState<UpgradeSourceToken>('DAI');
+  const [token, setToken] = useState<UpgradeSourceToken>(initialToken);
   const [value, setValue] = useState('');
 
   const amount = parseAmount(value);

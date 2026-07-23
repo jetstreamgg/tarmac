@@ -1,5 +1,6 @@
 import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
+import type { UpgradeSourceToken } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { UpgradeModalForm } from '../components/UpgradeModalForm';
 
@@ -16,23 +17,30 @@ export function useUpgradeModal() {
   const { launch } = useTransaction();
   const sessionId = useId();
 
-  const open = useCallback(() => {
-    launch({
-      title: t`Upgrade DAI/MKR`,
-      transactionTitle: t`Confirm upgrade`,
-      subtitles: {
-        loading: t`Your upgrade is being processed on the blockchain. Please wait.`,
-        success: t`You've successfully upgraded your tokens.`,
-        error: t`An error occurred while upgrading your tokens.`
-      },
-      sessionId,
-      entry: { confirmLabel: t`Continue`, confirmDisabled: true },
-      // The editable body lives outside the dialog (hidden host) so its in-flight
-      // hook survives minimize; it portals its inputs into the modal's entry slot.
-      backgroundContent: <UpgradeModalForm sessionId={sessionId} />,
-      onConfirm: () => {}
-    });
-  }, [launch, sessionId]);
+  const open = useCallback(
+    (initialToken: UpgradeSourceToken = 'DAI') => {
+      launch({
+        title: t`Upgrade DAI/MKR`,
+        transactionTitle: t`Confirm upgrade`,
+        subtitles: {
+          loading: t`Your upgrade is being processed on the blockchain. Please wait.`,
+          success: t`You've successfully upgraded your tokens.`,
+          error: t`An error occurred while upgrading your tokens.`
+        },
+        sessionId,
+        entry: { confirmLabel: t`Continue`, confirmDisabled: true },
+        // The editable body lives outside the dialog (hidden host) so its in-flight
+        // hook survives minimize; it portals its inputs into the modal's entry slot.
+        // Keyed by the source token so a relaunch with a different preselection
+        // remounts the form instead of keeping the previous session's state.
+        backgroundContent: (
+          <UpgradeModalForm key={initialToken} sessionId={sessionId} initialToken={initialToken} />
+        ),
+        onConfirm: () => {}
+      });
+    },
+    [launch, sessionId]
+  );
 
   return { open };
 }
