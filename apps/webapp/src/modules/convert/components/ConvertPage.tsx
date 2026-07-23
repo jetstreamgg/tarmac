@@ -96,7 +96,8 @@ export function ConvertPage() {
         <Button
           variant="primary"
           size="xl"
-          className="w-full"
+          // Phone tier steps to the L button (48px, comp 1295:25314); XL at md.
+          className="h-12 w-full text-sm leading-4 tracking-[-0.28px] md:h-14 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
           disabled={reviewDisabled}
           onClick={launchOrConnect}
           data-testid="convert-review-cta"
