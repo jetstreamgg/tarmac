@@ -42,9 +42,14 @@ export function ConvertCard({ form }: { form: ConvertFormModel }) {
   const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
 
   return (
-    <div className="flex w-full flex-col gap-[2px] overflow-clip rounded-[28px]" data-testid="convert-card">
+    // Phone tier (comp 1295:25285, M6.9): 16px radius + 16px row padding; the
+    // desktop 28px/32px geometry returns at md.
+    <div
+      className="flex w-full flex-col gap-[2px] overflow-clip rounded-2xl md:rounded-[28px]"
+      data-testid="convert-card"
+    >
       <ChainModal variant="wrapper" chainIds={networks} dataTestId="convert-network">
-        <span className="bg-glassSurface flex w-full items-center justify-between gap-2 px-8 py-6 backdrop-blur-[20px]">
+        <span className="bg-glassSurface flex w-full items-center justify-between gap-2 p-4 backdrop-blur-[20px] md:px-8 md:py-6">
           <span className="flex items-center gap-3">
             <Text className="text-textSecondary text-sm">
               <Trans>Network</Trans>
