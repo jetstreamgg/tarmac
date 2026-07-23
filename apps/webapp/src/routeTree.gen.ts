@@ -25,7 +25,6 @@ import { Route as ShellEarnSavingsRouteImport } from './routes/_shell.earn.savin
 import { Route as ShellEarnRewardsRouteImport } from './routes/_shell.earn.rewards'
 import { Route as ShellEarnFixedRouteImport } from './routes/_shell.earn.fixed'
 import { Route as ShellEarnExpertRouteImport } from './routes/_shell.earn.expert'
-import { Route as ShellConvertUpgradeRouteImport } from './routes/_shell.convert.upgrade'
 import { Route as ShellConvertTradeRouteImport } from './routes/_shell.convert.trade'
 import { Route as ShellConvertPsmRouteImport } from './routes/_shell.convert.psm'
 import { Route as ShellEarnVaultsIndexRouteImport } from './routes/_shell.earn.vaults.index'
@@ -117,11 +116,6 @@ const ShellEarnExpertRoute = ShellEarnExpertRouteImport.update({
   path: '/earn/expert',
   getParentRoute: () => ShellRoute,
 } as any)
-const ShellConvertUpgradeRoute = ShellConvertUpgradeRouteImport.update({
-  id: '/upgrade',
-  path: '/upgrade',
-  getParentRoute: () => ShellConvertRoute,
-} as any)
 const ShellConvertTradeRoute = ShellConvertTradeRouteImport.update({
   id: '/trade',
   path: '/trade',
@@ -187,7 +181,6 @@ export interface FileRoutesByFullPath {
   '/stake': typeof ShellStakeRoute
   '/convert/psm': typeof ShellConvertPsmRoute
   '/convert/trade': typeof ShellConvertTradeRoute
-  '/convert/upgrade': typeof ShellConvertUpgradeRoute
   '/earn/expert': typeof ShellEarnExpertRouteWithChildren
   '/earn/fixed': typeof ShellEarnFixedRouteWithChildren
   '/earn/rewards': typeof ShellEarnRewardsRouteWithChildren
@@ -215,7 +208,6 @@ export interface FileRoutesByTo {
   '/': typeof ShellIndexRoute
   '/convert/psm': typeof ShellConvertPsmRoute
   '/convert/trade': typeof ShellConvertTradeRoute
-  '/convert/upgrade': typeof ShellConvertUpgradeRoute
   '/earn/expert': typeof ShellEarnExpertRouteWithChildren
   '/earn/savings': typeof ShellEarnSavingsRoute
   '/earn/stusds': typeof ShellEarnStusdsRoute
@@ -242,7 +234,6 @@ export interface FileRoutesById {
   '/_shell/': typeof ShellIndexRoute
   '/_shell/convert/psm': typeof ShellConvertPsmRoute
   '/_shell/convert/trade': typeof ShellConvertTradeRoute
-  '/_shell/convert/upgrade': typeof ShellConvertUpgradeRoute
   '/_shell/earn/expert': typeof ShellEarnExpertRouteWithChildren
   '/_shell/earn/fixed': typeof ShellEarnFixedRouteWithChildren
   '/_shell/earn/rewards': typeof ShellEarnRewardsRouteWithChildren
@@ -272,7 +263,6 @@ export interface FileRouteTypes {
     | '/stake'
     | '/convert/psm'
     | '/convert/trade'
-    | '/convert/upgrade'
     | '/earn/expert'
     | '/earn/fixed'
     | '/earn/rewards'
@@ -300,7 +290,6 @@ export interface FileRouteTypes {
     | '/'
     | '/convert/psm'
     | '/convert/trade'
-    | '/convert/upgrade'
     | '/earn/expert'
     | '/earn/savings'
     | '/earn/stusds'
@@ -326,7 +315,6 @@ export interface FileRouteTypes {
     | '/_shell/'
     | '/_shell/convert/psm'
     | '/_shell/convert/trade'
-    | '/_shell/convert/upgrade'
     | '/_shell/earn/expert'
     | '/_shell/earn/fixed'
     | '/_shell/earn/rewards'
@@ -466,13 +454,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellEarnExpertRouteImport
       parentRoute: typeof ShellRoute
     }
-    '/_shell/convert/upgrade': {
-      id: '/_shell/convert/upgrade'
-      path: '/upgrade'
-      fullPath: '/convert/upgrade'
-      preLoaderRoute: typeof ShellConvertUpgradeRouteImport
-      parentRoute: typeof ShellConvertRoute
-    }
     '/_shell/convert/trade': {
       id: '/_shell/convert/trade'
       path: '/trade'
@@ -549,13 +530,11 @@ declare module '@tanstack/react-router' {
 interface ShellConvertRouteChildren {
   ShellConvertPsmRoute: typeof ShellConvertPsmRoute
   ShellConvertTradeRoute: typeof ShellConvertTradeRoute
-  ShellConvertUpgradeRoute: typeof ShellConvertUpgradeRoute
 }
 
 const ShellConvertRouteChildren: ShellConvertRouteChildren = {
   ShellConvertPsmRoute: ShellConvertPsmRoute,
   ShellConvertTradeRoute: ShellConvertTradeRoute,
-  ShellConvertUpgradeRoute: ShellConvertUpgradeRoute,
 }
 
 const ShellConvertRouteWithChildren = ShellConvertRoute._addFileChildren(

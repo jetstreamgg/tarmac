@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Cookie, FileText, FileWarning, Menu, Shield, X } from 'lucide-react';
+import { Cookie, FileText, FileWarning, Menu, Shield, SquareArrowUp, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { cn } from '@/lib/cn';
@@ -18,6 +18,7 @@ import { MockConnectButton } from '@/modules/layout/components/MockConnectButton
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { useCookieConsent } from '@/modules/analytics/context/CookieConsentContext';
 import { POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
+import { useUpgradeModal } from '@/modules/upgrade/hooks/useUpgradeModal';
 import { DESTINATIONS, navTestId, useActiveDestinationPath, useDestinationLinkProps } from './destinations';
 
 // Design-system Button / Navbar (Figma 5010:29059, Default type); active
@@ -41,13 +42,15 @@ function linkIcon(name: string) {
 }
 
 /**
- * Shared body of the More menu: bundling toggle + hairline, then the theme
- * toggle, legal links and cookie row. `mobile` swaps the desktop row rhythm
- * (20px gaps) for the comp's 40px touch rows with 2px gaps (Figma 536:26429).
+ * Shared body of the More menu: bundling toggle + hairline, the Upgrade
+ * DAI/MKR row in its own hairline-delimited section, then the theme toggle,
+ * legal links and cookie row. `mobile` swaps the desktop row rhythm (20px
+ * gaps) for the comp's 40px touch rows with 2px gaps (Figma 536:26429).
  */
 function MoreMenuContent({ mobile, closeMenu }: { mobile?: boolean; closeMenu: () => void }) {
   const { showBanner } = useCookieConsent();
   const footerLinks = getFooterLinks();
+  const { open: openUpgrade } = useUpgradeModal();
 
   return (
     <>
@@ -57,6 +60,22 @@ function MoreMenuContent({ mobile, closeMenu }: { mobile?: boolean; closeMenu: (
           <div className="bg-glassBorder h-px w-full" />
         </>
       )}
+      {/* Upgrade DAI/MKR (Figma 536:26429): its own section between hairlines.
+          Closes the menu, then launches the shared transaction modal —
+          `launch()` replaces an idle open modal; the provider's in-flight
+          guard restores a pending one instead (APP-413). */}
+      <button
+        data-testid="nav-more-upgrade"
+        onClick={() => {
+          closeMenu();
+          openUpgrade();
+        }}
+        className={cn(moreItemClasses, mobile && 'min-h-10')}
+      >
+        <SquareArrowUp size={16} className="text-fgBrand shrink-0" />
+        <Trans>Upgrade DAI/MKR</Trans>
+      </button>
+      <div className="bg-glassBorder h-px w-full" />
       <div className={cn('flex flex-col', mobile ? 'gap-0.5 *:min-h-10' : 'gap-5')}>
         <ThemeToggle />
         {footerLinks.map(link => {
@@ -110,8 +129,8 @@ function MoreMenu() {
   // M4.5 (Figma 536:26429): below md the popover becomes a bottom-anchored
   // floating panel — 12px viewport insets (the DS in-situ inset), 24px radius,
   // its own More heading + 32px circular close. Same rows as the desktop
-  // menu; the comp's Upgrade DAI/MKR row stays omitted (E2 parked) and the
-  // Dark mode row stays included (content parity — flagged on APP-388).
+  // menu; the Dark mode row stays included (content parity — flagged on
+  // APP-388).
   if (bpi < BP.md) {
     return (
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -152,8 +171,7 @@ function MoreMenu() {
       </PopoverTrigger>
       {/* Menu dropdown panel (Figma 5069:27495): 274px glass panel — bg-secondary
           over a 100px backdrop blur, 24px radius, 20px padding, 24px between
-          sections with a hairline divider after the bundling block. The comp's
-          Upgrade DAI/MKR row is omitted: the upgrade surface is parked (E2). */}
+          sections with a hairline divider after the bundling block. */}
       <PopoverContent
         align="end"
         className="bg-bgSecondary flex w-[274px] flex-col gap-6 rounded-3xl p-5 shadow-none backdrop-blur-[100px]"
