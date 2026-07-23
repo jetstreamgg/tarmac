@@ -16,6 +16,8 @@ type FormatOptions = {
   compact?: boolean;
   amount?: number;
   maxDecimals?: number;
+  /** Pad with trailing zeros up to this many decimals (e.g. 2 → "10,000.00"). */
+  minDecimals?: number;
   showPercentageDecimals?: boolean;
   roundingMode?: 'ceil' | 'floor';
   useGrouping?: boolean;
@@ -36,10 +38,12 @@ export function createNumberFormatter(options?: FormatOptions) {
             : options?.compact
               ? COMPACT_LARGE_NUM_DECIMALS
               : LARGE_NUM_DECIMALS;
+  const minDecimals = options?.minDecimals ?? 0;
   return new Intl.NumberFormat(locale, {
     style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: maxDecimals,
+    minimumFractionDigits: minDecimals,
+    // Intl throws when max < min, so a lone minDecimals wins over the derived max.
+    maximumFractionDigits: Math.max(maxDecimals, minDecimals),
     notation: options?.compact ? 'compact' : undefined,
     compactDisplay: options?.compact ? 'short' : undefined,
     roundingMode: options?.roundingMode || undefined,

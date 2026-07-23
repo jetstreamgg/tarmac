@@ -34,6 +34,11 @@ const parseAmount = (value: string): bigint => {
 const formatAmount = (amount: bigint) =>
   formatNumber(parseFloat(formatUnits(amount, DECIMALS)), { maxDecimals: 2 });
 
+// The confirm-screen hero pins two decimals ("10,000.00", Figma 1310:130657);
+// everywhere else trailing zeros drop, matching the Convert hero.
+const formatHeroAmount = (amount: bigint) =>
+  formatNumber(parseFloat(formatUnits(amount, DECIMALS)), { minDecimals: 2, maxDecimals: 2 });
+
 function TokenOption({ symbol }: { symbol: string }) {
   return (
     <span className="flex items-center gap-1">
@@ -201,7 +206,7 @@ export function UpgradeModalForm({ sessionId }: { sessionId: string }) {
               className="h-7 w-7 shrink-0"
             />
             <Text className="text-text truncate text-2xl font-medium" dataTestId="upgrade-modal-from-amount">
-              {formatAmount(debouncedAmount)}
+              {formatHeroAmount(debouncedAmount)}
             </Text>
           </span>
           <TokenChip symbol={token} />
@@ -219,7 +224,7 @@ export function UpgradeModalForm({ sessionId }: { sessionId: string }) {
               className="h-7 w-7 shrink-0"
             />
             <Text className="text-text truncate text-2xl font-medium" dataTestId="upgrade-modal-to-amount">
-              {formatAmount(receiveAmount)}
+              {formatHeroAmount(receiveAmount)}
             </Text>
           </span>
           <TokenChip symbol={target} />
