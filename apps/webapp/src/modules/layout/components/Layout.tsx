@@ -57,7 +57,10 @@ export function Layout({
         <ErrorBoundary>
           <div className={shellHeaderClasses(fullWidth)}>
             <div className={shellHeaderContentClasses(fullWidth)}>
-              <AppLink to="/" title="Home page" className="min-w-[96px]">
+              {/* justify-self-start: in the desktop header grid the logo sits
+                  in a 1fr flank; without it the anchor stretches across the
+                  whole track and empty header space becomes clickable. */}
+              <AppLink to="/" title="Home page" className="desktop:justify-self-start min-w-[96px]">
                 {/* Theme-specific logo: dark is the default; light swaps in under
                     [data-theme='light'] (the `light:` variant). */}
                 <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
