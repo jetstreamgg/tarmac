@@ -56,19 +56,30 @@ describe('StakeRateChart', () => {
 
     expect(screen.getByTestId('stake-rate-chart')).toBeTruthy();
     const toggle = screen.getByTestId('chart-metric-toggle');
-    expect(within(toggle).getByText('Rate')).toBeTruthy();
+    expect(within(toggle).getByText('Staking rate')).toBeTruthy();
+    expect(within(toggle).getByText('Borrow rate')).toBeTruthy();
     expect(within(toggle).getByText('TVL')).toBeTruthy();
   });
 
   it('shows the winning farm rewards rate as the rate hero, not the borrow rate', () => {
     renderChart();
 
-    expect(screen.getByText('Current Rate')).toBeTruthy();
+    expect(screen.getByText('Staking Reward Rate')).toBeTruthy();
     // The hero is the highest-rate farm's latest datapoint (5.69%) — not the
     // losing farm's (3%) and not the historic borrowRate (7.5%).
     expect(screen.getByText('5.69%')).toBeTruthy();
     expect(screen.queryByText('3%')).toBeNull();
     expect(screen.queryByText('7.5%')).toBeNull();
+  });
+
+  it('switches the hero to the latest borrow rate when the Borrow rate toggle is clicked', () => {
+    renderChart();
+
+    fireEvent.click(within(screen.getByTestId('chart-metric-toggle')).getByText('Borrow rate'));
+
+    // Newest historic borrowRate (0.075) plotted/shown as a percentage.
+    expect(screen.getByText('Borrow Rate')).toBeTruthy();
+    expect(screen.getByText('7.5%')).toBeTruthy();
   });
 
   it('switches the hero to the TVL series when the toggle is clicked', () => {

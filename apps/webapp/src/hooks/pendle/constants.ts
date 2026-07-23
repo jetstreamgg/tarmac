@@ -393,7 +393,7 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     // PT-sUSDS-26NOV2026 — underlying is sUSDS (Pendle's underlyingAsset = SY's
     // wrapped yield-bearing token). PT redeems to 1 USDS at maturity per
     // SY.assetInfo (assetType=0 TOKEN, USDS), so usdsEquivalence is 'pegged'.
-    name: 'PT-sUSDS',
+    name: 'Fixed Yield',
     slug: 'pt-susds',
     marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
     ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',

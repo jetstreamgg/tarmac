@@ -728,21 +728,22 @@
 }
 
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
-   selected-icon gradient fill (dark) / indigo tint (light) don't map to
-   utilities, so they stay here, keyed off the link's [aria-current].
+   selected-icon gradient fill doesn't map to utilities, so it stays here,
+   keyed off the link's [aria-current].
 
-   Dark's #9ca9ff is components/buttons/navbar/fg-active, which the DS types as
-   theme-invariant — but light does NOT reuse it: sampling the light comp's
-   navbar (Sky App: UI 1030:58491) gives #2f2d40 for the glyph and label, i.e.
-   colors/fg/fg-primary. So light takes fg-primary via the token, and fg-active
-   is a dark-only value in practice despite carrying no mode dimension. */
+   The DS types components/buttons/navbar/fg-active (#9ca9ff) and the active
+   gradient as theme-invariant, and the light comp's navbar (Sky App: UI
+   1030:58491) binds both — the active treatment is identical in both modes
+   (APP-399 #1; an earlier eyedropper sample of the since-updated light comp
+   concluded otherwise). Only the inactive glyph carries a mode: #9ca9ff in
+   dark, colors/fg/fg-tertiary in light. */
 .nav-icon {
   color: #9ca9ff;
   transition: color 250ms var(--ease-out-expo);
 }
 /* Hovering the pill brightens the glyph to fg-primary (Figma hover state).
-   Light mode is unaffected: its .nav-icon rules below tie on specificity and
-   win by source order. */
+   Light mode is unaffected: its .nav-icon rule below ties on specificity and
+   wins by source order. */
 :hover > .nav-icon {
   color: var(--color-fgPrimary);
 }
@@ -750,21 +751,12 @@
   fill: url(#nav-icon-gradient);
 }
 [data-theme='light'] .nav-icon {
-  color: var(--color-fgPrimary);
-  opacity: 0.5;
-}
-[data-theme='light'] [aria-current='page'] > .nav-icon {
-  opacity: 1;
-}
-[data-theme='light'] [aria-current='page'] > .nav-icon :where(path) {
-  fill: var(--color-fgPrimary);
+  color: var(--color-fgTertiary);
 }
 /* Menu trigger glyph (lucide, stroke-based): open gets the brand gradient
-   (Figma Type=Menu State=Active); rest/hover stay fg-primary via
-   currentColor. */
+   (Figma Type=Menu State=Active) in both modes — the gradient is
+   theme-invariant like the nav-icon active fill; rest/hover stay fg-primary
+   via currentColor. */
 [data-state='open'] > .nav-menu-icon {
   stroke: url(#nav-icon-gradient);
-}
-[data-theme='light'] [data-state='open'] > .nav-menu-icon {
-  stroke: var(--color-fgPrimary);
 }

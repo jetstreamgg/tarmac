@@ -24,7 +24,7 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
   // still names the actual underlying: that's the variable-yield instrument.
   const symbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
   const variableSymbol = market.underlyingSymbol;
-  const ptSymbol = market.name;
+  const ptSymbol = `PT-${market.underlyingSymbol}`;
 
   const expirySec = stats?.expirySec ?? market.expiry;
   const remainingDays = Math.max(
