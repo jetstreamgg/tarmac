@@ -1,14 +1,14 @@
 import { useState, useCallback, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus, Clock, InProgress, SuccessCheck, FailedX, Cancel } from '@/widgets';
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import {
   ResponsiveModal,
   ResponsiveModalContent,
   ResponsiveModalTitle
 } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
-import { Steps, StepsItem, type StepState } from '@/components/ui/steps';
+import { Steps, StepsItem } from '@/components/ui/steps';
 import { Switch } from '@/components/ui/switch';
 import { Close, Info } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
@@ -22,19 +22,16 @@ import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
+
+// The step-list shape lives with its derivation; re-exported so the contract and
+// launch hooks keep importing it from here.
+export type { TransactionStep } from './transactionStepsModel';
 
 // 'entry' is an editable first screen (the body owns its inputs); 'review' is the
 // read-only first screen. Both transition to the shared 'transaction' screen.
 type TransactionModalStep = 'entry' | 'review' | 'transaction';
-
-/**
- * One entry of a flow's step list. The plain-string form is a bare label; the
- * object form adds the token rendered as an icon+symbol chip after the label
- * (DS Steps pattern, Figma 5200:30561) — e.g. `{ label: "Approve", tokenSymbol:
- * "SKY" }` renders "Approve ◉ SKY".
- */
-export type TransactionStep = string | { label: string; tokenSymbol?: string };
 
 export type TransactionSubtitles = {
   review?: string;
@@ -159,6 +156,11 @@ export function TransactionModal({
   // steps active together, "Bundled" header badge).
   const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
+  // Multi-step failures render inside the step list (retitled step + inline
+  // "Try again", Figma 1030:139111) and drop the bottom status row/buttons —
+  // the header back arrow still returns to the first screen. Single-step flows
+  // have no list, so they keep the bottom treatment.
+  const showInlineFailure = !!hasMultipleSteps && isTransaction && txStatus === TxStatus.ERROR;
 
   // The entry screen sources its label/gating from the entry descriptor (kept
   // live by the in-modal body); the review screen uses the top-level config.
@@ -239,23 +241,27 @@ export function TransactionModal({
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
       <ResponsiveModalContent
         aria-describedby={undefined}
-        className="bg-containerDark flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5"
+        className="bg-containerDark flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5 sm:px-8 sm:pt-7 sm:pb-8"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph. */}
             <Button
-              variant="ghost"
+              variant="secondary"
+              size="iconM"
               aria-label={t`Back`}
-              className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
               onClick={handleHeaderBack}
               disabled={isTransacting}
               data-testid="transaction-modal-back"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ArrowLeft className="size-4" />
             </Button>
-            <ResponsiveModalTitle className="text-text text-2xl">{displayTitle}</ResponsiveModalTitle>
+            {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking. */}
+            <ResponsiveModalTitle className="text-text font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
+              {displayTitle}
+            </ResponsiveModalTitle>
             {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
                 the wallet/status screen relabels the title. */}
             {isFirstScreen && titleBadge}
@@ -263,13 +269,13 @@ export function TransactionModal({
           <div className="flex items-center gap-2">
             {rightHeaderComponent}
             <Button
-              variant="ghost"
+              variant="secondary"
+              size="iconM"
               aria-label={isTransacting ? t`Minimize` : t`Close`}
-              className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
               onClick={handleDismiss}
               data-testid="transaction-modal-close"
             >
-              <Close className="h-5 w-5" />
+              <Close className="size-4" />
             </Button>
           </div>
         </div>
@@ -294,48 +300,6 @@ export function TransactionModal({
             )}
           </AnimatePresence>
 
-          {/* Step list (DS Steps pattern) — Figma shows it only on the wallet/status
-              screen, not on the review/entry screen. Standard flows advance one step
-              per tx; bundled flows mark every step active while the single bundle is
-              in flight, then complete together. */}
-          {hasMultipleSteps && isTransaction && (
-            <Steps
-              bundled={isBundled}
-              badge={txStatus === TxStatus.INITIALIZED ? <Trans>Confirm in the wallet</Trans> : undefined}
-            >
-              {steps.map((step, i) => {
-                const { label, tokenSymbol } = typeof step === 'string' ? { label: step } : step;
-                const allDone = txStatus === TxStatus.SUCCESS;
-                const state: StepState =
-                  allDone || (!isBundled && i < currentStep)
-                    ? 'completed'
-                    : isBundled || i === currentStep
-                      ? 'active'
-                      : 'upcoming';
-
-                return (
-                  <StepsItem
-                    key={i}
-                    stepNumber={i + 1}
-                    label={label}
-                    tokenSymbol={tokenSymbol}
-                    tokenIcon={
-                      tokenSymbol && (
-                        <TokenIcon
-                          token={{ symbol: tokenSymbol }}
-                          className="h-3.5 w-3.5"
-                          showChainIcon={false}
-                        />
-                      )
-                    }
-                    state={state}
-                    showConnector={i < steps.length - 1}
-                  />
-                );
-              })}
-            </Steps>
-          )}
-
           {/* The editable entry body stays MOUNTED for the modal's lifetime — it can
               own the in-flight engine hook whose onSuccess completes the transaction,
               so unmounting it on the transaction screen would strand the modal in
@@ -356,7 +320,59 @@ export function TransactionModal({
 
           {/* Compact summary on the wallet/status screen (Figma "Confirm in the
               wallet"): a relabelled amount header in place of the full breakdown. */}
-          {isTransaction && transactionScreenBody && <div className="text-text">{transactionScreenBody}</div>}
+          {/* py-4 + the column gaps ≈ the comp's 40px breathing room around the hero (1036:208089). */}
+          {isTransaction && transactionScreenBody && (
+            <div className="text-text py-4">{transactionScreenBody}</div>
+          )}
+
+          {/* Step list (DS Steps pattern) — wallet/status screen only, drawn BELOW
+              the hero behind a hairline divider (Figma confirm comps, 1310:130531).
+              The per-row states (including the failure treatment with its inline
+              "Try again") come from the derivation in ./transactionStepsModel. */}
+          {hasMultipleSteps && isTransaction && (
+            <>
+              {transactionScreenBody && <div className="border-selectActive border-t" />}
+              <Steps
+                bundled={isBundled}
+                badge={txStatus === TxStatus.INITIALIZED ? <Trans>Confirm in the wallet</Trans> : undefined}
+              >
+                {(() => {
+                  const items = deriveTransactionStepItems({
+                    steps,
+                    currentStep,
+                    txStatus,
+                    bundled: isBundled
+                  });
+                  const tryAgain = (
+                    <Button variant="primary" size="m" onClick={handleRetry}>
+                      {errorLabel ?? <Trans>Try again</Trans>}
+                    </Button>
+                  );
+                  return items.map((item, i) => (
+                    <StepsItem
+                      key={item.stepNumber}
+                      stepNumber={item.stepNumber}
+                      label={item.retry === 'slot' ? tryAgain : item.label}
+                      tokenSymbol={item.tokenSymbol}
+                      tokenIcon={
+                        item.tokenSymbol && (
+                          <TokenIcon
+                            token={{ symbol: item.tokenSymbol }}
+                            className="h-3.5 w-3.5"
+                            showChainIcon={false}
+                          />
+                        )
+                      }
+                      state={item.state}
+                      description={item.description}
+                      trailingAction={item.retry === 'trailing' ? tryAgain : undefined}
+                      showConnector={i < items.length - 1}
+                    />
+                  ));
+                })()}
+              </Steps>
+            </>
+          )}
 
           <div className="grow" />
 
@@ -382,7 +398,7 @@ export function TransactionModal({
                   {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
                 </Button>
               </motion.div>
-            ) : (
+            ) : showInlineFailure ? null : (
               <motion.div
                 key={`transaction-${txStatus}`}
                 initial={{ opacity: 0, x: 20 }}

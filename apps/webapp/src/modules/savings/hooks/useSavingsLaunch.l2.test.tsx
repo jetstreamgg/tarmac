@@ -345,7 +345,7 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
     act(() => a.result.current.launch());
     // DS Steps chips are token-derived (APP-354), so L2 flows carry the origin token too.
     expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
       { label: 'Supply', tokenSymbol: 'USDS' }
     ]);
     a.unmount();

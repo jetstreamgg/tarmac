@@ -248,26 +248,27 @@ export function useSavingsLaunch({
   // Hoisted from launch() so the editable modal entry body can pass them straight
   // to the shared modal; launch() consumes the same value (behaviour unchanged).
   const steps = useMemo<TransactionStep[]>(() => {
+    // Failure copy per Figma 1030:139111 — shown under "Approve failed" when
+    // the approval is the step that rolled back.
+    const approveStep = (symbol: string): TransactionStep => ({
+      label: t`Approve`,
+      tokenSymbol: symbol,
+      failureDetail: t`The ${symbol} hasn't been approved.`
+    });
     if (isSupply) {
       return isL2
         ? needsPsmApproval
-          ? [
-              { label: t`Approve`, tokenSymbol: originToken.symbol },
-              { label: t`Supply`, tokenSymbol: originToken.symbol }
-            ]
+          ? [approveStep(originToken.symbol), { label: t`Supply`, tokenSymbol: originToken.symbol }]
           : [{ label: t`Supply`, tokenSymbol: originToken.symbol }]
         : isDai
           ? ([
-              needsDaiApproval && { label: t`Approve`, tokenSymbol: 'DAI' },
+              needsDaiApproval && approveStep('DAI'),
               t`Upgrade DAI to USDS`,
-              needsUsdsApproval && { label: t`Approve`, tokenSymbol: 'USDS' },
+              needsUsdsApproval && approveStep('USDS'),
               { label: t`Supply`, tokenSymbol: 'USDS' }
             ].filter(Boolean) as TransactionStep[])
           : needsUsdsApproval
-            ? [
-                { label: t`Approve`, tokenSymbol: 'USDS' },
-                { label: t`Supply`, tokenSymbol: 'USDS' }
-              ]
+            ? [approveStep('USDS'), { label: t`Supply`, tokenSymbol: 'USDS' }]
             : [{ label: t`Supply`, tokenSymbol: 'USDS' }];
     }
     // The withdraw approval is for the sUSDS share token, not `originToken` —
