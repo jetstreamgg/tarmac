@@ -202,22 +202,26 @@ export function TransactionModal({
     }
   }, [onConfirm, onRetry]);
 
+  // Closing is only blocked while the tx is BROADCAST (LOADING) — a session still
+  // awaiting the wallet signature (INITIALIZED) has nothing on-chain, so closing
+  // abandons it (the provider tracks the cancel + warns about the wallet prompt).
   const handleClose = useCallback(() => {
-    if (isTransacting) return;
+    if (txStatus === TxStatus.LOADING) return;
     setStep(firstStep);
     setContentHeight(undefined);
     onClose();
-  }, [isTransacting, onClose, firstStep]);
+  }, [txStatus, onClose, firstStep]);
 
-  // Dismissing the modal: mid-flight it minimizes (the tx keeps running and a toast
-  // takes over); otherwise it closes. Used by the close button, esc, and click-outside.
+  // Dismissing the modal: after broadcast it minimizes (the tx keeps running and a
+  // toast takes over); otherwise it closes. Used by the close button, esc, and
+  // click-outside.
   const handleDismiss = useCallback(() => {
-    if (isTransacting && onMinimize) {
+    if (txStatus === TxStatus.LOADING && onMinimize) {
       onMinimize();
       return;
     }
     handleClose();
-  }, [isTransacting, onMinimize, handleClose]);
+  }, [txStatus, onMinimize, handleClose]);
 
   const handleBack = useCallback(() => {
     onBack?.();
@@ -271,7 +275,7 @@ export function TransactionModal({
             <Button
               variant="secondary"
               size="iconM"
-              aria-label={isTransacting ? t`Minimize` : t`Close`}
+              aria-label={txStatus === TxStatus.LOADING ? t`Minimize` : t`Close`}
               onClick={handleDismiss}
               data-testid="transaction-modal-close"
             >
