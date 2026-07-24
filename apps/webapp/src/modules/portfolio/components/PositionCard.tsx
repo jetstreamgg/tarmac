@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
+import { productStatusType } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 import { ProductGlyph } from './ProductGlyph';
 
@@ -56,7 +57,7 @@ export function PositionCard({
     <Card className="flex flex-col gap-7 p-5" data-testid="position-card">
       {/* DS Iconbox/Status: 64px box, borderTertiary ring, 48px token inside. */}
       <div className="flex items-start justify-between">
-        <IconboxStatus size="l">
+        <IconboxStatus size="l" type={productStatusType(position)} dot={!!productStatusType(position)}>
           <TokenIcon
             token={{ symbol: position.tokenSymbol }}
             width={48}

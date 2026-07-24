@@ -158,6 +158,7 @@ export function CellToken({
   titleSuffix,
   subtitle,
   active,
+  status,
   titleClassName
 }: {
   /** 28px logo for the iconbox. */
@@ -168,12 +169,14 @@ export function CellToken({
   subtitle?: ReactNode;
   /** Product has an active position: mint iconbox border + status dot. */
   active?: boolean;
+  /** Product-family iconbox tint (Morpho `info`, Pendle `success`) + dot; `active` wins over it. */
+  status?: 'success' | 'info';
   /** Title override for consumers whose comps step off Label 4 (e.g. the M6.2 accordion's mobile Label 5). */
   titleClassName?: string;
 }) {
   return (
     <span className="flex items-center gap-3">
-      <IconboxStatus type={active ? 'success' : 'default'} dot={active}>
+      <IconboxStatus type={active ? 'success' : (status ?? 'default')} dot={active || !!status}>
         {icon}
       </IconboxStatus>
       <span className="flex flex-col gap-0.5">

@@ -100,12 +100,13 @@ export function StakeProductPage() {
   return (
     <div data-testid="stake-product-page" className="flex flex-col gap-6 py-4 md:py-10">
       {/* Header (Patterns/Headers, Stake type 5043:59183): the DS 64px
-          Iconbox / Status with the brand glow (5043:59189) beside a Heading 2
-          title; the DS 17px icon-title gap is normalized to 16. */}
+          Iconbox / Status beside a Heading 2 title; the DS 17px icon-title gap
+          is normalized to 16. The brand glow was dropped from product icons in
+          the latest design iterations (APP-416). */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="shrink-0" data-testid="stake-header-icon">
-            <IconboxStatus size="l" className="shadow-brandGlow">
+            <IconboxStatus size="l">
               <TokenIcon token={{ symbol: 'SKY' }} width={48} className="h-12 w-12" showChainIcon={false} />
             </IconboxStatus>
           </div>

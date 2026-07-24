@@ -22,6 +22,8 @@ export type EarnTableRowItem = {
   isNew?: boolean;
   /** 28px product logo for the token iconbox (the caller injects its TokenIcon). */
   icon?: ReactNode;
+  /** Product-family iconbox tint (Morpho `info` blue, Pendle `success` green) + dot. */
+  status?: 'success' | 'info';
   /** Optional glyph rendered after the name (e.g. a provider logo). */
   nameSuffix?: ReactNode;
   /** Content of the "Supply:" subline (token icons). */
@@ -75,6 +77,7 @@ function TokenCell({ row }: { row: EarnTableRowItem }) {
   return (
     <CellToken
       icon={row.icon}
+      status={row.status}
       title={row.name}
       titleSuffix={
         <>
