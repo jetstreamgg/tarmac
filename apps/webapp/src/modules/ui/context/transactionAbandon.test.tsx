@@ -83,12 +83,17 @@ function Harness({
 }) {
   const ctx = useTransaction();
   const started = useRef(false);
+  // Report the LATEST context value on every render: engine callbacks are
+  // bound to the session generation that rendered them, so tests must capture
+  // them the way real engines do — from the value current after launch.
+  useEffect(() => {
+    onReady(ctx);
+  });
   useEffect(() => {
     if (started.current) return;
     started.current = true;
     ctx.launch(config);
-    onReady(ctx);
-  }, [ctx, onReady, config]);
+  }, [ctx, config]);
   return null;
 }
 
@@ -200,5 +205,50 @@ describe('TransactionModal abandon vs minimize (state-dependent dismissal)', () 
     expect(toastWithCloseMock).toHaveBeenCalled();
     const blocked = renderLastToast();
     expect(blocked.getByText('Transaction in progress')).toBeDefined();
+  });
+});
+
+// An in-flight write outlives its host: the wallet can accept in the same
+// instant the user dismisses the modal, so the orphaned engine's callbacks fire
+// AFTER teardown. They must recognise their session ended — without the
+// generation guard a late onStart stranded txStatusRef at LOADING with no modal
+// to restore, blocking every later launch() until a page reload (APP-416).
+describe('stale engine callbacks after teardown (APP-416)', () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it('a late onStart from a closed session is dropped — the next launch opens instead of hitting the in-progress guard', () => {
+    const ctx = renderFlow();
+    const staleCb = cbOf(ctx);
+
+    act(() => staleCb.onMutate()); // INITIALIZED — wallet prompt open
+    act(() => fireEvent.click(screen.getByTestId('transaction-modal-close'))); // abandon
+    toastWithCloseMock.mockClear();
+
+    // The wallet had already accepted: the orphaned engine reports broadcast late.
+    act(() => staleCb.onStart('0xdeadbeef'));
+
+    // A fresh flow launches normally — no "Transaction in progress" block.
+    act(() => ctx.launch(STAKE_CONFIG));
+    expect(screen.queryByText('Stake SKY')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: /^confirm$/i })).not.toBeNull();
+    expect(toastWithCloseMock).not.toHaveBeenCalled();
+  });
+
+  it('a late onSuccess from an abandoned session leaves the replacing session untouched', () => {
+    const onNewSuccess = vi.fn();
+    const ctx = renderFlow();
+    const staleCb = cbOf(ctx);
+
+    act(() => staleCb.onMutate()); // INITIALIZED
+    act(() => ctx.launch({ ...STAKE_CONFIG, onSuccess: onNewSuccess })); // abandons the supply session
+    analytics.trackTransactionCompleted.mockClear();
+
+    act(() => staleCb.onSuccess('0xdeadbeef')); // old engine settles late
+
+    // The new session still sits on its first screen: the foreign success
+    // neither advanced its status nor fired the NEW config's onSuccess.
+    expect(onNewSuccess).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /^confirm$/i })).not.toBeNull();
+    expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
   });
 });

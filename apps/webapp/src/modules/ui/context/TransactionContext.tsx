@@ -87,6 +87,16 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
   const activeSessionRef = useRef<string | null>(null);
+  // Session generation: advanced by launch() and handleClose(), so engine
+  // callbacks are bound to the session that rendered them (state) and can spot
+  // that it has since ended (ref). An in-flight write outlives its host — the
+  // wallet can accept in the same instant the user dismisses the modal — and
+  // without this check the orphaned engine's onStart stamped LOADING onto the
+  // torn-down provider (no modal left to restore), bricking every later
+  // launch() on the in-progress guard until a reload; after an
+  // abandon-then-relaunch it would corrupt the NEW session instead.
+  const [sessionGen, setSessionGen] = useState(0);
+  const sessionGenRef = useRef(0);
   // Mirrors txStatus for reads inside callbacks (avoids setState-inside-updater impurity).
   const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
@@ -103,7 +113,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       // One BROADCAST transaction at a time: it's on-chain and will resolve, so
       // don't start a new session — bring the pending modal back into view and
       // say why. Launching here would remount the host and strand the running tx.
-      if (txStatusRef.current === TxStatus.LOADING) {
+      // The configRef check is self-healing defense: LOADING with no live
+      // session has nothing to restore, so fall through to a fresh launch
+      // instead of blocking forever.
+      if (txStatusRef.current === TxStatus.LOADING && configRef.current) {
         setMinimized(false);
         toastWithClose(
           () => (
@@ -138,6 +151,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
         notifyRequestAbandoned();
       }
 
+      sessionGenRef.current += 1;
+      setSessionGen(sessionGenRef.current);
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveConfig(config);
@@ -207,6 +222,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       notifyRequestAbandoned();
     }
 
+    // End the session generation FIRST: an engine the wallet already answered
+    // may fire callbacks right after this teardown, and they must see
+    // themselves as stale (see sessionGen above).
+    sessionGenRef.current += 1;
+    setSessionGen(sessionGenRef.current);
     setOpen(false);
     setMinimized(false);
     setTxStatus(TxStatus.IDLE);
@@ -272,8 +292,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     configRef.current?.onConfirm();
   }, [resetTransactionProgress]);
 
+  // Each callback closes over the `sessionGen` of the render that created it
+  // and drops itself when the generation has moved on — the caller is an
+  // engine from a session that was closed or abandoned.
   const txCallbacks: TxCallbacks = {
     onMutate: useCallback(() => {
+      if (sessionGen !== sessionGenRef.current) return;
       // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
       if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
         setCurrentStep(s => s + 1);
@@ -294,10 +318,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           data: analytics.data
         });
       }
-    }, [chainId, trackTransactionStarted]),
+    }, [sessionGen, chainId, trackTransactionStarted]),
 
     onStart: useCallback(
       (hash?: string) => {
+        if (sessionGen !== sessionGenRef.current) return;
         setTxStatus(TxStatus.LOADING);
         txStatusRef.current = TxStatus.LOADING;
         if (hash) {
@@ -305,11 +330,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           txHashRef.current = hash;
         }
       },
-      [chainId, address, isSafeWallet]
+      [sessionGen, chainId, address, isSafeWallet]
     ),
 
     onSuccess: useCallback(
       (hash?: string) => {
+        if (sessionGen !== sessionGenRef.current) return;
         setTxStatus(TxStatus.SUCCESS);
         txStatusRef.current = TxStatus.SUCCESS;
         if (hash) {
@@ -334,11 +360,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
         configRef.current?.onSuccess?.();
       },
-      [chainId, address, isSafeWallet, trackTransactionCompleted, startNewFlow]
+      [sessionGen, chainId, address, isSafeWallet, trackTransactionCompleted, startNewFlow]
     ),
 
     onError: useCallback(
       (error: Error, hash?: string) => {
+        if (sessionGen !== sessionGenRef.current) return;
         setTxStatus(TxStatus.ERROR);
         txStatusRef.current = TxStatus.ERROR;
         if (hash) {
@@ -382,7 +409,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
         configRef.current?.onError?.();
       },
-      [chainId, address, isSafeWallet, trackTransactionCompleted, startNewFlow]
+      [sessionGen, chainId, address, isSafeWallet, trackTransactionCompleted, startNewFlow]
     )
   };
 
