@@ -74,6 +74,13 @@ vi.mock('@/components/ThemeToggle', () => ({
   ThemeToggle: () => <div data-testid="theme-toggle-stub" />
 }));
 
+// The upgrade-modal opener reads the TransactionContext (absent here); the
+// modal flow is covered by its own tests — this only asserts the row wiring.
+const upgradeMocks = vi.hoisted(() => ({ open: vi.fn() }));
+vi.mock('@/modules/upgrade/hooks/useUpgradeModal', () => ({
+  useUpgradeModal: () => ({ open: upgradeMocks.open })
+}));
+
 vi.mock('@/modules/analytics/PostHogProvider', async importOriginal => {
   const actual = await importOriginal<typeof import('@/modules/analytics/PostHogProvider')>();
   return { ...actual, POSTHOG_ENABLED: true };
@@ -210,7 +217,7 @@ describe('TopNav new-module dot', () => {
 });
 
 describe('TopNav More menu', () => {
-  it('lists batch toggle, legal links and cookie settings (no upgrade shortcut — E2)', async () => {
+  it('lists batch toggle, upgrade shortcut, legal links and cookie settings', async () => {
     vi.stubEnv(
       'VITE_FOOTER_LINKS',
       JSON.stringify([
@@ -223,8 +230,8 @@ describe('TopNav More menu', () => {
 
     fireEvent.click(await screen.findByTestId('nav-more'));
 
-    // The Upgrade DAI/MKR shortcut left with the parked upgrade surface (E2).
-    expect(screen.queryByTestId('nav-more-upgrade')).toBeNull();
+    // The Upgrade DAI/MKR shortcut landed with APP-413 (modal surface).
+    expect(screen.getByTestId('nav-more-upgrade')).toBeTruthy();
     expect(screen.getByTestId('batch-transactions-toggle-stub')).toBeTruthy();
     expect(screen.getByTestId('theme-toggle-stub')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Docs/ }).getAttribute('href')).toBe('https://docs.sky.money/');
@@ -277,6 +284,16 @@ describe('TopNav More menu — mobile bottom panel (M4.5)', () => {
 
     expect(mocks.showBanner).toHaveBeenCalledTimes(1);
     // The row closes the panel like the desktop menu does.
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('launches the upgrade modal from the panel and closes it (APP-413)', async () => {
+    renderTopNav();
+
+    fireEvent.click(await screen.findByTestId('nav-more'));
+    fireEvent.click(await screen.findByTestId('nav-more-upgrade'));
+
+    expect(upgradeMocks.open).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

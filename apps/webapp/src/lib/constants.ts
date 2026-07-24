@@ -15,7 +15,12 @@ export enum QueryParams {
   StakeTab = 'stake_tab',
   Tab = 'tab',
   /** Earn list supply-token filter, e.g. /earn?token=USDS. */
-  Token = 'token'
+  Token = 'token',
+  /**
+   * Deep link to the Upgrade DAI/MKR modal, e.g. /?upgrade=mkr — consumed
+   * (opened + stripped) by useUpgradeDeepLink on any module route.
+   */
+  Upgrade = 'upgrade'
 }
 
 export enum Environment {

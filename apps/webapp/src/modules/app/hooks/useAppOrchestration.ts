@@ -20,6 +20,7 @@ import { usePageLoadNotifications } from './usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { useUpgradeDeepLink } from '@/modules/upgrade/hooks/useUpgradeDeepLink';
 
 /**
  * App-level orchestration that must run once for every module route: route
@@ -139,6 +140,11 @@ export function useAppOrchestration(): { intent: Intent } {
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();
+
+  // The `?upgrade=dai|mkr` deep link opens the Upgrade modal on any module
+  // route. Registered before the search-param validation effect below so the
+  // param is consumed before validation sees it.
+  useUpgradeDeepLink();
 
   // Route validation: redirects that depend on chain or user state, replacing
   // the navigation-param stripping the legacy query-param validator did.
