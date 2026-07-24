@@ -48,6 +48,17 @@ describe('formatBigInt magnitude-driven decimals', () => {
       '10.1234'
     );
   });
+
+  it('pads trailing zeros when minDecimals is set — confirm-screen heroes', () => {
+    expect(formatBigInt(parseUnits('10000', 18), { locale: 'en', minDecimals: 2, maxDecimals: 2 })).toBe(
+      '10,000.00'
+    );
+    expect(formatBigInt(parseUnits('249.75', 18), { locale: 'en', minDecimals: 2, maxDecimals: 2 })).toBe(
+      '249.75'
+    );
+    // A lone minDecimals wins over the magnitude-derived max (0 above 1000).
+    expect(formatBigInt(parseUnits('1234.5', 18), { locale: 'en', minDecimals: 2 })).toBe('1,234.50');
+  });
 });
 
 describe('formatUsd', () => {

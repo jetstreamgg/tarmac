@@ -113,6 +113,16 @@ describe('TransactionModal — per-screen content + chrome (Figma "Confirm in th
     expect(screen.queryByText('Supply USDS')).not.toBeNull();
   });
 
+  it('renders the wallet-screen hero above the Actions step list (Figma order)', () => {
+    renderModal(reviewConfig());
+    clickConfirm();
+
+    const hero = screen.getByTestId('confirm-summary');
+    const actions = screen.getByText('Actions');
+    // The hero must precede the step list in document order.
+    expect(hero.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('falls back to the review body on the wallet screen when no compact summary is supplied (back-compat)', () => {
     const { transactionScreenContent, ...rest } = reviewConfig();
     void transactionScreenContent;

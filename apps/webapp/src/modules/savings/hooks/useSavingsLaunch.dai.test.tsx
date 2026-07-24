@@ -342,9 +342,9 @@ describe('useSavingsLaunch — DAI upgrade-and-supply launch() config', () => {
 
     const config = h.launchMock.mock.calls[0][0];
     expect(config.steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'DAI' },
+      { label: 'Approve', tokenSymbol: 'DAI', failureDetail: "The DAI hasn't been approved." },
       'Upgrade DAI to USDS',
-      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
       { label: 'Supply', tokenSymbol: 'USDS' }
     ]);
   });

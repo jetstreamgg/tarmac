@@ -327,6 +327,8 @@ export { useUpgradeHistory } from './upgrade/useUpgradeHistory';
 export { useUpgradeTotals } from './upgrade/useUpgradeTotals';
 export { useMkrSkyFee } from './upgrade/useMkrSkyFee';
 export { useMigrationStats } from './upgrade/useMigrationStats';
+export { useBatchUpgrade } from './upgrade/useBatchUpgrade';
+export type { UpgradeSourceToken } from './upgrade/useBatchUpgrade';
 
 // Trade
 export { useTradeHistory } from './trade/useTradeHistory';
