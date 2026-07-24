@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId, useEstimateFeesPerGas, usePublicClient } from 'wagmi';
+import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import type { Call } from 'viem';
 import { formatUsd } from '@/utils/formatValue';
@@ -8,7 +8,15 @@ import { TRUST_LEVELS } from '../constants';
 import type { ReadHook } from '../hooks';
 import { usePrices } from '../prices/usePrices';
 import { estimateFlowGas } from './estimateFlowGas';
-import { computeBatchSaving, computeFeeWei, feeWeiToUsd, getCallsKey } from './networkFee';
+import {
+  computeBatchSaving,
+  computeFeePerGas,
+  computeFeeWei,
+  FEE_HISTORY_BLOCK_COUNT,
+  feeWeiToUsd,
+  getCallsKey,
+  PRIORITY_FEE_PERCENTILE
+} from './networkFee';
 import { useIsBatchSupported } from './useIsBatchSupported';
 
 export type NetworkFeeData = {
@@ -98,24 +106,30 @@ export function useNetworkFee({
     retry: false
   });
 
+  // Priced from fee history rather than `useEstimateFeesPerGas`: that hook prefers
+  // `eth_maxPriorityFeePerGas`, which reports the tip needed to be included at all and
+  // not the one wallets actually bid. See PRIORITY_FEE_PERCENTILE for the measurement.
   const {
-    data: feesPerGas,
+    data: feePerGas,
     isLoading: isFeesLoading,
     error: feesError,
     refetch: refetchFees
-  } = useEstimateFeesPerGas({
-    chainId: resolvedChainId,
-    query: {
-      enabled,
-      staleTime: resolvedChainId === mainnet.id ? MAINNET_FEE_STALE_TIME : L2_FEE_STALE_TIME
-    }
+  } = useQuery({
+    queryKey: ['network-fee-per-gas', resolvedChainId],
+    queryFn: async () =>
+      computeFeePerGas(
+        await publicClient!.getFeeHistory({
+          blockCount: FEE_HISTORY_BLOCK_COUNT,
+          blockTag: 'latest',
+          rewardPercentiles: [PRIORITY_FEE_PERCENTILE]
+        })
+      ),
+    enabled: enabled && !!publicClient,
+    staleTime: resolvedChainId === mainnet.id ? MAINNET_FEE_STALE_TIME : L2_FEE_STALE_TIME
   });
 
   const data = useMemo((): NetworkFeeData | undefined => {
-    if (!gasData) return undefined;
-
-    const feePerGas = feesPerGas?.maxFeePerGas ?? feesPerGas?.gasPrice;
-    if (feePerGas === undefined) return undefined;
+    if (!gasData || feePerGas === undefined) return undefined;
 
     const isBatch = gasData.batchGas !== undefined;
     const gas = isBatch ? gasData.batchGas! : gasData.sequentialGas;
@@ -138,7 +152,7 @@ export function useNetworkFee({
       formatted: feeUsd === undefined ? undefined : formatUsd(feeUsd),
       batchSaving: computeBatchSaving(gasData.sequentialGas, gasData.batchGas)
     };
-  }, [gasData, feesPerGas, pricesData]);
+  }, [gasData, feePerGas, pricesData]);
 
   return {
     data,

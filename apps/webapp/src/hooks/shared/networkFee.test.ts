@@ -6,6 +6,7 @@ import {
   BATCH_EXECUTOR_ADDRESS,
   EIP7702_AUTH_COST,
   computeBatchSaving,
+  computeFeePerGas,
   computeFeeWei,
   encodeBatchExecutorData,
   encodeErc7821ExecuteData,
@@ -186,6 +187,51 @@ describe('computeFeeWei', () => {
 
   it('adds the L1 data fee on OP-stack chains', () => {
     expect(computeFeeWei({ gas: 100_000n, feePerGas: 1_000n, l1Fee: 555n })).toBe(100_000_555n);
+  });
+});
+
+describe('computeFeePerGas', () => {
+  const gwei = (value: number) => BigInt(Math.round(value * 1e9));
+
+  it('prices at the NEXT block base fee, not the last mined one', () => {
+    // eth_feeHistory returns blockCount + 1 base fees; the trailing entry is the one a
+    // transaction sent now will actually pay.
+    const feePerGas = computeFeePerGas({
+      baseFeePerGas: [gwei(5), gwei(6), gwei(7)],
+      reward: [[0n], [0n]]
+    });
+
+    expect(feePerGas).toBe(gwei(7));
+  });
+
+  it('reproduces what a real MetaMask batch paid, which the base fee alone does not', () => {
+    // Fee history around tx 0xb2d7c987… — base fee ~0.1 gwei, p95 tips ~2 gwei.
+    const feePerGas = computeFeePerGas({
+      baseFeePerGas: [gwei(0.12), gwei(0.11), gwei(0.13), gwei(0.1008)],
+      reward: [[gwei(1.8)], [gwei(2.0)], [gwei(2.2)]]
+    });
+
+    // That transaction's effective gas price was 2.1007 gwei. A base-fee-driven estimate
+    // said 0.136 gwei and understated the fee 15x.
+    expect(Number(feePerGas) / 1e9).toBeCloseTo(2.1008, 3);
+  });
+
+  it('takes the median tip so one outlier block cannot swing the estimate', () => {
+    const feePerGas = computeFeePerGas({
+      baseFeePerGas: [gwei(1), gwei(1)],
+      reward: [[gwei(1)], [gwei(2)], [gwei(500)]]
+    });
+
+    expect(feePerGas).toBe(gwei(1) + gwei(2));
+  });
+
+  it('falls back to the base fee when a chain reports no tips', () => {
+    expect(computeFeePerGas({ baseFeePerGas: [gwei(3), gwei(4)] })).toBe(gwei(4));
+    expect(computeFeePerGas({ baseFeePerGas: [gwei(3), gwei(4)], reward: [] })).toBe(gwei(4));
+  });
+
+  it('is zero rather than NaN on an empty history', () => {
+    expect(computeFeePerGas({ baseFeePerGas: [] })).toBe(0n);
   });
 });
 
