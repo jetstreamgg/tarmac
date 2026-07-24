@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { X } from 'lucide-react';
+import { useNetworkFee } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -131,14 +132,25 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
 
   const confirmSummary = useMemo(() => <StakeClaimConfirmSummary selected={selected} />, [selected]);
 
-  const { launch, restakeAvailable, plainPrepared, plainLoading, restakePrepared, restakeLoading } =
-    useStakeClaimLaunch({
-      urnIndex: BigInt(urnIndex),
-      selected,
-      enabled: selected.length > 0,
-      transactionContent: confirmSummary,
-      onSuccess
-    });
+  const {
+    launch,
+    restakeAvailable,
+    plainPrepared,
+    plainLoading,
+    restakePrepared,
+    restakeLoading,
+    calls,
+    isBatch
+  } = useStakeClaimLaunch({
+    urnIndex: BigInt(urnIndex),
+    selected,
+    enabled: selected.length > 0,
+    transactionContent: confirmSummary,
+    onSuccess
+  });
+
+  // Read-only: the row shows a dash until this resolves, and neither CTA waits on it.
+  const { data: networkFee } = useNetworkFee({ calls, chainId, shouldUseBatch: isBatch });
 
   const claimDisabled = selected.length === 0 || !plainPrepared || plainLoading;
   const restakeDisabled = !restakePrepared || restakeLoading;
@@ -213,9 +225,8 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
           <InfoRow label={<Trans>Network</Trans>} dataTestId="stake-claim-network">
             {networkName}
           </InfoRow>
-          {/* Live gas estimate is stubbed like the D5/Savings/Vault modals (C10). */}
           <InfoRow label={<Trans>Network fee</Trans>} dataTestId="stake-claim-fee">
-            {NO_VALUE}
+            {networkFee?.formatted ?? NO_VALUE}
           </InfoRow>
         </div>
 

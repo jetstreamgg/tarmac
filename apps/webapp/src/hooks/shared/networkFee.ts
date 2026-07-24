@@ -1,4 +1,5 @@
 import { encodeAbiParameters, encodeFunctionData, formatEther, parseAbi, type Call, type Hex } from 'viem';
+
 import { base, optimism, unichain } from 'wagmi/chains';
 
 /**
@@ -44,6 +45,27 @@ const multicall3Abi = parseAbi([
 const erc7821Abi = parseAbi(['function execute(bytes32 mode, bytes executionData)']);
 
 /**
+ * Calldata for a call in either form viem's `Call` accepts.
+ *
+ * The engines build calls through `getWriteContractCall`, which keeps the *contract*
+ * form (`{ to, abi, functionName, args }`) and lets viem encode at send time. Anywhere
+ * we hand calldata to something other than `simulateCalls` — the batch encoders, the L1
+ * data-fee estimate, the cache key — it has to be encoded here first, or the inner calls
+ * come out empty.
+ */
+export function getCallData(call: Call): Hex {
+  if ('data' in call && call.data) return call.data;
+  if ('abi' in call && 'functionName' in call && call.abi && call.functionName) {
+    return encodeFunctionData({
+      abi: call.abi,
+      functionName: call.functionName,
+      args: 'args' in call ? call.args : undefined
+    });
+  }
+  return '0x';
+}
+
+/**
  * True when `code` is an EIP-7702 delegation indicator. A delegated account lets us
  * simulate against the wallet's real delegate rather than a stand-in, and tells us the
  * authorization cost has already been paid.
@@ -64,14 +86,14 @@ export function encodeBatchExecutorData(calls: readonly Call[]): Hex {
             target: call.to,
             allowFailure: false,
             value: call.value ?? 0n,
-            callData: call.data ?? '0x'
+            callData: getCallData(call)
           }))
         ]
       })
     : encodeFunctionData({
         abi: multicall3Abi,
         functionName: 'aggregate3',
-        args: [calls.map(call => ({ target: call.to, allowFailure: false, callData: call.data ?? '0x' }))]
+        args: [calls.map(call => ({ target: call.to, allowFailure: false, callData: getCallData(call) }))]
       });
 }
 
@@ -88,7 +110,7 @@ export function encodeErc7821ExecuteData(calls: readonly Call[]): Hex {
         ]
       }
     ],
-    [calls.map(call => ({ to: call.to, value: call.value ?? 0n, data: call.data ?? '0x' }))]
+    [calls.map(call => ({ to: call.to, value: call.value ?? 0n, data: getCallData(call) }))]
   );
 
   return encodeFunctionData({
@@ -109,7 +131,7 @@ export function totalCallValue(calls: readonly Call[]): bigint {
  * calldata doesn't capture cannot collide.
  */
 export function getCallsKey(calls: readonly Call[]): string {
-  return calls.map(call => `${call.to}:${call.data ?? '0x'}:${call.value ?? 0n}`).join('|');
+  return calls.map(call => `${call.to}:${getCallData(call)}:${call.value ?? 0n}`).join('|');
 }
 
 /** Wei cost of a transaction: execution gas at the current price, plus any L1 data fee. */

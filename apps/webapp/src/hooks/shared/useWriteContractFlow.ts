@@ -11,7 +11,7 @@ import { Config, ResolvedRegister } from '@wagmi/core';
 import { SAFE_CONNECTOR_ID } from './constants';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
-import type { Abi, ContractFunctionArgs, ContractFunctionName } from 'viem';
+import type { Abi, Call, ContractFunctionArgs, ContractFunctionName } from 'viem';
 
 export function useWriteContractFlow<
   const abi extends Abi | readonly unknown[],
@@ -102,7 +102,16 @@ export function useWriteContractFlow<
     }
   }, [isSuccess, miningError, failureReason, txHash, txReverted]);
 
+  // The single call this hook sends, in the same contract form the batch engines use.
+  // Exposed read-only so a flow that routes through here can still be fee-estimated;
+  // the cast mirrors `getWriteContractCall`, which viem's `Call` union requires.
+  const { address, abi, functionName, args } = useSimulateContractParamters;
+  const calls: Call[] =
+    address && abi && functionName ? [{ to: address, abi, functionName, args } as Call] : [];
+
   return {
+    calls,
+    isBatch: false,
     execute: () => {
       if (simulationData?.request) {
         writeContract(simulationData.request as Parameters<typeof writeContract>[0]);

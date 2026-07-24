@@ -5,6 +5,7 @@ import {
   EIP7702_AUTH_COST,
   encodeBatchExecutorData,
   encodeErc7821ExecuteData,
+  getCallData,
   isDelegated,
   isOpStackChain,
   totalCallValue
@@ -192,7 +193,7 @@ export async function estimateFlowGas({
       calls.map(call =>
         estimateL1Fee(client, chainId, account, {
           to: call.to,
-          data: call.data ?? '0x',
+          data: getCallData(call),
           value: call.value ?? 0n
         })
       )

@@ -35,6 +35,7 @@ import {
   formatNumber,
   isTestnetId
 } from '@/utils';
+import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -288,6 +289,14 @@ export function PendleModalForm({
     [writeHook.error]
   );
 
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee } = useNetworkFee({
+    calls: writeHook.calls ?? [],
+    chainId,
+    shouldUseBatch: !!writeHook.isBatch
+  });
+
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
 
   // Memoized: useModalEntryBody lists this as an effect dep, and every
@@ -518,7 +527,7 @@ export function PendleModalForm({
           label={<Trans>Max slippage</Trans>}
           value={`${formatNumber(slippage * 100, { maxDecimals: 2 })}%`}
         />
-        <Row label={<Trans>Network fee</Trans>} value={NO_VALUE} />
+        <Row label={<Trans>Network fee</Trans>} value={networkFee?.formatted ?? NO_VALUE} />
       </div>
 
       {prepareErrorMessage && amountReady && (

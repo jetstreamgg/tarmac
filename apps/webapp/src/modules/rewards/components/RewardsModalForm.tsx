@@ -7,6 +7,7 @@ import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useNetworkFee } from '@/hooks';
 import { useRewardsLaunch, type RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
 import { useRewardsTransactionForm, type RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
 
@@ -80,7 +81,10 @@ export function RewardsModalForm({
     setMaxAmount
   } = form;
 
-  const { execute, steps, prepared } = useRewardsLaunch(engineParams);
+  const { execute, steps, prepared, calls, isBatch } = useRewardsLaunch(engineParams);
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch });
   const disabled = !amountReady || !prepared;
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -111,7 +115,7 @@ export function RewardsModalForm({
         },
         { label: <Trans>Product</Trans>, value: displayName },
         { label: <Trans>Withdrawal</Trans>, value: <Trans>Anytime</Trans> },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
+        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
       ]
     : [
         {
@@ -119,7 +123,7 @@ export function RewardsModalForm({
           value: `${formatNumber(amountUsd, { maxDecimals: 2 })} ${supplyToken.symbol}`
         },
         { label: <Trans>Product</Trans>, value: displayName },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
+        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
       ];
 
   const body = (

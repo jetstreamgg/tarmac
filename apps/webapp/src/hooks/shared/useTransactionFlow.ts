@@ -51,6 +51,7 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
     enabled: enabled && useBatch && !isLoadingCapabilities
   });
 
-  // Return the appropriate results based on useBatch
-  return useBatch ? batchResults : sequentialResults;
+  // Return the appropriate results based on useBatch, carrying the calls and the routing
+  // decision so callers can estimate what this flow costs without rebuilding calldata.
+  return { ...(useBatch ? batchResults : sequentialResults), calls, isBatch: useBatch };
 }

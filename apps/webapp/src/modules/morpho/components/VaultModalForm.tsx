@@ -7,6 +7,7 @@ import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useNetworkFee } from '@/hooks';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
 
@@ -79,7 +80,10 @@ export function VaultModalForm({
     setMaxAmount
   } = form;
 
-  const { execute, steps, prepared } = useVaultLaunch(engineParams);
+  const { execute, steps, prepared, calls, isBatch } = useVaultLaunch(engineParams);
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch });
   const disabled = !amountReady || !prepared;
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -113,12 +117,12 @@ export function VaultModalForm({
         },
         { label: <Trans>Product</Trans>, value: vaultName },
         { label: <Trans>Withdrawal</Trans>, value: <Trans>Anytime</Trans> },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
+        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
       ]
     : [
         receiveRow,
         { label: <Trans>Product</Trans>, value: vaultName },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
+        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
       ];
 
   const body = (

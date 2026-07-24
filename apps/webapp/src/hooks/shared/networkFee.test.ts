@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { decodeFunctionData, parseAbi, type Call } from 'viem';
+import { decodeFunctionData, encodeFunctionData, erc20Abi, parseAbi, type Call } from 'viem';
 import { arbitrum, base, mainnet, optimism, unichain } from 'wagmi/chains';
+import { getWriteContractCall } from './getWriteContractCall';
 import {
   BATCH_EXECUTOR_ADDRESS,
   EIP7702_AUTH_COST,
@@ -9,6 +10,7 @@ import {
   encodeBatchExecutorData,
   encodeErc7821ExecuteData,
   feeWeiToUsd,
+  getCallData,
   getCallsKey,
   isDelegated,
   isOpStackChain,
@@ -22,6 +24,35 @@ const calls: Call[] = [
   { to: USDS, data: '0xdeadbeef' },
   { to: SUSDS, data: '0xcafebabe' }
 ];
+
+/** How the engine hooks actually build calls — abi/functionName, not pre-encoded data. */
+const contractFormCall = getWriteContractCall({
+  to: USDS,
+  abi: erc20Abi,
+  functionName: 'approve',
+  args: [SUSDS, 100n]
+});
+
+const expectedApproveData = encodeFunctionData({
+  abi: erc20Abi,
+  functionName: 'approve',
+  args: [SUSDS, 100n]
+});
+
+describe('getCallData', () => {
+  it('passes through pre-encoded calldata', () => {
+    expect(getCallData(calls[0])).toBe('0xdeadbeef');
+  });
+
+  it('encodes the contract form the engines produce', () => {
+    // Without this the batch encoders would nest empty calls and price a no-op bundle.
+    expect(getCallData(contractFormCall)).toBe(expectedApproveData);
+  });
+
+  it('falls back to empty calldata for a bare value transfer', () => {
+    expect(getCallData({ to: USDS, value: 1n })).toBe('0x');
+  });
+});
 
 describe('isDelegated', () => {
   it('recognises the EIP-7702 delegation indicator', () => {
@@ -84,6 +115,17 @@ describe('encodeBatchExecutorData', () => {
       { target: USDS, allowFailure: false, value: 5n, callData: '0xdeadbeef' },
       { target: SUSDS, allowFailure: false, value: 0n, callData: '0xcafebabe' }
     ]);
+  });
+
+  it('encodes contract-form calls rather than nesting empty calldata', () => {
+    const { args } = decodeFunctionData({
+      abi: parseAbi([
+        'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[])'
+      ]),
+      data: encodeBatchExecutorData([contractFormCall, calls[1]])
+    });
+
+    expect(args[0][0]).toEqual({ target: USDS, allowFailure: false, callData: expectedApproveData });
   });
 
   it('never lets a call fail silently — a reverting bundle must surface, not be priced', () => {

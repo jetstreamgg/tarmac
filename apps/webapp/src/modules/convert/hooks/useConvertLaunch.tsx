@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
 import { useChainId, useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
+import { useNetworkFee } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
 import { REFERRAL_CODE } from '@/lib/constants';
@@ -86,6 +87,14 @@ export function useConvertLaunch({
   const confirmDisabled =
     amount === 0n || !!conversion.disabledReason || !conversion.prepared || conversion.isLoading;
 
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee } = useNetworkFee({
+    calls: conversion.calls,
+    chainId,
+    shouldUseBatch: conversion.isBatch
+  });
+
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
   const executeRef = useRef<() => void>(() => undefined);
@@ -114,7 +123,7 @@ export function useConvertLaunch({
         targetDecimals={targetDecimals}
         chainId={chainId}
         networkName={networkName}
-        networkFee={NO_VALUE}
+        networkFee={networkFee?.formatted ?? NO_VALUE}
       />
     ),
     [
@@ -125,7 +134,8 @@ export function useConvertLaunch({
       originDecimals,
       targetDecimals,
       chainId,
-      networkName
+      networkName,
+      networkFee?.formatted
     ]
   );
 

@@ -59,6 +59,13 @@ vi.mock('wagmi', async importOriginal => {
 });
 
 vi.mock('@/hooks', () => ({
+  useNetworkFee: () => ({
+    data: undefined,
+    isLoading: false,
+    error: null,
+    mutate: () => {},
+    dataSources: []
+  }),
   useTransactionFlow: (params: { calls: unknown[] }) => {
     h.flowCalls = params.calls;
     return { execute: vi.fn(), prepared: true };

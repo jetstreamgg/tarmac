@@ -91,6 +91,13 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
     usePendleUserPtBalances: () => ({
       data: { [MARKET.marketAddress]: PT_BALANCE },
       isLoading: false,

@@ -5,6 +5,7 @@ import { t } from '@lingui/core/macro';
 import { formatBigInt, formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useNetworkFee } from '@/hooks';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
@@ -91,8 +92,12 @@ export function SavingsModalForm({
     switchOrigin
   } = form;
 
-  const { execute, steps, prepared } = useSavingsLaunch(engineParams);
+  const { execute, steps, prepared, calls, isBatch } = useSavingsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
+
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee } = useNetworkFee({ calls, chainId, shouldUseBatch: isBatch });
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / step labels / wallet summary / toast
@@ -127,7 +132,7 @@ export function SavingsModalForm({
         earningsBefore: NO_VALUE,
         earningsAfter: NO_VALUE,
         network: networkName,
-        networkFee: NO_VALUE
+        networkFee: networkFee?.formatted ?? NO_VALUE
       })
     : buildWithdrawModalRows({
         // Rate is unchanged by a withdrawal, but Figma 527:10945 draws it as a delta.
@@ -138,7 +143,7 @@ export function SavingsModalForm({
         earningsBefore: NO_VALUE,
         earningsAfter: NO_VALUE,
         network: networkName,
-        networkFee: NO_VALUE
+        networkFee: networkFee?.formatted ?? NO_VALUE
       });
 
   const body = (

@@ -31,6 +31,12 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+vi.mock('@/hooks/shared/useNetworkFee', () => ({
+  // The fee row is read-only and network-backed; these tests render without a
+  // WagmiProvider, so stub it to the un-resolved state the row falls back on.
+  useNetworkFee: () => ({ data: undefined, isLoading: false, error: null, mutate: () => {}, dataSources: [] })
+}));
+
 vi.mock('@tanstack/react-query', async importOriginal => {
   const actual = await importOriginal<typeof import('@tanstack/react-query')>();
   return {
@@ -68,7 +74,9 @@ vi.mock('../hooks/useStakeClaimLaunch', () => ({
       plainLoading: false,
       restakePrepared: h.restakePrepared,
       restakeLoading: false,
-      calldata: []
+      calldata: [],
+      calls: [],
+      isBatch: false
     };
   }
 }));

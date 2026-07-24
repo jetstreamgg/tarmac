@@ -3,6 +3,7 @@ import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useNetworkFee } from '@/hooks';
 import { TOKENS, useDebounce, useMkrSkyFee, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, getChainIcon, math } from '@/utils';
 import { TxStatus, PopoverRateInfo } from '@/widgets';
@@ -175,7 +176,14 @@ export function UpgradeModalForm({
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
   const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending;
 
-  const { execute, steps, prepared, error } = useUpgradeLaunch({ token, amount: debouncedAmount });
+  const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
+    token,
+    amount: debouncedAmount
+  });
+
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee } = useNetworkFee({ calls, chainId, shouldUseBatch: isBatch });
   const disabled = !amountReady || !prepared;
 
   // The wallet balance is chain state the engine's success doesn't refetch —
@@ -390,7 +398,7 @@ export function UpgradeModalForm({
         {hairline}
         <DetailCell
           label={<Trans>Network fee</Trans>}
-          value={NO_VALUE}
+          value={networkFee?.formatted ?? NO_VALUE}
           dataTestId="upgrade-modal-network-fee"
         />
       </div>
