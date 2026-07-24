@@ -1,4 +1,4 @@
-import { encodeAbiParameters, encodeFunctionData, formatEther, parseAbi, type Call, type Hex } from 'viem';
+import { encodeFunctionData, formatEther, parseAbi, type Call, type Hex } from 'viem';
 
 import { base, optimism, unichain } from 'wagmi/chains';
 
@@ -25,6 +25,24 @@ const DELEGATION_INDICATOR_PREFIX = '0xef0100';
  */
 export const EIP7702_AUTH_COST = 12_500n;
 
+/** Intrinsic cost every transaction pays before executing a single opcode. */
+const INTRINSIC_GAS = 21_000n;
+
+/**
+ * Smallest gas a genuine bundle of these calls could possibly use.
+ *
+ * A bundle still performs the work of its most expensive call; all it saves is that
+ * call's *siblings'* intrinsic and cold-access charges. So the largest single call, less
+ * its own intrinsic, is a hard floor — and a cheap way to catch a batch simulation that
+ * reported success without doing the work. Ambire's 7702 delegate does exactly that: it
+ * returns success from an ERC-7821 `execute` it does not implement, and 31,180 gas for an
+ * approve+deposit that really costs ~148,000. Anything under the floor is not a price.
+ */
+export function getBatchGasFloor(perCallGas: readonly bigint[]): bigint {
+  const largest = perCallGas.reduce((max, gas) => (gas > max ? gas : max), 0n);
+  return largest > INTRINSIC_GAS ? largest - INTRINSIC_GAS : 0n;
+}
+
 /**
  * OP-stack chains bill an L1 data fee on top of L2 execution, and `eth_estimateGas`
  * covers only the latter. Arbitrum is deliberately absent: it already inflates the gas
@@ -34,15 +52,10 @@ const OP_STACK_CHAIN_IDS: readonly number[] = [base.id, optimism.id, unichain.id
 
 export const isOpStackChain = (chainId: number): boolean => OP_STACK_CHAIN_IDS.includes(chainId);
 
-/** ERC-7821 batch mode with no `opData` — the single-batch form every delegate implements. */
-const ERC7821_BATCH_MODE = '0x0100000000000000000000000000000000000000000000000000000000000000' as const;
-
 const multicall3Abi = parseAbi([
   'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[])',
   'function aggregate3Value((address target, bool allowFailure, uint256 value, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[])'
 ]);
-
-const erc7821Abi = parseAbi(['function execute(bytes32 mode, bytes executionData)']);
 
 /**
  * Calldata for a call in either form viem's `Call` accepts.
@@ -95,29 +108,6 @@ export function encodeBatchExecutorData(calls: readonly Call[]): Hex {
         functionName: 'aggregate3',
         args: [calls.map(call => ({ target: call.to, allowFailure: false, callData: getCallData(call) }))]
       });
-}
-
-/** Calldata for a real EIP-7702 delegate that implements ERC-7821 `execute`. */
-export function encodeErc7821ExecuteData(calls: readonly Call[]): Hex {
-  const executionData = encodeAbiParameters(
-    [
-      {
-        type: 'tuple[]',
-        components: [
-          { name: 'to', type: 'address' },
-          { name: 'value', type: 'uint256' },
-          { name: 'data', type: 'bytes' }
-        ]
-      }
-    ],
-    [calls.map(call => ({ to: call.to, value: call.value ?? 0n, data: getCallData(call) }))]
-  );
-
-  return encodeFunctionData({
-    abi: erc7821Abi,
-    functionName: 'execute',
-    args: [ERC7821_BATCH_MODE, executionData]
-  });
 }
 
 /** Total ETH a batch must carry — the sum of its calls' values. */

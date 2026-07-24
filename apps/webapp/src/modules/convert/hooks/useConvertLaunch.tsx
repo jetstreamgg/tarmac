@@ -92,7 +92,8 @@ export function useConvertLaunch({
   const { data: networkFee } = useNetworkFee({
     calls: conversion.calls,
     chainId,
-    shouldUseBatch: conversion.isBatch
+    shouldUseBatch: conversion.isBatch,
+    enabled: amount > 0n
   });
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,

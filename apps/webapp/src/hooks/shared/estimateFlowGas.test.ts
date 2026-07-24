@@ -114,10 +114,10 @@ describe('estimateFlowGas — batch', () => {
     expect(batchCall?.stateOverrides).toEqual([{ address: ACCOUNT, code: EXECUTOR_CODE }]);
   });
 
-  it('prices an already-delegated account against its real delegate, with no auth cost', async () => {
-    const { client, simulateCalls } = makeClient({
+  it('charges no auth cost to an already-delegated account', async () => {
+    const { client } = makeClient({
       accountCode: `0xef0100${SUSDS.slice(2)}`,
-      simulate: params => (params.calls.length === 1 ? success(150_000n) : success(51_086n, 148_136n))
+      simulate: params => (params.stateOverrides ? success(162_592n) : success(51_086n, 148_136n))
     });
 
     const result = await estimateFlowGas({
@@ -129,18 +129,32 @@ describe('estimateFlowGas — batch', () => {
     });
 
     // Delegation already paid for — adding it again would overstate every bundle after the first.
-    expect(result.batchGas).toBe(150_000n);
-    expect(simulateCalls.mock.calls.every(([params]) => !params.stateOverrides)).toBe(true);
+    expect(result.batchGas).toBe(162_592n);
   });
 
-  it('falls back to the stand-in when a delegate does not speak ERC-7821', async () => {
+  it("never asks the account's own delegate — one stand-in path for every wallet", async () => {
+    const { client, simulateCalls } = makeClient({
+      accountCode: `0xef0100${SUSDS.slice(2)}`,
+      simulate: params => (params.stateOverrides ? success(162_592n) : success(51_086n, 148_136n))
+    });
+
+    await estimateFlowGas({ client, chainId: freshChainId(), account: ACCOUNT, calls, wantsBatch: true });
+
+    // Every bundled simulation must carry the executor override. A bare self-call would
+    // be asking the wallet's delegate to price itself — which Ambire's answers wrongly.
+    const bundleSims = simulateCalls.mock.calls
+      .map(([params]) => params)
+      .filter(params => params.calls.length === 1);
+    expect(bundleSims.length).toBeGreaterThan(0);
+    expect(bundleSims.every(params => !!params.stateOverrides)).toBe(true);
+  });
+
+  it('discards a batch cheaper than its own most expensive call', async () => {
+    // Ambire's delegate reported success and 31,180 gas for work costing ~148,000. Even
+    // if such a figure reaches us, it must never be shown as a price.
     const { client } = makeClient({
       accountCode: `0xef0100${SUSDS.slice(2)}`,
-      simulate: params => {
-        if (params.stateOverrides) return success(162_592n);
-        if (params.calls.length === 1) throw new Error('unsupported mode');
-        return success(51_086n, 148_136n);
-      }
+      simulate: params => (params.stateOverrides ? success(31_180n) : success(51_062n, 130_771n))
     });
 
     const result = await estimateFlowGas({
@@ -151,8 +165,8 @@ describe('estimateFlowGas — batch', () => {
       wantsBatch: true
     });
 
-    // Still no auth cost: the account is delegated, we just couldn't use its delegate's ABI.
-    expect(result.batchGas).toBe(162_592n);
+    expect(result.batchGas).toBeUndefined();
+    expect(result.sequentialGas).toBe(181_833n);
   });
 
   it('fetches the executor code once per chain across repeated estimates', async () => {

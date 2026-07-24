@@ -80,7 +80,7 @@ export function StUsdsModalForm({
   const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch });
+  const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch, enabled: amountReady });
 
   const disabled =
     !amountReady ||

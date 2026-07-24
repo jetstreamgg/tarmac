@@ -9,7 +9,7 @@ import {
   computeFeePerGas,
   computeFeeWei,
   encodeBatchExecutorData,
-  encodeErc7821ExecuteData,
+  getBatchGasFloor,
   feeWeiToUsd,
   getCallData,
   getCallsKey,
@@ -141,16 +141,22 @@ describe('encodeBatchExecutorData', () => {
   });
 });
 
-describe('encodeErc7821ExecuteData', () => {
-  it('encodes the single-batch mode with no opData', () => {
-    const { functionName, args } = decodeFunctionData({
-      abi: parseAbi(['function execute(bytes32 mode, bytes executionData)']),
-      data: encodeErc7821ExecuteData(calls)
-    });
+describe('getBatchGasFloor', () => {
+  it('floors at the largest call minus its own intrinsic', () => {
+    expect(getBatchGasFloor([51_062n, 130_771n])).toBe(109_771n);
+  });
 
-    expect(functionName).toBe('execute');
-    expect(args[0]).toBe('0x0100000000000000000000000000000000000000000000000000000000000000');
-    expect(args[1]).toMatch(/^0x[0-9a-f]+$/);
+  it('rejects the no-op batch a non-conforming delegate reports', () => {
+    // Ambire's 7702 delegate returned success and 31,180 gas for an approve+deposit that
+    // really costs ~148,000 — 5x too cheap, and it must not reach the UI.
+    const floor = getBatchGasFloor([51_062n, 130_771n]);
+    expect(31_180n >= floor).toBe(false);
+    expect(148_003n >= floor).toBe(true);
+  });
+
+  it('never goes negative on calls cheaper than the intrinsic', () => {
+    expect(getBatchGasFloor([1_000n])).toBe(0n);
+    expect(getBatchGasFloor([])).toBe(0n);
   });
 });
 

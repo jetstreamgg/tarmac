@@ -4,7 +4,7 @@ import {
   BATCH_EXECUTOR_ADDRESS,
   EIP7702_AUTH_COST,
   encodeBatchExecutorData,
-  encodeErc7821ExecuteData,
+  getBatchGasFloor,
   getCallData,
   isDelegated,
   isOpStackChain,
@@ -97,24 +97,26 @@ async function simulateSequential(
   client: PublicClient,
   account: Address,
   calls: readonly Call[]
-): Promise<bigint> {
+): Promise<bigint[]> {
   const { results } = await client.simulateCalls({ account, calls });
 
-  return results.reduce((total, result) => {
+  return results.map(result => {
     if (result.status === 'failure') {
       throw new Error('Network fee estimation failed: a call reverted in simulation');
     }
-    return total + result.gasUsed;
-  }, 0n);
+    return result.gasUsed;
+  });
 }
 
 /**
  * Gas for the same calls as one bundled transaction.
  *
- * Delegated accounts are simulated against the wallet's real delegate via ERC-7821,
- * which is near-exact. Otherwise we place stand-in executor code at the user's address
- * and add the authorization tuple the first bundle will pay. The stand-in is also the
- * fallback when a delegate turns out not to speak ERC-7821.
+ * Always modelled with the stand-in executor, never by calling the account's real 7702
+ * delegate. Measured against MetaMask's delegate the stand-in agrees to 0.05% (148,003 vs
+ * 148,070 for an approve+deposit), so asking the real delegate buys nothing — while
+ * Ambire's delegate returns *success* from an ERC-7821 `execute` it doesn't implement and
+ * reports 31,180 gas for the same work, which we would otherwise have shown as a 5x-too-
+ * cheap fee. One code path, no assumptions about a wallet's ABI.
  */
 async function simulateBatch(
   client: PublicClient,
@@ -126,22 +128,6 @@ async function simulateBatch(
     client.getCode({ address: account }),
     getBatchExecutorCode(client, chainId)
   ]);
-  const value = totalCallValue(calls);
-  const delegated = isDelegated(accountCode);
-
-  if (delegated) {
-    try {
-      const { results } = await client.simulateCalls({
-        account,
-        calls: [{ to: account, data: encodeErc7821ExecuteData(calls), value }]
-      });
-      const [result] = results;
-      if (result?.status === 'success') return result.gasUsed;
-    } catch {
-      // Delegate doesn't implement ERC-7821 (or rejects the mode) — fall through to the
-      // stand-in, which models the same shape closely enough for a displayed estimate.
-    }
-  }
 
   if (!executorCode) {
     throw new Error('Network fee estimation failed: batch executor code unavailable');
@@ -149,7 +135,7 @@ async function simulateBatch(
 
   const { results } = await client.simulateCalls({
     account,
-    calls: [{ to: account, data: encodeBatchExecutorData(calls), value }],
+    calls: [{ to: account, data: encodeBatchExecutorData(calls), value: totalCallValue(calls) }],
     stateOverrides: [{ address: account, code: executorCode }]
   });
 
@@ -159,7 +145,7 @@ async function simulateBatch(
   }
 
   // An account that has never delegated pays for the authorization tuple on its first bundle.
-  return delegated ? result.gasUsed : result.gasUsed + EIP7702_AUTH_COST;
+  return isDelegated(accountCode) ? result.gasUsed : result.gasUsed + EIP7702_AUTH_COST;
 }
 
 /**
@@ -183,10 +169,18 @@ export async function estimateFlowGas({
   calls: readonly Call[];
   wantsBatch: boolean;
 }): Promise<FlowGasEstimate> {
-  const [sequentialGas, batchGas] = await Promise.all([
+  const [perCallGas, simulatedBatchGas] = await Promise.all([
     simulateSequential(client, account, calls),
     wantsBatch ? simulateBatch(client, chainId, account, calls) : Promise.resolve(undefined)
   ]);
+
+  const sequentialGas = perCallGas.reduce((total, gas) => total + gas, 0n);
+  // A bundle cheaper than its own most expensive call did not execute the calls. Drop it
+  // rather than price it, and the caller falls back to the sequential figure.
+  const batchGas =
+    simulatedBatchGas !== undefined && simulatedBatchGas >= getBatchGasFloor(perCallGas)
+      ? simulatedBatchGas
+      : undefined;
 
   const [sequentialL1Fees, batchL1Fee] = await Promise.all([
     Promise.all(

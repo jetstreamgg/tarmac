@@ -294,7 +294,8 @@ export function PendleModalForm({
   const { data: networkFee } = useNetworkFee({
     calls: writeHook.calls ?? [],
     chainId,
-    shouldUseBatch: !!writeHook.isBatch
+    shouldUseBatch: !!writeHook.isBatch,
+    enabled: amountReady
   });
 
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
