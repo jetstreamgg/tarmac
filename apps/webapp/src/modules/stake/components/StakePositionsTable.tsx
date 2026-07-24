@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
@@ -31,6 +31,7 @@ import {
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
 import { TransactionCard } from '@/components/product/TransactionCard';
+import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
 import { CellAmount, CellAmountWithToken, CellChevron, CellPosition } from '@/components/ui/table-cells';
 import {
   StakeUserPosition,
@@ -214,30 +215,10 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
 ];
 
 // Mobile position card (comp 1222:16771 / 1295:21684): 36px position iconbox
-// with a Label 4 title, equal-column field pairs split by centered hairlines,
-// and a full-width secondary "View more" footer. The card wrapper still owns
-// the tap-to-manage behavior (the engine wires onRowClick to it); the button
-// simply bubbles into that same handler. The field trio is shared with the
-// activity card (StakeActivityTable), which uses the same centered geometry.
-export function CardField({ label, children }: { label: ReactNode; children: ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1">
-      <span className="font-graphik text-fgSecondary text-xs leading-[18px]">{label}</span>
-      <span className="font-circle text-fgPrimary flex min-h-4 items-center text-sm leading-4 font-medium tracking-[-0.28px]">
-        {children}
-      </span>
-    </div>
-  );
-}
-
-export function CardFieldRow({ children }: { children: ReactNode }) {
-  return <div className="flex w-full items-center gap-4">{children}</div>;
-}
-
-export const CardFieldDivider = ({ className }: { className?: string }) => (
-  <span className={cn('bg-glassBorder h-9 w-px shrink-0', className)} aria-hidden />
-);
-
+// with a Label 4 title, equal-column CardField pairs split by centered
+// hairlines, and a full-width secondary "View more" footer. The card wrapper
+// still owns the tap-to-manage behavior (the engine wires onRowClick to it);
+// the button simply bubbles into that same handler.
 const renderCard = (position: StakeUserPosition) => (
   <TransactionCard
     header={

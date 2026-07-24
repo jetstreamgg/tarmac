@@ -29,7 +29,7 @@ import {
 import { TransactionCard } from '@/components/product/TransactionCard';
 import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
-import { CardField, CardFieldDivider, CardFieldRow } from './StakePositionsTable';
+import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
 
 /**
  * The verb taxonomy of the hi-fi activity table (486:31830). The subgraph
