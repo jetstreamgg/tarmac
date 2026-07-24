@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import {
@@ -16,7 +16,7 @@ import {
   X,
   XCircle
 } from 'lucide-react';
-import { RiskLevel, ZERO_ADDRESS } from '@/hooks';
+import { BP, MD_MEDIA_QUERY, RiskLevel, useBreakpointIndex, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -400,10 +400,28 @@ export function PositionDetailsModal({
   // below reads it because Radix invokes that handler from a stale closure.
   const [manageOpen, setManageOpen] = useState(false);
   const manageOpenRef = useRef(false);
-  const setManageSheet = (open: boolean) => {
+  const setManageSheet = useCallback((open: boolean) => {
     manageOpenRef.current = open;
     setManageOpen(open);
-  };
+  }, []);
+
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
+
+  // Crossing to ≥md with the sheet open (rotation, window resize) would strand
+  // its overlay: the sheet content is md:hidden, but the shared DialogContent
+  // wrapper's full-screen overlay — and Radix's scroll lock + focus trap — is
+  // not, leaving the page dimmed with nothing clickable. Close it instead,
+  // from a listener on the same query the JS breakpoint scale tracks (an
+  // event callback, so the ref write and setState stay off the render path).
+  useEffect(() => {
+    const mdQuery = window.matchMedia(MD_MEDIA_QUERY);
+    const closeOnDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) setManageSheet(false);
+    };
+    mdQuery.addEventListener('change', closeOnDesktop);
+    return () => mdQuery.removeEventListener('change', closeOnDesktop);
+  }, [setManageSheet]);
 
   const dropPercent = liquidationDropPercent(vault?.liquidationProximityPercentage);
   // Price fields pin 4 decimals like the takeover/manage cards — the bare
@@ -461,9 +479,9 @@ export function PositionDetailsModal({
           // would take the details modal down with the sheet. At the phone
           // tier the card fills the viewport minus 12px gutters anyway, so
           // outside-pointer dismissal is dropped there wholesale; desktop
-          // keeps its backdrop-click behavior. 767 mirrors the md breakpoint.
+          // keeps its backdrop-click behavior.
           onInteractOutside={event => {
-            if (window.matchMedia('(max-width: 767px)').matches) event.preventDefault();
+            if (isMobile) event.preventDefault();
           }}
           // With the sheet open, Escape belongs to the sheet — this handler
           // fires before the sheet's own (listener registration order), so
@@ -833,40 +851,40 @@ export function PositionDetailsModal({
 
       {/* Mobile manage sheet (comp 1222:16239): a floating bottom card over
           the dimmed details modal reusing the panel's row/CTA composition;
-          × returns to the details view underneath. */}
-      {manageOpen && (
-        <Dialog open onOpenChange={open => !open && setManageSheet(false)}>
-          <DialogContent
-            aria-describedby={undefined}
-            data-testid="stake-manage-sheet"
-            onOpenAutoFocus={event => event.preventDefault()}
-            className="bg-containerDark data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:slide-in-from-bottom-8 top-auto right-3 bottom-3 left-3 flex w-auto max-w-none min-w-0 translate-x-0 translate-y-0 flex-col gap-0 rounded-[20px] p-5 sm:min-w-0 sm:px-5 sm:py-5 md:hidden"
-          >
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
-                <Trans>Manage position</Trans>
-              </DialogTitle>
-              <Button
-                variant="secondary"
-                size="iconM"
-                onClick={() => setManageSheet(false)}
-                aria-label={t`Close`}
-                data-testid="stake-manage-sheet-close"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+          × returns to the details view underneath. The Dialog stays mounted
+          with a controlled `open` so Radix holds the content through the
+          slide-out exit animation instead of unmounting it instantly. */}
+      <Dialog open={manageOpen} onOpenChange={open => !open && setManageSheet(false)}>
+        <DialogContent
+          aria-describedby={undefined}
+          data-testid="stake-manage-sheet"
+          onOpenAutoFocus={event => event.preventDefault()}
+          className="bg-containerDark data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:slide-in-from-bottom-8 top-auto right-3 bottom-3 left-3 flex w-auto max-w-none min-w-0 translate-x-0 translate-y-0 flex-col gap-0 rounded-[20px] p-5 sm:min-w-0 sm:px-5 sm:py-5 md:hidden"
+        >
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
+              <Trans>Manage position</Trans>
+            </DialogTitle>
+            <Button
+              variant="secondary"
+              size="iconM"
+              onClick={() => setManageSheet(false)}
+              aria-label={t`Close`}
+              data-testid="stake-manage-sheet-close"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
 
-            <div className="mt-3 flex flex-col">
-              <ManageMenuRows {...menuRowsProps} variant="sheet" idSuffix="-sheet" />
-            </div>
+          <div className="mt-3 flex flex-col">
+            <ManageMenuRows {...menuRowsProps} variant="sheet" idSuffix="-sheet" />
+          </div>
 
-            <div className="mt-6 flex flex-col gap-3">
-              <ManageCtas {...ctaProps} size="l" idSuffix="-sheet" />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          <div className="mt-6 flex flex-col gap-3">
+            <ManageCtas {...ctaProps} size="l" idSuffix="-sheet" />
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
