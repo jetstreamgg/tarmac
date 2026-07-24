@@ -245,7 +245,11 @@ export function TransactionModal({
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
       <ResponsiveModalContent
         aria-describedby={undefined}
-        className="bg-containerDark flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5 sm:px-8 sm:pt-7 sm:pb-8"
+        // DS Modal card (Figma 1310:130558): colors/bg/bg-secondary tint at
+        // radius-2xl over the frosted scrim — the old containerDark black
+        // predates the comps. Radius only at md+ where the Dialog renders;
+        // the mobile bottom Sheet keeps its own top-only rounding.
+        className="bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
