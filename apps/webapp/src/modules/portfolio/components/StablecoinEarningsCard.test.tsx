@@ -46,6 +46,7 @@ const SUPPLIED: SuppliedView = {
       amountUsd: 1000,
       rate: 0.0375,
       color: '#7C5BF5',
+      hoverColor: '#7C5BF5',
       share: 1,
       detailPath: '/earn/savings',
       chainIds: [1]

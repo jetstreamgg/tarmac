@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildVaultStrategy, IDLE_COLOR, STRATEGY_COLORS } from './vaultStrategy';
+import { buildVaultStrategy, IDLE_COLOR } from './vaultStrategy';
+import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/widgets/shared/constants';
 import type { MorphoMarketAllocation } from '@/hooks';
 
 // Minimal allocation factory — only the fields buildVaultStrategy reads matter.
@@ -39,8 +40,19 @@ describe('buildVaultStrategy', () => {
     expect(view.segments[0].label).toBe('stUSDS/USDC');
     expect(view.segments[0].formattedShare).toBe('50%');
     expect(view.segments[1].formattedShare).toBe('50%');
-    expect(view.segments[0].color).toBe(STRATEGY_COLORS[0]);
-    expect(view.segments[1].color).toBe(STRATEGY_COLORS[1]);
+    // Mapped collateral tokens take the DS chart color pair (APP-416).
+    expect(view.segments[0]).toMatchObject(resolveTokenChartColors('stUSDS')!);
+    expect(view.segments[1]).toMatchObject(resolveTokenChartColors('stUSDS')!);
+  });
+
+  it('cycles the DS generic chart slots for collaterals without a chart color', () => {
+    const view = buildVaultStrategy([
+      market({ marketId: '0xa', assetsUsd: 10_000_000, collateralAsset: 'PT-sUSDE' }),
+      market({ marketId: '0xb', assetsUsd: 10_000_000, collateralAsset: 'WBTC' })
+    ]);
+
+    expect(view.segments[0]).toMatchObject(CHART_GENERIC_COLORS[0]);
+    expect(view.segments[1]).toMatchObject(CHART_GENERIC_COLORS[1]);
   });
 
   it('drops zero/negative allocations and shares sum to 1 over survivors', () => {

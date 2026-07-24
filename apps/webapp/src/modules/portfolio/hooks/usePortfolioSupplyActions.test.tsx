@@ -109,6 +109,7 @@ const position = (
   amountUsd: 100,
   rate: 0.05,
   color: '#000',
+  hoverColor: '#000',
   share: 1,
   detailPath: `/earn/${kind}`,
   chainIds: [1],

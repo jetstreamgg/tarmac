@@ -90,6 +90,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
   const segments: DonutSegment[] = view.positions.map(p => ({
     id: p.id,
     color: p.color,
+    hoverColor: p.hoverColor,
     value: p.amountUsd
   }));
 
@@ -198,6 +199,7 @@ function IdleContent({
   const segments: DonutSegment[] = view.tokens.map(t => ({
     id: t.symbol,
     color: t.color,
+    hoverColor: t.hoverColor,
     value: t.amountUsd
   }));
 

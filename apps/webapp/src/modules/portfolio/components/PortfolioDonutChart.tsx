@@ -7,6 +7,8 @@ export type DonutSegment = {
   id: string;
   /** Any CSS color (hex / token); resolved by the caller. */
   color: string;
+  /** Hovered-arc color (DS Components/Charts-Hover); falls back to `color`. */
+  hoverColor?: string;
   /** Raw magnitude; normalized to angles internally. */
   value: number;
 };
@@ -128,15 +130,21 @@ export function PortfolioDonutChart({
               onMouseEnter={(_, index) => onActiveChange(chartSegments[index]?.id ?? null)}
               // `Cell` is deprecated (removed in recharts 4); per-sector fill +
               // hover dimming via the `shape` prop, rendering the same Sector.
+              // DS pie hover (Figma 5051:133511): the hovered arc swaps to its
+              // Charts-Hover color; the others dim to 50%.
               shape={(props: PieSectorShapeProps) => {
                 const segment = props.payload as DonutSegment;
-                const dim = activeId !== null && activeId !== segment.id;
+                const isActive = activeId === segment.id;
+                const dim = activeId !== null && !isActive;
                 return (
                   <Sector
                     {...props}
-                    fill={segment.color}
+                    fill={isActive ? (segment.hoverColor ?? segment.color) : segment.color}
                     fillOpacity={dim ? 0.5 : 1}
-                    style={{ transition: 'fill-opacity 150ms ease-out', outline: 'none' }}
+                    style={{
+                      transition: 'fill-opacity 150ms ease-out, fill 150ms ease-out',
+                      outline: 'none'
+                    }}
                   />
                 );
               }}
