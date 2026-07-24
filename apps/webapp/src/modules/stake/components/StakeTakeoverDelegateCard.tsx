@@ -88,12 +88,13 @@ export function DelegateList({
                   aria-pressed={isSelected}
                   className={cn(
                     'flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition-colors md:rounded-xl md:p-4',
-                    // Comp 1222:19936: #504dff ring over the 10% brand gradient.
-                    // Applied at every tier — the previous border-primary/
-                    // bg-primary pair resolves to transparent in the dark scope,
-                    // leaving desktop's selected row invisible.
+                    // Comp 1222:19936: brand ring over the 10% brand gradient —
+                    // the brandBorder/brand3 recipe the selected wallet row in
+                    // ui/list already uses. Applied at every tier: the previous
+                    // border-primary/bg-primary pair resolves to transparent in
+                    // the dark scope, leaving desktop's selected row invisible.
                     isSelected
-                      ? 'border-[#504dff] bg-linear-to-b from-[#949aff]/10 to-[#504dff]/10'
+                      ? 'border-brandBorder from-brand3-start to-brand3-end bg-linear-to-b'
                       : 'border-borderPrimary md:bg-surfaceAlt/40 bg-transparent md:border-transparent'
                   )}
                 >

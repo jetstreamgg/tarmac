@@ -201,7 +201,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
       className="flex flex-col rounded-[20px] p-0 md:gap-6 md:rounded-[28px] md:p-8"
     >
       <div className="px-1.5 pt-1.5 md:contents">
-        <div className="flex flex-col gap-8 rounded-2xl bg-linear-to-b from-[rgba(182,179,252,0)] from-50% to-[#756fec]/10 p-4 md:contents">
+        <div className="to-brandCover/10 flex flex-col gap-8 rounded-2xl bg-linear-to-b from-[rgba(182,179,252,0)] from-50% p-4 md:contents">
           <span className="bg-surfaceAlt text-fgSecondary md:text-textSecondary font-circle flex h-6 w-fit items-center gap-1 rounded-full py-0.5 pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px] md:pl-1.5 md:font-sans md:leading-4 md:tracking-normal">
             <StakeSky className="h-3 w-3 md:h-3.5 md:w-3.5" />
             <Trans>Total Staked</Trans>
