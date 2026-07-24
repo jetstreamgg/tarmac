@@ -166,17 +166,21 @@ const TOKEN_ACTIONS: BalancesAction[] = [
     module: 'trade',
     url: '/convert/trade?target_token=SKY'
   },
+  // The upgrade surface is the More-menu modal (APP-413); its parked route is
+  // gone, so these land on Convert — the same place the old stub redirected
+  // to. Launching the modal directly from here is a follow-up: it must first
+  // resolve the mainnet network switch these actions can trigger.
   {
     label: 'Upgrade DAI to USDS',
     tokens: ['DAI', 'USDS'],
     module: 'upgrade',
-    url: '/convert/upgrade?source_token=DAI'
+    url: '/convert'
   },
   {
     label: 'Upgrade MKR to SKY',
     tokens: ['MKR', 'SKY'],
     module: 'upgrade',
-    url: '/convert/upgrade?source_token=MKR'
+    url: '/convert'
   }
 ];
 

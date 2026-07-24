@@ -1,6 +1,6 @@
 # useSavingsHistory
 
-Hook for fetching the savings history of supplies and withdrawals from the Sky Ecosystem subgraph.
+Hook for fetching the savings history of supplies and withdrawals from the Sky Ecosystem indexer.
 Fetches either the Ethereum or Base savings history, depending on wagmi's chainId.
 
 ## Import
@@ -16,7 +16,7 @@ import { useSavingsHistory } from '@/hooks';
 
 function SavingsHistoryComponent() {
   const { data, error, isLoading, mutate } = useSavingsHistory({
-    subgraphUrl: 'https://custom-subgraph-url.com'
+    indexerUrl: 'https://custom-indexer-url.com'
   });
 
   if (isLoading) return <div>Loading...</div>;
@@ -43,12 +43,12 @@ function SavingsHistoryComponent() {
 
 ```ts
 type Props = {
-  subgraphUrl?: string;
+  indexerUrl?: string;
 };
 ```
 
-- `subgraphUrl`: `string | undefined`
-  - Optional. A custom subgraph URL to use for fetching data. If not provided, the default URL will be used.
+- `indexerUrl`: `string | undefined`
+  - Optional. A custom indexer URL to use for fetching data. If not provided, the default URL will be used.
 
 ## Return Type
 

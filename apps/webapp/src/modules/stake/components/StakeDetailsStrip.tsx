@@ -1,47 +1,13 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
-import { useStakeHistoricData, RISK_LEVEL_THRESHOLDS, RiskLevel } from '@/hooks';
+import { AudioLines, Asterisk, Vault, Droplet, UsersRound, Info } from 'lucide-react';
+import { useStakeHistoricData } from '@/hooks';
 import { formatNumber, formatDecimalPercentage } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useStakeRewardsRate } from '../hooks/useStakeRewardsRate';
 
 const NO_VALUE = '–';
-
-// Trailing 6-month window, in days, used to average the historic rewards rate.
-const SIX_MONTH_DAYS = 183;
-
-// Structural subset of RewardsChartInfoParsed: seconds timestamp + decimal-
-// fraction rate string, as the BA Labs farms endpoint delivers them.
-type RatePoint = { blockTimestamp: number; rate: string };
-
-/**
- * Mean of the historic rewards `rate` over the trailing 6 months relative to
- * the most recent datapoint. Pure and structurally typed so the test can hit it
- * directly without standing up the hook. Returns null when there is no data in
- * the window. (Rewards — not borrow — rate per the product call on the F1
- * review; 6M window semantics flagged for confirmation in PRD Decision 7.)
- */
-export function calculateTrailing6MonthRate(data: readonly RatePoint[] | undefined): number | null {
-  if (!data || data.length === 0) return null;
-  const sorted = [...data].sort((a, b) => b.blockTimestamp - a.blockTimestamp);
-  const cutoff = sorted[0].blockTimestamp - SIX_MONTH_DAYS * 24 * 60 * 60;
-  const windowPoints = sorted.filter(point => point.blockTimestamp >= cutoff);
-  if (windowPoints.length === 0) return null;
-  const sum = windowPoints.reduce((acc, point) => acc + parseFloat(point.rate), 0);
-  return Number.isFinite(sum) ? sum / windowPoints.length : null;
-}
-
-// Static risk meter: iterate the canonical thresholds low→high and tint each
-// segment along the green→red status spectrum. Semantic tokens only — the exact
-// amber/orange mid-hues are a design-review concern, not new token families.
-const RISK_SEGMENT_COLOR: Record<RiskLevel, string> = {
-  [RiskLevel.LOW]: 'bg-bullish',
-  [RiskLevel.MEDIUM]: 'bg-bullish/50',
-  [RiskLevel.HIGH]: 'bg-error/60',
-  [RiskLevel.LIQUIDATION]: 'bg-error'
-};
-const RISK_LEVELS_ASCENDING = [...RISK_LEVEL_THRESHOLDS].sort((a, b) => a.threshold - b.threshold);
 
 // Phone tier (comp 1222:17089): single-column rows with 12px leading icons,
 // Body 5 labels and Label 4 values on borderPrimary hairlines; md restores
@@ -58,7 +24,7 @@ function DetailRow({ icon, label, children }: { icon: ReactNode; label: ReactNod
         </span>
         {label}
       </span>
-      <span className="text-text font-circle flex items-center text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-normal md:tracking-normal">
+      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-normal md:tracking-normal">
         {children}
       </span>
     </div>
@@ -82,8 +48,12 @@ function StatValue({
 }
 
 /**
- * Statistics-tab "Details" strip: the hi-fi label/value rows fed entirely by the
- * existing read hooks. Read-only — no engine hook is touched here.
+ * Statistics-tab "Details" strip: the hi-fi label/value rows fed entirely by
+ * the existing read hooks (comp 1036:208698, APP-399 #7 — Staking Reward Rate /
+ * Borrow Rate / Total SKY staked / TVL / Protocol SKY Price / Users). The info
+ * glyph on Protocol SKY Price is decorative for now, like the sibling Borrow
+ * Utilization heading — tooltip copy arrives via the corpus pipeline.
+ * Read-only — no engine hook is touched here.
  */
 export function StakeDetailsStrip() {
   const { data: historicData, isLoading: historicLoading, error: historicError } = useStakeHistoricData();
@@ -93,14 +63,7 @@ export function StakeDetailsStrip() {
 
   // Rewards rate (highest-rate farm) — the same figure the promo card and the
   // Statistics chart hero show, so all three rate surfaces agree.
-  const {
-    series: rewardsSeries,
-    currentRate,
-    isLoading: rewardsLoading,
-    error: rewardsError
-  } = useStakeRewardsRate();
-
-  const sixMonthRate = calculateTrailing6MonthRate(rewardsSeries);
+  const { currentRate, isLoading: rewardsLoading, error: rewardsError } = useStakeRewardsRate();
 
   return (
     <div data-testid="stake-details-strip" className="flex flex-col">
@@ -109,24 +72,29 @@ export function StakeDetailsStrip() {
       </h3>
 
       <div className="grid grid-cols-1 gap-x-5 md:grid-cols-2">
-        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Current Rate</Trans>}>
+        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Staking Reward Rate</Trans>}>
           <StatValue isLoading={rewardsLoading} error={rewardsError}>
             {currentRate !== null ? formatDecimalPercentage(currentRate) : NO_VALUE}
           </StatValue>
         </DetailRow>
 
-        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>6M Rate</Trans>}>
-          <StatValue isLoading={rewardsLoading} error={rewardsError}>
-            {sixMonthRate !== null ? formatDecimalPercentage(sixMonthRate) : NO_VALUE}
+        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Borrow Rate</Trans>}>
+          <StatValue isLoading={historicLoading} error={historicError}>
+            {mostRecent ? formatDecimalPercentage(mostRecent.borrowRate) : NO_VALUE}
           </StatValue>
         </DetailRow>
 
-        <DetailRow icon={<Asterisk className="h-4 w-4" />} label={<Trans>Risk scale</Trans>}>
-          <span className="flex w-28 gap-0.5" aria-hidden>
-            {RISK_LEVELS_ASCENDING.map(({ level }) => (
-              <span key={level} className={`h-1.5 flex-1 rounded-full ${RISK_SEGMENT_COLOR[level]}`} />
-            ))}
-          </span>
+        <DetailRow icon={<Asterisk className="h-4 w-4" />} label={<Trans>Total SKY staked</Trans>}>
+          <StatValue isLoading={historicLoading} error={historicError}>
+            {mostRecent ? (
+              <>
+                {formatNumber(mostRecent.totalSky, { maxDecimals: 0 })}
+                <TokenIcon token={{ symbol: 'SKY' }} width={16} className="h-4 w-4" />
+              </>
+            ) : (
+              NO_VALUE
+            )}
+          </StatValue>
         </DetailRow>
 
         <DetailRow icon={<Vault className="h-4 w-4" />} label={<Trans>TVL</Trans>}>
@@ -135,8 +103,18 @@ export function StakeDetailsStrip() {
           </StatValue>
         </DetailRow>
 
-        <DetailRow icon={<Droplet className="h-4 w-4" />} label={<Trans>Liquidity</Trans>}>
-          <Trans>Unlimited</Trans>
+        <DetailRow
+          icon={<Droplet className="h-4 w-4" />}
+          label={
+            <>
+              <Trans>Protocol SKY Price</Trans>
+              <Info className="text-textSecondary h-3.5 w-3.5" aria-hidden />
+            </>
+          }
+        >
+          <StatValue isLoading={historicLoading} error={historicError}>
+            {mostRecent ? `$${formatNumber(mostRecent.skyPrice, { maxDecimals: 4 })}` : NO_VALUE}
+          </StatValue>
         </DetailRow>
 
         <DetailRow icon={<UsersRound className="h-4 w-4" />} label={<Trans>Users</Trans>}>

@@ -10,7 +10,9 @@ import { cn } from '@/lib/cn';
 // flows differ only in the header badge and in every step being active at
 // once, both driven by the caller.
 
-export type StepState = 'upcoming' | 'active' | 'completed';
+// 'failed' keeps the active icon/connector treatment (Figma 1030:139111 draws
+// no red icon) — failure is conveyed by the retitled label + description row.
+export type StepState = 'upcoming' | 'active' | 'completed' | 'failed';
 
 // Figma Steps Icon Item (5119:21048): a 30px circle per state. Ring + fill are
 // SVG (the active ring is a gradient stroke, which CSS borders can't do); the
@@ -18,8 +20,9 @@ export type StepState = 'upcoming' | 'active' | 'completed';
 // to existing tokens: ring = brandHover→fgBrand, fill = the button gradient
 // pair. The completed greens (Figma bg/border-system-success-primary) have no
 // theme token yet, so they stay literal.
-function StepIcon({ state, stepNumber }: { state: StepState; stepNumber: number }) {
+function StepIcon({ state: rawState, stepNumber }: { state: StepState; stepNumber: number }) {
   const id = useId();
+  const state = rawState === 'failed' ? 'active' : rawState;
 
   return (
     <div className="relative size-[30px] shrink-0">
@@ -97,6 +100,7 @@ function StepIcon({ state, stepNumber }: { state: StepState; stepNumber: number 
 const connectorClasses: Record<StepState, string> = {
   upcoming: 'bg-[rgba(188,182,239,0.2)]',
   active: 'bg-linear-to-b from-brandHover to-[rgba(188,182,239,0.2)]',
+  failed: 'bg-linear-to-b from-brandHover to-[rgba(188,182,239,0.2)]',
   completed: 'bg-linear-to-b from-[#00A186] to-[rgba(188,182,239,0.2)]'
 };
 
@@ -107,6 +111,10 @@ export type StepsItemProps = {
   tokenSymbol?: string;
   /** 14px icon node for the token chip — supplied by the caller (the primitive stays icon-source agnostic). */
   tokenIcon?: ReactNode;
+  /** Grey helper paragraph under the label (Figma failure states, 1030:139111). */
+  description?: ReactNode;
+  /** Right-aligned node vertically centered on the row — e.g. the "Try again" pill. */
+  trailingAction?: ReactNode;
   state?: StepState;
   /** Draw the connector line to the next item — every item except the last. */
   showConnector?: boolean;
@@ -118,6 +126,8 @@ export function StepsItem({
   label,
   tokenSymbol,
   tokenIcon,
+  description,
+  trailingAction,
   state = 'upcoming',
   showConnector = false,
   className
@@ -131,14 +141,20 @@ export function StepsItem({
         )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="font-circle text-fgPrimary flex h-[30px] items-center gap-1.5 text-base leading-4.5 font-medium tracking-[-0.32px]">
-          <span className="truncate">{label}</span>
-          {tokenSymbol && (
-            <span className="flex shrink-0 items-center gap-[3px]">
-              {tokenIcon}
-              <span>{tokenSymbol}</span>
-            </span>
-          )}
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="font-circle text-fgPrimary flex min-h-[30px] items-center gap-1.5 text-base leading-4.5 font-medium tracking-[-0.32px]">
+              {typeof label === 'string' ? <span className="truncate">{label}</span> : label}
+              {tokenSymbol && (
+                <span className="flex shrink-0 items-center gap-[3px]">
+                  {tokenIcon}
+                  <span>{tokenSymbol}</span>
+                </span>
+              )}
+            </div>
+            {description && <div className="text-fgSecondary text-sm leading-5">{description}</div>}
+          </div>
+          {trailingAction && <div className="shrink-0 self-center">{trailingAction}</div>}
         </div>
         {/* Spacer giving the connector its run to the next item (Figma 5205:31478). */}
         {showConnector && <div className="h-5" aria-hidden="true" />}

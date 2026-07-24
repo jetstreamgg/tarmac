@@ -254,7 +254,6 @@ export { useAvailableTokenRewardContracts } from './rewards/useAvailableTokenRew
 export { useAvailableTokenRewardContractsForChains } from './rewards/useAvailableTokenRewardContracts';
 export { useRewardContractInfo } from './rewards/useRewardContractInfo';
 export { useRewardContractsInfo } from './rewards/useRewardContractsInfo';
-export { useRewardsUserHistory } from './rewards/useRewardsUserHistory';
 export { useAllRewardsUserHistory } from './rewards/useAllRewardsUserHistory';
 export { useRewardsChartInfo } from './rewards/useRewardsChartInfo';
 export { useMultipleRewardsChartInfo } from './rewards/useMultipleRewardsChartInfo';
@@ -285,6 +284,10 @@ export { useCombinedHistory } from './shared/useCombinedHistory';
 export { useAllNetworksCombinedHistory } from './shared/useAllNetworksCombinedHistory';
 export { useL2CombinedHistory } from './shared/useL2CombinedHistory';
 export { useEthereumCombinedHistory } from './shared/useEthereumCombinedHistory';
+export { useEthereumIndexerHistory } from './shared/useEthereumIndexerHistory';
+export { useL2sIndexerHistory } from './shared/useL2sIndexerHistory';
+export { useHistoryFamilyQuery } from './shared/useHistoryFamilyQuery';
+export { useFilteredPortfolioHistory } from './shared/useFilteredPortfolioHistory';
 export { useUsdsDaiData } from './shared/useUsdsDaiData';
 export { useOverallSkyData } from './shared/useOverallSkyData';
 
@@ -324,6 +327,8 @@ export { useUpgradeHistory } from './upgrade/useUpgradeHistory';
 export { useUpgradeTotals } from './upgrade/useUpgradeTotals';
 export { useMkrSkyFee } from './upgrade/useMkrSkyFee';
 export { useMigrationStats } from './upgrade/useMigrationStats';
+export { useBatchUpgrade } from './upgrade/useBatchUpgrade';
+export type { UpgradeSourceToken } from './upgrade/useBatchUpgrade';
 
 // Trade
 export { useTradeHistory } from './trade/useTradeHistory';
@@ -418,7 +423,7 @@ export {
   ModuleEnum,
   TransactionTypeEnum,
   TRUST_LEVELS,
-  URL_SKY_SUBGRAPH,
+  URL_SKY_INDEXER,
   ZERO_ADDRESS,
   ZERO_BYTES32,
   TENDERLY_CHAIN_ID

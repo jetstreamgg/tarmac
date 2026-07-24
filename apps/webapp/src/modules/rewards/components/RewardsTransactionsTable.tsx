@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
-import { TransactionTypeEnum, useRewardsUserHistory, type RewardContract } from '@/hooks';
+import { TransactionTypeEnum, useAllRewardsUserHistory, type RewardContract } from '@/hooks';
 import { formatBigInt, getEtherscanLink, formatAddress } from '@/utils';
 import { absBigInt } from '@/modules/utils/math';
 import { SavingsSupply, ArrowDown, Reward } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import {
   ProductTransactionsTable,
   ProductTransactionColumn
@@ -102,19 +102,27 @@ const renderCard = (row: RewardsTxRow) => (
 /**
  * Per-farm user history mapped onto the shared (column-driven)
  * ProductTransactionsTable — the ProductDetailTemplate `transactions` slot.
- * Supply/withdraw/claim rows come pre-merged and sorted from
- * `useRewardsUserHistory` (subgraph).
+ * Supply/withdraw/claim rows come pre-merged and sorted from the batched
+ * `useAllRewardsUserHistory` (indexer) — one shared query across all farms,
+ * filtered down to this contract.
  */
 export function RewardsTransactionsTable({ contract }: { contract: RewardContract }) {
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
   const {
-    data: history,
+    data: allHistory,
     isLoading,
-    error
-  } = useRewardsUserHistory({ subgraphUrl, rewardContractAddress: contract.contractAddress });
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useAllRewardsUserHistory({
+    indexerUrl
+  });
 
   const rows = useMemo<RewardsTxRow[]>(() => {
-    if (!history) return [];
+    if (!allHistory) return [];
+    const history = allHistory.filter(
+      item => item.rewardContractAddress?.toLowerCase() === contract.contractAddress.toLowerCase()
+    );
 
     return history.map((item, index) => {
       const kind: RewardsTxKind =
@@ -137,7 +145,7 @@ export function RewardsTransactionsTable({ contract }: { contract: RewardContrac
         txHref: getEtherscanLink(item.chainId ?? contract.chainId, item.transactionHash, 'tx')
       };
     });
-  }, [history, contract]);
+  }, [allHistory, contract]);
 
   return (
     <ProductTransactionsTable
@@ -148,6 +156,9 @@ export function RewardsTransactionsTable({ contract }: { contract: RewardContrac
       isLoading={isLoading}
       error={error}
       renderCard={renderCard}
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

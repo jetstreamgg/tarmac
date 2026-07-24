@@ -35,6 +35,8 @@ export interface HistoryTableProps {
   statusColumn?: boolean;
   typeHeader?: string;
   dataTestId?: string;
+  /** Fired on page navigation with the page landed on and the current page count — lets keyset-paginated sources fetch more when the user reaches the end. */
+  onPageChange?: (page: number, totalPages: number) => void;
 }
 
 export enum SortDirection {

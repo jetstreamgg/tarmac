@@ -190,7 +190,7 @@ export function ProductDetailTemplate({
   dataTestId = 'product-detail'
 }: ProductDetailTemplateProps) {
   return (
-    <div className="flex w-full flex-col gap-8 py-6 md:py-10" data-testid={dataTestId}>
+    <div className="flex w-full flex-col gap-8 py-4 md:py-10" data-testid={dataTestId}>
       {/* Header (Patterns/Headers, Savings type 5039:35173): Label 5 back-link
           over the ringed-icon + Heading 3 title row, network pill right. The
           DS 17px icon-title gap is normalized to 16. M6.3 mobile (486:20720):

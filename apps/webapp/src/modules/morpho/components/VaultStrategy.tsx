@@ -12,7 +12,9 @@ import { buildVaultStrategy } from '../helpers/vaultStrategy';
  */
 export function VaultStrategy({ vaultAddress }: { vaultAddress: `0x${string}` }) {
   const { data, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
-  const strategy = data?.market ? buildVaultStrategy(data.market.markets) : undefined;
+  const strategy = data?.market
+    ? buildVaultStrategy(data.market.markets, data.market.idleLiquidity, data.totalAssetsUsd)
+    : undefined;
 
   return (
     <div data-testid="vault-strategy">

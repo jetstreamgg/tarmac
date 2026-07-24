@@ -54,6 +54,15 @@ export const shellHeaderClasses = (fullWidth: boolean) =>
 export const shellHeaderContentClasses = (fullWidth: boolean) =>
   cn(
     'flex items-center gap-4',
+    // APP-415: at the desktop tier the row becomes the comp's three-flank grid
+    // (Navbar 1036:201230 — equal 417|418|417 columns: logo | pills | wallet
+    // cluster; TopNav dissolves via desktop:contents so its groups land in the
+    // outer tracks). The pill group centers on the container axis — the same
+    // center line as the page content — instead of the leftover flex space,
+    // which sat it ~60px left and let it drift with wallet-chip width. `1fr`
+    // tracks bottom out at min-content, so a long chip squeezes the flanks
+    // (pills nudge off-center) rather than overlapping the pills.
+    'desktop:grid desktop:grid-cols-[1fr_auto_1fr]',
     // Full-width routes align the header content with the design-system page
     // container (same max-width + gutter tiers as the bare AppContainer);
     // boxed routes keep the legacy full-bleed padding. 20px side padding is

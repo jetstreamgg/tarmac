@@ -2,10 +2,10 @@ import { TOKENS, type RewardContract } from '@/hooks';
 
 /**
  * Product title for a reward contract on the redesigned surfaces (detail-page
- * header, modal titles). The registry keeps the legacy names as-is ("With: USDS
- * Get: SPK") per the marketplace-labels decision; those don't read as product
- * titles, so token farms render as "<TOKEN> Rewards" here. Chronicle's registry
- * name ("Chronicle Points") already is one.
+ * header, modal titles). The registry names marketplace rows "Earn <TOKEN>"
+ * (APP-399 #5); detail surfaces keep the "<TOKEN> Rewards" framing for token
+ * farms. Chronicle's registry name already reads as a title, so it passes
+ * through.
  */
 export function rewardContractDisplayName(contract: RewardContract): string {
   return contract.rewardToken.symbol === TOKENS.cle.symbol

@@ -18,7 +18,7 @@ function App() {
     chainId: 1,
     user: '0x123...',
     search: 'delegateName',
-    subgraphUrl: 'https://custom-subgraph-url.com'
+    indexerUrl: 'https://custom-indexer-url.com'
   });
 
   if (isLoading) return <div>Loading...</div>;
@@ -50,7 +50,7 @@ type Props = ReadHookParams<DelegateInfo[]> & {
   chainId: number;
   user: `0x${string}`;
   search?: string;
-  subgraphUrl?: string;
+  indexerUrl?: string;
 };
 ```
 
@@ -60,8 +60,8 @@ type Props = ReadHookParams<DelegateInfo[]> & {
   - The user address to fetch delegates for.
 - `search`: `string | undefined`
   - A search term to filter delegates by name.
-- `subgraphUrl`: `string | undefined`
-  - Optional. A custom subgraph URL to use for fetching data. If not provided, the default URL for the given chainId will be used.
+- `indexerUrl`: `string | undefined`
+  - Optional. A custom indexer URL to use for fetching data. If not provided, the default URL for the given chainId will be used.
 - `options`: `ReadHookParams<DelegateInfo[]>`
   - Additional options for the query.
 

@@ -51,6 +51,14 @@ describe('validateSearchParams removed params', () => {
   });
 });
 
+describe('validateSearchParams upgrade deep link', () => {
+  it('preserves the upgrade param on any module for useUpgradeDeepLink to consume', () => {
+    const params = new URLSearchParams('upgrade=mkr');
+    validateSearchParams(params, Intent.BALANCES_INTENT);
+    expect(params.get('upgrade')).toBe('mkr');
+  });
+});
+
 describe('validateSearchParams geo overrides (non-production)', () => {
   it('preserves valid geo override params and strips unrelated unknown params', () => {
     const params = validateConvertParams('geo_mode=restricted&geo_module_savings=true&foo=bar');

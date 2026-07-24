@@ -7,12 +7,20 @@ import { absBigInt } from '../../utils/math';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
 import { useSusdtVaultHistory, TransactionTypeEnum, getTokenDecimals } from '@/hooks';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import { useChainId } from 'wagmi';
 
 export function SusdtVaultHistory() {
-  const subgraphUrl = useSubgraphUrl();
-  const { data: vaultHistory, isLoading, error } = useSusdtVaultHistory({ subgraphUrl });
+  const indexerUrl = useIndexerUrl();
+  const {
+    data: vaultHistory,
+    isLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useSusdtVaultHistory({
+    indexerUrl
+  });
 
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -44,6 +52,9 @@ export function SusdtVaultHistory() {
       isLoading={isLoading}
       transactionHeader={t`Amount`}
       typeColumn
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

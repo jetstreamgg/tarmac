@@ -32,7 +32,7 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
-vi.mock('@/modules/app/hooks/useSubgraphUrl', () => ({ useSubgraphUrl: () => 'http://test' }));
+vi.mock('@/modules/app/hooks/useIndexerUrl', () => ({ useIndexerUrl: () => 'http://test' }));
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { TransactionTypeEnum, TOKENS } from '@/hooks';

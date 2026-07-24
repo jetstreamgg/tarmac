@@ -1,6 +1,6 @@
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
+import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 
 import { formatBaLabsUrl } from '../helpers';

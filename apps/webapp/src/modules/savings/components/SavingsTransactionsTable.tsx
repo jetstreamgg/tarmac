@@ -7,7 +7,7 @@ import { formatBigInt, isL2ChainId, getEtherscanLink, formatAddress } from '@/ut
 import { absBigInt } from '@/modules/utils/math';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import {
   ProductTransactionsTable,
   ProductTransactionColumn
@@ -101,8 +101,14 @@ const renderCard = (row: SavingsTxRow) => (
  * list stays unfiltered.
  */
 export function SavingsTransactionsTable({ filter = 'all' }: { filter?: SavingsTxFilter }) {
-  const subgraphUrl = useSubgraphUrl();
-  const { data: savingsHistory, isLoading, error } = useSavingsHistory(subgraphUrl);
+  const indexerUrl = useIndexerUrl();
+  const {
+    data: savingsHistory,
+    isLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useSavingsHistory(indexerUrl);
   const chainId = useChainId();
 
   const rows = useMemo<SavingsTxRow[]>(() => {
@@ -140,6 +146,9 @@ export function SavingsTransactionsTable({ filter = 'all' }: { filter?: SavingsT
       isLoading={isLoading}
       error={error}
       renderCard={renderCard}
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

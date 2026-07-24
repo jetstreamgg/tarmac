@@ -80,7 +80,7 @@ export function VaultDetails({ vaultAddress, assetToken, vaultName }: VaultDetai
         </DetailSection>
       )}
       {/* History source is provider-specific: Morpho vaults read the Morpho
-          indexer; the sUSDT vault reads the Sky Ecosystem subgraph. */}
+          indexer; the sUSDT vault reads the Sky Ecosystem indexer. */}
       {isConnectedAndAcceptedTerms && (
         <DetailSection title={t`Your ${vaultName} vault transaction history`}>
           <DetailSectionRow>

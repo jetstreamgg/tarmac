@@ -24,7 +24,11 @@ declare module '@tanstack/react-router' {
 /** A path registered in the app's route tree — typos or stale paths fail to compile. */
 export type AppRoutePath = FileRouteTypes['to'];
 
-/** Path each module lives at. TRADE/UPGRADE intents render as Convert submodules. */
+/**
+ * Path each module lives at. The TRADE intent renders as a Convert submodule;
+ * UPGRADE has no destination — it's the More-menu modal (APP-413) — so its
+ * intent lands on Convert.
+ */
 export const INTENT_PATHS: Record<Intent, AppRoutePath> = {
   [Intent.BALANCES_INTENT]: '/',
   [Intent.SAVINGS_INTENT]: '/earn/savings',
@@ -35,7 +39,7 @@ export const INTENT_PATHS: Record<Intent, AppRoutePath> = {
   [Intent.VAULTS_INTENT]: '/earn/vaults',
   [Intent.FIXED_INTENT]: '/earn/fixed',
   [Intent.TRADE_INTENT]: '/convert/trade',
-  [Intent.UPGRADE_INTENT]: '/convert/upgrade'
+  [Intent.UPGRADE_INTENT]: '/convert'
 };
 
 const useDeepestStaticData = <K extends keyof import('@tanstack/react-router').StaticDataRouteOption>(
