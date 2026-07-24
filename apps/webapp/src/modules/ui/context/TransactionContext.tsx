@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
-import { TxStatus } from '@/widgets';
+import { TxStatus, InProgress, Cancel } from '@/widgets';
 import { toError } from '@/hooks';
 import { getTransactionLink } from '@/utils';
+import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
+import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
 import { useIsSafeWallet } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
@@ -21,6 +23,23 @@ import type {
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
 const MINIMIZED_TOAST_ID = 'transaction-minimized';
+const ABANDONED_TOAST_ID = 'transaction-abandoned';
+const PENDING_BLOCK_TOAST_ID = 'transaction-pending-block';
+
+// The dapp cannot dismiss a wallet's signature prompt — abandoning a session
+// only stops the app from listening. Tell the user to finish the job wallet-side.
+function notifyRequestAbandoned() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Transaction request discarded</Trans>}
+        description={<Trans>If your wallet still shows the request, reject it there.</Trans>}
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
 
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
@@ -81,13 +100,42 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
   const launch = useCallback(
     (config: TransactionConfig) => {
-      // One transaction at a time: if one is still in-flight (e.g. minimized while
-      // awaiting the wallet / mining), don't start a new session — bring the pending
-      // one back into view. Launching here would remount the host and strand the
-      // running transaction.
-      if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
+      // One BROADCAST transaction at a time: it's on-chain and will resolve, so
+      // don't start a new session — bring the pending modal back into view and
+      // say why. Launching here would remount the host and strand the running tx.
+      if (txStatusRef.current === TxStatus.LOADING) {
         setMinimized(false);
+        toastWithClose(
+          () => (
+            <TransactionNoticeToast
+              icon={<InProgress />}
+              title={<Trans>Transaction in progress</Trans>}
+              description={<Trans>It needs to finish before you can start a new one.</Trans>}
+            />
+          ),
+          { id: PENDING_BLOCK_TOAST_ID, duration: 8000 }
+        );
         return;
+      }
+
+      // A session still awaiting the wallet signature (INITIALIZED) has nothing
+      // on-chain — starting a new flow abandons it: track the cancellation, warn
+      // about the orphaned wallet prompt, and fall through to a fresh launch
+      // (which resets all session state and remounts the hosts).
+      if (txStatusRef.current === TxStatus.INITIALIZED) {
+        const abandoned = configRef.current?.analytics;
+        if (abandoned) {
+          trackTransactionCompleted({
+            widgetName: abandoned.widgetName,
+            chainId,
+            txStatus: 'cancelled',
+            action: abandoned.action,
+            flow: abandoned.flow,
+            data: abandoned.data
+          });
+          startNewFlow();
+        }
+        notifyRequestAbandoned();
       }
 
       configRef.current = config;
@@ -111,7 +159,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [chainId, trackWidgetReviewViewed]
+    [chainId, trackWidgetReviewViewed, trackTransactionCompleted, startNewFlow]
   );
 
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
@@ -141,18 +189,22 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleClose = useCallback(() => {
-    // Track cancellation if the user closes during INITIALIZED (waiting for wallet confirmation)
+    // Closing during INITIALIZED abandons an un-signed session: track the
+    // cancellation and warn about the wallet prompt we can't dismiss.
     const analytics = configRef.current?.analytics;
-    if (txStatus === TxStatus.INITIALIZED && analytics) {
-      trackTransactionCompleted({
-        widgetName: analytics.widgetName,
-        chainId,
-        txStatus: 'cancelled',
-        action: analytics.action,
-        flow: analytics.flow,
-        data: analytics.data
-      });
-      startNewFlow();
+    if (txStatus === TxStatus.INITIALIZED) {
+      if (analytics) {
+        trackTransactionCompleted({
+          widgetName: analytics.widgetName,
+          chainId,
+          txStatus: 'cancelled',
+          action: analytics.action,
+          flow: analytics.flow,
+          data: analytics.data
+        });
+        startNewFlow();
+      }
+      notifyRequestAbandoned();
     }
 
     setOpen(false);
