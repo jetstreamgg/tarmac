@@ -188,8 +188,12 @@ export function TopNav() {
   const { showNewDot } = useNewIntentDots();
   const { searchForIntent, handleNavClick } = useDestinationLinkProps();
 
+  // At the desktop tier the nav box dissolves (display: contents) so the pill
+  // group and chip cluster sit directly in the shell header's three-flank grid
+  // (APP-415) — the nav landmark itself stays in the accessibility tree. Below
+  // desktop it's the flex row of the DS Mobile / Topbar layout.
   return (
-    <nav className="flex w-full items-center gap-3" data-testid="top-nav">
+    <nav className="desktop:contents flex w-full items-center gap-3" data-testid="top-nav">
       {/* Shared gradient for the selected nav icon (dark mode); referenced by
           fill: url(#nav-icon-gradient) in globals.css. Bounding-box units span
           each glyph exactly (Figma's per-icon ramp), which relies on every nav
@@ -203,10 +207,12 @@ export function TopNav() {
           </linearGradient>
         </defs>
       </svg>
-      {/* mx-auto centers the pill group between the logo (left, in Layout) and
-          the chip cluster. Below the desktop tier the destinations live in the
-          bottom MobileNavbar instead (M2), so the pill group hides. */}
-      <div className="desktop:flex mx-auto hidden items-center gap-2">
+      {/* The pill group is the center `auto` track of the header grid, so it
+          sits on the page content's center line regardless of how the logo and
+          chip-cluster flanks differ in width. Below the desktop tier the
+          destinations live in the bottom MobileNavbar instead (M2), so the
+          pill group hides. */}
+      <div className="desktop:flex hidden items-center gap-2">
         {DESTINATIONS.map(destination => {
           const isActive = activePath === destination.path;
           const Icon = destination.icon;
@@ -233,8 +239,9 @@ export function TopNav() {
         })}
       </div>
       {/* With the pill group hidden on mobile, ml-auto keeps the chip cluster
-          pinned right (the DS Mobile / Topbar layout: logo · wallet · menu). */}
-      <div className="desktop:ml-0 ml-auto flex items-center gap-3">
+          pinned right (the DS Mobile / Topbar layout: logo · wallet · menu).
+          At desktop it's the right grid flank instead, pinned by justify-self. */}
+      <div className="desktop:ml-0 desktop:justify-self-end ml-auto flex items-center gap-3">
         <WalletChip />
         {import.meta.env.VITE_USE_MOCK_WALLET === 'true' && <MockConnectButton />}
         <MoreMenu />

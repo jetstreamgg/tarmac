@@ -55,6 +55,17 @@ describe('shellHeaderContentClasses', () => {
     expect(cls).not.toContain('max-w-[1320px]');
     expect(cls).toContain('sm:px-10');
   });
+
+  // APP-415: the desktop row is the comp's three-flank grid (logo | pills |
+  // wallet cluster) so the pill group centers on the content axis instead of
+  // the leftover flex space between unequal flanks.
+  it('lays the desktop row out as the three-flank grid in both modes', () => {
+    for (const fullWidth of [true, false]) {
+      const cls = shellHeaderContentClasses(fullWidth);
+      expect(cls).toContain('desktop:grid');
+      expect(cls).toContain('desktop:grid-cols-[1fr_auto_1fr]');
+    }
+  });
 });
 
 describe('shellSurfaceClasses', () => {
