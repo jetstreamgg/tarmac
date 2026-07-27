@@ -112,7 +112,9 @@ const iconboxStatusVariants = cva('relative inline-flex shrink-0 items-center ju
     },
     size: {
       l: 'size-16 border-2',
-      m: 'size-9 border-[1.5px]',
+      // Figma types the M ring at 1.5px, but the border scale is whole-px
+      // (1/2) — rounded up to 2 (APP-416).
+      m: 'size-9 border-2',
       s: 'size-6 border',
       xs: 'size-4 border',
       '2xs': 'size-3 border'
@@ -138,6 +140,12 @@ const iconboxStatusDot = cva('ring-pageBackground absolute rounded-full ring-2',
       // Figma draws no dot at 2XS; the box is barely bigger than a dot.
       '2xs': 'hidden'
     }
+  },
+  // Must mirror the box cva's default: without it, callers that omit `size`
+  // (table cells) got a box at `m` but a dot with NO size/position classes —
+  // a 0×0, invisible dot (APP-416 round 3).
+  defaultVariants: {
+    size: 'm'
   }
 });
 

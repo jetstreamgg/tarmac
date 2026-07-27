@@ -15,6 +15,9 @@ import { useIsSafeWallet } from '@/hooks';
 import { WalletPreviewDrawer } from './WalletPreviewDrawer';
 
 const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+// Phone tier: 0x + first two hex chars + last four (0x00…C4A2) — short enough
+// to fit the chip at 360px without ellipsis-truncating mid-glyph (APP-416).
+const formatAddressShort = (addr: string) => `${addr.slice(0, 4)}…${addr.slice(-4)}`;
 
 /** V2 wallet chip: unauthorized page / terms modal / connect / chip with preview drawer. */
 export function WalletChip() {
@@ -58,8 +61,18 @@ export function WalletChip() {
           >
             <CustomAvatar address={address} size={24} />
             {/* DS Mobile / Topbar keeps the name at phone width; the cap stops
-                long ENS names from squeezing the logo out at 360px. */}
-            <Text className="max-w-24 truncate sm:max-w-none">{`${isSafeWallet ? 'safe:' : ''}${ensName || formatAddress(address)}`}</Text>
+                long ENS names from squeezing the logo out at 360px. Addresses
+                swap to the short trim there instead of ellipsis-truncating. */}
+            <Text className="max-w-24 truncate sm:max-w-none">
+              {ensName ? (
+                `${isSafeWallet ? 'safe:' : ''}${ensName}`
+              ) : (
+                <>
+                  <span className="sm:hidden">{`${isSafeWallet ? 'safe:' : ''}${formatAddressShort(address)}`}</span>
+                  <span className="hidden sm:inline">{`${isSafeWallet ? 'safe:' : ''}${formatAddress(address)}`}</span>
+                </>
+              )}
+            </Text>
             <ChevronDown className={cn('h-4 w-4 transition-transform', showDrawer && 'rotate-180')} />
           </Button>
           <WalletPreviewDrawer

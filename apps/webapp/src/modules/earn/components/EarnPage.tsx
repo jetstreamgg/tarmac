@@ -15,7 +15,7 @@ import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
-import { productIconSymbol } from '@/components/product/productVisuals';
+import { productIconSymbol, productStatusType } from '@/components/product/productVisuals';
 import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
@@ -119,7 +119,17 @@ export function EarnPage() {
         name: row.name,
         riskProfile: row.riskProfile,
         isNew: NEW_PRODUCT_IDS.includes(row.id),
-        icon: <TokenIcon token={{ symbol: productIconSymbol(row) }} width={28} className="h-7 w-7" />,
+        // Bare logo — the comp's iconbox holds no chain chip (1036:201236);
+        // networks live in their own column.
+        icon: (
+          <TokenIcon
+            token={{ symbol: productIconSymbol(row) }}
+            width={28}
+            className="h-7 w-7"
+            showChainIcon={false}
+          />
+        ),
+        status: productStatusType(row),
         nameSuffix:
           row.kind === 'vault' && row.id.startsWith('vault-morpho') ? (
             <Morpho className="h-4 w-4 rounded-sm" />

@@ -58,6 +58,7 @@ export default defineConfig({
         '**/la-u-r.spec.ts',
         '**/la-u-s.spec.ts',
         '**/stake.spec.ts',
+        '**/stake-mobile.spec.ts',
         '**/stake-onchain.spec.ts',
         '**/landing.spec.ts',
         '**/network-switching.spec.ts',

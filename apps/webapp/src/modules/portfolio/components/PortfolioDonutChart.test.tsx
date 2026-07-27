@@ -31,25 +31,26 @@ describe('PortfolioDonutChart', () => {
     expect(screen.queryByText('No tokens')).toBeNull();
   });
 
-  // M6.1: the radial geometry scales with `size` so the DS band stays ~5% of the
-  // diameter at every box (Figma 486:20138). Holding the constants absolute made
-  // the mobile 160 render a band twice as thick, relative, as the desktop 320.
+  // The radial geometry scales with `size` so the DS band stays ~4.5% of the
+  // diameter at every box (Charts / Pie Chart comp 5034:22030: a 178 box with
+  // an 8px band). Holding the constants absolute would thicken the band,
+  // relatively, on the mobile 160.
   describe('radial geometry scales with size', () => {
-    it('is unchanged at the 320 base size', () => {
-      const { container } = renderChart([], 320);
-      // outerRadius 160-4=156, innerRadius 156-18=138, ringRadius 138-10=128.
-      expect(ringRadius(container)).toBe(128);
+    it('is unchanged at the 178 base size', () => {
+      const { container } = renderChart([], 178);
+      // outerRadius 89-0=89, innerRadius 89-8=81, ringRadius 81-9=72.
+      expect(ringRadius(container)).toBe(72);
     });
 
     it('scales the ring proportionally at the mobile 160 box', () => {
       const { container } = renderChart([], 160);
-      // scale 0.5: outerRadius 80-2=78, innerRadius 78-9=69, ringRadius 69-5=64.
-      expect(ringRadius(container)).toBe(64);
+      // scale 160/178: outerRadius 80, ringRadius 80-(8+9)*(160/178) ≈ 64.72.
+      expect(ringRadius(container)).toBeCloseTo(64.72, 2);
     });
 
     it('keeps the ring at the same share of the box across sizes', () => {
-      const { container: big } = renderChart([], 320);
-      const bigShare = ringRadius(big) / 320;
+      const { container: big } = renderChart([], 178);
+      const bigShare = ringRadius(big) / 178;
       cleanup();
       const { container: small } = renderChart([], 160);
       expect(ringRadius(small) / 160).toBeCloseTo(bigShare, 5);

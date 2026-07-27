@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
-import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { IconboxStatus } from '@/components/ui/iconbox';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
-import { productIconSymbol, productRingColor } from '@/components/product/productVisuals';
+import { productIconSymbol, productStatusType } from '@/components/product/productVisuals';
 import { ProductGlyph } from './ProductGlyph';
 
 const RISK_LABEL: Record<EarnRiskTier, ReactNode> = {
@@ -25,12 +26,21 @@ const RISK_LABEL: Record<EarnRiskTier, ReactNode> = {
 export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onStart: () => void }) {
   return (
     <Card className="flex h-full flex-col gap-8 p-5" data-testid="earn-marketplace-card">
-      <ProductTokenIcon
-        symbol={productIconSymbol(row)}
-        ringColor={productRingColor(row)}
-        width={40}
-        className="h-10 w-10"
-      />
+      {/* DS Iconbox / Status keeps the family tint (ring + dot) in sync with
+          the detail headers; 48px box holding the 40px token. */}
+      <IconboxStatus
+        size="l"
+        type={productStatusType(row)}
+        dot={!!productStatusType(row)}
+        className="size-12"
+      >
+        <TokenIcon
+          token={{ symbol: productIconSymbol(row) }}
+          width={40}
+          showChainIcon={false}
+          className="h-10 w-10"
+        />
+      </IconboxStatus>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">

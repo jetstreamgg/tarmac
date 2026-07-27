@@ -26,6 +26,12 @@ import { PageHeading } from '@/components/ui/page-header';
 export interface ProductDetailToken {
   /** Token image node injected by the module — a bare 48px `<TokenIcon/>`; the template supplies the DS ring. */
   icon: ReactNode;
+  /**
+   * Product-family status tint for the header ring + dot (Iconbox / Status):
+   * Morpho vaults `info` (blue), Pendle fixed `success` (green); omit for the
+   * neutral borderTertiary ring. Optional — additive to the frozen C3 contract.
+   */
+  status?: 'success' | 'info';
 }
 
 /** One row of the Details grid. The module supplies icon/label/value. */
@@ -84,7 +90,7 @@ function ProductTitleIcon({ token }: { token: ProductDetailToken }) {
   return (
     <div className="shrink-0" data-testid="product-detail-token-icon">
       {/* M6.3 mobile header ring is 56px (486:20720); 64 from md. */}
-      <IconboxStatus size="l" className="size-14 md:size-16">
+      <IconboxStatus size="l" type={token.status} dot={!!token.status} className="size-14 md:size-16">
         {token.icon}
       </IconboxStatus>
     </div>

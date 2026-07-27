@@ -79,11 +79,9 @@
   /* Dialog/Sheet scrim (Figma components/modals/bg-overlay). Was a hardcoded
      `bg-black/50` on both overlays, so light inherited dark's black scrim —
      the light comps (1030:59384) show a pale indigo wash over the blurred page
-     instead. This dark value is the incumbent black/50 kept byte-for-byte for
-     parity, NOT the DS value: the DS types dark as #05041199, a deliberate
-     unapplied delta because dark is frozen (see THEMING.md). The light scope
-     takes the real DS value. */
-  --color-modalOverlay: rgba(0, 0, 0, 0.5);
+     instead. Dark now takes the DS value too (#05041199): APP-416 aligned the
+     transaction-modal scrim with the comps, retiring the frozen black/50. */
+  --color-modalOverlay: rgba(5, 4, 17, 0.6);
   /* Design-system button tokens (Figma 5010:7958): dark values are the Figma
      source values — colors/bg/bg-brand-primary + bg-brand-secondary (primary
      hover/pressed fills), colors/border/border-focus (focus ring),
@@ -186,6 +184,9 @@
   --color-brand3-end: rgba(80, 77, 255, 0.1);
   --color-loader-brand-start: #949aff;
   --color-loader-brand-end: #504dff;
+  /* The /stake mobile summary-card "Cover" wash (comp 1222:16799): Figma types
+     the gradient's bottom stop as a raw hex; same value in both themes. */
+  --color-brandCover: #756fec;
   /* Design-system Patterns/Headers (Figma 5178:37451): the brand glow behind
      the Stake header's Iconbox/Status (5043:59189). Figma types it as a raw
      effect (no variable); same value in both themes for now. */

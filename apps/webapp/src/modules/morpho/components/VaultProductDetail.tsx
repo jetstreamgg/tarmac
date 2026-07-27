@@ -112,7 +112,8 @@ export function VaultProductDetail({
             className="h-12 w-12"
             showChainIcon={false}
           />
-        )
+        ),
+        status: vault.provider === 'morpho' ? 'info' : undefined
       }}
       title={
         <span className="flex flex-wrap items-center gap-2">

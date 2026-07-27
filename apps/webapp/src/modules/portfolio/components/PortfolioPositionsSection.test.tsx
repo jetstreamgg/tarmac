@@ -82,6 +82,7 @@ const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   amountUsd: 100,
   rate: 0.05,
   color: '#000',
+  hoverColor: '#000',
   share: 0.5,
   detailPath: '/earn/x',
   chainIds: [1],
