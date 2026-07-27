@@ -245,14 +245,13 @@ export function TransactionModal({
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
       <ResponsiveModalContent
         aria-describedby={undefined}
-        // DS Modal card (Figma 1310:130558): colors/bg/bg-secondary tint at
-        // radius-2xl over the frosted scrim — the old containerDark black
-        // predates the comps. Tint and radius only at md+ where the Dialog
-        // renders: the near-transparent tint is only legible over the
-        // DialogOverlay's blur-full scrim, and the mobile bottom Sheet's
-        // overlay has no frost, so below md the card stays opaque
-        // containerDark (and keeps the Sheet's top-only rounding).
-        className="bg-containerDark md:bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]"
+        // DS Modal card (Figma 1310:130558 desktop, 1292:63543 mobile):
+        // colors/bg/bg-secondary tint at radius-2xl over the frosted scrim at
+        // every tier — the mobile comp ships the same bg-overlay +
+        // blur-full scrim under the same near-transparent card, and the
+        // SheetOverlay carries that frost. Radius only at md+; the mobile
+        // bottom Sheet keeps its own top-only rounding.
+        className="bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
