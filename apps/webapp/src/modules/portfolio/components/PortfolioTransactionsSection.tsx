@@ -109,12 +109,14 @@ const COLUMNS: ProductTransactionColumn<PortfolioTxRow>[] = [
   { id: 'network', header: <Trans>Network</Trans>, width: '0.8fr', cell: networkCell },
   { id: 'status', header: <Trans>Status</Trans>, width: '1fr', cell: statusCell },
   { id: 'product', header: <Trans>Product</Trans>, width: '1fr', cell: productCell },
-  { id: 'supplied', header: <Trans>Supplied</Trans>, width: '1.2fr', cell: suppliedCell },
+  // Comp says "Supplied" — deliberately "Amounts" per APP-426 item 5: the table
+  // mixes supplies, withdrawals and claims.
+  { id: 'supplied', header: <Trans>Amounts</Trans>, width: '1.2fr', cell: suppliedCell },
   { id: 'hash', header: <Trans>Tx hash</Trans>, width: '1fr', cell: hashCell }
 ];
 
 // Mobile card: Action is the header, Tx hash becomes the footer button, and the
-// remaining Network / Status / Product / Supplied columns fold into the 2×2 grid.
+// remaining Network / Status / Product / Amounts columns fold into the 2×2 grid.
 // (The comp mislabels the top grid row "My position" / "APY" — placeholder text
 // carried over from the PositionCard; the real fields are Network / Status.)
 const renderCard = (row: PortfolioTxRow) => (
@@ -124,7 +126,7 @@ const renderCard = (row: PortfolioTxRow) => (
       { label: <Trans>Network</Trans>, value: networkCell(row) },
       { label: <Trans>Status</Trans>, value: statusCell(row) },
       { label: <Trans>Product</Trans>, value: productCell(row) },
-      { label: <Trans>Supplied</Trans>, value: suppliedCell(row) }
+      { label: <Trans>Amounts</Trans>, value: suppliedCell(row) }
     ]}
     link={{ label: <Trans>View transaction</Trans>, href: row.explorerHref }}
   />
