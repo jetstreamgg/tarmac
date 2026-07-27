@@ -1979,7 +1979,7 @@ function BannersSection() {
       <div className="flex max-w-[1032px] flex-col gap-6">
         <PromoBanner
           illustration={
-            <img src="/illustrations/illustration-connect-wallet.png" alt="" className="size-full" />
+            <img src="/illustrations/illustration-connect-glass-panels.png" alt="" className="size-full" />
           }
           heading={
             <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
