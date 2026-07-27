@@ -49,6 +49,13 @@ const BP_MIN_WIDTHS = [768, 912, 1200, 1280, 1400];
 
 const BP_QUERIES = BP_MIN_WIDTHS.map(width => `(min-width: ${width}px)`);
 
+/**
+ * The `md`-tier media query — for one-off matchMedia guards/listeners that
+ * must stay in lockstep with the JS breakpoint scale rather than hard-coding
+ * the threshold.
+ */
+export const MD_MEDIA_QUERY = BP_QUERIES[BP.md - 1];
+
 const subscribeToBreakpoints = (onStoreChange: () => void) => {
   const mediaQueries = BP_QUERIES.map(query => window.matchMedia(query));
   mediaQueries.forEach(mediaQuery => mediaQuery.addEventListener('change', onStoreChange));

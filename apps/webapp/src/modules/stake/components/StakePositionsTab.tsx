@@ -20,14 +20,17 @@ export function StakePositionsTab({
   const { data: positions, isLoading, error } = useStakeUserPositions();
   const hasPositions = (positions?.length ?? 0) > 0;
 
+  // Mobile comp 1222:16771 leads with the rail content (summary hero / promo
+  // card) before the tables, so the phone tier reorders via `order-*` while
+  // the lg grid keeps its DOM placement.
   return (
-    <div data-testid="stake-positions-tab" className="grid items-start gap-6 lg:grid-cols-3">
+    <div data-testid="stake-positions-tab" className="grid items-start gap-10 lg:grid-cols-3 lg:gap-6">
       {/* Two panes at lg (ProductDetailTemplate's pattern): the left pane is a
           real column so positions → activity follow its normal flow beside the
           self-heighted rail. Below lg the pane dissolves (`contents`) and
-          `order` restores the stacked sequence positions → summary → activity. */}
+          `order` restores the stacked sequence summary → positions → activity. */}
       <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-6">
-        <div className="order-1">
+        <div className="order-2">
           <StakePositionsTable
             positions={positions}
             isLoading={isLoading}
@@ -39,7 +42,7 @@ export function StakePositionsTab({
           <StakeActivityTable positions={positions} />
         </div>
       </div>
-      <div className="order-2 lg:order-none lg:col-span-1">
+      <div className="order-1 lg:order-none lg:col-span-1">
         {isLoading ? (
           <Skeleton className="rounded-card h-[420px]" />
         ) : hasPositions ? (
