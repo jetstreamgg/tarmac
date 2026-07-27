@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
-import { productNetworks } from '@/hooks';
+import { BP, productNetworks, useBreakpointIndex } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -97,25 +97,45 @@ export function StakeProductPage() {
   );
   const onInitialSheetInitConsumed = useCallback(() => setPendingSheetInit(null), []);
 
+  // Phone tier (comp 1295:20810): the header scales down (56px iconbox,
+  // Heading 3 title at 24/26) and the network pill keeps its FULL "Ethereum"
+  // label in the compact xs recipe — superseding the M3 icon-only treatment.
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
+
   return (
-    <div data-testid="stake-product-page" className="flex flex-col gap-6 py-4 md:py-10">
+    <div data-testid="stake-product-page" className="flex flex-col gap-16 py-4 md:gap-6 md:py-10">
       {/* Header (Patterns/Headers, Stake type 5043:59183): the DS 64px
           Iconbox / Status with the brand glow (5043:59189) beside a Heading 2
           title; the DS 17px icon-title gap is normalized to 16. */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
           <div className="shrink-0" data-testid="stake-header-icon">
-            <IconboxStatus size="l" className="shadow-brandGlow">
-              <TokenIcon token={{ symbol: 'SKY' }} width={48} className="h-12 w-12" showChainIcon={false} />
+            <IconboxStatus
+              size="l"
+              className="shadow-brandGlow size-14 border-[1.75px] md:size-16 md:border-2"
+            >
+              <TokenIcon
+                token={{ symbol: 'SKY' }}
+                width={48}
+                className="h-11 w-11 md:h-12 md:w-12"
+                showChainIcon={false}
+              />
             </IconboxStatus>
           </div>
-          <PageHeading size="lg">
+          <PageHeading
+            size="lg"
+            className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
+          >
             <Trans>SKY Staking</Trans>
           </PageHeading>
         </div>
-        {/* Phone tier: icon-only — the full chain name doesn't fit beside the
-            title (M3; same treatment as the product detail pages). */}
-        <ChainModal chainIds={networks} labelClassName="hidden sm:block" dataTestId="stake-network" />
+        <ChainModal
+          chainIds={networks}
+          size={isMobile ? 'xs' : undefined}
+          triggerClassName="h-8 md:h-10"
+          dataTestId="stake-network"
+        />
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>
@@ -146,13 +166,13 @@ export function StakeProductPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-6">
+        <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-5 md:mt-6">
           <StakePositionsTab onRemediate={onRemediate} />
         </TabsContent>
-        <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-6">
+        <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-5 md:mt-6">
           <StakeStatisticsTab />
         </TabsContent>
-        <TabsContent value="about" data-testid="stake-tab-content-about" className="mt-6">
+        <TabsContent value="about" data-testid="stake-tab-content-about" className="mt-5 md:mt-6">
           <StakeAboutTab />
         </TabsContent>
       </Tabs>

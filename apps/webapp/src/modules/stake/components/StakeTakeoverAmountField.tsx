@@ -54,12 +54,23 @@ export function StakeTakeoverAmountField({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
-        <span className="text-textSecondary text-sm">{label ?? <Trans>Amount</Trans>}</span>
-        {topRight && <span className="text-textSecondary text-sm">{topRight}</span>}
+        <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:text-sm md:leading-5">
+          {label ?? <Trans>Amount</Trans>}
+        </span>
+        {topRight && (
+          <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:text-sm md:leading-5">
+            {topRight}
+          </span>
+        )}
       </div>
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <TokenIcon token={{ symbol: tokenSymbol }} width={28} className="h-7 w-7" showChainIcon={false} />
+          <TokenIcon
+            token={{ symbol: tokenSymbol }}
+            width={28}
+            className="h-6 w-6 md:h-7 md:w-7"
+            showChainIcon={false}
+          />
           <input
             type="text"
             inputMode="decimal"
@@ -71,17 +82,18 @@ export function StakeTakeoverAmountField({
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              'text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-3xl font-medium tracking-tight outline-none disabled:opacity-50',
+              'text-text placeholder:text-textSecondary font-circle w-full min-w-0 bg-transparent text-[22px] leading-6 font-medium tracking-[-0.44px] outline-none disabled:opacity-50 md:font-sans md:text-3xl md:leading-9 md:tracking-tight',
               error && 'text-error'
             )}
           />
         </div>
         {onPercentClick && (
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1 md:gap-1.5">
             {PERCENT_CHIPS.map(percent => (
               // Design-system Button / Mini (Figma 5051:168712); the base
               // recipe's solid disabled fill is swapped back for the field's
-              // subtler faded look.
+              // subtler faded look. Mobile steps down to the comp's 32px chip
+              // with a Label 6 digit (1222:19764).
               <button
                 key={percent}
                 type="button"
@@ -90,6 +102,7 @@ export function StakeTakeoverAmountField({
                 data-testid={`${dataTestId}-percent-${percent}`}
                 className={cn(
                   buttonVariants({ variant: 'mini', size: 'mini' }),
+                  'h-8 px-2.5 text-xs leading-[14px] tracking-[-0.24px] md:h-auto md:px-2 md:text-sm md:leading-4 md:tracking-[-0.28px]',
                   'disabled:text-text disabled:bg-transparent disabled:opacity-50'
                 )}
               >

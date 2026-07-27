@@ -34,7 +34,8 @@ function InlineTokenIcon({
     <TokenIcon
       token={{ symbol }}
       width={isHeadline ? 24 : 16}
-      className={isHeadline ? 'mx-1 inline-block h-6 w-6 align-middle' : 'h-4 w-4'}
+      // Headline chips step down to 20px on the phone tier (comp 1222:17089).
+      className={isHeadline ? 'mx-1 inline-block h-5 w-5 align-middle md:h-6 md:w-6' : 'h-4 w-4'}
       showChainIcon={false}
     />
   );
@@ -54,12 +55,14 @@ function Stat({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-textSecondary text-sm">{label}</span>
+    <div className="flex flex-col gap-1 md:gap-1.5">
+      <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
+        {label}
+      </span>
       {isLoading ? (
         <Skeleton className="h-5 w-20" />
       ) : (
-        <span className="text-text flex items-center gap-1.5 font-medium">
+        <span className="text-text font-circle flex items-center gap-1.5 text-base leading-[18px] font-medium tracking-[-0.32px] md:font-sans md:leading-normal md:tracking-normal">
           {!error && icon}
           {error ? NO_VALUE : children}
         </span>
@@ -112,16 +115,18 @@ export function StakeEngineCard() {
       ? `${formatBigInt(math.convertRadToWad(collateralData.dust))} USDS`
       : NO_VALUE;
 
+  // Phone tier (comp 1222:17089): tighter 20px paddings, Heading 4 headline
+  // with 20px inline token chips, and an extra 20px above the stats row.
   return (
-    <Card data-testid="stake-engine-card" className="flex flex-col gap-8 p-8">
-      <span className="bg-surfaceAlt text-textSecondary flex h-6 w-fit items-center gap-1 rounded-full py-0.5 pr-2 pl-1.5 text-xs font-medium">
-        <StakeSky className="h-3.5 w-3.5" />
+    <Card data-testid="stake-engine-card" className="flex flex-col gap-5 p-5 md:gap-8 md:p-8">
+      <span className="bg-surfaceAlt text-fgSecondary md:text-textSecondary font-circle flex h-6 w-fit items-center gap-1 rounded-full py-0.5 pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px] md:pl-1.5 md:font-sans md:leading-4 md:tracking-normal">
+        <StakeSky className="h-3 w-3 md:h-3.5 md:w-3.5" />
         <Trans>Sky Staking Engine</Trans>
       </span>
 
       <h3
         data-testid="stake-engine-headline"
-        className="text-text text-[28px] leading-[30px] font-medium tracking-tight"
+        className="text-text font-circle text-[22px] leading-6 font-medium tracking-[-0.44px] md:font-sans md:text-[28px] md:leading-[30px] md:tracking-tight"
       >
         <Trans>
           Stake <InlineTokenIcon symbol="SKY" />
@@ -130,7 +135,7 @@ export function StakeEngineCard() {
         </Trans>
       </h3>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 pt-5 md:pt-0">
         <Stat
           label={<Trans>Rewards rate</Trans>}
           icon={<InlineTokenIcon symbol="SKY" variant="stat" />}

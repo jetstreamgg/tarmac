@@ -330,3 +330,63 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
     expect(borrowed.onReopen).toHaveBeenLastCalledWith(true);
   });
 });
+
+describe('PositionDetailsModal — phone-tier footer + manage sheet (M6, comps 1292:63278 / 1222:16239)', () => {
+  beforeEach(() => {
+    h.detail = { ...baseDetail };
+  });
+  afterEach(cleanup);
+
+  it('renders the pinned footer pair and routes Stake more SKY through onAction', () => {
+    const { onAction } = renderModal();
+
+    fireEvent.click(screen.getByTestId('stake-details-cta-stake'));
+    expect(onAction).toHaveBeenLastCalledWith('stake');
+    expect(screen.getByTestId('stake-details-cta-manage').textContent).toContain('Manage position');
+    expect(screen.queryByTestId('stake-details-cta-reopen')).toBeNull();
+  });
+
+  it('swaps the footer primary for Reopen on an inactive urn', () => {
+    const { onReopen } = renderModal(inactiveDetail({ hasBorrowHistory: true }));
+
+    expect(screen.queryByTestId('stake-details-cta-stake')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-details-cta-reopen'));
+    expect(onReopen).toHaveBeenLastCalledWith(true);
+  });
+
+  it('raises the manage sheet with the shared row composition under suffixed ids', () => {
+    const { onAction } = renderModal();
+
+    expect(screen.queryByTestId('stake-manage-sheet')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-details-cta-manage'));
+    expect(screen.getByTestId('stake-manage-sheet')).toBeTruthy();
+
+    for (const testid of [
+      'stake-manage-menu-claim-sheet',
+      'stake-manage-menu-borrow-sheet',
+      'stake-manage-menu-repay-sheet',
+      'stake-manage-menu-withdraw-sheet',
+      'stake-manage-menu-change-reward-sheet',
+      'stake-manage-menu-change-delegate-sheet',
+      'stake-manage-menu-close-position-sheet'
+    ]) {
+      expect(screen.getByTestId(testid)).toBeTruthy();
+    }
+    // Comp 1222:16239 pins a single Stake more SKY CTA while indebted.
+    expect(screen.getByTestId('stake-manage-cta-stake-sheet')).toBeTruthy();
+    expect(screen.queryByTestId('stake-manage-cta-borrow-sheet')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('stake-manage-menu-withdraw-sheet'));
+    expect(onAction).toHaveBeenLastCalledWith('withdraw');
+  });
+
+  it('closes the sheet without taking the details modal down with it', () => {
+    const { onClose } = renderModal();
+
+    fireEvent.click(screen.getByTestId('stake-details-cta-manage'));
+    fireEvent.click(screen.getByTestId('stake-manage-sheet-close'));
+    expect(screen.queryByTestId('stake-manage-sheet')).toBeNull();
+    expect(screen.getByTestId('stake-position-details')).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
