@@ -21,7 +21,7 @@ import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
  * restoring the pre-M6.1 layout untouched at every tier md and up.
  *
  * The seam is md (768 = BP.md), matching `useDonutSize` — a mismatch would give
- * 768–911 a hybrid (reordered blocks around a full 320 donut) matching neither
+ * 768–911 a hybrid (reordered blocks around the desktop 178 donut) matching neither
  * comp. Callers add their own `md:gap-*` since the skeleton and the loaded card
  * space their columns differently.
  *
@@ -34,10 +34,11 @@ const COLUMN = 'contents md:flex md:flex-col';
 const DONUT = 'order-2 md:order-none';
 const LEGEND = 'order-3 md:order-none';
 
-/** Donut box: 160 on phones per the comp (486:20138), the desktop 320 from md. */
+/** Donut box: 160 on phones per the comp (486:20138), the desktop 178 from md
+ * per the Portfolio card comp (5034:39333 / 1036:189543). */
 function useDonutSize() {
   const { bpi } = useBreakpointIndex();
-  return bpi < BP.md ? 160 : 320;
+  return bpi < BP.md ? 160 : 178;
 }
 
 export function StablecoinEarningsCard({
@@ -96,7 +97,9 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
 
   return (
     <>
-      <div className="mt-6 flex flex-col gap-10 md:gap-8 lg:flex-row lg:items-start lg:justify-between">
+      {/* The comp (5034:39333) insets the chart 80px from the card's right
+          edge (`pr-[80px]` on the row) so the donut doesn't hug the border. */}
+      <div className="mt-6 flex flex-col gap-10 md:gap-8 lg:flex-row lg:items-start lg:justify-between lg:pr-20">
         <div className={cn(COLUMN, 'md:gap-8')}>
           <EarningsHeadline
             label={<Trans>Total supplied</Trans>}
@@ -205,7 +208,8 @@ function IdleContent({
 
   return (
     <>
-      <div className="mt-6 flex flex-col gap-10 md:gap-8 lg:flex-row lg:items-start lg:justify-between">
+      {/* Same 80px right inset for the chart as the Supplied tab (5034:39333). */}
+      <div className="mt-6 flex flex-col gap-10 md:gap-8 lg:flex-row lg:items-start lg:justify-between lg:pr-20">
         <div className={cn(COLUMN, 'md:gap-8')}>
           <EarningsHeadline
             label={<Trans>Wallet balance</Trans>}
@@ -348,12 +352,15 @@ function LegendRow({
   );
 }
 
-/** The active segment's token, shown centered in the donut hole. */
+/** The active segment's token, shown centered in the donut hole: 16px icon +
+ * Label 4 (Circular 16/18, -0.32 tracking) per the comp (1036:189543). */
 function DonutCenter({ symbol }: { symbol: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
-      <span className="text-text text-sm font-medium">{symbol}</span>
+      <span className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
+        {symbol}
+      </span>
     </div>
   );
 }
@@ -408,7 +415,10 @@ function EarningsSkeleton() {
         </div>
       </div>
       <div
-        className={cn(DONUT, 'bg-surface mx-auto h-40 w-40 shrink-0 rounded-full md:h-80 md:w-80 lg:mx-0')}
+        className={cn(
+          DONUT,
+          'bg-surface mx-auto h-40 w-40 shrink-0 rounded-full md:h-[178px] md:w-[178px] lg:mx-0'
+        )}
         data-testid="earnings-skeleton-donut"
       />
     </div>

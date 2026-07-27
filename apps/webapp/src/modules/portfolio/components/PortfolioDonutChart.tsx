@@ -24,17 +24,17 @@ type PortfolioDonutChartProps = {
   className?: string;
 };
 
-// Radial dimensions are tuned against the 320 box and scale with `size`: the DS
-// pie keeps the band at ~5% of the diameter at every size (Figma 486:20138 is
-// 160 with an ~8px band), so holding them constant would double the band's
-// relative thickness on the mobile 160.
-const BASE_SIZE = 320;
-const PAD = 4; // breathing room from the box edge
-const THICKNESS = 18; // colored band width
+// Radial dimensions are tuned against the DS Charts / Pie Chart comp (Figma
+// 5034:22030, a 178 box measured from its exported vectors: 89 outer radius,
+// 8px band, hairline ring at ~72.3) and scale with `size` so the band keeps
+// its ~4.5%-of-diameter share at the mobile 160.
+const BASE_SIZE = 178;
+const PAD = 0; // the band touches the box edge in the comp
+const THICKNESS = 8; // colored band width
 const PADDING_ANGLE = 3; // gap between segments, degrees — angular, so unscaled
-const RING_GAP = 10; // distance from the colored band's inner edge to the gray ring
+const RING_GAP = 9; // distance from the colored band's inner edge to the gray ring
 const RING_STROKE = 1.5; // hairline at every size
-const CORNER_RADIUS = 4; // subtle rounding on the bar ends
+const CORNER_RADIUS = 4; // = THICKNESS / 2 — fully rounded bar ends per the comp
 const START_ANGLE = 90; // 12 o'clock
 const END_ANGLE = -270; // full sweep, clockwise
 const FULL_CIRCLE_EPS = 359.9;
@@ -86,7 +86,7 @@ export function PortfolioDonutChart({
   activeId,
   onActiveChange,
   renderCenter,
-  size = 320,
+  size = BASE_SIZE,
   className
 }: PortfolioDonutChartProps) {
   const chartSegments = segments.filter(s => s.value > 0);

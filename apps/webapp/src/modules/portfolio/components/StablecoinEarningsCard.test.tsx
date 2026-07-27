@@ -97,9 +97,9 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
     expect(donutBox()).toBe('160px');
   });
 
-  it('keeps the desktop 320 donut box from md up', () => {
+  it('keeps the desktop 178 donut box from md up (5034:39333)', () => {
     renderCard();
-    expect(donutBox()).toBe('320px');
+    expect(donutBox()).toBe('178px');
   });
 
   // jsdom has no layout, so visual order can only be asserted through the
@@ -166,10 +166,11 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
   it('keeps the skeleton donut and order in step with the loaded card', () => {
     breakpoint.isMobile = true;
     renderCard({ suppliedLoading: true, suppliedView: { ...SUPPLIED, positions: [] } });
-    // Skeleton donut is a plain div — 160 below md, 320 from md, via h-40/md:h-80.
+    // Skeleton donut is a plain div — 160 below md, 178 from md, matching
+    // useDonutSize.
     const donut = screen.getByTestId('earnings-skeleton-donut');
     expect(donut.className).toContain('h-40');
-    expect(donut.className).toContain('md:h-80');
+    expect(donut.className).toContain('md:h-[178px]');
     expect(donut.className).toContain('order-2');
   });
 });
