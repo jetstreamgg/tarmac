@@ -208,7 +208,7 @@ export function ProductTransactionsTable<T>({
           ) : allRows.length === 0 ? (
             <StateRow colSpan={columns.length}>{emptyLabel ?? <Trans>No transactions yet.</Trans>}</StateRow>
           ) : (
-            pageRows.map(row => {
+            pageRows.map((row, index) => {
               const belowRow = renderBelowRow?.(row);
               return (
                 <Fragment key={rowKey(row)}>
@@ -231,7 +231,17 @@ export function ProductTransactionsTable<T>({
                           }
                         : undefined
                     }
-                    className={cn(onRowClick && 'cursor-pointer')}
+                    className={cn(
+                      onRowClick && 'cursor-pointer',
+                      // A banner carrier row (below) becomes tbody's real last
+                      // <tr> and takes the shared table selectors' bottom
+                      // corners with it — visibly squaring the last data row
+                      // (worst with a single position). Re-pin the radii to the
+                      // last *data* row whenever carriers are in play.
+                      renderBelowRow &&
+                        index === pageRows.length - 1 &&
+                        '[&>td:first-child]:rounded-bl-[24px] [&>td:last-child]:rounded-br-[24px]'
+                    )}
                   >
                     {columns.map(column => (
                       <TableCell key={column.id}>{column.cell(row)}</TableCell>

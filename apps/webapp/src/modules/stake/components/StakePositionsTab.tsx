@@ -25,13 +25,22 @@ export function StakePositionsTab({
   // the lg grid keeps its DOM placement.
   return (
     <div data-testid="stake-positions-tab" className="grid items-start gap-10 lg:grid-cols-3 lg:gap-6">
-      <div className="order-2 lg:order-none lg:col-span-2">
-        <StakePositionsTable
-          positions={positions}
-          isLoading={isLoading}
-          error={error}
-          onRemediate={onRemediate}
-        />
+      {/* Two panes at lg (ProductDetailTemplate's pattern): the left pane is a
+          real column so positions → activity follow its normal flow beside the
+          self-heighted rail. Below lg the pane dissolves (`contents`) and
+          `order` restores the stacked sequence summary → positions → activity. */}
+      <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-6">
+        <div className="order-2">
+          <StakePositionsTable
+            positions={positions}
+            isLoading={isLoading}
+            error={error}
+            onRemediate={onRemediate}
+          />
+        </div>
+        <div className="order-3">
+          <StakeActivityTable positions={positions} />
+        </div>
       </div>
       <div className="order-1 lg:order-none lg:col-span-1">
         {isLoading ? (
@@ -41,9 +50,6 @@ export function StakePositionsTab({
         ) : (
           <StakeEngineCard />
         )}
-      </div>
-      <div className="order-3 lg:order-none lg:col-span-2">
-        <StakeActivityTable positions={positions} />
       </div>
     </div>
   );

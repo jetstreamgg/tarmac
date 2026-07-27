@@ -1,16 +1,14 @@
 import type { EarnProductKind } from '@/hooks';
 
 /**
- * Outline-ring color keys the product family wherever a product token icon is
- * shown — Portfolio cards, Earn marketplace cards, and the product-detail page
- * headers: Morpho vaults blue, Pendle fixed-yield green, everything else
- * (savings, rewards, stUSDS, Spark vaults) a neutral gray. Consumed via
- * `ProductTokenIcon` so the surfaces never drift. Lives in components/product so
- * product modules import it "down" rather than from a sibling module.
+ * The Iconbox / Status tint keys the product family wherever a product token
+ * icon is shown — Portfolio cards, Earn marketplace cards, and the
+ * product-detail page headers: Morpho vaults `info` (blue ring + dot), Pendle
+ * fixed-yield `success` (green ring + dot), everything else (savings, rewards,
+ * stUSDS, Spark vaults) the neutral default ring. Lives in components/product
+ * so product modules import it "down" rather than from a sibling module.
  */
-export const RING_MORPHO = '#2973FF';
 export const RING_PENDLE = '#1DD9BA';
-export const RING_DEFAULT = '#7E7E8F';
 
 /** The minimal identity both SuppliedPosition and EarnProductRow satisfy. */
 export type ProductIdentity = { id: string; kind: EarnProductKind };
@@ -20,8 +18,9 @@ export const isMorphoVault = ({ id, kind }: ProductIdentity): boolean =>
 
 export const isPendleFixed = ({ kind }: ProductIdentity): boolean => kind === 'fixed';
 
-export const productRingColor = (product: ProductIdentity): string =>
-  isMorphoVault(product) ? RING_MORPHO : isPendleFixed(product) ? RING_PENDLE : RING_DEFAULT;
+/** Iconbox / Status `type` for a product's icon; undefined = default ring, no dot. */
+export const productStatusType = (product: ProductIdentity): 'success' | 'info' | undefined =>
+  isMorphoVault(product) ? 'info' : isPendleFixed(product) ? 'success' : undefined;
 
 /**
  * Symbol to draw in a product's token icon. Rewards rows supply USDS but are

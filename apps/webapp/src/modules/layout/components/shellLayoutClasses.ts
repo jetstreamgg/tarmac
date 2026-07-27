@@ -43,11 +43,15 @@ export const shellHeaderClasses = (fullWidth: boolean) =>
     fullWidth && 'sticky top-0 z-30',
     // Progressive blur: the blur lives on a `::before` overlay behind the nav
     // content (so logo + pills stay sharp), and a gradient mask feathers it out
-    // toward the bottom — the blurred backdrop dissolves into the sharp content
-    // instead of cutting at a hard line. The sticky header is the containing
-    // block for the absolute pseudo, so no `relative` is needed.
+    // toward the bottom. The overlay is confined to the bar itself (100%
+    // height, mask fully transparent by 95%) — the earlier 150% overhang put a
+    // frosted "white glow" band over page content, visible as an edge/color
+    // difference below the header (APP-416); keeping any transition at the
+    // bar's own boundary reads as a normal frosted navbar instead. The sticky
+    // header is the containing block for the absolute pseudo, so no `relative`
+    // is needed.
     fullWidth &&
-      "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-z-10 before:h-[150%] before:backdrop-blur-[7px] before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_35%,transparent)] before:[-webkit-mask-image:linear-gradient(to_bottom,#000_35%,transparent)]"
+      "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-z-10 before:h-full before:backdrop-blur-[7px] before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_40%,transparent_95%)] before:[-webkit-mask-image:linear-gradient(to_bottom,#000_40%,transparent_95%)]"
   );
 
 /** The header row content (logo + TopNav) inside the full-bleed bar. */

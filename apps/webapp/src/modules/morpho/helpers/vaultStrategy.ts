@@ -1,11 +1,6 @@
 import type { MorphoIdleLiquidityAllocation, MorphoMarketAllocation } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
-
-/**
- * Segment colors for the Strategy allocation bar, cycled by index. Distinct,
- * brand-adjacent hues so adjacent market slices read apart.
- */
-export const STRATEGY_COLORS = ['#7E6BF2', '#5AD293', '#4A9FF5', '#F17FBD', '#FFA74E', '#9B8AFB'];
+import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/widgets/shared/constants';
 
 /** Muted fill for the idle-capital segment — visually "parked", not a strategy. */
 export const IDLE_COLOR = '#8A8FA8';
@@ -21,8 +16,10 @@ export type StrategySegment = {
   share: number;
   /** Rounded percentage, e.g. "49%". */
   formattedShare: string;
-  /** Bar/legend color. */
+  /** Bar/legend color (DS Components/Charts). */
   color: string;
+  /** Hovered-segment color (DS Components/Charts-Hover). */
+  hoverColor: string;
 };
 
 export type VaultStrategyView = {
@@ -57,7 +54,12 @@ export function buildVaultStrategy(
   const totalUsd =
     totalAssetsUsd !== undefined && totalAssetsUsd >= segmentSumUsd ? totalAssetsUsd : segmentSumUsd;
 
-  const toSegment = (id: string, label: string, usd: number, color: string): StrategySegment => {
+  const toSegment = (
+    id: string,
+    label: string,
+    usd: number,
+    colors: { color: string; hoverColor: string }
+  ): StrategySegment => {
     const share = totalUsd > 0 ? usd / totalUsd : 0;
     return {
       id,
@@ -65,20 +67,29 @@ export function buildVaultStrategy(
       formattedUsd: `$${formatNumber(usd, { compact: true })}`,
       share,
       formattedShare: formatDecimalPercentage(share, 0),
-      color
+      ...colors
     };
   };
 
+  // Collaterals with a DS chart variable (Components/Charts/bg-*, Figma
+  // 5270:15609 — APP-416) use it, keeping the bar in agreement with the pie
+  // chart and legends; the rest cycle the DS generic chart1/chart2 slots.
   const segments: StrategySegment[] = [
     ...positive.map((market, index) =>
       toSegment(
         market.marketId,
         `${market.collateralAsset}/${market.loanAsset}`,
         market.assetsUsd,
-        STRATEGY_COLORS[index % STRATEGY_COLORS.length]
+        resolveTokenChartColors(market.collateralAsset) ??
+          CHART_GENERIC_COLORS[index % CHART_GENERIC_COLORS.length]
       )
     ),
-    ...idlePositive.map(idle => toSegment(`idle-${idle.assetSymbol}`, 'Idle', idle.idleAssetsUsd, IDLE_COLOR))
+    ...idlePositive.map(idle =>
+      toSegment(`idle-${idle.assetSymbol}`, 'Idle', idle.idleAssetsUsd, {
+        color: IDLE_COLOR,
+        hoverColor: IDLE_COLOR
+      })
+    )
   ];
 
   return {

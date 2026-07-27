@@ -22,8 +22,24 @@ i18n.load('en', {});
 i18n.activate('en');
 
 const TOKENS: IdleToken[] = [
-  { symbol: 'USDS', name: 'USDS Stablecoin', amount: 1000, amountUsd: 1000, color: '#888', share: 0.95 },
-  { symbol: 'USDC', name: 'USD Coin', amount: 50, amountUsd: 50, color: '#999', share: 0.05 }
+  {
+    symbol: 'USDS',
+    name: 'USDS Stablecoin',
+    amount: 1000,
+    amountUsd: 1000,
+    color: '#888',
+    hoverColor: '#888',
+    share: 0.95
+  },
+  {
+    symbol: 'USDC',
+    name: 'USD Coin',
+    amount: 50,
+    amountUsd: 50,
+    color: '#999',
+    hoverColor: '#999',
+    share: 0.05
+  }
 ];
 
 const SUPPLY_INFO = new Map<string, IdleSupplyInfo>([

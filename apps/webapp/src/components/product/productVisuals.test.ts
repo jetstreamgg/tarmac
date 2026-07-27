@@ -1,34 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import {
-  RING_DEFAULT,
-  RING_MORPHO,
-  RING_PENDLE,
-  isMorphoVault,
-  isPendleFixed,
-  productIconSymbol,
-  productRingColor
-} from './productVisuals';
+import { isMorphoVault, isPendleFixed, productIconSymbol, productStatusType } from './productVisuals';
 
 describe('productVisuals', () => {
-  it('rings Morpho vaults blue', () => {
+  it('tints Morpho vaults info-blue', () => {
     expect(isMorphoVault({ id: 'vault-morpho-0x1', kind: 'vault' })).toBe(true);
-    expect(productRingColor({ id: 'vault-morpho-0x1', kind: 'vault' })).toBe(RING_MORPHO);
+    expect(productStatusType({ id: 'vault-morpho-0x1', kind: 'vault' })).toBe('info');
   });
 
-  it('rings non-Morpho vaults (Sky/Spark) gray', () => {
+  it('leaves non-Morpho vaults (Sky/Spark) on the default ring', () => {
     expect(isMorphoVault({ id: 'vault-sky-0x1', kind: 'vault' })).toBe(false);
-    expect(productRingColor({ id: 'vault-sky-0x1', kind: 'vault' })).toBe(RING_DEFAULT);
+    expect(productStatusType({ id: 'vault-sky-0x1', kind: 'vault' })).toBeUndefined();
   });
 
-  it('rings Pendle fixed-yield green', () => {
+  it('tints Pendle fixed-yield success-green', () => {
     expect(isPendleFixed({ id: 'fixed-0x1', kind: 'fixed' })).toBe(true);
-    expect(productRingColor({ id: 'fixed-0x1', kind: 'fixed' })).toBe(RING_PENDLE);
+    expect(productStatusType({ id: 'fixed-0x1', kind: 'fixed' })).toBe('success');
   });
 
-  it('rings savings, rewards and stUSDS gray', () => {
-    expect(productRingColor({ id: 'savings', kind: 'savings' })).toBe(RING_DEFAULT);
-    expect(productRingColor({ id: 'rewards-spk', kind: 'rewards' })).toBe(RING_DEFAULT);
-    expect(productRingColor({ id: 'stusds', kind: 'stusds' })).toBe(RING_DEFAULT);
+  it('leaves savings, rewards and stUSDS on the default ring', () => {
+    expect(productStatusType({ id: 'savings', kind: 'savings' })).toBeUndefined();
+    expect(productStatusType({ id: 'rewards-spk', kind: 'rewards' })).toBeUndefined();
+    expect(productStatusType({ id: 'stusds', kind: 'stusds' })).toBeUndefined();
   });
 
   it('uses the reward token for the rewards icon, the display token otherwise', () => {

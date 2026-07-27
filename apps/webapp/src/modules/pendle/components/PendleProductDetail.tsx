@@ -111,7 +111,8 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
             className="h-12 w-12"
             showChainIcon={false}
           />
-        )
+        ),
+        status: 'success'
       }}
       title={
         <span className="flex flex-col gap-1">
