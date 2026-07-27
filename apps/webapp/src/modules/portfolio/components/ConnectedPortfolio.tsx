@@ -34,7 +34,7 @@ export function ConnectedPortfolio() {
   const connectedChainId = useChainId();
   const { rows, isLoading, totalDepositedUsd } = useEarnMarketplace();
   const { balances, isLoading: balancesLoading } = useStablecoinBalances();
-  const { data: overallSkyData } = useOverallSkyData();
+  const { data: overallSkyData, isLoading: skyDataLoading } = useOverallSkyData();
   const { address } = useConnection();
   const chains = useChains();
   const navigate = useNavigate();
@@ -57,13 +57,19 @@ export function ConnectedPortfolio() {
   const savingsRate = overallSkyData?.skySavingsRatecRate
     ? parseFloat(overallSkyData.skySavingsRatecRate)
     : 0;
-  const savingsTvlUsd = overallSkyData?.skySavingsRateTvl ? parseFloat(overallSkyData.skySavingsRateTvl) : 0;
+  // undefined while the query is in flight — the callout chips the figure.
+  const savingsTvlUsd = skyDataLoading
+    ? undefined
+    : overallSkyData?.skySavingsRateTvl
+      ? parseFloat(overallSkyData.skySavingsRateTvl)
+      : 0;
 
   // Onboarding callout gates on family-wide totals (ignores the network filter),
   // and only after both data sources settle so it never flashes the wrong state.
-  // While they settle the slot shows the simulate callout in its loading dress,
-  // so the callout doesn't pop in and shove the earnings card down. That pins
-  // the `simulate` outcome exactly; `allocate` (taller banner) and `none`
+  // While they settle the slot optimistically shows the simulate callout — its
+  // copy and button are static, only the TVL figure is data (chipped until it
+  // lands) — so the card doesn't pop in and shove the earnings card down. That
+  // pins the `simulate` outcome exactly; `allocate` (taller banner) and `none`
   // (slot collapses) still shift — the winner can't be known while loading.
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
   const calloutLoading = isLoading || balancesLoading;
@@ -133,8 +139,9 @@ export function ConnectedPortfolio() {
         </div>
       </div>
 
-      {calloutLoading && <SavingsTvlCallout loading tvlUsd={0} savingsRate={0} />}
-      {callout === 'simulate' && <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />}
+      {(calloutLoading || callout === 'simulate') && (
+        <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />
+      )}
       {callout === 'allocate' && (
         <AllocateStablecoinsBanner
           idleUsd={idleTotalUsd}
