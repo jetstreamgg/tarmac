@@ -9,6 +9,7 @@ import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
 import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
+import { Card } from '@/components/ui/card';
 import { PageHeading } from '@/components/ui/page-header';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { buildSuppliedView } from '../helpers/suppliedView';
@@ -61,8 +62,11 @@ export function ConnectedPortfolio() {
 
   // Onboarding callout gates on family-wide totals (ignores the network filter),
   // and only after both data sources settle so it never flashes the wrong state.
+  // While they settle the slot shows a skeleton, so the callout doesn't pop in
+  // and shove the earnings card down.
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
-  const callout = isLoading || balancesLoading ? 'none' : portfolioCallout(totalDepositedUsd, idleTotalUsd);
+  const calloutLoading = isLoading || balancesLoading;
+  const callout = calloutLoading ? 'none' : portfolioCallout(totalDepositedUsd, idleTotalUsd);
 
   const tab = userTab ?? (!isLoading && totalDepositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
 
@@ -128,6 +132,7 @@ export function ConnectedPortfolio() {
         </div>
       </div>
 
+      {calloutLoading && <CalloutSkeleton />}
       {callout === 'simulate' && <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />}
       {callout === 'allocate' && (
         <AllocateStablecoinsBanner
@@ -166,5 +171,36 @@ export function ConnectedPortfolio() {
       {/* Sub-$10 users get the same Sky-wide statistics as disconnected visitors. */}
       {callout !== 'none' && <PortfolioStatistics />}
     </div>
+  );
+}
+
+/**
+ * Placeholder for the settling callout slot, mirroring the SavingsTvlCallout
+ * geometry so settling doesn't move the earnings card: measured 140px at
+ * desktop (1-line heading + 2 text lines) and 256px at 390 (2-line heading +
+ * 4 text lines) — heading bar and line count step down at md to match. The
+ * line rhythm tracks the current copy's wrap points, so a locale or copy
+ * change can reopen a small shift. The allocate banner is taller and the
+ * `none` outcome collapses the slot, so a residual shift remains for those
+ * users — the skeleton pins the common shape, it can't predict which callout
+ * wins.
+ */
+function CalloutSkeleton() {
+  return (
+    <Card
+      className="flex animate-pulse flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between md:p-8"
+      data-testid="portfolio-callout-skeleton"
+    >
+      <div className="flex flex-col gap-2">
+        <div className="bg-surface h-14 w-96 max-w-full rounded md:h-7" />
+        <div className="flex h-20 flex-col justify-between md:h-10">
+          <div className="bg-surface h-4 w-80 max-w-full rounded" />
+          <div className="bg-surface h-4 w-72 max-w-full rounded" />
+          <div className="bg-surface h-4 w-80 max-w-full rounded md:hidden" />
+          <div className="bg-surface h-4 w-64 max-w-full rounded md:hidden" />
+        </div>
+      </div>
+      <div className="bg-surface h-12 w-44 shrink-0 rounded-full" />
+    </Card>
   );
 }
