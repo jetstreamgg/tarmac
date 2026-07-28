@@ -98,7 +98,7 @@ export function ConnectedPortfolio() {
   // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
   return (
     <div
-      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:py-10"
+      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:pt-20 md:pb-10"
       data-testid="portfolio-page"
     >
       {/* Header (Patterns/Headers, Portfolio type 5034:20993): Label 5
