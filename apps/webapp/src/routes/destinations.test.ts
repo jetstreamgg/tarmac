@@ -1,10 +1,48 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory, type AnyRouter } from '@tanstack/react-router';
 import { createAppRouter } from '@/pages/router';
 import { Intent } from '@/lib/enums';
 import { ROUTES } from '@/lib/routes';
 import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
 import { MORPHO_VAULTS } from '@/hooks/morpho/constants';
+import { queryClient } from '@/lib/queryClient';
+import { GEO_CONFIG_QUERY_KEY } from '@/modules/geo-config/query';
+import type { GeoConfig, ModuleId } from '@/modules/geo-config/types';
+
+const MODULE_IDS: ModuleId[] = [
+  'savings',
+  'rewards',
+  'expert',
+  'trade',
+  'upgrade',
+  'stake',
+  'vaults',
+  'fixed'
+];
+
+// The module routes gate on geo config in `beforeLoad` (G5, replacing the shell's
+// old Balances-pane swap). Seeding the shared query cache keeps these specs about
+// routing: the guard reads the cache instead of hitting the network, which would
+// otherwise resolve to the restrictive fallback and redirect half of them.
+function seedGeoConfig(disabled: ModuleId[] = []) {
+  const config: GeoConfig = {
+    version: 'test',
+    countryCode: 'XX',
+    generatedAt: new Date(0).toISOString(),
+    cacheTtl: 60,
+    isRegionRestricted: disabled.length > 0,
+    modules: Object.fromEntries(
+      MODULE_IDS.map(id => [id, { enabled: !disabled.includes(id) }])
+    ) as GeoConfig['modules'],
+    isCookiesBannerRequired: false
+  };
+  queryClient.setQueryData(GEO_CONFIG_QUERY_KEY, config);
+}
+
+beforeEach(() => {
+  queryClient.clear();
+  seedGeoConfig();
+});
 
 // Boots the app's real router (route tree + redirects + not-found config)
 // against a path without rendering, so a missing destination route or broken
@@ -62,23 +100,25 @@ describe('target-IA destination routes', () => {
     expect(match?.staticData?.intent).toBe(Intent.BALANCES_INTENT);
   });
 
+  // G5 retired `staticData.fullWidth`: every route is a full-width page on the
+  // document scroll, so there is no per-route flag left to assert.
   it.each([
     [ROUTES.PORTFOLIO, '/_shell/portfolio'],
     [ROUTES.EARN, '/_shell/earn/']
-  ])('declares %s full-width so it escapes the widget-pane column', async (path, routeId) => {
+  ])('no longer carries a fullWidth flag on %s', async (path, routeId) => {
     const router = await routerAt(path);
     const match = router.state.matches.find(m => (m.routeId as string) === routeId);
-    expect(match?.staticData?.fullWidth).toBe(true);
+    expect(match).toBeDefined();
+    expect(match?.staticData).not.toHaveProperty('fullWidth');
   });
 });
 
 describe('stake destination (F7 flip)', () => {
-  it('boots /stake as a full-width shell route with the Stake intent', async () => {
+  it('boots /stake as a shell route with the Stake intent', async () => {
     const router = await routerAt('/stake');
     const match = router.state.matches.find(m => (m.routeId as string) === '/_shell/stake');
     expect(match).toBeDefined();
     expect(match?.staticData?.intent).toBe(Intent.STAKE_INTENT);
-    expect(match?.staticData?.fullWidth).toBe(true);
   });
 
   it('preserves stake deep-link params on /stake', async () => {
@@ -153,11 +193,10 @@ describe('pre-flip module path redirects', () => {
 describe('fixed (Pendle) market detail routes', () => {
   const market = PENDLE_MARKETS[0];
 
-  it('boots /earn/fixed/:slug full-width for a live market', async () => {
+  it('boots /earn/fixed/:slug for a live market', async () => {
     const router = await routerAt(`${ROUTES.EARN_FIXED}/${market.slug}`);
     const match = router.state.matches.find(m => (m.routeId as string) === '/_shell/earn/fixed/$slug');
     expect(match).toBeDefined();
-    expect(match?.staticData?.fullWidth).toBe(true);
   });
 
   it('falls back to the Earn marketplace for an unknown slug', async () => {
@@ -187,13 +226,12 @@ describe('vault detail routes', () => {
   const vault = MORPHO_VAULTS[0];
   const vaultAddress = Object.values(vault.vaultAddress)[0]!;
 
-  it('boots /earn/vaults/morpho/:address full-width for a known vault', async () => {
+  it('boots /earn/vaults/morpho/:address for a known vault', async () => {
     const router = await routerAt(`${ROUTES.EARN_VAULTS}/morpho/${vaultAddress}`);
     const match = router.state.matches.find(
       m => (m.routeId as string) === '/_shell/earn/vaults/$provider/$vaultAddress'
     );
     expect(match).toBeDefined();
-    expect(match?.staticData?.fullWidth).toBe(true);
   });
 
   it('falls back to the Earn marketplace for an unknown vault address', async () => {
@@ -203,6 +241,56 @@ describe('vault detail routes', () => {
 
   it('falls back to the Earn marketplace for an unrecognised provider segment', async () => {
     const router = await routerAt(`${ROUTES.EARN_VAULTS}/bogus/${vaultAddress}`);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+  });
+});
+
+// G5: the shell used to swap a geo-restricted module's panes for the Balances
+// pair, but only on the boxed branch — once every route went full-width that
+// swap was unreachable and a deep link rendered the restricted module in full.
+// The gate now lives in the router.
+describe('geo-restricted module routes', () => {
+  const market = PENDLE_MARKETS[0];
+  const vaultAddress = Object.values(MORPHO_VAULTS[0].vaultAddress)[0]!;
+
+  const guarded: [ModuleId, string][] = [
+    ['savings', ROUTES.EARN_SAVINGS],
+    ['expert', ROUTES.EARN_STUSDS],
+    ['rewards', `${ROUTES.EARN_REWARDS}/0x0650CAF159C5A49f711e8169D4336ECB9b950275`],
+    ['stake', '/stake'],
+    ['fixed', `${ROUTES.EARN_FIXED}/${market.slug}`],
+    ['vaults', `${ROUTES.EARN_VAULTS}/morpho/${vaultAddress}`]
+  ];
+
+  it.each(guarded)('redirects %s to the Portfolio when the module is restricted', async (module, path) => {
+    seedGeoConfig([module]);
+    const router = await routerAt(path);
+    expect(router.state.location.pathname).toBe(ROUTES.PORTFOLIO);
+  });
+
+  it.each(guarded)('serves %s when the module is enabled', async (_module, path) => {
+    const router = await routerAt(path);
+    expect(router.state.location.pathname).not.toBe(ROUTES.PORTFOLIO);
+  });
+
+  it('preserves search params through a geo redirect', async () => {
+    seedGeoConfig(['savings']);
+    const router = await routerAt(`${ROUTES.EARN_SAVINGS}?network=ethereum`);
+    expect(router.state.location.pathname).toBe(ROUTES.PORTFOLIO);
+    expect(router.state.location.search).toEqual({ network: 'ethereum' });
+  });
+
+  // Path validity resolves before the geo gate, so a bogus entity still lands on
+  // the marketplace rather than implying it exists but is restricted.
+  it('prefers the unknown-vault fallback over the geo redirect', async () => {
+    seedGeoConfig(['vaults']);
+    const router = await routerAt(`${ROUTES.EARN_VAULTS}/morpho/0x000000000000000000000000000000000000dEaD`);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+  });
+
+  it('prefers the unknown-slug fallback over the geo redirect', async () => {
+    seedGeoConfig(['fixed']);
+    const router = await routerAt(`${ROUTES.EARN_FIXED}/pt-does-not-exist`);
     expect(router.state.location.pathname).toBe(ROUTES.EARN);
   });
 });
