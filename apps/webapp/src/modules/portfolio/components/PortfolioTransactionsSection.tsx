@@ -12,7 +12,6 @@ import {
 } from '@/hooks';
 import { formatAddress, getChainIcon } from '@/utils';
 import { cn } from '@/lib/cn';
-import { Heading } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ConvertArrows, ArrowDown, SavingsSupply } from '@/modules/icons';
 import { FilterSelect } from '@/components/product/FilterSelect';
@@ -229,9 +228,11 @@ export function PortfolioTransactionsView({
   return (
     <section className="flex flex-col gap-5" data-testid="portfolio-transactions">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <Heading variant="small" tag="h2" className="text-fgPrimary">
+        {/* Heading 5 from md (24/26/-0.48), Heading 6 below — the same section
+            title scale as the reward sections directly above (comp 1036:190260). */}
+        <h2 className="text-fgPrimary font-circle text-xl leading-[22px] font-medium tracking-[-0.4px] md:text-2xl md:leading-[26px] md:tracking-[-0.48px]">
           <Trans>Transactions</Trans>
-        </Heading>
+        </h2>
         <div className={cn('flex gap-2 md:gap-3', isMobile ? 'flex-col' : 'flex-row')}>
           <FilterSelect
             testId="portfolio-tx-filter-network"
