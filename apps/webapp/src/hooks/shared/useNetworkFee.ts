@@ -33,8 +33,14 @@ export type NetworkFeeData = {
   feeUsd?: number;
   /** Fee as a `$0.00` string, or undefined when we can't price it. */
   formatted?: string;
-  /** Proportion of the sequential cost bundling saves (0.184 = 18.4%). */
+  /**
+   * Proportion of the sequential cost bundling saves (0.184 = 18.4%), quoted from the
+   * steady-state bundle so a first-ever bundle's one-time delegation cost doesn't make
+   * the feature look worse than it is.
+   */
   batchSaving?: number;
+  /** The sequential cost, formatted — the struck-through figure beside a bundled fee. */
+  sequentialFormatted?: string;
 };
 
 export type UseNetworkFeeParameters = {
@@ -139,7 +145,12 @@ export function useNetworkFee({
       l1Fee: isBatch ? gasData.batchL1Fee : gasData.sequentialL1Fee
     });
     const ethPrice = pricesData?.ETH?.price;
-    const feeUsd = feeWeiToUsd(feeWei, ethPrice === undefined ? undefined : Number(ethPrice));
+    const price = ethPrice === undefined ? undefined : Number(ethPrice);
+    const feeUsd = feeWeiToUsd(feeWei, price);
+    const sequentialUsd = feeWeiToUsd(
+      computeFeeWei({ gas: gasData.sequentialGas, feePerGas, l1Fee: gasData.sequentialL1Fee }),
+      price
+    );
 
     return {
       gas,
@@ -150,7 +161,8 @@ export function useNetworkFee({
       feeWei,
       feeUsd,
       formatted: feeUsd === undefined ? undefined : formatUsd(feeUsd),
-      batchSaving: computeBatchSaving(gasData.sequentialGas, gasData.batchGas)
+      sequentialFormatted: sequentialUsd === undefined ? undefined : formatUsd(sequentialUsd),
+      batchSaving: computeBatchSaving(gasData.sequentialGas, gasData.batchGasSteadyState)
     };
   }, [gasData, feePerGas, pricesData]);
 

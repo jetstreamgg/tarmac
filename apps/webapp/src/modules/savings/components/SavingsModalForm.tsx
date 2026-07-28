@@ -7,6 +7,13 @@ import { formatBigInt, formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useNetworkFee } from '@/hooks';
+import type { NetworkFeeData } from '@/hooks';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import {
+  NetworkFeeValue,
+  useBundlePromoVisible,
+  useCanBundle
+} from '@/modules/ui/components/NetworkFeeValue';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 import {
@@ -27,15 +34,25 @@ const USDS_DECIMALS = 18;
 const formatUsds = (value: bigint) =>
   `${formatNumber(parseFloat(formatUnits(value, USDS_DECIMALS)), { maxDecimals: 2 })} USDS`;
 
-function ModalRow({ row }: { row: SavingsModalRow }) {
+function ModalRow({
+  row,
+  networkFee,
+  callCount
+}: {
+  row: SavingsModalRow;
+  networkFee?: NetworkFeeData;
+  callCount: number;
+}) {
+  const isFeeRow = row.label === NETWORK_FEE_LABEL;
   return (
     <div className="flex items-center justify-between" data-testid={`savings-modal-row-${row.label}`}>
       {/* Rows stay pure string data (asserted in savingsModalRows.test.ts); the fee row's
-          tooltip is attached here, in the renderer, rather than smuggling JSX into them. */}
-      <Text className="text-textSecondary text-sm">
-        {row.label === NETWORK_FEE_LABEL ? <NetworkFeeLabel /> : row.label}
-      </Text>
-      {row.kind === 'single' ? (
+          tooltip and bundling badge are attached here, in the renderer, rather than
+          smuggling JSX into them. */}
+      <Text className="text-textSecondary text-sm">{isFeeRow ? <NetworkFeeLabel /> : row.label}</Text>
+      {isFeeRow ? (
+        <NetworkFeeValue fee={networkFee} callCount={callCount} />
+      ) : row.kind === 'single' ? (
         <Text className="text-text text-sm font-medium">{row.value}</Text>
       ) : (
         <span className="text-text flex items-center gap-1.5 text-sm font-medium">
@@ -113,6 +130,9 @@ export function SavingsModalForm({
     shouldUseBatch: isBatch,
     enabled: amountReady
   });
+
+  const canBundle = useCanBundle(calls.length);
+  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / step labels / wallet summary / toast
@@ -207,9 +227,11 @@ export function SavingsModalForm({
 
       <div className="flex flex-col gap-3 pt-1">
         {rows.map(row => (
-          <ModalRow key={row.label} row={row} />
+          <ModalRow key={row.label} row={row} networkFee={networkFee} callCount={calls.length} />
         ))}
       </div>
+
+      {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

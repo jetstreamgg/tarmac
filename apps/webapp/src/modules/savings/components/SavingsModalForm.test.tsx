@@ -52,6 +52,15 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    // The bundling badge asks whether the wallet can batch; these renders have no
+    // WagmiProvider, so answer "no" and the fee row stays a plain value.
+    useIsBatchSupported: () => ({
+      data: false,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
@@ -104,7 +113,11 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
       steps: ['Supply'],
       prepared: h.prepared,
       isLoading: false,
-      error: null
+      error: null,
+      // Mirrors the real result shape; the form reads these for the fee row's
+      // bundling badge and the "Save X%" promo.
+      calls: [],
+      isBatch: false
     };
   }
 }));

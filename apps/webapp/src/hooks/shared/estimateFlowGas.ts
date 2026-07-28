@@ -16,6 +16,13 @@ export type FlowGasEstimate = {
   sequentialGas: bigint;
   /** Cost of the same calls as one bundled transaction, or undefined when not applicable. */
   batchGas?: bigint;
+  /**
+   * The bundled cost an account that has already delegated would pay — i.e. `batchGas`
+   * without the one-time authorization tuple. The saving is quoted from this: a first
+   * bundle can genuinely cost more than the sequence, but every bundle after it saves,
+   * so advertising the first-run penalty would misrepresent the feature.
+   */
+  batchGasSteadyState?: bigint;
   /** L1 data fee in wei for the sequential path (0 outside OP-stack chains). */
   sequentialL1Fee: bigint;
   /** L1 data fee in wei for the batch path (0 outside OP-stack chains). */
@@ -123,7 +130,7 @@ async function simulateBatch(
   chainId: number,
   account: Address,
   calls: readonly Call[]
-): Promise<bigint> {
+): Promise<{ gas: bigint; steadyStateGas: bigint }> {
   const [accountCode, executorCode] = await Promise.all([
     client.getCode({ address: account }),
     getBatchExecutorCode(client, chainId)
@@ -145,7 +152,10 @@ async function simulateBatch(
   }
 
   // An account that has never delegated pays for the authorization tuple on its first bundle.
-  return isDelegated(accountCode) ? result.gasUsed : result.gasUsed + EIP7702_AUTH_COST;
+  return {
+    gas: isDelegated(accountCode) ? result.gasUsed : result.gasUsed + EIP7702_AUTH_COST,
+    steadyStateGas: result.gasUsed
+  };
 }
 
 /**
@@ -177,10 +187,10 @@ export async function estimateFlowGas({
   const sequentialGas = perCallGas.reduce((total, gas) => total + gas, 0n);
   // A bundle cheaper than its own most expensive call did not execute the calls. Drop it
   // rather than price it, and the caller falls back to the sequential figure.
-  const batchGas =
-    simulatedBatchGas !== undefined && simulatedBatchGas >= getBatchGasFloor(perCallGas)
-      ? simulatedBatchGas
-      : undefined;
+  const trustworthy =
+    simulatedBatchGas !== undefined && simulatedBatchGas.gas >= getBatchGasFloor(perCallGas);
+  const batchGas = trustworthy ? simulatedBatchGas!.gas : undefined;
+  const batchGasSteadyState = trustworthy ? simulatedBatchGas!.steadyStateGas : undefined;
 
   const [sequentialL1Fees, batchL1Fee] = await Promise.all([
     Promise.all(
@@ -204,6 +214,7 @@ export async function estimateFlowGas({
   return {
     sequentialGas,
     batchGas,
+    batchGasSteadyState,
     sequentialL1Fee: sequentialL1Fees.reduce((total, fee) => total + fee, 0n),
     batchL1Fee
   };
