@@ -11,12 +11,19 @@ import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal'
 export function ConnectWalletCard() {
   const connect = useCustomConnectModal();
 
+  // Not-connected comps (1222:16510 mobile / 1222:14807 desktop): the
+  // layered-glass-panels asset in a 96px box on the phone tier, 160 from md
+  // (the asset bakes the comp's inner margins), heading a tier down at 24/26,
+  // and the CTA as a full-width 48px pill below md.
   return (
     <PromoBanner
       dataTestId="portfolio-connect-card"
-      illustration={<img src="/illustrations/illustration-connect-wallet.png" alt="" className="size-full" />}
+      illustration={
+        <img src="/illustrations/illustration-connect-glass-panels.png" alt="" className="size-full" />
+      }
+      illustrationClassName="size-24 md:size-40"
       heading={
-        <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
+        <p className="font-circle text-fgPrimary max-w-[480px] text-2xl leading-[26px] font-medium tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]">
           <Trans>
             <BannerAccent>Connect your wallet</BannerAccent> to see your balances and start earning
           </Trans>
@@ -30,7 +37,13 @@ export function ConnectWalletCard() {
         </p>
       }
       action={
-        <Button variant="primary" size="xl" onClick={connect} data-testid="portfolio-connect-card-button">
+        <Button
+          variant="primary"
+          size="xl"
+          className="h-12 w-full md:h-14 md:w-auto"
+          onClick={connect}
+          data-testid="portfolio-connect-card-button"
+        >
           <Trans>Connect wallet</Trans>
         </Button>
       }

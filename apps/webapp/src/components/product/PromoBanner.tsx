@@ -24,6 +24,7 @@ export function PromoBanner({
   subtitle,
   action,
   className,
+  illustrationClassName,
   dataTestId
 }: {
   illustration: ReactNode;
@@ -31,6 +32,8 @@ export function PromoBanner({
   subtitle: ReactNode;
   action: ReactNode;
   className?: string;
+  /** Overrides the 160px illustration slot (e.g. the connect card's 96px mobile tier). */
+  illustrationClassName?: string;
   dataTestId?: string;
 }) {
   return (
@@ -42,7 +45,7 @@ export function PromoBanner({
         className
       )}
     >
-      <div className="size-40 shrink-0">{illustration}</div>
+      <div className={cn('size-40 shrink-0', illustrationClassName)}>{illustration}</div>
       <div className="flex min-w-px flex-1 flex-col items-start gap-3">
         {heading}
         {subtitle}
