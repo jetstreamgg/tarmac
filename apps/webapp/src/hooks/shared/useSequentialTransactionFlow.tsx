@@ -29,6 +29,14 @@ export function useSequentialTransactionFlow(
   const transactionsRef = useRef(calls);
   // Frozen call count for the completion check; the live `calls` length shrinks after an approve.
   const totalCallsRef = useRef(0);
+  // The call index most recently handed to the wallet. `transactionHashes[i]` cannot
+  // serve as the "already dispatched" guard because it is only filled once the tx
+  // MINES — leaving the whole submit→mine window open to a re-dispatch every time
+  // `useSimulateContract` hands back a new object (a refetch on window focus when the
+  // user returns from the wallet, or a cache hit followed by a background refetch on a
+  // repeat flow). That re-dispatch sent a second supply tx and double-advanced the
+  // modal's step counter, completing the step before its tx mined (APP-417).
+  const dispatchedIndexRef = useRef(-1);
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? transactionsRef.current : calls;
@@ -124,8 +132,10 @@ export function useSequentialTransactionFlow(
       prepared &&
       simulationData?.request &&
       currentIndex < stableTransactions.length &&
+      dispatchedIndexRef.current !== currentIndex && // one dispatch per index — see the ref
       !transactionHashes[currentIndex] // Only execute if not already executed
     ) {
+      dispatchedIndexRef.current = currentIndex;
       writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     }
   }, [currentIndex, prepared, simulationData, stableTransactions.length, transactionHashes, writeContract]);
@@ -159,6 +169,7 @@ export function useSequentialTransactionFlow(
         setCurrentIndex(0);
         setTransactionHashes([]);
         lastProcessedTxHash.current = undefined; // Reset ref on completion
+        dispatchedIndexRef.current = -1; // next flow starts from a clean latch
       } else {
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
@@ -189,6 +200,7 @@ export function useSequentialTransactionFlow(
     setCurrentIndex(0);
     setTransactionHashes([]);
     setHasWriteError(false);
+    dispatchedIndexRef.current = -1;
     resetWrite();
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution
@@ -209,6 +221,9 @@ export function useSequentialTransactionFlow(
     if (simulationData?.request) {
       transactionsRef.current = calls; // freeze args for the whole sequence
       totalCallsRef.current = calls.length; // and the count, for the completion check
+      // This call is dispatched here, so claim its index before the auto-execute
+      // effect can see it (a retry re-enters at a non-zero currentIndex).
+      dispatchedIndexRef.current = currentIndex;
       setIsExecuting(true);
       writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     } else {
