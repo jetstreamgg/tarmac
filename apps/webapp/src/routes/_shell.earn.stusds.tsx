@@ -9,7 +9,8 @@ import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 // Savings/vault/fixed pages. Freely reachable: the expert-risk acknowledgement
 // lives in the supply modal, not a route gate.
 export const Route = createFileRoute('/_shell/earn/stusds')({
-  beforeLoad: ({ location, search }) => requireModuleEnabled('expert', location.searchStr, search),
+  beforeLoad: ({ context, location, search }) =>
+    requireModuleEnabled(context.queryClient, 'expert', location.searchStr, search),
   component: StUsdsProductDetail,
   staticData: { intent: Intent.EXPERT_INTENT }
 });

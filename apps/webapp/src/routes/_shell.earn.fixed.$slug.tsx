@@ -10,7 +10,7 @@ import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 // ready-to-redeem section is where redemption lives (G6) — and unknown slugs
 // fall back to the Earn marketplace.
 export const Route = createFileRoute('/_shell/earn/fixed/$slug')({
-  beforeLoad: async ({ params, location, search }) => {
+  beforeLoad: async ({ context, params, location, search }) => {
     const market = getPendleMarketBySlug(params.slug);
     if (!market) {
       throw redirect({ to: '/earn', search: keepSearch, replace: true });
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_shell/earn/fixed/$slug')({
     }
     // Slug validity resolves first, so an unknown slug still lands on the
     // marketplace rather than implying the market exists but is restricted.
-    await requireModuleEnabled('fixed', location.searchStr, search);
+    await requireModuleEnabled(context.queryClient, 'fixed', location.searchStr, search);
   },
   component: PendleMarketDetail,
   staticData: { fixedIntent: FixedIntent.MARKET_INTENT }

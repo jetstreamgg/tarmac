@@ -10,7 +10,7 @@ import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 // vault of that provider falls back to the Earn marketplace. Which chain the
 // vault lives on is resolved by the page (chain-dependent).
 export const Route = createFileRoute('/_shell/earn/vaults/$provider/$vaultAddress')({
-  beforeLoad: async ({ params, location, search }) => {
+  beforeLoad: async ({ context, params, location, search }) => {
     const provider = providerForVaultModule(params.provider);
     const address = params.vaultAddress.toLowerCase();
     const isKnownVault =
@@ -23,7 +23,7 @@ export const Route = createFileRoute('/_shell/earn/vaults/$provider/$vaultAddres
     }
     // Unknown vaults fall back first, so a restricted region gets the marketplace
     // for a bogus URL rather than a geo redirect that implies the vault exists.
-    await requireModuleEnabled('vaults', location.searchStr, search);
+    await requireModuleEnabled(context.queryClient, 'vaults', location.searchStr, search);
   },
   // Morpho vault details render full-width through the ProductDetailTemplate
   // (D4), like the Savings page. The sky (sUSDT) detail shares this leaf and

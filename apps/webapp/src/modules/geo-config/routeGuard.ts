@@ -1,5 +1,5 @@
 import { redirect } from '@tanstack/react-router';
-import { queryClient } from '@/lib/queryClient';
+import type { QueryClient } from '@tanstack/react-query';
 import { ROUTES } from '@/lib/routes';
 import { applyGeoOverrides } from './applyGeoOverrides';
 import { FALLBACK_CONFIG } from './constants';
@@ -16,13 +16,22 @@ import { ModuleId } from './types';
  * ever ran on the boxed branch, so once every route went full-width a direct
  * deep link to a restricted module rendered it in full.
  *
+ * The client arrives via router context, not an import: `beforeLoad` runs outside
+ * the React tree, so `useQueryClient` is unavailable, and threading it through
+ * keeps route specs hermetic (each boots its own client).
+ *
  * Shares the provider's query (same key, same client), so the config is fetched
  * once and the guard is a cache read on every navigation after the first. The
  * first navigation awaits it; `fetchGeoConfig` resolves to the restrictive
  * FALLBACK_CONFIG on error or after its own 5s timeout, so a failed lookup
  * redirects rather than hanging.
  */
-export async function requireModuleEnabled(moduleId: ModuleId, searchStr: string, search: unknown) {
+export async function requireModuleEnabled(
+  queryClient: QueryClient,
+  moduleId: ModuleId,
+  searchStr: string,
+  search: unknown
+) {
   if (GEO_BYPASS) return;
 
   let config;

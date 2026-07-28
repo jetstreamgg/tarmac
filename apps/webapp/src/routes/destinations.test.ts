@@ -5,7 +5,7 @@ import { Intent } from '@/lib/enums';
 import { ROUTES } from '@/lib/routes';
 import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
 import { MORPHO_VAULTS } from '@/hooks/morpho/constants';
-import { queryClient } from '@/lib/queryClient';
+import { QueryClient } from '@tanstack/react-query';
 import { GEO_CONFIG_QUERY_KEY } from '@/modules/geo-config/query';
 import type { GeoConfig, ModuleId } from '@/modules/geo-config/types';
 
@@ -21,9 +21,12 @@ const MODULE_IDS: ModuleId[] = [
 ];
 
 // The module routes gate on geo config in `beforeLoad` (G5, replacing the shell's
-// old Balances-pane swap). Seeding the shared query cache keeps these specs about
-// routing: the guard reads the cache instead of hitting the network, which would
-// otherwise resolve to the restrictive fallback and redirect half of them.
+// old Balances-pane swap). Each spec boots its own client — the router takes one
+// through context — and seeds the cache, so the guard reads it instead of hitting
+// the network, which would resolve to the restrictive fallback and redirect half
+// of them. No shared state between specs.
+let queryClient: QueryClient;
+
 function seedGeoConfig(disabled: ModuleId[] = []) {
   const config: GeoConfig = {
     version: 'test',
@@ -40,7 +43,7 @@ function seedGeoConfig(disabled: ModuleId[] = []) {
 }
 
 beforeEach(() => {
-  queryClient.clear();
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   seedGeoConfig();
 });
 
@@ -48,7 +51,7 @@ beforeEach(() => {
 // against a path without rendering, so a missing destination route or broken
 // redirect fails here instead of 404ing on a preview deploy.
 async function routerAt(path: string): Promise<AnyRouter> {
-  const router = createAppRouter(createMemoryHistory({ initialEntries: [path] }));
+  const router = createAppRouter(createMemoryHistory({ initialEntries: [path] }), queryClient);
   await router.load();
   return router;
 }

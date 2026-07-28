@@ -7,7 +7,8 @@ import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 // in useAppOrchestration's route-validation effect rather than here. Renders
 // full-width through the ProductDetailTemplate (D6), like Savings/Vaults.
 export const Route = createFileRoute('/_shell/earn/rewards/$rewardContract')({
-  beforeLoad: ({ location, search }) => requireModuleEnabled('rewards', location.searchStr, search),
+  beforeLoad: ({ context, location, search }) =>
+    requireModuleEnabled(context.queryClient, 'rewards', location.searchStr, search),
   component: RewardsDetailPage,
   staticData: { intent: Intent.REWARDS_INTENT }
 });

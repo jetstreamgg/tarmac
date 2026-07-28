@@ -6,7 +6,8 @@ import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 // Stake is a destination page (F7 flip): keeps its intent for orchestration
 // and network validation, and renders full-width like the /earn marketplace.
 export const Route = createFileRoute('/_shell/stake')({
-  beforeLoad: ({ location, search }) => requireModuleEnabled('stake', location.searchStr, search),
+  beforeLoad: ({ context, location, search }) =>
+    requireModuleEnabled(context.queryClient, 'stake', location.searchStr, search),
   component: StakeProductPage,
   staticData: { intent: Intent.STAKE_INTENT }
 });

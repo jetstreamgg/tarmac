@@ -7,7 +7,8 @@ import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 // for orchestration/network validation, and renders full-width like the /earn
 // marketplace.
 export const Route = createFileRoute('/_shell/earn/savings')({
-  beforeLoad: ({ location, search }) => requireModuleEnabled('savings', location.searchStr, search),
+  beforeLoad: ({ context, location, search }) =>
+    requireModuleEnabled(context.queryClient, 'savings', location.searchStr, search),
   component: SavingsProductDetail,
   staticData: { intent: Intent.SAVINGS_INTENT }
 });
