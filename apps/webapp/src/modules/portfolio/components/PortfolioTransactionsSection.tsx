@@ -7,6 +7,7 @@ import {
   BP,
   ModuleEnum,
   useAllNetworksCombinedHistory,
+  useAvailableTokenRewardContractsForChains,
   useBreakpointIndex,
   useFilteredPortfolioHistory
 } from '@/hooks';
@@ -29,7 +30,7 @@ import {
   CellProduct,
   CellStatus
 } from '@/components/ui/table-cells';
-import { PortfolioTxRow, toPortfolioTxRow } from '../helpers/transactionRow';
+import { PortfolioTxRow, RewardTokenLookup, toPortfolioTxRow } from '../helpers/transactionRow';
 
 const ALL = 'all';
 
@@ -93,11 +94,11 @@ const networkCell = (row: PortfolioTxRow) => (
 const statusCell = (row: PortfolioTxRow) => <CellStatus status={row.status} />;
 
 const productCell = (row: PortfolioTxRow) => (
-  <CellProduct icon={tokenIcon(row.symbol)} label={productName(row.module)} />
+  <CellProduct icon={tokenIcon(row.iconSymbol)} label={productName(row.module)} />
 );
 
 const suppliedCell = (row: PortfolioTxRow) => (
-  <CellAmount icon={tokenIcon(row.symbol)} amount={`${row.amount} ${row.symbol}`} usd={row.usd} />
+  <CellAmount icon={tokenIcon(row.iconSymbol)} amount={`${row.amount} ${row.symbol}`} usd={row.usd} />
 );
 
 const hashCell = (row: PortfolioTxRow) => (
@@ -298,11 +299,31 @@ export function PortfolioTransactionsSection() {
     product: product === ALL ? undefined : (product as ModuleEnum)
   });
 
+  // Reward claims only carry the reward contract address; resolve it to the
+  // paid token (SPK / GROVE / …) per chain seen in the history (APP-426 item 7).
+  const getRewardContracts = useAvailableTokenRewardContractsForChains();
+  const rewardTokenByContract = useMemo(() => {
+    const lookup: RewardTokenLookup = {};
+    const chainIds = new Set<number>();
+    for (const item of [...(aggregate.data ?? []), ...(data ?? [])]) {
+      if ('chainId' in item) chainIds.add(item.chainId);
+    }
+    for (const id of chainIds) {
+      for (const contract of getRewardContracts(id)) {
+        lookup[`${id}-${contract.contractAddress.toLowerCase()}`] = contract.rewardToken.symbol;
+      }
+    }
+    return lookup;
+  }, [aggregate.data, data, getRewardContracts]);
+
   const optionRows = useMemo(
-    () => (aggregate.data ?? []).map((item, i) => toPortfolioTxRow(item, i)),
-    [aggregate.data]
+    () => (aggregate.data ?? []).map((item, i) => toPortfolioTxRow(item, i, rewardTokenByContract)),
+    [aggregate.data, rewardTokenByContract]
   );
-  const rows = useMemo(() => (data ?? []).map((item, i) => toPortfolioTxRow(item, i)), [data]);
+  const rows = useMemo(
+    () => (data ?? []).map((item, i) => toPortfolioTxRow(item, i, rewardTokenByContract)),
+    [data, rewardTokenByContract]
+  );
 
   return (
     <PortfolioTransactionsView

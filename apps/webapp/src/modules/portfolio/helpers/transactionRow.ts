@@ -1,5 +1,11 @@
 import { t } from '@lingui/core/macro';
-import { CombinedHistoryItem, ModuleEnum, TransactionTypeEnum, getTokenDecimals } from '@/hooks';
+import {
+  CombinedHistoryItem,
+  ModuleEnum,
+  PENDLE_MARKETS,
+  TransactionTypeEnum,
+  getTokenDecimals
+} from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, getCowExplorerLink, getEtherscanLink } from '@/utils';
 
 /**
@@ -26,6 +32,9 @@ export interface PortfolioTxRow {
   action: string;
   /** Token symbol for the amount/product cells. */
   symbol: string;
+  /** Symbol driving the TokenIcon; differs from `symbol` when that isn't a
+      real token (Pendle rows carry the market *name*, which has no icon). */
+  iconSymbol: string;
   /** Formatted token amount (compact, absolute); empty for admin/no-value events. */
   amount: string;
   /** `$`-prefixed USD, present only for $1-pegged tokens. */
@@ -59,6 +68,20 @@ const NO_VALUE_TYPES = new Set<TransactionTypeEnum>([
 ]);
 
 const absBigInt = (v: bigint): bigint => (v < 0n ? -v : v);
+
+// Pendle rows display the market name as `symbol` ("Fixed Yield"), which is
+// not a token — resolve the market's underlying (sUSDS) for the icon, the
+// same token the /earn/fixed product page uses (APP-426 item 6).
+const PENDLE_UNDERLYING_BY_MARKET: Record<string, string> = Object.fromEntries(
+  PENDLE_MARKETS.map(m => [m.marketAddress.toLowerCase(), m.underlyingSymbol])
+);
+
+function iconSymbol(item: CombinedHistoryItem, symbol: string): string {
+  if (item.module === ModuleEnum.PENDLE && 'marketAddress' in item && item.marketAddress) {
+    return PENDLE_UNDERLYING_BY_MARKET[String(item.marketAddress).toLowerCase()] ?? symbol;
+  }
+  return symbol;
+}
 
 function actionLabel(item: CombinedHistoryItem): string {
   const { type, module } = item;
@@ -114,7 +137,22 @@ function actionLabel(item: CombinedHistoryItem): string {
   }
 }
 
-function tokenSymbol(item: CombinedHistoryItem): string {
+/** `${chainId}-${lowercased contract address}` → reward token symbol. */
+export type RewardTokenLookup = Record<string, string>;
+
+function tokenSymbol(item: CombinedHistoryItem, rewardTokenByContract?: RewardTokenLookup): string {
+  // Reward claims are paid in the contract's reward token (SPK / GROVE / …),
+  // but the history item only carries the contract address — resolve it, like
+  // the legacy BalancesHistoryItem did via useRewardContractTokens. Its
+  // fallback (the original SKY-paying contract) is kept for unknown contracts.
+  if (
+    item.type === TransactionTypeEnum.REWARD &&
+    'rewardContractAddress' in item &&
+    item.rewardContractAddress
+  ) {
+    const chainId = 'chainId' in item ? item.chainId : 1;
+    return rewardTokenByContract?.[`${chainId}-${String(item.rewardContractAddress).toLowerCase()}`] ?? 'SKY';
+  }
   if ('token' in item && item.token) return item.token.symbol;
   if ('fromToken' in item && item.fromToken) return item.fromToken.symbol;
   if ('underlyingSymbol' in item && item.underlyingSymbol) return item.underlyingSymbol;
@@ -209,12 +247,16 @@ function txStatus(item: CombinedHistoryItem): PortfolioTxStatus {
   }
 }
 
-export function toPortfolioTxRow(item: CombinedHistoryItem, index: number): PortfolioTxRow {
+export function toPortfolioTxRow(
+  item: CombinedHistoryItem,
+  index: number,
+  rewardTokenByContract?: RewardTokenLookup
+): PortfolioTxRow {
   // ParsedTradeRecord omits chainId in its *type*, but every runtime producer
   // (cowswap / psm / hybrid) attaches it, so `'chainId' in item` reads it; the
   // `: 1` is only a defensive default.
   const chainId = 'chainId' in item ? item.chainId : 1;
-  const symbol = tokenSymbol(item);
+  const symbol = tokenSymbol(item, rewardTokenByContract);
   const amount = amountString(item, chainId);
   // CoW orders store an order UID in `transactionHash`, which resolves on the
   // CoW explorer, not Etherscan (mirrors BalancesHistoryItem).
@@ -231,6 +273,7 @@ export function toPortfolioTxRow(item: CombinedHistoryItem, index: number): Port
     chainId,
     action: actionLabel(item),
     symbol,
+    iconSymbol: iconSymbol(item, symbol),
     amount,
     usd: amount && STABLES.has(symbol.toUpperCase()) ? `$${amount}` : undefined,
     status: txStatus(item),
