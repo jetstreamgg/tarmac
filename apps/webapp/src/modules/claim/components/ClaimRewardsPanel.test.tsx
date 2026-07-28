@@ -58,21 +58,33 @@ vi.mock('wagmi', async importOriginal => {
   return { ...actual, useChainId: () => 1, useChains: () => [{ id: 1, name: 'Ethereum' }] };
 });
 
-vi.mock('@/hooks', () => ({
-  // The DS Tooltip reads this to suppress itself on touch devices.
-  useIsTouchDevice: () => false,
-  useNetworkFee: () => ({
-    data: undefined,
-    isLoading: false,
-    error: null,
-    mutate: () => {},
-    dataSources: []
-  }),
-  useTransactionFlow: (params: { calls: unknown[] }) => {
-    h.flowCalls = params.calls;
-    return { execute: vi.fn(), prepared: true };
-  }
-}));
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return {
+    ...actual,
+    // The DS Tooltip reads this to suppress itself on touch devices.
+    useIsTouchDevice: () => false,
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
+    useTransactionFlow: (params: { calls: unknown[] }) => {
+      h.flowCalls = params.calls;
+      return { execute: vi.fn(), prepared: true };
+    },
+    // No WagmiProvider in these renders → the fee row stays a plain value.
+    useIsBatchSupported: () => ({
+      data: false,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    })
+  };
+});
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({

@@ -85,10 +85,14 @@ export function useNetworkFee({
   const { data: batchSupported } = useIsBatchSupported();
   const { data: pricesData, isLoading: isPricesLoading } = usePrices();
 
-  // Bundling only exists for multi-call flows on wallets that support it. Wallets that
-  // batch some other way (Safe, smart-contract accounts) or sponsor the fee fall through
-  // to the sequential estimate — we can't model economics we can't see.
-  const wantsBatch = shouldUseBatch && batchSupported === true && calls.length > 1;
+  // Whether bundling is *possible*, which is not the same as whether the user wants it.
+  // Both figures get simulated whenever it's possible: the "save X%" pitch is aimed
+  // precisely at people who have bundling switched off, so gating the bundled simulation
+  // on their preference would mean never having a saving to show them.
+  //
+  // Wallets that batch some other way (Safe, smart-contract accounts) or sponsor the fee
+  // fall through to the sequential estimate — we can't model economics we can't see.
+  const canBundle = batchSupported === true && calls.length > 1;
 
   const callsKey = useMemo(() => getCallsKey(calls), [calls]);
 
@@ -98,14 +102,14 @@ export function useNetworkFee({
     error: gasError,
     refetch: refetchGas
   } = useQuery({
-    queryKey: ['network-fee-gas', resolvedChainId, address, callsKey, wantsBatch],
+    queryKey: ['network-fee-gas', resolvedChainId, address, callsKey, canBundle],
     queryFn: () =>
       estimateFlowGas({
         client: publicClient!,
         chainId: resolvedChainId,
         account: address!,
         calls,
-        wantsBatch
+        wantsBatch: canBundle
       }),
     enabled: enabled && !!publicClient && !!address && calls.length > 0,
     staleTime: GAS_STALE_TIME,
@@ -137,7 +141,8 @@ export function useNetworkFee({
   const data = useMemo((): NetworkFeeData | undefined => {
     if (!gasData || feePerGas === undefined) return undefined;
 
-    const isBatch = gasData.batchGas !== undefined;
+    // Which figure the row shows follows the user's preference; what we simulated does not.
+    const isBatch = shouldUseBatch && gasData.batchGas !== undefined;
     const gas = isBatch ? gasData.batchGas! : gasData.sequentialGas;
     const feeWei = computeFeeWei({
       gas,
@@ -164,7 +169,7 @@ export function useNetworkFee({
       sequentialFormatted: sequentialUsd === undefined ? undefined : formatUsd(sequentialUsd),
       batchSaving: computeBatchSaving(gasData.sequentialGas, gasData.batchGasSteadyState)
     };
-  }, [gasData, feePerGas, pricesData]);
+  }, [gasData, feePerGas, pricesData, shouldUseBatch]);
 
   return {
     data,

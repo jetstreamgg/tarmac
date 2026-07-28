@@ -3,6 +3,12 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import {
+  NetworkFeeValue,
+  useBundlePromoVisible,
+  useCanBundle
+} from '@/modules/ui/components/NetworkFeeValue';
 import { type Token, type VaultProvider } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
@@ -85,6 +91,9 @@ export function VaultModalForm({
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch, enabled: amountReady });
+
+  const canBundle = useCanBundle(calls.length);
+  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
   const disabled = !amountReady || !prepared;
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -118,12 +127,18 @@ export function VaultModalForm({
         },
         { label: <Trans>Product</Trans>, value: vaultName },
         { label: <Trans>Withdrawal</Trans>, value: <Trans>Anytime</Trans> },
-        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
+        {
+          label: <NetworkFeeLabel />,
+          value: <NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />
+        }
       ]
     : [
         receiveRow,
         { label: <Trans>Product</Trans>, value: vaultName },
-        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
+        {
+          label: <NetworkFeeLabel />,
+          value: <NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />
+        }
       ];
 
   const body = (
@@ -178,6 +193,8 @@ export function VaultModalForm({
           <Row key={index} label={row.label} value={row.value} />
         ))}
       </div>
+
+      {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

@@ -4,6 +4,12 @@ import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import {
+  NetworkFeeValue,
+  useBundlePromoVisible,
+  useCanBundle
+} from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
 import { TOKENS, useDebounce, useMkrSkyFee, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, getChainIcon, math } from '@/utils';
@@ -190,6 +196,9 @@ export function UpgradeModalForm({
     shouldUseBatch: isBatch,
     enabled: amountReady
   });
+
+  const canBundle = useCanBundle(calls.length);
+  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
   const disabled = !amountReady || !prepared;
 
   // The wallet balance is chain state the engine's success doesn't refetch —
@@ -404,10 +413,12 @@ export function UpgradeModalForm({
         {hairline}
         <DetailCell
           label={<NetworkFeeLabel />}
-          value={networkFee?.formatted ?? NO_VALUE}
+          value={<NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />}
           dataTestId="upgrade-modal-network-fee"
         />
       </div>
+
+      {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
       {error && amountReady && (
         <Text className="text-error text-sm" data-testid="upgrade-modal-error">

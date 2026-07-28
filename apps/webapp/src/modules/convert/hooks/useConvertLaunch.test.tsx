@@ -43,6 +43,16 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
+  useIsBatchSupported: () => ({
+    data: false,
+    isLoading: false,
+    error: null,
+    mutate: () => {},
+    dataSources: []
+  })
+}));
+
 vi.mock('@/hooks/shared/useNetworkFee', () => ({
   // The fee row is read-only and network-backed; these tests render without a
   // WagmiProvider, so stub it to the un-resolved state the row falls back on.
@@ -78,7 +88,11 @@ vi.mock('./usePsmConversion', () => ({
       isLoading: h.isLoading,
       disabledReason: h.disabledReason,
       execute: h.execute,
-      mutatePocketBalance: h.mutatePocketBalance
+      mutatePocketBalance: h.mutatePocketBalance,
+      // Mirrors the real result shape; the review content reads these for the fee
+      // row's bundling badge and the "Save X%" promo.
+      calls: [],
+      isBatch: false
     };
   }
 }));

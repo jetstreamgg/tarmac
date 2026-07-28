@@ -3,6 +3,12 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import {
+  NetworkFeeValue,
+  useBundlePromoVisible,
+  useCanBundle
+} from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -83,6 +89,9 @@ export function StUsdsModalForm({
   // waits on it.
   const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch, enabled: amountReady });
 
+  const canBundle = useCanBundle(calls.length);
+  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
+
   const disabled =
     !amountReady ||
     !prepared ||
@@ -124,12 +133,18 @@ export function StUsdsModalForm({
           value: `$${formatNumber(projectAnnualEarnings(amountUsd, rate), { maxDecimals: 2 })}`
         },
         { label: <Trans>Product</Trans>, value: 'stUSDS' },
-        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
+        {
+          label: <NetworkFeeLabel />,
+          value: <NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />
+        }
       ]
     : [
         { label: <Trans>You&apos;ll receive</Trans>, value: receiveValue },
         { label: <Trans>Product</Trans>, value: 'stUSDS' },
-        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
+        {
+          label: <NetworkFeeLabel />,
+          value: <NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />
+        }
       ];
 
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);
@@ -196,6 +211,8 @@ export function StUsdsModalForm({
           <Row key={index} label={row.label} value={row.value} />
         ))}
       </div>
+
+      {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
       {needsImpactAcknowledgement && (
         <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">

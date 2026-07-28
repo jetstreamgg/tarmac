@@ -31,6 +31,18 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
+  // The bundling badge asks whether the wallet can batch; these renders have no
+  // WagmiProvider, so answer "no" and the fee row stays a plain value.
+  useIsBatchSupported: () => ({
+    data: false,
+    isLoading: false,
+    error: null,
+    mutate: () => {},
+    dataSources: []
+  })
+}));
+
 vi.mock('@/hooks/shared/useNetworkFee', () => ({
   // The fee row is read-only and network-backed; these tests render without a
   // WagmiProvider, so stub it to the un-resolved state the row falls back on.

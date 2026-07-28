@@ -9,12 +9,10 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Steps, StepsItem } from '@/components/ui/steps';
-import { Switch } from '@/components/ui/switch';
-import { Close, Info } from '@/modules/icons';
+import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { Popover, PopoverTrigger, PopoverContent, PopoverClose, PopoverArrow } from '@/components/ui/popover';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { getExplorerName } from '@/utils';
 import { useIsSafeWallet } from '@/hooks';
@@ -150,7 +148,6 @@ export function TransactionModal({
   const isFirstScreen = isEntry || isReview;
   const isTransaction = step === 'transaction';
   const hasMultipleSteps = steps && steps.length > 1;
-  const showBatchToggle = hasMultipleSteps && batchSupported;
   // Same expression the launch hooks use for `shouldUseBatch` — when true the
   // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
   // steps active together, "Bundled" header badge).
@@ -397,7 +394,6 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
-                {showBatchToggle && <BatchToggle />}
                 <Button
                   variant="primary"
                   size="xl"
@@ -470,50 +466,5 @@ export function TransactionModal({
         </div>
       </ResponsiveModalContent>
     </ResponsiveModal>
-  );
-}
-
-function BatchToggle() {
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
-
-  return (
-    <div className="border-selectActive flex items-center gap-4 border-t pt-4">
-      <div className="flex flex-wrap items-center gap-1">
-        <Text className="text-text text-sm leading-none">
-          <Trans>Bundle transactions</Trans>
-        </Text>
-        <Popover>
-          <PopoverTrigger onClick={e => e.stopPropagation()} className="text-text z-10">
-            <Info width={13} height={13} />
-          </PopoverTrigger>
-          <PopoverContent align="center" side="top" className="bg-containerDark backdrop-blur-[50px]">
-            <div className="flex items-start justify-between">
-              <Text className="text-base font-medium">
-                <Trans>Bundle transactions</Trans>
-              </Text>
-              <PopoverClose onClick={e => e.stopPropagation()}>
-                <Close className="text-text h-5 w-5 cursor-pointer" />
-              </PopoverClose>
-            </div>
-            <Text className="light:text-textSecondary mt-2 text-sm text-white/80">
-              <Trans>
-                Bundled transactions are set &apos;on&apos; by default to complete transactions in a single
-                step. Combining actions improves the user experience and reduces gas fees. Manually toggle off
-                to cancel this feature.
-              </Trans>
-            </Text>
-            <PopoverArrow />
-          </PopoverContent>
-        </Popover>
-        <Text className="text-textSecondary text-sm leading-none">
-          <Trans>(toggled on by default)</Trans>
-        </Text>
-      </div>
-      <Switch
-        checked={batchEnabled}
-        onCheckedChange={setBatchEnabled}
-        aria-label={t`Toggle bundled transactions`}
-      />
-    </div>
   );
 }
