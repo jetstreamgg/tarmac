@@ -58,6 +58,32 @@ vi.mock('wagmi', async importOriginal => {
   return { ...actual, useChainId: () => 1, useChains: () => [{ id: 1, name: 'Ethereum' }] };
 });
 
+// The real hero reaches TokenIcon → `@/widgets`, which needs the un-mocked
+// `@/hooks`. This panel's tests are about the scope→calls merge, not the hero's
+// chrome (that has its own test), so stand it in with its text content.
+vi.mock('@/modules/ui/components/TransactionAmountHero', () => ({
+  TransactionAmountHero: ({
+    amount,
+    symbol,
+    usd,
+    dataTestId
+  }: {
+    amount: string;
+    symbol: string;
+    usd?: string;
+    dataTestId?: string;
+  }) => (
+    <div data-testid={dataTestId}>
+      {amount} {symbol} {usd}
+    </div>
+  )
+}));
+
+vi.mock('@/utils', () => ({
+  formatNumber: (value: number) => String(value),
+  getChainIcon: () => null
+}));
+
 vi.mock('@/hooks', () => ({
   useTransactionFlow: (params: { calls: unknown[] }) => {
     h.flowCalls = params.calls;
@@ -85,7 +111,7 @@ import type { ClaimScope } from '../types';
 const reward = (source: ClaimSource, id: string, symbol: string): ClaimableReward => ({
   id,
   source,
-  sourceLabel: source === 'merkl' ? 'Merkl' : source === 'sky-rewards' ? 'Sky Rewards' : 'Staking',
+  tokenName: `${symbol} token`,
   tokenSymbol: symbol,
   icon: null,
   formattedAmount: '10.00',
@@ -126,27 +152,25 @@ describe('ClaimRewardsPanel', () => {
 
     expect(h.flowCalls).toHaveLength(3);
     expect(h.entry?.confirmDisabled).toBe(false);
-    // Multiple sources → group headers rendered.
-    expect(screen.getByTestId('claim-group-merkl')).toBeTruthy();
-    expect(screen.getByTestId('claim-group-sky-rewards')).toBeTruthy();
+    expect(screen.getAllByTestId('claim-reward-row')).toHaveLength(3);
   });
 
-  it('drops a de-selected reward from the merged calls', () => {
+  it('claims everything in scope — no per-reward opt-out', () => {
     h.merkl = [reward('merkl', '0xa', 'MORPHO'), reward('merkl', '0xb', 'SKY')];
-    renderPanel();
-    expect(h.flowCalls).toHaveLength(2);
+    renderPanel({ kind: 'merkl' });
 
-    fireEvent.click(screen.getAllByTestId('claim-reward-checkbox')[0]);
-    expect(h.flowCalls).toHaveLength(1);
+    expect(h.flowCalls).toHaveLength(2);
+    // The redesigned modal (Figma 1036:190105) shows amounts only — the scope
+    // is the selection, so there is nothing to uncheck.
+    expect(screen.queryByTestId('claim-reward-checkbox')).toBeNull();
   });
 
-  it('hides the checkbox and group header for a single reward', () => {
+  it('renders a single row for a single-reward scope', () => {
     h.merkl = [reward('merkl', '0xa', 'MORPHO')];
-    renderPanel({ kind: 'vault', vaultAddress: '0xvault' });
+    renderPanel({ kind: 'merkl-token', tokenAddress: '0xa' });
 
-    expect(screen.queryByTestId('claim-reward-checkbox')).toBeNull();
-    expect(screen.queryByTestId('claim-group-merkl')).toBeNull();
-    expect(screen.getByText('MORPHO')).toBeTruthy();
+    expect(screen.getAllByTestId('claim-reward-row')).toHaveLength(1);
+    expect(screen.getByText(/MORPHO/)).toBeTruthy();
   });
 
   it('offers the restake toggle only in the stake scope with a SKY reward', () => {

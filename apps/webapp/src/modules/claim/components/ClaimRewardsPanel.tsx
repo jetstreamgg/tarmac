@@ -2,27 +2,31 @@ import { ReactNode, useMemo, useState } from 'react';
 import { useChains, useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { useTransactionFlow } from '@/hooks';
-import { formatUsd } from '@/utils';
-import { Checkbox } from '@/components/ui/checkbox';
+import { formatNumber, getChainIcon } from '@/utils';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 import { merklAdapter } from '../adapters/merklAdapter';
 import { skyRewardsAdapter } from '../adapters/skyRewardsAdapter';
 import { stakeAdapter } from '../adapters/stakeAdapter';
 import type { ClaimSource, ClaimableReward, ClaimScope } from '../types';
 
 const NO_VALUE = '–';
-// Fixed group order for the merged list (also the order calls are merged in).
-const SOURCE_ORDER: ClaimSource[] = ['merkl', 'sky-rewards', 'stake'];
 
-function InfoRow({ label, children }: { label: ReactNode; children: ReactNode }) {
+/**
+ * One of the two stacked label/value columns of the modal's footer block
+ * (Figma 1036:190131): Body 6 label over a Label 5 value, split by a hairline.
+ */
+function FooterStat({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between">
-      <Text className="text-textSecondary text-sm">{label}</Text>
-      <Text className="text-text text-sm font-medium">{children}</Text>
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="text-fgSecondary font-graphik text-xs leading-[18px]">{label}</span>
+      <span className="font-circle text-fgPrimary flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
+        {children}
+      </span>
     </div>
   );
 }
@@ -32,15 +36,17 @@ function InfoRow({ label, children }: { label: ReactNode; children: ReactNode })
  * modal's `backgroundContent` and portaled into its entry slot (via `useModalEntryBody`).
  *
  * It calls the three claim adapters' read hooks unconditionally (fixed trio,
- * rules-of-hooks), merges their in-scope rewards into one grouped, per-token checkbox
- * list (default all selected, tracking only de-selections), and merges every selected
- * adapter's `Call[]` into ONE `useTransactionFlow` — an EIP-5792 batch on wallets that
- * support it, sequential otherwise. All three engines are mainnet, so a single bundle
- * works. Restake (SKY-only) is offered in the stake scope and passed to the stake
- * adapter, which folds the SKY reward back via `lock`.
+ * rules-of-hooks), merges their in-scope rewards into one list of amount heroes, and
+ * merges every adapter's `Call[]` into ONE `useTransactionFlow` — an EIP-5792 batch on
+ * wallets that support it, sequential otherwise. All three engines are mainnet, so a
+ * single bundle works. Restake (SKY-only) is offered in the stake scope and passed to
+ * the stake adapter, which folds the SKY reward back via `lock`.
  *
- * The `scope` narrows what each adapter reads: a vault card passes `{kind:'vault'}`
- * (only Merkl responds), the future portfolio surface passes `{kind:'all'}`, etc.
+ * The `scope` narrows what each adapter reads and is the ONLY selection mechanism: a
+ * table row's Claim passes a single-reward scope (`merkl-token` / `reward-contract`), a
+ * section's Claim all passes the source-wide scope (`merkl` / `sky-rewards`), a vault
+ * card passes `{kind:'vault'}`. Per-reward checkboxes were dropped with the redesigned
+ * modal (Figma 1036:190105 shows none) — everything in scope is always claimed.
  */
 export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; scope: ClaimScope }) {
   const { txCallbacks } = useTransaction();
@@ -53,34 +59,24 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   const stake = stakeAdapter.useClaimable(scope);
 
   const isLoading = merkl.isLoading || sky.isLoading || stake.isLoading;
-  const allRewards = useMemo(
+  const rewards = useMemo(
     () => [...merkl.rewards, ...sky.rewards, ...stake.rewards],
     [merkl.rewards, sky.rewards, stake.rewards]
   );
 
-  // Default all selected: track only explicit de-selections, so a newly loaded reward
-  // is selected by default with no setState-in-effect.
-  const [deselected, setDeselected] = useState<Set<string>>(new Set());
-  const isSelected = (id: string) => !deselected.has(id);
-  const selected = useMemo(
-    () => allRewards.filter(reward => !deselected.has(reward.id)),
-    [allRewards, deselected]
-  );
-
-  // Restake is a stake-scoped, SKY-only affordance. Effective only while the SKY reward
-  // it folds back is itself selected.
+  // Restake is a stake-scoped, SKY-only affordance.
   const [restake, setRestake] = useState(false);
   const skyStakeReward =
     scope.kind === 'stake'
       ? stake.rewards.find(reward => reward.tokenSymbol.toUpperCase() === 'SKY')
       : undefined;
-  const effectiveRestake = restake && !!skyStakeReward && isSelected(skyStakeReward.id);
+  const effectiveRestake = restake && !!skyStakeReward;
 
-  // Each adapter's useClaimCalls filters `selected` to its own source, so the full list
+  // Each adapter's useClaimCalls filters `rewards` to its own source, so the full list
   // can be passed to all three; only stake reads the restake option.
-  const merklCalls = merklAdapter.useClaimCalls(selected);
-  const skyCalls = skyRewardsAdapter.useClaimCalls(selected);
-  const stakeCalls = stakeAdapter.useClaimCalls(selected, { restake: effectiveRestake });
+  const merklCalls = merklAdapter.useClaimCalls(rewards);
+  const skyCalls = skyRewardsAdapter.useClaimCalls(rewards);
+  const stakeCalls = stakeAdapter.useClaimCalls(rewards, { restake: effectiveRestake });
   const calls = useMemo(
     () => [...merklCalls.calls, ...skyCalls.calls, ...stakeCalls.calls],
     [merklCalls.calls, skyCalls.calls, stakeCalls.calls]
@@ -88,13 +84,13 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   const flow = useTransactionFlow({ calls, chainId, shouldUseBatch: true, ...txCallbacks });
 
-  // Disabled until there's something to send AND no selected source is still preparing
-  // (e.g. Merkl proofs mid-load) — so we never claim a partial subset of the selection.
-  const hasSelectionIn = (source: ClaimSource) => selected.some(reward => reward.source === source);
+  // Disabled until there's something to send AND no in-scope source is still preparing
+  // (e.g. Merkl proofs mid-load) — so we never claim a partial subset of the scope.
+  const hasRewardsIn = (source: ClaimSource) => rewards.some(reward => reward.source === source);
   const preparing =
-    (hasSelectionIn('merkl') && !merklCalls.prepared) ||
-    (hasSelectionIn('sky-rewards') && !skyCalls.prepared) ||
-    (hasSelectionIn('stake') && !stakeCalls.prepared);
+    (hasRewardsIn('merkl') && !merklCalls.prepared) ||
+    (hasRewardsIn('sky-rewards') && !skyCalls.prepared) ||
+    (hasRewardsIn('stake') && !stakeCalls.prepared);
   const disabled = calls.length === 0 || preparing;
 
   // Memoized so the useModalEntryBody sync effect has stable deps — an inline
@@ -104,7 +100,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   const transactionScreenContent = useMemo(
     () => (
       <div className="flex flex-col gap-2" data-testid="claim-rewards-summary">
-        {selected.map(reward => (
+        {rewards.map(reward => (
           <div key={reward.id} className="flex items-center gap-2">
             {reward.icon}
             <Text className="text-text text-sm">
@@ -114,7 +110,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
         ))}
       </div>
     ),
-    [selected]
+    [rewards]
   );
 
   const renderInSlot = useModalEntryBody({
@@ -124,68 +120,28 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     transactionScreenContent
   });
 
-  const toggle = (id: string) =>
-    setDeselected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-  const groups = SOURCE_ORDER.map(source => ({
-    source,
-    rewards: allRewards.filter(reward => reward.source === source)
-  })).filter(group => group.rewards.length > 0);
-  const showGroupHeaders = groups.length > 1;
-  const showCheckboxes = allRewards.length > 1;
-
   // All three engines are mainnet, so the network is the connected chain.
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
+  const chain = chains.find(candidate => candidate.id === chainId);
 
   const body = (
-    <div className="flex flex-col gap-5" data-testid="claim-rewards-form">
-      {isLoading && allRewards.length === 0 ? (
-        <Skeleton className="h-20 w-full" />
-      ) : allRewards.length === 0 ? (
+    <div className="flex flex-col gap-8" data-testid="claim-rewards-form">
+      {isLoading && rewards.length === 0 ? (
+        <Skeleton className="h-12 w-full" />
+      ) : rewards.length === 0 ? (
         <Text className="text-textSecondary text-sm">
           <Trans>There are currently no claimable rewards.</Trans>
         </Text>
       ) : (
-        <div className="flex flex-col gap-4">
-          {groups.map(group => (
-            <div key={group.source} className="flex flex-col gap-2">
-              {showGroupHeaders && (
-                <div className="flex items-center gap-2" data-testid={`claim-group-${group.source}`}>
-                  {group.rewards[0].badge ?? (
-                    <Text className="text-textSecondary text-xs font-medium uppercase">
-                      {group.rewards[0].sourceLabel}
-                    </Text>
-                  )}
-                </div>
-              )}
-              {group.rewards.map(reward => (
-                <label
-                  key={reward.id}
-                  data-testid="claim-reward-row"
-                  className="bg-panel flex cursor-pointer items-center gap-3 rounded-xl p-3"
-                >
-                  {showCheckboxes && (
-                    <Checkbox
-                      data-testid="claim-reward-checkbox"
-                      checked={isSelected(reward.id)}
-                      onCheckedChange={() => toggle(reward.id)}
-                      aria-label={reward.tokenSymbol}
-                    />
-                  )}
-                  {reward.icon}
-                  <span className="text-text flex-1 font-medium">{reward.tokenSymbol}</span>
-                  <div className="flex flex-col items-end">
-                    <span className="text-text font-medium">{reward.formattedAmount}</span>
-                    <span className="text-textSecondary text-sm">{formatUsd(reward.amountUsd)}</span>
-                  </div>
-                </label>
-              ))}
-            </div>
+        <div className="flex flex-col gap-8">
+          {rewards.map(reward => (
+            <TransactionAmountHero
+              key={reward.id}
+              amount={reward.formattedAmount}
+              symbol={reward.tokenSymbol}
+              usd={formatNumber(reward.amountUsd, { maxDecimals: 2 })}
+              inlineUsd
+              dataTestId="claim-reward-row"
+            />
           ))}
         </div>
       )}
@@ -199,11 +155,21 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
         </label>
       )}
 
-      {allRewards.length > 0 && (
-        <div className="border-borderPrimary flex flex-col gap-3 border-t pt-4">
-          <InfoRow label={<Trans>Network</Trans>}>{networkName}</InfoRow>
+      {rewards.length > 0 && (
+        <div className="flex items-center gap-4">
           {/* TODO: live gas estimate; stubbed like the Savings/Vault modals. */}
-          <InfoRow label={<Trans>Network fee</Trans>}>{NO_VALUE}</InfoRow>
+          <FooterStat label={<Trans>Network fee</Trans>}>{NO_VALUE}</FooterStat>
+          <div className="bg-borderPrimary h-6 w-px shrink-0" />
+          <FooterStat label={<Trans>Network</Trans>}>
+            {chain ? (
+              <>
+                {getChainIcon(chain.id, 'h-3 w-3')}
+                {chain.name}
+              </>
+            ) : (
+              NO_VALUE
+            )}
+          </FooterStat>
         </div>
       )}
     </div>
