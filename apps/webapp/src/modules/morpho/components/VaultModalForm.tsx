@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { type Token, type VaultProvider } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
@@ -117,12 +118,12 @@ export function VaultModalForm({
         },
         { label: <Trans>Product</Trans>, value: vaultName },
         { label: <Trans>Withdrawal</Trans>, value: <Trans>Anytime</Trans> },
-        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
+        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
       ]
     : [
         receiveRow,
         { label: <Trans>Product</Trans>, value: vaultName },
-        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
+        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
       ];
 
   const body = (

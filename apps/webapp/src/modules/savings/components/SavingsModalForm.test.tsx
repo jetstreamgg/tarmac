@@ -152,11 +152,14 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { SavingsModalForm } from './SavingsModalForm';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const renderForm = (flow: SavingsLaunchFlow) =>
   render(
     <I18nProvider i18n={i18n}>
-      <SavingsModalForm sessionId="s1" flow={flow} />
+      <TooltipProvider>
+        <SavingsModalForm sessionId="s1" flow={flow} />
+      </TooltipProvider>
     </I18nProvider>
   );
 

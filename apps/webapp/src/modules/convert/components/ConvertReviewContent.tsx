@@ -1,4 +1,5 @@
 import { formatUnits } from 'viem';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { formatNumber, getChainIcon } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -20,7 +21,9 @@ function TokenChip({ symbol }: { symbol: string }) {
 function ReviewRow({ row, chainId }: { row: ConvertModalRow; chainId: number }) {
   return (
     <div className="flex items-center justify-between" data-testid={`convert-modal-row-${row.id}`}>
-      <Text className="text-textSecondary text-sm">{row.label}</Text>
+      <Text className="text-textSecondary text-sm">
+        {row.id === 'networkFee' ? <NetworkFeeLabel /> : row.label}
+      </Text>
       <span className="text-text flex items-center gap-1.5 text-sm font-medium">
         {row.kind === 'network' && getChainIcon(chainId, 'h-4 w-4')}
         <Text className="text-text text-sm font-medium">{row.value}</Text>

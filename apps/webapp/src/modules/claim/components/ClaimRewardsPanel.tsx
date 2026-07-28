@@ -1,6 +1,7 @@
 import { ReactNode, useMemo, useState } from 'react';
 import { useChains, useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { useNetworkFee, useTransactionFlow } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -206,7 +207,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
       {allRewards.length > 0 && (
         <div className="border-borderPrimary flex flex-col gap-3 border-t pt-4">
           <InfoRow label={<Trans>Network</Trans>}>{networkName}</InfoRow>
-          <InfoRow label={<Trans>Network fee</Trans>}>{networkFee?.formatted ?? NO_VALUE}</InfoRow>
+          <InfoRow label={<NetworkFeeLabel />}>{networkFee?.formatted ?? NO_VALUE}</InfoRow>
         </div>
       )}
     </div>

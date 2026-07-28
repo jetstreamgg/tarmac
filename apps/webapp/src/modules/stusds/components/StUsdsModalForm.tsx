@@ -2,6 +2,7 @@ import { useId, useMemo, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { useNetworkFee } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -123,12 +124,12 @@ export function StUsdsModalForm({
           value: `$${formatNumber(projectAnnualEarnings(amountUsd, rate), { maxDecimals: 2 })}`
         },
         { label: <Trans>Product</Trans>, value: 'stUSDS' },
-        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
+        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
       ]
     : [
         { label: <Trans>You&apos;ll receive</Trans>, value: receiveValue },
         { label: <Trans>Product</Trans>, value: 'stUSDS' },
-        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
+        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
       ];
 
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);

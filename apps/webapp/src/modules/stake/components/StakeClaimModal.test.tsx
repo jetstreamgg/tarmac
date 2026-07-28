@@ -84,6 +84,7 @@ vi.mock('../hooks/useStakeClaimLaunch', () => ({
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { StakeClaimModal } from './StakeClaimModal';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const reward = (contract: string, symbol: string, formattedAmount: string, amountUsd: number) => ({
   id: `1:${contract}`,
@@ -100,7 +101,9 @@ function renderModal() {
   const onClose = vi.fn();
   render(
     <I18nProvider i18n={i18n}>
-      <StakeClaimModal urnIndex={1} onClose={onClose} />
+      <TooltipProvider>
+        <StakeClaimModal urnIndex={1} onClose={onClose} />
+      </TooltipProvider>
     </I18nProvider>
   );
   return { onClose };

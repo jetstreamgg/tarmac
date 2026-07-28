@@ -2,13 +2,19 @@ import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { formatBigInt, formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useNetworkFee } from '@/hooks';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
-import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
+import {
+  buildSupplyModalRows,
+  buildWithdrawModalRows,
+  NETWORK_FEE_LABEL,
+  type SavingsModalRow
+} from './savingsModalRows';
 import { SavingsOriginSelect } from './SavingsOriginSelect';
 
 // `SavingsModalPreset` now lives with the shared form model; re-exported here so the
@@ -24,7 +30,11 @@ const formatUsds = (value: bigint) =>
 function ModalRow({ row }: { row: SavingsModalRow }) {
   return (
     <div className="flex items-center justify-between" data-testid={`savings-modal-row-${row.label}`}>
-      <Text className="text-textSecondary text-sm">{row.label}</Text>
+      {/* Rows stay pure string data (asserted in savingsModalRows.test.ts); the fee row's
+          tooltip is attached here, in the renderer, rather than smuggling JSX into them. */}
+      <Text className="text-textSecondary text-sm">
+        {row.label === NETWORK_FEE_LABEL ? <NetworkFeeLabel /> : row.label}
+      </Text>
       {row.kind === 'single' ? (
         <Text className="text-text text-sm font-medium">{row.value}</Text>
       ) : (

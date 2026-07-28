@@ -179,11 +179,14 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { PendleModalForm } from '../PendleModalForm';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const renderForm = (flow: 'supply' | 'withdraw') =>
   render(
     <I18nProvider i18n={i18n}>
-      <PendleModalForm sessionId="session-1" flow={flow} market={MARKET} />
+      <TooltipProvider>
+        <PendleModalForm sessionId="session-1" flow={flow} market={MARKET} />
+      </TooltipProvider>
     </I18nProvider>
   );
 
@@ -215,7 +218,9 @@ describe('PendleModalForm', () => {
 
     render(
       <I18nProvider i18n={i18n}>
-        <Host />
+        <TooltipProvider>
+          <Host />
+        </TooltipProvider>
       </I18nProvider>
     );
 

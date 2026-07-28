@@ -7,6 +7,7 @@ import {
   EIP7702_AUTH_COST,
   computeBatchSaving,
   computeFeePerGas,
+  PRIORITY_FEE_PERCENTILE,
   computeFeeWei,
   encodeBatchExecutorData,
   getBatchGasFloor,
@@ -210,16 +211,16 @@ describe('computeFeePerGas', () => {
     expect(feePerGas).toBe(gwei(7));
   });
 
-  it('reproduces what a real MetaMask batch paid, which the base fee alone does not', () => {
-    // Fee history around tx 0xb2d7c987… — base fee ~0.1 gwei, p95 tips ~2 gwei.
+  it('prices at the market rate the wallets bracket', () => {
+    // Fee history around tx 0xb2d7c987… — base ~0.1 gwei, median tip ~0.1 gwei. On those
+    // blocks base+p50 came to $0.056 against Ambire's $0.06–0.07 quote, while MetaMask's
+    // Market tier bid 2 gwei and charged $0.59 for the same transaction.
     const feePerGas = computeFeePerGas({
-      baseFeePerGas: [gwei(0.12), gwei(0.11), gwei(0.13), gwei(0.1008)],
-      reward: [[gwei(1.8)], [gwei(2.0)], [gwei(2.2)]]
+      baseFeePerGas: [gwei(0.12), gwei(0.11), gwei(0.13), gwei(0.101)],
+      reward: [[gwei(0.05)], [gwei(0.1)], [gwei(0.2)]]
     });
 
-    // That transaction's effective gas price was 2.1007 gwei. A base-fee-driven estimate
-    // said 0.136 gwei and understated the fee 15x.
-    expect(Number(feePerGas) / 1e9).toBeCloseTo(2.1008, 3);
+    expect(Number(feePerGas) / 1e9).toBeCloseTo(0.201, 3);
   });
 
   it('takes the median tip so one outlier block cannot swing the estimate', () => {
@@ -270,6 +271,12 @@ describe('computeBatchSaving', () => {
 });
 
 describe('module constants', () => {
+  it("bills at the median tip — the going rate, not one wallet's tier", () => {
+    // p95 tracks MetaMask's Market floor (2 gwei) and overstates ~8x for wallets that
+    // bid at market; p50 is the gas-weighted median actually paid.
+    expect(PRIORITY_FEE_PERCENTILE).toBe(50);
+  });
+
   it('pins the canonical Multicall3 address used as the stand-in executor', () => {
     expect(BATCH_EXECUTOR_ADDRESS).toBe('0xcA11bde05977b3631167028862bE2a173976CA11');
   });

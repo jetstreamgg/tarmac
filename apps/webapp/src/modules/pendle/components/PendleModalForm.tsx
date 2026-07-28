@@ -35,6 +35,7 @@ import {
   formatNumber,
   isTestnetId
 } from '@/utils';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
@@ -528,7 +529,7 @@ export function PendleModalForm({
           label={<Trans>Max slippage</Trans>}
           value={`${formatNumber(slippage * 100, { maxDecimals: 2 })}%`}
         />
-        <Row label={<Trans>Network fee</Trans>} value={networkFee?.formatted ?? NO_VALUE} />
+        <Row label={<NetworkFeeLabel />} value={networkFee?.formatted ?? NO_VALUE} />
       </div>
 
       {prepareErrorMessage && amountReady && (

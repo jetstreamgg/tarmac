@@ -59,6 +59,8 @@ vi.mock('wagmi', async importOriginal => {
 });
 
 vi.mock('@/hooks', () => ({
+  // The DS Tooltip reads this to suppress itself on touch devices.
+  useIsTouchDevice: () => false,
   useNetworkFee: () => ({
     data: undefined,
     isLoading: false,
@@ -88,6 +90,7 @@ vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
 
 import { ClaimRewardsPanel } from './ClaimRewardsPanel';
 import type { ClaimScope } from '../types';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const reward = (source: ClaimSource, id: string, symbol: string): ClaimableReward => ({
   id,
@@ -103,7 +106,9 @@ const reward = (source: ClaimSource, id: string, symbol: string): ClaimableRewar
 const renderPanel = (scope: ClaimScope = { kind: 'all' }) =>
   render(
     <I18nProvider i18n={i18n}>
-      <ClaimRewardsPanel sessionId="s1" scope={scope} />
+      <TooltipProvider>
+        <ClaimRewardsPanel sessionId="s1" scope={scope} />
+      </TooltipProvider>
     </I18nProvider>
   );
 
@@ -180,7 +185,9 @@ describe('ClaimRewardsPanel', () => {
     const { rerender } = renderPanel({ kind: 'reward-contract', address: '0xb' });
     rerender(
       <I18nProvider i18n={i18n}>
-        <ClaimRewardsPanel sessionId="s1" scope={{ kind: 'reward-contract', address: '0xb' }} />
+        <TooltipProvider>
+          <ClaimRewardsPanel sessionId="s1" scope={{ kind: 'reward-contract', address: '0xb' }} />
+        </TooltipProvider>
       </I18nProvider>
     );
 

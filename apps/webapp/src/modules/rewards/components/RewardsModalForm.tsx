@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { type Token } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
@@ -115,7 +116,7 @@ export function RewardsModalForm({
         },
         { label: <Trans>Product</Trans>, value: displayName },
         { label: <Trans>Withdrawal</Trans>, value: <Trans>Anytime</Trans> },
-        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
+        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
       ]
     : [
         {
@@ -123,7 +124,7 @@ export function RewardsModalForm({
           value: `${formatNumber(amountUsd, { maxDecimals: 2 })} ${supplyToken.symbol}`
         },
         { label: <Trans>Product</Trans>, value: displayName },
-        { label: <Trans>Network fee</Trans>, value: networkFee?.formatted ?? NO_VALUE }
+        { label: <NetworkFeeLabel />, value: networkFee?.formatted ?? NO_VALUE }
       ];
 
   const body = (

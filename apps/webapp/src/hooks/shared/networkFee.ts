@@ -128,16 +128,21 @@ export function getCallsKey(calls: readonly Call[]): string {
  * Blocks of history sampled to price a transaction, and the percentile of the priority
  * fees paid in them that we bill at.
  *
- * The percentile is not a guess. `eth_maxPriorityFeePerGas` reports what it takes to get
- * included *at all* — on the Sky proxy it returned 0.000426 gwei — while wallets bid for
- * prompt inclusion, and when the base fee is ~0.1 gwei the tip IS the price. A real
- * MetaMask batch (0xb2d7c987…) paid a 2.0 gwei tip against a 0.1 gwei base: 2.1007 gwei
- * total, where the base-fee-driven estimate said 0.136 — understating the fee 15x.
- * Measured over the 40 blocks around it, the median p95 tip reproduces what that
- * transaction actually paid to within 1% (p90 reaches only 69%, p99 overshoots to 106%).
+ * Not `eth_maxPriorityFeePerGas`: that reports the tip needed to be included *at all* —
+ * the Sky proxy returned 0.000426 gwei — and pricing from it understated a real MetaMask
+ * batch (0xb2d7c987…) 15x, showing $0.03 for a transaction that cost $0.59.
+ *
+ * p50 is the gas-weighted median tip actually paid, so this is a statement about what
+ * Ethereum currently charges rather than about one wallet's bidding policy. Measured
+ * against both wallets on the same blocks, the percentiles line up with their tiers:
+ * base+p50 = $0.056 against Ambire's $0.06–0.07, base+p95 = $0.581 against MetaMask's
+ * Market $0.59. No percentile satisfies both — MetaMask floors its tip at 2 gwei against
+ * a ~0.1 gwei base fee, roughly 10x the going rate, and pays it in full (priority fees
+ * are never refunded; only unused `maxFeePerGas` headroom is). So we quote the market and
+ * let the fee row's tooltip own the part we cannot see: the wallet sets the final bid.
  */
 export const FEE_HISTORY_BLOCK_COUNT = 20;
-export const PRIORITY_FEE_PERCENTILE = 95;
+export const PRIORITY_FEE_PERCENTILE = 50;
 
 const median = (values: bigint[]): bigint => {
   if (values.length === 0) return 0n;

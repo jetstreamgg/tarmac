@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { X } from 'lucide-react';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { useNetworkFee } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { QueryParams } from '@/lib/constants';
@@ -225,7 +226,7 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
           <InfoRow label={<Trans>Network</Trans>} dataTestId="stake-claim-network">
             {networkName}
           </InfoRow>
-          <InfoRow label={<Trans>Network fee</Trans>} dataTestId="stake-claim-fee">
+          <InfoRow label={<NetworkFeeLabel />} dataTestId="stake-claim-fee">
             {networkFee?.formatted ?? NO_VALUE}
           </InfoRow>
         </div>

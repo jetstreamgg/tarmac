@@ -3,6 +3,7 @@ import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { useNetworkFee } from '@/hooks';
 import { TOKENS, useDebounce, useMkrSkyFee, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, getChainIcon, math } from '@/utils';
@@ -402,7 +403,7 @@ export function UpgradeModalForm({
         </div>
         {hairline}
         <DetailCell
-          label={<Trans>Network fee</Trans>}
+          label={<NetworkFeeLabel />}
           value={networkFee?.formatted ?? NO_VALUE}
           dataTestId="upgrade-modal-network-fee"
         />
