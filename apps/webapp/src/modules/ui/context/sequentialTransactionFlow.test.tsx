@@ -286,6 +286,59 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onSuccess).toHaveBeenLastCalledWith('0xsupply2');
   });
 
+  // Retrying a wallet rejection mid-sequence. `handleRetry` calls the config's
+  // onConfirm, which is this execute(). By then the approve has mined and the live
+  // `calls` has shrunk to [supply], so bounds-checking currentIndex (1) against it
+  // swallowed the retry entirely and the modal's "Try again" did nothing.
+  it('a retry after the wallet rejects the second call re-dispatches it', () => {
+    const onError = vi.fn();
+    let calls: Call[] = [APPROVE, SUPPLY];
+
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onError }));
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(result.current.currentCallIndex).toBe(1);
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + supply
+
+    // The allowance landed, so the engine's live `calls` drops the approve.
+    calls = [SUPPLY];
+    // The user rejects the supply in their wallet.
+    act(() => {
+      wagmi.mutationHash = undefined;
+      wagmi.onWriteError?.(new Error('User rejected the request'));
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    // "Try again" must actually hand the supply back to the wallet.
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+
+    // And the retried supply still completes the sequence exactly once.
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+    expect(result.current.currentCallIndex).toBe(0); // sequence completed and reset
+  });
+
   it('an error on the first (approve) receipt does not fire onSuccess', () => {
     const onSuccess = vi.fn();
     const onError = vi.fn();

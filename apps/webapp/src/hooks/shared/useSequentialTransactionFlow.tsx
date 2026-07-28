@@ -208,7 +208,14 @@ export function useSequentialTransactionFlow(
 
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {
-    if (currentIndex >= calls.length) {
+    // Retrying a call the wallet rejected re-enters mid-sequence (currentIndex > 0)
+    // while the live `calls` has already shrunk — the approve drops out of the array
+    // as soon as its allowance lands. Bounds-check against the sequence frozen at the
+    // start of this run instead, or the retry is silently swallowed here.
+    const isResume = isExecuting && currentIndex > 0;
+    const sequence = isResume ? transactionsRef.current : calls;
+
+    if (currentIndex >= sequence.length) {
       console.log('ERROR: All transactions have been executed');
       return;
     }
@@ -219,8 +226,10 @@ export function useSequentialTransactionFlow(
     }
 
     if (simulationData?.request) {
-      transactionsRef.current = calls; // freeze args for the whole sequence
-      totalCallsRef.current = calls.length; // and the count, for the completion check
+      if (!isResume) {
+        transactionsRef.current = calls; // freeze args for the whole sequence
+        totalCallsRef.current = calls.length; // and the count, for the completion check
+      }
       // This call is dispatched here, so claim its index before the auto-execute
       // effect can see it (a retry re-enters at a non-zero currentIndex).
       dispatchedIndexRef.current = currentIndex;
@@ -238,6 +247,7 @@ export function useSequentialTransactionFlow(
   }, [
     enabled,
     currentIndex,
+    isExecuting,
     calls,
     currentTransaction,
     simulationData,
