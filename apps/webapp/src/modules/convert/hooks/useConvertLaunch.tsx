@@ -4,11 +4,7 @@ import { useChainId, useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useNetworkFee } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import {
-  NetworkFeeValue,
-  useBundlePromoVisible,
-  useCanBundle
-} from '@/modules/ui/components/NetworkFeeValue';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
 import { REFERRAL_CODE } from '@/lib/constants';
@@ -102,8 +98,7 @@ export function useConvertLaunch({
     enabled: amount > 0n
   });
 
-  const canBundle = useCanBundle(conversion.calls.length);
-  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
+  const bundleState = useBundleFeeState(conversion.calls.length, networkFee);
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
@@ -134,10 +129,10 @@ export function useConvertLaunch({
         chainId={chainId}
         networkName={networkName}
         networkFee={networkFee?.formatted ?? NO_VALUE}
-        feeValue={
-          <NetworkFeeValue fee={networkFee} callCount={conversion.calls.length} promoVisible={promoVisible} />
+        feeValue={<NetworkFeeValue fee={networkFee} state={bundleState} />}
+        promo={
+          bundleState.promoVisible ? <BundleSavingsPromo saving={networkFee!.batchSaving!} /> : undefined
         }
-        promo={promoVisible ? <BundleSavingsPromo saving={networkFee!.batchSaving!} /> : undefined}
       />
     ),
     [
@@ -151,7 +146,7 @@ export function useConvertLaunch({
       networkName,
       networkFee?.formatted,
       networkFee?.batchSaving,
-      promoVisible,
+      bundleState.promoVisible,
       conversion.calls.length
     ]
   );

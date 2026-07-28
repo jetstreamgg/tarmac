@@ -6,24 +6,40 @@ import { BundleTogglePanel } from './BundleTogglePanel';
 
 const NO_VALUE = '–';
 
-/** Bundling is on the table only for a multi-call flow on a wallet that supports it. */
-export function useCanBundle(callCount: number): boolean {
-  const { data: batchSupported } = useIsBatchSupported();
-  return !!batchSupported && callCount > 1;
-}
+export type BundleFeeState = {
+  /** Every input the row and the card depend on has landed. */
+  ready: boolean;
+  canBundle: boolean;
+  promoVisible: boolean;
+};
 
 /**
- * Whether to show the "Save X%" promo card.
+ * One resolved answer for everything the fee row and the promo card render from.
  *
- * Keyed to the toggle's value *when the modal opened*, not its live value: someone who
- * already had bundling on never sees the pitch, and someone who switches it on mid-modal
- * keeps the card until they close and reopen (Figma 1036:207086). The snapshot is what
- * makes both of those true at once.
+ * The pieces arrive at different times — wallet capabilities from one query, the two gas
+ * figures from another, the ETH price from a third — and rendering each as it lands walks
+ * the row through several layouts (dash → badge → value → strikethrough) and pops the card
+ * in underneath. `ready` holds the whole composition until they're all in, so it changes
+ * shape once.
+ *
+ * Toggling bundling afterwards costs nothing: both figures are already simulated and
+ * cached, so the row re-reads them without another fetch.
  */
-export function useBundlePromoVisible(canBundle: boolean, saving: number | undefined): boolean {
+export function useBundleFeeState(callCount: number, fee?: NetworkFeeData): BundleFeeState {
+  const { data: batchSupported, isLoading: isSupportLoading } = useIsBatchSupported();
   const [batchEnabled] = useBatchToggle();
+  // Snapshot: someone who already had bundling on never sees the pitch, and someone who
+  // switches it on mid-modal keeps the card until they close and reopen.
   const [enabledOnOpen] = useState(batchEnabled);
-  return canBundle && !enabledOnOpen && saving !== undefined && saving > 0;
+
+  const ready = !isSupportLoading && fee !== undefined;
+  const canBundle = !!batchSupported && callCount > 1;
+
+  return {
+    ready,
+    canBundle,
+    promoVisible: ready && canBundle && !enabledOnOpen && (fee?.batchSaving ?? 0) > 0
+  };
 }
 
 /**
@@ -34,23 +50,13 @@ export function useBundlePromoVisible(canBundle: boolean, saving: number | undef
  * Without bundling available this is just the fee, so the row is unchanged for wallets
  * that can't batch.
  */
-export function NetworkFeeValue({
-  fee,
-  callCount,
-  promoVisible = false
-}: {
-  fee?: NetworkFeeData;
-  callCount: number;
-  /** Whether the "Save X%" card is on screen, which changes what the row needs to say. */
-  promoVisible?: boolean;
-}) {
-  const canBundle = useCanBundle(callCount);
+export function NetworkFeeValue({ fee, state }: { fee?: NetworkFeeData; state: BundleFeeState }) {
   const [batchEnabled] = useBatchToggle();
 
   // The `Not bundled` badge exists to explain a higher fee to someone who just switched
   // bundling off. While the promo card is up it is already making that case, so the row
   // stays plain until bundling is actually on (Figma 1036:206739 vs 1036:207086).
-  const showBadge = canBundle && (batchEnabled || !promoVisible);
+  const showBadge = state.ready && state.canBundle && (batchEnabled || !state.promoVisible);
 
   if (!showBadge) return <>{fee?.formatted ?? NO_VALUE}</>;
 

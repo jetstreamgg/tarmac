@@ -3,11 +3,7 @@ import { useChains, useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import {
-  NetworkFeeValue,
-  useBundlePromoVisible,
-  useCanBundle
-} from '@/modules/ui/components/NetworkFeeValue';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee, useTransactionFlow } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -99,8 +95,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   // waits on it.
   const { data: networkFee } = useNetworkFee({ calls, chainId, shouldUseBatch: !!flow.isBatch });
 
-  const canBundle = useCanBundle(calls.length);
-  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
+  const bundleState = useBundleFeeState(calls.length, networkFee);
 
   // Disabled until there's something to send AND no selected source is still preparing
   // (e.g. Merkl proofs mid-load) — so we never claim a partial subset of the selection.
@@ -217,9 +212,9 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
         <div className="border-borderPrimary flex flex-col gap-3 border-t pt-4">
           <InfoRow label={<Trans>Network</Trans>}>{networkName}</InfoRow>
           <InfoRow label={<NetworkFeeLabel />}>
-            <NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />
+            <NetworkFeeValue fee={networkFee} state={bundleState} />
           </InfoRow>
-          {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+          {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
         </div>
       )}
     </div>

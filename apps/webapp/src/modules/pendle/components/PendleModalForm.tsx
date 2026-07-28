@@ -37,11 +37,7 @@ import {
 } from '@/utils';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import {
-  NetworkFeeValue,
-  useBundlePromoVisible,
-  useCanBundle
-} from '@/modules/ui/components/NetworkFeeValue';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
@@ -305,8 +301,7 @@ export function PendleModalForm({
     enabled: amountReady
   });
 
-  const canBundle = useCanBundle((writeHook.calls ?? []).length);
-  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
+  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee);
 
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
 
@@ -538,19 +533,10 @@ export function PendleModalForm({
           label={<Trans>Max slippage</Trans>}
           value={`${formatNumber(slippage * 100, { maxDecimals: 2 })}%`}
         />
-        <Row
-          label={<NetworkFeeLabel />}
-          value={
-            <NetworkFeeValue
-              fee={networkFee}
-              callCount={(writeHook.calls ?? []).length}
-              promoVisible={promoVisible}
-            />
-          }
-        />
+        <Row label={<NetworkFeeLabel />} value={<NetworkFeeValue fee={networkFee} state={bundleState} />} />
       </div>
 
-      {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
       {prepareErrorMessage && amountReady && (
         <p className="text-error text-sm" data-testid="pendle-modal-error">

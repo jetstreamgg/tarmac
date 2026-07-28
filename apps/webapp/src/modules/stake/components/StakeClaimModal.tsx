@@ -6,11 +6,7 @@ import { t } from '@lingui/core/macro';
 import { X } from 'lucide-react';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import {
-  NetworkFeeValue,
-  useBundlePromoVisible,
-  useCanBundle
-} from '@/modules/ui/components/NetworkFeeValue';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { QueryParams } from '@/lib/constants';
@@ -159,8 +155,7 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
   // Read-only: the row shows a dash until this resolves, and neither CTA waits on it.
   const { data: networkFee } = useNetworkFee({ calls, chainId, shouldUseBatch: isBatch });
 
-  const canBundle = useCanBundle(calls.length);
-  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
+  const bundleState = useBundleFeeState(calls.length, networkFee);
 
   const claimDisabled = selected.length === 0 || !plainPrepared || plainLoading;
   const restakeDisabled = !restakePrepared || restakeLoading;
@@ -236,9 +231,9 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
             {networkName}
           </InfoRow>
           <InfoRow label={<NetworkFeeLabel />} dataTestId="stake-claim-fee">
-            <NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />
+            <NetworkFeeValue fee={networkFee} state={bundleState} />
           </InfoRow>
-          {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+          {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
         </div>
 
         <div className="flex gap-3">

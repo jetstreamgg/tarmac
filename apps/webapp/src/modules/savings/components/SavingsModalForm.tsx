@@ -11,8 +11,8 @@ import type { NetworkFeeData } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import {
   NetworkFeeValue,
-  useBundlePromoVisible,
-  useCanBundle
+  useBundleFeeState,
+  type BundleFeeState
 } from '@/modules/ui/components/NetworkFeeValue';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
@@ -37,13 +37,11 @@ const formatUsds = (value: bigint) =>
 function ModalRow({
   row,
   networkFee,
-  callCount,
-  promoVisible
+  state
 }: {
   row: SavingsModalRow;
   networkFee?: NetworkFeeData;
-  callCount: number;
-  promoVisible: boolean;
+  state: BundleFeeState;
 }) {
   const isFeeRow = row.label === NETWORK_FEE_LABEL;
   return (
@@ -53,7 +51,7 @@ function ModalRow({
           smuggling JSX into them. */}
       <Text className="text-textSecondary text-sm">{isFeeRow ? <NetworkFeeLabel /> : row.label}</Text>
       {isFeeRow ? (
-        <NetworkFeeValue fee={networkFee} callCount={callCount} promoVisible={promoVisible} />
+        <NetworkFeeValue fee={networkFee} state={state} />
       ) : row.kind === 'single' ? (
         <Text className="text-text text-sm font-medium">{row.value}</Text>
       ) : (
@@ -133,8 +131,7 @@ export function SavingsModalForm({
     enabled: amountReady
   });
 
-  const canBundle = useCanBundle(calls.length);
-  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
+  const bundleState = useBundleFeeState(calls.length, networkFee);
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / step labels / wallet summary / toast
@@ -229,17 +226,11 @@ export function SavingsModalForm({
 
       <div className="flex flex-col gap-3 pt-1">
         {rows.map(row => (
-          <ModalRow
-            key={row.label}
-            row={row}
-            networkFee={networkFee}
-            callCount={calls.length}
-            promoVisible={promoVisible}
-          />
+          <ModalRow key={row.label} row={row} networkFee={networkFee} state={bundleState} />
         ))}
       </div>
 
-      {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

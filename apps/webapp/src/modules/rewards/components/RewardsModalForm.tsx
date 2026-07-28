@@ -4,11 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import {
-  NetworkFeeValue,
-  useBundlePromoVisible,
-  useCanBundle
-} from '@/modules/ui/components/NetworkFeeValue';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { type Token } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
@@ -93,8 +89,7 @@ export function RewardsModalForm({
   // waits on it.
   const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch, enabled: amountReady });
 
-  const canBundle = useCanBundle(calls.length);
-  const promoVisible = useBundlePromoVisible(canBundle, networkFee?.batchSaving);
+  const bundleState = useBundleFeeState(calls.length, networkFee);
   const disabled = !amountReady || !prepared;
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -127,7 +122,7 @@ export function RewardsModalForm({
         { label: <Trans>Withdrawal</Trans>, value: <Trans>Anytime</Trans> },
         {
           label: <NetworkFeeLabel />,
-          value: <NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />
+          value: <NetworkFeeValue fee={networkFee} state={bundleState} />
         }
       ]
     : [
@@ -138,7 +133,7 @@ export function RewardsModalForm({
         { label: <Trans>Product</Trans>, value: displayName },
         {
           label: <NetworkFeeLabel />,
-          value: <NetworkFeeValue fee={networkFee} callCount={calls.length} promoVisible={promoVisible} />
+          value: <NetworkFeeValue fee={networkFee} state={bundleState} />
         }
       ];
 
@@ -195,7 +190,7 @@ export function RewardsModalForm({
         ))}
       </div>
 
-      {promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 
