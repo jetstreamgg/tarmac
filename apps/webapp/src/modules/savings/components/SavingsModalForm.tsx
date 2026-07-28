@@ -37,11 +37,13 @@ const formatUsds = (value: bigint) =>
 function ModalRow({
   row,
   networkFee,
-  callCount
+  callCount,
+  promoVisible
 }: {
   row: SavingsModalRow;
   networkFee?: NetworkFeeData;
   callCount: number;
+  promoVisible: boolean;
 }) {
   const isFeeRow = row.label === NETWORK_FEE_LABEL;
   return (
@@ -51,7 +53,7 @@ function ModalRow({
           smuggling JSX into them. */}
       <Text className="text-textSecondary text-sm">{isFeeRow ? <NetworkFeeLabel /> : row.label}</Text>
       {isFeeRow ? (
-        <NetworkFeeValue fee={networkFee} callCount={callCount} />
+        <NetworkFeeValue fee={networkFee} callCount={callCount} promoVisible={promoVisible} />
       ) : row.kind === 'single' ? (
         <Text className="text-text text-sm font-medium">{row.value}</Text>
       ) : (
@@ -227,7 +229,13 @@ export function SavingsModalForm({
 
       <div className="flex flex-col gap-3 pt-1">
         {rows.map(row => (
-          <ModalRow key={row.label} row={row} networkFee={networkFee} callCount={calls.length} />
+          <ModalRow
+            key={row.label}
+            row={row}
+            networkFee={networkFee}
+            callCount={calls.length}
+            promoVisible={promoVisible}
+          />
         ))}
       </div>
 

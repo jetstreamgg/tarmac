@@ -34,10 +34,25 @@ export function useBundlePromoVisible(canBundle: boolean, saving: number | undef
  * Without bundling available this is just the fee, so the row is unchanged for wallets
  * that can't batch.
  */
-export function NetworkFeeValue({ fee, callCount }: { fee?: NetworkFeeData; callCount: number }) {
+export function NetworkFeeValue({
+  fee,
+  callCount,
+  promoVisible = false
+}: {
+  fee?: NetworkFeeData;
+  callCount: number;
+  /** Whether the "Save X%" card is on screen, which changes what the row needs to say. */
+  promoVisible?: boolean;
+}) {
   const canBundle = useCanBundle(callCount);
+  const [batchEnabled] = useBatchToggle();
 
-  if (!canBundle) return <>{fee?.formatted ?? NO_VALUE}</>;
+  // The `Not bundled` badge exists to explain a higher fee to someone who just switched
+  // bundling off. While the promo card is up it is already making that case, so the row
+  // stays plain until bundling is actually on (Figma 1036:206739 vs 1036:207086).
+  const showBadge = canBundle && (batchEnabled || !promoVisible);
+
+  if (!showBadge) return <>{fee?.formatted ?? NO_VALUE}</>;
 
   return (
     <span className="flex items-center gap-2" data-testid="network-fee-value">
