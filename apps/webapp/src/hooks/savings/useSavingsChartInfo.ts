@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { parseEther } from 'viem';
-import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
+import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { useChainId } from 'wagmi';
 import { formatBaLabsUrl } from '../helpers';

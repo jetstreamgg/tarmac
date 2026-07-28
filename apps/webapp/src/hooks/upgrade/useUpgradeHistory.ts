@@ -1,44 +1,52 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import {
+  TRUST_LEVELS,
+  TrustLevelEnum,
+  ModuleEnum,
+  TransactionTypeEnum,
+  HISTORY_STALE_TIME
+} from '../constants';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { DaiUsdsRow, MkrSkyRow, UpgradeHistory, UpgradeResponse, UpgradeResponses } from './upgrade';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@/utils';
 
 async function fetchUpgradeHistory(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   address?: string
 ): Promise<UpgradeHistory | undefined> {
   if (!address) return [];
   // Note: 'usr' is the reciever of the upgraded/reverted token, 'caller' is the sender.
+  const usr = address.toLowerCase();
+  const whereClause = `(where: { usr: { _eq: "${usr}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc })`;
   const query = gql`
     {
-      daiToUsdsUpgrades: DaiToUsdsUpgrade(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      daiToUsdsUpgrades: DaiToUsdsUpgrade${whereClause} {
         wad
         blockTimestamp
         transactionHash
       }
-      usdsToDaiReverts: UsdsToDaiRevert(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      usdsToDaiReverts: UsdsToDaiRevert${whereClause} {
         wad
         blockTimestamp
         transactionHash
       }
-      mkrToSkyUpgrades: MkrToSkyUpgrade(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      mkrToSkyUpgrades: MkrToSkyUpgrade${whereClause} {
         mkrAmt
         skyAmt
         blockTimestamp
         transactionHash
       }
-      mkrToSkyUpgradeV2S: MkrToSkyUpgradeV2(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      mkrToSkyUpgradeV2S: MkrToSkyUpgradeV2${whereClause} {
         mkrAmt
         skyAmt
         blockTimestamp
         transactionHash
       }
-      skyToMkrReverts: SkyToMkrRevert(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      skyToMkrReverts: SkyToMkrRevert${whereClause} {
         mkrAmt
         skyAmt
         blockTimestamp
@@ -53,7 +61,7 @@ async function fetchUpgradeHistory(
     mkrToSkyUpgrades: UpgradeResponses<MkrSkyRow>;
     skyToMkrReverts: UpgradeResponses<MkrSkyRow>;
     mkrToSkyUpgradeV2S: UpgradeResponses<MkrSkyRow>;
-  } = await request(urlSubgraph, query);
+  } = await request(urlIndexer, query);
 
   const daiToUsdsUpgrades: DaiUsdsRow[] = response.daiToUsdsUpgrades.map(
     (d: UpgradeResponse<DaiUsdsRow>) => ({
@@ -118,13 +126,13 @@ async function fetchUpgradeHistory(
 }
 
 export function useUpgradeHistory({
-  subgraphUrl
+  indexerUrl
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
 } = {}): ReadHook & { data?: UpgradeHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(currentChainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
@@ -133,9 +141,10 @@ export function useUpgradeHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph && address),
-    queryKey: ['upgrade-history', urlSubgraph, address, chainIdToUse],
-    queryFn: () => fetchUpgradeHistory(urlSubgraph, chainIdToUse, address)
+    enabled: Boolean(urlIndexer && address),
+    staleTime: HISTORY_STALE_TIME,
+    queryKey: ['upgrade-history', urlIndexer, address, chainIdToUse],
+    queryFn: () => fetchUpgradeHistory(urlIndexer, chainIdToUse, address)
   });
 
   return {
@@ -145,8 +154,8 @@ export function useUpgradeHistory({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

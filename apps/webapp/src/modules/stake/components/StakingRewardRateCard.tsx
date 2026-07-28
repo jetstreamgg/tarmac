@@ -4,11 +4,7 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { PopoverRateInfo } from '@/widgets';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import {
-  useHighestRateFromChartData,
-  useMultipleRewardsChartInfo,
-  useStakeRewardContracts
-} from '@/hooks';
+import { useHighestRateFromChartData, useMultipleRewardsChartInfo, useStakeRewardContracts } from '@/hooks';
 import { formatDecimalPercentage } from '@/utils';
 
 export function StakingRewardRateCard() {

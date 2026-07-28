@@ -1,6 +1,6 @@
-import { WAD_PRECISION, math } from '@/utils';
+import { WAD_PRECISION } from '@/utils';
 import { OrderQuoteSideKind, cowApiClient } from './constants';
-import { formatUnits, parseUnits } from 'viem';
+import { calculateAmountUsd } from './helpers';
 import { useChainId } from 'wagmi';
 import { mcdDaiAddress } from '../generated';
 import { useQueries } from '@tanstack/react-query';
@@ -114,30 +114,12 @@ export const useTradeCosts = ({
 
   const sellAmountBeforeFeeUsd =
     sellAmountBeforeFee && sellTokenPrice && sellToken
-      ? parseFloat(
-          formatUnits(
-            math.tokenValue(
-              sellAmountBeforeFee,
-              parseUnits(sellTokenPrice, getTokenDecimals(sellToken, chainId)),
-              getTokenDecimals(sellToken, chainId)
-            ),
-            WAD_PRECISION
-          )
-        )
+      ? calculateAmountUsd(sellAmountBeforeFee, sellTokenPrice, getTokenDecimals(sellToken, chainId))
       : undefined;
 
   const sellAmountAfterFeeUsd =
     sellAmountAfterFee && sellTokenPrice && sellToken
-      ? parseFloat(
-          formatUnits(
-            math.tokenValue(
-              sellAmountAfterFee,
-              parseUnits(sellTokenPrice, getTokenDecimals(sellToken, chainId)),
-              getTokenDecimals(sellToken, chainId)
-            ),
-            WAD_PRECISION
-          )
-        )
+      ? calculateAmountUsd(sellAmountAfterFee, sellTokenPrice, getTokenDecimals(sellToken, chainId))
       : undefined;
 
   const sellAmountUsd =
@@ -149,15 +131,10 @@ export const useTradeCosts = ({
 
   const buyAmountUsd =
     buyAmountBeforeFee && buyAmountAfterFee && buyTokenPrice && buyToken
-      ? parseFloat(
-          formatUnits(
-            math.tokenValue(
-              kind === OrderQuoteSideKind.SELL ? buyAmountAfterFee : buyAmountBeforeFee,
-              parseUnits(buyTokenPrice, getTokenDecimals(buyToken, chainId)),
-              getTokenDecimals(buyToken, chainId)
-            ),
-            WAD_PRECISION
-          )
+      ? calculateAmountUsd(
+          kind === OrderQuoteSideKind.SELL ? buyAmountAfterFee : buyAmountBeforeFee,
+          buyTokenPrice,
+          getTokenDecimals(buyToken, chainId)
         )
       : undefined;
 

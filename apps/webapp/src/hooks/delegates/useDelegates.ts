@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
 import { getRandomItem } from '@/utils';
@@ -10,7 +10,7 @@ import { parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchDelegates(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   first: number,
   skip: number,
@@ -45,7 +45,7 @@ async function fetchDelegates(
     }
   `;
 
-  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlSubgraph, query);
+  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlIndexer, query);
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
     id: d.address as `0x${string}`
@@ -58,7 +58,7 @@ async function fetchDelegates(
 }
 
 export function useDelegates({
-  subgraphUrl,
+  indexerUrl,
   chainId,
   exclude,
   page = 1,
@@ -69,7 +69,7 @@ export function useDelegates({
   enabled = true
 }: {
   chainId: number;
-  subgraphUrl?: string;
+  indexerUrl?: string;
   exclude?: `0x${string}`[];
   page?: number;
   pageSize?: number;
@@ -78,7 +78,7 @@ export function useDelegates({
   version?: 1 | 2 | 3;
   enabled?: boolean;
 }): ReadHook & { data?: DelegateInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   const orderByFields = [
     'blockTimestamp',
@@ -97,10 +97,10 @@ export function useDelegates({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph && enabled),
+    enabled: Boolean(urlIndexer && enabled),
     queryKey: [
       'delegates',
-      urlSubgraph,
+      urlIndexer,
       chainId,
       exclude,
       page,
@@ -112,7 +112,7 @@ export function useDelegates({
     ],
     queryFn: () =>
       fetchDelegates(
-        urlSubgraph,
+        urlIndexer,
         chainId,
         pageSize,
         (page - 1) * pageSize,
@@ -137,8 +137,8 @@ export function useDelegates({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

@@ -2,9 +2,9 @@ import { useConnection, useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { StUsdsHistoryItem } from './stusds';
 import { request, gql } from 'graphql-request';
-import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { ModuleEnum, TransactionTypeEnum, HISTORY_STALE_TIME } from '../constants';
 import { TOKENS } from '../tokens/tokens.constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { isTestnetId } from '@/utils';
@@ -13,15 +13,16 @@ import { CURVE_POOL_TOKEN_INDICES } from './providers/constants';
 import { StUsdsProviderType } from './providers/types';
 
 // Fetch native stUSDS history (deposits and withdrawals)
-async function fetchNativeStusdsHistory(urlSubgraph: string, chainId: number, address: string) {
+async function fetchNativeStusdsHistory(urlIndexer: string, chainId: number, address: string) {
+  const ownerClause = `(where: { owner: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc })`;
   const query = gql`
     {
-      stusdsDeposits: StusdsDeposit(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      stusdsDeposits: StusdsDeposit${ownerClause} {
         assets
         blockTimestamp
         transactionHash
       }
-      stusdsWithdraws: StusdsWithdraw(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      stusdsWithdraws: StusdsWithdraw${ownerClause} {
         assets
         blockTimestamp
         transactionHash
@@ -29,7 +30,7 @@ async function fetchNativeStusdsHistory(urlSubgraph: string, chainId: number, ad
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as any;
+  const response = (await request(urlIndexer, query)) as any;
 
   const supplies = (response.stusdsDeposits || []).map((d: any) => ({
     assets: BigInt(d.assets),
@@ -56,11 +57,11 @@ async function fetchNativeStusdsHistory(urlSubgraph: string, chainId: number, ad
   return [...supplies, ...withdraws];
 }
 
-// Fetch Curve pool swap history (optional, may not exist in subgraph yet)
-async function fetchCurveStusdsHistory(urlSubgraph: string, chainId: number, address: string) {
+// Fetch Curve pool swap history (optional, may not exist in indexer yet)
+async function fetchCurveStusdsHistory(urlIndexer: string, chainId: number, address: string) {
   const query = gql`
     {
-      curveTokenExchanges: CurveTokenExchange(where: { buyer: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      curveTokenExchanges: CurveTokenExchange(where: { buyer: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { blockTimestamp: desc }) {
         soldId
         amountSold
         boughtId
@@ -71,7 +72,7 @@ async function fetchCurveStusdsHistory(urlSubgraph: string, chainId: number, add
     }
   `;
 
-  const response = (await request(urlSubgraph, query)) as any;
+  const response = (await request(urlIndexer, query)) as any;
 
   return (response.curveTokenExchanges || []).map((c: any) => {
     const soldId = parseInt(c.soldId);
@@ -94,13 +95,13 @@ async function fetchCurveStusdsHistory(urlSubgraph: string, chainId: number, add
   });
 }
 
-async function fetchStusdsHistory(urlSubgraph: string, chainId: number, address?: string) {
+async function fetchStusdsHistory(urlIndexer: string, chainId: number, address?: string) {
   if (!address) return [];
 
   // Fetch native history first (required)
   let nativeHistory: any[] = [];
   try {
-    nativeHistory = await fetchNativeStusdsHistory(urlSubgraph, chainId, address);
+    nativeHistory = await fetchNativeStusdsHistory(urlIndexer, chainId, address);
   } catch (err) {
     console.error('Error fetching native stUSDS history:', err);
   }
@@ -108,10 +109,10 @@ async function fetchStusdsHistory(urlSubgraph: string, chainId: number, address?
   // Try to fetch Curve history (optional - graceful degradation if not available)
   let curveHistory: any[] = [];
   try {
-    curveHistory = await fetchCurveStusdsHistory(urlSubgraph, chainId, address);
+    curveHistory = await fetchCurveStusdsHistory(urlIndexer, chainId, address);
   } catch (err) {
-    // Curve history not available yet in subgraph, continue with just native history
-    console.debug('Curve history not available in subgraph:', err);
+    // Curve history not available yet in indexer, continue with just native history
+    console.debug('Curve history not available in indexer:', err);
   }
 
   const combined = [...nativeHistory, ...curveHistory];
@@ -123,15 +124,15 @@ export type StUsdsHistoryHook = ReadHook & {
 };
 
 export function useStUsdsHistory({
-  subgraphUrl,
+  indexerUrl,
   enabled = true
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   enabled?: boolean;
 } = {}): StUsdsHistoryHook {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(currentChainId) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
@@ -140,9 +141,10 @@ export function useStUsdsHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph) && enabled,
-    queryKey: ['stusds-history', urlSubgraph, address, chainIdToUse],
-    queryFn: () => fetchStusdsHistory(urlSubgraph, chainIdToUse, address)
+    enabled: Boolean(urlIndexer) && enabled,
+    staleTime: HISTORY_STALE_TIME,
+    queryKey: ['stusds-history', urlIndexer, address, chainIdToUse],
+    queryFn: () => fetchStusdsHistory(urlIndexer, chainIdToUse, address)
   });
 
   return {
@@ -152,8 +154,8 @@ export function useStUsdsHistory({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

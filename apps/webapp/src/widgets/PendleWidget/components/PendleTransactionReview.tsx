@@ -1,12 +1,7 @@
 import { useContext, useEffect } from 'react';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
-import {
-  type PendleConvertQuote,
-  type PendleMarketConfig,
-  type Token,
-  useIsBatchSupported
-} from '@/hooks';
+import { type PendleConvertQuote, type PendleMarketConfig, type Token, useIsBatchSupported } from '@/hooks';
 import { TransactionReview } from '@/widgets/shared/components/ui/transaction/TransactionReview';
 import { BatchStatus } from '@/widgets/shared/constants';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
@@ -86,8 +81,7 @@ export const PendleTransactionReview = ({
   // into a PT-sUSDS market).
   const userSideSymbol = flow === PendleFlow.BUY ? originToken.symbol : targetToken.symbol;
   useEffect(() => {
-    const batchStatus =
-      !!batchSupported && batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED;
+    const batchStatus = !!batchSupported && batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED;
 
     if (flow === PendleFlow.BUY) {
       setTxTitle(i18n._(pendleBuyReviewTitle));

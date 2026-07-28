@@ -540,8 +540,7 @@ const fetchUserSuggestedActions = (
 
   const isIntentSupported = (intentString: string): boolean => {
     const intentEnum = Object.entries(IntentMapping).find(([, value]) => value === intentString)?.[0] as
-      | Intent
-      | undefined;
+      Intent | undefined;
     if (!intentEnum) return false;
     return supportedIntents.includes(intentEnum);
   };

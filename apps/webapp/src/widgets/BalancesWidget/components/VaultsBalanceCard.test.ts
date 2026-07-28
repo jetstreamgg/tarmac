@@ -61,9 +61,7 @@ describe('buildVaultDeepLinkMap', () => {
     const map = buildVaultDeepLinkMap('/vaults', [
       { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'sky' } }
     ]);
-    expect(map[SPARK_USDT_VAULT_ADDRESS]).toBe(
-      `/vaults?vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=sky`
-    );
+    expect(map[SPARK_USDT_VAULT_ADDRESS]).toBe(`/vaults?vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=sky`);
   });
 
   it('maps every vault to an empty string when no base url is provided', () => {

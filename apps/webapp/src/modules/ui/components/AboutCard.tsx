@@ -78,7 +78,7 @@ export const AboutCard = ({
     >
       <div className={cn('w-[80%] space-y-2 self-start', contentWidth === 'w-1/2' ? 'xl:w-1/2' : 'xl:w-2/3')}>
         {titleContent && <Heading className="flex items-center gap-2">{titleContent}</Heading>}
-        <div className="font-graphik text-[13px] font-normal leading-normal">{description}</div>
+        <div className="font-graphik text-[13px] leading-normal font-normal">{description}</div>
       </div>
       {linkHref && (
         <ExternalLink href={linkHref} showIcon={false} className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">

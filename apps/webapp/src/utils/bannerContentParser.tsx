@@ -76,4 +76,3 @@ export function parseBannerContent(description: string | React.ReactNode): React
     </Text>
   );
 }
-

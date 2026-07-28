@@ -11,12 +11,12 @@ import { ReadHook } from '../hooks';
 export function useHybridTradeHistory({
   chainId,
   excludeSUsds = false,
-  subgraphUrl,
+  indexerUrl,
   enabled = true
 }: {
   chainId: number;
   excludeSUsds?: boolean;
-  subgraphUrl?: string;
+  indexerUrl?: string;
   enabled?: boolean;
 }): ReadHook & { data?: any[] } {
   const cutoffDate = TRADE_CUTOFF_DATES[chainId];
@@ -26,7 +26,7 @@ export function useHybridTradeHistory({
   const psmHistory = usePsmTradeHistory({
     chainId,
     excludeSUsds,
-    subgraphUrl,
+    indexerUrl,
     enabled: shouldFetch,
     maxBlockTimestamp: cutoffDate ? Math.floor(cutoffDate.getTime() / 1000) : undefined
   });
@@ -44,7 +44,7 @@ export function useHybridTradeHistory({
     const psmData = psmHistory.data || [];
     const cowswapData = cowswapHistory.data || [];
 
-    // PSM filtering is done on the subgraph side, CowSwap filtering done client-side
+    // PSM filtering is done on the indexer side, CowSwap filtering done client-side
     const filteredCowswapData = cowswapData.filter(trade => trade.blockTimestamp >= cutoffDate);
 
     return [...psmData, ...filteredCowswapData].sort(

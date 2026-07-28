@@ -112,7 +112,7 @@ export const StakeHelpModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
         </div>
 
         <DialogClose asChild>
-          <Button className="text-text absolute right-4 top-[26px] h-12 w-12 p-0">
+          <Button className="text-text absolute top-[26px] right-4 h-12 w-12 p-0">
             <Close width={bpi === 0 ? 20 : 24} height={bpi === 0 ? 20 : 24} />
           </Button>
         </DialogClose>

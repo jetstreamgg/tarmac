@@ -15,7 +15,7 @@ import { useTotalSavingsSuppliers } from '@/hooks';
 
 function TotalSuppliersComponent() {
   const { data, isLoading, error } = useTotalSavingsSuppliers({
-    subgraphUrl: 'https://custom-subgraph-url.com'
+    indexerUrl: 'https://custom-indexer-url.com'
   });
 
   // ... rest of the component
@@ -26,9 +26,9 @@ function TotalSuppliersComponent() {
 
 ```ts
 type Props = {
-  subgraphUrl?: string;
+  indexerUrl?: string;
 };
 ```
 
-- `subgraphUrl`: `string | undefined`
-  - Optional. A custom subgraph URL to use for fetching data. If not provided, the default URL will be used.
+- `indexerUrl`: `string | undefined`
+  - Optional. A custom indexer URL to use for fetching data. If not provided, the default URL will be used.
