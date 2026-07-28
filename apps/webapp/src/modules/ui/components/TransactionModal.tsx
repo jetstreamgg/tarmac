@@ -241,6 +241,14 @@ export function TransactionModal({
   return (
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
       <ResponsiveModalContent
+        // Popovers, tooltips and selects opened from inside the modal are portalled to
+        // the document root, so Radix sees a pointer-down on them as outside the dialog
+        // and closes it — which killed the transaction when the bundling switch was used.
+        onPointerDownOutside={event => {
+          if ((event.target as HTMLElement | null)?.closest('[data-radix-popper-content-wrapper]')) {
+            event.preventDefault();
+          }
+        }}
         aria-describedby={undefined}
         // DS Modal card (Figma 1310:130558 desktop, 1292:63543 mobile):
         // colors/bg/bg-secondary tint at radius-2xl over the frosted scrim at

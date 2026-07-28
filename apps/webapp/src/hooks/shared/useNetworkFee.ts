@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import type { Call } from 'viem';
@@ -113,7 +113,12 @@ export function useNetworkFee({
       }),
     enabled: enabled && !!publicClient && !!address && calls.length > 0,
     staleTime: GAS_STALE_TIME,
-    retry: false
+    retry: false,
+    // The key moves as the amount is typed and again when the call set settles (an
+    // allowance read can add or drop the approve). Without this the row falls back to a
+    // dash on every one of those transitions — dash, value, dash, value. Holding the last
+    // result means it only ever changes from one figure to the next.
+    placeholderData: keepPreviousData
   });
 
   // Priced from fee history rather than `useEstimateFeesPerGas`: that hook prefers

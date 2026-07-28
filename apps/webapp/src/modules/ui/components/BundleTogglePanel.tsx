@@ -16,6 +16,11 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
  * a click-opened Popover rather than a Tooltip — a hover surface can't be operated by
  * keyboard or touch.
  *
+ * `PopoverContent` portals to the document root, which puts this panel outside the
+ * transaction modal's dialog. The modal handles that (see `onPointerDownOutside` in
+ * TransactionModal); without it, using the switch reads as a click outside the dialog and
+ * Radix dismisses the whole modal.
+ *
  * The switch writes the app-wide preference (`useBatchToggle`), so flipping it here also
  * changes the nav menu and every later transaction.
  */
