@@ -140,7 +140,7 @@ import type { ClaimableReward } from '@/modules/claim/types';
 const reward = (contract: `0x${string}`, symbol: string): ClaimableReward => ({
   id: makeStakeId(URN_INDEX, contract),
   source: 'stake',
-  sourceLabel: 'Staking',
+  tokenName: 'Sky token',
   tokenSymbol: symbol,
   icon: null,
   formattedAmount: '0',
