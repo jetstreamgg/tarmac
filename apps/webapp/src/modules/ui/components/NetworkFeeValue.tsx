@@ -32,7 +32,14 @@ export function useBundleFeeState(callCount: number, fee?: NetworkFeeData): Bund
   // switches it on mid-modal keeps the card until they close and reopen.
   const [enabledOnOpen] = useState(batchEnabled);
 
-  const ready = !isSupportLoading && fee !== undefined;
+  // `formatted` is the one field that requires every input: it exists only once the two
+  // gas figures, the fee-per-gas history and the ETH price have all landed. Waiting on
+  // `fee` alone let the row render a dash with the data half-there, then update again when
+  // the price arrived. Waiting on a formatted figure collapses that into one change.
+  //
+  // Deliberately not gated on `isFetching`: with the previous result held, a refetch keeps
+  // showing the last complete figure rather than blanking the row on every keystroke.
+  const ready = !isSupportLoading && fee?.formatted !== undefined;
   const canBundle = !!batchSupported && callCount > 1;
 
   return {
