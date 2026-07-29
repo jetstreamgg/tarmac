@@ -91,14 +91,14 @@ export function useConvertLaunch({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee } = useNetworkFee({
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
     calls: conversion.calls,
     chainId,
     shouldUseBatch: conversion.isBatch,
     enabled: amount > 0n
   });
 
-  const bundleState = useBundleFeeState(conversion.calls.length, networkFee);
+  const bundleState = useBundleFeeState(conversion.calls.length, networkFee, !!networkFeeError);
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
@@ -146,6 +146,15 @@ export function useConvertLaunch({
       networkName,
       networkFee?.formatted,
       networkFee?.batchSaving,
+      // Every field the fee row reads, listed one by one: the memoised element is what
+      // `updateModalContent` pushes, so anything missing here is a value the open modal
+      // can never pick up — `NetworkFeeValue` can't re-render itself out of a stale
+      // `state` prop. (The objects themselves are new identities each render; depending
+      // on them would defeat the memo and re-open the update loop this guards against.)
+      networkFee?.isBatch,
+      networkFee?.sequentialFormatted,
+      bundleState.settled,
+      bundleState.canBundle,
       bundleState.promoVisible,
       conversion.calls.length
     ]
