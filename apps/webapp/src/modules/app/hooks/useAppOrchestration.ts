@@ -159,8 +159,9 @@ export function useAppOrchestration(): { intent: Intent } {
     // user's behalf instead of bouncing home. Writing the param triggers the
     // wallet switch below; the auto flags make the shell toast explain the
     // change. The flags are skipped when the wallet is already on the target
-    // chain (param merely stale) — no switch would run to clear them, and
-    // TwoPane holds its switching state while isSwitchingNetwork is set.
+    // chain (param merely stale) — no switch would run to clear them.
+    // useNetworkChangeToast owns the user-facing feedback and clears
+    // isSwitchingNetwork once the wallet settles.
     if (action.kind === 'switch-network') {
       autoSwitchAttempted.current = true;
       const targetChainId = chains.find(c => normalizeUrlParam(c.name) === action.network)?.id;

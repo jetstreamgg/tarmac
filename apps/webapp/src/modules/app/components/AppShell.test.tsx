@@ -38,17 +38,12 @@ vi.mock('../hooks/useWidgetItems', () => ({
 vi.mock('../hooks/useDeeplinkAnalytics', () => ({ useDeeplinkAnalytics: () => {} }));
 vi.mock('../hooks/useNetworkChangeToast', () => ({ useNetworkChangeToast: () => {} }));
 
-vi.mock('@/modules/balances/components/BalancesPanes', () => ({
-  BalancesPanes: () => <div data-testid="balances-panes-stub" />
-}));
-
 beforeEach(() => {
   mocks.intent = Intent.SAVINGS_INTENT;
   mocks.effectiveIntent = Intent.SAVINGS_INTENT;
 });
 
-// Memory-router harness: AppShell as the layout route, probe routes mirroring
-// a module route (intent) and a destination route (fullWidth).
+// Memory-router harness: AppShell as the layout route with a probe child.
 function renderAppShell(initialPath: string) {
   const rootRoute = createRootRoute({ component: AppShell });
   const routeTree = rootRoute.addChildren([
@@ -61,8 +56,7 @@ function renderAppShell(initialPath: string) {
     createRoute({
       getParentRoute: () => rootRoute,
       path: '/earn',
-      component: () => <div data-testid="route-probe" />,
-      staticData: { fullWidth: true }
+      component: () => <div data-testid="route-probe" />
     })
   ]);
   const router = createRouter({
@@ -72,25 +66,38 @@ function renderAppShell(initialPath: string) {
   render(<RouterProvider router={router as never} />);
 }
 
-describe('AppShell pane column', () => {
-  it('renders a module route inside the widget-pane column', async () => {
+// G5: there is one rendering mode left. Every route is a full-width page on the
+// document scroll — no widget-pane column, no container card, no details portal.
+describe('AppShell', () => {
+  it.each(['/savings', '/earn'])(
+    'renders %s as a full-width page, without the container card',
+    async path => {
+      renderAppShell(path);
+      const probe = await screen.findByTestId('route-probe');
+      const main = probe.closest('main');
+
+      expect(main).toBeTruthy();
+      // The legacy card box: viewport cap + inner scroll + container chrome.
+      expect(main?.className).not.toContain('bg-container');
+      expect(main?.className).not.toContain('h-dvh');
+      expect(main?.className).not.toContain('overflow-y-auto');
+      // The DS page container is all that remains.
+      expect(main?.className).toContain('max-w-[1320px]');
+    }
+  );
+
+  it('no longer renders the widget-pane column or the details-pane portal target', async () => {
     renderAppShell('/savings');
-    const probe = await screen.findByTestId('route-probe');
-    expect(probe.closest('[data-testid="widget-pane-column"]')).toBeTruthy();
-    expect(probe.closest('main')?.className).toContain('bg-container');
+    await screen.findByTestId('route-probe');
+    expect(screen.queryByTestId('widget-pane-column')).toBeNull();
   });
 
-  it('renders a full-width destination route outside the widget-pane column, without the container card', async () => {
-    renderAppShell('/earn');
-    const probe = await screen.findByTestId('route-probe');
-    expect(probe.closest('[data-testid="widget-pane-column"]')).toBeNull();
-    expect(probe.closest('main')?.className).not.toContain('bg-container');
-  });
-
-  it('falls back to the Balances panes when the module is geo-restricted', async () => {
+  // The geo fallback that swapped a restricted module's panes for the Balances
+  // pair lived on the boxed branch. It moved to the router (requireModuleEnabled),
+  // so the shell renders the matched route unconditionally.
+  it('renders the matched route even when the module resolves to a different effective intent', async () => {
     mocks.effectiveIntent = Intent.BALANCES_INTENT;
     renderAppShell('/savings');
-    expect(await screen.findByTestId('balances-panes-stub')).toBeTruthy();
-    expect(screen.queryByTestId('route-probe')).toBeNull();
+    expect(await screen.findByTestId('route-probe')).toBeTruthy();
   });
 });
