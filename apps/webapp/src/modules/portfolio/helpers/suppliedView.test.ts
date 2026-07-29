@@ -11,6 +11,7 @@ const makeRow = (overrides: Partial<EarnProductRow> & Pick<EarnProductRow, 'id'>
   tokenSymbol: 'USDS',
   supplyTokens: ['USDS'],
   risk: 'moderate',
+  riskProfile: 'savings',
   networks: [1],
   detailPath: '/earn/savings',
   rate: { formatted: '0.00%' },
@@ -67,7 +68,7 @@ describe('buildSuppliedView', () => {
   it('derives each segment color from its display token', () => {
     const view = buildSuppliedView(rows, 'all');
     expect(view.positions[0].color).toBe(resolveTokenColor('sUSDS'));
-    expect(view.positions[2].color).toBe('#F17FBD'); // stUSDS pink
+    expect(view.positions[2].color).toBe('#deb3b5'); // DS Components/Charts/bg-stUSDS (APP-416)
   });
 
   it('carries the owning module intent onto each position', () => {

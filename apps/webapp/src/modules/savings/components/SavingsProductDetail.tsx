@@ -4,13 +4,20 @@ import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import { productNetworks, useOverallSkyData, useSavingsData, useSkySavingsRateHistoricData } from '@/hooks';
+import {
+  BP,
+  productNetworks,
+  useBreakpointIndex,
+  useOverallSkyData,
+  useSavingsData,
+  useSkySavingsRateHistoricData
+} from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { RiskTierMeter } from '@/components/product/RiskMeter';
+import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
@@ -41,6 +48,12 @@ export function SavingsProductDetail() {
   const { data: savingsData } = useSavingsData();
   const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;
   const [txFilter, setTxFilter] = useState<SavingsTxFilter>('all');
+
+  // M6.3: the mobile comp (486:20706) keeps the transactions filter visible
+  // even without a position; desktop retains the C3 has-position gating.
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
+  const showTxFilter = hasPosition || isMobile;
 
   const { data: overall } = useOverallSkyData();
   // "6M Rate" = trailing 6-month average APY. 🔶 confirm semantics with design
@@ -81,11 +94,9 @@ export function SavingsProductDetail() {
       id: 'risk',
       icon: <Asterisk className="h-3 w-3" />,
       label: <Trans>Risk scale</Trans>,
-      // Mirrors the marketplace's hardcoded tier (earnProducts.ts
-      // DEFAULT_RISK_TIER = 'moderate', BL-07) so the table and detail page
-      // never diverge for the same product. 🔶 the C3 design meter showed 'low'
-      // — confirm with design; updating the registry constant flips both.
-      value: <RiskTierMeter tier="moderate" />
+      // Tier + copy resolve through the profile registry (RISK_TIER_BY_PROFILE,
+      // BL-07), so the marketplace and this page can't diverge.
+      value: <RiskTierDetailsTrigger profile="savings" />
     },
     { id: 'tvl', icon: <Vault className="h-3 w-3" />, label: <Trans>TVL</Trans>, value: tvl },
     {
@@ -106,10 +117,34 @@ export function SavingsProductDetail() {
     <ProductDetailTemplate
       backHref={ROUTES.EARN}
       token={{
-        icon: <TokenIcon token={{ symbol: 'sUSDS' }} width={48} className="h-12 w-12" showChainIcon={false} />
+        icon: (
+          <TokenIcon
+            token={{ symbol: 'sUSDS' }}
+            width={48}
+            className="h-11 w-11 md:h-12 md:w-12"
+            showChainIcon={false}
+          />
+        )
       }}
       title={<Trans>Sky Savings</Trans>}
-      networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
+      networkSelector={
+        isMobile ? (
+          // M6.3 (486:20732): full-width labelled row under the title — 24px
+          // chain icon + Label 6 name left, chevron flush right.
+          <ChainModal
+            chainIds={networks}
+            dataTestId="product-detail-network"
+            triggerClassName="w-full [&>svg:last-child]:ml-auto"
+            labelClassName="font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]"
+          />
+        ) : (
+          <ChainModal
+            chainIds={networks}
+            labelClassName="hidden sm:block"
+            dataTestId="product-detail-network"
+          />
+        )
+      }
       chart={<SavingsDetailChart />}
       position={<SavingsPositionCard />}
       details={details}
@@ -117,9 +152,9 @@ export function SavingsProductDetail() {
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
         learnMoreHref: 'https://docs.sky.money'
       }}
-      transactions={<SavingsTransactionsTable filter={hasPosition ? txFilter : 'all'} />}
+      transactions={<SavingsTransactionsTable filter={showTxFilter ? txFilter : 'all'} />}
       transactionsAction={
-        hasPosition ? <SavingsTransactionsFilter value={txFilter} onChange={setTxFilter} /> : undefined
+        showTxFilter ? <SavingsTransactionsFilter value={txFilter} onChange={setTxFilter} /> : undefined
       }
     />
   );

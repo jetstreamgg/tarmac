@@ -1,7 +1,7 @@
 import type { EarnProductKind, EarnProductRow } from '@/hooks';
 import type { Intent } from '@/lib/enums';
 import { projectAnnualEarnings } from '@/utils';
-import { resolveTokenColor } from '@/widgets/shared/constants';
+import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/widgets/shared/constants';
 
 /** One supplied position, decorated for the Portfolio "Supplied" tab. */
 export type SuppliedPosition = {
@@ -19,6 +19,8 @@ export type SuppliedPosition = {
   rate?: number;
   /** Brand color derived from the product's display token. */
   color: string;
+  /** Hovered-segment color (DS Components/Charts-Hover); base color when the token has no hover variable. */
+  hoverColor: string;
   /** Share of total supplied, 0..1. */
   share: number;
   /** In-app product page (registry route contract) — Supply/Manage destination. */
@@ -109,7 +111,10 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     address: row.address,
     amountUsd,
     rate: row.rate.value,
-    color: resolveTokenColor(row.tokenSymbol),
+    ...(resolveTokenChartColors(row.tokenSymbol) ?? {
+      color: FALLBACK_TOKEN_COLOR,
+      hoverColor: FALLBACK_TOKEN_COLOR
+    }),
     share: totalSupplied > 0 ? amountUsd / totalSupplied : 0,
     detailPath: row.detailPath,
     chainIds: chainsFor(row)

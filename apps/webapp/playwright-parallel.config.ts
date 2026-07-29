@@ -48,6 +48,7 @@ export default defineConfig({
       // back one by one as they are rewritten (lockstep rule).
       testMatch: [
         '**/stake.spec.ts',
+        '**/stake-mobile.spec.ts',
         '**/stake-onchain.spec.ts',
         '**/unstake-repay.spec.ts',
         '**/capped-osm-unstake.spec.ts',

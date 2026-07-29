@@ -90,6 +90,15 @@ describe('SavingsSupplyCard — no-position entry card', () => {
     expect(screen.queryByTestId('savings-amount-input')).toBeNull();
   });
 
+  // M6.3: both comps carry a product badge above the headline (desktop
+  // 486:20522 reads "Sky Savings"; the mobile comp's "Sky Staking Engine"
+  // wording looks like a design copy error — that engine belongs to Stake).
+  it('renders the product badge above the headline', () => {
+    renderCard();
+
+    expect(screen.getByTestId('savings-supply-badge').textContent).toContain('Sky Savings');
+  });
+
   it('opens the supply modal via onSupply when the CTA is clicked', () => {
     const onSupply = renderCard();
 

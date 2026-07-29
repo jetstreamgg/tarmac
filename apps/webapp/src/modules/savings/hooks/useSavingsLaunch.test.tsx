@@ -328,7 +328,7 @@ describe('useSavingsLaunch — launch() config', () => {
     act(() => a.result.current.launch());
     // Figma 527:8273 — the supply steps name their token; step count is unchanged.
     expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
       { label: 'Supply', tokenSymbol: 'USDS' }
     ]);
     a.unmount();

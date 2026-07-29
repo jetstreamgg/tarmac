@@ -54,7 +54,7 @@ export function ConvertPage() {
     form.isConnected && (form.isZero || form.insufficient || !!conversion.disabledReason);
 
   return (
-    <div className="flex w-full flex-col items-center gap-8 py-4 md:py-14" data-testid="convert-page">
+    <div className="flex w-full flex-col items-center gap-8 py-4 md:py-10" data-testid="convert-page">
       {/* Patterns/Headers, Convert type 5044:35419. */}
       <PageHeaderHero
         badges={
@@ -96,7 +96,8 @@ export function ConvertPage() {
         <Button
           variant="primary"
           size="xl"
-          className="w-full"
+          // Phone tier steps to the L button (48px, comp 1295:25314); XL at md.
+          className="h-12 w-full text-sm leading-4 tracking-[-0.28px] md:h-14 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
           disabled={reviewDisabled}
           onClick={launchOrConnect}
           data-testid="convert-review-cta"

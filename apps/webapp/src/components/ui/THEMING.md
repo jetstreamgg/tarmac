@@ -53,8 +53,24 @@ Two consequences that surprised us during the audit:
 
 - **Dark = at-parity.** It must stay **pixel-identical** to production. Do not "improve" dark values;
   only fix outright invalid ones (missing `var()`, undefined referenced primitive).
-- **Light = mechanism + interim placeholder.** It must render without crashing; full visual parity is
-  deferred to **G2**. Expect rough edges (e.g. the wordmark/logo still reads light-on-light).
+- **Light = filled from the design system (G2).** The light scope in `globals.css` now carries the DS
+  `1. Color modes` / `Light Mode` values, resolved through their alias chains; each line cites the DS
+  variable it fills. Parity references are the `🟢 Lightmode` page in Sky App: UI (`1030:58446`).
+
+  Two rules follow from how the DS models modes, and both are load-bearing:
+
+  1. **Only override what actually differs.** 48 of the DS's 117 color variables differ between modes;
+     the other 69 are theme-invariant by design (brand ramps, the system color scale, `border-focus`,
+     `fg-tertiary`, `fg-text-consistent-*`). Those are deliberately left to the `@theme` dark default
+     rather than restated in the light scope — restating them would fork a value the DS intends to keep
+     single-sourced.
+  2. **Light inverts the elevation stack.** Dark's surfaces rise on lilac-alpha (`#bcb6ef`); light's rise
+     on white-alpha (`bg-secondary`/`tertiary`/`quarternary`) over the lilac `bg-primary` page. Hairlines
+     and low tints likewise move from dark's lilac to light's periwinkle (`#9ca0e5`). A light value that
+     reads as "dark's value with the alpha nudged" is almost always wrong.
+
+  Prefer a token over a `light:` variant. A `light:`-prefixed arbitrary value (`light:border-[#1a1855]`)
+  is how the pre-G2 interim palette leaked into components; G2 removed the ones that existed.
 
 ## Audit results (A2)
 

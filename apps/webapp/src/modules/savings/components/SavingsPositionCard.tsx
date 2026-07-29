@@ -18,11 +18,15 @@ const NO_VALUE = '–';
 const formatToken = (value?: bigint) =>
   value === undefined ? NO_VALUE : formatNumber(parseFloat(formatUnits(value, 18)), { maxDecimals: 2 });
 
+// M6.3 mobile (486:20984): Body 6 labels over Label 6 values with 12px icons;
+// desktop keeps the C3 scale.
 function Stat({ label, className, children }: { label: ReactNode; className?: string; children: ReactNode }) {
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
-      <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text flex items-center gap-1.5 font-medium">{children}</span>
+    <div className={cn('flex flex-col gap-1 md:gap-1.5', className)}>
+      <span className="text-textSecondary text-xs leading-4 md:text-sm md:leading-normal">{label}</span>
+      <span className="text-text font-circle md:font-graphik flex items-center gap-1 text-xs leading-[14px] font-medium tracking-[-0.24px] md:gap-1.5 md:text-base md:leading-normal md:tracking-normal">
+        {children}
+      </span>
     </div>
   );
 }
@@ -96,9 +100,14 @@ export function SavingsPositionCard() {
             </Stat>
             <StatDivider />
             <Stat className="flex-1" label={<Trans>1Y projected earnings</Trans>}>
-              <TrendingUp className="text-bullish h-4 w-4" />
+              <TrendingUp className="text-bullish h-3 w-3 md:h-4 md:w-4" />
               {formatUsd(projectedEarnings)}
-              <TokenIcon token={{ symbol: 'USDS' }} width={16} showChainIcon={false} className="h-4 w-4" />
+              <TokenIcon
+                token={{ symbol: 'USDS' }}
+                width={16}
+                showChainIcon={false}
+                className="h-3 w-3 md:h-4 md:w-4"
+              />
             </Stat>
           </div>
           <div className="flex">
@@ -107,7 +116,7 @@ export function SavingsPositionCard() {
                 token={{ symbol: 'sUSDS' }}
                 width={18}
                 showChainIcon={false}
-                className="h-4.5 w-4.5"
+                className="h-3 w-3 md:h-4.5 md:w-4.5"
               />
               {susds}
             </Stat>
@@ -118,8 +127,9 @@ export function SavingsPositionCard() {
           </div>
         </div>
 
-        {/* Supply / Withdraw each open the editable modal for their flow. */}
-        <div className="flex gap-3">
+        {/* Supply / Withdraw each open the editable modal for their flow.
+            8px apart on mobile (486:21010), 12 from md. */}
+        <div className="flex gap-2 md:gap-3">
           <Button
             variant="primary"
             size="l"

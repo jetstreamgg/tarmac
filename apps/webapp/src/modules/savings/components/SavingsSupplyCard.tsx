@@ -78,7 +78,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
             showChainIcon={false}
             // align-middle centers to the line's x-height; nudge up ~2px so the icon
             // centers on the uppercase symbol's cap-height instead of sitting low.
-            className="mr-1 inline-block h-6 w-6 -translate-y-0.5 align-middle"
+            className="mr-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6"
           />
           {symbol}
         </span>
@@ -87,35 +87,55 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
   );
 
   return (
-    <Card className="flex flex-col gap-6 p-6" data-testid="savings-supply-card">
-      <h3 className="text-text text-2xl leading-snug font-medium">
+    <Card className="flex flex-col gap-5 p-5 md:gap-6 md:p-6" data-testid="savings-supply-card">
+      {/* Product badge (Figma 486:20741 / desktop 486:20522). The desktop comp
+          reads "Sky Savings"; the mobile comp's "Sky Staking Engine" wording is
+          treated as a copy error (that engine belongs to Stake) — flagged on
+          APP-378. */}
+      <span
+        data-testid="savings-supply-badge"
+        className="bg-glassBadge text-textSecondary font-circle flex w-fit items-center gap-1 rounded-full py-[5px] pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px]"
+      >
+        <TokenIcon token={{ symbol: 'sUSDS' }} width={12} showChainIcon={false} className="h-3 w-3" />
+        <Trans>Sky Savings</Trans>
+      </span>
+
+      <h3 className="text-text font-circle md:font-graphik text-[22px] leading-6 font-medium tracking-[-0.44px] md:text-2xl md:leading-snug md:tracking-normal">
         <Trans>
           Supply {supplyTokens} and earn {rate} APY
         </Trans>
       </h3>
 
-      <p className="text-textSecondary text-sm leading-relaxed">
+      <p className="text-textSecondary text-xs leading-[19px] md:text-sm md:leading-relaxed">
         <Trans>
           Governed by Sky Ecosystem to deliver the best risk-adjusted yield, sUSDS allows you to grow your
           holdings with instant liquidity and zero fees.
         </Trans>
       </p>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-textSecondary text-sm">
+      {/* Mobile (486:20747): the two stats sit content-width around a 28px
+          hairline; from md the C3 two-column grid returns. */}
+      <div className="flex items-center gap-6 md:grid md:grid-cols-2 md:gap-4">
+        <div className="flex flex-col gap-1 md:gap-1.5">
+          <span className="text-textSecondary text-xs leading-4 md:text-sm md:leading-normal">
             <Trans>Current Rate</Trans>
           </span>
-          <span className="text-text flex items-center gap-1.5 font-medium">
+          <span className="text-text font-circle md:font-graphik flex items-center gap-1.5 leading-[18px] font-medium tracking-[-0.32px] md:leading-normal md:tracking-normal">
             {rate}
-            <TokenIcon token={{ symbol: 'sUSDS' }} width={18} showChainIcon={false} className="h-4.5 w-4.5" />
+            <TokenIcon
+              token={{ symbol: 'sUSDS' }}
+              width={18}
+              showChainIcon={false}
+              className="h-4 w-4 md:h-4.5 md:w-4.5"
+            />
           </span>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-textSecondary text-sm">
+        <div className="bg-border h-7 w-px shrink-0 md:hidden" />
+        <div className="flex flex-col gap-1 md:gap-1.5">
+          <span className="text-textSecondary text-xs leading-4 md:text-sm md:leading-normal">
             <Trans>Idle balance</Trans>
           </span>
-          <span className="text-text flex items-center gap-1.5 font-medium">
+          <span className="text-text font-circle md:font-graphik flex items-center gap-1.5 leading-[18px] font-medium tracking-[-0.32px] md:leading-normal md:tracking-normal">
             {idleBalance}
             <TokenIconStack symbols={origins} size={18} />
           </span>

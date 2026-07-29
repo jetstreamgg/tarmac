@@ -17,6 +17,8 @@ import {
 
 import { applyTheme } from '@/lib/theme';
 import { cn } from '@/lib/cn';
+import { AppLink } from '@/lib/navigation';
+import { defaultConfig } from '@/modules/config/default-config';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -42,6 +44,15 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
+import {
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+  ResponsiveModalTrigger
+} from '@/components/ui/responsive-modal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -63,6 +74,7 @@ import {
   CellTokenIdle
 } from '@/components/ui/table-cells';
 import { RiskMeter, RiskTierMeter, RiskScaleMeter } from '@/components/product/RiskMeter';
+import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { TokensComposition } from '@/components/product/TokensComposition';
 import { ChartTooltip } from '@/modules/ui/components/ChartTooltip';
 import { PortfolioDonutChart } from '@/modules/portfolio/components/PortfolioDonutChart';
@@ -854,6 +866,28 @@ function OverlaysSection() {
             </SheetContent>
           </Sheet>
         </Spec>
+        <Spec label="responsive modal (dialog ≥768px / bottom sheet below)">
+          <ResponsiveModal>
+            <ResponsiveModalTrigger asChild>
+              <Button variant="secondary" size="m">
+                Open responsive modal
+              </Button>
+            </ResponsiveModalTrigger>
+            <ResponsiveModalContent showCloseButton>
+              <ResponsiveModalHeader>
+                <ResponsiveModalTitle>Responsive modal title</ResponsiveModalTitle>
+                <ResponsiveModalDescription>
+                  Renders as a Dialog on desktop and a bottom Sheet on mobile — resize below 768px to switch.
+                </ResponsiveModalDescription>
+              </ResponsiveModalHeader>
+              <ResponsiveModalFooter>
+                <Button variant="primary" size="m">
+                  Confirm
+                </Button>
+              </ResponsiveModalFooter>
+            </ResponsiveModalContent>
+          </ResponsiveModal>
+        </Spec>
         <Spec label="popover">
           <Popover>
             <PopoverTrigger asChild>
@@ -956,6 +990,18 @@ function TablesSection() {
                 <RiskTierMeter tier="low" />
                 <RiskTierMeter tier="moderate" />
                 <RiskTierMeter tier="advanced" />
+              </span>
+            </CellSpecimenRow>
+            <CellSpecimenRow name="Risk details trigger, per profile (hover/focus md+ · tap sheet below md)">
+              <span className="flex flex-wrap items-center gap-2">
+                <RiskTierDetailsTrigger profile="savings" />
+                <RiskTierDetailsTrigger profile="rewards-spk" />
+                <RiskTierDetailsTrigger profile="rewards-cle" />
+                <RiskTierDetailsTrigger profile="vault-flagship" />
+                <RiskTierDetailsTrigger profile="vault-usdt-savings" />
+                <RiskTierDetailsTrigger profile="vault-risk-capital" />
+                <RiskTierDetailsTrigger profile="fixed" />
+                <RiskTierDetailsTrigger profile="stusds" />
               </span>
             </CellSpecimenRow>
             <CellSpecimenRow name="Status">
@@ -1836,7 +1882,8 @@ function ChartsSection() {
             active
             label={new Date('2026-03-12T00:00:00Z')}
             labelFormatter={() => 'Mar 12, 2026'}
-            tooltipLabel="Sky TVL"
+            tooltipLabel="sUSDS TVL"
+            tokenSymbols={['sUSDS']}
             payload={[{ color: '#02C2A1', value: 5774407, payload: {} }]}
           />
           <ChartTooltip
@@ -1844,6 +1891,15 @@ function ChartsSection() {
             label={new Date('2026-03-12T00:00:00Z')}
             labelFormatter={() => 'Mar 12, 2026'}
             tooltipLabel="Total USDS"
+            tokenSymbols={['USDS']}
+            payload={[{ color: '#757dff', value: 8238778407, payload: {} }]}
+          />
+          <ChartTooltip
+            active
+            label={new Date('2026-03-12T00:00:00Z')}
+            labelFormatter={() => 'Mar 12, 2026'}
+            tooltipLabel="Total USDS and DAI"
+            tokenSymbols={['USDS', 'DAI']}
             payload={[{ color: '#757dff', value: 8238778407, payload: {} }]}
           />
         </div>
@@ -1923,7 +1979,7 @@ function BannersSection() {
       <div className="flex max-w-[1032px] flex-col gap-6">
         <PromoBanner
           illustration={
-            <img src="/illustrations/illustration-connect-wallet.png" alt="" className="size-full" />
+            <img src="/illustrations/illustration-connect-glass-panels.png" alt="" className="size-full" />
           }
           heading={
             <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
@@ -2270,6 +2326,12 @@ function DesignSystem() {
       <div aria-hidden className="app-background" />
       <header className="border-glassBorder bg-pageBackground/80 sticky top-0 z-10 border-b backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-6 py-3">
+          {/* Same theme-swapped logo link as the app shell (Layout.tsx) — the DS
+              page renders outside it, so the way back home lives here. */}
+          <AppLink to="/" title="Home page" className="min-w-[96px]">
+            <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
+            <img src={defaultConfig.logoLight} alt="logo" width={96} className="light:block hidden" />
+          </AppLink>
           <Heading tag="h1" variant="small" className="mr-auto">
             Design system preview
           </Heading>

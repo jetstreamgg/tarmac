@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
-import { TxStatus } from '@/widgets';
+import { TxStatus, InProgress, Cancel } from '@/widgets';
 import { toError } from '@/hooks';
 import { getTransactionLink } from '@/utils';
+import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
+import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
 import { useIsSafeWallet } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
@@ -21,6 +23,23 @@ import type {
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
 const MINIMIZED_TOAST_ID = 'transaction-minimized';
+const ABANDONED_TOAST_ID = 'transaction-abandoned';
+const PENDING_BLOCK_TOAST_ID = 'transaction-pending-block';
+
+// The dapp cannot dismiss a wallet's signature prompt — abandoning a session
+// only stops the app from listening. Tell the user to finish the job wallet-side.
+function notifyRequestAbandoned() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Transaction request discarded</Trans>}
+        description={<Trans>If your wallet still shows the request, reject it there.</Trans>}
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
 
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
@@ -68,6 +87,39 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
   const activeSessionRef = useRef<string | null>(null);
+  // Session generation: advanced by launch() and handleClose(), so engine
+  // callbacks are bound to the session that rendered them (state) and can spot
+  // that it has since ended (ref). An in-flight write outlives its host — the
+  // wallet can accept in the same instant the user dismisses the modal — and
+  // without this check the orphaned engine's onStart stamped LOADING onto the
+  // torn-down provider (no modal left to restore), bricking every later
+  // launch() on the in-progress guard until a reload; after an
+  // abandon-then-relaunch it would corrupt the NEW session instead.
+  const [sessionGen, setSessionGen] = useState(0);
+  const sessionGenRef = useRef(0);
+  // The generation of the write currently in flight, latched at onMutate.
+  //
+  // The closure check above only sheds a stale callback when the engine is
+  // still HOLDING an old render's closure — true for flows hosted in
+  // `backgroundContent` (savings, stUSDS, rewards, vault, claim, upgrade,
+  // pendle supply/withdraw): close unmounts the host and freezes its closures
+  // at the pre-bump generation. The review-first flows (convert, pendle
+  // redeem, the stake takeovers) keep their engine host mounted on the page,
+  // so it re-renders after teardown and react-query hands the LIVE mutation
+  // the newest options (MutationObserver.setOptions pushes into a pending
+  // Mutation, and useWriteContractFlow's receipt effect closes over the
+  // current render) — a late callback from an abandoned write would arrive
+  // carrying the CURRENT generation and sail through.
+  //
+  // onMutate is the one callback that always fires synchronously from the
+  // user's confirm, so the generation it records is the session that actually
+  // started the write, whatever the host's mount state. The settle callbacks
+  // check that instead of trusting their own closure. Null until the first
+  // write of the page's life, where it falls back to the closure check alone.
+  const writeGenRef = useRef<number | null>(null);
+  // Hash of the write this session is tracking, latched at onStart, so a
+  // settle carrying a DIFFERENT hash is recognisable as another transaction's.
+  const writeHashRef = useRef<string | undefined>(undefined);
   // Mirrors txStatus for reads inside callbacks (avoids setState-inside-updater impurity).
   const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
@@ -81,15 +133,49 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
   const launch = useCallback(
     (config: TransactionConfig) => {
-      // One transaction at a time: if one is still in-flight (e.g. minimized while
-      // awaiting the wallet / mining), don't start a new session — bring the pending
-      // one back into view. Launching here would remount the host and strand the
-      // running transaction.
-      if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
+      // One BROADCAST transaction at a time: it's on-chain and will resolve, so
+      // don't start a new session — bring the pending modal back into view and
+      // say why. Launching here would remount the host and strand the running tx.
+      // The configRef check is self-healing defense: LOADING with no live
+      // session has nothing to restore, so fall through to a fresh launch
+      // instead of blocking forever.
+      if (txStatusRef.current === TxStatus.LOADING && configRef.current) {
         setMinimized(false);
+        toastWithClose(
+          () => (
+            <TransactionNoticeToast
+              icon={<InProgress />}
+              title={<Trans>Transaction in progress</Trans>}
+              description={<Trans>It needs to finish before you can start a new one.</Trans>}
+            />
+          ),
+          { id: PENDING_BLOCK_TOAST_ID, duration: 8000 }
+        );
         return;
       }
 
+      // A session still awaiting the wallet signature (INITIALIZED) has nothing
+      // on-chain — starting a new flow abandons it: track the cancellation, warn
+      // about the orphaned wallet prompt, and fall through to a fresh launch
+      // (which resets all session state and remounts the hosts).
+      if (txStatusRef.current === TxStatus.INITIALIZED) {
+        const abandoned = configRef.current?.analytics;
+        if (abandoned) {
+          trackTransactionCompleted({
+            widgetName: abandoned.widgetName,
+            chainId,
+            txStatus: 'cancelled',
+            action: abandoned.action,
+            flow: abandoned.flow,
+            data: abandoned.data
+          });
+          startNewFlow();
+        }
+        notifyRequestAbandoned();
+      }
+
+      sessionGenRef.current += 1;
+      setSessionGen(sessionGenRef.current);
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveConfig(config);
@@ -111,7 +197,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [chainId, trackWidgetReviewViewed]
+    [chainId, trackWidgetReviewViewed, trackTransactionCompleted, startNewFlow]
   );
 
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
@@ -141,20 +227,29 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleClose = useCallback(() => {
-    // Track cancellation if the user closes during INITIALIZED (waiting for wallet confirmation)
+    // Closing during INITIALIZED abandons an un-signed session: track the
+    // cancellation and warn about the wallet prompt we can't dismiss.
     const analytics = configRef.current?.analytics;
-    if (txStatus === TxStatus.INITIALIZED && analytics) {
-      trackTransactionCompleted({
-        widgetName: analytics.widgetName,
-        chainId,
-        txStatus: 'cancelled',
-        action: analytics.action,
-        flow: analytics.flow,
-        data: analytics.data
-      });
-      startNewFlow();
+    if (txStatus === TxStatus.INITIALIZED) {
+      if (analytics) {
+        trackTransactionCompleted({
+          widgetName: analytics.widgetName,
+          chainId,
+          txStatus: 'cancelled',
+          action: analytics.action,
+          flow: analytics.flow,
+          data: analytics.data
+        });
+        startNewFlow();
+      }
+      notifyRequestAbandoned();
     }
 
+    // End the session generation FIRST: an engine the wallet already answered
+    // may fire callbacks right after this teardown, and they must see
+    // themselves as stale (see sessionGen above).
+    sessionGenRef.current += 1;
+    setSessionGen(sessionGenRef.current);
     setOpen(false);
     setMinimized(false);
     setTxStatus(TxStatus.IDLE);
@@ -220,8 +315,39 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     configRef.current?.onConfirm();
   }, [resetTransactionProgress]);
 
+  // A settle callback belongs to the running session only if BOTH its closure
+  // and the write it reports on were made in the current generation (see
+  // writeGenRef). Either mismatch means the caller is an engine from a session
+  // that was closed or abandoned, and it must drop itself.
+  const isStaleWrite = useCallback(
+    (gen: number) =>
+      gen !== sessionGenRef.current ||
+      (writeGenRef.current !== null && writeGenRef.current !== sessionGenRef.current),
+    []
+  );
+
+  // A settle for a hash other than the one this session broadcast is another
+  // transaction's — an abandoned write landing while a new one is in flight.
+  // Skipped for Safe wallets, where the two hashes differ legitimately: the
+  // engine reports the safeTxHash at onStart and the real transaction hash at
+  // onSuccess. `isSafeWallet` is the broader test of the two (it also covers a
+  // Safe address reached through another connector), so this only ever errs
+  // towards accepting a settle — never towards dropping a real one.
+  const isForeignHash = useCallback(
+    (hash?: string) => !isSafeWallet && !!hash && !!writeHashRef.current && hash !== writeHashRef.current,
+    [isSafeWallet]
+  );
+
+  // Each callback closes over the `sessionGen` of the render that created it
+  // and drops itself when the generation has moved on — the caller is an
+  // engine from a session that was closed or abandoned.
   const txCallbacks: TxCallbacks = {
     onMutate: useCallback(() => {
+      if (sessionGen !== sessionGenRef.current) return;
+      // Latch the write to this session; the settle callbacks check it. Fires
+      // synchronously from the user's confirm, so it can trust its closure.
+      writeGenRef.current = sessionGenRef.current;
+      writeHashRef.current = undefined;
       // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
       if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
         setCurrentStep(s => s + 1);
@@ -242,10 +368,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           data: analytics.data
         });
       }
-    }, [chainId, trackTransactionStarted]),
+    }, [sessionGen, chainId, trackTransactionStarted]),
 
     onStart: useCallback(
       (hash?: string) => {
+        if (isStaleWrite(sessionGen)) return;
+        writeHashRef.current = hash;
         setTxStatus(TxStatus.LOADING);
         txStatusRef.current = TxStatus.LOADING;
         if (hash) {
@@ -253,11 +381,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           txHashRef.current = hash;
         }
       },
-      [chainId, address, isSafeWallet]
+      [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
     ),
 
     onSuccess: useCallback(
       (hash?: string) => {
+        if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
         setTxStatus(TxStatus.SUCCESS);
         txStatusRef.current = TxStatus.SUCCESS;
         if (hash) {
@@ -282,11 +411,21 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
         configRef.current?.onSuccess?.();
       },
-      [chainId, address, isSafeWallet, trackTransactionCompleted, startNewFlow]
+      [
+        sessionGen,
+        chainId,
+        address,
+        isSafeWallet,
+        trackTransactionCompleted,
+        startNewFlow,
+        isStaleWrite,
+        isForeignHash
+      ]
     ),
 
     onError: useCallback(
       (error: Error, hash?: string) => {
+        if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
         setTxStatus(TxStatus.ERROR);
         txStatusRef.current = TxStatus.ERROR;
         if (hash) {
@@ -330,7 +469,16 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
         configRef.current?.onError?.();
       },
-      [chainId, address, isSafeWallet, trackTransactionCompleted, startNewFlow]
+      [
+        sessionGen,
+        chainId,
+        address,
+        isSafeWallet,
+        trackTransactionCompleted,
+        startNewFlow,
+        isStaleWrite,
+        isForeignHash
+      ]
     )
   };
 

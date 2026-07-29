@@ -1,5 +1,5 @@
 import type { EarnProductRow } from '@/hooks';
-import { resolveTokenColor } from '@/widgets/shared/constants';
+import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/widgets/shared/constants';
 
 /**
  * Stablecoins surfaced in the Portfolio "Idle" tab (wallet holdings sitting
@@ -44,6 +44,8 @@ export type IdleToken = {
   amountUsd: number;
   /** Brand color (donut segment + legend swatch). */
   color: string;
+  /** Hovered-segment color (DS Components/Charts-Hover). */
+  hoverColor: string;
   /** Share of the wallet balance, 0..1. */
   share: number;
 };
@@ -90,7 +92,10 @@ export function buildIdleView(balances: StablecoinBalance[], network: number | '
       name: NAME_BY_SYMBOL.get(symbol) ?? symbol,
       amount: entry.amount,
       amountUsd: entry.amountUsd,
-      color: resolveTokenColor(symbol),
+      ...(resolveTokenChartColors(symbol) ?? {
+        color: FALLBACK_TOKEN_COLOR,
+        hoverColor: FALLBACK_TOKEN_COLOR
+      }),
       share: walletBalance > 0 ? entry.amountUsd / walletBalance : 0
     }))
     .sort((a, b) => b.amountUsd - a.amountUsd);

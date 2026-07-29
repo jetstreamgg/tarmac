@@ -10,6 +10,17 @@ import { cn } from '@/lib/utils';
  *   the surface drops its height cap and the header pins as a sticky frosted bar.
  */
 
+/**
+ * Side gutter of the design-system page container, per the DS grid tiers
+ * (Foundations / Grids & Spacing 5176:33992): 24px on the tablet tier (640 to
+ * 1200), 20px elsewhere. The DS table lists 12px for the mobile tier, but the
+ * mobile screen comps (Sky App: UI, 🟠 Mobile canvas, 393px frames) all place
+ * page content at 20px — the 12px margin only shows up as the bottom Navbar's
+ * in-situ inset. Shared by the bare AppContainer and the full-width header row
+ * so the header content stays aligned with the page content at every tier.
+ */
+export const pageGutterClasses = 'px-5 sm:px-6 desktop:px-5';
+
 /** The shell surface (the VStack wrapping the header + content). */
 export const shellSurfaceClasses = (fullWidth: boolean) =>
   cn(
@@ -24,25 +35,42 @@ export const shellSurfaceClasses = (fullWidth: boolean) =>
 /** The shell header bar (full-bleed; the row content lives in the inner div). */
 export const shellHeaderClasses = (fullWidth: boolean) =>
   cn(
-    'w-full py-2 md:mb-1',
+    // Mobile tiers get the DS Mobile / Topbar vertical rhythm (16px, 68px bar
+    // with the 36px chip row); the desktop tier keeps the legacy 8px.
+    'w-full py-3.5 desktop:py-2 desktop:mb-1',
     // Full-width routes scroll on the document, so the header pins as a sticky,
     // see-through frosted bar (Figma: transparent + blur(7px), no opaque fill).
     fullWidth && 'sticky top-0 z-30',
     // Progressive blur: the blur lives on a `::before` overlay behind the nav
     // content (so logo + pills stay sharp), and a gradient mask feathers it out
-    // toward the bottom — the blurred backdrop dissolves into the sharp content
-    // instead of cutting at a hard line. The sticky header is the containing
-    // block for the absolute pseudo, so no `relative` is needed.
+    // toward the bottom. The overlay is confined to the bar itself (100%
+    // height, mask fully transparent by 95%) — the earlier 150% overhang put a
+    // frosted "white glow" band over page content, visible as an edge/color
+    // difference below the header (APP-416); keeping any transition at the
+    // bar's own boundary reads as a normal frosted navbar instead. The sticky
+    // header is the containing block for the absolute pseudo, so no `relative`
+    // is needed.
     fullWidth &&
-      "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-z-10 before:h-[150%] before:backdrop-blur-[7px] before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_35%,transparent)] before:[-webkit-mask-image:linear-gradient(to_bottom,#000_35%,transparent)]"
+      "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-z-10 before:h-full before:backdrop-blur-[7px] before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_40%,transparent_95%)] before:[-webkit-mask-image:linear-gradient(to_bottom,#000_40%,transparent_95%)]"
   );
 
 /** The header row content (logo + TopNav) inside the full-bleed bar. */
 export const shellHeaderContentClasses = (fullWidth: boolean) =>
   cn(
     'flex items-center gap-4',
+    // APP-415: at the desktop tier the row becomes the comp's three-flank grid
+    // (Navbar 1036:201230 — equal 417|418|417 columns: logo | pills | wallet
+    // cluster; TopNav dissolves via desktop:contents so its groups land in the
+    // outer tracks). The pill group centers on the container axis — the same
+    // center line as the page content — instead of the leftover flex space,
+    // which sat it ~60px left and let it drift with wallet-chip width. `1fr`
+    // tracks bottom out at min-content, so a long chip squeezes the flanks
+    // (pills nudge off-center) rather than overlapping the pills.
+    'desktop:grid desktop:grid-cols-[1fr_auto_1fr]',
     // Full-width routes align the header content with the design-system page
-    // container (12 columns / 1280 + 20px gutters — same geometry as the bare
-    // AppContainer); boxed routes keep the legacy full-bleed padding.
-    fullWidth ? 'mx-auto w-full max-w-[1320px] px-5' : 'w-full px-3 sm:px-10'
+    // container (same max-width + gutter tiers as the bare AppContainer);
+    // boxed routes keep the legacy full-bleed padding. 20px side padding is
+    // also the DS Mobile / Topbar gutter, so both modes share it on the
+    // mobile tier.
+    fullWidth ? cn('mx-auto w-full max-w-[1320px]', pageGutterClasses) : 'w-full px-5 sm:px-10'
   );

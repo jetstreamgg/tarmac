@@ -7,6 +7,8 @@ export type DonutSegment = {
   id: string;
   /** Any CSS color (hex / token); resolved by the caller. */
   color: string;
+  /** Hovered-arc color (DS Components/Charts-Hover); falls back to `color`. */
+  hoverColor?: string;
   /** Raw magnitude; normalized to angles internally. */
   value: number;
 };
@@ -22,12 +24,17 @@ type PortfolioDonutChartProps = {
   className?: string;
 };
 
-const PAD = 4; // breathing room from the box edge
-const THICKNESS = 18; // colored band width
-const PADDING_ANGLE = 3; // gap between segments, degrees
-const RING_GAP = 10; // distance from the colored band's inner edge to the gray ring
-const RING_STROKE = 1.5;
-const CORNER_RADIUS = 4; // subtle rounding on the bar ends
+// Radial dimensions are tuned against the DS Charts / Pie Chart comp (Figma
+// 5034:22030, a 178 box measured from its exported vectors: 89 outer radius,
+// 8px band, hairline ring at ~72.3) and scale with `size` so the band keeps
+// its ~4.5%-of-diameter share at the mobile 160.
+const BASE_SIZE = 178;
+const PAD = 0; // the band touches the box edge in the comp
+const THICKNESS = 8; // colored band width
+const PADDING_ANGLE = 3; // gap between segments, degrees — angular, so unscaled
+const RING_GAP = 9; // distance from the colored band's inner edge to the gray ring
+const RING_STROKE = 1.5; // hairline at every size
+const CORNER_RADIUS = 4; // = THICKNESS / 2 — fully rounded bar ends per the comp
 const START_ANGLE = 90; // 12 o'clock
 const END_ANGLE = -270; // full sweep, clockwise
 const FULL_CIRCLE_EPS = 359.9;
@@ -79,18 +86,19 @@ export function PortfolioDonutChart({
   activeId,
   onActiveChange,
   renderCenter,
-  size = 320,
+  size = BASE_SIZE,
   className
 }: PortfolioDonutChartProps) {
   const chartSegments = segments.filter(s => s.value > 0);
   const sectors = computeSectors(chartSegments);
   const isEmpty = chartSegments.length === 0;
 
+  const scale = size / BASE_SIZE;
   const cx = size / 2;
   const cy = size / 2;
-  const outerRadius = size / 2 - PAD;
-  const innerRadius = outerRadius - THICKNESS;
-  const ringRadius = innerRadius - RING_GAP;
+  const outerRadius = size / 2 - PAD * scale;
+  const innerRadius = outerRadius - THICKNESS * scale;
+  const ringRadius = innerRadius - RING_GAP * scale;
   const isSingle = chartSegments.length === 1;
   const singleFullRing =
     sectors.length === 1 && Math.abs(sectors[0].startAngle - sectors[0].endAngle) >= FULL_CIRCLE_EPS;
@@ -100,6 +108,7 @@ export function PortfolioDonutChart({
       className={className}
       style={{ position: 'relative', width: size, height: size }}
       onMouseLeave={() => onActiveChange(null)}
+      data-testid="portfolio-donut"
     >
       {chartSegments.length > 0 && (
         <div className="absolute inset-0">
@@ -115,21 +124,27 @@ export function PortfolioDonutChart({
               innerRadius={innerRadius}
               outerRadius={outerRadius}
               paddingAngle={isSingle ? 0 : PADDING_ANGLE}
-              cornerRadius={isSingle ? 0 : CORNER_RADIUS}
+              cornerRadius={isSingle ? 0 : CORNER_RADIUS * scale}
               stroke="none"
               isAnimationActive={false}
               onMouseEnter={(_, index) => onActiveChange(chartSegments[index]?.id ?? null)}
               // `Cell` is deprecated (removed in recharts 4); per-sector fill +
               // hover dimming via the `shape` prop, rendering the same Sector.
+              // DS pie hover (Figma 5051:133511): the hovered arc swaps to its
+              // Charts-Hover color; the others dim to 50%.
               shape={(props: PieSectorShapeProps) => {
                 const segment = props.payload as DonutSegment;
-                const dim = activeId !== null && activeId !== segment.id;
+                const isActive = activeId === segment.id;
+                const dim = activeId !== null && !isActive;
                 return (
                   <Sector
                     {...props}
-                    fill={segment.color}
+                    fill={isActive ? (segment.hoverColor ?? segment.color) : segment.color}
                     fillOpacity={dim ? 0.5 : 1}
-                    style={{ transition: 'fill-opacity 150ms ease-out', outline: 'none' }}
+                    style={{
+                      transition: 'fill-opacity 150ms ease-out, fill 150ms ease-out',
+                      outline: 'none'
+                    }}
                   />
                 );
               }}

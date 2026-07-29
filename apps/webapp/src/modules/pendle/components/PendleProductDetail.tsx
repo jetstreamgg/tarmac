@@ -10,7 +10,7 @@ import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { HeaderBadge } from '@/components/ui/page-header';
-import { RiskTierMeter } from '@/components/product/RiskMeter';
+import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { PendleDetailChart } from './PendleDetailChart';
 import { PendlePositionCard } from './PendlePositionCard';
@@ -68,9 +68,9 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       id: 'risk',
       icon: <Asterisk className="h-3 w-3" />,
       label: <Trans>Risk profile</Trans>,
-      // Mirrors the marketplace's hardcoded tier (earnProducts.ts
-      // DEFAULT_RISK_TIER, BL-07) so the table and detail page never diverge.
-      value: <RiskTierMeter tier="moderate" />
+      // Tier + copy resolve through the profile registry (RISK_TIER_BY_PROFILE,
+      // BL-07), so the marketplace and this page can't diverge.
+      value: <RiskTierDetailsTrigger profile="fixed" />
     },
     {
       id: 'maturity',
@@ -111,7 +111,8 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
             className="h-12 w-12"
             showChainIcon={false}
           />
-        )
+        ),
+        status: 'success'
       }}
       title={
         <span className="flex flex-col gap-1">
@@ -131,7 +132,13 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
           </span>
         </span>
       }
-      networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
+      networkSelector={
+        <ChainModal
+          chainIds={networks}
+          labelClassName="hidden sm:block"
+          dataTestId="product-detail-network"
+        />
+      }
       chart={<PendleDetailChart market={market} />}
       position={<PendlePositionCard market={market} />}
       details={details}

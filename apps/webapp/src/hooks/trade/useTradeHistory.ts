@@ -5,13 +5,15 @@ import { isCowSupportedChainId, TRADE_CUTOFF_DATES } from '@/utils';
 import { useChainId } from 'wagmi';
 
 export function useTradeHistory({
-  subgraphUrl,
+  indexerUrl,
   chainId: providedChainId,
-  excludeSUsds = false
+  excludeSUsds = false,
+  enabled = true
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   chainId?: number;
   excludeSUsds?: boolean;
+  enabled?: boolean;
 } = {}) {
   const currentChainId = useChainId();
   const chainId = providedChainId ?? currentChainId;
@@ -22,18 +24,18 @@ export function useTradeHistory({
   const hybridTradeHistory = useHybridTradeHistory({
     chainId,
     excludeSUsds,
-    subgraphUrl,
-    enabled: shouldUseHybrid
+    indexerUrl,
+    enabled: enabled && shouldUseHybrid
   });
 
   const cowswapTradeHistory = useCowswapTradeHistory({
-    enabled: !shouldUseHybrid && isCowSupportedChainId(chainId),
+    enabled: enabled && !shouldUseHybrid && isCowSupportedChainId(chainId),
     chainId
   });
 
   const psmTradeHistory = usePsmTradeHistory({
-    subgraphUrl,
-    enabled: !shouldUseHybrid && !isCowSupportedChainId(chainId),
+    indexerUrl,
+    enabled: enabled && !shouldUseHybrid && !isCowSupportedChainId(chainId),
     chainId,
     excludeSUsds
   });
@@ -43,7 +45,15 @@ export function useTradeHistory({
   }
 
   if (isCowSupportedChainId(chainId)) {
-    return cowswapTradeHistory;
+    // The CoW REST feed is a bounded one-shot list, not keyset-paginated;
+    // inert pagination fields keep the branches interchangeable.
+    return {
+      ...cowswapTradeHistory,
+      nextCursor: undefined,
+      hasNextPage: false,
+      fetchNextPage: () => {},
+      isFetchingNextPage: false
+    };
   }
 
   return psmTradeHistory;

@@ -9,6 +9,16 @@ i18n.activate('en');
 // Mutable history fed to the mocked useSavingsHistory — set per test before render.
 const h = vi.hoisted(() => ({ history: [] as unknown[] }));
 
+// Pin the JS breakpoint per test (happy-dom's 1024 viewport = table mode).
+const breakpoint = vi.hoisted(() => ({ isMobile: false }));
+vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
+  return {
+    ...actual,
+    useBreakpointIndex: () => ({ bpi: breakpoint.isMobile ? actual.BP.sm : actual.BP.desktop })
+  };
+});
+
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return { ...actual, useChainId: () => 1 };
@@ -22,7 +32,7 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
-vi.mock('@/modules/app/hooks/useSubgraphUrl', () => ({ useSubgraphUrl: () => 'http://test' }));
+vi.mock('@/modules/app/hooks/useIndexerUrl', () => ({ useIndexerUrl: () => 'http://test' }));
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { TransactionTypeEnum, TOKENS } from '@/hooks';
@@ -90,6 +100,36 @@ describe('SavingsTransactionsTable — action-type filter', () => {
     renderTable('withdraw');
 
     expect(rowCount()).toBe(1);
+    expect(withdrawRows()).toBe(1);
+    expect(supplyRows()).toBe(0);
+  });
+});
+
+describe('SavingsTransactionsTable — mobile cards (M5)', () => {
+  afterEach(() => {
+    breakpoint.isMobile = false;
+    cleanup();
+  });
+
+  it('renders each transaction as a card with action, status, amount and explorer link', () => {
+    breakpoint.isMobile = true;
+    h.history = [supply('0xaaa1')];
+    renderTable();
+
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByText('Supply')).toBeTruthy();
+    expect(screen.getByText('Completed')).toBeTruthy();
+    expect(screen.getByText('Amount')).toBeTruthy();
+    expect(screen.getByText('100')).toBeTruthy();
+    const link = screen.getByRole('link', { name: /View transaction/ });
+    expect(link.getAttribute('href')).toContain('0xaaa1');
+  });
+
+  it('keeps filtering working in card mode', () => {
+    breakpoint.isMobile = true;
+    h.history = [supply('0xaaa1'), withdraw('0xbbb2')];
+    renderTable('withdraw');
+
     expect(withdrawRows()).toBe(1);
     expect(supplyRows()).toBe(0);
   });

@@ -36,6 +36,16 @@ const h = vi.hoisted(() => ({
   claimError: null as Error | null
 }));
 
+// Pin the JS breakpoint per test (happy-dom's 1024 viewport = table mode).
+const breakpoint = vi.hoisted(() => ({ isMobile: false }));
+vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
+  return {
+    ...actual,
+    useBreakpointIndex: () => ({ bpi: breakpoint.isMobile ? actual.BP.sm : actual.BP.desktop })
+  };
+});
+
 // Per-row reads: urn address, vault risk, claimable rewards, prices — all
 // mocked to fixed values so the table logic is what's under test.
 vi.mock('@/hooks', async importOriginal => {
@@ -246,5 +256,43 @@ describe('StakePositionsTable', () => {
 
     fireEvent.click(screen.getAllByTestId('stake-warning-repay-cta')[0]);
     expect(onRemediate).toHaveBeenCalledWith(POSITIONS[0], 'repay');
+  });
+});
+
+describe('StakePositionsTable — mobile cards (M5)', () => {
+  beforeEach(() => {
+    breakpoint.isMobile = true;
+    mockSearchParams = new URLSearchParams();
+    setSearchParamsMock.mockClear();
+    h.vault = { riskLevel: 'LOW' };
+    h.vaultError = null;
+    h.claimError = null;
+  });
+
+  afterEach(() => {
+    breakpoint.isMobile = false;
+    cleanup();
+  });
+
+  it('renders position cards with the column data and keeps tap-to-manage', () => {
+    renderTable();
+
+    expect(screen.queryByRole('table')).toBeNull();
+    // One field-label pair per visible position card.
+    expect(screen.getAllByText('Total staked (SKY)')).toHaveLength(2);
+    expect(screen.getAllByText('Total borrowed (USDS)')).toHaveLength(2);
+
+    fireEvent.click(screen.getByTestId('stake-position-row-0'));
+    expect(mockSearchParams.get('flow')).toBe('manage');
+    expect(mockSearchParams.get('urn_index')).toBe('0');
+  });
+
+  it('keeps the liquidation banner under its matching card', () => {
+    const positions: StakeUserPosition[] = [
+      { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [bark()], lastMutationTimestamp: undefined }
+    ];
+    renderTable(positions);
+
+    expect(screen.getByTestId('stake-position-liquidated-banner')).toBeTruthy();
   });
 });

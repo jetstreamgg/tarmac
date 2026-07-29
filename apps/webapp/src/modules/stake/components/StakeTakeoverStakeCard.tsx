@@ -11,11 +11,20 @@ const NO_VALUE = '–';
 
 function StatItem({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col gap-1">
-      <span className="text-textSecondary flex items-center gap-1 text-sm">{label}</span>
-      <span className="text-text flex items-center gap-1.5 text-sm font-medium">{children}</span>
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:flex md:items-center md:gap-1 md:text-sm md:leading-5">
+        {label}
+      </span>
+      <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px] md:gap-1.5 md:font-sans md:leading-5 md:tracking-normal">
+        {children}
+      </span>
     </div>
   );
+}
+
+/** Mobile-only 32px hairline between the stat columns (comp 1222:19772). */
+function StatDivider() {
+  return <span aria-hidden className="bg-borderPrimary h-8 w-px shrink-0 self-center md:hidden" />;
 }
 
 /**
@@ -70,17 +79,18 @@ export function StakeTakeoverStakeCard({
         }
       />
 
-      <div className="border-textSecondary/10 flex flex-wrap items-start gap-6 border-t pt-4">
+      <div className="border-textSecondary/10 -mt-3 flex items-center gap-4 border-t pt-6 md:mt-0 md:flex-wrap md:items-start md:gap-6 md:pt-4">
         <StatItem label={<Trans>SKY Rewards rate</Trans>}>{rewardsRate ?? NO_VALUE}</StatItem>
+        <StatDivider />
         <StatItem label={<Trans>Est. annual rewards</Trans>}>
-          <span data-testid="stake-takeover-est-rewards" className="flex items-center gap-1.5">
+          <span data-testid="stake-takeover-est-rewards" className="flex items-center gap-1 md:gap-1.5">
             {estAnnualRewards !== null && estAnnualRewards > 0n ? (
               <>
                 {formatBigInt(estAnnualRewards)}
                 <TokenIcon
                   token={{ symbol: rewardSymbol }}
                   width={16}
-                  className="h-4 w-4"
+                  className="h-3 w-3 md:h-4 md:w-4"
                   showChainIcon={false}
                 />
               </>
@@ -90,19 +100,30 @@ export function StakeTakeoverStakeCard({
           </span>
         </StatItem>
         {minStakeToBorrow !== undefined && (
-          <StatItem
-            label={
-              <>
-                <Trans>Min. stake to borrow</Trans>
-                <Info className="h-3.5 w-3.5" aria-hidden />
-              </>
-            }
-          >
-            <span data-testid="stake-takeover-min-stake" className="flex items-center gap-1.5">
-              {formatBigInt(minStakeToBorrow)}
-              <TokenIcon token={{ symbol: 'SKY' }} width={16} className="h-4 w-4" showChainIcon={false} />
-            </span>
-          </StatItem>
+          <>
+            <StatDivider />
+            <StatItem
+              label={
+                <>
+                  <Trans>Min. stake to borrow</Trans>
+                  <Info
+                    className="ml-1 inline h-3 w-3 shrink-0 align-[-2px] md:ml-0 md:h-3.5 md:w-3.5 md:align-baseline"
+                    aria-hidden
+                  />
+                </>
+              }
+            >
+              <span data-testid="stake-takeover-min-stake" className="flex items-center gap-1 md:gap-1.5">
+                {formatBigInt(minStakeToBorrow)}
+                <TokenIcon
+                  token={{ symbol: 'SKY' }}
+                  width={16}
+                  className="h-3 w-3 md:h-4 md:w-4"
+                  showChainIcon={false}
+                />
+              </span>
+            </StatItem>
+          </>
         )}
       </div>
     </StakeTakeoverCard>

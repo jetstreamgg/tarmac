@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useChainId } from 'wagmi';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
+import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { formatBaLabsUrl } from '../helpers';
 
 export interface PriceData {

@@ -18,6 +18,7 @@ import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
+import { PortfolioTransactionsSection } from './PortfolioTransactionsSection';
 import { PortfolioStatistics } from './PortfolioStatistics';
 import { SavingsTvlCallout } from './SavingsTvlCallout';
 import { AllocateStablecoinsBanner } from './AllocateStablecoinsBanner';
@@ -108,7 +109,10 @@ export function ConnectedPortfolio() {
             <Trans>Welcome back, {displayName}</Trans>
           </p>
         )}
-        <div className="flex items-center justify-between gap-4">
+        {/* M6.1 (486:20118): below md the title and the network dropdown stack,
+            the dropdown going full-width 24px under the heading; from md the
+            comp's desktop row (heading left, dropdown right) returns. */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-4">
           <PageHeading size="md">
             <Trans>Your Stablecoin Earnings</Trans>
           </PageHeading>
@@ -119,6 +123,7 @@ export function ConnectedPortfolio() {
             allLabel={allNetworksLabel}
             testId="portfolio-network-filter"
             size="m"
+            triggerClassName="w-full justify-between md:w-auto"
           />
         </div>
       </div>
@@ -150,6 +155,9 @@ export function ConnectedPortfolio() {
         tab={tab}
         onTabChange={setUserTab}
       />
+
+      {/* Portfolio-wide transactions (D8), after the position cards per the comp. */}
+      <PortfolioTransactionsSection />
 
       {/* Matured PT redemption (G6): the marketplace filters matured markets out
           of the supplied view, so this self-hiding section is their only surface. */}

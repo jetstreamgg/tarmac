@@ -11,6 +11,7 @@ import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
 import { Banner } from '@/components/extensible';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
 import { TopNav } from '@/modules/app/shell/TopNav';
+import { MobileNavbar } from '@/modules/app/shell/MobileNavbar';
 import { AppLink } from '@/lib/navigation';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { defaultConfig } from '../../config/default-config';
@@ -56,7 +57,10 @@ export function Layout({
         <ErrorBoundary>
           <div className={shellHeaderClasses(fullWidth)}>
             <div className={shellHeaderContentClasses(fullWidth)}>
-              <AppLink to="/" title="Home page" className="min-w-[96px]">
+              {/* justify-self-start: in the desktop header grid the logo sits
+                  in a 1fr flank; without it the anchor stretches across the
+                  whole track and empty header space becomes clickable. */}
+              <AppLink to="/" title="Home page" className="desktop:justify-self-start min-w-[96px]">
                 {/* Theme-specific logo: dark is the default; light swaps in under
                     [data-theme='light'] (the `light:` variant). */}
                 <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
@@ -74,7 +78,20 @@ export function Layout({
             <AuthWrapper>{children}</AuthWrapper>
           )}
         </ErrorBoundary>
+
+        {/* Clearance for the fixed bottom MobileNavbar (60px pill + 16px top
+            pad + max(16px, safe-area) bottom pad) so the end of the content can
+            scroll out from under it. A spacer instead of padding utilities so
+            it can't collide with the boxed mode's md:pb-2. */}
+        <div
+          aria-hidden
+          className="desktop:hidden h-[calc(92px+env(safe-area-inset-bottom,0px))] w-full shrink-0"
+        />
       </VStack>
+
+      <ErrorBoundary>
+        <MobileNavbar />
+      </ErrorBoundary>
       <Banner />
       {showEnvInfo && (
         <div className="absolute bottom-0 left-2">

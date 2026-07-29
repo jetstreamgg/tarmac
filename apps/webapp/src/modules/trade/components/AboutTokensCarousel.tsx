@@ -6,7 +6,7 @@ import { AboutUsds } from '@/modules/ui/components/AboutUsds';
 import { AboutSky } from '@/modules/ui/components/AboutSky';
 import { AboutSpk } from '@/modules/ui/components/AboutSpk';
 import { AboutSUsds } from '@/modules/ui/components/AboutSUsds';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { BP, useBreakpointIndex } from '@/hooks';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export function AboutTokensCarousel() {

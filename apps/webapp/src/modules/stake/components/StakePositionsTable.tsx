@@ -20,7 +20,9 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { Stake, Liquidated } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { IconboxPosition } from '@/components/ui/iconbox';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RiskMeter } from '@/components/product/RiskMeter';
@@ -28,6 +30,8 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
+import { TransactionCard } from '@/components/product/TransactionCard';
+import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
 import { CellAmount, CellAmountWithToken, CellChevron, CellPosition } from '@/components/ui/table-cells';
 import {
   StakeUserPosition,
@@ -160,6 +164,13 @@ function PositionIdCell({ position }: { position: StakeUserPosition }) {
   );
 }
 
+const stakedCell = (position: StakeUserPosition) => (
+  <CellAmount
+    icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
+    amount={formatStakeAmount(position.skyLocked)}
+  />
+);
+
 const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
   {
     id: 'position',
@@ -171,12 +182,7 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     id: 'staked',
     header: <Trans>Total staked (SKY)</Trans>,
     width: '1.2fr',
-    cell: position => (
-      <CellAmount
-        icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
-        amount={formatStakeAmount(position.skyLocked)}
-      />
-    )
+    cell: stakedCell
   },
   {
     id: 'borrowed',
@@ -207,6 +213,54 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     )
   }
 ];
+
+// Mobile position card (comp 1222:16771 / 1295:21684): 36px position iconbox
+// with a Label 4 title, equal-column CardField pairs split by centered
+// hairlines, and a full-width secondary "View more" footer. The card wrapper
+// still owns the tap-to-manage behavior (the engine wires onRowClick to it);
+// the button simply bubbles into that same handler.
+const renderCard = (position: StakeUserPosition) => (
+  <TransactionCard
+    header={
+      <span
+        className={cn('flex items-center gap-3', isInactiveStakePosition(position) && 'opacity-50')}
+        data-testid={`stake-position-id-${position.index}`}
+      >
+        <IconboxPosition>
+          <Stake width={16} height={16} />
+        </IconboxPosition>
+        <span className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
+          <Trans>Position {position.index + 1}</Trans>
+        </span>
+      </span>
+    }
+    footer={
+      <>
+        <div className="flex w-full flex-col gap-6">
+          <CardFieldRow>
+            <CardField label={<Trans>Total staked (SKY)</Trans>}>{stakedCell(position)}</CardField>
+            <CardFieldDivider />
+            <CardField label={<Trans>Total borrowed (USDS)</Trans>}>
+              <PositionBorrowedCell position={position} />
+            </CardField>
+          </CardFieldRow>
+          <CardFieldRow>
+            <CardField label={<Trans>Liquidation risk</Trans>}>
+              <PositionRiskCell position={position} />
+            </CardField>
+            <CardFieldDivider />
+            <CardField label={<Trans>Claimable rewards</Trans>}>
+              <PositionClaimableCell position={position} />
+            </CardField>
+          </CardFieldRow>
+        </div>
+        <Button variant="secondary" size="m" className="w-full">
+          <Trans>View more</Trans>
+        </Button>
+      </>
+    }
+  />
+);
 
 /**
  * Active-positions table (hi-fi 486:31830 / component 486:32084): one row per
@@ -255,12 +309,18 @@ export function StakePositionsTable({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="text-text text-lg font-medium">
+        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px] md:font-sans md:leading-normal md:tracking-normal">
           <Trans>Active positions</Trans>
         </h3>
         {allPositions.length > 0 && (
           <label className="text-textSecondary flex cursor-pointer items-center gap-2 text-sm">
-            <Trans>Hide inactive positions</Trans>
+            {/* Comp 1222:16843 shortens the label at the phone tier. */}
+            <span className="md:hidden">
+              <Trans>Hide inactive</Trans>
+            </span>
+            <span className="hidden md:inline">
+              <Trans>Hide inactive positions</Trans>
+            </span>
             <Switch
               checked={hideInactive}
               onCheckedChange={setHideInactive}
@@ -295,6 +355,7 @@ export function StakePositionsTable({
           error={error}
           emptyLabel={<Trans>No active positions.</Trans>}
           minWidth={720}
+          renderCard={renderCard}
           renderBelowRow={position => (
             <StakePositionRowBanner
               position={position}

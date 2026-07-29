@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
+import { BP, useBreakpointIndex } from '@/hooks';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
@@ -11,6 +12,34 @@ import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
+
+/**
+ * M6.1 (486:20132): the mobile comp stacks the chart block headline → donut →
+ * legend, while the desktop comp pairs a headline+legend column with the donut
+ * beside it. Below md the column dissolves into the parent flow so all three
+ * blocks order themselves against it; from md it re-forms and DOM order wins,
+ * restoring the pre-M6.1 layout untouched at every tier md and up.
+ *
+ * The seam is md (768 = BP.md), matching `useDonutSize` — a mismatch would give
+ * 768–911 a hybrid (reordered blocks around the desktop 178 donut) matching neither
+ * comp. Callers add their own `md:gap-*` since the skeleton and the loaded card
+ * space their columns differently.
+ *
+ * Caveat: below md this makes DOM order (headline → legend → donut) diverge from
+ * visual order. Harmless today — LegendRow and the recharts sectors are
+ * hover-driven, not focusable — but giving either a keyboard affordance would
+ * create a tab-order trap, and this is the constraint to revisit first.
+ */
+const COLUMN = 'contents md:flex md:flex-col';
+const DONUT = 'order-2 md:order-none';
+const LEGEND = 'order-3 md:order-none';
+
+/** Donut box: 160 on phones per the comp (486:20138), the desktop 178 from md
+ * per the Portfolio card comp (5034:39333 / 1036:189543). */
+function useDonutSize() {
+  const { bpi } = useBreakpointIndex();
+  return bpi < BP.md ? 160 : 178;
+}
 
 export function StablecoinEarningsCard({
   suppliedView,
@@ -47,6 +76,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
   // Hovering a position (legend or chart) focuses the card on it: totals and
   // footer stats collapse to that single position's values.
   const [activeId, setActiveId] = useState<string | null>(null);
+  const donutSize = useDonutSize();
 
   if (isLoading && view.positions.length === 0) return <EarningsSkeleton />;
 
@@ -61,13 +91,16 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
   const segments: DonutSegment[] = view.positions.map(p => ({
     id: p.id,
     color: p.color,
+    hoverColor: p.hoverColor,
     value: p.amountUsd
   }));
 
   return (
     <>
-      <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-8">
+      {/* The comp (5034:39333) insets the chart 80px from the card's right
+          edge (`pr-[80px]` on the row) so the donut doesn't hug the border. */}
+      <div className="mt-6 flex flex-col gap-10 md:gap-8 lg:flex-row lg:items-start lg:justify-between lg:pr-20">
+        <div className={cn(COLUMN, 'md:gap-8')}>
           <EarningsHeadline
             label={<Trans>Total supplied</Trans>}
             value={displayTotal}
@@ -75,7 +108,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
             activeSymbol={activeSymbol}
           />
 
-          <ul className="flex flex-col gap-3" onMouseLeave={() => setActiveId(null)}>
+          <ul className={cn(LEGEND, 'flex flex-col gap-3')} onMouseLeave={() => setActiveId(null)}>
             {view.positions.map(position => {
               const pct = position.share * 100;
               const pctLabel = pct > 0 && pct < 1 ? '<1%' : `${Math.round(pct)}%`;
@@ -97,10 +130,13 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
                 </li>
               );
             })}
+            {/* `ul` only admits `li` children, so the empty state gets one too. */}
             {view.positions.length === 0 && (
-              <Text variant="medium" className="text-textSecondary">
-                <Trans>No supplied positions yet.</Trans>
-              </Text>
+              <li>
+                <Text variant="medium" className="text-textSecondary">
+                  <Trans>No supplied positions yet.</Trans>
+                </Text>
+              </li>
             )}
           </ul>
         </div>
@@ -109,11 +145,12 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
           segments={segments}
           activeId={activeId}
           onActiveChange={setActiveId}
+          size={donutSize}
           renderCenter={id => {
             const position = view.positions.find(p => p.id === id);
             return position ? <DonutCenter symbol={position.tokenSymbol} /> : null;
           }}
-          className="mx-auto shrink-0 lg:mx-0"
+          className={cn(DONUT, 'mx-auto shrink-0 lg:mx-0')}
         />
       </div>
 
@@ -153,6 +190,7 @@ function IdleContent({
 }) {
   // Hovering a token focuses the card on it (mirrors the Supplied tab).
   const [activeId, setActiveId] = useState<string | null>(null);
+  const donutSize = useDonutSize();
 
   if (isLoading && view.tokens.length === 0) return <EarningsSkeleton />;
 
@@ -164,13 +202,15 @@ function IdleContent({
   const segments: DonutSegment[] = view.tokens.map(t => ({
     id: t.symbol,
     color: t.color,
+    hoverColor: t.hoverColor,
     value: t.amountUsd
   }));
 
   return (
     <>
-      <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-8">
+      {/* Same 80px right inset for the chart as the Supplied tab (5034:39333). */}
+      <div className="mt-6 flex flex-col gap-10 md:gap-8 lg:flex-row lg:items-start lg:justify-between lg:pr-20">
+        <div className={cn(COLUMN, 'md:gap-8')}>
           <EarningsHeadline
             label={<Trans>Wallet balance</Trans>}
             value={displayTotal}
@@ -178,7 +218,7 @@ function IdleContent({
             activeSymbol={activeSymbol}
           />
 
-          <ul className="flex flex-col gap-3" onMouseLeave={() => setActiveId(null)}>
+          <ul className={cn(LEGEND, 'flex flex-col gap-3')} onMouseLeave={() => setActiveId(null)}>
             {view.tokens.map(token => (
               <li key={token.symbol}>
                 <LegendRow
@@ -196,10 +236,13 @@ function IdleContent({
                 </LegendRow>
               </li>
             ))}
+            {/* `ul` only admits `li` children, so the empty state gets one too. */}
             {view.tokens.length === 0 && (
-              <Text variant="medium" className="text-textSecondary">
-                <Trans>No idle stablecoins.</Trans>
-              </Text>
+              <li>
+                <Text variant="medium" className="text-textSecondary">
+                  <Trans>No idle stablecoins.</Trans>
+                </Text>
+              </li>
             )}
           </ul>
         </div>
@@ -208,8 +251,9 @@ function IdleContent({
           segments={segments}
           activeId={activeId}
           onActiveChange={setActiveId}
+          size={donutSize}
           renderCenter={id => <DonutCenter symbol={id} />}
-          className="mx-auto shrink-0 lg:mx-0"
+          className={cn(DONUT, 'mx-auto shrink-0 lg:mx-0')}
         />
       </div>
 
@@ -244,21 +288,29 @@ function EarningsHeadline({
   tokenSymbols: string[];
   activeSymbol: string | null;
 }) {
+  const { bpi } = useBreakpointIndex();
+  // Badge cluster: 24 on phones per the comp (486:20137), the desktop 28 from md.
+  const iconSize = bpi < BP.md ? 24 : 28;
+
   return (
     <div className="flex flex-col gap-2">
       <Text variant="medium" className="text-textSecondary">
         {label}
       </Text>
       <div className="flex items-center gap-3">
-        <Heading tag="h2" className="text-text font-circle text-[40px] leading-none">
+        {/* 32/35 on phones per the comp (486:20136), the desktop 40 from md. */}
+        <Heading
+          tag="h2"
+          className="text-text font-circle text-[32px] leading-[35px] md:text-[40px] md:leading-none"
+        >
           {formatUsd(value)}
         </Heading>
-        <IconStack size={28}>
+        <IconStack size={iconSize}>
           {tokenSymbols.map(symbol => (
             <TokenIcon
               key={symbol}
               token={{ symbol }}
-              width={28}
+              width={iconSize}
               showChainIcon={false}
               className={cn(
                 'h-full w-full transition-opacity',
@@ -300,12 +352,15 @@ function LegendRow({
   );
 }
 
-/** The active segment's token, shown centered in the donut hole. */
+/** The active segment's token, shown centered in the donut hole: 16px icon +
+ * Label 4 (Circular 16/18, -0.32 tracking) per the comp (1036:189543). */
 function DonutCenter({ symbol }: { symbol: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
-      <span className="text-text text-sm font-medium">{symbol}</span>
+      <span className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
+        {symbol}
+      </span>
     </div>
   );
 }
@@ -337,19 +392,35 @@ function TodoValue() {
   return <span className="text-textSecondary text-lg font-medium">TODO</span>;
 }
 
+/**
+ * Mirrors the loaded card's per-tier order so nothing jumps as data lands. Keeps
+ * its own `md:gap-6` (the loaded card uses gap-8) so spacing from md up stays as
+ * it was before the reorder. `w-72 max-w-full` likewise preserves the bar's
+ * 288px intrinsic width — which is what sizes the column on desktop, since a
+ * percentage width contributes nothing to max-content — while still fitting a
+ * 360 phone.
+ */
 function EarningsSkeleton() {
   return (
-    <div className="mt-6 flex animate-pulse flex-col gap-8 lg:flex-row lg:justify-between">
-      <div className="flex flex-col gap-6">
-        <div className="bg-surface h-4 w-28 rounded" />
-        <div className="bg-surface h-10 w-72 rounded" />
-        <div className="flex flex-col gap-3">
+    <div className="mt-6 flex animate-pulse flex-col gap-10 md:gap-8 lg:flex-row lg:justify-between">
+      <div className={cn(COLUMN, 'md:gap-6')}>
+        <div className="flex flex-col gap-6">
+          <div className="bg-surface h-4 w-28 rounded" />
+          <div className="bg-surface h-10 w-72 max-w-full rounded" />
+        </div>
+        <div className={cn(LEGEND, 'flex flex-col gap-3')}>
           <div className="bg-surface h-4 w-40 rounded" />
           <div className="bg-surface h-4 w-36 rounded" />
           <div className="bg-surface h-4 w-32 rounded" />
         </div>
       </div>
-      <div className="bg-surface mx-auto h-[320px] w-[320px] shrink-0 rounded-full lg:mx-0" />
+      <div
+        className={cn(
+          DONUT,
+          'bg-surface mx-auto h-40 w-40 shrink-0 rounded-full md:h-[178px] md:w-[178px] lg:mx-0'
+        )}
+        data-testid="earnings-skeleton-donut"
+      />
     </div>
   );
 }

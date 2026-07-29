@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { Table, TableBody } from '@/components/ui/table';
+import { paginate } from '@/components/product/paginate';
 import { CustomPagination } from '../CustomPagination';
 import { LoadingErrorWrapper } from '../LoadingErrorWrapper';
 import { HistoryTableProps, SortDirection } from './types';
@@ -22,12 +23,13 @@ function HistoryTableUiComponents({
   typeColumn = false,
   typeHeader,
   statusColumn = false,
-  dataTestId
+  dataTestId,
+  onPageChange: onExternalPageChange
 }: HistoryTableProps) {
   const { address } = useConnection();
   const chainId = useChainId();
   const [sortDirection, setSortDirection] = useState<SortDirection>(SortDirection.desc);
-  const [startIndex, setStartIndex] = useState(0);
+  const [page, setPage] = useState(1);
 
   const sortedHistory = useMemo(
     () =>
@@ -45,17 +47,21 @@ function HistoryTableUiComponents({
     [history, sortDirection]
   );
 
-  const rowsToShow = useMemo(
-    () => sortedHistory.slice(startIndex, startIndex + itemsPerPage),
-    [sortedHistory, startIndex]
+  // paginate clamps out-of-range pages, so a row set that shrinks under a
+  // stale page (e.g. wallet switch re-keys the hook) still yields a real
+  // slice instead of the "no transactions" state with data present.
+  const { rows: rowsToShow, totalPages } = useMemo(
+    () => paginate(sortedHistory, itemsPerPage, page),
+    [sortedHistory, itemsPerPage, page]
   );
 
   const toggleSortDirection = () => {
     setSortDirection(prevValue => (prevValue === SortDirection.asc ? SortDirection.desc : SortDirection.asc));
   };
 
-  const onPageChange = (page: number) => {
-    setStartIndex((page - 1) * itemsPerPage);
+  const onPageChange = (nextPage: number) => {
+    setPage(nextPage);
+    onExternalPageChange?.(nextPage, totalPages);
   };
 
   const shouldShowError = !isLoading && (!address || (address && !rowsToShow.length));
