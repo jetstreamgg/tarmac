@@ -464,9 +464,14 @@ function DetailHeaderValue({
   return (
     <span
       data-testid="chart-detail-value"
+      // Desktop is Heading 2 (44/48, Circular Medium — Figma 859:35718, whose
+      // header block measures 22px of label over a 48px figure); the phone tier
+      // keeps its own Heading 5 from M6.3.
       className={cn(
-        'text-text text-2xl',
-        mobile ? 'font-circle leading-[26px] font-medium tracking-[-0.48px]' : 'font-semibold lg:text-[28px]'
+        'text-text font-circle font-medium',
+        mobile
+          ? 'text-2xl leading-[26px] tracking-[-0.48px]'
+          : 'text-[44px] leading-[48px] tracking-[-0.88px]'
       )}
     >
       {formatted}
@@ -486,7 +491,8 @@ function ChartContent({
   tooltipLabel,
   tokenSymbols,
   chartHeight,
-  color
+  color,
+  isDetail = false
 }: {
   data: Data[];
   isLarge: boolean;
@@ -500,10 +506,16 @@ function ChartContent({
   tokenSymbols?: string[];
   chartHeight?: number;
   color?: string;
+  /** detail variant: no date axis under the plot, so it runs to the card floor. */
+  isDetail?: boolean;
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
   const dimMaskId = useId();
+
+  // components/charts/bg-chart2 unless the caller themes the series (e.g. the
+  // Stake destination chart's bg-chart1 indigo).
+  const seriesColor = color ?? 'var(--color-chart2)';
 
   // Single source of truth for the plot height so the loading skeleton
   // reserves the same space as the rendered chart (no layout shift on load).
@@ -526,21 +538,17 @@ function ChartContent({
       <ResponsiveContainer width={'100%'} height={resolvedHeight}>
         <AreaChart
           data={data}
-          margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isLarge ? 22 : 0, left: 0 }}
+          margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isDetail ? 0 : isLarge ? 22 : 0, left: 0 }}
         >
           <defs>
+            {/* The area wash is one hue fading to nothing at the plot floor
+                (Figma 859:35718). It used to end at 75% — and, on the default
+                teal, to fade into a *different* hue (#00A167 green) — which is
+                what read as the wrong colour and the short gradient in APP-432
+                item 9. */}
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="100%" gradientUnits="objectBoundingBox">
-              {color ? (
-                <>
-                  <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-                  <stop offset="75%" stopColor={color} stopOpacity="0" />
-                </>
-              ) : (
-                <>
-                  <stop offset="5%" stopColor="#1DD9BA" stopOpacity={0.25} />
-                  <stop offset="75%" stopColor="#00A167" stopOpacity="0" />
-                </>
-              )}
+              <stop offset="0%" stopColor={seriesColor} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={seriesColor} stopOpacity="0" />
             </linearGradient>
           </defs>
           <HoverDimMask id={dimMaskId} />
@@ -565,7 +573,7 @@ function ChartContent({
 
           <Area
             dataKey="value"
-            stroke={color ?? '#1DD9BA'}
+            stroke={seriesColor}
             strokeWidth={2.5}
             type="monotone"
             fill={`url(#${gradientId})`}
@@ -573,9 +581,9 @@ function ChartContent({
             // and tooltip render outside the masked layer, so they stay lit.
             mask={`url(#${dimMaskId})`}
             label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
-            dot={<CustomizedDot data={data} stroke={color ?? '#1DD9BA'} />}
+            dot={<CustomizedDot data={data} stroke={seriesColor} />}
             // Ringed hover dot at the cursor point (Figma 5273:12162).
-            activeDot={{ r: 5, fill: color ?? '#1DD9BA', stroke: 'var(--color-container)', strokeWidth: 3 }}
+            activeDot={{ r: 5, fill: seriesColor, stroke: 'var(--color-container)', strokeWidth: 3 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -653,13 +661,20 @@ export function Chart({
     <>
       <Card
         data-testid={dataTestId}
+        // Desktop detail is the comp's 32px-padded block (859:35718: header at
+        // 32/32, a 760-wide plot, 32px under it); the phone tier and the
+        // default variant keep their own full-bleed plot inside a p-0 card.
         className={cn(
-          'relative overflow-hidden p-0',
-          isDetail ? (isMobileDetail ? 'pb-5' : 'pb-3') : 'bg-cardLight h-[288px] lg:h-[220px] lg:p-0'
+          'relative overflow-hidden',
+          isDetail
+            ? isMobileDetail
+              ? 'p-0 pb-5'
+              : 'p-8'
+            : 'bg-cardLight h-[288px] p-0 lg:h-[220px] lg:p-0'
         )}
         ref={containerRef}
       >
-        <CardHeader className="p-5 pb-0">
+        <CardHeader className={cn(isDetail && !isMobileDetail ? 'p-0' : 'p-5 pb-0')}>
           {isMobileDetail ? (
             <div className="flex w-full flex-col gap-5">
               {metrics && activeMetric !== undefined && onMetricChange && (
@@ -687,11 +702,11 @@ export function Chart({
             </div>
           ) : isDetail ? (
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
+                {/* Body 5 on fg-secondary, flush against the figure (859:35718);
+                    it was 13px on the selectActive periwinkle. */}
                 {label && (
-                  <span className="text-selectActive light:text-textSecondary text-[13px] leading-none">
-                    {label}
-                  </span>
+                  <span className="text-fgSecondary font-graphik text-sm leading-[22px]">{label}</span>
                 )}
                 <DetailHeaderValue
                   data={data}
@@ -753,7 +768,7 @@ export function Chart({
         </CardHeader>
         <div
           data-testid={dataTestId ? `${dataTestId}-plot` : undefined}
-          className={cn(isMobileDetail && 'px-5')}
+          className={cn(isMobileDetail && 'px-5', isDetail && !isMobileDetail && 'pt-2')}
         >
           <ChartContent
             data={data}
@@ -764,7 +779,8 @@ export function Chart({
             activeTimeframe={activeTimeframe}
             isLoading={isLoading}
             error={error}
-            chartHeight={isDetail ? (isMobileDetail ? 203 : 280) : undefined}
+            isDetail={isDetail}
+            chartHeight={isDetail ? (isMobileDetail ? 203 : 263) : undefined}
             tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
             tokenSymbols={tokenSymbols}
             color={color}
