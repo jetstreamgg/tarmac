@@ -144,6 +144,11 @@ export function useNetworkFee({
   });
 
   const data = useMemo((): NetworkFeeData | undefined => {
+    // `keepPreviousData` hands back the last result whenever this observer has none of
+    // its own, and a disabled query has none — so without this the row goes on quoting
+    // the fee for an amount the user has just cleared. Held results are for *key*
+    // changes while an estimate is still wanted, not for the flow going quiet.
+    if (!enabled) return undefined;
     if (!gasData || feePerGas === undefined) return undefined;
 
     // Which figure the row shows follows the user's preference; what we simulated does not.
@@ -174,7 +179,7 @@ export function useNetworkFee({
       sequentialFormatted: sequentialUsd === undefined ? undefined : formatUsd(sequentialUsd),
       batchSaving: computeBatchSaving(gasData.sequentialGas, gasData.batchGasSteadyState)
     };
-  }, [gasData, feePerGas, pricesData, shouldUseBatch]);
+  }, [enabled, gasData, feePerGas, pricesData, shouldUseBatch]);
 
   return {
     data,
