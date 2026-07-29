@@ -84,14 +84,22 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   const flow = useTransactionFlow({ calls, chainId, shouldUseBatch: true, ...txCallbacks });
 
-  // Disabled until there's something to send AND no in-scope source is still preparing
-  // (e.g. Merkl proofs mid-load) — so we never claim a partial subset of the scope.
+  // Disabled until there's something to send, no in-scope source is still preparing
+  // (e.g. Merkl proofs mid-load, so we never claim a partial subset of the scope),
+  // AND the flow itself is prepared.
+  //
+  // That last one matters: the sequential flow's `execute` needs a simulated
+  // request and SILENTLY RETURNS (console.log only) without one. Confirming
+  // before the simulation lands therefore walks the modal to the wallet screen
+  // having dispatched nothing at all — reachable by clicking a row's Claim and
+  // the modal CTA straight after a page load. The savings and vault bodies
+  // already gate on their engine's `prepared` the same way.
   const hasRewardsIn = (source: ClaimSource) => rewards.some(reward => reward.source === source);
   const preparing =
     (hasRewardsIn('merkl') && !merklCalls.prepared) ||
     (hasRewardsIn('sky-rewards') && !skyCalls.prepared) ||
     (hasRewardsIn('stake') && !stakeCalls.prepared);
-  const disabled = calls.length === 0 || preparing;
+  const disabled = calls.length === 0 || preparing || !flow.prepared;
 
   // Memoized so the useModalEntryBody sync effect has stable deps — an inline
   // element here recreates every render and loops updateModalContent →

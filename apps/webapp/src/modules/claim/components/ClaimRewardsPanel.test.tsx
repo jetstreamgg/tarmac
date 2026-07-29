@@ -12,6 +12,7 @@ const h = vi.hoisted(() => ({
   sky: [] as ClaimableReward[],
   stake: [] as ClaimableReward[],
   flowCalls: [] as unknown[],
+  flowPrepared: true,
   entry: undefined as { confirmDisabled: boolean } | undefined,
   screenContents: [] as unknown[],
   restakeSeen: false
@@ -87,7 +88,7 @@ vi.mock('@/utils', () => ({
 vi.mock('@/hooks', () => ({
   useTransactionFlow: (params: { calls: unknown[] }) => {
     h.flowCalls = params.calls;
-    return { execute: vi.fn(), prepared: true };
+    return { execute: vi.fn(), prepared: h.flowPrepared };
   }
 }));
 
@@ -132,6 +133,7 @@ describe('ClaimRewardsPanel', () => {
     h.sky = [];
     h.stake = [];
     h.flowCalls = [];
+    h.flowPrepared = true;
     h.entry = undefined;
     h.screenContents = [];
     h.restakeSeen = false;
@@ -163,6 +165,19 @@ describe('ClaimRewardsPanel', () => {
     // The redesigned modal (Figma 1036:190105) shows amounts only — the scope
     // is the selection, so there is nothing to uncheck.
     expect(screen.queryByTestId('claim-reward-checkbox')).toBeNull();
+  });
+
+  it('keeps confirm disabled until the flow itself is prepared', () => {
+    // The sequential flow's `execute` silently returns without a simulated
+    // request, so an early confirm would walk the modal to the wallet screen
+    // having dispatched nothing — clicking a row's Claim and the CTA straight
+    // after a page load used to hit exactly that.
+    h.merkl = [reward('merkl', '0xa', 'MORPHO')];
+    h.flowPrepared = false;
+    renderPanel({ kind: 'merkl-token', tokenAddress: '0xa' });
+
+    expect(h.flowCalls).toHaveLength(1);
+    expect(h.entry?.confirmDisabled).toBe(true);
   });
 
   it('renders a single row for a single-reward scope', () => {
