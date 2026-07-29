@@ -80,7 +80,14 @@ export function initSentry(): void {
       // handled, 0 affected users, the message is itself user guidance and the
       // pending request still resolves. Global match because the auto-reconnect
       // path fires with no `flow` tag, like WEBAPP-5N above (WEBAPP-5H).
-      /Existing connection is pending/
+      /Existing connection is pending/,
+      // MetaMask multichain SDK probes transport.getActiveSession() and the
+      // DefaultTransport stub intentionally throws to signal "no session support";
+      // it escapes as an unhandled rejection from a setTimeout inside the SDK.
+      // thirdPartyErrorFilterIntegration misses it because Sentry's own setTimeout
+      // instrumentation wrapper puts a first-party frame on top of the stack.
+      // Purely SDK-internal, 0 affected users (WEBAPP-9R).
+      /getActiveSession is purposely not implemented for the DefaultTransport/
     ],
     integrations: [
       Sentry.thirdPartyErrorFilterIntegration({
