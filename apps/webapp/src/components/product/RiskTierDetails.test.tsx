@@ -55,9 +55,9 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
 
     const segments = screen.getAllByTestId('risk-details-segment');
     expect(segments).toHaveLength(3);
-    expect(segments[0].className).toContain('bg-statusSuccessSolid');
-    expect(segments[1].className).toContain('bg-bgTertiary');
-    expect(segments[2].className).toContain('bg-bgTertiary');
+    expect(segments[0].className).toContain('bg-statusSuccess');
+    expect(segments[1].className).toContain('bg-fgQuaternary');
+    expect(segments[2].className).toContain('bg-fgQuaternary');
   });
 
   it('renders the Flagship vault profile with its multi-asset exposure, with two warning segments', () => {
@@ -73,7 +73,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     const segments = screen.getAllByTestId('risk-details-segment');
     expect(segments[0].className).toContain('bg-statusWarning');
     expect(segments[1].className).toContain('bg-statusWarning');
-    expect(segments[2].className).toContain('bg-bgTertiary');
+    expect(segments[2].className).toContain('bg-fgQuaternary');
   });
 
   it('renders the Risk Capital vault profile as Aggressive — same provider, different assessment', () => {
@@ -113,7 +113,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(screen.getByText('Liquidity based')).toBeTruthy();
 
     const segments = screen.getAllByTestId('risk-details-segment');
-    segments.forEach(segment => expect(segment.className).toContain('bg-error'));
+    segments.forEach(segment => expect(segment.className).toContain('bg-statusError'));
   });
 });
 
