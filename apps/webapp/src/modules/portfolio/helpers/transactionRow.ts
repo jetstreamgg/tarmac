@@ -69,8 +69,8 @@ const NO_VALUE_TYPES = new Set<TransactionTypeEnum>([
 
 const absBigInt = (v: bigint): bigint => (v < 0n ? -v : v);
 
-// Pendle rows display the market name as `symbol` ("Fixed Yield"), which is
-// not a token — resolve the market's underlying (sUSDS) for the icon, the
+// Pendle rows carry the PT ticker as `symbol` ("PT-sUSDS"), which has no
+// token image — resolve the market's underlying (sUSDS) for the icon, the
 // same token the /earn/fixed product page uses (APP-426 item 6).
 const PENDLE_UNDERLYING_BY_MARKET: Record<string, string> = Object.fromEntries(
   PENDLE_MARKETS.map(m => [m.marketAddress.toLowerCase(), m.underlyingSymbol])

@@ -101,12 +101,14 @@ export function PendleTransactionsTable({ market }: { market: PendleMarketConfig
       action: tx.action,
       amount: formatNumber(tx.ptAmount, { compact: true }),
       usd: `$${formatNumber(Math.abs(tx.valueUsd), { maxDecimals: 2 })}`,
-      marketName: market.name,
+      // Amounts are PT-denominated; `market.name` is the product display name
+      // ("Fixed Yield"), so derive the ticker from the underlying.
+      marketName: `PT-${market.underlyingSymbol}`,
       time: format(new Date(tx.timestamp), 'MMM d, yyyy, h:mm a'),
       txHashLabel: formatAddress(tx.txHash, 6, 4),
       txHref: getEtherscanLink(mainnet.id, tx.txHash, 'tx')
     }));
-  }, [history, market.name]);
+  }, [history, market.underlyingSymbol]);
 
   return (
     <ProductTransactionsTable
