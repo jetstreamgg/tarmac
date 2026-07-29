@@ -57,8 +57,7 @@ export function TokensComposition({
   const share = (value: number) => (sum > 0 ? (value / sum) * 100 : 0);
   const fillOf = (segment: CompositionSegment) =>
     hoveredId === segment.id ? (segment.hoverColor ?? segment.color) : segment.color;
-  const dimmed = (segment: CompositionSegment) =>
-    hoveredId !== null && hoveredId !== segment.id ? 0.5 : 1;
+  const dimmed = (segment: CompositionSegment) => (hoveredId !== null && hoveredId !== segment.id ? 0.5 : 1);
 
   // Cumulative spans: pill i runs from its segment's start to its end, plus a
   // small tuck under pill i-1; earlier pills stack on top so their caps (with

@@ -48,7 +48,7 @@ export function FilterSelect({
         className={cn(
           buttonVariants({ variant: 'dropdown', size: size === 'm' ? 'dropdownM' : 'dropdownS' }),
           'h-auto w-auto bg-transparent [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180',
-          '[&>span]:flex [&>span]:items-center [&>span]:line-clamp-none',
+          '[&>span]:line-clamp-none [&>span]:flex [&>span]:items-center',
           size === 'm' ? '[&>svg]:size-4' : '[&>svg]:size-3',
           triggerClassName
         )}

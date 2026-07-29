@@ -666,11 +666,7 @@ export function Chart({
         // default variant keep their own full-bleed plot inside a p-0 card.
         className={cn(
           'relative overflow-hidden',
-          isDetail
-            ? isMobileDetail
-              ? 'p-0 pb-5'
-              : 'p-8'
-            : 'bg-cardLight h-[288px] p-0 lg:h-[220px] lg:p-0'
+          isDetail ? (isMobileDetail ? 'p-0 pb-5' : 'p-8') : 'bg-cardLight h-[288px] p-0 lg:h-[220px] lg:p-0'
         )}
         ref={containerRef}
       >
