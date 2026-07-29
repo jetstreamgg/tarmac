@@ -5,7 +5,7 @@ import { Trans } from '@lingui/react/macro';
 import { useSavingsHistory, getTokenDecimals, TransactionTypeEnum } from '@/hooks';
 import { formatBigInt, isL2ChainId, getEtherscanLink, formatAddress } from '@/utils';
 import { absBigInt } from '@/modules/utils/math';
-import { SavingsSupply, ArrowDown } from '@/modules/icons';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import {
@@ -31,13 +31,7 @@ type SavingsTxRow = {
 // Single USDS Amount column for now (no historical share data — see APP-300).
 const actionCell = (row: SavingsTxRow) => (
   <CellAction
-    icon={
-      row.isSupply ? (
-        <SavingsSupply width={16} height={15} />
-      ) : (
-        <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
-      )
-    }
+    icon={row.isSupply ? <ArrowDownToLine className="size-4" /> : <ArrowUpToLine className="size-4" />}
     label={row.isSupply ? <Trans>Supply</Trans> : <Trans>Withdraw</Trans>}
     sublabel={row.timeAgo}
   />

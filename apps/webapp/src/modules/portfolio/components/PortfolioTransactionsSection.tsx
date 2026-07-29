@@ -15,7 +15,8 @@ import { formatAddress, getChainIcon } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Heading } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ConvertArrows, ArrowDown, SavingsSupply } from '@/modules/icons';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
+import { ConvertArrows } from '@/modules/icons';
 import { FilterSelect } from '@/components/product/FilterSelect';
 import {
   ProductTransactionsTable,
@@ -61,11 +62,7 @@ function productName(module: ModuleEnum): string {
 
 function actionIcon(row: PortfolioTxRow): ReactNode {
   if (row.module === ModuleEnum.TRADE) return <ConvertArrows width={16} height={16} />;
-  return row.positive === false ? (
-    <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
-  ) : (
-    <SavingsSupply width={16} height={15} />
-  );
+  return row.positive === false ? <ArrowUpToLine className="size-4" /> : <ArrowDownToLine className="size-4" />;
 }
 
 const tokenIcon = (symbol: string, width = 12) => (
