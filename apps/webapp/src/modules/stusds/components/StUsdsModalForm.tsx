@@ -83,9 +83,13 @@ export function StUsdsModalForm({
   const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch, enabled: amountReady });
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
 
-  const bundleState = useBundleFeeState(calls.length, networkFee);
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
   const disabled =
     !amountReady ||

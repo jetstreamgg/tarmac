@@ -124,14 +124,14 @@ export function SavingsModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee } = useNetworkFee({
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: isBatch,
     enabled: amountReady
   });
 
-  const bundleState = useBundleFeeState(calls.length, networkFee);
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / step labels / wallet summary / toast

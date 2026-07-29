@@ -93,9 +93,13 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee } = useNetworkFee({ calls, chainId, shouldUseBatch: !!flow.isBatch });
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: !!flow.isBatch
+  });
 
-  const bundleState = useBundleFeeState(calls.length, networkFee);
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
   // Disabled until there's something to send AND no selected source is still preparing
   // (e.g. Merkl proofs mid-load) — so we never claim a partial subset of the selection.

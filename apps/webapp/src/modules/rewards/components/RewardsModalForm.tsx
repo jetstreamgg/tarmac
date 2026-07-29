@@ -87,9 +87,13 @@ export function RewardsModalForm({
   const { execute, steps, prepared, calls, isBatch } = useRewardsLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee } = useNetworkFee({ calls, shouldUseBatch: isBatch, enabled: amountReady });
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
 
-  const bundleState = useBundleFeeState(calls.length, networkFee);
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
   const disabled = !amountReady || !prepared;
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that

@@ -153,9 +153,13 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
   });
 
   // Read-only: the row shows a dash until this resolves, and neither CTA waits on it.
-  const { data: networkFee } = useNetworkFee({ calls, chainId, shouldUseBatch: isBatch });
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch
+  });
 
-  const bundleState = useBundleFeeState(calls.length, networkFee);
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
   const claimDisabled = selected.length === 0 || !plainPrepared || plainLoading;
   const restakeDisabled = !restakePrepared || restakeLoading;

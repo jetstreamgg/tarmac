@@ -294,14 +294,14 @@ export function PendleModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee } = useNetworkFee({
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
     calls: writeHook.calls ?? [],
     chainId,
     shouldUseBatch: !!writeHook.isBatch,
     enabled: amountReady
   });
 
-  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee);
+  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee, !!networkFeeError);
 
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
 
