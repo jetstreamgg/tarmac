@@ -9,20 +9,10 @@
  * to the DS treatments (12px token icons, the chain icon, the savings-green %).
  */
 
-/** One labelled grid cell: a single value, or a before→after delta (Figma "x → y"). */
-export type SavingsModalCell = {
-  label: string;
-  /** Symbol for the 12px token icon drawn before the value(s). */
-  token?: string;
-  /** Draw the 12px network (chain) icon before the value. */
-  network?: boolean;
-  /** Render the value's trailing "%" through the savings green gradient. */
-  rateAccent?: boolean;
-  /** Draw the 12px trending-up glyph before the value (review Est. earnings). */
-  trend?: boolean;
-  /** Draw the value's token icon inside the ringed Iconbox / Status (review Product). */
-  productIcon?: boolean;
-} & ({ kind: 'single'; value: string } | { kind: 'delta'; before: string; after: string });
+import type { ModalGridCell } from '@/components/product/ModalGridCells';
+
+/** One labelled grid cell — the shared modal-grid cell model (single or before→after delta). */
+export type SavingsModalCell = ModalGridCell;
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type SavingsModalGridRow = SavingsModalCell[];
@@ -75,7 +65,7 @@ export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalGr
   const networkFee: SavingsModalCell = { kind: 'single', label: 'Network fee', value: input.networkFee };
   return [
     [
-      { kind: 'single', label: 'Savings rate', value: input.savingsRate, rateAccent: true },
+      { kind: 'single', label: 'Savings rate', value: input.savingsRate, rateAccent: 'savings' },
       { kind: 'single', label: 'Network', value: input.network, network: true }
     ],
     [
@@ -127,7 +117,7 @@ export type WithdrawModalRowInput = {
 export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsModalGridRow[] {
   return [
     [
-      { kind: 'single', label: 'Savings rate', value: input.savingsRate, rateAccent: true },
+      { kind: 'single', label: 'Savings rate', value: input.savingsRate, rateAccent: 'savings' },
       { kind: 'single', label: 'Network', value: input.network, network: true }
     ],
     [
@@ -178,8 +168,8 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
       { kind: 'single', label: 'Est. earnings (1Y)', value: input.estEarnings, trend: true }
     ],
     [
-      { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: true },
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: true }
+      { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: 'default' },
+      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' }
     ],
     [
       { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
@@ -213,10 +203,10 @@ export function buildWithdrawReviewRows(input: WithdrawReviewRowInput): SavingsM
   return [
     [
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: true }
+      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' }
     ],
     [
-      { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: true },
+      { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: 'default' },
       { kind: 'single', label: 'Network', value: input.network, network: true }
     ],
     [{ kind: 'single', label: 'Network fee', value: input.networkFee }]

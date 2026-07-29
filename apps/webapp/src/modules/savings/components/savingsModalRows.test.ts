@@ -60,7 +60,7 @@ describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry
 
   it('threads the single-value cells with their presentation hints', () => {
     const cells = byLabel(buildSupplyModalRows(INPUT));
-    expect(cells['Savings rate']).toMatchObject({ kind: 'single', value: '6.50%', rateAccent: true });
+    expect(cells['Savings rate']).toMatchObject({ kind: 'single', value: '6.50%', rateAccent: 'savings' });
     expect(cells['Network']).toMatchObject({ kind: 'single', value: 'Ethereum', network: true });
     expect(cells['Network fee']).toMatchObject({ kind: 'single', value: '–' });
     expect(cells['Supply']).toMatchObject({ token: 'USDS' });
@@ -96,7 +96,7 @@ describe('buildWithdrawModalRows — "Withdraw from Sky Savings" entry grid', ()
 
   it('keeps Savings rate single (a withdrawal never moves the rate) and deltas the position', () => {
     const cells = byLabel(buildWithdrawModalRows(WITHDRAW_INPUT));
-    expect(cells['Savings rate']).toMatchObject({ kind: 'single', value: '6.50%', rateAccent: true });
+    expect(cells['Savings rate']).toMatchObject({ kind: 'single', value: '6.50%', rateAccent: 'savings' });
     expect(cells['Supply']).toMatchObject({ kind: 'delta', before: '100', after: '90' });
     expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'delta', before: '–', after: '–' });
   });
@@ -129,8 +129,8 @@ describe('buildSupplyReviewRows — Figma 859:36154 "Review supply" grid', () =>
     const cells = byLabel(rows);
     expect(cells["You'll receive"]).toMatchObject({ value: '908.93 sUSDS', token: 'sUSDS' });
     expect(cells['Est. earnings (1Y)']).toMatchObject({ value: '–', trend: true });
-    expect(cells['Product']).toMatchObject({ value: 'Sky Savings', token: 'sUSDS', productIcon: true });
-    expect(cells['Rate']).toMatchObject({ value: '3.60%', rateAccent: true });
+    expect(cells['Product']).toMatchObject({ value: 'Sky Savings', token: 'sUSDS', productIcon: 'default' });
+    expect(cells['Rate']).toMatchObject({ value: '3.60%', rateAccent: 'savings' });
     expect(cells['Withdrawal']).toMatchObject({ value: 'Anytime' });
     expect(cells['Network']).toMatchObject({ value: 'Ethereum', network: true });
   });

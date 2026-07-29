@@ -3,13 +3,11 @@ import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { ArrowRight } from 'lucide-react';
 import { formatBigInt, formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
-import { ModalSummaryGrid, type ModalSummaryCell } from '@/components/product/ModalSummaryGrid';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useChainImage } from '@/widgets';
+import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
+import { toGridCells } from '@/components/product/ModalGridCells';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
@@ -18,8 +16,7 @@ import {
   buildSupplyModalRows,
   buildSupplyReviewRows,
   buildWithdrawModalRows,
-  buildWithdrawReviewRows,
-  type SavingsModalCell
+  buildWithdrawReviewRows
 } from './savingsModalRows';
 
 // `SavingsModalPreset` now lives with the shared form model; re-exported here so the
@@ -31,102 +28,6 @@ const USDS_DECIMALS = 18;
 
 const formatUsds = (value: bigint) =>
   formatNumber(parseFloat(formatUnits(value, USDS_DECIMALS)), { maxDecimals: 2 });
-
-/** The savings-green treatment on a value's trailing "%" (Figma gradient-savings, per WalletDrawerAssets). */
-function RatePercent({ value }: { value: string }) {
-  if (!value.endsWith('%')) return <>{value}</>;
-  return (
-    <>
-      {value.slice(0, -1)}
-      <span className="bg-gradient-to-b from-[#02c2a1] to-[#9fde88] bg-clip-text text-transparent">%</span>
-    </>
-  );
-}
-
-/** 12px trending-up glyph (Figma Icons/General/trending-up) in the system-success green. */
-function TrendIcon() {
-  return (
-    <svg viewBox="0 0 12 12" className="text-statusSuccessSolid size-3 shrink-0" fill="none" aria-hidden>
-      <path
-        d="M8 3.5h3v3M11 3.5 6.75 7.75l-2.5-2.5L1 8.5"
-        stroke="currentColor"
-        strokeWidth="1.33"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-/** 12px chain icon for the Network cells. */
-function NetworkIcon() {
-  const chainId = useChainId();
-  const src = useChainImage(chainId);
-  if (!src) return null;
-  return <img src={src} alt="" className="size-3 shrink-0 rounded-full" />;
-}
-
-function CellToken({ symbol, ringed = false }: { symbol: string; ringed?: boolean }) {
-  const icon = (
-    <TokenIcon
-      token={{ symbol }}
-      className={ringed ? 'size-full' : 'size-3 shrink-0'}
-      width={12}
-      showChainIcon={false}
-    />
-  );
-  // Iconbox / Status (Figma 859:36188): 12px border-tertiary ring, 2px inset.
-  if (ringed) {
-    return (
-      <span className="border-borderTertiary flex size-3 shrink-0 items-center justify-center rounded-full border p-px">
-        {icon}
-      </span>
-    );
-  }
-  return icon;
-}
-
-/** Renders one grid cell's value: optional icon, then a single value or the before→after delta. */
-function CellValue({ cell }: { cell: SavingsModalCell }) {
-  const icon = cell.network ? (
-    <NetworkIcon />
-  ) : cell.trend ? (
-    <TrendIcon />
-  ) : cell.token ? (
-    <CellToken symbol={cell.token} ringed={cell.productIcon} />
-  ) : null;
-
-  if (cell.kind === 'single') {
-    return (
-      <span className="flex items-center gap-1">
-        {icon}
-        <span>{cell.rateAccent ? <RatePercent value={cell.value} /> : cell.value}</span>
-      </span>
-    );
-  }
-  return (
-    <span className="flex flex-wrap items-center gap-1.5">
-      <span className="flex items-center gap-1">
-        {icon}
-        <span>{cell.before}</span>
-      </span>
-      <ArrowRight className="text-fgPrimary size-3 shrink-0" aria-hidden />
-      <span className="flex items-center gap-1">
-        {icon}
-        <span>{cell.after}</span>
-      </span>
-    </span>
-  );
-}
-
-const toGridCells = (rows: SavingsModalCell[][]): ModalSummaryCell[][] =>
-  rows.map(row =>
-    row.map(cell => ({
-      label: cell.label,
-      testId: `savings-modal-row-${cell.label}`,
-      content: <CellValue cell={cell} />
-    }))
-  );
 
 /**
  * Editable body for the "Supply to / Withdraw from Sky Savings" modals (Figma
@@ -256,7 +157,7 @@ export function SavingsModalForm({
     return (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`savings-modal-${flow}-review`}>
         {transactionScreenContent}
-        <ModalSummaryGrid rows={toGridCells(reviewRows)} dividerClassName="h-6" />
+        <ModalSummaryGrid rows={toGridCells(reviewRows, 'savings-modal-row')} dividerClassName="h-6" />
       </div>
     );
   }, [isSupply, youReceive, apyDisplay, networkName, originSymbol, flow, transactionScreenContent]);
@@ -311,7 +212,7 @@ export function SavingsModalForm({
         maxTestId="savings-modal-amount-max"
       />
 
-      <ModalSummaryGrid rows={toGridCells(rows)} dividerClassName="h-8" />
+      <ModalSummaryGrid rows={toGridCells(rows, 'savings-modal-row')} dividerClassName="h-8" />
     </div>
   );
 
