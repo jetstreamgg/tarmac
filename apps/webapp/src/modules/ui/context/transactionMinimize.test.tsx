@@ -139,12 +139,17 @@ function Harness({
 }) {
   const ctx = useTransaction();
   const started = useRef(false);
+  // Report the LATEST context value on every render: engine callbacks are
+  // bound to the session generation that rendered them, so tests must capture
+  // them post-launch, the way real engines do.
+  useEffect(() => {
+    onReady(ctx);
+  });
   useEffect(() => {
     if (started.current) return;
     started.current = true;
     ctx.launch(config);
-    onReady(ctx);
-  }, [ctx, onReady, config]);
+  }, [ctx, config]);
   return null;
 }
 

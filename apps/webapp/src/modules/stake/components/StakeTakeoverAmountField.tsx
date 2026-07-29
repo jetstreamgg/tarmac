@@ -6,12 +6,15 @@ import { buttonVariants } from '@/components/ui/button';
 import { formatAmountForInput, parseAmountText, sanitizeAmountText } from '../lib/amountInput';
 
 const PERCENT_CHIPS = [25, 50, 100] as const;
+// Borrow caps the top chip at 75%: staging the exact max puts the position on
+// the liquidation boundary, where fee accrual alone tips it underwater.
+export const BORROW_PERCENT_CHIPS = [25, 50, 75] as const;
 
 /**
  * Takeover amount row (hi-fi 486:32657): "Amount" label with a right-aligned
- * balance/max line, a big icon+numeric input, and 25/50/100% chips. Text is
- * held locally while typing; programmatic amounts (chips, slider) re-render the
- * field through the exact re-parseable formatter.
+ * balance/max line, a big icon+numeric input, and percent chips (25/50/100
+ * unless overridden). Text is held locally while typing; programmatic amounts
+ * (chips, slider) re-render the field through the exact re-parseable formatter.
  */
 export function StakeTakeoverAmountField({
   tokenSymbol,
@@ -20,6 +23,7 @@ export function StakeTakeoverAmountField({
   label,
   topRight,
   onPercentClick,
+  percentChips = PERCENT_CHIPS,
   disabled = false,
   error,
   maxDisplayDecimals,
@@ -32,6 +36,7 @@ export function StakeTakeoverAmountField({
   label?: ReactNode;
   topRight?: ReactNode;
   onPercentClick?: (percent: number) => void;
+  percentChips?: readonly number[];
   disabled?: boolean;
   error?: string;
   /** Display-only decimal cap for programmatic amounts (exact-max staging). */
@@ -89,7 +94,7 @@ export function StakeTakeoverAmountField({
         </div>
         {onPercentClick && (
           <div className="flex shrink-0 items-center gap-1 md:gap-1.5">
-            {PERCENT_CHIPS.map(percent => (
+            {percentChips.map(percent => (
               // Design-system Button / Mini (Figma 5051:168712); the base
               // recipe's solid disabled fill is swapped back for the field's
               // subtler faded look. Mobile steps down to the comp's 32px chip

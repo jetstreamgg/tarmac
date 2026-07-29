@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { StUsdsProviderType, TransactionTypeEnum, useStUsdsHistory } from '@/hooks';
 import { formatBigInt, getEtherscanLink, formatAddress } from '@/utils';
 import { absBigInt } from '@/modules/utils/math';
-import { SavingsSupply, ArrowDown } from '@/modules/icons';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import {
   ProductTransactionsTable,
@@ -29,13 +29,7 @@ type StUsdsTxRow = {
 // history hook merges native module events and Curve pool swaps.
 const actionCell = (row: StUsdsTxRow, sublabel?: string) => (
   <CellAction
-    icon={
-      row.isSupply ? (
-        <SavingsSupply width={16} height={15} />
-      ) : (
-        <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
-      )
-    }
+    icon={row.isSupply ? <ArrowDownToLine className="size-4" /> : <ArrowUpToLine className="size-4" />}
     label={
       <span className="flex items-center gap-1.5">
         {row.isSupply ? <Trans>Supply</Trans> : <Trans>Withdrawal</Trans>}

@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, type ReactNode } from 'react';
+import { StrictMode, useEffect, useRef, useState, type ReactNode } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -64,12 +64,29 @@ function Harness({
   const api = useTransaction();
   const { launch, txCallbacks } = api;
   const started = useRef(false);
+  // The config's closures must drive the LIVE session's callbacks: real
+  // engines capture the current value when they fire, and callbacks are bound
+  // to the session generation that rendered them — a config baked with the
+  // pre-launch object would be stale. Delegate through a ref instead.
+  const cbRef = useRef(txCallbacks);
+  useEffect(() => {
+    cbRef.current = txCallbacks;
+  });
+  const [liveCb] = useState<ReturnType<typeof useTransaction>['txCallbacks']>(() => ({
+    onMutate: () => cbRef.current.onMutate(),
+    onStart: hash => cbRef.current.onStart(hash),
+    onSuccess: hash => cbRef.current.onSuccess(hash),
+    onError: (error, hash) => cbRef.current.onError(error, hash)
+  }));
+  // Report the latest api on every render (post-launch callbacks included).
+  useEffect(() => {
+    onReady(api);
+  });
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    launch(build(txCallbacks));
-    onReady(api);
-  }, [launch, txCallbacks, build, onReady, api]);
+    launch(build(liveCb));
+  }, [launch, build, liveCb]);
   return null;
 }
 

@@ -176,6 +176,169 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(result.current.currentCallIndex).toBe(0); // reset on completion
   });
 
+  // APP-417. `useSimulateContract` hands back a NEW object whenever it refetches —
+  // on window focus as the user returns from the wallet, or (on a repeat flow) as a
+  // cache hit is followed by a background refetch. The supply's own hash is not
+  // recorded until it MINES, so `!transactionHashes[currentIndex]` left the whole
+  // submit→mine window open and every such refetch re-fired writeContract: a second
+  // supply tx in the wallet, plus a second onMutate that pushed the modal's step
+  // counter past the last step, rendering "Supply" completed before it mined.
+  it('dispatches the second call ONCE even as the simulation keeps re-resolving mid-flight', () => {
+    const onSuccess = vi.fn();
+    const calls: Call[] = [APPROVE, SUPPLY];
+
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onSuccess }));
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(1); // approve
+
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+
+    // Approve mines → the flow advances and auto-executes the supply.
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(result.current.currentCallIndex).toBe(1);
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + supply
+
+    // The supply is now in the wallet, unsigned: no hash, no receipt. The mocked
+    // useSimulateContract returns a fresh object on every render, so these rerenders
+    // reproduce the refetch churn that used to re-fire the write.
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+    });
+    rerender();
+    rerender();
+    rerender();
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // still just the two
+
+    // And the supply still completes normally once its receipt lands.
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith('0xsupply');
+  });
+
+  it('a second flow on the same mounted hook dispatches each call once', () => {
+    const onSuccess = vi.fn();
+    const calls: Call[] = [APPROVE, SUPPLY];
+
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onSuccess }));
+
+    const runFlow = (approveHash: `0x${string}`, supplyHash: `0x${string}`) => {
+      act(() => result.current.execute());
+      act(() => {
+        wagmi.mutationHash = approveHash;
+        wagmi.onWriteSuccess?.(approveHash);
+      });
+      rerender();
+      act(() => {
+        wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+      });
+      rerender();
+      // supply auto-executed; let the simulation churn while it is unsigned
+      act(() => {
+        wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      });
+      rerender();
+      rerender();
+      act(() => {
+        wagmi.mutationHash = supplyHash;
+        wagmi.onWriteSuccess?.(supplyHash);
+      });
+      rerender();
+      act(() => {
+        wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+      });
+      rerender();
+    };
+
+    runFlow('0xapprove1', '0xsupply1');
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+
+    // Reopening the modal and supplying again — the latch must have been released
+    // on completion, and must still hold for this flow's own second call.
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+    });
+    rerender();
+    runFlow('0xapprove2', '0xsupply2');
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(4); // 2 per flow, not 3
+    expect(onSuccess).toHaveBeenCalledTimes(2);
+    expect(onSuccess).toHaveBeenLastCalledWith('0xsupply2');
+  });
+
+  // Retrying a wallet rejection mid-sequence. `handleRetry` calls the config's
+  // onConfirm, which is this execute(). By then the approve has mined and the live
+  // `calls` has shrunk to [supply], so bounds-checking currentIndex (1) against it
+  // swallowed the retry entirely and the modal's "Try again" did nothing.
+  it('a retry after the wallet rejects the second call re-dispatches it', () => {
+    const onError = vi.fn();
+    let calls: Call[] = [APPROVE, SUPPLY];
+
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onError }));
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(result.current.currentCallIndex).toBe(1);
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + supply
+
+    // The allowance landed, so the engine's live `calls` drops the approve.
+    calls = [SUPPLY];
+    // The user rejects the supply in their wallet.
+    act(() => {
+      wagmi.mutationHash = undefined;
+      wagmi.onWriteError?.(new Error('User rejected the request'));
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    // "Try again" must actually hand the supply back to the wallet.
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+
+    // And the retried supply still completes the sequence exactly once.
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+    expect(result.current.currentCallIndex).toBe(0); // sequence completed and reset
+  });
+
   it('an error on the first (approve) receipt does not fire onSuccess', () => {
     const onSuccess = vi.fn();
     const onError = vi.fn();

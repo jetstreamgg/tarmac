@@ -56,12 +56,17 @@ i18n.activate('en');
 function Harness({ steps, onReady }: { steps: string[]; onReady: (cb: TxCallbacks) => void }) {
   const { launch, txCallbacks } = useTransaction();
   const started = useRef(false);
+  // Report the LATEST callbacks on every render: they are bound to the session
+  // generation that rendered them, so tests must capture them post-launch, the
+  // way real engines do.
+  useEffect(() => {
+    onReady(txCallbacks);
+  });
   useEffect(() => {
     if (started.current) return;
     started.current = true;
     launch({ title: 'Supply', steps, onConfirm: () => {} });
-    onReady(txCallbacks);
-  }, [launch, txCallbacks, onReady, steps]);
+  }, [launch, steps]);
   return null;
 }
 

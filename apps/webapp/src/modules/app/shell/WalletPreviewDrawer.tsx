@@ -8,6 +8,16 @@ import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { WalletPreviewHeader } from './WalletPreviewHeader';
 import { WalletDrawerTabs } from './WalletDrawerTabs';
 
+/**
+ * The frosted Sheet scrim is the mobile *modal* recipe (Figma 1292:63542), and
+ * the wallet preview isn't one: its comp (Figma 1030:138710) has no overlay
+ * node at all — the page reads sharp and undimmed right up to the panel edge.
+ * The panel self-frosts (backdrop-blur-sm over an opaque/glass fill), so it
+ * stays legible without a scrim. Kept as an element, transparent, so Radix
+ * still gets its pointer blocker and dismiss target.
+ */
+const NO_SCRIM = 'bg-transparent backdrop-blur-none';
+
 interface WalletPreviewDrawerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -55,6 +65,7 @@ export function WalletPreviewDrawer({
           side="bottom"
           data-testid="wallet-drawer"
           aria-describedby={undefined}
+          overlayClassName={NO_SCRIM}
           hideCloseButton
           className="bg-containerDark border-borderPrimary inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] h-auto max-h-[calc(100dvh-92px)] gap-0 overflow-hidden rounded-[28px] border p-0 backdrop-blur-sm"
           onOpenAutoFocus={e => e.preventDefault()}
@@ -84,6 +95,7 @@ export function WalletPreviewDrawer({
         side="right"
         data-testid="wallet-drawer"
         aria-describedby={undefined}
+        overlayClassName={NO_SCRIM}
         className="border-glassBorder bg-glassSurface inset-y-3 right-3 h-auto w-[calc(100%-24px)] flex-row gap-0 overflow-hidden rounded-[28px] border p-0 backdrop-blur-sm sm:max-w-[538px]"
         closeButtonClassName="hidden"
         onOpenAutoFocus={e => e.preventDefault()}

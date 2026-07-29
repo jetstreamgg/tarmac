@@ -6,7 +6,6 @@ import { Failure } from './Failure';
 import { RewardsModule } from './RewardsModule';
 import { LinkExternal } from './LinkExternal';
 import { Metrics } from './Metrics';
-import { Reward } from './Reward';
 import { Rewards } from './Rewards';
 import { RewardsEmpty } from './RewardsEmpty';
 import { Savings } from './Savings';
@@ -57,7 +56,6 @@ export {
   RewardsModule,
   LinkExternal,
   Metrics,
-  Reward,
   Rewards,
   RewardsEmpty,
   Savings,

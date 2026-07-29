@@ -36,6 +36,7 @@ const row = (o: Partial<PortfolioTxRow>): PortfolioTxRow => ({
   chainId: 1,
   action: 'Savings Supply',
   symbol: 'USDS',
+  iconSymbol: 'USDS',
   amount: '1,000.00',
   usd: '$1,000.00',
   status: 'completed',

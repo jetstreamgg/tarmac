@@ -378,19 +378,28 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('→');
   });
 
-  it('borrow: the 100% chip at a binding debt ceiling keeps Confirm enabled (boundary)', () => {
-    // Ceiling headroom (40k) below the collateral max (3M/10 = 300k) → the
-    // 100% chip stages exactly the headroom. Equality must stay valid: with
-    // the old strict < gate, Confirm went dead with no error at the very max
-    // the card itself advertised.
+  it('borrow: staging exactly the ceiling headroom keeps Confirm enabled (boundary)', () => {
+    // Ceiling headroom (40k) below the collateral max (3M/10 = 300k).
+    // Equality must stay valid: with the old strict < gate, Confirm went dead
+    // with no error at the very max the card itself advertised.
     h.debtCeiling = 40_000n * WAD;
     renderSheet({ borrowCard: 'borrow' });
 
-    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-100'));
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '40000' } });
 
     expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
     expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
     expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('borrow: the top chip is 75% and stages three quarters of the max', () => {
+    h.debtCeiling = 40_000n * WAD;
+    renderSheet({ borrowCard: 'borrow' });
+
+    expect(screen.queryByTestId('stake-manage-borrow-amount-percent-100')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-75'));
+
+    expect(h.launchParams?.usdsToBorrow).toBe(30_000n * WAD);
   });
 
   it('borrow: above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {

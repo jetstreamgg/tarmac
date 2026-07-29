@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { mainnet } from 'wagmi/chains';
 import { usePendleMarketHistory, PendleHistoryAction, type PendleMarketConfig } from '@/hooks';
 import { formatNumber, getEtherscanLink, formatAddress } from '@/utils';
-import { SavingsSupply, ArrowDown } from '@/modules/icons';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import {
   ProductTransactionsTable,
   ProductTransactionColumn
@@ -34,9 +34,9 @@ const actionCell = (row: PendleTxRow, sublabel?: string) => (
   <CellAction
     icon={
       row.action === PendleHistoryAction.BUY_PT ? (
-        <SavingsSupply width={16} height={15} />
+        <ArrowDownToLine className="size-4" />
       ) : (
-        <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
+        <ArrowUpToLine className="size-4" />
       )
     }
     label={ACTION_LABEL[row.action]}
@@ -101,12 +101,14 @@ export function PendleTransactionsTable({ market }: { market: PendleMarketConfig
       action: tx.action,
       amount: formatNumber(tx.ptAmount, { compact: true }),
       usd: `$${formatNumber(Math.abs(tx.valueUsd), { maxDecimals: 2 })}`,
-      marketName: market.name,
+      // Amounts are PT-denominated; `market.name` is the product display name
+      // ("Fixed Yield"), so derive the ticker from the underlying.
+      marketName: `PT-${market.underlyingSymbol}`,
       time: format(new Date(tx.timestamp), 'MMM d, yyyy, h:mm a'),
       txHashLabel: formatAddress(tx.txHash, 6, 4),
       txHref: getEtherscanLink(mainnet.id, tx.txHash, 'tx')
     }));
-  }, [history, market.name]);
+  }, [history, market.underlyingSymbol]);
 
   return (
     <ProductTransactionsTable
