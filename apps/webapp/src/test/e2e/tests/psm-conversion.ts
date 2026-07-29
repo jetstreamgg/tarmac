@@ -324,7 +324,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await expect(isolatedPage.getByText('An error occurred while converting your funds.')).toBeVisible({
         timeout: 60_000
       });
-      await expect(isolatedPage.getByRole('button', { name: 'Retry' })).toBeVisible();
+      await expect(isolatedPage.getByRole('button', { name: 'Try again' })).toBeVisible();
 
       // Back returns to the review screen with the breakdown intact
       await isolatedPage.getByRole('button', { name: 'Back', exact: true }).last().click();
