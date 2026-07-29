@@ -1,11 +1,11 @@
 import { ReactNode } from 'react';
-import { Globe } from 'lucide-react';
+import { Globe, Vault } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex, type EarnRiskTier } from '@/hooks';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
 import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
-import { ConvertArrows, Vaults } from '@/modules/icons';
+import { Convert } from '@/modules/icons';
 
 export type EarnFilterOption = FilterOption;
 
@@ -40,7 +40,13 @@ export type EarnTableFiltersProps = {
  * draws them on the desktop toolbar too — they were mobile-only until APP-432
  * item 2). Below md (486:22051) the dropdowns stack full-width under the chips
  * row; from md the single-row toolbar stays as C2 shipped it.
+ *
+ * The comp tints the glyphs fg-brand-primary against the white label, and
+ * pairs each filter with the mark its domain already uses elsewhere in the
+ * app: the globe, the Convert nav mark for stablecoins, and the Vault mark the
+ * TVL detail rows carry for products.
  */
+const FILTER_ICON = 'text-fgBrand shrink-0';
 export function EarnTableFilters({
   selectedRiskTiers,
   onRiskTierToggle,
@@ -97,7 +103,7 @@ export function EarnTableFilters({
           onChange={onNetworkChange}
           allLabel={
             <span className="flex items-center gap-1.5">
-              <Globe className="h-3 w-3 shrink-0" />
+              <Globe className={cn('h-3 w-3', FILTER_ICON)} />
               <Trans>All networks</Trans>
             </span>
           }
@@ -110,7 +116,7 @@ export function EarnTableFilters({
           onChange={onStablecoinChange}
           allLabel={
             <span className="flex items-center gap-1.5">
-              <ConvertArrows boxSize={12} className="shrink-0" />
+              <Convert boxSize={12} className={FILTER_ICON} />
               <Trans>All stablecoins</Trans>
             </span>
           }
@@ -123,7 +129,7 @@ export function EarnTableFilters({
           onChange={onProductChange}
           allLabel={
             <span className="flex items-center gap-1.5">
-              <Vaults boxSize={12} className="shrink-0" />
+              <Vault className={cn('h-3 w-3', FILTER_ICON)} />
               <Trans>All products</Trans>
             </span>
           }
