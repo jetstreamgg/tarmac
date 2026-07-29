@@ -153,6 +153,10 @@
      statusSuccessBorder and statusSuccessSolid are theme-invariant. */
   --color-bgSecondary: rgba(188, 182, 239, 0.05);
   --color-bgTertiary: rgba(188, 182, 239, 0.1);
+  /* components/badges/bg-primary — the action-iconbox disc. Coincides with
+     bg-secondary in dark but diverges in light (periwinkle vs white glass),
+     so it needs its own token. */
+  --color-badgePrimary: rgba(188, 182, 239, 0.05);
   --color-statusSuccess: #40e3c8;
   --color-statusSuccessBg: rgba(2, 194, 161, 0.1);
   --color-statusSuccessBorder: rgba(2, 194, 161, 0.2);
@@ -582,6 +586,7 @@
        theme-invariant in the DS and stay on the @theme default. */
     --color-bgSecondary: #ffffff99; /* colors/bg/bg-secondary */
     --color-bgTertiary: #ffffff66; /* colors/bg/bg-tertiary */
+    --color-badgePrimary: #9ca0e54d; /* components/badges/bg-primary */
     --color-statusSuccess: #00a186; /* components/status/fg-success */
     --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */
     --color-statusWarning: #dd6102; /* components/status/fg-warning */
