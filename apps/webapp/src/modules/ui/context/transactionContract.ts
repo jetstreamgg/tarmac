@@ -61,6 +61,13 @@ export type TransactionConfig = {
   title: string;
   /** Title for the wallet/status screen (e.g. "Confirm in the wallet"); defaults to `title`. */
   transactionTitle?: string;
+  /**
+   * Title for the review stage of a three-screen flow (e.g. "Review supply");
+   * defaults to `title`. A config carrying both `entry` and `transactionContent`
+   * runs entry → review → transaction; entry-only and review-only configs keep
+   * their two screens.
+   */
+  reviewTitle?: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
   /**

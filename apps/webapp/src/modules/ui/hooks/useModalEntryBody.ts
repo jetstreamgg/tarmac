@@ -12,6 +12,8 @@ import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 type ModalEntryBodyLive = {
   /** Disables the shared modal's confirm button (amount zero / over balance / nothing selected). */
   confirmDisabled: boolean;
+  /** Read-only breakdown for a three-screen flow's review stage. */
+  transactionContent?: ReactNode;
   /** Compact amount summary rendered on the wallet/status screen. */
   transactionScreenContent?: ReactNode;
   /** Steps for multi-step flows (labels or `{ label, tokenSymbol }` chips). */
@@ -46,6 +48,7 @@ export function useModalEntryBody({
   sessionId,
   execute,
   confirmDisabled,
+  transactionContent,
   transactionScreenContent,
   steps,
   toast
@@ -67,13 +70,26 @@ export function useModalEntryBody({
   // loop on provider re-renders.
   useEffect(() => {
     updateModalContent(sessionId, {
+      // `confirmDisabled` gates the entry screen via the entry descriptor and the
+      // review stage via the top-level field — same value, both screens.
       entry: { confirmDisabled },
+      confirmDisabled,
       onConfirm,
+      ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
       ...(toast !== undefined ? { toast } : {})
     });
-  }, [sessionId, confirmDisabled, transactionScreenContent, steps, toast, onConfirm, updateModalContent]);
+  }, [
+    sessionId,
+    confirmDisabled,
+    transactionContent,
+    transactionScreenContent,
+    steps,
+    toast,
+    onConfirm,
+    updateModalContent
+  ]);
 
   // Display inside the dialog when its entry slot is mounted; otherwise render
   // inline in the hidden host (keeps the body — and its engine hook — mounted).

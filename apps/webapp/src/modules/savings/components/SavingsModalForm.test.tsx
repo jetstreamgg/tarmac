@@ -165,7 +165,7 @@ const lastToast = () => {
   return withToast.at(-1)?.[1].toast;
 };
 
-const FIGMA_ROWS = ['Savings rate', 'Supply', '1Y est. earnings', 'Network', 'Network fee'];
+const FIGMA_ROWS = ['Savings rate', 'Network', 'Supply', 'Est. earnings (1Y)', 'Network fee'];
 
 describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   beforeEach(() => {

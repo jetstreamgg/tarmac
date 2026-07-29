@@ -515,6 +515,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             onMinimize={minimize}
             title={activeConfig.title}
             transactionTitle={activeConfig.transactionTitle}
+            reviewTitle={activeConfig.reviewTitle}
             subtitles={activeConfig.subtitles}
             transactionContent={activeConfig.transactionContent}
             transactionScreenContent={activeConfig.transactionScreenContent}

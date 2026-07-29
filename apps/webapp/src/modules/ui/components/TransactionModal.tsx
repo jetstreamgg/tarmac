@@ -24,6 +24,7 @@ import { useChainId } from 'wagmi';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
+import { cn } from '@/lib/cn';
 
 // The step-list shape lives with its derivation; re-exported so the contract and
 // launch hooks keep importing it from here.
@@ -58,6 +59,12 @@ export type TransactionModalProps = {
   title: string;
   /** Title for the wallet/status screen; falls back to `title` when omitted. */
   transactionTitle?: string;
+  /**
+   * Title for the read-only review stage of a three-screen flow (e.g. "Review
+   * supply"); falls back to `title`. Only read when `entry` and
+   * `transactionContent` are both present.
+   */
+  reviewTitle?: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
   /**
@@ -112,6 +119,7 @@ export function TransactionModal({
   onMinimize,
   title,
   transactionTitle,
+  reviewTitle,
   subtitles,
   transactionContent,
   transactionScreenContent,
@@ -134,6 +142,10 @@ export function TransactionModal({
   // read-only review. Initialised per mount (the provider remounts the modal on
   // each launch, so the initializer sees the launch's `entry`).
   const firstStep: TransactionModalStep = entry ? 'entry' : 'review';
+  // A config carrying BOTH an entry and review content is the three-screen flow
+  // (Figma 859:36036 → 859:36154 → 859:36214): entry → review → transaction.
+  // Entry-only and review-only configs keep their two screens.
+  const hasReviewStage = !!(entry && transactionContent);
   const [step, setStep] = useState<TransactionModalStep>(firstStep);
   const [contentHeight, setContentHeight] = useState<number | undefined>();
   const reviewRef = useRef<HTMLDivElement>(null);
@@ -179,20 +191,31 @@ export function TransactionModal({
   };
   const subtitle = isFirstScreen ? subtitles?.review : subtitleByStatus[txStatus];
 
-  // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet");
-  // falls back to `title` so single-title configs render unchanged on both screens.
-  const displayTitle = isTransaction ? (transactionTitle ?? title) : title;
+  // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
+  // and the three-screen review stage its own (e.g. "Review supply"); both fall back
+  // to `title` so single-title configs render unchanged on every screen.
+  const displayTitle = isTransaction
+    ? (transactionTitle ?? title)
+    : isReview && hasReviewStage
+      ? (reviewTitle ?? title)
+      : title;
 
   // Stable callback ref so registering the entry slot doesn't thrash on re-render.
   const slotRef = useCallback((el: HTMLDivElement | null) => registerEntrySlot?.(el), [registerEntrySlot]);
 
   const handleConfirm = useCallback(() => {
+    // In the three-screen flow the entry's confirm only advances to the review —
+    // nothing fires on-chain until the review's confirm.
+    if (isEntry && hasReviewStage) {
+      setStep('review');
+      return;
+    }
     if (reviewRef.current) {
       setContentHeight(reviewRef.current.offsetHeight);
     }
     setStep('transaction');
     onConfirm();
-  }, [onConfirm]);
+  }, [isEntry, hasReviewStage, onConfirm]);
 
   const handleRetry = useCallback(() => {
     if (onRetry) {
@@ -229,17 +252,19 @@ export function TransactionModal({
     setContentHeight(undefined);
   }, [onBack, firstStep]);
 
-  // Header back arrow (Figma chrome on every screen): on the first screen it
-  // closes (there's nothing before it — the inputs live on the page/entry); on
-  // the wallet/status screen it returns to the first screen. Disabled mid-flight,
-  // like the close button.
+  // Header back arrow (Figma chrome on every screen): on the flow's first screen
+  // it closes (there's nothing before it — the inputs live on the page/entry); on
+  // a three-screen flow's review it returns to the entry; on the wallet/status
+  // screen it returns to the first screen. Disabled mid-flight, like close.
   const handleHeaderBack = useCallback(() => {
-    if (isFirstScreen) {
+    if (isReview && hasReviewStage) {
+      setStep('entry');
+    } else if (isFirstScreen) {
       handleClose();
     } else {
       handleBack();
     }
-  }, [isFirstScreen, handleClose, handleBack]);
+  }, [isReview, hasReviewStage, isFirstScreen, handleClose, handleBack]);
 
   return (
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
@@ -250,26 +275,35 @@ export function TransactionModal({
         // every tier — the mobile comp ships the same bg-overlay +
         // blur-full scrim under the same near-transparent card, and the
         // SheetOverlay carries that frost. Radius only at md+; the mobile
-        // bottom Sheet keeps its own top-only rounding.
-        className="bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]"
+        // bottom Sheet keeps its own top-only rounding. 610px wide with 48px
+        // section gaps on the first screens per the comp; the wallet/status
+        // screen spaces its sections with per-section padding instead.
+        className={cn(
+          'bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
+          !isTransaction && 'sm:gap-12'
+        )}
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph. */}
-            <Button
-              variant="secondary"
-              size="iconM"
-              aria-label={t`Back`}
-              onClick={handleHeaderBack}
-              disabled={isTransacting}
-              data-testid="transaction-modal-back"
-            >
-              <ArrowLeft className="size-4" />
-            </Button>
-            {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking. */}
-            <ResponsiveModalTitle className="text-text font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
+            {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph.
+                The flow's initial screen has no back arrow (Figma 859:36036 draws
+                title + close only); later screens gain it. */}
+            {step !== firstStep && (
+              <Button
+                variant="secondary"
+                size="iconM"
+                aria-label={t`Back`}
+                onClick={handleHeaderBack}
+                disabled={isTransacting}
+                data-testid="transaction-modal-back"
+              >
+                <ArrowLeft className="size-4" />
+              </Button>
+            )}
+            {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking, fg-primary. */}
+            <ResponsiveModalTitle className="text-fgPrimary font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
               {displayTitle}
             </ResponsiveModalTitle>
             {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
@@ -292,7 +326,7 @@ export function TransactionModal({
 
         <div
           ref={isFirstScreen ? reviewRef : undefined}
-          className="flex flex-col gap-4"
+          className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}
           style={isTransaction ? { minHeight: contentHeight } : undefined}
         >
           {/* Subtitle */}
@@ -322,17 +356,16 @@ export function TransactionModal({
             </div>
           )}
 
-          {/* Read-only review breakdown (review path) — first screen only. Owns no
-              hook, so it can unmount on the transaction screen. */}
-          {!entry && isFirstScreen && transactionContent && (
-            <div className="text-text">{transactionContent}</div>
-          )}
+          {/* Read-only review breakdown — the review-path first screen, or the
+              three-screen flow's middle stage. Owns no hook, so it can unmount on
+              the transaction screen. */}
+          {isReview && transactionContent && <div className="text-text">{transactionContent}</div>}
 
           {/* Compact summary on the wallet/status screen (Figma "Confirm in the
               wallet"): a relabelled amount header in place of the full breakdown. */}
-          {/* py-4 + the column gaps ≈ the comp's 40px breathing room around the hero (1036:208089). */}
+          {/* pt-4/pb-6 + the column gaps = the comp's 40px breathing room around the hero (1310:130564). */}
           {isTransaction && transactionScreenBody && (
-            <div className="text-text py-4">{transactionScreenBody}</div>
+            <div className="text-text pt-4 pb-6">{transactionScreenBody}</div>
           )}
 
           {/* Step list (DS Steps pattern) — wallet/status screen only, drawn BELOW
@@ -341,8 +374,10 @@ export function TransactionModal({
               "Try again") come from the derivation in ./transactionStepsModel. */}
           {hasMultipleSteps && isTransaction && (
             <>
-              {transactionScreenBody && <div className="border-selectActive border-t" />}
+              {/* Figma 859:36229: the steps section splits from the hero on a border-primary hairline, 24px above the header. */}
+              {transactionScreenBody && <div className="border-borderPrimary border-t" />}
               <Steps
+                className="pt-2"
                 bundled={isBundled}
                 badge={txStatus === TxStatus.INITIALIZED ? <Trans>Confirm in the wallet</Trans> : undefined}
               >
@@ -384,7 +419,10 @@ export function TransactionModal({
             </>
           )}
 
-          <div className="grow" />
+          {/* Pushes the status row/buttons to the held height on the wallet screen.
+              A zero-height child still consumes two column gaps, so it must not
+              render on the first screens (their card hugs content, Figma 859:36036). */}
+          {isTransaction && <div className="grow" />}
 
           {/* Bottom section: animates on step/status change */}
           <AnimatePresence mode="wait" initial={false}>
