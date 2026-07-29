@@ -77,7 +77,13 @@ export function BorrowUtilizationBlock() {
         {isLoading ? <Skeleton className="h-8 w-24" /> : error ? NO_VALUE : `${utilization.toFixed(1)}%`}
       </div>
 
-      <Progress value={isLoading ? 0 : Math.min(100, utilization)} className="mb-5 h-1.5 md:mb-4 md:h-2" />
+      {/* Flat fg-brand-primary fill per 486:31955 — the DS Progress default is
+          the slider brand gradient, which this comp does not use. */}
+      <Progress
+        value={isLoading ? 0 : Math.min(100, utilization)}
+        indicatorClassName={UTILIZED_COLOR}
+        className="mb-5 h-1.5 md:mb-4 md:h-2"
+      />
 
       <div className="flex flex-col md:gap-3">
         <LegendRow
