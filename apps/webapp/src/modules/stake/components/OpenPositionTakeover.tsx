@@ -95,18 +95,23 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     chainId
   });
 
-  // Debounced amounts drive simulation, approval sizing and calldata — the
+  // Debounced amounts drive approval sizing, calldata and validation — the
   // legacy widget's exact arrangement (typing doesn't thrash the RPC reads).
   const debouncedSkyToLock = useDebounce(state.skyToLock);
   const debouncedUsdsToBorrow = useDebounce(state.usdsToBorrow);
 
+  // Live simulation for the slider and display surfaces: useSimulatedVault's
+  // per-amount work is pure math over cached chain reads, so it can track the
+  // raw amounts frame-for-frame while the RPC-bound seams stay debounced.
+  const { data: simulatedVault } = useSimulatedVault(state.skyToLock, state.usdsToBorrow, 0n, ilkName);
+  // Same simulation with no new debt — feeds the slider's floor math.
+  const { data: vaultNoBorrow } = useSimulatedVault(state.skyToLock, 0n, 0n, ilkName);
+  // Debounced simulation for validation, so errors wait for typing to settle.
   const {
-    data: simulatedVault,
+    data: debouncedVault,
     isLoading: simulationLoading,
     error: simulationError
   } = useSimulatedVault(debouncedSkyToLock, debouncedUsdsToBorrow, 0n, ilkName);
-  // Same simulation with no new debt — feeds the slider's floor math.
-  const { data: vaultNoBorrow } = useSimulatedVault(debouncedSkyToLock, 0n, 0n, ilkName);
   const { data: collateralData } = useCollateralData(ilkName);
 
   // A-Q2 (recorded on APP-311): the baseline takeover has no reward picker; the
@@ -160,9 +165,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       : availableBorrowFromDebtCeiling;
 
   const minCollateralNotMet =
-    simulatedVault?.collateralAmount !== undefined &&
-    simulatedVault?.minCollateralForDust !== undefined &&
-    simulatedVault.collateralAmount <= simulatedVault.minCollateralForDust;
+    debouncedVault?.collateralAmount !== undefined &&
+    debouncedVault?.minCollateralForDust !== undefined &&
+    debouncedVault.collateralAmount <= debouncedVault.minCollateralForDust;
 
   // Validity — legacy Lock.tsx / Borrow.tsx effects, computed during render.
   const hasSufficientBalance = !!skyBalance && state.skyToLock <= skyBalance.value;
@@ -186,7 +191,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       : minCollateralNotMet
         ? undefined
         : debouncedUsdsToBorrow > 0n
-          ? formatSimulationErrorMessage(simulationError?.message, simulatedVault?.dust)
+          ? formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust)
           : undefined;
 
   const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
