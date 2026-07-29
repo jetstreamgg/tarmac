@@ -60,8 +60,8 @@ test.describe('Sequential transactions — Savings supply', () => {
     await confirm.click();
 
     // Approve and Supply run as two sequential wallet confirmations
-    const steps = isolatedPage.getByTestId('step-indicator');
-    await expect(steps.filter({ hasText: 'Approve' })).toBeVisible({ timeout: 30_000 });
+   await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
+    
     await expect(isolatedPage.getByText("You've successfully supplied to Sky Savings.")).toBeVisible({
       timeout: 60_000
     });

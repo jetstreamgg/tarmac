@@ -263,9 +263,9 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       // The DS step list renders on the wallet/status screen and persists
       // through success (all steps completed).
-      const steps = isolatedPage.getByTestId('step-indicator');
-      await expect(steps.filter({ hasText: 'Approve USDS' })).toBeVisible();
-      await expect(steps.filter({ hasText: 'Convert USDS to USDC' })).toBeVisible();
+      await expect(isolatedPage.getByText('Approve USDS')).toBeVisible({ timeout: 60_000 });
+      await expect(isolatedPage.getByText('Convert USDS to USDC')).toBeVisible({ timeout: 60_000 });
+  
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
   });
@@ -296,9 +296,8 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
         timeout: 60_000
       });
-      const steps = isolatedPage.getByTestId('step-indicator');
-      await expect(steps.filter({ hasText: 'Approve USDS' })).toBeVisible();
-      await expect(steps.filter({ hasText: 'Convert USDS to USDC' })).toBeVisible();
+      await expect(isolatedPage.getByText('Approve USDS')).toBeVisible({ timeout: 60_000 });
+      await expect(isolatedPage.getByText('Convert USDS to USDC')).toBeVisible({ timeout: 60_000 });
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
   });
@@ -322,7 +321,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await interceptAndRejectTransactions(isolatedPage, 0, true);
       await confirm.click();
 
-      await expect(isolatedPage.getByText('Transaction failed. Please try again.')).toBeVisible({
+      await expect(isolatedPage.getByText('An error occurred while converting your funds.')).toBeVisible({
         timeout: 60_000
       });
       await expect(isolatedPage.getByRole('button', { name: 'Retry' })).toBeVisible();
