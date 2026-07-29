@@ -31,16 +31,21 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
 
   const openSupply = useCallback(
     (market: PendleMarketConfig) => {
+      // Figma titles the modals by the PT naming convention ("Supply to
+      // PT-sUSDS", 859:41120), not the market's marketing name ("Fixed Yield").
+      const ptName = `PT-${market.underlyingSymbol}`;
       launch({
-        title: t`Supply to ${market.name}`,
+        title: t`Supply to ${ptName}`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
           loading: t`Your supply is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully supplied to ${market.name}.`,
-          error: t`An error occurred while supplying to ${market.name}.`
+          success: t`You've successfully supplied to ${ptName}.`,
+          error: t`An error occurred while supplying to ${ptName}.`
         },
         sessionId: supplySessionId,
-        entry: { confirmLabel: t`Supply`, confirmDisabled: true },
+        reviewTitle: t`Review supply`,
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
         backgroundContent: <PendleModalForm sessionId={supplySessionId} flow="supply" market={market} />,
@@ -53,16 +58,19 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
 
   const openWithdraw = useCallback(
     (market: PendleMarketConfig) => {
+      const ptName = `PT-${market.underlyingSymbol}`;
       launch({
-        title: t`Withdraw from ${market.name}`,
+        title: t`Withdraw from ${ptName}`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
           loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully withdrawn from ${market.name}.`,
-          error: t`An error occurred while withdrawing from ${market.name}.`
+          success: t`You've successfully withdrawn from ${ptName}.`,
+          error: t`An error occurred while withdrawing from ${ptName}.`
         },
         sessionId: withdrawSessionId,
-        entry: { confirmLabel: t`Withdraw`, confirmDisabled: true },
+        reviewTitle: t`Review withdrawal`,
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        confirmLabel: t`Confirm`,
         backgroundContent: <PendleModalForm sessionId={withdrawSessionId} flow="withdraw" market={market} />,
         onConfirm: () => {},
         onSuccess

@@ -14,27 +14,32 @@ import type { ModalSummaryCell } from './ModalSummaryGrid';
  */
 export type ModalGridCell = {
   label: string;
+  /** Small pill after the label (Figma Badge, e.g. the slippage "Auto"/"Custom" mode). */
+  labelBadge?: string;
   /** Symbol for the 12px token icon drawn before the value(s). */
   token?: string;
   /** Draw the 12px network (chain) icon before the value. */
   network?: boolean;
   /**
    * Product rate treatment: 'savings' renders the value's trailing "%" through
-   * the savings green gradient; 'morpho' keeps the value plain and appends the
-   * morpho-gradient stars glyph (Figma Icons/Custom/stars-filled) — drawn only
-   * when the rate carries extra incentives, per the vault rate popover.
+   * the savings green gradient (deltas accent both values); 'morpho' keeps the
+   * value plain and appends the morpho-gradient stars glyph (Figma
+   * Icons/Custom/stars-filled) — drawn only when the rate carries extra
+   * incentives, per the vault rate popover.
    */
   rateAccent?: 'savings' | 'morpho';
   /** Draw the 12px trending-up glyph before the value (review Est. earnings). */
   trend?: boolean;
   /**
    * Draw the value's token icon inside the ringed Iconbox / Status (review
-   * Product row). 'default' = border-tertiary ring (Savings); 'morpho' = the
-   * morpho-gradient ring.
+   * Product row). 'default' = border-tertiary ring (Savings); 'morpho' /
+   * 'pendle' = the product's gradient ring.
    */
-  productIcon?: 'default' | 'morpho';
+  productIcon?: 'default' | 'morpho' | 'pendle';
   /** Symbol for a 12px token icon drawn after the value (vault review Est. earnings). */
   trailingToken?: string;
+  /** Interactive trailing element after the value (the review slippage gear). */
+  action?: React.ReactNode;
 } & ({ kind: 'single'; value: string } | { kind: 'delta'; before: string; after: string });
 
 /** The savings-green treatment on a value's trailing "%" (Figma gradient-savings, per WalletDrawerAssets). */
@@ -98,16 +103,32 @@ function NetworkIcon() {
   return <img src={src} alt="" className="size-3 shrink-0 rounded-full" />;
 }
 
-/** 12px ring for the Product cell's morpho variant: SVG circle stroked with gradient-morpho. */
-function MorphoRing({ children }: { children: React.ReactNode }) {
+/**
+ * 12px ring for the Product cell's gradient variants: SVG circle stroked with
+ * the product gradient (Iconbox / Status, Type=Morpho / Pendle — raw hexes in
+ * Figma, no variable).
+ */
+const RING_GRADIENTS = {
+  morpho: ['#60A9FF', '#2E8EFF'],
+  pendle: ['#8BF1CA', '#40E3A6']
+} as const;
+
+function GradientRing({
+  variant,
+  children
+}: {
+  variant: keyof typeof RING_GRADIENTS;
+  children: React.ReactNode;
+}) {
   const id = useId();
+  const [from, to] = RING_GRADIENTS[variant];
   return (
     <span className="relative flex size-3 shrink-0 items-center justify-center p-0.5">
       <svg viewBox="0 0 12 12" className="absolute inset-0 size-3" fill="none" aria-hidden>
         <defs>
           <linearGradient id={id} x1="6" y1="0" x2="6" y2="12" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#60A9FF" />
-            <stop offset="1" stopColor="#2E8EFF" />
+            <stop stopColor={from} />
+            <stop offset="1" stopColor={to} />
           </linearGradient>
         </defs>
         <circle cx="6" cy="6" r="5.5" stroke={`url(#${id})`} strokeWidth="1" />
@@ -117,7 +138,7 @@ function MorphoRing({ children }: { children: React.ReactNode }) {
   );
 }
 
-function CellToken({ symbol, ring }: { symbol: string; ring?: 'default' | 'morpho' }) {
+function CellToken({ symbol, ring }: { symbol: string; ring?: 'default' | 'morpho' | 'pendle' }) {
   const icon = (
     <TokenIcon
       token={{ symbol }}
@@ -126,8 +147,8 @@ function CellToken({ symbol, ring }: { symbol: string; ring?: 'default' | 'morph
       showChainIcon={false}
     />
   );
-  // Iconbox / Status (Figma 859:36188 / 859:38587): 12px ring, tight inset.
-  if (ring === 'morpho') return <MorphoRing>{icon}</MorphoRing>;
+  // Iconbox / Status (Figma 859:36188 / 859:38587 / 859:41307): 12px ring, tight inset.
+  if (ring === 'morpho' || ring === 'pendle') return <GradientRing variant={ring}>{icon}</GradientRing>;
   if (ring === 'default') {
     return (
       <span className="border-borderTertiary flex size-3 shrink-0 items-center justify-center rounded-full border p-px">
@@ -148,11 +169,13 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     <CellToken symbol={cell.token} ring={cell.productIcon} />
   ) : null;
 
+  const accent = (value: string) => (cell.rateAccent === 'savings' ? <RatePercent value={value} /> : value);
+
   if (cell.kind === 'single') {
     return (
       <span className="flex items-center gap-1">
         {icon}
-        <span>{cell.rateAccent === 'savings' ? <RatePercent value={cell.value} /> : cell.value}</span>
+        <span>{accent(cell.value)}</span>
         {cell.rateAccent === 'morpho' && <MorphoStars />}
         {cell.trailingToken && (
           <TokenIcon
@@ -162,6 +185,7 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
             showChainIcon={false}
           />
         )}
+        {cell.action}
       </span>
     );
   }
@@ -169,13 +193,22 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     <span className="flex flex-wrap items-center gap-1.5">
       <span className="flex items-center gap-1">
         {icon}
-        <span>{cell.before}</span>
+        <span>{accent(cell.before)}</span>
       </span>
       <ArrowRight className="text-fgPrimary size-3 shrink-0" aria-hidden />
       <span className="flex items-center gap-1">
         {icon}
-        <span>{cell.after}</span>
+        <span>{accent(cell.after)}</span>
       </span>
+    </span>
+  );
+}
+
+/** Label pill (Figma Badge, 16px tall, Label 7 on badges/bg-secondary) beside a cell label. */
+function LabelBadge({ text }: { text: string }) {
+  return (
+    <span className="bg-glassBadge font-circle text-fgSecondary flex h-4 items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]">
+      {text}
     </span>
   );
 }
@@ -184,7 +217,14 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
 export const toGridCells = (rows: ModalGridCell[][], testIdPrefix: string): ModalSummaryCell[][] =>
   rows.map(row =>
     row.map(cell => ({
-      label: cell.label,
+      label: cell.labelBadge ? (
+        <span className="flex items-center gap-1">
+          {cell.label}
+          <LabelBadge text={cell.labelBadge} />
+        </span>
+      ) : (
+        cell.label
+      ),
       testId: `${testIdPrefix}-${cell.label}`,
       content: <CellValue cell={cell} />
     }))
