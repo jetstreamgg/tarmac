@@ -1,5 +1,6 @@
 import { WagmiProvider } from 'wagmi';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { wagmiConfigDev, wagmiConfigMainnet } from '@/data/wagmi/config/config.default';
 import { mockWagmiConfig } from '@/data/wagmi/config/config.e2e';
 import { RouterProvider } from '@tanstack/react-router';
@@ -41,8 +42,6 @@ const useTestnetConfig =
 
 // Use mock config for tests, testnet config for development, mainnet for production
 const config = useMock ? mockWagmiConfig : useTestnetConfig ? wagmiConfigDev : wagmiConfigMainnet;
-
-const queryClient = new QueryClient();
 
 const AppContent = () => {
   return (

@@ -2,9 +2,8 @@ import { useChainId } from 'wagmi';
 import { Navigate } from '@tanstack/react-router';
 import { Intent } from '@/lib/enums';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
-import { TwoPane } from '@/modules/app/components/TwoPane';
-import { DetailsLayout } from '@/modules/app/components/DetailsLayout';
-import { useBreakpointIndex } from '@/hooks';
+import { ConnectCard } from '@/modules/layout/components/ConnectCard';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
 import { VAULTS } from '@/hooks';
 import { VaultsWidgetPane } from './VaultsWidgetPane';
@@ -20,8 +19,8 @@ import { VaultProductDetail } from '@/modules/morpho/components/VaultProductDeta
  * overviews (G6).
  */
 export function VaultDetailPage() {
-  const { bpi } = useBreakpointIndex();
   const chainId = useChainId();
+  const { isConnectedAndAcceptedTerms } = useConnectedContext();
 
   const routeVaultAddress = (useRouteEntityParams().vaultAddress ?? null) as `0x${string}` | null;
 
@@ -39,18 +38,17 @@ export function VaultDetailPage() {
     return <VaultProductDetail vault={vault} vaultAddress={vaultAddress} />;
   }
 
-  // The sky (sUSDT Tether Savings, flag-gated) detail still renders the legacy
-  // two-pane layout pending its V2 product page (APP-266 track).
+  // The sky (sUSDT Tether Savings, flag-gated) detail has no V2 product page yet
+  // (APP-266 track), so it keeps the legacy widget + details components — but
+  // stacked on the document rather than in the retired two-pane box (G5). The
+  // `details-pane` class stays as the e2e pane-visibility locator hook.
   return (
-    <TwoPane
-      // Remount per breakpoint, matching the legacy widget-pane key
-      key={`vaults-${bpi}`}
-      widget={withErrorBoundary(<VaultsWidgetPane />)}
-      details={
-        <DetailsLayout intent={Intent.VAULTS_INTENT} contentKey="detail">
-          <VaultDetails vaultAddress={vaultAddress} assetToken={vault.assetToken} vaultName={vault.name} />
-        </DetailsLayout>
-      }
-    />
+    <div className="flex w-full flex-col gap-4 pb-8">
+      {withErrorBoundary(<VaultsWidgetPane />)}
+      <div className="details-pane bg-panel flex w-full flex-col gap-4 rounded-3xl p-3 md:p-6 xl:p-8">
+        {!isConnectedAndAcceptedTerms && <ConnectCard intent={Intent.VAULTS_INTENT} />}
+        <VaultDetails vaultAddress={vaultAddress} assetToken={vault.assetToken} vaultName={vault.name} />
+      </div>
+    </div>
   );
 }
