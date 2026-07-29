@@ -44,16 +44,19 @@ function SheetContent({
   hideCloseButton = false,
   closeButtonClassName,
   closeIconClassName,
+  overlayClassName,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
   hideCloseButton?: boolean;
   closeButtonClassName?: string;
   closeIconClassName?: string;
+  /** Extra classes on the scrim, e.g. to opt a panel out of the frosted overlay. */
+  overlayClassName?: string;
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay className={overlayClassName} />
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
