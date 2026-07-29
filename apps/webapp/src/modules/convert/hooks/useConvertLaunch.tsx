@@ -151,8 +151,6 @@ export function useConvertLaunch({
       // can never pick up — `NetworkFeeValue` can't re-render itself out of a stale
       // `state` prop. (The objects themselves are new identities each render; depending
       // on them would defeat the memo and re-open the update loop this guards against.)
-      networkFee?.isBatch,
-      networkFee?.sequentialFormatted,
       bundleState.settled,
       bundleState.canBundle,
       bundleState.promoVisible,

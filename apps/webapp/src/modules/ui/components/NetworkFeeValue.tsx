@@ -65,9 +65,13 @@ export function useBundleFeeState(
 }
 
 /**
- * The value side of the "Network fee" row: the bundling badge, the fee, and — when the
- * calls will go out bundled — the sequential cost struck through beside it
- * (Figma 1036:206870).
+ * The value side of the "Network fee" row: the bundling badge and the fee.
+ *
+ * Figma 1036:206870 also strikes the sequential cost through beside a bundled fee. It is
+ * deliberately not drawn: it only appears once bundling is *on*, and at that point the
+ * saving has already been made — the reader is being sold something they have bought.
+ * The pitch belongs to the promo card, which is aimed at people who have bundling off
+ * (team call, 2026-07-28).
  *
  * Without bundling available this is just the fee, so the row is unchanged for wallets
  * that can't batch.
@@ -85,15 +89,8 @@ export function NetworkFeeValue({ fee, state }: { fee?: NetworkFeeData; state: B
   return (
     <span className="flex items-center gap-2" data-testid="network-fee-value">
       <BundleTogglePanel />
-      <span className="flex items-baseline gap-2">
-        <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
-          {fee?.formatted ?? NO_VALUE}
-        </span>
-        {fee?.isBatch && fee.sequentialFormatted && (
-          <s className="text-textSecondary text-sm" data-testid="network-fee-sequential">
-            {fee.sequentialFormatted}
-          </s>
-        )}
+      <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
+        {fee?.formatted ?? NO_VALUE}
       </span>
     </span>
   );

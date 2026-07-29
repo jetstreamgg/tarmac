@@ -39,7 +39,10 @@ export type NetworkFeeData = {
    * the feature look worse than it is.
    */
   batchSaving?: number;
-  /** The sequential cost, formatted — the struck-through figure beside a bundled fee. */
+  /**
+   * The sequential cost, formatted. Not drawn in the row — see `NetworkFeeValue` — but
+   * kept for the deferred bundled-vs-sequential savings UI, which needs it priced.
+   */
   sequentialFormatted?: string;
 };
 

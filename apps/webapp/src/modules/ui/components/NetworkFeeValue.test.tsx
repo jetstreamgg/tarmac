@@ -133,21 +133,24 @@ describe('NetworkFeeValue', () => {
     expect(screen.queryByTestId('bundle-toggle-badge')).toBeNull();
   });
 
-  it('shows the badge and the struck-through sequential cost when bundling is on', async () => {
+  it('shows the badge and the bundled fee when bundling is on', async () => {
     mocks.batchEnabled = true;
     const data = fee();
     renderValue(data, stateOf(2, data));
     expect(await screen.findByTestId('bundle-toggle-badge')).toBeTruthy();
     expect(screen.getByText('Bundled')).toBeTruthy();
-    expect(screen.getByTestId('network-fee-sequential').textContent).toBe('$0.13');
+    expect(screen.getByText('$0.11')).toBeTruthy();
+    // The sequential cost is not drawn beside it — struck through or otherwise: the
+    // saving has already been made by the time this state is reachable (team call,
+    // 2026-07-28).
+    expect(screen.queryByText('$0.13')).toBeNull();
   });
 
-  it('shows a `Not bundled` badge with no strikethrough once the pitch is gone', async () => {
+  it('shows a `Not bundled` badge once the pitch is gone', async () => {
     // Bundling off and nothing to pitch (no saving) → the badge explains the higher fee.
     const data = fee({ isBatch: false, batchSaving: 0 });
     renderValue(data, stateOf(2, data));
     expect(await screen.findByText('Not bundled')).toBeTruthy();
-    expect(screen.queryByTestId('network-fee-sequential')).toBeNull();
   });
 
   it('still offers the toggle when the estimate failed', async () => {
