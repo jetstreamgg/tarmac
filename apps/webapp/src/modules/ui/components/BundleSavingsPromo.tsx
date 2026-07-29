@@ -2,9 +2,8 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Zap } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { BATCH_TX_LEGAL_NOTICE_URL } from '@/lib/constants';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { BundleExplainer } from './BundleExplainer';
 
 /**
  * The "Save X% on network fees" card (Figma 1036:206803), shown above Confirm.
@@ -40,19 +39,7 @@ export function BundleSavingsPromo({ saving }: { saving: number }) {
           data-testid="bundle-promo-switch"
         />
       </div>
-      <p className="text-fgSecondary text-xs leading-[18px]">
-        <Trans>
-          Approve + Supply run as one transaction. You sign once and bundled transactions saves you clicks and
-          gas.
-        </Trans>{' '}
-        <ExternalLink
-          href={BATCH_TX_LEGAL_NOTICE_URL}
-          showIcon={false}
-          className="text-fgPrimary hover:underline"
-        >
-          <Trans>Learn more</Trans>
-        </ExternalLink>
-      </p>
+      <BundleExplainer />
     </div>
   );
 }

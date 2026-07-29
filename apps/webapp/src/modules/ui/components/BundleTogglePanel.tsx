@@ -4,9 +4,8 @@ import { Layers, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
-import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { BATCH_TX_LEGAL_NOTICE_URL } from '@/lib/constants';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { BundleExplainer } from './BundleExplainer';
 
 /**
  * The `Bundled` / `Not bundled` badge that sits beside the network fee, and the panel it
@@ -55,19 +54,7 @@ export function BundleTogglePanel() {
             data-testid="bundle-panel-switch"
           />
         </div>
-        <p className="text-fgSecondary text-xs leading-[18px]">
-          <Trans>
-            Approve + Supply run as one transaction. You sign once and bundled transactions saves you clicks
-            and gas.
-          </Trans>{' '}
-          <ExternalLink
-            href={BATCH_TX_LEGAL_NOTICE_URL}
-            showIcon={false}
-            className="text-fgPrimary hover:underline"
-          >
-            <Trans>Learn more</Trans>
-          </ExternalLink>
-        </p>
+        <BundleExplainer />
       </PopoverContent>
     </Popover>
   );
