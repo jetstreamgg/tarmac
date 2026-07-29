@@ -36,9 +36,10 @@ export type EarnTableFiltersProps = {
 
 /**
  * Filter bar of the Earn Opportunities section: risk pills + the three
- * dropdowns. Below md (486:22051) the dropdowns stack full-width under the
- * chips row and grow a leading glyph; from md the single-row toolbar stays as
- * C2 shipped it.
+ * dropdowns, each carrying its leading glyph at every tier (Figma 1036:201239
+ * draws them on the desktop toolbar too — they were mobile-only until APP-432
+ * item 2). Below md (486:22051) the dropdowns stack full-width under the chips
+ * row; from md the single-row toolbar stays as C2 shipped it.
  */
 export function EarnTableFilters({
   selectedRiskTiers,
@@ -96,7 +97,7 @@ export function EarnTableFilters({
           onChange={onNetworkChange}
           allLabel={
             <span className="flex items-center gap-1.5">
-              <Globe className="h-3 w-3 md:hidden" />
+              <Globe className="h-3 w-3 shrink-0" />
               <Trans>All networks</Trans>
             </span>
           }
@@ -109,7 +110,7 @@ export function EarnTableFilters({
           onChange={onStablecoinChange}
           allLabel={
             <span className="flex items-center gap-1.5">
-              <ConvertArrows boxSize={12} className="md:hidden" />
+              <ConvertArrows boxSize={12} className="shrink-0" />
               <Trans>All stablecoins</Trans>
             </span>
           }
@@ -122,7 +123,7 @@ export function EarnTableFilters({
           onChange={onProductChange}
           allLabel={
             <span className="flex items-center gap-1.5">
-              <Vaults boxSize={12} className="md:hidden" />
+              <Vaults boxSize={12} className="shrink-0" />
               <Trans>All products</Trans>
             </span>
           }
