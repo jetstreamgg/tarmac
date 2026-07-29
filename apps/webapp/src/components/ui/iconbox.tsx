@@ -227,7 +227,7 @@ export function IconboxAction({ children, className }: { children: ReactNode; cl
         className
       )}
     >
-      <span className="bg-bgSecondary text-fgPrimary flex size-full items-center justify-center rounded-full">
+      <span className="bg-badgePrimary text-fgPrimary flex size-full items-center justify-center rounded-full">
         {children}
       </span>
     </span>

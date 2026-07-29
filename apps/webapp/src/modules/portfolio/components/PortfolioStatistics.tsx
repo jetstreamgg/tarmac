@@ -34,7 +34,7 @@ export function PortfolioStatistics() {
   return (
     <section data-testid="portfolio-statistics">
       <Heading tag="h2" variant="medium" className="mb-6">
-        <Trans>Statistics</Trans>
+        <Trans>Sky Protocol Statistics</Trans>
       </Heading>
 
       <Card className="p-6">

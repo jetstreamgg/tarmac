@@ -7,5 +7,5 @@ import { Intent } from '@/lib/enums';
 // sub-routes are gone — see the sibling redirect stubs.
 export const Route = createFileRoute('/_shell/convert')({
   component: ConvertPage,
-  staticData: { intent: Intent.CONVERT_INTENT, fullWidth: true }
+  staticData: { intent: Intent.CONVERT_INTENT }
 });

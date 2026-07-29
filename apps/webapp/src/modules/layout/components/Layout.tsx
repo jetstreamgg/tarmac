@@ -18,18 +18,10 @@ import { defaultConfig } from '../../config/default-config';
 
 export function Layout({
   children,
-  metaDescription,
-  fullWidth = false
+  metaDescription
 }: {
   children: React.ReactNode;
   metaDescription?: string;
-  /**
-   * Full-width destination routes scroll on the document instead of inside the
-   * viewport-capped box: the VStack drops its height cap + `overflow-auto` so it
-   * grows with content, and the header pins as a sticky frosted bar (B6). Legacy
-   * two-pane routes keep the boxed scroll (the default).
-   */
-  fullWidth?: boolean;
 }): React.ReactElement {
   const { siteConfig } = useContext(ConfigContext);
   const { chain } = useConnection();
@@ -53,10 +45,10 @@ export function Layout({
           --background-image-app-background token. */}
       <div aria-hidden className="app-background" />
 
-      <VStack className={shellSurfaceClasses(fullWidth)}>
+      <VStack className={shellSurfaceClasses()}>
         <ErrorBoundary>
-          <div className={shellHeaderClasses(fullWidth)}>
-            <div className={shellHeaderContentClasses(fullWidth)}>
+          <div className={shellHeaderClasses()}>
+            <div className={shellHeaderContentClasses()}>
               {/* justify-self-start: in the desktop header grid the logo sits
                   in a 1fr flank; without it the anchor stretches across the
                   whole track and empty header space becomes clickable. */}
@@ -81,8 +73,8 @@ export function Layout({
 
         {/* Clearance for the fixed bottom MobileNavbar (60px pill + 16px top
             pad + max(16px, safe-area) bottom pad) so the end of the content can
-            scroll out from under it. A spacer instead of padding utilities so
-            it can't collide with the boxed mode's md:pb-2. */}
+            scroll out from under it. A spacer rather than padding utilities so
+            it stays independent of the surface's own spacing. */}
         <div
           aria-hidden
           className="desktop:hidden h-[calc(92px+env(safe-area-inset-bottom,0px))] w-full shrink-0"

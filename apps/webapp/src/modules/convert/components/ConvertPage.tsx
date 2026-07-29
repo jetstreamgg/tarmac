@@ -55,8 +55,11 @@ export function ConvertPage() {
 
   return (
     <div className="flex w-full flex-col items-center gap-8 py-4 md:py-10" data-testid="convert-page">
-      {/* Patterns/Headers, Convert type 5044:35419. */}
+      {/* Patterns/Headers, Convert type 5044:35419. Desktop comp 1222:15248
+          puts the badges 80px under the navbar — the outer md:py-10 plus this
+          hero padding, same recipe as the Earn hero (APP-426 item 1). */}
       <PageHeaderHero
+        className="md:py-10"
         badges={
           <>
             <HeaderBadge icon={<IllustrationStakingLogomark boxSize={16} />}>

@@ -3,13 +3,14 @@ import { FixedIntent } from '@/lib/enums';
 import { keepSearch } from '@/lib/navigation';
 import { getPendleMarketBySlug, isMarketMatured } from '@/hooks';
 import { PendleProductDetail } from '@/modules/pendle/components/PendleProductDetail';
+import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 
 // Market details render full-width through the ProductDetailTemplate (E1).
 // Matured markets have no detail view — they redirect to the Portfolio, whose
 // ready-to-redeem section is where redemption lives (G6) — and unknown slugs
 // fall back to the Earn marketplace.
 export const Route = createFileRoute('/_shell/earn/fixed/$slug')({
-  beforeLoad: ({ params }) => {
+  beforeLoad: async ({ context, params, location, search }) => {
     const market = getPendleMarketBySlug(params.slug);
     if (!market) {
       throw redirect({ to: '/earn', search: keepSearch, replace: true });
@@ -17,9 +18,12 @@ export const Route = createFileRoute('/_shell/earn/fixed/$slug')({
     if (isMarketMatured(market.expiry)) {
       throw redirect({ to: '/portfolio', search: keepSearch, replace: true });
     }
+    // Slug validity resolves first, so an unknown slug still lands on the
+    // marketplace rather than implying the market exists but is restricted.
+    await requireModuleEnabled(context.queryClient, 'fixed', location.searchStr, search);
   },
   component: PendleMarketDetail,
-  staticData: { fixedIntent: FixedIntent.MARKET_INTENT, fullWidth: true }
+  staticData: { fixedIntent: FixedIntent.MARKET_INTENT }
 });
 
 function PendleMarketDetail() {
