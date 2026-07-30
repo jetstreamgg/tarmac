@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { TxStatus } from '@/widgets';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import type { TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
@@ -53,7 +54,7 @@ export function useModalEntryBody({
   steps,
   toast
 }: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
-  const { updateModalContent } = useTransaction();
+  const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
 
   // `execute` is rebuilt every render; read the latest from a ref so `onConfirm`
@@ -67,8 +68,14 @@ export function useModalEntryBody({
   // Keep the shared modal's confirm gating + handler + wallet summary (+ optional
   // step labels / toast titles) live. Merged into the entry (never replacing
   // `content`), so the body stays mounted; bounded to its listed deps, so it can't
-  // loop on provider re-renders.
+  // loop on provider re-renders. Frozen once the tx leaves IDLE: mid-flight
+  // refetches (allowance after an approve, balances after success) rebuild the
+  // body's steps/summaries, and pushing that state would collapse the executed
+  // step list and amounts on the wallet/status/failure screens (the convert and
+  // stake-claim precedent). Pushes resume when the status resets to IDLE (back
+  // from a failure returns to an editable entry).
   useEffect(() => {
+    if (txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
       // `confirmDisabled` gates the entry screen via the entry descriptor and the
       // review stage via the top-level field — same value, both screens.
@@ -82,6 +89,7 @@ export function useModalEntryBody({
     });
   }, [
     sessionId,
+    txStatus,
     confirmDisabled,
     transactionContent,
     transactionScreenContent,

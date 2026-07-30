@@ -103,7 +103,9 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.update }),
+  // txStatus stays IDLE: these tests exercise the live entry pushes, which the
+  // shared hook freezes once a tx is in flight.
+  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
   // No entry slot in these standalone renders → the form renders its body inline.
   useEntrySlot: () => null
 }));
