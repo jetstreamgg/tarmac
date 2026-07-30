@@ -14,7 +14,10 @@ import { useRewardContractInfo } from '@/hooks';
 import { useRewardContractInfo } from '@/hooks';
 
 function App() {
-  const { data, error, isLoading } = useRewardContractInfo('0xRewardContractAddress...');
+  const { data, error, isLoading } = useRewardContractInfo({
+    chainId: 1,
+    rewardContractAddress: '0xRewardContractAddress...'
+  });
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -30,23 +33,20 @@ function App() {
 
 ## Parameters
 
-```ts
-import { type ReadHookParams } from '@/hooks';
-```
-
 ### Props
 
 ```ts
-type Props = ReadHookParams<RewardContract> & {
+type Props = {
+  chainId: number;
   rewardContractAddress: `0x${string}`;
   indexerUrl?: string;
 };
 ```
 
+- `chainId`: `number`
+  - The chain to fetch the reward contract information for.
 - `rewardContractAddress`: `0x${string}`
   - The address of the reward contract to fetch information for.
-- `options`: `ReadHookParams<RewardContract>`
-  - Additional options for the query.
 - `indexerUrl`: `string | undefined`
   - Optional. A custom indexer URL to use for fetching data. If not provided, the default URL will be used.
 

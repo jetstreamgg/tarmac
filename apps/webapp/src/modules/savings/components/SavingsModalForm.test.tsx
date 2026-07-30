@@ -52,6 +52,22 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    // The bundling badge asks whether the wallet can batch; these renders have no
+    // WagmiProvider, so answer "no" and the fee row stays a plain value.
+    useIsBatchSupported: () => ({
+      data: false,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
     // The savings position (drives the withdraw balance/Max).
     useSavingsData: () => ({
       data: { userSavingsBalance: 100n * 10n ** 18n, savingsRate: 65n * 10n ** 15n, savingsTvl: 0n },
@@ -97,7 +113,11 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
       steps: ['Supply'],
       prepared: h.prepared,
       isLoading: false,
-      error: null
+      error: null,
+      // Mirrors the real result shape; the form reads these for the fee row's
+      // bundling badge and the "Save X%" promo.
+      calls: [],
+      isBatch: false
     };
   }
 }));
@@ -145,11 +165,14 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { SavingsModalForm } from './SavingsModalForm';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const renderForm = (flow: SavingsLaunchFlow) =>
   render(
     <I18nProvider i18n={i18n}>
-      <SavingsModalForm sessionId="s1" flow={flow} />
+      <TooltipProvider>
+        <SavingsModalForm sessionId="s1" flow={flow} />
+      </TooltipProvider>
     </I18nProvider>
   );
 

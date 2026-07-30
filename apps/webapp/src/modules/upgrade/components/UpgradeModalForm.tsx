@@ -3,6 +3,10 @@ import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee } from '@/hooks';
 import { TOKENS, useDebounce, useMkrSkyFee, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, getChainIcon, math } from '@/utils';
 import { TxStatus, PopoverRateInfo } from '@/widgets';
@@ -175,7 +179,21 @@ export function UpgradeModalForm({
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
   const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending;
 
-  const { execute, steps, prepared, error } = useUpgradeLaunch({ token, amount: debouncedAmount });
+  const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
+    token,
+    amount: debouncedAmount
+  });
+
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
   const disabled = !amountReady || !prepared;
 
   // The wallet balance is chain state the engine's success doesn't refetch —
@@ -389,11 +407,13 @@ export function UpgradeModalForm({
         </div>
         {hairline}
         <DetailCell
-          label={<Trans>Network fee</Trans>}
-          value={NO_VALUE}
+          label={<NetworkFeeLabel />}
+          value={<NetworkFeeValue fee={networkFee} state={bundleState} />}
           dataTestId="upgrade-modal-network-fee"
         />
       </div>
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
       {error && amountReady && (
         <Text className="text-error text-sm" data-testid="upgrade-modal-error">

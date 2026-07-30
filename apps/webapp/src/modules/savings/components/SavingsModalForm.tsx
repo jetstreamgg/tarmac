@@ -2,12 +2,26 @@ import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { formatBigInt, formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useNetworkFee } from '@/hooks';
+import type { NetworkFeeData } from '@/hooks';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import {
+  NetworkFeeValue,
+  useBundleFeeState,
+  type BundleFeeState
+} from '@/modules/ui/components/NetworkFeeValue';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
-import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
+import {
+  buildSupplyModalRows,
+  buildWithdrawModalRows,
+  NETWORK_FEE_LABEL,
+  type SavingsModalRow
+} from './savingsModalRows';
 import { SavingsOriginSelect } from './SavingsOriginSelect';
 
 // `SavingsModalPreset` now lives with the shared form model; re-exported here so the
@@ -20,11 +34,25 @@ const USDS_DECIMALS = 18;
 const formatUsds = (value: bigint) =>
   `${formatNumber(parseFloat(formatUnits(value, USDS_DECIMALS)), { maxDecimals: 2 })} USDS`;
 
-function ModalRow({ row }: { row: SavingsModalRow }) {
+function ModalRow({
+  row,
+  networkFee,
+  state
+}: {
+  row: SavingsModalRow;
+  networkFee?: NetworkFeeData;
+  state: BundleFeeState;
+}) {
+  const isFeeRow = row.label === NETWORK_FEE_LABEL;
   return (
     <div className="flex items-center justify-between" data-testid={`savings-modal-row-${row.label}`}>
-      <Text className="text-textSecondary text-sm">{row.label}</Text>
-      {row.kind === 'single' ? (
+      {/* Rows stay pure string data (asserted in savingsModalRows.test.ts); the fee row's
+          tooltip and bundling badge are attached here, in the renderer, rather than
+          smuggling JSX into them. */}
+      <Text className="text-textSecondary text-sm">{isFeeRow ? <NetworkFeeLabel /> : row.label}</Text>
+      {isFeeRow ? (
+        <NetworkFeeValue fee={networkFee} state={state} />
+      ) : row.kind === 'single' ? (
         <Text className="text-text text-sm font-medium">{row.value}</Text>
       ) : (
         <span className="text-text flex items-center gap-1.5 text-sm font-medium">
@@ -91,8 +119,19 @@ export function SavingsModalForm({
     switchOrigin
   } = form;
 
-  const { execute, steps, prepared } = useSavingsLaunch(engineParams);
+  const { execute, steps, prepared, calls, isBatch } = useSavingsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
+
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / step labels / wallet summary / toast
@@ -127,7 +166,7 @@ export function SavingsModalForm({
         earningsBefore: NO_VALUE,
         earningsAfter: NO_VALUE,
         network: networkName,
-        networkFee: NO_VALUE
+        networkFee: networkFee?.formatted ?? NO_VALUE
       })
     : buildWithdrawModalRows({
         // Rate is unchanged by a withdrawal, but Figma 527:10945 draws it as a delta.
@@ -138,7 +177,7 @@ export function SavingsModalForm({
         earningsBefore: NO_VALUE,
         earningsAfter: NO_VALUE,
         network: networkName,
-        networkFee: NO_VALUE
+        networkFee: networkFee?.formatted ?? NO_VALUE
       });
 
   const body = (
@@ -187,9 +226,11 @@ export function SavingsModalForm({
 
       <div className="flex flex-col gap-3 pt-1">
         {rows.map(row => (
-          <ModalRow key={row.label} row={row} />
+          <ModalRow key={row.label} row={row} networkFee={networkFee} state={bundleState} />
         ))}
       </div>
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

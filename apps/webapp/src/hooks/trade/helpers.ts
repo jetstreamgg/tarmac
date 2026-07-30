@@ -1,3 +1,5 @@
+import { formatUnits, parseUnits } from 'viem';
+import { WAD_PRECISION, math } from '@/utils';
 import { TOKENS } from '../tokens/tokens.constants';
 
 const STABLECOIN_SYMBOLS = new Set([
@@ -8,6 +10,15 @@ const STABLECOIN_SYMBOLS = new Set([
 ]);
 const STABLE_PAIR_AUTO_SLIPPAGE = 0.05;
 const VOLATILE_PAIR_AUTO_SLIPPAGE = 0.3;
+
+// Converts a raw token amount (in the token's native decimals) and a decimal price string
+// into a USD value as a float. The price is parsed to WAD so the result is WAD-scaled
+// regardless of the token's decimals
+export const calculateAmountUsd = (amount: bigint, price: string, tokenDecimals: number): number => {
+  return parseFloat(
+    formatUnits(math.tokenValue(amount, parseUnits(price, WAD_PRECISION), tokenDecimals), WAD_PRECISION)
+  );
+};
 
 export function getAutoSlippage(originSymbol?: string, targetSymbol?: string): number {
   if (

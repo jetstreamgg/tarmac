@@ -35,6 +35,10 @@ import {
   formatNumber,
   isTestnetId
 } from '@/utils';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -288,6 +292,17 @@ export function PendleModalForm({
     [writeHook.error]
   );
 
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls: writeHook.calls ?? [],
+    chainId,
+    shouldUseBatch: !!writeHook.isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee, !!networkFeeError);
+
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
 
   // Memoized: useModalEntryBody lists this as an effect dep, and every
@@ -518,8 +533,10 @@ export function PendleModalForm({
           label={<Trans>Max slippage</Trans>}
           value={`${formatNumber(slippage * 100, { maxDecimals: 2 })}%`}
         />
-        <Row label={<Trans>Network fee</Trans>} value={NO_VALUE} />
+        <Row label={<NetworkFeeLabel />} value={<NetworkFeeValue fee={networkFee} state={bundleState} />} />
       </div>
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
       {prepareErrorMessage && amountReady && (
         <p className="text-error text-sm" data-testid="pendle-modal-error">
