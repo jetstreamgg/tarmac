@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { Call } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   StUsdsDirection,
@@ -40,6 +41,10 @@ export interface UseStUsdsLaunchResult {
   prepared: boolean;
   isLoading: boolean;
   error: Error | null;
+  /** The routed engine's calls, for estimating the flow's network fee. */
+  calls: Call[];
+  /** Whether those calls go out bundled — the batch costs less than the sequence. */
+  isBatch: boolean;
 }
 
 /**
@@ -150,6 +155,8 @@ export function useStUsdsLaunch({
     steps,
     prepared: activeHook.prepared,
     isLoading: activeHook.isLoading,
-    error: activeHook.error ?? prepareError
+    error: activeHook.error ?? prepareError,
+    calls: activeHook.calls ?? [],
+    isBatch: !!activeHook.isBatch
   };
 }

@@ -290,6 +290,12 @@ export function useStakeClaimLaunch({
     plainLoading: plainFlow.isLoading,
     restakePrepared: restakeEngine.prepared,
     restakeLoading: restakeEngine.isLoading,
-    calldata
+    calldata,
+    // The plain-claim flow's calls. The modal draws a single fee row but offers two
+    // CTAs (Claim / Claim & Restake); we price the plain claim, which is the one action
+    // always available. Restake's extra cost is not represented — a design gap, not an
+    // oversight.
+    calls: plainFlow.calls ?? [],
+    isBatch: !!plainFlow.isBatch
   };
 }

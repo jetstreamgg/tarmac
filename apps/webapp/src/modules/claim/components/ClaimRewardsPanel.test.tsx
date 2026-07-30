@@ -58,12 +58,33 @@ vi.mock('wagmi', async importOriginal => {
   return { ...actual, useChainId: () => 1, useChains: () => [{ id: 1, name: 'Ethereum' }] };
 });
 
-vi.mock('@/hooks', () => ({
-  useTransactionFlow: (params: { calls: unknown[] }) => {
-    h.flowCalls = params.calls;
-    return { execute: vi.fn(), prepared: true };
-  }
-}));
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return {
+    ...actual,
+    // The DS Tooltip reads this to suppress itself on touch devices.
+    useIsTouchDevice: () => false,
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
+    useTransactionFlow: (params: { calls: unknown[] }) => {
+      h.flowCalls = params.calls;
+      return { execute: vi.fn(), prepared: true };
+    },
+    // No WagmiProvider in these renders → the fee row stays a plain value.
+    useIsBatchSupported: () => ({
+      data: false,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    })
+  };
+});
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
@@ -81,6 +102,7 @@ vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
 
 import { ClaimRewardsPanel } from './ClaimRewardsPanel';
 import type { ClaimScope } from '../types';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const reward = (source: ClaimSource, id: string, symbol: string): ClaimableReward => ({
   id,
@@ -96,7 +118,9 @@ const reward = (source: ClaimSource, id: string, symbol: string): ClaimableRewar
 const renderPanel = (scope: ClaimScope = { kind: 'all' }) =>
   render(
     <I18nProvider i18n={i18n}>
-      <ClaimRewardsPanel sessionId="s1" scope={scope} />
+      <TooltipProvider>
+        <ClaimRewardsPanel sessionId="s1" scope={scope} />
+      </TooltipProvider>
     </I18nProvider>
   );
 
@@ -173,7 +197,9 @@ describe('ClaimRewardsPanel', () => {
     const { rerender } = renderPanel({ kind: 'reward-contract', address: '0xb' });
     rerender(
       <I18nProvider i18n={i18n}>
-        <ClaimRewardsPanel sessionId="s1" scope={{ kind: 'reward-contract', address: '0xb' }} />
+        <TooltipProvider>
+          <ClaimRewardsPanel sessionId="s1" scope={{ kind: 'reward-contract', address: '0xb' }} />
+        </TooltipProvider>
       </I18nProvider>
     );
 

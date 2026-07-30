@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import { formatUnits } from 'viem';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { formatNumber, getChainIcon } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -17,13 +19,28 @@ function TokenChip({ symbol }: { symbol: string }) {
   );
 }
 
-function ReviewRow({ row, chainId }: { row: ConvertModalRow; chainId: number }) {
+function ReviewRow({
+  row,
+  chainId,
+  feeValue
+}: {
+  row: ConvertModalRow;
+  chainId: number;
+  /** Replaces the plain fee string with the bundling badge group on the fee row. */
+  feeValue?: ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between" data-testid={`convert-modal-row-${row.id}`}>
-      <Text className="text-textSecondary text-sm">{row.label}</Text>
+      <Text className="text-textSecondary text-sm">
+        {row.id === 'networkFee' ? <NetworkFeeLabel /> : row.label}
+      </Text>
       <span className="text-text flex items-center gap-1.5 text-sm font-medium">
         {row.kind === 'network' && getChainIcon(chainId, 'h-4 w-4')}
-        <Text className="text-text text-sm font-medium">{row.value}</Text>
+        {row.id === 'networkFee' && feeValue ? (
+          feeValue
+        ) : (
+          <Text className="text-text text-sm font-medium">{row.value}</Text>
+        )}
       </span>
     </div>
   );
@@ -44,7 +61,9 @@ export function ConvertReviewContent({
   targetDecimals,
   chainId,
   networkName,
-  networkFee
+  networkFee,
+  feeValue,
+  promo
 }: {
   originSymbol: string;
   targetSymbol: string;
@@ -55,6 +74,10 @@ export function ConvertReviewContent({
   chainId: number;
   networkName: string;
   networkFee: string;
+  /** Bundling badge group for the fee row; falls back to `networkFee` when absent. */
+  feeValue?: ReactNode;
+  /** The "Save X%" card, rendered under the rows when bundling is worth pitching. */
+  promo?: ReactNode;
 }) {
   const rows = buildConvertModalRows({
     originSymbol,
@@ -103,9 +126,11 @@ export function ConvertReviewContent({
 
       <div className="border-border flex flex-col gap-3 border-t pt-4">
         {rows.map(row => (
-          <ReviewRow key={row.id} row={row} chainId={chainId} />
+          <ReviewRow key={row.id} row={row} chainId={chainId} feeValue={feeValue} />
         ))}
       </div>
+
+      {promo}
     </div>
   );
 }

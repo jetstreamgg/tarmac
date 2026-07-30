@@ -1,7 +1,10 @@
 import { ReactNode, useMemo, useState } from 'react';
 import { useChains, useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import { useTransactionFlow } from '@/hooks';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee, useTransactionFlow } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
@@ -87,6 +90,16 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   );
 
   const flow = useTransactionFlow({ calls, chainId, shouldUseBatch: true, ...txCallbacks });
+
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: !!flow.isBatch
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
   // Disabled until there's something to send AND no selected source is still preparing
   // (e.g. Merkl proofs mid-load) — so we never claim a partial subset of the selection.
@@ -202,8 +215,10 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
       {allRewards.length > 0 && (
         <div className="border-borderPrimary flex flex-col gap-3 border-t pt-4">
           <InfoRow label={<Trans>Network</Trans>}>{networkName}</InfoRow>
-          {/* TODO: live gas estimate; stubbed like the Savings/Vault modals. */}
-          <InfoRow label={<Trans>Network fee</Trans>}>{NO_VALUE}</InfoRow>
+          <InfoRow label={<NetworkFeeLabel />}>
+            <NetworkFeeValue fee={networkFee} state={bundleState} />
+          </InfoRow>
+          {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
         </div>
       )}
     </div>

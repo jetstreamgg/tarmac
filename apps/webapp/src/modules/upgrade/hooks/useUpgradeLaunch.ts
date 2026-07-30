@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { Call } from 'viem';
 import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
@@ -30,6 +31,10 @@ export interface UseUpgradeLaunchResult {
   prepared: boolean;
   isLoading: boolean;
   error: Error | null;
+  /** The routed engine's calls, for estimating the flow's network fee. */
+  calls: Call[];
+  /** Whether those calls go out bundled — the batch costs less than the sequence. */
+  isBatch: boolean;
 }
 
 /**
@@ -93,6 +98,8 @@ export function useUpgradeLaunch({
     steps,
     prepared: upgrade.prepared,
     isLoading: upgrade.isLoading,
-    error: upgrade.error
+    error: upgrade.error,
+    calls: upgrade.calls ?? [],
+    isBatch: !!upgrade.isBatch
   };
 }
