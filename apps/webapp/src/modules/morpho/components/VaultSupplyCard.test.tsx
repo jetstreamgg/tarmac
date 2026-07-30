@@ -53,7 +53,7 @@ const wrap = (onSupply: () => void) => (
   <I18nProvider i18n={i18n}>
     <ConnectModalProvider>
       <ConnectThenActProvider>
-        <VaultSupplyCard assetToken={usdt} netRate={0.0276} onSupply={onSupply} />
+        <VaultSupplyCard assetToken={usdt} vaultName="USDT Savings" netRate={0.0276} onSupply={onSupply} />
       </ConnectThenActProvider>
     </ConnectModalProvider>
   </I18nProvider>

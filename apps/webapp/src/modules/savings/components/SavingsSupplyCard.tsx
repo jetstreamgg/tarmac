@@ -3,7 +3,12 @@ import { Trans } from '@lingui/react/macro';
 import { useOverallSkyData, useTokenBalances, type TokenItem } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isL2ChainId } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import {
+  ProductBadge,
+  ProductStat,
+  ProductStatPair,
+  ProductSupplyCard
+} from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Usds } from '@/modules/icons';
@@ -88,70 +93,58 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
   );
 
   return (
-    <Card className="flex flex-col gap-5 p-5 md:gap-6 md:p-6" data-testid="savings-supply-card">
-      {/* Product badge: monochrome per the current comp (859:35719, APP-432
-          item 11) — the fg-tertiary USDS mark replaces the green token logo,
-          with the label on fg-secondary. */}
-      <span
-        data-testid="savings-supply-badge"
-        className="bg-glassBadge text-fgSecondary font-circle flex w-fit items-center gap-1 rounded-full py-[5px] pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px]"
-      >
-        <Usds boxSize={12} className="text-fgTertiary h-3 w-3" aria-hidden />
-        <Trans>Sky Savings</Trans>
-      </span>
-
-      <h3 className="text-text font-circle md:font-graphik text-[22px] leading-6 font-medium tracking-[-0.44px] md:text-2xl md:leading-snug md:tracking-normal">
+    <ProductSupplyCard
+      data-testid="savings-supply-card"
+      badges={
+        /* Product badge: monochrome per the current comp (859:35719, APP-432
+           item 11) — the fg-tertiary USDS mark replaces the green token logo,
+           with the label on fg-secondary. */
+        <ProductBadge
+          data-testid="savings-supply-badge"
+          icon={<Usds boxSize={12} className="text-fgTertiary h-3 w-3" aria-hidden />}
+        >
+          <Trans>Sky Savings</Trans>
+        </ProductBadge>
+      }
+      title={
         <Trans>
           Supply {supplyTokens} and earn {rate} APY
         </Trans>
-      </h3>
-
-      <p className="text-textSecondary text-xs leading-[19px] md:text-sm md:leading-relaxed">
+      }
+      description={
         <Trans>
           Governed by Sky Ecosystem to deliver the best risk-adjusted yield, sUSDS allows you to grow your
           holdings with instant liquidity and zero fees.
         </Trans>
-      </p>
-
-      {/* The two stats sit content-width around a 28px border-primary hairline
-          at every tier — the desktop comp (859:35719) keeps the divider too
-          (APP-432 item 11), so the old md: two-column grid is gone. */}
-      <div className="flex items-center gap-6">
-        <div className="flex flex-col gap-1 md:gap-1.5">
-          <span className="text-textSecondary text-xs leading-4 md:text-sm md:leading-normal">
-            <Trans>Current Rate</Trans>
-          </span>
-          <span className="text-text font-circle md:font-graphik flex items-center gap-1.5 leading-[18px] font-medium tracking-[-0.32px] md:leading-normal md:tracking-normal">
+      }
+      stats={
+        <ProductStatPair>
+          <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
             {rate}
             <TokenIcon
               token={{ symbol: 'sUSDS' }}
-              width={18}
+              width={16}
               showChainIcon={false}
-              className="h-4 w-4 md:h-4.5 md:w-4.5"
+              className="h-4 w-4 shrink-0"
             />
-          </span>
-        </div>
-        <div className="bg-borderPrimary h-7 w-px shrink-0" />
-        <div className="flex flex-col gap-1 md:gap-1.5">
-          <span className="text-textSecondary text-xs leading-4 md:text-sm md:leading-normal">
-            <Trans>Idle balance</Trans>
-          </span>
-          <span className="text-text font-circle md:font-graphik flex items-center gap-1.5 leading-[18px] font-medium tracking-[-0.32px] md:leading-normal md:tracking-normal">
+          </ProductStat>
+          <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
             {idleBalance}
-            <TokenIconStack symbols={origins} size={18} />
-          </span>
-        </div>
-      </div>
-
-      <Button
-        variant="primary"
-        size="l"
-        className="w-full"
-        onClick={onSupplyOrConnect}
-        data-testid="savings-supply-cta"
-      >
-        <Trans>Supply</Trans>
-      </Button>
-    </Card>
+            <TokenIconStack symbols={origins} size={16} />
+          </ProductStat>
+        </ProductStatPair>
+      }
+      cta={
+        <Button
+          variant="primary"
+          size="l"
+          className="w-full"
+          onClick={onSupplyOrConnect}
+          data-testid="savings-supply-cta"
+        >
+          <Trans>Supply</Trans>
+        </Button>
+      }
+    />
   );
 }

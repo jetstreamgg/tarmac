@@ -9,7 +9,7 @@ import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { QueryParams } from '@/lib/constants';
 import { retainOnNavigate, useAppSearchParams } from '@/lib/navigation';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
-import { IllustrationStaked } from '@/modules/icons';
+import { IllustrationStaked, Pendle } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
@@ -140,9 +140,13 @@ export function EarnPage() {
           />
         ),
         status: productStatusType(row),
+        // Provider mark beside the name: Morpho for its vaults, Pendle for the
+        // fixed-yield rows (1036:201260 — the Pendle mark was missing).
         nameSuffix:
           row.kind === 'vault' && row.id.startsWith('vault-morpho') ? (
             <Morpho className="h-4 w-4 rounded-sm" />
+          ) : row.kind === 'fixed' ? (
+            <Pendle className="h-4 w-4" />
           ) : undefined,
         supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
         maturityLabel: row.maturity ? formatMaturity(row.maturity) : undefined,

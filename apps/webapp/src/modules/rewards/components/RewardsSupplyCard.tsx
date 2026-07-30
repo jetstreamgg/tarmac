@@ -6,7 +6,12 @@ import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import {
+  ProductBadge,
+  ProductStat,
+  ProductStatPair,
+  ProductSupplyCard
+} from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 const NO_VALUE = '–';
@@ -67,7 +72,7 @@ export function RewardsSupplyCard({
         token={{ symbol }}
         width={24}
         showChainIcon={false}
-        className="mr-1 inline-block h-6 w-6 -translate-y-0.5 align-middle"
+        className="mr-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6"
       />
       {symbol}
     </span>
@@ -76,9 +81,26 @@ export function RewardsSupplyCard({
   const rewardToken = inlineToken(rewardSymbol);
 
   return (
-    <Card className="flex flex-col gap-6 p-6" data-testid="rewards-supply-card">
-      <h3 className="text-text text-2xl leading-snug font-medium">
-        {isPointsFarm ? (
+    <ProductSupplyCard
+      data-testid="rewards-supply-card"
+      // No comp of its own (APP-432 item 16) — the badge follows the savings
+      // card, tagged with the farm's reward token.
+      badges={
+        <ProductBadge
+          icon={
+            <TokenIcon
+              token={{ symbol: rewardSymbol }}
+              width={12}
+              showChainIcon={false}
+              className="h-3 w-3"
+            />
+          }
+        >
+          <Trans>Sky Token Rewards</Trans>
+        </ProductBadge>
+      }
+      title={
+        isPointsFarm ? (
           <Trans>
             Supply {supplyToken} and earn {rewardToken} points
           </Trans>
@@ -86,56 +108,45 @@ export function RewardsSupplyCard({
           <Trans>
             Supply {supplyToken} and earn {rewardToken} rewards
           </Trans>
-        )}
-      </h3>
-
-      {aboutBanner && (
-        <p className="text-textSecondary text-sm leading-relaxed">{parseBannerContent(aboutBanner)}</p>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-textSecondary text-sm">
-            <Trans>Current Rate</Trans>
-          </span>
-          <span className="text-text flex items-center gap-1.5 font-medium">
+        )
+      }
+      description={aboutBanner ? parseBannerContent(aboutBanner) : undefined}
+      stats={
+        <ProductStatPair>
+          <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
             {formattedRate}
             <TokenIcon
               token={{ symbol: rewardSymbol }}
-              width={18}
+              width={16}
               showChainIcon={false}
-              className="h-4.5 w-4.5"
+              className="h-4 w-4 shrink-0"
             />
-          </span>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-textSecondary text-sm">
-            <Trans>Idle balance</Trans>
-          </span>
-          <span className="text-text flex items-center gap-1.5 font-medium">
+          </ProductStat>
+          <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
             {idleBalance}
             <TokenIcon
               token={{ symbol: supplySymbol }}
-              width={18}
+              width={16}
               showChainIcon={false}
-              className="h-4.5 w-4.5"
+              className="h-4 w-4 shrink-0"
             />
-          </span>
-        </div>
-      </div>
-
-      {onSupply && (
-        <Button
-          variant="primary"
-          size="l"
-          className="w-full"
-          onClick={onSupply}
-          disabled={!isConnected}
-          data-testid="rewards-supply-cta"
-        >
-          <Trans>Supply</Trans>
-        </Button>
-      )}
-    </Card>
+          </ProductStat>
+        </ProductStatPair>
+      }
+      cta={
+        onSupply && (
+          <Button
+            variant="primary"
+            size="l"
+            className="w-full"
+            onClick={onSupply}
+            disabled={!isConnected}
+            data-testid="rewards-supply-cta"
+          >
+            <Trans>Supply</Trans>
+          </Button>
+        )
+      }
+    />
   );
 }

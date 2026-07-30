@@ -1,55 +1,79 @@
+import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { splitAmount } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ProductBadge } from './ProductCard';
 
 /**
  * The "My position" hero shared by every product position card (the
- * ProductDetailTemplate `position` slot): a token-tagged pill and the position
- * balance over a soft bottom-fade inset (Figma: 16px radius, brand-purple
- * linear fade).
+ * ProductDetailTemplate `position` slot): a tagged pill and the position
+ * balance over a soft bottom-fade inset (Figma 859:41055 — 16px radius,
+ * brand-purple linear fade, 24px padding, 64px pill→figure gap).
+ *
+ * The figure is Heading 2 (Circular 44/48, -0.88) with a Heading 6 fraction on
+ * fg-secondary. The phone tier keeps M6.3's smaller scale (486:20976).
  */
 export function PositionHero({
   pillSymbol,
+  pillIcon,
+  pillLabel,
   balanceSymbol,
-  amount
+  amount,
+  subline
 }: {
-  /** Token tagged on the "My position" pill (the product's share/reward token). */
-  pillSymbol: string;
+  /** Token tagged on the pill (the product's share/reward token). */
+  pillSymbol?: string;
+  /** Overrides the pill's token mark — /stake tags its badge with the Sky pinwheel. */
+  pillIcon?: ReactNode;
+  /** Defaults to "My position"; /stake's comp (1036:214138) says "Total Staked". */
+  pillLabel?: ReactNode;
   /** Token the balance is denominated in. */
   balanceSymbol: string;
-  amount: number;
+  /**
+   * A number is split into a full-size whole and a dimmed fraction; pass a
+   * pre-formatted string to render the figure whole (the /stake comp does).
+   */
+  amount: number | string;
+  /** Optional line under the figure, indented past the token mark (e.g. "~$120,788.90"). */
+  subline?: ReactNode;
 }) {
-  const { whole, fraction } = splitAmount(amount);
+  const { whole, fraction } =
+    typeof amount === 'number' ? splitAmount(amount) : { whole: amount, fraction: undefined };
 
-  // M6.3 mobile (486:20976): 16px inset, 40px pill→balance gap, Heading 3
-  // figure (32/35) with an 18/20 fraction; desktop keeps the C3 scale.
   return (
-    <div className="flex flex-col gap-10 rounded-2xl bg-[linear-gradient(180deg,_rgba(182,179,252,0)_50.24%,_rgba(117,111,236,0.1)_100%)] p-4 md:gap-6 md:p-5">
-      <span className="bg-surface text-textSecondary font-circle md:font-graphik flex w-fit items-center gap-1 rounded-full py-[5px] pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px] md:gap-1.5 md:px-3 md:py-1 md:text-sm md:leading-normal md:font-normal md:tracking-normal">
-        <TokenIcon
-          token={{ symbol: pillSymbol }}
-          width={16}
-          showChainIcon={false}
-          className="h-3 w-3 md:h-4 md:w-4"
-        />
-        <Trans>My position</Trans>
-      </span>
-      <span className="text-text flex items-end gap-2 font-semibold">
-        <TokenIcon
-          token={{ symbol: balanceSymbol }}
-          width={32}
-          showChainIcon={false}
-          className="mb-1 h-8 w-8"
-        />
-        <span className="font-circle md:font-graphik text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-4xl md:leading-none md:font-semibold md:tracking-normal">
-          {whole}
-        </span>
-        {fraction && (
-          <span className="text-textSecondary font-circle md:font-graphik text-lg leading-5 font-medium tracking-[-0.36px] md:text-2xl md:leading-tight md:font-semibold md:tracking-normal">
-            .{fraction}
+    <div className="flex flex-col gap-10 rounded-2xl bg-[linear-gradient(180deg,_rgba(182,179,252,0)_50.24%,_rgba(117,111,236,0.1)_100%)] p-4 md:gap-16 md:p-6">
+      <ProductBadge
+        icon={
+          pillIcon ??
+          (pillSymbol && (
+            <TokenIcon token={{ symbol: pillSymbol }} width={12} showChainIcon={false} className="h-3 w-3" />
+          ))
+        }
+      >
+        {pillLabel ?? <Trans>My position</Trans>}
+      </ProductBadge>
+
+      <div className="flex flex-col gap-2">
+        <span className="text-fgPrimary flex items-center gap-2">
+          <TokenIcon
+            token={{ symbol: balanceSymbol }}
+            width={32}
+            showChainIcon={false}
+            className="h-8 w-8 shrink-0"
+          />
+          <span className="flex items-baseline gap-px">
+            <span className="font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]">
+              {whole}
+            </span>
+            {fraction && (
+              <span className="text-fgSecondary font-circle text-lg leading-5 font-medium tracking-[-0.36px] md:text-xl md:leading-[22px] md:tracking-[-0.4px]">
+                .{fraction}
+              </span>
+            )}
           </span>
-        )}
-      </span>
+        </span>
+        {subline && <span className="text-fgSecondary pl-10 text-xs leading-[18px]">{subline}</span>}
+      </div>
     </div>
   );
 }
