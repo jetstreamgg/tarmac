@@ -416,8 +416,8 @@ export type PendleCombinedMarketHistoryHook = ReadHook & {
  * `ptAmount` is the raw PT integer (PT decimals = underlying decimals per
  * Pendle convention), so `formatBigInt(amount, { unit: decimals })` renders
  * the same number a user would see on a block explorer or the per-market
- * history table. `marketName` ("PT-sUSDS", …) is the unit shown in the row's
- * right-hand text.
+ * history table. `underlyingSymbol` carries the PT ticker ("PT-sUSDS", …)
+ * shown as the row's right-hand unit.
  */
 export interface PendleHistoryItem {
   blockTimestamp: Date;
@@ -435,9 +435,9 @@ export interface PendleHistoryItem {
   assets: bigint;
   /** Underlying-token decimals — used by formatBigInt at render time. */
   underlyingDecimals: number;
-  /** Underlying-token display symbol (e.g. "sUSDS"). */
+  /** PT ticker ("PT-sUSDS") — the row's unit; amounts are PT-denominated. */
   underlyingSymbol: string;
-  /** Market name for breadcrumb context; not used in the row's right-hand unit. */
+  /** Same PT ticker, for breadcrumb context; `market.name` is the product display name, not a ticker. */
   marketName: string;
   /** Source market address — useful for downstream linking; not currently rendered. */
   marketAddress: `0x${string}`;

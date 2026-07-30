@@ -7,17 +7,8 @@ import { Trans } from '@lingui/react/macro';
 import { TransactionTypeEnum, useSkyPrice, useStakeHistory } from '@/hooks';
 import { formatAddress, formatUsd, getEtherscanLink } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
-import {
-  SavingsSupply,
-  ArrowDown,
-  Stake,
-  Delegate,
-  Borrow,
-  ClaimRewards,
-  Liquidated,
-  Repaid,
-  SelectRewards
-} from '@/modules/icons';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
+import { Stake, Delegate, Borrow, ClaimRewards, Liquidated, Repaid, SelectRewards } from '@/modules/icons';
 import { ExternalLink } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
@@ -159,10 +150,10 @@ function verbIcon(verb: StakeActivityVerb) {
     case 'open':
       return <Stake width={16} height={16} />;
     case 'stake':
-      return <SavingsSupply width={14} height={13} />;
+      return <ArrowDownToLine className="size-4" />;
     case 'unstakeRepay':
     case 'unstake':
-      return <ArrowDown width={10} height={14} className="light:fill-text fill-white" />;
+      return <ArrowUpToLine className="size-4" />;
     case 'borrow':
       return <Borrow width={16} height={16} />;
     case 'repay':

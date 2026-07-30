@@ -99,7 +99,7 @@ export function ConnectedPortfolio() {
   // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
   return (
     <div
-      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:py-10"
+      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:pt-20 md:pb-10"
       data-testid="portfolio-page"
     >
       {/* Header (Patterns/Headers, Portfolio type 5034:20993): Label 5
@@ -114,7 +114,10 @@ export function ConnectedPortfolio() {
             the dropdown going full-width 24px under the heading; from md the
             comp's desktop row (heading left, dropdown right) returns. */}
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-4">
-          <PageHeading size="md">
+          <PageHeading
+            size="md"
+            className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
+          >
             <Trans>Your Stablecoin Earnings</Trans>
           </PageHeading>
           <FilterSelect

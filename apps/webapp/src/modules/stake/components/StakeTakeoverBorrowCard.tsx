@@ -8,7 +8,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
-import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
+import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
 
 const NO_VALUE = '–';
 
@@ -91,9 +91,8 @@ export function StakeTakeoverBorrowCard({
 
   const onPercentClick = (percent: number) => {
     if (maxBorrowable === 0n) return;
-    const raw = percent === 100 ? maxBorrowable : (maxBorrowable * BigInt(percent)) / 100n;
-    // Chips follow the slider's whole-USDS rounding; 100% is the exact max.
-    onAmountChange(percent === 100 ? raw : (raw / 10n ** 18n) * 10n ** 18n);
+    // Chips follow the slider's whole-USDS rounding.
+    onAmountChange(((maxBorrowable * BigInt(percent)) / 100n / 10n ** 18n) * 10n ** 18n);
   };
 
   return (
@@ -111,6 +110,7 @@ export function StakeTakeoverBorrowCard({
           amount={usdsToBorrow}
           onAmountChange={onAmountChange}
           onPercentClick={onPercentClick}
+          percentChips={BORROW_PERCENT_CHIPS}
           disabled={inputDisabled}
           error={error}
           dataTestId="stake-takeover-borrow-amount"
