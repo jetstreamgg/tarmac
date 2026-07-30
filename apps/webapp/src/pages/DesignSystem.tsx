@@ -2187,7 +2187,7 @@ function TooltipReplica({ className, children }: { className?: string; children:
   return (
     <div
       className={cn(
-        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[100px]',
+        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
         className
       )}
     >

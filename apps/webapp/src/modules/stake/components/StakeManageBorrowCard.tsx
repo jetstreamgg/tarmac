@@ -9,7 +9,7 @@ import { Slider, SliderTicks } from '@/components/ui/slider';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
 import { StakeManageCard, StakeManageDeltaRow } from './StakeManageCard';
-import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
+import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
 
 const NO_VALUE = '–';
 const WAD = 10n ** 18n;
@@ -118,8 +118,7 @@ export function StakeManageBorrowCard({
       return;
     }
     if (maxBorrowable === 0n) return;
-    const raw = percent === 100 ? maxBorrowable : (maxBorrowable * BigInt(percent)) / 100n;
-    onAmountChange(percent === 100 ? raw : (raw / WAD) * WAD);
+    onAmountChange(((maxBorrowable * BigInt(percent)) / 100n / WAD) * WAD);
   };
 
   // Delta values (M13): current → simulated, arrow only when they differ.
@@ -151,6 +150,7 @@ export function StakeManageBorrowCard({
           amount={amount}
           onAmountChange={value => onAmountChange(value)}
           onPercentClick={onPercentClick}
+          percentChips={isRepay ? undefined : BORROW_PERCENT_CHIPS}
           disabled={inputDisabled}
           error={error}
           label={isRepay ? <Trans>Repay amount</Trans> : <Trans>Borrow amount</Trans>}

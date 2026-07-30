@@ -41,9 +41,9 @@ const RISK_TIER_DETAILS: Record<
   EarnRiskTier,
   { title: ReactNode; litSegments: number; segmentClass: string }
 > = {
-  low: { title: <Trans>Conservative</Trans>, litSegments: 1, segmentClass: 'bg-statusSuccessSolid' },
+  low: { title: <Trans>Conservative</Trans>, litSegments: 1, segmentClass: 'bg-statusSuccess' },
   moderate: { title: <Trans>Moderate</Trans>, litSegments: 2, segmentClass: 'bg-statusWarning' },
-  advanced: { title: <Trans>Aggressive</Trans>, litSegments: 3, segmentClass: 'bg-error' }
+  advanced: { title: <Trans>Aggressive</Trans>, litSegments: 3, segmentClass: 'bg-statusError' }
 };
 
 /**
@@ -230,7 +230,7 @@ function ExposureFactValue({ symbols }: { symbols: string[] }) {
       </PopoverTrigger>
       <PopoverContent
         side="top"
-        className="font-graphik text-fgPrimary bg-bgTertiary w-auto rounded-2xl px-3 py-2 text-[11px] leading-4 backdrop-blur-[100px]"
+        className="font-graphik text-fgPrimary bg-bgTertiary w-auto rounded-2xl px-3 py-2 text-[11px] leading-4 backdrop-blur-[20px]"
       >
         {names}
       </PopoverContent>
@@ -265,7 +265,7 @@ function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: E
             data-testid="risk-details-segment"
             className={cn(
               'h-1 flex-1 rounded-full',
-              index < severity.litSegments ? severity.segmentClass : 'bg-bgTertiary'
+              index < severity.litSegments ? severity.segmentClass : 'bg-fgQuaternary'
             )}
           />
         ))}

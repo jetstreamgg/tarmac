@@ -14,10 +14,10 @@ const NO_VALUE = '–';
 // the desktop 2-column strip.
 function DetailRow({ icon, label, children }: { icon: ReactNode; label: ReactNode; children: ReactNode }) {
   return (
-    <div className="border-borderPrimary md:border-textSecondary/10 flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3">
-      <span className="text-textSecondary flex items-center gap-1.5 text-sm leading-[22px] md:gap-2 md:leading-normal">
+    <div className="border-borderPrimary flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3">
+      <span className="text-fgSecondary flex items-center gap-1.5 text-sm leading-[22px] md:gap-2 md:leading-normal">
         <span
-          className="text-textSecondary flex h-3 w-3 items-center justify-center md:h-4 md:w-4 [&>svg]:h-full [&>svg]:w-full"
+          className="text-fgSecondary flex h-3 w-3 items-center justify-center md:h-4 md:w-4 [&>svg]:h-full [&>svg]:w-full"
           aria-hidden
         >
           {icon}
@@ -108,7 +108,7 @@ export function StakeDetailsStrip() {
           label={
             <>
               <Trans>Protocol SKY Price</Trans>
-              <Info className="text-textSecondary h-3.5 w-3.5" aria-hidden />
+              <Info className="text-fgSecondary h-3.5 w-3.5" aria-hidden />
             </>
           }
         >

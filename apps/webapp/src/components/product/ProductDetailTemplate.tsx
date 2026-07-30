@@ -118,7 +118,7 @@ function DetailsSection({ title, details }: { title?: ReactNode; details: Produc
             key={row.id}
             className="border-borderPrimary flex items-center justify-between gap-4 border-b py-4"
           >
-            <span className="text-textSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-normal">
+            <span className="text-fgSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-normal">
               {row.icon}
               {row.label}
             </span>
@@ -136,14 +136,18 @@ function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetai
   return (
     <section className="flex flex-col gap-4" data-testid="product-detail-about">
       <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>About</Trans>}</SectionHeading>
-      <div className="text-textSecondary text-sm leading-relaxed">
+      {/* Body 5 on fg-secondary with an inline fg-brand-primary link
+          (Figma 859:35769). textSecondary is the legacy lavender
+          (rgba(198,194,255,.8)), which is what read as purple next to the
+          comp's gray — APP-432 item 10. */}
+      <div className="text-fgSecondary font-graphik text-sm leading-[22px]">
         {about.body}
         {about.learnMoreHref && (
           <a
             href={about.learnMoreHref}
             target="_blank"
             rel="noreferrer"
-            className="text-text mt-1 inline-block font-medium underline"
+            className="text-fgBrand ml-1 font-medium"
           >
             <Trans>Learn more</Trans>
           </a>

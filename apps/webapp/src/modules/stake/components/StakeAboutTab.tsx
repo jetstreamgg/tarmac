@@ -66,7 +66,7 @@ export function StakeAboutTab() {
       <div className="order-2 flex flex-col gap-10 lg:order-none lg:col-span-2 lg:gap-6">
         <Card testId="stake-about-copy">
           {banner?.title && <h3 className={sectionHeading}>{banner.title}</h3>}
-          <div className="text-textSecondary text-sm leading-[22px] md:text-base md:leading-normal">
+          <div className="text-fgSecondary text-sm leading-[22px] md:text-base md:leading-normal">
             {parseBannerContent(banner?.description)}
           </div>
         </Card>
@@ -124,7 +124,7 @@ function HowItWorksRow({
   children: React.ReactNode;
 }) {
   return (
-    <li className="border-borderPrimary md:border-textSecondary/10 flex items-center justify-between gap-3 border-b p-4 last:border-b-0 md:px-0 md:py-4">
+    <li className="border-borderPrimary flex items-center justify-between gap-3 border-b p-4 last:border-b-0 md:px-0 md:py-4">
       <span className="flex items-center gap-2 md:gap-3">
         <span className="bg-glassSurface md:bg-surface text-text font-circle flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-normal md:tracking-normal">
           {n}
@@ -134,7 +134,7 @@ function HowItWorksRow({
         </span>
       </span>
       {optional && (
-        <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
+        <span className="text-fgSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
           <Trans>(Optional)</Trans>
         </span>
       )}
