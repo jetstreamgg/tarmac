@@ -3,7 +3,7 @@ import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ExternalLink, Search } from 'lucide-react';
-import { BP, useBreakpointIndex, useStakeUserDelegates, useDebounce, ZERO_ADDRESS } from '@/hooks';
+import { useStakeUserDelegates, useDebounce, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { cn } from '@/lib/cn';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
@@ -33,8 +33,6 @@ export function DelegateList({
   const chainId = useChainId();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
-  const { bpi } = useBreakpointIndex();
-  const isMobile = bpi < BP.md;
 
   // Legacy SelectDelegate arguments, verbatim (pageSize 100, random, sorted).
   const { data: delegates, isLoading } = useStakeUserDelegates({
@@ -49,8 +47,9 @@ export function DelegateList({
   });
 
   return (
-    <div className="flex flex-col gap-6 md:gap-4">
-      <div className="border-textSecondary/20 flex items-center gap-2 border-b pb-3 md:pb-2">
+    <div className="flex flex-col gap-6 md:gap-8">
+      {/* Search row over its hairline (Frame 2087328600, 1036:209801). */}
+      <div className="border-borderPrimary flex items-center gap-2 border-b pb-3">
         <Search className="text-textSecondary h-4 w-4 shrink-0" aria-hidden />
         <input
           type="text"
@@ -58,7 +57,7 @@ export function DelegateList({
           placeholder={t`Search`}
           onChange={event => setSearch(event.target.value)}
           data-testid={`${dataTestIdPrefix}-search`}
-          className="text-text placeholder:text-fgTertiary md:placeholder:text-textSecondary w-full bg-transparent text-sm leading-[22px] outline-none md:leading-5"
+          className="text-text placeholder:text-fgTertiary md:placeholder:text-textSecondary w-full bg-transparent text-sm leading-[22px] outline-none"
         />
       </div>
 
@@ -87,20 +86,21 @@ export function DelegateList({
                   data-testid={`${dataTestIdPrefix}-${delegate.id.toLowerCase()}`}
                   aria-pressed={isSelected}
                   className={cn(
-                    'flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition-colors md:rounded-xl md:p-4',
-                    // Comp 1222:19936: brand ring over the 10% brand gradient —
-                    // the brandBorder/brand3 recipe the selected wallet row in
-                    // ui/list already uses. Applied at every tier: the previous
-                    // border-primary/bg-primary pair resolves to transparent in
-                    // the dark scope, leaving desktop's selected row invisible.
+                    'flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition-colors md:rounded-[20px] md:px-5 md:py-4',
+                    // Comp 1222:19936 / 1036:209807: brand ring over the 10%
+                    // brand gradient — the brandBorder/brand3 recipe the
+                    // selected wallet row in ui/list already uses. Applied at
+                    // every tier: the previous border-primary/bg-primary pair
+                    // resolves to transparent in the dark scope, leaving
+                    // desktop's selected row invisible.
                     isSelected
                       ? 'border-brandBorder from-brand3-start to-brand3-end bg-linear-to-b'
-                      : 'border-borderPrimary md:bg-surfaceAlt/40 bg-transparent md:border-transparent'
+                      : 'border-borderPrimary bg-transparent'
                   )}
                 >
                   <span className="flex min-w-0 items-center gap-3">
-                    <CustomAvatar address={delegate.ownerAddress ?? delegate.id} size={isMobile ? 24 : 32} />
-                    <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-5 md:tracking-normal">
+                    <CustomAvatar address={delegate.ownerAddress ?? delegate.id} size={24} />
+                    <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
                       {delegate.metadata?.name || shortenAddress(delegate.id)}
                       <a
                         href={delegateProfileUrl(delegate.metadata?.externalProfileURL, delegate.id)}
@@ -110,20 +110,20 @@ export function DelegateList({
                         aria-label={t`View delegate profile`}
                         className="text-textSecondary hover:text-text"
                       >
-                        <ExternalLink className="h-3 w-3 md:h-3.5 md:w-3.5" aria-hidden />
+                        <ExternalLink className="h-3 w-3" aria-hidden />
                       </a>
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5">
-                    <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:leading-4">
+                    <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px]">
                       <Trans>Total delegated</Trans>
                     </span>
-                    <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px] md:gap-1.5 md:font-sans md:leading-5 md:tracking-normal">
+                    <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
                       {formatBigInt(delegate.totalDelegated ?? 0n, { maxDecimals: 0 })}
                       <TokenIcon
                         token={{ symbol: 'SKY' }}
-                        width={16}
-                        className="h-3 w-3 md:h-4 md:w-4"
+                        width={12}
+                        className="h-3 w-3"
                         showChainIcon={false}
                       />
                     </span>

@@ -294,6 +294,21 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(500n * WAD);
   });
 
+  it('the stake slider tracks the typed share of the balance (1036:209724)', () => {
+    renderTakeover();
+
+    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
+    expect(slider?.getAttribute('aria-valuenow')).toBe('0');
+
+    // Balance is 1000 SKY, so a quarter of it puts the thumb at 25%.
+    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
+    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
+
+    // Typing past the balance pins the thumb rather than running it off-track.
+    typeStakeAmount('5000');
+    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
+  });
+
   it('shows the est. annual rewards from the selected farm rate', () => {
     renderTakeover();
 

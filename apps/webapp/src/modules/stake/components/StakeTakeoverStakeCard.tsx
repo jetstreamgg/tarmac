@@ -1,9 +1,11 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Info } from 'lucide-react';
+import { t } from '@lingui/core/macro';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Slider, SliderTicks } from '@/components/ui/slider';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 
@@ -11,24 +13,25 @@ const NO_VALUE = '–';
 
 function StatItem({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1">
-      <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:flex md:items-center md:gap-1 md:text-sm md:leading-5">
+    <div className="flex min-w-0 flex-1 flex-col gap-1 md:flex-none">
+      <span className="text-fgSecondary md:text-textSecondary flex items-center gap-1 text-xs leading-[18px]">
         {label}
       </span>
-      <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px] md:gap-1.5 md:font-sans md:leading-5 md:tracking-normal">
+      <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
         {children}
       </span>
     </div>
   );
 }
 
-/** Mobile-only 32px hairline between the stat columns (comp 1222:19772). */
+/** 32px hairline between the stat columns (comp 1036:209729). */
 function StatDivider() {
-  return <span aria-hidden className="bg-borderPrimary h-8 w-px shrink-0 self-center md:hidden" />;
+  return <span aria-hidden className="bg-borderPrimary h-8 w-px shrink-0 self-center" />;
 }
 
 /**
- * Card 1 · Stake SKY: amount + balance/percent chips + rewards-rate stats. The
+ * Card 1 · Stake SKY (Modal / 12, 1036:209703): amount + balance/percent chips
+ * over a hairline, a 0–100%-of-balance slider, then the rewards-rate stats. The
  * `Min. stake to borrow` stat appears only while Borrow is enabled (UX §A.2).
  * Est. annual rewards shows "–" until an amount is entered.
  */
@@ -61,36 +64,70 @@ export function StakeTakeoverStakeCard({
     onAmountChange(percent === 100 ? balance : (balance * BigInt(percent)) / 100n);
   };
 
+  // Slider ↔ amount share the chips' arithmetic, so dragging to a stop and
+  // clicking the matching chip stage the same wei. Held at whole percents (the
+  // DS Standard slider's step); an amount typed past the balance pins the thumb
+  // at 100 rather than running it off the track.
+  const sliderBalance = balance ?? 0n;
+  const sliderPercent = sliderBalance > 0n ? Math.min(100, Number((amount * 100n) / sliderBalance)) : 0;
+
   return (
     <StakeTakeoverCard step={1} title={<Trans>Stake SKY</Trans>} dataTestId="stake-takeover-stake-card">
-      <StakeTakeoverAmountField
-        tokenSymbol="SKY"
-        amount={amount}
-        onAmountChange={onAmountChange}
-        onPercentClick={onPercentClick}
-        error={error}
-        dataTestId="stake-takeover-stake-amount"
-        topRight={
-          balanceLoading ? (
-            <Skeleton className="h-4 w-32" />
-          ) : (
-            <Trans>Balance: {balance !== undefined ? formatBigInt(balance) : NO_VALUE} SKY</Trans>
-          )
-        }
-      />
+      <div className="flex flex-col gap-6 md:gap-5">
+        <div className="flex flex-col gap-2 md:gap-3">
+          <StakeTakeoverAmountField
+            tokenSymbol="SKY"
+            amount={amount}
+            onAmountChange={onAmountChange}
+            onPercentClick={onPercentClick}
+            error={error}
+            dataTestId="stake-takeover-stake-amount"
+            topRight={
+              balanceLoading ? (
+                <Skeleton className="h-4 w-32" />
+              ) : (
+                <Trans>Balance: {balance !== undefined ? formatBigInt(balance) : NO_VALUE} SKY</Trans>
+              )
+            }
+          />
+          <span aria-hidden className="border-borderPrimary border-t" />
+        </div>
 
-      <div className="border-textSecondary/10 -mt-3 flex items-center gap-4 border-t pt-6 md:mt-0 md:flex-wrap md:items-start md:gap-6 md:pt-4">
+        {/* Sliders / Standard (I1036:209724): the share of the wallet balance
+            being staked. Inert with no balance to divide by. */}
+        <div className="flex flex-col gap-1.5">
+          <Slider
+            value={[sliderPercent]}
+            max={100}
+            step={1}
+            disabled={sliderBalance === 0n}
+            onValueChange={value => {
+              const percent = value[0];
+              onAmountChange(percent >= 100 ? sliderBalance : (sliderBalance * BigInt(percent)) / 100n);
+            }}
+            aria-label={t`Share of balance to stake`}
+            data-testid="stake-takeover-stake-slider"
+          />
+          <div className="text-fgSecondary flex items-center gap-4 text-xs leading-[18px]">
+            <span>0%</span>
+            <SliderTicks progress={sliderPercent} className="grow" />
+            <span>100%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 md:gap-6">
         <StatItem label={<Trans>SKY Rewards rate</Trans>}>{rewardsRate ?? NO_VALUE}</StatItem>
         <StatDivider />
         <StatItem label={<Trans>Est. annual rewards</Trans>}>
-          <span data-testid="stake-takeover-est-rewards" className="flex items-center gap-1 md:gap-1.5">
+          <span data-testid="stake-takeover-est-rewards" className="flex items-center gap-1">
             {estAnnualRewards !== null && estAnnualRewards > 0n ? (
               <>
                 {formatBigInt(estAnnualRewards)}
                 <TokenIcon
                   token={{ symbol: rewardSymbol }}
-                  width={16}
-                  className="h-3 w-3 md:h-4 md:w-4"
+                  width={12}
+                  className="h-3 w-3"
                   showChainIcon={false}
                 />
               </>
@@ -106,21 +143,17 @@ export function StakeTakeoverStakeCard({
               label={
                 <>
                   <Trans>Min. stake to borrow</Trans>
-                  <Info
-                    className="ml-1 inline h-3 w-3 shrink-0 align-[-2px] md:ml-0 md:h-3.5 md:w-3.5 md:align-baseline"
-                    aria-hidden
+                  <InfoTooltip
+                    iconSize={12}
+                    iconClassName="shrink-0"
+                    content={t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`}
                   />
                 </>
               }
             >
-              <span data-testid="stake-takeover-min-stake" className="flex items-center gap-1 md:gap-1.5">
+              <span data-testid="stake-takeover-min-stake" className="flex items-center gap-1">
                 {formatBigInt(minStakeToBorrow)}
-                <TokenIcon
-                  token={{ symbol: 'SKY' }}
-                  width={16}
-                  className="h-3 w-3 md:h-4 md:w-4"
-                  showChainIcon={false}
-                />
+                <TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />
               </span>
             </StatItem>
           </>
