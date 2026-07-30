@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
-import { MoveDown } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { TOKENS, useMkrSkyFee, useDebounce, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
@@ -12,8 +11,7 @@ import { ModalAmountField, type PercentPreset } from '@/components/product/Modal
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
+import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
@@ -37,24 +35,6 @@ const parseAmount = (value: string): bigint => {
 // the confirm-screen hero alike ("7,500.00" / "9,000.00", Figma 1310:130760).
 const formatAmount = (amount: bigint) =>
   formatNumber(parseFloat(formatUnits(amount, DECIMALS)), { minDecimals: 2, maxDecimals: 2 });
-
-/** One confirm-screen hero row (Figma 1310:130691): 32px icon + Heading-2 amount + token badge. */
-function HeroAmountRow({ symbol, amount, testId }: { symbol: string; amount: string; testId: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="flex min-w-0 items-center gap-3">
-        <TokenIcon token={{ symbol }} width={32} showChainIcon={false} className="size-8 shrink-0" />
-        <span
-          className="font-circle text-fgPrimary truncate text-[44px] leading-12 font-medium tracking-[-0.88px]"
-          data-testid={testId}
-        >
-          {amount}
-        </span>
-      </span>
-      <TokenBadge symbol={symbol} />
-    </div>
-  );
-}
 
 /**
  * Editable body for the "Upgrade DAI/MKR" modal (Figma 1310:130712 DAI /
@@ -132,21 +112,11 @@ export function UpgradeModalForm({
   // Approve/Upgrade steps.
   const transactionScreenContent = useMemo(
     () => (
-      <div className="flex flex-col gap-4" data-testid="upgrade-modal-summary">
-        <HeroAmountRow
-          symbol={token}
-          amount={formatAmount(debouncedAmount)}
-          testId="upgrade-modal-from-amount"
-        />
-        <span aria-hidden className="pl-2">
-          <MoveDown className="text-fgSecondary size-5" />
-        </span>
-        <HeroAmountRow
-          symbol={target}
-          amount={formatAmount(receiveAmount)}
-          testId="upgrade-modal-to-amount"
-        />
-      </div>
+      <TokenTransferHero
+        from={{ symbol: token, amount: formatAmount(debouncedAmount), testId: 'upgrade-modal-from-amount' }}
+        to={{ symbol: target, amount: formatAmount(receiveAmount), testId: 'upgrade-modal-to-amount' }}
+        testId="upgrade-modal-summary"
+      />
     ),
     [token, target, debouncedAmount, receiveAmount]
   );

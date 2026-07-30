@@ -113,7 +113,8 @@ describe('useConvertLaunch', () => {
   it('labels a two-step approve → convert flow when allowance is needed', () => {
     h.needsAllowance = true;
     const { result } = renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
-    expect(result.current.steps).toEqual(['Approve USDS', 'Convert USDS to USDC']);
+    // The approve step carries tokenSymbol so the steps list renders "Approve ◉ USDS" (Figma 1036:205564).
+    expect(result.current.steps).toEqual([{ label: 'Approve', tokenSymbol: 'USDS' }, 'Convert USDS to USDC']);
   });
 
   it('collapses to a single convert step when allowance covers the amount', () => {
@@ -132,7 +133,8 @@ describe('useConvertLaunch', () => {
     const config = h.launchMock.mock.calls[0][0];
     expect(config).toMatchObject({
       title: 'Review conversion',
-      transactionTitle: 'Confirm in the wallet',
+      // The wallet screen keeps the review title (Figma 1036:205564).
+      transactionTitle: 'Review conversion',
       confirmLabel: 'Confirm',
       confirmDisabled: false,
       steps: ['Convert USDS to USDC'],
