@@ -4,6 +4,9 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { StUsdsProviderType } from '@/hooks';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
@@ -104,7 +107,32 @@ export function StUsdsModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, error } = useStUsdsLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
+  // every render, so depending on its identity would give the review breakdown a
+  // new identity every render — and the live push that carries it would re-enter
+  // the provider on each of its re-renders (the update loop the modal forms guard
+  // against). Same field-by-field list the convert launch hook keeps.
+  const feeCell = useMemo(
+    () => ({ fee: networkFee, state: bundleState }),
+    [
+      networkFee?.formatted,
+      networkFee?.batchSaving,
+      bundleState.ready,
+      bundleState.settled,
+      bundleState.canBundle,
+      bundleState.promoVisible
+    ]
+  );
 
   const disabled =
     !amountReady ||
@@ -138,7 +166,7 @@ export function StUsdsModalForm({
     earningsBefore: projectEarnings(position),
     earningsAfter: projectEarnings(positionAfter),
     hasAmount: !isZero,
-    networkFee: NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE
   });
 
   // Review breakdown: the from→to hero the wallet screen also draws, over the
@@ -168,9 +196,10 @@ export function StUsdsModalForm({
               routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
               withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
               network: networkName,
-              networkFee: NO_VALUE
+              networkFee: networkFee?.formatted ?? NO_VALUE
             }),
-            'stusds-modal-row'
+            'stusds-modal-row',
+            feeCell
           )}
           dividerClassName="h-6"
         />
@@ -184,7 +213,9 @@ export function StUsdsModalForm({
       earningsAfterDisplay,
       rateDisplay,
       isCurveRoute,
-      networkName
+      networkName,
+      feeCell,
+      networkFee
     ]
   );
 
@@ -246,7 +277,9 @@ export function StUsdsModalForm({
       <div className="flex flex-col gap-4">
         <StUsdsProviderNotice providerSelection={providerSelection} flow={flow} />
 
-        <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row')} dividerClassName="h-8" />
+        <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row', feeCell)} dividerClassName="h-8" />
+
+        {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
         {needsImpactAcknowledgement && (
           <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">

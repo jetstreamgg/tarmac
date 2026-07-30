@@ -2,11 +2,15 @@ import { type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { type Token } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useNetworkFee } from '@/hooks';
 import { useRewardsLaunch, type RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
 import { useRewardsTransactionForm, type RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
 
@@ -80,7 +84,16 @@ export function RewardsModalForm({
     setMaxAmount
   } = form;
 
-  const { execute, steps, prepared } = useRewardsLaunch(engineParams);
+  const { execute, steps, prepared, calls, isBatch } = useRewardsLaunch(engineParams);
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
   const disabled = !amountReady || !prepared;
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -111,7 +124,10 @@ export function RewardsModalForm({
         },
         { label: <Trans>Product</Trans>, value: displayName },
         { label: <Trans>Withdrawal</Trans>, value: <Trans>Anytime</Trans> },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
+        {
+          label: <NetworkFeeLabel />,
+          value: <NetworkFeeValue fee={networkFee} state={bundleState} />
+        }
       ]
     : [
         {
@@ -119,7 +135,10 @@ export function RewardsModalForm({
           value: `${formatNumber(amountUsd, { maxDecimals: 2 })} ${supplyToken.symbol}`
         },
         { label: <Trans>Product</Trans>, value: displayName },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
+        {
+          label: <NetworkFeeLabel />,
+          value: <NetworkFeeValue fee={networkFee} state={bundleState} />
+        }
       ];
 
   const body = (
@@ -174,6 +193,8 @@ export function RewardsModalForm({
           <Row key={index} label={row.label} value={row.value} />
         ))}
       </div>
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

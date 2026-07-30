@@ -14,10 +14,9 @@ import {
 } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
-import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import { Stake, Liquidated } from '@/modules/icons';
+import { StakeSky, Liquidated, SuppliedEmpty } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Button } from '@/components/ui/button';
@@ -155,10 +154,14 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
 function PositionIdCell({ position }: { position: StakeUserPosition }) {
   const inactive = isInactiveStakePosition(position);
   return (
-    <div data-testid={`stake-position-id-${position.index}`} className={cn(inactive && 'opacity-50')}>
+    // Inactive positions read through Iconbox/Position's own Inactive variant
+    // (Figma 5051:145321) rather than a blanket opacity — the comp keeps the
+    // label at full-strength fg-primary and only neutralizes the mark.
+    <div data-testid={`stake-position-id-${position.index}`}>
       <CellPosition
-        icon={<Stake width={16} height={16} />}
+        icon={<StakeSky width={16} height={16} />}
         label={<Trans>Position {position.index + 1}</Trans>}
+        inactive={inactive}
       />
     </div>
   );
@@ -222,12 +225,10 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
 const renderCard = (position: StakeUserPosition) => (
   <TransactionCard
     header={
-      <span
-        className={cn('flex items-center gap-3', isInactiveStakePosition(position) && 'opacity-50')}
-        data-testid={`stake-position-id-${position.index}`}
-      >
-        <IconboxPosition>
-          <Stake width={16} height={16} />
+      <span className="flex items-center gap-3" data-testid={`stake-position-id-${position.index}`}>
+        {/* Same inactive treatment as the desktop cell: the variant, not opacity. */}
+        <IconboxPosition inactive={isInactiveStakePosition(position)}>
+          <StakeSky width={16} height={16} />
         </IconboxPosition>
         <span className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
           <Trans>Position {position.index + 1}</Trans>
@@ -306,6 +307,24 @@ export function StakePositionsTable({
     : allPositions;
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
+  // Comp 1036:208676: the empty state is a self-contained card — the section
+  // title moves inside it and there is no table chrome.
+  if (isEmpty) {
+    return (
+      <Card data-testid="stake-positions-empty" className="flex flex-col gap-6 p-8">
+        <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+          <Trans>Active positions</Trans>
+        </h3>
+        <div className="flex flex-col items-center gap-4 py-6">
+          <SuppliedEmpty aria-hidden />
+          <p className="text-fgSecondary font-circle max-w-[224px] text-center text-sm leading-4 font-medium tracking-[-0.28px]">
+            <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
@@ -330,41 +349,26 @@ export function StakePositionsTable({
         )}
       </div>
 
-      {isEmpty ? (
-        <Card
-          data-testid="stake-positions-empty"
-          className="flex flex-col items-center justify-center gap-4 px-6 py-16"
-        >
-          <span className="flex items-center" aria-hidden>
-            <span className="bg-textSecondary/20 h-10 w-10 rounded-full" />
-            <span className="bg-textSecondary/30 -ml-4 h-10 w-10 rounded-full" />
-          </span>
-          <p className="text-textSecondary text-center text-sm">
-            <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
-          </p>
-        </Card>
-      ) : (
-        <ProductTransactionsTable
-          dataTestId="stake-positions-table"
-          columns={COLUMNS}
-          rows={visiblePositions}
-          rowKey={position => String(position.index)}
-          rowTestId={position => `stake-position-row-${position.index}`}
-          onRowClick={onRowClick}
-          isLoading={isLoading}
-          error={error}
-          emptyLabel={<Trans>No active positions.</Trans>}
-          minWidth={720}
-          renderCard={renderCard}
-          renderBelowRow={position => (
-            <StakePositionRowBanner
-              position={position}
-              onRemediate={action => onRemediate(position, action)}
-              onClaim={() => onRowClick(position)}
-            />
-          )}
-        />
-      )}
+      <ProductTransactionsTable
+        dataTestId="stake-positions-table"
+        columns={COLUMNS}
+        rows={visiblePositions}
+        rowKey={position => String(position.index)}
+        rowTestId={position => `stake-position-row-${position.index}`}
+        onRowClick={onRowClick}
+        isLoading={isLoading}
+        error={error}
+        emptyLabel={<Trans>No active positions.</Trans>}
+        minWidth={720}
+        renderCard={renderCard}
+        renderBelowRow={position => (
+          <StakePositionRowBanner
+            position={position}
+            onRemediate={action => onRemediate(position, action)}
+            onClaim={() => onRowClick(position)}
+          />
+        )}
+      />
     </div>
   );
 }

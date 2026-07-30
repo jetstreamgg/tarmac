@@ -1,9 +1,19 @@
 import { useId } from 'react';
 import { useChainId } from 'wagmi';
 import { ArrowRight } from 'lucide-react';
+import type { NetworkFeeData } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useChainImage } from '@/widgets';
 import type { ModalSummaryCell } from './ModalSummaryGrid';
+
+/**
+ * The fee cell's label. Shared with `toGridCells`, which hangs the estimate's
+ * tooltip and bundling panel off it — so the row builders keep emitting plain
+ * strings (asserted in their tests) instead of smuggling JSX through.
+ */
+export const NETWORK_FEE_LABEL = 'Network fee';
 
 /**
  * One labelled transaction-modal grid cell: a single value, or a before→after
@@ -236,12 +246,33 @@ function LabelBadge({ text }: { text: string }) {
   );
 }
 
+/**
+ * The live gas estimate for the grid's `Network fee` cell (APP-418). Passing it
+ * swaps that one cell's label for the tooltip and its value for the estimate +
+ * bundling panel; omit it and the cell renders whatever string the builder put
+ * there (the modules that have no flow to simulate yet).
+ */
+export type ModalGridFee = {
+  fee?: NetworkFeeData;
+  state: BundleFeeState;
+};
+
 /** Maps builder rows to `ModalSummaryGrid` cells; test ids are `${testIdPrefix}-${label}`. */
-export const toGridCells = (rows: ModalGridCell[][], testIdPrefix: string): ModalSummaryCell[][] =>
+export const toGridCells = (
+  rows: ModalGridCell[][],
+  testIdPrefix: string,
+  networkFee?: ModalGridFee
+): ModalSummaryCell[][] =>
   rows.map(row =>
-    row.map(cell => ({
-      label:
-        cell.labelBadge || cell.labelAction ? (
+    row.map(cell => {
+      // The fee cell is the one place the grid renders live data rather than a
+      // formatted string: the label carries the estimate's tooltip and the value
+      // carries the bundling panel (Figma 1036:206739 / 1036:207086).
+      const isFeeCell = !!networkFee && cell.label === NETWORK_FEE_LABEL;
+      return {
+        label: isFeeCell ? (
+          <NetworkFeeLabel />
+        ) : cell.labelBadge || cell.labelAction ? (
           <span className="flex items-center gap-1">
             {cell.label}
             {cell.labelBadge && <LabelBadge text={cell.labelBadge} />}
@@ -250,7 +281,12 @@ export const toGridCells = (rows: ModalGridCell[][], testIdPrefix: string): Moda
         ) : (
           cell.label
         ),
-      testId: `${testIdPrefix}-${cell.label}`,
-      content: <CellValue cell={cell} />
-    }))
+        testId: `${testIdPrefix}-${cell.label}`,
+        content: isFeeCell ? (
+          <NetworkFeeValue fee={networkFee.fee} state={networkFee.state} />
+        ) : (
+          <CellValue cell={cell} />
+        )
+      };
+    })
   );

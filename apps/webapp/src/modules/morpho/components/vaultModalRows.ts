@@ -9,6 +9,7 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type VaultModalGridRow = ModalGridCell[];
@@ -78,7 +79,7 @@ export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRo
         input.hasAmount
       )
     ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }
 
@@ -149,6 +150,6 @@ export function buildVaultReviewRows(
       { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
       { kind: 'single', label: 'Network', value: input.network, network: true }
     ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }

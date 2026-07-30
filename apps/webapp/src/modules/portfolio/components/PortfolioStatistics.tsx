@@ -33,7 +33,7 @@ export function PortfolioStatistics() {
 
   return (
     <section data-testid="portfolio-statistics">
-      <Heading tag="h2" variant="medium" className="mb-6">
+      <Heading tag="h2" variant="medium" className="mb-8">
         <Trans>Sky Protocol Statistics</Trans>
       </Heading>
 

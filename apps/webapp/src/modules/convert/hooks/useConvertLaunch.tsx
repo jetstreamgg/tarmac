@@ -2,6 +2,9 @@ import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
 import { useChainId, useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
+import { useNetworkFee } from '@/hooks';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
 import { REFERRAL_CODE } from '@/lib/constants';
@@ -90,6 +93,17 @@ export function useConvertLaunch({
   const confirmDisabled =
     amount === 0n || !!conversion.disabledReason || !conversion.prepared || conversion.isLoading;
 
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls: conversion.calls,
+    chainId,
+    shouldUseBatch: conversion.isBatch,
+    enabled: amount > 0n
+  });
+
+  const bundleState = useBundleFeeState(conversion.calls.length, networkFee, !!networkFeeError);
+
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
   const executeRef = useRef<() => void>(() => undefined);
@@ -117,10 +131,33 @@ export function useConvertLaunch({
         originDecimals={originDecimals}
         targetDecimals={targetDecimals}
         networkName={networkName}
-        networkFee={NO_VALUE}
+        networkFee={networkFee?.formatted ?? NO_VALUE}
+        feeCell={{ fee: networkFee, state: bundleState }}
+        promo={
+          bundleState.promoVisible ? <BundleSavingsPromo saving={networkFee!.batchSaving!} /> : undefined
+        }
       />
     ),
-    [originSymbol, targetSymbol, amount, conversion.targetAmount, originDecimals, targetDecimals, networkName]
+    [
+      originSymbol,
+      targetSymbol,
+      amount,
+      conversion.targetAmount,
+      originDecimals,
+      targetDecimals,
+      networkName,
+      networkFee?.formatted,
+      networkFee?.batchSaving,
+      // Every field the fee row reads, listed one by one: the memoised element is what
+      // `updateModalContent` pushes, so anything missing here is a value the open modal
+      // can never pick up — `NetworkFeeValue` can't re-render itself out of a stale
+      // `state` prop. (The objects themselves are new identities each render; depending
+      // on them would defeat the memo and re-open the update loop this guards against.)
+      bundleState.settled,
+      bundleState.canBundle,
+      bundleState.promoVisible,
+      conversion.calls.length
+    ]
   );
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, originDecimals)), { maxDecimals: 2 })} ${originSymbol}`;

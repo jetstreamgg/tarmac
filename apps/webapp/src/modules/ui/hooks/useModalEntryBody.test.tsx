@@ -66,6 +66,9 @@ describe('useModalEntryBody — live-push freeze once the tx leaves IDLE', () =>
 
     h.txStatus = TxStatus.IDLE;
     view.rerender(<Host steps={[{ label: 'Supply' }]} />);
-    expect(h.updateModalContent).toHaveBeenCalledWith('s1', expect.objectContaining({ steps: [{ label: 'Supply' }] }));
+    expect(h.updateModalContent).toHaveBeenCalledWith(
+      's1',
+      expect.objectContaining({ steps: [{ label: 'Supply' }] })
+    );
   });
 });

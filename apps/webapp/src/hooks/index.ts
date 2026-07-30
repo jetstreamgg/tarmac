@@ -527,6 +527,8 @@ export { contracts, l2Contracts } from './contracts';
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
+export { useNetworkFee } from './shared/useNetworkFee';
+export type { NetworkFeeData, UseNetworkFeeParameters } from './shared/useNetworkFee';
 
 // UI utility hooks
 export * from './ui';

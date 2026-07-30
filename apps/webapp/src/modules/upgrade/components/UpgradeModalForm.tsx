@@ -5,6 +5,9 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { TOKENS, useMkrSkyFee, useDebounce, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, math } from '@/utils';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee } from '@/hooks';
 import { TxStatus, PopoverRateInfo } from '@/widgets';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
@@ -84,7 +87,37 @@ export function UpgradeModalForm({
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
   const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending;
 
-  const { execute, steps, prepared, error } = useUpgradeLaunch({ token, amount: debouncedAmount });
+  const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
+    token,
+    amount: debouncedAmount
+  });
+
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
+  // every render, so depending on its identity would give the review breakdown a
+  // new identity every render — and the live push that carries it would re-enter
+  // the provider on each of its re-renders (the update loop the modal forms guard
+  // against). Same field-by-field list the convert launch hook keeps.
+  const feeCell = useMemo(
+    () => ({ fee: networkFee, state: bundleState }),
+    [
+      networkFee?.formatted,
+      networkFee?.batchSaving,
+      bundleState.ready,
+      bundleState.settled,
+      bundleState.canBundle,
+      bundleState.promoVisible
+    ]
+  );
   const disabled = !amountReady || !prepared;
 
   // The wallet balance is chain state the engine's success doesn't refetch —
@@ -150,7 +183,7 @@ export function UpgradeModalForm({
     // 12px info glyph after the label (Figma 1343:79562).
     penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} height={12} /> : undefined,
     network: networkName,
-    networkFee: NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE
   });
 
   const body = (
@@ -192,7 +225,9 @@ export function UpgradeModalForm({
       />
 
       <div className="flex flex-col gap-4">
-        <ModalSummaryGrid rows={toGridCells(rows, 'upgrade-modal-row')} dividerClassName="h-6" />
+        <ModalSummaryGrid rows={toGridCells(rows, 'upgrade-modal-row', feeCell)} dividerClassName="h-6" />
+
+        {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
         {error && amountReady && (
           <Text className="text-error text-sm" data-testid="upgrade-modal-error">
             <Trans>Something went wrong preparing the transaction. Please try again.</Trans>

@@ -2,13 +2,15 @@ import { useMemo, useState } from 'react';
 import { useChains, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { useTransactionFlow } from '@/hooks';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee, useTransactionFlow } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
-import { toGridCells } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL, toGridCells } from '@/components/product/ModalGridCells';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
@@ -94,6 +96,16 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   const flow = useTransactionFlow({ calls, chainId, shouldUseBatch: true, ...txCallbacks });
 
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: !!flow.isBatch
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+
   // Disabled until there's something to send AND no in-scope source is still
   // preparing (e.g. Merkl proofs mid-load) — so we never claim a partial subset.
   const hasRewardsIn = (source: ClaimSource) => allRewards.some(reward => reward.source === source);
@@ -132,11 +144,12 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   const gridRows = toGridCells(
     [
       [
-        { label: t`Network fee`, kind: 'single', value: NO_VALUE },
+        { label: NETWORK_FEE_LABEL, kind: 'single', value: networkFee?.formatted ?? NO_VALUE },
         { label: t`Network`, kind: 'single', value: networkName, network: true }
       ]
     ],
-    'claim-modal-row'
+    'claim-modal-row',
+    { fee: networkFee, state: bundleState }
   );
 
   const body = (
@@ -165,6 +178,8 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
       )}
 
       {allRewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

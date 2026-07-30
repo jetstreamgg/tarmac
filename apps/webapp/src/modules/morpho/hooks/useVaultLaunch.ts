@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { Call } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
@@ -39,6 +40,10 @@ export interface UseVaultLaunchResult {
   prepared: boolean;
   isLoading: boolean;
   error: Error | null;
+  /** The routed engine's calls, for estimating the flow's network fee. */
+  calls: Call[];
+  /** Whether those calls go out bundled — the batch costs less than the sequence. */
+  isBatch: boolean;
 }
 
 /**
@@ -132,6 +137,8 @@ export function useVaultLaunch({
     steps,
     prepared: activeHook.prepared,
     isLoading: activeHook.isLoading,
-    error: activeHook.error
+    error: activeHook.error,
+    calls: activeHook.calls ?? [],
+    isBatch: !!activeHook.isBatch
   };
 }

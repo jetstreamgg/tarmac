@@ -9,13 +9,11 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Steps, StepsItem } from '@/components/ui/steps';
-import { Switch } from '@/components/ui/switch';
-import { Close, LightningFilled } from '@/modules/icons';
+import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { BATCH_TX_LEGAL_NOTICE_URL } from '@/lib/constants';
 import { getExplorerName } from '@/utils';
 import { useIsSafeWallet } from '@/hooks';
 import { useIsBatchSupported } from '@/hooks';
@@ -165,7 +163,6 @@ export function TransactionModal({
   const isFirstScreen = isEntry || isReview;
   const isTransaction = step === 'transaction';
   const hasMultipleSteps = steps && steps.length > 1;
-  const showBatchToggle = hasMultipleSteps && batchSupported;
   // Same expression the launch hooks use for `shouldUseBatch` — when true the
   // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
   // steps active together, "Bundled" header badge).
@@ -288,6 +285,14 @@ export function TransactionModal({
   return (
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
       <ResponsiveModalContent
+        // Popovers, tooltips and selects opened from inside the modal are portalled to
+        // the document root, so Radix sees a pointer-down on them as outside the dialog
+        // and closes it — which killed the transaction when the bundling switch was used.
+        onPointerDownOutside={event => {
+          if ((event.target as HTMLElement | null)?.closest('[data-radix-popper-content-wrapper]')) {
+            event.preventDefault();
+          }
+        }}
         aria-describedby={undefined}
         // DS Modal card (Figma 1310:130558 desktop, 1292:63543 mobile):
         // colors/bg/bg-secondary tint at radius-2xl over the frosted scrim at
@@ -454,7 +459,6 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
-                {showBatchToggle && <BatchToggle steps={steps ?? []} />}
                 {hasSecondaryConfirm ? (
                   // Comp 1036:214001: two flex-1 CTAs with a 20px gutter.
                   <div className="flex w-full gap-5">
@@ -551,49 +555,5 @@ export function TransactionModal({
         </div>
       </ResponsiveModalContent>
     </ResponsiveModal>
-  );
-}
-
-/**
- * "Save on clicks & network fee" card on the review screen (Figma 1036:206739
- * off / 1036:207086 on): bordered 16px-radius card, zap + Label-4 header beside
- * the DS switch, Body-6 explainer naming the flow's own steps ("Approve +
- * Supply run as one transaction…"). The comp's bare "Learn more" is wired to
- * the legal-notice route — the same target the nav-menu toggle discloses. The
- * extra bottom margin stretches the review column's 16px gap to the comp's
- * 32px before the confirm CTA.
- */
-function BatchToggle({ steps }: { steps: TransactionStep[] }) {
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
-
-  const stepLabels = steps.map(step => (typeof step === 'string' ? step : step.label)).join(' + ');
-
-  return (
-    <div className="border-borderPrimary mb-4 flex flex-col gap-2 rounded-2xl border p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-fgPrimary font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px]">
-          <LightningFilled boxSize={16} className="text-fgBrand shrink-0" />
-          <Trans>Save on clicks &amp; network fee</Trans>
-        </span>
-        <Switch
-          checked={batchEnabled}
-          onCheckedChange={setBatchEnabled}
-          aria-label={t`Toggle bundled transactions`}
-        />
-      </div>
-      <Text className="font-graphik text-fgSecondary text-xs leading-[18px]">
-        <Trans>
-          {stepLabels} run as one transaction. You sign once and bundled transactions saves you clicks and
-          gas.
-        </Trans>{' '}
-        <ExternalLink
-          href={BATCH_TX_LEGAL_NOTICE_URL}
-          showIcon={false}
-          className="text-fgPrimary hover:underline"
-        >
-          <Trans>Learn more</Trans>
-        </ExternalLink>
-      </Text>
-    </div>
   );
 }

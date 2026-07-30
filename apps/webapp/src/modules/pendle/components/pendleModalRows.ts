@@ -11,6 +11,7 @@
 
 import type { ReactNode } from 'react';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type PendleModalGridRow = ModalGridCell[];
@@ -95,7 +96,7 @@ export function buildPendleEntryRows(input: PendleEntryRowInput): PendleModalGri
       ),
       { kind: 'single', label: 'Claim date', value: input.claimDate }
     ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }
 
@@ -167,7 +168,7 @@ export function buildPendleReviewRows(
     value: input.network,
     network: true
   };
-  const feeCell: ModalGridCell = { kind: 'single', label: 'Network fee', value: input.networkFee };
+  const feeCell: ModalGridCell = { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee };
 
   if (flow === 'supply') {
     return [

@@ -9,6 +9,9 @@ import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useNetworkFee } from '@/hooks';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 import { SavingsOriginSelect } from './SavingsOriginSelect';
@@ -85,8 +88,35 @@ export function SavingsModalForm({
     switchOrigin
   } = form;
 
-  const { execute, steps, prepared } = useSavingsLaunch(engineParams);
+  const { execute, steps, prepared, calls, isBatch } = useSavingsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
+
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
+  // every render, so depending on its identity would give the review breakdown a
+  // new identity every render — and the live push that carries it would re-enter
+  // the provider on each of its re-renders (the update loop the modal forms guard
+  // against). Same field-by-field list the convert launch hook keeps.
+  const feeCell = useMemo(
+    () => ({ fee: networkFee, state: bundleState }),
+    [
+      networkFee?.formatted,
+      networkFee?.batchSaving,
+      bundleState.ready,
+      bundleState.settled,
+      bundleState.canBundle,
+      bundleState.promoVisible
+    ]
+  );
 
   const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
   // The position is always USDS-denominated (18-dec — on L2 `userSavingsBalance` is
@@ -110,7 +140,7 @@ export function SavingsModalForm({
         // 1Y est. earnings has no projection source yet (PRD Out of Scope) — stubbed.
         earningsBefore: NO_VALUE,
         earningsAfter: NO_VALUE,
-        networkFee: NO_VALUE
+        networkFee: networkFee?.formatted ?? NO_VALUE
       })
     : buildWithdrawModalRows({
         savingsRate: apyDisplay,
@@ -120,7 +150,7 @@ export function SavingsModalForm({
         hasAmount: !isZero,
         earningsBefore: NO_VALUE,
         earningsAfter: NO_VALUE,
-        networkFee: NO_VALUE
+        networkFee: networkFee?.formatted ?? NO_VALUE
       });
 
   // Review breakdown (Figma 859:36154): the amount hero the wallet screen also
@@ -144,7 +174,7 @@ export function SavingsModalForm({
           rate: apyDisplay,
           withdrawal: t`Anytime`,
           network: networkName,
-          networkFee: NO_VALUE
+          networkFee: networkFee?.formatted ?? NO_VALUE
         })
       : buildWithdrawReviewRows({
           youReceive,
@@ -154,15 +184,28 @@ export function SavingsModalForm({
           rate: apyDisplay,
           withdrawal: t`Instant`,
           network: networkName,
-          networkFee: NO_VALUE
+          networkFee: networkFee?.formatted ?? NO_VALUE
         });
     return (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`savings-modal-${flow}-review`}>
         {transactionScreenContent}
-        <ModalSummaryGrid rows={toGridCells(reviewRows, 'savings-modal-row')} dividerClassName="h-6" />
+        <ModalSummaryGrid
+          rows={toGridCells(reviewRows, 'savings-modal-row', feeCell)}
+          dividerClassName="h-6"
+        />
       </div>
     );
-  }, [isSupply, youReceive, apyDisplay, networkName, originSymbol, flow, transactionScreenContent]);
+  }, [
+    isSupply,
+    youReceive,
+    apyDisplay,
+    networkName,
+    originSymbol,
+    flow,
+    transactionScreenContent,
+    feeCell,
+    networkFee
+  ]);
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / review breakdown / step labels /
@@ -214,7 +257,9 @@ export function SavingsModalForm({
         maxTestId="savings-modal-amount-max"
       />
 
-      <ModalSummaryGrid rows={toGridCells(rows, 'savings-modal-row')} dividerClassName="h-8" />
+      <ModalSummaryGrid rows={toGridCells(rows, 'savings-modal-row', feeCell)} dividerClassName="h-8" />
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

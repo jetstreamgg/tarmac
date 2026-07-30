@@ -14,7 +14,7 @@ import { useAllRewardsUserHistory } from '@/hooks';
 import { useAllRewardsUserHistory } from '@/hooks';
 
 function App() {
-  const { data, error, isLoading } = useAllRewardsUserHistory('0xUserAddress...');
+  const { data, error, isLoading } = useAllRewardsUserHistory();
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -35,23 +35,16 @@ function App() {
 
 ## Parameters
 
-```ts
-import { type ReadHookParams } from '@/hooks';
-```
+The history is fetched for the connected wallet on the current chain.
 
 ### Props
 
 ```ts
-type Props = ReadHookParams<RewardUserHistory[]> & {
-  userAddress: `0x${string}`;
+type Props = {
   indexerUrl?: string;
 };
 ```
 
-- `userAddress`: `0x${string}`
-  - The address of the user to fetch history for.
-- `options`: `ReadHookParams<RewardUserHistory[]>`
-  - Additional options for the query.
 - `indexerUrl`: `string | undefined`
   - Optional. A custom indexer URL to use for fetching data. If not provided, the default URL will be used.
 

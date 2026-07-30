@@ -27,6 +27,10 @@ export type WriteHook = {
   retryPrepare: () => void;
   prepareError: Error | SimulateContractErrorType | null;
   prepared: boolean;
+  /** The calls this hook will send — read-only, for estimating the flow's network fee. */
+  calls?: Call[];
+  /** Always false: a single contract write is never bundled. Present so flow results are uniform. */
+  isBatch?: boolean;
 };
 
 export type WriteHookParams = {
@@ -70,6 +74,10 @@ export type BatchWriteHook = {
   execute: () => void;
   currentCallIndex: number;
   reset: () => void;
+  /** The calls this hook will send — read-only, for estimating the flow's network fee. */
+  calls?: Call[];
+  /** Whether those calls will go out bundled, which changes what the flow costs. */
+  isBatch?: boolean;
 };
 
 export type BatchWriteHookParams = {

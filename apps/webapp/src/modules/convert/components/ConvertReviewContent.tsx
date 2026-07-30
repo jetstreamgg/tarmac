@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { formatNumber } from '@/utils';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
-import { toGridCells } from '@/components/product/ModalGridCells';
+import { toGridCells, type ModalGridFee } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { buildConvertModalRows } from './convertModalRows';
 
@@ -24,7 +25,9 @@ export function ConvertReviewContent({
   originDecimals,
   targetDecimals,
   networkName,
-  networkFee
+  networkFee,
+  feeCell,
+  promo
 }: {
   originSymbol: string;
   targetSymbol: string;
@@ -34,6 +37,10 @@ export function ConvertReviewContent({
   targetDecimals: number;
   networkName: string;
   networkFee: string;
+  /** Live estimate for the fee cell (tooltip + bundling panel); falls back to `networkFee` when absent. */
+  feeCell?: ModalGridFee;
+  /** The "Save X%" card, rendered under the rows when bundling is worth pitching. */
+  promo?: ReactNode;
 }) {
   const rows = buildConvertModalRows({
     originSymbol,
@@ -56,7 +63,8 @@ export function ConvertReviewContent({
           testId: 'convert-modal-to-amount'
         }}
       />
-      <ModalSummaryGrid rows={toGridCells(rows, 'convert-modal-row')} dividerClassName="h-6" />
+      <ModalSummaryGrid rows={toGridCells(rows, 'convert-modal-row', feeCell)} dividerClassName="h-6" />
+      {promo}
     </div>
   );
 }

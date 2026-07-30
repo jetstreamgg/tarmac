@@ -10,6 +10,7 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
 
 /** One labelled grid cell — the shared modal-grid cell model (single or before→after delta). */
 export type SavingsModalCell = ModalGridCell;
@@ -62,7 +63,7 @@ const singleOrDelta = (
  * the PSM slippage floor.
  */
 export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalGridRow[] {
-  const networkFee: SavingsModalCell = { kind: 'single', label: 'Network fee', value: input.networkFee };
+  const networkFee: SavingsModalCell = { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee };
   return [
     [
       { kind: 'single', label: 'Savings rate', value: input.savingsRate, rateAccent: 'savings' },
@@ -134,7 +135,7 @@ export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsMod
         input.hasAmount
       )
     ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }
 
@@ -175,7 +176,7 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
       { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
       { kind: 'single', label: 'Network', value: input.network, network: true }
     ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }
 
@@ -218,6 +219,6 @@ export function buildWithdrawReviewRows(input: WithdrawReviewRowInput): SavingsM
       { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
       { kind: 'single', label: 'Network', value: input.network, network: true }
     ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }

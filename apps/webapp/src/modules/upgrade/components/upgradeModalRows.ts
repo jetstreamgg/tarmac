@@ -10,6 +10,7 @@
 
 import type { ReactNode } from 'react';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
 
 /** Display strings for the upgrade entry grid. */
 export type UpgradeModalRowInput = {
@@ -52,6 +53,6 @@ export function buildUpgradeModalRows(input: UpgradeModalRowInput): ModalGridCel
     input.penalty !== undefined
       ? [{ kind: 'single', label: 'Penalty', value: input.penalty, labelAction: input.penaltyInfo }, network]
       : [network],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }

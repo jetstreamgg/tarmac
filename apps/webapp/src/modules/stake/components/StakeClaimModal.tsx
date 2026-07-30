@@ -7,12 +7,15 @@ import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
-import { toGridCells } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL, toGridCells } from '@/components/product/ModalGridCells';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import { stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
@@ -73,13 +76,31 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
   });
   const rewards = useMemo(() => sortSkyFirst(unsortedRewards), [unsortedRewards]);
 
-  const { confirm, retry, restakeAvailable, plainPrepared, plainLoading, restakePrepared, restakeLoading } =
-    useStakeClaimLaunch({
-      urnIndex: BigInt(urnIndex),
-      selected: rewards,
-      enabled: rewards.length > 0,
-      sessionId
-    });
+  const {
+    confirm,
+    retry,
+    restakeAvailable,
+    plainPrepared,
+    plainLoading,
+    restakePrepared,
+    restakeLoading,
+    calls,
+    isBatch
+  } = useStakeClaimLaunch({
+    urnIndex: BigInt(urnIndex),
+    selected: rewards,
+    enabled: rewards.length > 0,
+    sessionId
+  });
+
+  // Read-only: the cell shows a dash until this resolves, and neither CTA waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
   const claimDisabled = rewards.length === 0 || !plainPrepared || plainLoading;
   const restakeDisabled = rewards.length === 0 || !restakePrepared || restakeLoading;
@@ -140,15 +161,18 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
 
   const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
 
-  // [Network fee | Network] (Figma 1036:213990). Fee is stubbed like the other modules.
+  // [Network fee | Network] (Figma 1036:213990). The fee cell draws the live
+  // estimate — the plain claim's, per `useStakeClaimLaunch`'s note on the
+  // two-CTA gap — with its tooltip and bundling panel.
   const gridRows = toGridCells(
     [
       [
-        { label: t`Network fee`, kind: 'single', value: NO_VALUE },
+        { label: NETWORK_FEE_LABEL, kind: 'single', value: networkFee?.formatted ?? NO_VALUE },
         { label: t`Network`, kind: 'single', value: networkName, network: true }
       ]
     ],
-    'stake-claim-row'
+    'stake-claim-row',
+    { fee: networkFee, state: bundleState }
   );
 
   const body = (
@@ -166,6 +190,8 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
       )}
 
       {rewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

@@ -96,9 +96,12 @@ export function ConnectedPortfolio() {
 
   // The desktop px-calc insets the page to the middle 10 columns of the design
   // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
+  // Section rhythm per the comps (1036:189460 desktop / 486:20104 mobile):
+  // no uniform gap — each block carries its own top margin, 48/80 (mobile/md)
+  // between major sections, 120 desktop bottom padding.
   return (
     <div
-      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:pt-20 md:pb-10"
+      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col py-4 md:pt-20 md:pb-30"
       data-testid="portfolio-page"
     >
       {/* Header (Patterns/Headers, Portfolio type 5034:20993): Label 5
@@ -131,43 +134,57 @@ export function ConnectedPortfolio() {
         </div>
       </div>
 
-      {callout === 'simulate' && <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />}
-      {callout === 'allocate' && (
-        <AllocateStablecoinsBanner
-          idleUsd={idleTotalUsd}
-          savingsRate={savingsRate}
-          onAllocate={goToSavings}
-        />
-      )}
+      {/* Banner and earnings card group: 56/48 below the header, and a tight
+          16 between banner and card when a callout shows (1036:188968). */}
+      <div className="mt-14 flex flex-col gap-4 md:mt-12">
+        {callout === 'simulate' && <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />}
+        {callout === 'allocate' && (
+          <AllocateStablecoinsBanner
+            idleUsd={idleTotalUsd}
+            savingsRate={savingsRate}
+            onAllocate={goToSavings}
+          />
+        )}
 
-      <StablecoinEarningsCard
-        suppliedView={suppliedView}
-        suppliedLoading={isLoading}
-        idleView={idleView}
-        idleLoading={balancesLoading}
-        savingsRate={savingsRate}
-        tab={tab}
-        onTabChange={setUserTab}
-      />
-      <PortfolioPositionsSection
-        suppliedView={suppliedView}
-        suppliedLoading={isLoading}
-        idleView={idleView}
-        idleSupplyInfo={idleSupplyInfo}
-        idleLoading={balancesLoading}
-        tab={tab}
-        onTabChange={setUserTab}
-      />
+        <StablecoinEarningsCard
+          suppliedView={suppliedView}
+          suppliedLoading={isLoading}
+          idleView={idleView}
+          idleLoading={balancesLoading}
+          savingsRate={savingsRate}
+          tab={tab}
+          onTabChange={setUserTab}
+        />
+      </div>
+      <div className="mt-12 md:mt-20">
+        <PortfolioPositionsSection
+          suppliedView={suppliedView}
+          suppliedLoading={isLoading}
+          idleView={idleView}
+          idleSupplyInfo={idleSupplyInfo}
+          idleLoading={balancesLoading}
+          tab={tab}
+          onTabChange={setUserTab}
+        />
+      </div>
 
       {/* Portfolio-wide transactions (D8), after the position cards per the comp. */}
-      <PortfolioTransactionsSection />
+      <div className="mt-12 md:mt-20">
+        <PortfolioTransactionsSection />
+      </div>
 
       {/* Matured PT redemption (G6): the marketplace filters matured markets out
-          of the supplied view, so this self-hiding section is their only surface. */}
+          of the supplied view, so this self-hiding section is their only surface.
+          It carries its own section margin — a wrapper here would leave a stray
+          gap when it renders null. */}
       <PendleReadyToRedeemList />
 
       {/* Sub-$10 users get the same Sky-wide statistics as disconnected visitors. */}
-      {callout !== 'none' && <PortfolioStatistics />}
+      {callout !== 'none' && (
+        <div className="mt-12 md:mt-20">
+          <PortfolioStatistics />
+        </div>
+      )}
     </div>
   );
 }

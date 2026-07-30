@@ -4,6 +4,8 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { type Token, type VaultProvider, useVaultMarketData } from '@/hooks';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
@@ -11,6 +13,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useNetworkFee } from '@/hooks';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
 import { buildVaultEntryRows, buildVaultReviewRows } from './vaultModalRows';
@@ -97,7 +100,32 @@ export function VaultModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared } = useVaultLaunch(engineParams);
+  const { execute, steps, prepared, calls, isBatch } = useVaultLaunch(engineParams);
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
+  // every render, so depending on its identity would give the review breakdown a
+  // new identity every render — and the live push that carries it would re-enter
+  // the provider on each of its re-renders (the update loop the modal forms guard
+  // against). Same field-by-field list the convert launch hook keeps.
+  const feeCell = useMemo(
+    () => ({ fee: networkFee, state: bundleState }),
+    [
+      networkFee?.formatted,
+      networkFee?.batchSaving,
+      bundleState.ready,
+      bundleState.settled,
+      bundleState.canBundle,
+      bundleState.promoVisible
+    ]
+  );
   const disabled = !amountReady || !prepared;
 
   // The stars accent marks an incentive-boosted rate, mirroring the vault rate
@@ -131,7 +159,7 @@ export function VaultModalForm({
     earningsBefore: projectEarnings(position),
     earningsAfter: projectEarnings(positionAfter),
     hasAmount: !isZero,
-    networkFee: NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE
   });
 
   // Review breakdown (Figma 859:38553 / 859:38234): the amount hero the wallet
@@ -154,9 +182,10 @@ export function VaultModalForm({
               boostedRate,
               withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
               network: networkName,
-              networkFee: NO_VALUE
+              networkFee: networkFee?.formatted ?? NO_VALUE
             }),
-            'vault-modal-row'
+            'vault-modal-row',
+            feeCell
           )}
           dividerClassName="h-6"
         />
@@ -171,7 +200,9 @@ export function VaultModalForm({
       vaultName,
       rate,
       boostedRate,
-      networkName
+      networkName,
+      feeCell,
+      networkFee
     ]
   );
 
@@ -215,7 +246,9 @@ export function VaultModalForm({
         maxTestId="vault-modal-amount-max"
       />
 
-      <ModalSummaryGrid rows={toGridCells(rows, 'vault-modal-row')} dividerClassName="h-8" />
+      <ModalSummaryGrid rows={toGridCells(rows, 'vault-modal-row', feeCell)} dividerClassName="h-8" />
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

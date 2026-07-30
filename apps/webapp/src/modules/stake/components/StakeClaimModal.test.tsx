@@ -37,6 +37,24 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
+  // The bundling badge asks whether the wallet can batch; these renders have no
+  // WagmiProvider, so answer "no" and the fee row stays a plain value.
+  useIsBatchSupported: () => ({
+    data: false,
+    isLoading: false,
+    error: null,
+    mutate: () => {},
+    dataSources: []
+  })
+}));
+
+vi.mock('@/hooks/shared/useNetworkFee', () => ({
+  // The fee row is read-only and network-backed; these tests render without a
+  // WagmiProvider, so stub it to the un-resolved state the row falls back on.
+  useNetworkFee: () => ({ data: undefined, isLoading: false, error: null, mutate: () => {}, dataSources: [] })
+}));
+
 vi.mock('@tanstack/react-query', async importOriginal => {
   const actual = await importOriginal<typeof import('@tanstack/react-query')>();
   return {
@@ -75,7 +93,9 @@ vi.mock('../hooks/useStakeClaimLaunch', () => ({
       plainLoading: false,
       restakePrepared: h.restakePrepared,
       restakeLoading: false,
-      calldata: []
+      calldata: [],
+      calls: [],
+      isBatch: false
     };
   }
 }));
@@ -99,6 +119,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { StakeClaimModal } from './StakeClaimModal';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const reward = (contract: string, symbol: string, formattedAmount: string, amountUsd: number) => ({
   id: `1:${contract}`,
@@ -115,7 +136,9 @@ function renderLauncher() {
   const onClose = vi.fn();
   const view = render(
     <I18nProvider i18n={i18n}>
-      <StakeClaimModal urnIndex={1} onClose={onClose} />
+      <TooltipProvider>
+        <StakeClaimModal urnIndex={1} onClose={onClose} />
+      </TooltipProvider>
     </I18nProvider>
   );
   return { onClose, view };
@@ -123,10 +146,18 @@ function renderLauncher() {
 
 const launchConfig = () => h.launchMock.mock.calls[0][0];
 
-/** The panel body lives in the launch config's backgroundContent — render it to test. */
+/**
+ * The panel body lives in the launch config's backgroundContent — render it to test.
+ * TooltipProvider because the grid's fee cell carries the estimate's info tooltip
+ * (the app mounts one at the root, `pages/App.tsx`).
+ */
 function renderPanel() {
   renderLauncher();
-  render(<I18nProvider i18n={i18n}>{launchConfig().backgroundContent as ReactNode}</I18nProvider>);
+  render(
+    <I18nProvider i18n={i18n}>
+      <TooltipProvider>{launchConfig().backgroundContent as ReactNode}</TooltipProvider>
+    </I18nProvider>
+  );
 }
 
 /** The last live-update partial the panel pushed. */
@@ -259,9 +290,13 @@ describe('StakeClaimModal', () => {
     expect(onClose).not.toHaveBeenCalled();
 
     h.isModalOpen = false;
+    // Same tree shape as the initial render — dropping the provider here would
+    // remount the launcher and reset the "was open" ref this asserts on.
     view.rerender(
       <I18nProvider i18n={i18n}>
-        <StakeClaimModal urnIndex={1} onClose={onClose} />
+        <TooltipProvider>
+          <StakeClaimModal urnIndex={1} onClose={onClose} />
+        </TooltipProvider>
       </I18nProvider>
     );
     expect(onClose).toHaveBeenCalled();

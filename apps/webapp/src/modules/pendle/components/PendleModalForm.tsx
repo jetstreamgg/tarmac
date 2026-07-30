@@ -37,6 +37,9 @@ import {
   formatNumber,
   isTestnetId
 } from '@/utils';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
@@ -294,6 +297,33 @@ export function PendleModalForm({
     [writeHook.error]
   );
 
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls: writeHook.calls ?? [],
+    chainId,
+    shouldUseBatch: !!writeHook.isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee, !!networkFeeError);
+  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
+  // every render, so depending on its identity would give the review breakdown a
+  // new identity every render — and the live push that carries it would re-enter
+  // the provider on each of its re-renders (the update loop the modal forms guard
+  // against). Same field-by-field list the convert launch hook keeps.
+  const feeCell = useMemo(
+    () => ({ fee: networkFee, state: bundleState }),
+    [
+      networkFee?.formatted,
+      networkFee?.batchSaving,
+      bundleState.ready,
+      bundleState.settled,
+      bundleState.canBundle,
+      bundleState.promoVisible
+    ]
+  );
+
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
 
   // --- Grid economics (see the component doc for the PT-at-maturity model). ---
@@ -345,7 +375,7 @@ export function PendleModalForm({
     daysToMaturity,
     claimDate,
     hasAmount,
-    networkFee: NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE
   });
 
   const setMaxAmount = () => setValue(formatUnits(available, inputDecimals));
@@ -417,9 +447,10 @@ export function PendleModalForm({
                 />
               ),
               network: networkName,
-              networkFee: NO_VALUE
+              networkFee: networkFee?.formatted ?? NO_VALUE
             }),
-            'pendle-modal-row'
+            'pendle-modal-row',
+            feeCell
           )}
           dividerClassName="h-6"
         />
@@ -443,7 +474,9 @@ export function PendleModalForm({
       slippage,
       defaultSlippage,
       setSlippage,
-      networkName
+      networkName,
+      feeCell,
+      networkFee
     ]
   );
 
@@ -492,7 +525,9 @@ export function PendleModalForm({
         maxTestId="pendle-modal-max"
       />
 
-      <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row')} dividerClassName="h-8" />
+      <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
       {prepareErrorMessage && amountReady && (
         <Text className="text-error text-sm" data-testid="pendle-modal-error">

@@ -11,6 +11,7 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type StUsdsModalGridRow = ModalGridCell[];
@@ -70,7 +71,7 @@ export function buildStUsdsEntryRows(input: StUsdsEntryRowInput): StUsdsModalGri
         input.hasAmount
       )
     ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }
 
@@ -137,7 +138,7 @@ export function buildStUsdsReviewRows(
     ],
     [
       { kind: 'single', label: 'Route', labelBadge: input.route, value: input.routeDetail },
-      { kind: 'single', label: 'Network fee', value: input.networkFee }
+      { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }
     ]
   ];
 }
