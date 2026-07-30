@@ -142,11 +142,15 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
       ) : (
         <div className="flex flex-col gap-8">
           {rewards.map(reward => (
+            /* The USD is padded to 2 decimals like the table row's formatUsd — the
+               same value must not read "$78.9" here and "$78.90" in the row that
+               launched this modal. The hero renders its own `$`, so formatUsd itself
+               can't be reused. */
             <TransactionAmountHero
               key={reward.id}
               amount={reward.formattedAmount}
               symbol={reward.tokenSymbol}
-              usd={formatNumber(reward.amountUsd, { maxDecimals: 2 })}
+              usd={formatNumber(reward.amountUsd, { minDecimals: 2, maxDecimals: 2 })}
               inlineUsd
               dataTestId="claim-reward-row"
             />
