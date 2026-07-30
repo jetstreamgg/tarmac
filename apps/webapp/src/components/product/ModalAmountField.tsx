@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { BP, useBreakpointIndex } from '@/hooks';
+import { cn } from '@/lib/cn';
 
 const PERCENT_PRESETS = [25, 50, 100] as const;
 export type PercentPreset = (typeof PERCENT_PRESETS)[number];
@@ -43,6 +45,34 @@ export function ModalAmountField({
   /** Test id for the 100% chip — the successor of the old "Max" button. */
   maxTestId?: string;
 }) {
+  // Sheet-tier rearrangement (Figma 486:21468): the selector pill moves up
+  // under the balance line and the percent chips become a full-width
+  // equal-thirds row BELOW the hairline. Keyed to the same tier that swaps the
+  // modal chrome to the bottom Sheet, so field and chrome flip together — and
+  // the chips render exactly once (duplicating them per tier would duplicate
+  // maxTestId in the DOM).
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
+
+  const percentChips = (
+    <div className={cn('flex items-center gap-1', isMobile && 'mt-1 w-full')}>
+      {PERCENT_PRESETS.map(pct => (
+        <Button
+          key={pct}
+          variant="mini"
+          size="mini"
+          disabled={disabled}
+          onClick={() => onPercent(pct)}
+          // Figma draws these chips at Label 6 (12/14) in fg-primary, tighter than the mini size's Label 5.
+          className={cn('text-fgPrimary text-xs leading-3.5 tracking-[-0.24px]', isMobile && 'flex-1')}
+          data-testid={pct === 100 ? maxTestId : undefined}
+        >
+          {pct}%
+        </Button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
@@ -70,28 +100,14 @@ export function ModalAmountField({
         <div className="flex shrink-0 flex-col items-end gap-2.5">
           <span className="font-graphik text-fgSecondary text-xs leading-[18px]">{balance}</span>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              {PERCENT_PRESETS.map(pct => (
-                <Button
-                  key={pct}
-                  variant="mini"
-                  size="mini"
-                  disabled={disabled}
-                  onClick={() => onPercent(pct)}
-                  // Figma draws these chips at Label 6 (12/14) in fg-primary, tighter than the mini size's Label 5.
-                  className="text-fgPrimary text-xs leading-3.5 tracking-[-0.24px]"
-                  data-testid={pct === 100 ? maxTestId : undefined}
-                >
-                  {pct}%
-                </Button>
-              ))}
-            </div>
+            {!isMobile && percentChips}
             {selector}
           </div>
         </div>
       </div>
       {error}
       <div className="border-borderPrimary border-t" aria-hidden />
+      {isMobile && percentChips}
     </div>
   );
 }
