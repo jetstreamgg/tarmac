@@ -34,11 +34,16 @@ export function PortfolioRewardsSections() {
   const merkl = merklAdapter.useClaimable(MERKL_SCOPE);
 
   // Both reads refresh after any claim: a bundled claim-all can span sections,
-  // and the cost is two refetches of already-cached queries.
+  // and the cost is two refetches of already-cached queries. Bound to the two
+  // `refresh` functions rather than the whole adapter results — those change
+  // identity whenever the reward data does, which would churn `refresh` (and
+  // `openClaim` with it) for no reason.
+  const { refresh: refreshEcosystem } = ecosystem;
+  const { refresh: refreshMerkl } = merkl;
   const refresh = useCallback(() => {
-    ecosystem.refresh();
-    merkl.refresh();
-  }, [ecosystem, merkl]);
+    refreshEcosystem();
+    refreshMerkl();
+  }, [refreshEcosystem, refreshMerkl]);
 
   const { openClaim } = useClaimRewardsModal({ onSuccess: refresh });
 
