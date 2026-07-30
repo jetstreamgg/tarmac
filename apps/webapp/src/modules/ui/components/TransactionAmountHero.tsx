@@ -2,6 +2,22 @@ import { ReactNode } from 'react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 /**
+ * Token badge pill (DS Badges / Illustration, 28px): 16px token icon + Label-5
+ * symbol on badges/bg-secondary. Right-aligned beside the hero amount and the
+ * claim-modal reward rows (Figma 1310:130565 / 1036:190121).
+ */
+export function TokenBadge({ symbol }: { symbol: string }) {
+  return (
+    <span className="bg-glassBadge flex h-7 shrink-0 items-center gap-1 rounded-full py-1.5 pr-2 pl-1.5">
+      <TokenIcon token={{ symbol }} className="size-4" width={16} showChainIcon={false} />
+      <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
+        {symbol}
+      </span>
+    </span>
+  );
+}
+
+/**
  * Amount hero (DS Modal comp 1310:130565 / 859:36161): grey label, 32px token
  * icon, Heading-2 amount (Circular 44/48, -0.88 tracking) with an optional USD
  * sub-line, and a right-aligned token badge pill (Badges / Illustration, 28px).
@@ -41,12 +57,7 @@ export function TransactionAmountHero({
             )}
           </div>
         </div>
-        <span className="bg-glassBadge flex h-7 shrink-0 items-center gap-1 rounded-full py-1.5 pr-2 pl-1.5">
-          <TokenIcon token={{ symbol }} className="size-4" width={16} showChainIcon={false} />
-          <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
-            {symbol}
-          </span>
-        </span>
+        <TokenBadge symbol={symbol} />
       </div>
     </div>
   );

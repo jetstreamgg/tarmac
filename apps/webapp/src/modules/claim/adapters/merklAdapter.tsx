@@ -1,24 +1,12 @@
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import type { Call } from 'viem';
-import { Trans } from '@lingui/react/macro';
 import { useMerklRewards, getWriteContractCall, type MerklTokenReward } from '@/hooks';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '@/hooks/generated';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { Merkl } from '@/modules/icons';
 import type { ClaimAdapter, ClaimableResult, ClaimCallsResult, ClaimableReward, ClaimScope } from '../types';
 
 const SOURCE_LABEL = 'Merkl';
-
-/** Merkl brand chip (icon + label) shown next to the source group. */
-function MerklBadge() {
-  return (
-    <span className="bg-surface text-text inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium">
-      <Merkl className="h-3 w-3" />
-      <Trans>Merkl</Trans>
-    </span>
-  );
-}
 
 /** Which of the user's Merkl reward tokens fall inside `scope`. */
 function rewardsInScope(rewards: MerklTokenReward[], scope: ClaimScope): MerklTokenReward[] {
@@ -49,7 +37,6 @@ function toClaimableReward(reward: MerklTokenReward): ClaimableReward {
     id: reward.tokenAddress,
     source: 'merkl',
     sourceLabel: SOURCE_LABEL,
-    badge: <MerklBadge />,
     tokenSymbol: reward.tokenSymbol,
     icon: (
       <TokenIcon
