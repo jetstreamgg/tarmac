@@ -62,7 +62,11 @@ function productName(module: ModuleEnum): string {
 
 function actionIcon(row: PortfolioTxRow): ReactNode {
   if (row.module === ModuleEnum.TRADE) return <ConvertArrows width={16} height={16} />;
-  return row.positive === false ? <ArrowUpToLine className="size-4" /> : <ArrowDownToLine className="size-4" />;
+  return row.positive === false ? (
+    <ArrowUpToLine className="size-4" />
+  ) : (
+    <ArrowDownToLine className="size-4" />
+  );
 }
 
 const tokenIcon = (symbol: string, width = 12) => (
@@ -225,7 +229,7 @@ export function PortfolioTransactionsView({
   const triggerClassName = isMobile ? 'w-full' : undefined;
 
   return (
-    <section className="flex flex-col gap-5" data-testid="portfolio-transactions">
+    <section className="flex flex-col gap-8" data-testid="portfolio-transactions">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <Heading variant="small" tag="h2" className="text-fgPrimary">
           <Trans>Transactions</Trans>

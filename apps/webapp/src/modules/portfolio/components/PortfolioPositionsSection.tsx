@@ -103,7 +103,7 @@ export function PortfolioPositionsSection({
   return (
     <section data-testid="portfolio-positions">
       <Carousel opts={{ align: 'start', slidesToScroll: 'auto', containScroll: 'trimSnaps' }}>
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between">
           <PortfolioTabs tab={tab} onTabChange={onTabChange} />
           <div className="flex gap-2">
             <CarouselPrevious className={INLINE_ARROW} />
@@ -128,7 +128,7 @@ export function PortfolioPositionsSection({
 
 function EmptyState({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 flex min-h-[180px] items-center justify-center">
+    <div className="mt-8 flex min-h-[180px] items-center justify-center">
       <Text variant="medium" className="text-textSecondary">
         {children}
       </Text>
@@ -140,7 +140,7 @@ function EmptyState({ children }: { children: ReactNode }) {
 // as many cards as the carousel does per tier (1 → 2 → 3), no clipped extras.
 function CarouselSkeleton() {
   return (
-    <div className="desktop:grid-cols-3 mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="desktop:grid-cols-3 mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div className="bg-surface h-[280px] animate-pulse rounded-[28px]" />
       <div className="bg-surface hidden h-[280px] animate-pulse rounded-[28px] sm:block" />
       <div className="bg-surface desktop:block hidden h-[280px] animate-pulse rounded-[28px]" />
@@ -150,7 +150,7 @@ function CarouselSkeleton() {
 
 function TableSkeleton() {
   return (
-    <Card className="mt-6 flex animate-pulse flex-col gap-4 p-6">
+    <Card className="mt-8 flex animate-pulse flex-col gap-4 p-6">
       {Array.from({ length: 3 }).map((_, index) => (
         <div key={index} className="bg-surface h-12 rounded-xl" />
       ))}
