@@ -75,7 +75,7 @@ describe('useSavingsModal', () => {
     const withdrawCfg: LaunchConfig = h.launchMock.mock.calls[1][0];
     expect(withdrawCfg.title).toBe('Withdraw from Sky Savings');
     expect(withdrawCfg.entry).toEqual({ confirmLabel: 'Review', confirmDisabled: true });
-    expect(withdrawCfg.reviewTitle).toBe('Review withdraw');
+    expect(withdrawCfg.reviewTitle).toBe('Review withdrawal');
     expect((withdrawCfg.backgroundContent as BodyElement).props.flow).toBe('withdraw');
     // Sibling sessions must differ so their live updates never cross-talk.
     expect(withdrawCfg.sessionId).not.toBe(supplyCfg.sessionId);

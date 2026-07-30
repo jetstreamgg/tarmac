@@ -149,8 +149,10 @@ export function SavingsModalForm({
       : buildWithdrawReviewRows({
           youReceive,
           receiveToken: originSymbol,
+          estEarnings: NO_VALUE,
           product: 'Sky Savings',
           rate: apyDisplay,
+          withdrawal: t`Instant`,
           network: networkName,
           networkFee: NO_VALUE
         });

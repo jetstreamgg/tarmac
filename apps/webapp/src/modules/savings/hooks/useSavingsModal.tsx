@@ -53,7 +53,7 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
     (preset?: SavingsModalPreset) => {
       launch({
         title: t`Withdraw from Sky Savings`,
-        reviewTitle: t`Review withdraw`,
+        reviewTitle: t`Review withdrawal`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
           loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,

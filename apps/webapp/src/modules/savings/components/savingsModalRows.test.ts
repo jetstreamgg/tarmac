@@ -136,26 +136,37 @@ describe('buildSupplyReviewRows — Figma 859:36154 "Review supply" grid', () =>
   });
 });
 
-describe('buildWithdrawReviewRows — "Review withdraw" grid (patterned on 859:36154)', () => {
+describe('buildWithdrawReviewRows — Figma 859:36322 "Review withdrawal" grid', () => {
   const REVIEW_INPUT = {
     youReceive: '908.93 USDS',
     receiveToken: 'USDS',
+    estEarnings: '–',
     product: 'Sky Savings',
     rate: '3.60%',
+    withdrawal: 'Instant',
     network: 'Ethereum',
     networkFee: '–'
   } as const;
 
-  it('produces the withdraw review pairing, in order', () => {
+  it('produces exactly the Figma withdraw review pairing, in order', () => {
     expect(gridLabels(buildWithdrawReviewRows(REVIEW_INPUT))).toEqual([
-      ["You'll receive", 'Rate'],
-      ['Product', 'Network'],
+      ["You'll receive", 'Est. earnings (1Y)'],
+      ['Product', 'Rate'],
+      ['Withdrawal', 'Network'],
       ['Network fee']
     ]);
   });
 
-  it('threads the destination token onto the receive cell', () => {
-    const cells = byLabel(buildWithdrawReviewRows(REVIEW_INPUT));
+  it('renders every review cell as a single value with its presentation hints', () => {
+    const rows = buildWithdrawReviewRows(REVIEW_INPUT);
+    expect(flat(rows).every(cell => cell.kind === 'single')).toBe(true);
+
+    const cells = byLabel(rows);
     expect(cells["You'll receive"]).toMatchObject({ value: '908.93 USDS', token: 'USDS' });
+    expect(cells['Est. earnings (1Y)']).toMatchObject({ value: '–', trend: true });
+    expect(cells['Product']).toMatchObject({ value: 'Sky Savings', token: 'sUSDS', productIcon: 'default' });
+    expect(cells['Rate']).toMatchObject({ value: '3.60%', rateAccent: 'savings' });
+    expect(cells['Withdrawal']).toMatchObject({ value: 'Instant' });
+    expect(cells['Network']).toMatchObject({ value: 'Ethereum', network: true });
   });
 });

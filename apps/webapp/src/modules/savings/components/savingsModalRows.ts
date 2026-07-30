@@ -179,16 +179,20 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
   ];
 }
 
-/** Display strings for the "Review withdraw" stage (patterned on Figma 859:36154 — no withdraw comp yet). */
+/** Display strings for the "Review withdrawal" stage (Figma 859:36322). */
 export type WithdrawReviewRowInput = {
   /** Amount you'll receive in the destination token, formatted (e.g. "9,999.99 USDS"). */
   youReceive: string;
   /** Destination token symbol for the You'll receive icon. */
   receiveToken: string;
+  /** 1Y estimated earnings after the withdrawal — stubbed until a projection source exists. */
+  estEarnings: string;
   /** Product name (e.g. "Sky Savings"). */
   product: string;
   /** Current savings rate, formatted. */
   rate: string;
+  /** Withdrawal availability (the comp reads "Instant"). */
+  withdrawal: string;
   /** Network the transaction runs on. */
   network: string;
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
@@ -196,17 +200,22 @@ export type WithdrawReviewRowInput = {
 };
 
 /**
- * Grid for the "Review withdraw" stage — patterned on the supply review (Figma
- * only draws supply): [You'll receive | Rate], [Product | Network], Network fee.
+ * Grid for the "Review withdrawal" stage (Figma 859:36322) — the supply
+ * review's shape: [You'll receive | Est. earnings (1Y)], [Product | Rate],
+ * [Withdrawal | Network], then Network fee full-width.
  */
 export function buildWithdrawReviewRows(input: WithdrawReviewRowInput): SavingsModalGridRow[] {
   return [
     [
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' }
+      { kind: 'single', label: 'Est. earnings (1Y)', value: input.estEarnings, trend: true }
     ],
     [
       { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: 'default' },
+      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' }
+    ],
+    [
+      { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
       { kind: 'single', label: 'Network', value: input.network, network: true }
     ],
     [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
