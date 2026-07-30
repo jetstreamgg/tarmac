@@ -182,15 +182,28 @@ export function RewardsPositionCard({
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
+            {/* The reward mark only tags a real figure — a dash stands alone. */}
             {isPointsFarm ? (
               <ProductStat label={<Trans>Points accrued</Trans>}>
-                {accruedPoints}
-                {rewardIcon}
+                {accruedPoints === NO_VALUE ? (
+                  <span className="text-fgSecondary">{NO_VALUE}</span>
+                ) : (
+                  <>
+                    {accruedPoints}
+                    {rewardIcon}
+                  </>
+                )}
               </ProductStat>
             ) : (
               <ProductStat label={<Trans>Claimable rewards</Trans>}>
-                {accruedRewards}
-                {rewardIcon}
+                {accruedRewards === NO_VALUE ? (
+                  <span className="text-fgSecondary">{NO_VALUE}</span>
+                ) : (
+                  <>
+                    {accruedRewards}
+                    {rewardIcon}
+                  </>
+                )}
               </ProductStat>
             )}
             <ProductStat label={<Trans>Current rate</Trans>}>

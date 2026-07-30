@@ -15,6 +15,7 @@ import {
 import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
+import { Pendle } from '@/widgets';
 import { PositionHero } from '@/components/product/PositionHero';
 import {
   ProductActions,
@@ -25,7 +26,7 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { Pendle } from '@/modules/icons';
+
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
 
