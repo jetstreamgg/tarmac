@@ -6,6 +6,9 @@
  * `savingsModalRows.test.ts`.
  */
 
+/** The fee row's label. Shared with the renderer, which hangs the tooltip off it. */
+export const NETWORK_FEE_LABEL = 'Network fee';
+
 /** A modal detail row: a single value, or a before→after delta (Figma "x → y"). */
 export type SavingsModalRow =
   | { kind: 'single'; label: string; value: string }
@@ -54,7 +57,7 @@ export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalRo
       : []),
     { kind: 'delta', label: '1Y est. earnings', before: input.earningsBefore, after: input.earningsAfter },
     { kind: 'single', label: 'Network', value: input.network },
-    { kind: 'single', label: 'Network fee', value: input.networkFee }
+    { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }
   ];
 }
 
@@ -91,7 +94,7 @@ export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsMod
     { kind: 'delta', label: 'Supply', before: input.supplyBefore, after: input.supplyAfter },
     { kind: 'delta', label: '1Y est. earnings', before: input.earningsBefore, after: input.earningsAfter },
     { kind: 'single', label: 'Network', value: input.network },
-    { kind: 'single', label: 'Network fee', value: input.networkFee }
+    { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }
   ];
 }
 
@@ -129,6 +132,6 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
     { kind: 'single', label: 'Product', value: input.product },
     { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
     { kind: 'single', label: 'Network', value: input.network },
-    { kind: 'single', label: 'Network fee', value: input.networkFee }
+    { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }
   ];
 }

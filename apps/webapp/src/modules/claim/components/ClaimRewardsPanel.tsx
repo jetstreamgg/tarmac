@@ -1,8 +1,11 @@
 import { ReactNode, useMemo, useState } from 'react';
 import { useChains, useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import { useTransactionFlow } from '@/hooks';
+import { useNetworkFee, useTransactionFlow } from '@/hooks';
 import { formatNumber, getChainIcon } from '@/utils';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';
@@ -84,6 +87,16 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   const flow = useTransactionFlow({ calls, chainId, shouldUseBatch: true, ...txCallbacks });
 
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: !!flow.isBatch
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+
   // Disabled until there's something to send, no in-scope source is still preparing
   // (e.g. Merkl proofs mid-load, so we never claim a partial subset of the scope),
   // AND the flow itself is prepared.
@@ -94,6 +107,9 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   // having dispatched nothing at all — reachable by clicking a row's Claim and
   // the modal CTA straight after a page load. The savings and vault bodies
   // already gate on their engine's `prepared` the same way.
+  //
+  // The scope IS the selection now (the comp's restyle dropped the per-reward
+  // checkboxes), so this reads the in-scope rewards rather than a checked subset.
   const hasRewardsIn = (source: ClaimSource) => rewards.some(reward => reward.source === source);
   const preparing =
     (hasRewardsIn('merkl') && !merklCalls.prepared) ||
@@ -168,20 +184,28 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
       )}
 
       {rewards.length > 0 && (
-        <div className="flex items-center gap-4">
-          {/* TODO: live gas estimate; stubbed like the Savings/Vault modals. */}
-          <FooterStat label={<Trans>Network fee</Trans>}>{NO_VALUE}</FooterStat>
-          <div className="bg-borderPrimary h-6 w-px shrink-0" />
-          <FooterStat label={<Trans>Network</Trans>}>
-            {chain ? (
-              <>
-                {getChainIcon(chain.id, 'h-3 w-3')}
-                {chain.name}
-              </>
-            ) : (
-              NO_VALUE
-            )}
-          </FooterStat>
+        // APP-435: the comp's two-column footer (1036:190131) replaced the stacked
+        // InfoRows APP-418 wired its fee into, and it has no slot for the savings
+        // card — so the fee keeps its live value inside the Network fee column and
+        // the promo sits full-width beneath both.
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <FooterStat label={<NetworkFeeLabel />}>
+              <NetworkFeeValue fee={networkFee} state={bundleState} />
+            </FooterStat>
+            <div className="bg-borderPrimary h-6 w-px shrink-0" />
+            <FooterStat label={<Trans>Network</Trans>}>
+              {chain ? (
+                <>
+                  {getChainIcon(chain.id, 'h-3 w-3')}
+                  {chain.name}
+                </>
+              ) : (
+                NO_VALUE
+              )}
+            </FooterStat>
+          </div>
+          {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+import type { Call } from 'viem';
 import {
   psm3L2Address,
   usdsPsmWrapperAddress,
@@ -65,6 +66,10 @@ export interface UsePsmConversionResult {
   execute: () => void;
   currentCallIndex: number;
   reset: () => void;
+  /** The routed engine's calls, for estimating the conversion's network fee. */
+  calls: Call[];
+  /** Whether those calls go out bundled — the batch costs less than the sequence. */
+  isBatch: boolean;
   execution: {
     l2AmountIn: bigint;
     l2MinAmountOut: bigint;
@@ -255,6 +260,8 @@ export function usePsmConversion({
     execute: activeHook.execute,
     currentCallIndex: activeHook.currentCallIndex,
     reset: activeHook.reset,
+    calls: activeHook.calls ?? [],
+    isBatch: !!activeHook.isBatch,
     execution: {
       l2AmountIn: execution.l2AmountIn,
       l2MinAmountOut: execution.l2MinAmountOut,

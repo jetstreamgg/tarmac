@@ -222,11 +222,24 @@ export function CellTokenIdle({
   );
 }
 
-/** Type=Position: green position iconbox + Label 5 label (14px, not 16). */
-export function CellPosition({ icon, label }: { icon: ReactNode; label: ReactNode }) {
+/**
+ * Type=Position: green position iconbox + Label 5 label (14px, not 16).
+ * `inactive` swaps the iconbox to its neutral variant; the label stays
+ * fg-primary — the comp recolors the mark, it does not dim the text
+ * (1030:59362).
+ */
+export function CellPosition({
+  icon,
+  label,
+  inactive = false
+}: {
+  icon: ReactNode;
+  label: ReactNode;
+  inactive?: boolean;
+}) {
   return (
     <span className="flex items-center gap-3">
-      <IconboxPosition>{icon}</IconboxPosition>
+      <IconboxPosition inactive={inactive}>{icon}</IconboxPosition>
       <span className={cn(label5, 'text-fgPrimary')}>{label}</span>
     </span>
   );

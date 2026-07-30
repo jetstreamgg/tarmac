@@ -15,9 +15,7 @@ import { useSavingsHistory } from '@/hooks';
 import { useSavingsHistory } from '@/hooks';
 
 function SavingsHistoryComponent() {
-  const { data, error, isLoading, mutate } = useSavingsHistory({
-    indexerUrl: 'https://custom-indexer-url.com'
-  });
+  const { data, error, isLoading, mutate } = useSavingsHistory('https://custom-indexer-url.com');
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -42,9 +40,7 @@ function SavingsHistoryComponent() {
 ## Parameters
 
 ```ts
-type Props = {
-  indexerUrl?: string;
-};
+useSavingsHistory(indexerUrl?: string);
 ```
 
 - `indexerUrl`: `string | undefined`

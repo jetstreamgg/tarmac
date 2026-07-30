@@ -2,6 +2,10 @@ import { useId, useMemo, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
@@ -76,7 +80,16 @@ export function StUsdsModalForm({
     setMaxAmount
   } = form;
 
-  const { execute, steps, prepared, error } = useStUsdsLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
   const disabled =
     !amountReady ||
@@ -119,12 +132,18 @@ export function StUsdsModalForm({
           value: `$${formatNumber(projectAnnualEarnings(amountUsd, rate), { maxDecimals: 2 })}`
         },
         { label: <Trans>Product</Trans>, value: 'stUSDS' },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
+        {
+          label: <NetworkFeeLabel />,
+          value: <NetworkFeeValue fee={networkFee} state={bundleState} />
+        }
       ]
     : [
         { label: <Trans>You&apos;ll receive</Trans>, value: receiveValue },
         { label: <Trans>Product</Trans>, value: 'stUSDS' },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
+        {
+          label: <NetworkFeeLabel />,
+          value: <NetworkFeeValue fee={networkFee} state={bundleState} />
+        }
       ];
 
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);
@@ -191,6 +210,8 @@ export function StUsdsModalForm({
           <Row key={index} label={row.label} value={row.value} />
         ))}
       </div>
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
       {needsImpactAcknowledgement && (
         <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">

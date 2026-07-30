@@ -82,7 +82,7 @@ import { RiskLevel } from '@/hooks';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
-import { BaseChain, MainnetChain, OptimismChain, Pendle, Stake } from '@/modules/icons';
+import { BaseChain, MainnetChain, OptimismChain, Pendle, StakeSky } from '@/modules/icons';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   Pagination,
@@ -1083,7 +1083,7 @@ function TablesSection() {
               />
             </CellSpecimenRow>
             <CellSpecimenRow name="Position">
-              <CellPosition icon={<Stake width={16} height={16} />} label="Position 1" />
+              <CellPosition icon={<StakeSky width={16} height={16} />} label="Position 1" />
             </CellSpecimenRow>
             <CellSpecimenRow name="Action">
               <CellAction
@@ -1460,7 +1460,7 @@ function TablesSection() {
             </TableRow>
             <TableRow>
               <TableCell>
-                <CellPosition icon={<Stake width={16} height={16} />} label="Position 1" />
+                <CellPosition icon={<StakeSky width={16} height={16} />} label="Position 1" />
               </TableCell>
               <TableCell>
                 <CellAmountWithToken
@@ -1699,10 +1699,10 @@ function IconboxSection() {
       <SubSection title="Position — default / inactive">
         <div className="flex items-center gap-6">
           <IconboxPosition>
-            <Stake width={16} height={16} />
+            <StakeSky width={16} height={16} />
           </IconboxPosition>
           <IconboxPosition inactive>
-            <Stake width={16} height={16} />
+            <StakeSky width={16} height={16} />
           </IconboxPosition>
         </div>
       </SubSection>
@@ -2187,7 +2187,7 @@ function TooltipReplica({ className, children }: { className?: string; children:
   return (
     <div
       className={cn(
-        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[100px]',
+        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
         className
       )}
     >
