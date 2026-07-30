@@ -21,6 +21,7 @@ import { WithdrawnEmpty } from './WithdrawnEmpty';
 import { Upgrade } from './Upgrade';
 import { Balances } from './Balances';
 import { Info } from './Info';
+import { LightningFilled } from './LightningFilled';
 import { Close } from './Close';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
@@ -71,6 +72,7 @@ export {
   Upgrade,
   Balances,
   Info,
+  LightningFilled,
   Close,
   BaseChain,
   MainnetChain,

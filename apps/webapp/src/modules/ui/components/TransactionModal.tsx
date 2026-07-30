@@ -10,12 +10,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Steps, StepsItem } from '@/components/ui/steps';
 import { Switch } from '@/components/ui/switch';
-import { Close, Info } from '@/modules/icons';
+import { Close, LightningFilled } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { Popover, PopoverTrigger, PopoverContent, PopoverClose, PopoverArrow } from '@/components/ui/popover';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
+import { BATCH_TX_LEGAL_NOTICE_URL } from '@/lib/constants';
 import { getExplorerName } from '@/utils';
 import { useIsSafeWallet } from '@/hooks';
 import { useIsBatchSupported } from '@/hooks';
@@ -454,7 +454,7 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
-                {showBatchToggle && <BatchToggle />}
+                {showBatchToggle && <BatchToggle steps={steps ?? []} />}
                 {hasSecondaryConfirm ? (
                   // Comp 1036:214001: two flex-1 CTAs with a 20px gutter.
                   <div className="flex w-full gap-5">
@@ -554,47 +554,46 @@ export function TransactionModal({
   );
 }
 
-function BatchToggle() {
+/**
+ * "Save on clicks & network fee" card on the review screen (Figma 1036:206739
+ * off / 1036:207086 on): bordered 16px-radius card, zap + Label-4 header beside
+ * the DS switch, Body-6 explainer naming the flow's own steps ("Approve +
+ * Supply run as one transaction…"). The comp's bare "Learn more" is wired to
+ * the legal-notice route — the same target the nav-menu toggle discloses. The
+ * extra bottom margin stretches the review column's 16px gap to the comp's
+ * 32px before the confirm CTA.
+ */
+function BatchToggle({ steps }: { steps: TransactionStep[] }) {
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
 
+  const stepLabels = steps.map(step => (typeof step === 'string' ? step : step.label)).join(' + ');
+
   return (
-    <div className="border-selectActive flex items-center gap-4 border-t pt-4">
-      <div className="flex flex-wrap items-center gap-1">
-        <Text className="text-text text-sm leading-none">
-          <Trans>Bundle transactions</Trans>
-        </Text>
-        <Popover>
-          <PopoverTrigger onClick={e => e.stopPropagation()} className="text-text z-10">
-            <Info width={13} height={13} />
-          </PopoverTrigger>
-          <PopoverContent align="center" side="top" className="bg-containerDark backdrop-blur-[50px]">
-            <div className="flex items-start justify-between">
-              <Text className="text-base font-medium">
-                <Trans>Bundle transactions</Trans>
-              </Text>
-              <PopoverClose onClick={e => e.stopPropagation()}>
-                <Close className="text-text h-5 w-5 cursor-pointer" />
-              </PopoverClose>
-            </div>
-            <Text className="light:text-textSecondary mt-2 text-sm text-white/80">
-              <Trans>
-                Bundled transactions are set &apos;on&apos; by default to complete transactions in a single
-                step. Combining actions improves the user experience and reduces gas fees. Manually toggle off
-                to cancel this feature.
-              </Trans>
-            </Text>
-            <PopoverArrow />
-          </PopoverContent>
-        </Popover>
-        <Text className="text-textSecondary text-sm leading-none">
-          <Trans>(toggled on by default)</Trans>
-        </Text>
+    <div className="border-borderPrimary mb-4 flex flex-col gap-2 rounded-2xl border p-5">
+      <div className="flex items-center justify-between">
+        <span className="text-fgPrimary font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px]">
+          <LightningFilled boxSize={16} className="text-fgBrand shrink-0" />
+          <Trans>Save on clicks &amp; network fee</Trans>
+        </span>
+        <Switch
+          checked={batchEnabled}
+          onCheckedChange={setBatchEnabled}
+          aria-label={t`Toggle bundled transactions`}
+        />
       </div>
-      <Switch
-        checked={batchEnabled}
-        onCheckedChange={setBatchEnabled}
-        aria-label={t`Toggle bundled transactions`}
-      />
+      <Text className="font-graphik text-fgSecondary text-xs leading-[18px]">
+        <Trans>
+          {stepLabels} run as one transaction. You sign once and bundled transactions saves you clicks and
+          gas.
+        </Trans>{' '}
+        <ExternalLink
+          href={BATCH_TX_LEGAL_NOTICE_URL}
+          showIcon={false}
+          className="text-fgPrimary hover:underline"
+        >
+          <Trans>Learn more</Trans>
+        </ExternalLink>
+      </Text>
     </div>
   );
 }
