@@ -8,7 +8,16 @@ import { TransactionTypeEnum, useSkyPrice, useStakeHistory } from '@/hooks';
 import { formatAddress, formatUsd, getEtherscanLink } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
-import { Stake, Delegate, Borrow, ClaimRewards, Liquidated, Repaid, SelectRewards } from '@/modules/icons';
+import {
+  Stake,
+  Delegate,
+  Borrow,
+  ClaimRewards,
+  Liquidated,
+  Repaid,
+  SelectRewards,
+  TransactionsEmpty
+} from '@/modules/icons';
 import { ExternalLink } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
@@ -363,8 +372,10 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         }}
         emptyLabel={
           <span data-testid="stake-activity-empty" className="flex flex-col items-center gap-4 py-8">
-            <span className="bg-textSecondary/20 h-10 w-10 rounded-full" aria-hidden />
-            <Trans>You don&apos;t have any transactions made yet.</Trans>
+            <TransactionsEmpty aria-hidden />
+            <span className="text-fgSecondary font-circle max-w-[224px] text-center text-sm leading-4 font-medium tracking-[-0.28px]">
+              <Trans>You don&apos;t have any transactions made yet.</Trans>
+            </span>
           </span>
         }
       />

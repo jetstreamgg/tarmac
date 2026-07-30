@@ -17,7 +17,7 @@ import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import { StakeSky, Liquidated } from '@/modules/icons';
+import { StakeSky, Liquidated, SuppliedEmpty } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Button } from '@/components/ui/button';
@@ -335,11 +335,8 @@ export function StakePositionsTable({
           data-testid="stake-positions-empty"
           className="flex flex-col items-center justify-center gap-4 px-6 py-16"
         >
-          <span className="flex items-center" aria-hidden>
-            <span className="bg-textSecondary/20 h-10 w-10 rounded-full" />
-            <span className="bg-textSecondary/30 -ml-4 h-10 w-10 rounded-full" />
-          </span>
-          <p className="text-textSecondary text-center text-sm">
+          <SuppliedEmpty aria-hidden />
+          <p className="text-fgSecondary font-circle max-w-[224px] text-center text-sm leading-4 font-medium tracking-[-0.28px]">
             <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
           </p>
         </Card>
