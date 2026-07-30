@@ -26,9 +26,7 @@ const RISK_PILL: Record<RiskLevel, string> = {
 function StatItem({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span className="text-fgSecondary md:text-textSecondary flex items-center gap-1 text-xs leading-[18px]">
-        {label}
-      </span>
+      <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
       <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
         {children}
       </span>
@@ -166,7 +164,7 @@ export function StakeTakeoverBorrowCard({
               <span className="text-text font-medium">
                 <Trans>More SKY needed to borrow</Trans>
               </span>
-              <span className="text-textSecondary">
+              <span className="text-fgSecondary">
                 <Trans>
                   The minimum borrow is {dust !== undefined ? formatBigInt(dust) : NO_VALUE} USDS, which
                   requires at least{' '}
@@ -246,7 +244,7 @@ export function StakeTakeoverBorrowCard({
             {simulatedVault?.delayedPrice
               ? `$${formatBigInt(simulatedVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
               : NO_VALUE}
-            <span className="bg-glassBadge text-textSecondary font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]">
+            <span className="bg-glassBadge text-fgSecondary font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]">
               <Trans>Updated hourly</Trans>
             </span>
           </StatItem>

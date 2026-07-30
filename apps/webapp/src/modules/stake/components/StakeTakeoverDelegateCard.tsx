@@ -50,14 +50,14 @@ export function DelegateList({
     <div className="flex flex-col gap-6 md:gap-8">
       {/* Search row over its hairline (Frame 2087328600, 1036:209801). */}
       <div className="border-borderPrimary flex items-center gap-2 border-b pb-3">
-        <Search className="text-textSecondary h-4 w-4 shrink-0" aria-hidden />
+        <Search className="text-fgSecondary h-4 w-4 shrink-0" aria-hidden />
         <input
           type="text"
           value={search}
           placeholder={t`Search`}
           onChange={event => setSearch(event.target.value)}
           data-testid={`${dataTestIdPrefix}-search`}
-          className="text-text placeholder:text-fgTertiary md:placeholder:text-textSecondary w-full bg-transparent text-sm leading-[22px] outline-none"
+          className="text-text placeholder:text-fgTertiary md:placeholder:text-fgSecondary w-full bg-transparent text-sm leading-[22px] outline-none"
         />
       </div>
 
@@ -68,7 +68,7 @@ export function DelegateList({
           ))}
         </div>
       ) : !delegates || delegates.length === 0 ? (
-        <p className="text-textSecondary py-6 text-center text-sm">
+        <p className="text-fgSecondary py-6 text-center text-sm">
           <Trans>No delegates found</Trans>
         </p>
       ) : (
@@ -108,14 +108,14 @@ export function DelegateList({
                         rel="noopener noreferrer"
                         onClick={event => event.stopPropagation()}
                         aria-label={t`View delegate profile`}
-                        className="text-textSecondary hover:text-text"
+                        className="text-fgSecondary hover:text-text"
                       >
                         <ExternalLink className="h-3 w-3" aria-hidden />
                       </a>
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-0.5">
-                    <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px]">
+                    <span className="text-fgSecondary text-xs leading-[18px]">
                       <Trans>Total delegated</Trans>
                     </span>
                     <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">

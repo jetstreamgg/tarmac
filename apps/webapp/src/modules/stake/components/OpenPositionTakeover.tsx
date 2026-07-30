@@ -287,7 +287,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       footer={
         <>
           {/* 237px is the comp's two-line measure for this copy (1036:209863). */}
-          <p className="text-fgSecondary md:text-textSecondary flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left">
+          <p className="text-fgSecondary flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left">
             <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
           </p>
           <Button

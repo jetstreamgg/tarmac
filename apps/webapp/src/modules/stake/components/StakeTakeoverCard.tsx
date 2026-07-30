@@ -39,7 +39,7 @@ export function StakeTakeoverCard({
           <h3 className="text-text font-circle flex items-baseline gap-2 text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
             {title}
             {optional && (
-              <span className="text-fgSecondary md:text-textSecondary font-sans text-xs leading-[18px] font-normal tracking-normal">
+              <span className="text-fgSecondary font-sans text-xs leading-[18px] font-normal tracking-normal">
                 <Trans>(Optional)</Trans>
               </span>
             )}

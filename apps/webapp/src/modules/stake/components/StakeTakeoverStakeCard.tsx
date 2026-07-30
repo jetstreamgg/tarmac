@@ -14,9 +14,7 @@ const NO_VALUE = '–';
 function StatItem({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1 md:flex-none">
-      <span className="text-fgSecondary md:text-textSecondary flex items-center gap-1 text-xs leading-[18px]">
-        {label}
-      </span>
+      <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
       <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
         {children}
       </span>

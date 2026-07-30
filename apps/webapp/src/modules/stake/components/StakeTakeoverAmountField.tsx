@@ -59,12 +59,8 @@ export function StakeTakeoverAmountField({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
-        <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px]">
-          {label ?? <Trans>Amount</Trans>}
-        </span>
-        {topRight && (
-          <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px]">{topRight}</span>
-        )}
+        <span className="text-fgSecondary text-xs leading-[18px]">{label ?? <Trans>Amount</Trans>}</span>
+        {topRight && <span className="text-fgSecondary text-xs leading-[18px]">{topRight}</span>}
       </div>
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -81,7 +77,7 @@ export function StakeTakeoverAmountField({
             aria-describedby={error ? errorId : undefined}
             className={cn(
               // Heading 5 on phones, Heading 4 (28/30, −0.56) from md up.
-              'text-text placeholder:text-textSecondary font-circle w-full min-w-0 bg-transparent text-[22px] leading-6 font-medium tracking-[-0.44px] outline-none disabled:opacity-50 md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]',
+              'text-text placeholder:text-fgSecondary font-circle w-full min-w-0 bg-transparent text-[22px] leading-6 font-medium tracking-[-0.44px] outline-none disabled:opacity-50 md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]',
               error && 'text-error'
             )}
           />
