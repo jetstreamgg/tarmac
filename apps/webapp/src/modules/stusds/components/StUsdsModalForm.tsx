@@ -1,40 +1,64 @@
-import { useId, useMemo, type ReactNode } from 'react';
+import { useId, useMemo } from 'react';
+import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { StUsdsProviderType } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ModalAmountField } from '@/components/product/ModalAmountField';
+import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
+import { toGridCells } from '@/components/product/ModalGridCells';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useStUsdsLaunch, type StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
 import { useStUsdsTransactionForm, type StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 import { stUsdsPrepareErrorMessage } from '../lib/prepareErrorMessage';
 import { PRICE_IMPACT_HIGH_THRESHOLD_BPS, PRICE_IMPACT_WARNING_THRESHOLD_BPS } from '../lib/providerNotice';
 import { StUsdsProviderNotice } from './StUsdsProviderNotice';
+import { buildStUsdsEntryRows, buildStUsdsReviewRows } from './stUsdsModalRows';
 
 export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
 const NO_VALUE = '–';
+const DECIMALS = 18;
 
-type ModalRow = { label: ReactNode; value: ReactNode };
+// Decision-12 standard: amounts pin two decimals (hero + grid + balance line).
+const formatUsds = (units: bigint) =>
+  formatNumber(parseFloat(formatUnits(units, DECIMALS)), { minDecimals: 2, maxDecimals: 2 });
 
-function Row({ label, value }: ModalRow) {
+/**
+ * The static USDS chip beside the percent presets — stUSDS moves exactly one
+ * asset, so this renders the DS dropdown pill without the chevron affordance
+ * (the vault-modal single-asset precedent).
+ */
+function AssetPill() {
   return (
-    <div className="flex items-center justify-between">
-      <Text className="text-textSecondary text-sm">{label}</Text>
-      <Text className="text-text text-sm font-medium">{value}</Text>
-    </div>
+    <span
+      className="border-glassBorder flex h-7 shrink-0 items-center gap-1 rounded-full border px-1.5"
+      data-testid="stusds-modal-asset"
+    >
+      <TokenIcon token={{ symbol: 'USDS' }} width={16} showChainIcon={false} className="size-4" />
+      <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
+        USDS
+      </span>
+    </span>
   );
 }
 
 /**
  * Editable body for the stUSDS "Supply / Withdraw" modals, mounted as the
- * shared modal's entry screen — the stUSDS analogue of `SavingsModalForm` /
- * `VaultModalForm`, plus the three surfaces the provider routing needs:
- * the route notice (native vs Curve + reason), the ≥2% price-impact
- * acknowledgement, and the one-time expert-risk acknowledgement on supply.
+ * shared modal's entry screen — restyled onto the vault-family template
+ * (no dedicated comps; grid shapes per `stUsdsModalRows.ts`): the DS amount
+ * field (label + 24px icon + Heading-3 input, balance + 25/50/100% chips +
+ * static USDS chip), the two-column entry grid, and a review stage whose
+ * breakdown pairs the from→to hero with the review grid. The provider-routing
+ * surfaces stay: the route notice (reason/warning states), the ≥2%
+ * price-impact acknowledgement, and the one-time expert-risk acknowledgement
+ * on supply — both acknowledgements live on the entry below the grid and gate
+ * the Review CTA, logic and copy untouched (restyle only).
  *
  * Amounts are USDS-denominated in both flows (the withdraw input is the USDS
  * you want back; the Curve quote derives the stUSDS input). Analytics-free by
@@ -49,18 +73,22 @@ export function StUsdsModalForm({
   flow: StUsdsLaunchFlow;
   preset?: StUsdsModalPreset;
 }) {
+  const chainId = useChainId();
+  const chains = useChains();
+
   const form = useStUsdsTransactionForm({ flow, preset });
   const {
     isConnected,
     isSupply,
-    decimals,
     value,
     amount,
     available,
+    isZero,
     insufficient,
     blocked,
     amountReady,
     rate,
+    position,
     engineParams,
     providerSelection,
     priceImpactBps,
@@ -73,7 +101,7 @@ export function StUsdsModalForm({
     toast,
     transactionScreenContent,
     onInput,
-    setMaxAmount
+    setPercentAmount
   } = form;
 
   const { execute, steps, prepared, error } = useStUsdsLaunch(engineParams);
@@ -85,47 +113,93 @@ export function StUsdsModalForm({
     (needsImpactAcknowledgement && !impactAccepted) ||
     (needsRiskAcknowledgement && !riskAccepted);
 
+  const impactCheckboxId = useId();
+  const riskCheckboxId = useId();
+
+  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  const rateDisplay = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
+  const projectEarnings = (units: bigint) =>
+    rate !== undefined
+      ? formatNumber(projectAnnualEarnings(parseFloat(formatUnits(units, DECIMALS)), rate), {
+          minDecimals: 2,
+          maxDecimals: 2
+        })
+      : NO_VALUE;
+
+  // Position after the action, clamped at zero for over-withdrawals (the
+  // insufficient gate blocks submission anyway).
+  const positionAfter = isSupply ? position + amount : position > amount ? position - amount : 0n;
+
+  const rows = buildStUsdsEntryRows({
+    rate: rateDisplay,
+    network: networkName,
+    supplyBefore: formatUsds(position),
+    supplyAfter: formatUsds(positionAfter),
+    earningsBefore: projectEarnings(position),
+    earningsAfter: projectEarnings(positionAfter),
+    hasAmount: !isZero,
+    networkFee: NO_VALUE
+  });
+
+  // Review breakdown: the from→to hero the wallet screen also draws, over the
+  // review grid. Supply's receive cell is the quoted stUSDS out; withdraw
+  // receives the entered USDS back. Scalar deps keep the memo stable.
+  const quote = providerSelection.selectedQuote;
+  const amountDisplay = formatUsds(amount);
+  const receiveDisplay = isSupply
+    ? quote
+      ? formatBigInt(quote.outputAmount, { unit: DECIMALS, minDecimals: 2, maxDecimals: 2 })
+      : NO_VALUE
+    : amountDisplay;
+  const earningsAfterDisplay = projectEarnings(positionAfter);
+  const isCurveRoute = providerSelection.selectedProvider === StUsdsProviderType.CURVE;
+  const transactionContent = useMemo(
+    () => (
+      <div className="flex flex-col gap-8 sm:gap-12" data-testid={`stusds-modal-${flow}-review`}>
+        {transactionScreenContent}
+        <ModalSummaryGrid
+          rows={toGridCells(
+            buildStUsdsReviewRows(flow, {
+              amount: amountDisplay,
+              receive: receiveDisplay,
+              estEarnings: earningsAfterDisplay,
+              rate: rateDisplay,
+              route: isCurveRoute ? t`Curve` : t`Native`,
+              routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
+              withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
+              network: networkName,
+              networkFee: NO_VALUE
+            }),
+            'stusds-modal-row'
+          )}
+          dividerClassName="h-6"
+        />
+      </div>
+    ),
+    [
+      flow,
+      transactionScreenContent,
+      amountDisplay,
+      receiveDisplay,
+      earningsAfterDisplay,
+      rateDisplay,
+      isCurveRoute,
+      networkName
+    ]
+  );
+
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
-  // keeps the shared modal's confirm gating / step labels / wallet summary / toast
-  // titles in sync, and the entry-slot portal. Returns the slot renderer.
+  // keeps the shared modal's confirm gating / review breakdown / step labels /
+  // wallet summary / toast titles in sync, and the entry-slot portal.
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
     confirmDisabled: disabled,
-    steps,
+    transactionContent,
     transactionScreenContent,
+    steps,
     toast
   });
-
-  const impactCheckboxId = useId();
-  const riskCheckboxId = useId();
-
-  const amountUsd = parseFloat(formatUnits(amount, decimals));
-  const quote = providerSelection.selectedQuote;
-  // Supply receives the quoted stUSDS; a withdraw receives the entered USDS
-  // (the quote's job there is deriving the stUSDS input).
-  const receiveValue = isSupply
-    ? quote
-      ? `${formatBigInt(quote.outputAmount, { unit: decimals, maxDecimals: 2 })} stUSDS`
-      : NO_VALUE
-    : `${formatNumber(amountUsd, { maxDecimals: 2 })} USDS`;
-
-  const rows: ModalRow[] = isSupply
-    ? [
-        { label: <Trans>You&apos;ll receive</Trans>, value: receiveValue },
-        { label: <Trans>Rate</Trans>, value: rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE },
-        {
-          label: <Trans>Est. earnings (1Y)</Trans>,
-          value: `$${formatNumber(projectAnnualEarnings(amountUsd, rate), { maxDecimals: 2 })}`
-        },
-        { label: <Trans>Product</Trans>, value: 'stUSDS' },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
-      ]
-    : [
-        { label: <Trans>You&apos;ll receive</Trans>, value: receiveValue },
-        { label: <Trans>Product</Trans>, value: 'stUSDS' },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
-      ];
 
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);
 
@@ -134,114 +208,97 @@ export function StUsdsModalForm({
     priceImpactBps !== undefined && priceImpactBps > PRICE_IMPACT_HIGH_THRESHOLD_BPS
       ? 'text-error'
       : priceImpactBps !== undefined && priceImpactBps > PRICE_IMPACT_WARNING_THRESHOLD_BPS
-        ? 'text-amber-400'
-        : 'text-text';
+        ? 'text-statusWarning'
+        : 'text-fgSecondary';
+
+  const amountError = insufficient ? (
+    <Text className="text-error text-sm" data-testid="stusds-modal-amount-error">
+      {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
+    </Text>
+  ) : blocked && !providerSelection.allProvidersBlocked ? (
+    <Text className="text-error text-sm" data-testid="stusds-modal-capacity-error">
+      <Trans>Amount exceeds the module&apos;s remaining supply capacity</Trans>
+    </Text>
+  ) : undefined;
 
   const body = (
-    <div className="flex flex-col gap-3" data-testid={`stusds-modal-${flow}-form`}>
-      <div className="bg-panel flex items-center justify-between gap-2 rounded-xl p-3">
-        <input
-          inputMode="decimal"
-          placeholder="0"
-          value={value}
-          onChange={e => onInput(e.target.value)}
-          disabled={!isConnected}
-          aria-label={isSupply ? t`Supply amount` : t`Withdraw amount`}
-          data-testid="stusds-modal-amount-input"
-          className="text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-2xl font-medium outline-none disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <div className="text-text flex shrink-0 items-center gap-1.5" data-testid="stusds-modal-asset">
-          <TokenIcon token={{ symbol: 'USDS' }} width={20} showChainIcon={false} className="h-5 w-5" />
-          <Text className="font-medium">USDS</Text>
-        </div>
+    <div className="flex flex-col gap-8 sm:gap-12" data-testid={`stusds-modal-${flow}-form`}>
+      <ModalAmountField
+        label={<Trans>Amount</Trans>}
+        tokenSymbol="USDS"
+        value={value}
+        onInput={onInput}
+        disabled={!isConnected}
+        balance={
+          <>
+            {isSupply ? <Trans>Balance</Trans> : <Trans>Withdrawable</Trans>}:{' '}
+            {isConnected ? formatUsds(available) : NO_VALUE}
+          </>
+        }
+        onPercent={setPercentAmount}
+        selector={<AssetPill />}
+        error={amountError}
+        inputAriaLabel={isSupply ? t`Supply amount` : t`Withdraw amount`}
+        inputTestId="stusds-modal-amount-input"
+        maxTestId="stusds-modal-amount-max"
+      />
+
+      <div className="flex flex-col gap-4">
+        <StUsdsProviderNotice providerSelection={providerSelection} flow={flow} />
+
+        <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row')} dividerClassName="h-8" />
+
+        {needsImpactAcknowledgement && (
+          <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">
+            <Checkbox
+              id={impactCheckboxId}
+              checked={impactAccepted}
+              onCheckedChange={checked => setImpactAccepted(checked === true)}
+              className="mt-0.5"
+            />
+            <label htmlFor={impactCheckboxId} className="cursor-pointer">
+              <Text className={`font-graphik text-xs leading-[18px] ${impactColor}`}>
+                <Trans>
+                  I understand the price impact exceeds {impactPercent}% and choose to proceed anyway
+                </Trans>
+              </Text>
+            </label>
+          </div>
+        )}
+
+        {needsRiskAcknowledgement && (
+          <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-risk-acknowledgement">
+            <Checkbox
+              id={riskCheckboxId}
+              checked={riskAccepted}
+              onCheckedChange={checked => acceptRisk(checked === true)}
+              className="mt-0.5"
+            />
+            <label htmlFor={riskCheckboxId} className="cursor-pointer">
+              <Text className="font-graphik text-fgSecondary text-xs leading-[18px]">
+                <Trans>
+                  I understand stUSDS is an expert module that may function differently than other modules,
+                  and I have reviewed the associated{' '}
+                  <ExternalLink
+                    href="https://docs.sky.money/user-risks"
+                    showIcon={false}
+                    className="text-fgBrand"
+                  >
+                    User Risks
+                  </ExternalLink>
+                  .
+                </Trans>
+              </Text>
+            </label>
+          </div>
+        )}
+
+        {prepareErrorMessage && amountReady && (
+          <Text className="text-error text-sm" data-testid="stusds-modal-error">
+            {prepareErrorMessage}
+          </Text>
+        )}
       </div>
-
-      <div className="flex items-center justify-between">
-        <Text className="text-textSecondary text-sm">
-          {isSupply ? <Trans>Balance</Trans> : <Trans>Withdrawable</Trans>}:{' '}
-          {isConnected
-            ? formatNumber(parseFloat(formatUnits(available, decimals)), { maxDecimals: 2 })
-            : NO_VALUE}
-        </Text>
-        <button
-          type="button"
-          onClick={setMaxAmount}
-          className="text-textEmphasis text-sm font-medium"
-          data-testid="stusds-modal-amount-max"
-        >
-          <Trans>Max</Trans>
-        </button>
-      </div>
-
-      {insufficient && (
-        <Text className="text-error text-sm" data-testid="stusds-modal-amount-error">
-          {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
-        </Text>
-      )}
-      {!insufficient && blocked && !providerSelection.allProvidersBlocked && (
-        <Text className="text-error text-sm" data-testid="stusds-modal-capacity-error">
-          <Trans>Amount exceeds the module&apos;s remaining supply capacity</Trans>
-        </Text>
-      )}
-
-      <StUsdsProviderNotice providerSelection={providerSelection} flow={flow} />
-
-      <div className="flex flex-col gap-3 pt-1">
-        {rows.map((row, index) => (
-          <Row key={index} label={row.label} value={row.value} />
-        ))}
-      </div>
-
-      {needsImpactAcknowledgement && (
-        <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">
-          <Checkbox
-            id={impactCheckboxId}
-            checked={impactAccepted}
-            onCheckedChange={checked => setImpactAccepted(checked === true)}
-            className="mt-0.5"
-          />
-          <label htmlFor={impactCheckboxId} className="cursor-pointer">
-            <Text variant="small" className={impactColor}>
-              <Trans>
-                I understand the price impact exceeds {impactPercent}% and choose to proceed anyway
-              </Trans>
-            </Text>
-          </label>
-        </div>
-      )}
-
-      {needsRiskAcknowledgement && (
-        <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-risk-acknowledgement">
-          <Checkbox
-            id={riskCheckboxId}
-            checked={riskAccepted}
-            onCheckedChange={checked => acceptRisk(checked === true)}
-            className="mt-0.5"
-          />
-          <label htmlFor={riskCheckboxId} className="cursor-pointer">
-            <Text variant="small" className="text-textSecondary">
-              <Trans>
-                I understand stUSDS is an expert module that may function differently than other modules, and
-                I have reviewed the associated{' '}
-                <ExternalLink
-                  href="https://docs.sky.money/user-risks"
-                  showIcon={false}
-                  className="text-textEmphasis"
-                >
-                  User Risks
-                </ExternalLink>
-                .
-              </Trans>
-            </Text>
-          </label>
-        </div>
-      )}
-
-      {prepareErrorMessage && amountReady && (
-        <Text className="text-error text-sm" data-testid="stusds-modal-error">
-          {prepareErrorMessage}
-        </Text>
-      )}
     </div>
   );
 
