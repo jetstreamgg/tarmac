@@ -204,7 +204,9 @@ export function IconboxPosition({
       <span
         className={cn(
           'flex size-full items-center justify-center rounded-full',
-          inactive ? 'bg-bgTertiary text-fgSecondary' : 'bg-statusSuccessBg text-statusSuccess'
+          // Active glyph is fg-system-success-primary (#02c2a1, theme-invariant)
+          // per the comp — statusSuccess is the lighter status-text green.
+          inactive ? 'bg-bgTertiary text-fgSecondary' : 'bg-statusSuccessBg text-statusSuccessSolid'
         )}
       >
         {children}

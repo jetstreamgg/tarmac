@@ -17,7 +17,7 @@ import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import { Stake, Liquidated } from '@/modules/icons';
+import { StakeSky, Liquidated } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Button } from '@/components/ui/button';
@@ -157,7 +157,7 @@ function PositionIdCell({ position }: { position: StakeUserPosition }) {
   return (
     <div data-testid={`stake-position-id-${position.index}`} className={cn(inactive && 'opacity-50')}>
       <CellPosition
-        icon={<Stake width={16} height={16} />}
+        icon={<StakeSky width={16} height={16} />}
         label={<Trans>Position {position.index + 1}</Trans>}
       />
     </div>
@@ -227,7 +227,7 @@ const renderCard = (position: StakeUserPosition) => (
         data-testid={`stake-position-id-${position.index}`}
       >
         <IconboxPosition>
-          <Stake width={16} height={16} />
+          <StakeSky width={16} height={16} />
         </IconboxPosition>
         <span className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
           <Trans>Position {position.index + 1}</Trans>
