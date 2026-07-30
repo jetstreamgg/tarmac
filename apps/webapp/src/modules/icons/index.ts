@@ -9,6 +9,7 @@ import { Metrics } from './Metrics';
 import { Rewards } from './Rewards';
 import { RewardsEmpty } from './RewardsEmpty';
 import { Savings } from './Savings';
+import { Usds } from './Usds';
 import { Earn } from './Earn';
 import { Supply } from './Supply';
 import { Supplied } from './Supplied';
@@ -59,6 +60,7 @@ export {
   Rewards,
   RewardsEmpty,
   Savings,
+  Usds,
   Earn,
   Supply,
   Supplied,

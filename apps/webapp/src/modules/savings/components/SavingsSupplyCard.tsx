@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { Usds } from '@/modules/icons';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import {
   ORIGIN_TOKENS,
@@ -88,15 +89,14 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
 
   return (
     <Card className="flex flex-col gap-5 p-5 md:gap-6 md:p-6" data-testid="savings-supply-card">
-      {/* Product badge (Figma 486:20741 / desktop 486:20522). The desktop comp
-          reads "Sky Savings"; the mobile comp's "Sky Staking Engine" wording is
-          treated as a copy error (that engine belongs to Stake) — flagged on
-          APP-378. */}
+      {/* Product badge: monochrome per the current comp (859:35719, APP-432
+          item 11) — the fg-tertiary USDS mark replaces the green token logo,
+          with the label on fg-secondary. */}
       <span
         data-testid="savings-supply-badge"
-        className="bg-glassBadge text-textSecondary font-circle flex w-fit items-center gap-1 rounded-full py-[5px] pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px]"
+        className="bg-glassBadge text-fgSecondary font-circle flex w-fit items-center gap-1 rounded-full py-[5px] pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px]"
       >
-        <TokenIcon token={{ symbol: 'sUSDS' }} width={12} showChainIcon={false} className="h-3 w-3" />
+        <Usds boxSize={12} className="text-fgTertiary h-3 w-3" aria-hidden />
         <Trans>Sky Savings</Trans>
       </span>
 
@@ -113,9 +113,10 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
         </Trans>
       </p>
 
-      {/* Mobile (486:20747): the two stats sit content-width around a 28px
-          hairline; from md the C3 two-column grid returns. */}
-      <div className="flex items-center gap-6 md:grid md:grid-cols-2 md:gap-4">
+      {/* The two stats sit content-width around a 28px border-primary hairline
+          at every tier — the desktop comp (859:35719) keeps the divider too
+          (APP-432 item 11), so the old md: two-column grid is gone. */}
+      <div className="flex items-center gap-6">
         <div className="flex flex-col gap-1 md:gap-1.5">
           <span className="text-textSecondary text-xs leading-4 md:text-sm md:leading-normal">
             <Trans>Current Rate</Trans>
@@ -130,7 +131,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
             />
           </span>
         </div>
-        <div className="bg-border h-7 w-px shrink-0 md:hidden" />
+        <div className="bg-borderPrimary h-7 w-px shrink-0" />
         <div className="flex flex-col gap-1 md:gap-1.5">
           <span className="text-textSecondary text-xs leading-4 md:text-sm md:leading-normal">
             <Trans>Idle balance</Trans>
