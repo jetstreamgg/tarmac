@@ -41,7 +41,15 @@ export function BundleTogglePanel() {
           </Badge>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" side="top" className="flex w-[260px] flex-col gap-2 p-4">
+      {/* The surface is the DS Tooltip's, not the app popover's opaque bg-container:
+          this panel sits beside the fee row's info tooltip, and the two read as one
+          family only if they share the bg-tertiary glass + 20px backdrop blur and the
+          16px radius (tooltip.tsx carries the same recipe). */}
+      <PopoverContent
+        align="start"
+        side="top"
+        className="bg-bgTertiary flex w-[260px] flex-col gap-2 rounded-2xl p-4 shadow-none backdrop-blur-[20px]"
+      >
         <div className="flex items-center justify-between gap-2">
           <span className="text-fgPrimary font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
             <Zap size={16} className="text-fgBrand shrink-0" />
