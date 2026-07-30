@@ -36,12 +36,19 @@ export function FilterSelect({
           shadcn trigger's own h-10/w-full/bg and its 16px half-opacity chevron
           are overridden here rather than editing the vendored component; the
           [&>svg] rules only reach the trigger's direct chevron child, not
-          icons inside option labels. */}
+          icons inside option labels.
+
+          The trigger's `[&>span]:line-clamp-1` also has to go: it puts
+          `-webkit-box` + overflow-hidden on the value span, which clipped the
+          chain-icon stack of the portfolio's "All networks" label to the text
+          line box (APP-432 item 1). Labels here are single-line by
+          construction, so nothing needs the clamp. */}
       <SelectTrigger
         data-testid={testId}
         className={cn(
           buttonVariants({ variant: 'dropdown', size: size === 'm' ? 'dropdownM' : 'dropdownS' }),
           'h-auto w-auto bg-transparent [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180',
+          '[&>span]:line-clamp-none [&>span]:flex [&>span]:items-center',
           size === 'm' ? '[&>svg]:size-4' : '[&>svg]:size-3',
           triggerClassName
         )}
