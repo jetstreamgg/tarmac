@@ -10,8 +10,9 @@ import { useStakeRewardsRate } from '../hooks/useStakeRewardsRate';
 const NO_VALUE = '–';
 
 // Phone tier (comp 1222:17089): single-column rows with 12px leading icons,
-// Body 5 labels and Label 4 values on borderPrimary hairlines; md restores
-// the desktop 2-column strip.
+// Body 5 labels and Label 5 values on borderPrimary hairlines; md restores
+// the desktop 2-column strip, where values grow to Label 4 (Circular 16/18,
+// -0.32 tracking, fg-primary — comp 1036:208698, APP-432 item 18).
 function DetailRow({ icon, label, children }: { icon: ReactNode; label: ReactNode; children: ReactNode }) {
   return (
     <div className="border-borderPrimary flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3">
@@ -24,7 +25,7 @@ function DetailRow({ icon, label, children }: { icon: ReactNode; label: ReactNod
         </span>
         {label}
       </span>
-      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-normal md:tracking-normal">
+      <span className="text-fgPrimary font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
         {children}
       </span>
     </div>
@@ -67,7 +68,7 @@ export function StakeDetailsStrip() {
 
   return (
     <div data-testid="stake-details-strip" className="flex flex-col">
-      <h3 className="text-text font-circle mb-4 text-base leading-[18px] font-medium tracking-[-0.32px] md:mb-2 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
+      <h3 className="text-fgPrimary font-circle mb-4 text-base leading-[18px] font-medium tracking-[-0.32px] md:mb-2 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
         <Trans>Details</Trans>
       </h3>
 
