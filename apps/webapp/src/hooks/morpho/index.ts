@@ -13,6 +13,11 @@ export {
   type MorphoVaultMultipleRateHook,
   type MorphoRewardData
 } from './useMorphoVaultRateApiData';
+export {
+  useMorphoVaultsTrailingRates,
+  type MorphoTrailingRates,
+  type MorphoVaultsTrailingRatesHook
+} from './useMorphoVaultsTrailingRates';
 export { useMorphoVaultAllocations } from './useMorphoVaultAllocations';
 export {
   useMorphoVaultMarketApiData,
