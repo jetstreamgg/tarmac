@@ -52,12 +52,22 @@ export function EarnPage() {
     [chains]
   );
 
+  // Rows carry their chain icon (Figma 1036:201601, APP-432 item 7) at the
+  // dropdown's 16px icon size — the same shape the portfolio filter uses.
   const networkOptions = useMemo<EarnFilterOption[]>(() => {
     const ids = [...new Set(rows.flatMap(row => row.networks))];
     return ids
       .map(id => ({ id, chain: chains.find(chain => chain.id === id) }))
       .filter(({ chain }) => chain !== undefined)
-      .map(({ id, chain }) => ({ value: chainSlugById[id], label: chain!.name }));
+      .map(({ id, chain }) => ({
+        value: chainSlugById[id],
+        label: (
+          <span className="flex items-center gap-2">
+            {getChainIcon(id, 'h-4 w-4 shrink-0')}
+            {chain!.name}
+          </span>
+        )
+      }));
   }, [rows, chains, chainSlugById]);
 
   const stablecoinOptions = useMemo<EarnFilterOption[]>(

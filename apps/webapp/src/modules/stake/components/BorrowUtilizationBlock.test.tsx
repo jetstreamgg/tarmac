@@ -62,7 +62,7 @@ describe('BorrowUtilizationBlock', () => {
 
     const dot = (label: string) => screen.getByText(label).parentElement!.querySelector('span[aria-hidden]')!;
     expect(dot('Borrowed (USDS)').className).toContain('bg-fgBrand');
-    expect(dot('Available (USDS)').className).toContain('bg-textSecondary/50');
+    expect(dot('Available (USDS)').className).toContain('bg-fgSecondary/50');
     const bar = screen.getByRole('progressbar');
     expect(bar.querySelector('.bg-fgBrand')).toBeTruthy();
   });
