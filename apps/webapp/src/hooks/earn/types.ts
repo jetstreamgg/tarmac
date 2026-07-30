@@ -89,10 +89,11 @@ export type EarnProductDescriptor = {
 export type EarnProductRow = EarnProductDescriptor & {
   rate: EarnRate;
   /**
-   * TODO(C1 follow-up): no 30-day-rate source is wired yet (needs the
-   * historical-rate endpoints) — always undefined; consumers render '–'.
+   * Trailing 30-day average rate, averaged over each product's daily historical
+   * series (`trailingAverageRate`). Formats to '—' when the product has no
+   * historical source data yet — a points farm, a market listed today.
    */
-  rate30d?: EarnRate;
+  rate30d: EarnRate;
   tvl?: EarnUsdAmount;
   position?: EarnUsdAmount;
   isLoading: boolean;

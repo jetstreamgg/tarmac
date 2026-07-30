@@ -42,7 +42,7 @@ type HistoricalDataResponseRaw = {
  * integration is mainnet-only (Pendle's API doesn't serve forks), matching
  * usePendleMarketsApiData.
  */
-async function fetchPendleMarketHistoricalData(
+export async function fetchPendleMarketHistoricalData(
   marketAddress: `0x${string}`
 ): Promise<PendleMarketChartPoint[]> {
   const url = `${PENDLE_API_BASE_URL}/v2/${mainnet.id}/markets/${marketAddress}/historical-data?time_frame=day`;
