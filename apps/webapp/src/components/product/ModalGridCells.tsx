@@ -40,7 +40,14 @@ export type ModalGridCell = {
   trailingToken?: string;
   /** Interactive trailing element after the value (the review slippage gear). */
   action?: React.ReactNode;
-} & ({ kind: 'single'; value: string } | { kind: 'delta'; before: string; after: string });
+  /** Interactive element after the label (the upgrade Penalty info popover). */
+  labelAction?: React.ReactNode;
+} & (
+  | { kind: 'single'; value: string }
+  | { kind: 'delta'; before: string; after: string }
+  /** `◉ left = ◉ right` — the token-pair equation (upgrade Rate, Figma 1310:130775). */
+  | { kind: 'pair'; left: string; right: string; rightToken: string }
+);
 
 /** The savings-green treatment on a value's trailing "%" (Figma gradient-savings, per WalletDrawerAssets). */
 function RatePercent({ value }: { value: string }) {
@@ -189,6 +196,22 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
       </span>
     );
   }
+  // Token-pair equation (Figma 1310:130775): `◉ left = ◉ right`.
+  if (cell.kind === 'pair') {
+    return (
+      <span className="flex flex-wrap items-center gap-1.5">
+        <span className="flex items-center gap-1">
+          {icon}
+          <span>{cell.left}</span>
+        </span>
+        <span aria-hidden>=</span>
+        <span className="flex items-center gap-1">
+          <CellToken symbol={cell.rightToken} />
+          <span>{cell.right}</span>
+        </span>
+      </span>
+    );
+  }
   return (
     <span className="flex flex-wrap items-center gap-1.5">
       <span className="flex items-center gap-1">
@@ -217,14 +240,16 @@ function LabelBadge({ text }: { text: string }) {
 export const toGridCells = (rows: ModalGridCell[][], testIdPrefix: string): ModalSummaryCell[][] =>
   rows.map(row =>
     row.map(cell => ({
-      label: cell.labelBadge ? (
-        <span className="flex items-center gap-1">
-          {cell.label}
-          <LabelBadge text={cell.labelBadge} />
-        </span>
-      ) : (
-        cell.label
-      ),
+      label:
+        cell.labelBadge || cell.labelAction ? (
+          <span className="flex items-center gap-1">
+            {cell.label}
+            {cell.labelBadge && <LabelBadge text={cell.labelBadge} />}
+            {cell.labelAction}
+          </span>
+        ) : (
+          cell.label
+        ),
       testId: `${testIdPrefix}-${cell.label}`,
       content: <CellValue cell={cell} />
     }))
