@@ -64,7 +64,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
             <TokenIcon token={{ symbol: 'stUSDS' }} width={12} showChainIcon={false} className="h-3 w-3" />
           }
         >
-          <Trans>Staked USDS</Trans>
+          <Trans>stUSDS</Trans>
         </ProductBadge>
       }
       title={
