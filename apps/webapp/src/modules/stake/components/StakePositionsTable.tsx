@@ -306,6 +306,24 @@ export function StakePositionsTable({
     : allPositions;
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
+  // Comp 1036:208676: the empty state is a self-contained card — the section
+  // title moves inside it and there is no table chrome.
+  if (isEmpty) {
+    return (
+      <Card data-testid="stake-positions-empty" className="flex flex-col gap-6 p-8">
+        <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+          <Trans>Active positions</Trans>
+        </h3>
+        <div className="flex flex-col items-center gap-4 py-6">
+          <SuppliedEmpty aria-hidden />
+          <p className="text-fgSecondary font-circle max-w-[224px] text-center text-sm leading-4 font-medium tracking-[-0.28px]">
+            <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
@@ -330,38 +348,26 @@ export function StakePositionsTable({
         )}
       </div>
 
-      {isEmpty ? (
-        <Card
-          data-testid="stake-positions-empty"
-          className="flex flex-col items-center justify-center gap-4 px-6 py-16"
-        >
-          <SuppliedEmpty aria-hidden />
-          <p className="text-fgSecondary font-circle max-w-[224px] text-center text-sm leading-4 font-medium tracking-[-0.28px]">
-            <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
-          </p>
-        </Card>
-      ) : (
-        <ProductTransactionsTable
-          dataTestId="stake-positions-table"
-          columns={COLUMNS}
-          rows={visiblePositions}
-          rowKey={position => String(position.index)}
-          rowTestId={position => `stake-position-row-${position.index}`}
-          onRowClick={onRowClick}
-          isLoading={isLoading}
-          error={error}
-          emptyLabel={<Trans>No active positions.</Trans>}
-          minWidth={720}
-          renderCard={renderCard}
-          renderBelowRow={position => (
-            <StakePositionRowBanner
-              position={position}
-              onRemediate={action => onRemediate(position, action)}
-              onClaim={() => onRowClick(position)}
-            />
-          )}
-        />
-      )}
+      <ProductTransactionsTable
+        dataTestId="stake-positions-table"
+        columns={COLUMNS}
+        rows={visiblePositions}
+        rowKey={position => String(position.index)}
+        rowTestId={position => `stake-position-row-${position.index}`}
+        onRowClick={onRowClick}
+        isLoading={isLoading}
+        error={error}
+        emptyLabel={<Trans>No active positions.</Trans>}
+        minWidth={720}
+        renderCard={renderCard}
+        renderBelowRow={position => (
+          <StakePositionRowBanner
+            position={position}
+            onRemediate={action => onRemediate(position, action)}
+            onClaim={() => onRowClick(position)}
+          />
+        )}
+      />
     </div>
   );
 }
