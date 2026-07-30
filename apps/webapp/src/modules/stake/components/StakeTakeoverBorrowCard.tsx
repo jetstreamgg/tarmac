@@ -189,7 +189,7 @@ export function StakeTakeoverBorrowCard({
         {/* 2×2 on phones (1222:19900), one 4-up row from md (1036:209767). The
             middle divider only exists in the row: `hidden` drops it out of the
             grid's flow entirely, so the mobile 2×2 keeps its centre rule. */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:flex md:flex-wrap md:items-start md:gap-4">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:flex md:flex-wrap md:gap-4">
           <StatItem label={<Trans>Borrow rate</Trans>}>
             {collateralData?.stabilityFee ? formatPercent(collateralData.stabilityFee) : NO_VALUE}
           </StatItem>

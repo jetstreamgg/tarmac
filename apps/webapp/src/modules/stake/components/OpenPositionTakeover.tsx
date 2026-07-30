@@ -286,6 +286,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       dataTestId="stake-takeover"
       footer={
         <>
+          {/* 237px is the comp's two-line measure for this copy (1036:209863). */}
           <p className="text-fgSecondary md:text-textSecondary flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left">
             <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
           </p>
@@ -295,7 +296,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
             onClick={launch}
             disabled={confirmDisabled}
             data-testid="stake-takeover-confirm"
-            className="h-12 shrink-0 px-5 text-sm leading-4 tracking-[-0.28px] md:h-14 md:w-40 md:px-10 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
+            // min-w, not w: the comp's 160px button leaves ~80px of text box
+            // inside the 40px insets, and `whitespace-nowrap` from the base
+            // recipe would clip a longer translated label rather than wrap it.
+            className="h-12 shrink-0 px-5 text-sm leading-4 tracking-[-0.28px] md:h-14 md:min-w-40 md:px-10 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
           >
             <Trans>Confirm</Trans>
           </Button>

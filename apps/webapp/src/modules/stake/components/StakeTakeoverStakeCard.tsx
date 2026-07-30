@@ -68,8 +68,16 @@ export function StakeTakeoverStakeCard({
   // clicking the matching chip stage the same wei. Held at whole percents (the
   // DS Standard slider's step); an amount typed past the balance pins the thumb
   // at 100 rather than running it off the track.
+  //
+  // The projection back to a percent must ROUND, not floor. Staging floors
+  // (`balance × p / 100`), so on any balance that isn't a round multiple of 100
+  // wei — i.e. essentially every real one — flooring here too reads back p − 1:
+  // the 25% chip would park the thumb at 24, and every drag step would lag the
+  // pointer by one. The extra 1e2 of scale keeps that rounding off the bigint
+  // division, which floors regardless.
   const sliderBalance = balance ?? 0n;
-  const sliderPercent = sliderBalance > 0n ? Math.min(100, Number((amount * 100n) / sliderBalance)) : 0;
+  const sliderPercent =
+    sliderBalance > 0n ? Math.min(100, Math.round(Number((amount * 10000n) / sliderBalance) / 100)) : 0;
 
   return (
     <StakeTakeoverCard step={1} title={<Trans>Stake SKY</Trans>} dataTestId="stake-takeover-stake-card">
@@ -106,6 +114,7 @@ export function StakeTakeoverStakeCard({
               onAmountChange(percent >= 100 ? sliderBalance : (sliderBalance * BigInt(percent)) / 100n);
             }}
             aria-label={t`Share of balance to stake`}
+            valueText={`${sliderPercent}%`}
             data-testid="stake-takeover-stake-slider"
           />
           <div className="text-fgSecondary flex items-center gap-4 text-xs leading-[18px]">
