@@ -119,8 +119,9 @@ minimumReleaseAge: 10080
 overrides:
   esbuild@<0.28.1: ~0.28.1
   '@babel/runtime@7.26.7': 7.26.10
-  axios@>=1.0.0 <1.16.0: ^1.16.0
-  '@json-rpc-tools/provider>axios@^0.21.0': ^1.16.0
+  axios@>=1.0.0 <1.18.0: ^1.18.0
+  '@json-rpc-tools/provider>axios@^0.21.0': ^1.18.0
+  postcss@<8.5.18: ^8.5.18
   protobufjs@<=7.6.0: ~7.6.1
   '@protobufjs/utf8@<1.1.1': ~1.1.1
   dompurify@<3.4.0: ~3.4.0
