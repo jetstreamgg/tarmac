@@ -196,17 +196,20 @@ export function IconboxPosition({
   return (
     <span
       className={cn(
-        'flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px] p-px',
-        inactive ? 'border-glassBorder' : 'border-statusSuccessBorder',
+        'flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]',
+        inactive ? 'border-glassBorder' : 'border-iconboxPosition',
         className
       )}
     >
       <span
         className={cn(
-          'flex size-full items-center justify-center rounded-full',
+          // Disc pinned to Figma's 30px and centered, not `size-full` off a
+          // padding: Chrome snaps the 1.5px border down to 1px, so any
+          // padding-derived diameter lands a pixel wide.
+          'flex size-[30px] items-center justify-center rounded-full',
           // Active glyph is fg-system-success-primary (#02c2a1, theme-invariant)
           // per the comp — statusSuccess is the lighter status-text green.
-          inactive ? 'bg-bgTertiary text-fgSecondary' : 'bg-statusSuccessBg text-statusSuccessSolid'
+          inactive ? 'bg-bgTertiary text-fgSecondary' : 'bg-iconboxPositionBg text-statusSuccessSolid'
         )}
       >
         {children}

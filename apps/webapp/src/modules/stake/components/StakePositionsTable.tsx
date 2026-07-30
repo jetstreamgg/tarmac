@@ -14,7 +14,6 @@ import {
 } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
-import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky, Liquidated, SuppliedEmpty } from '@/modules/icons';
@@ -155,10 +154,14 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
 function PositionIdCell({ position }: { position: StakeUserPosition }) {
   const inactive = isInactiveStakePosition(position);
   return (
-    <div data-testid={`stake-position-id-${position.index}`} className={cn(inactive && 'opacity-50')}>
+    // Inactive positions read through Iconbox/Position's own Inactive variant
+    // (Figma 5051:145321) rather than a blanket opacity — the comp keeps the
+    // label at full-strength fg-primary and only neutralizes the mark.
+    <div data-testid={`stake-position-id-${position.index}`}>
       <CellPosition
         icon={<StakeSky width={16} height={16} />}
         label={<Trans>Position {position.index + 1}</Trans>}
+        inactive={inactive}
       />
     </div>
   );
@@ -222,11 +225,9 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
 const renderCard = (position: StakeUserPosition) => (
   <TransactionCard
     header={
-      <span
-        className={cn('flex items-center gap-3', isInactiveStakePosition(position) && 'opacity-50')}
-        data-testid={`stake-position-id-${position.index}`}
-      >
-        <IconboxPosition>
+      <span className="flex items-center gap-3" data-testid={`stake-position-id-${position.index}`}>
+        {/* Same inactive treatment as the desktop cell: the variant, not opacity. */}
+        <IconboxPosition inactive={isInactiveStakePosition(position)}>
           <StakeSky width={16} height={16} />
         </IconboxPosition>
         <span className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">

@@ -148,8 +148,8 @@
      shared by the Status/Risk/Token-Idle cells: fg/bg/border-success,
      fg-warning (risk Medium segments) and fg/bg-brand (Pending badge).
      statusSuccessSolid is colors/system/success (#02c2a1), the active-position
-     dot; statusSuccessBorder doubles as the position-iconbox ring. G2 filled the
-     row surfaces and the fg/bg status pairs from the DS light mode;
+     dot and the active position-iconbox glyph. G2 filled the row surfaces
+     and the fg/bg status pairs from the DS light mode;
      statusSuccessBorder and statusSuccessSolid are theme-invariant. */
   --color-bgSecondary: rgba(188, 182, 239, 0.05);
   --color-bgTertiary: rgba(188, 182, 239, 0.1);
@@ -161,6 +161,13 @@
   --color-statusSuccessBg: rgba(2, 194, 161, 0.1);
   --color-statusSuccessBorder: rgba(2, 194, 161, 0.2);
   --color-statusSuccessSolid: #02c2a1;
+  /* components/iconbox/bg-position-green + border-position-green (Figma
+     Iconbox/Position 5051:145321). Numerically the dark statusSuccessBg/Border
+     pair, but they need their own tokens: the DS holds the position iconbox at
+     0.1/0.2 in BOTH modes, while components/status/bg-success doubles to
+     #02c2a133 in light. Theme-invariant — no light override below. */
+  --color-iconboxPositionBg: rgba(2, 194, 161, 0.1);
+  --color-iconboxPosition: rgba(2, 194, 161, 0.2);
   --color-statusWarning: #ffc044;
   /* components/status/fg-error (APP-432 item 6 — the risk meters' Aggressive
      tier). Distinct from the legacy `--color-error` (--service-red #ff6d6d),
