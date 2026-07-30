@@ -366,7 +366,7 @@ test('claim pays rewards out and claim & restake locks them back into the urn', 
   const urn = await getUrnAddress(testAccount, 0n);
 
   // Deterministic claimables instead of waiting out emissions: SKY (the urn's
-  // farm) + USDS (a second farm) → the multi-reward checkbox modal.
+  // farm) + USDS (a second farm) → the stacked two-reward modal.
   await mintFarmReward(SKY_FARM, urn, parseUnits('31.4', 18));
   await mintFarmReward(USDS_FARM, urn, parseUnits('22.9', 18));
 
@@ -375,30 +375,41 @@ test('claim pays rewards out and claim & restake locks them back into the urn', 
   await isolatedPage.waitForTimeout(2000);
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
 
-  // Leg 1 — plain claim of USDS only (SKY unchecked).
+  // Leg 1 — plain claim. The redesigned modal claims the urn's FULL claimable
+  // set (Figma 1036:213978 draws no per-token selection): both rewards pay out
+  // to the wallet. The entry CTA executes directly — no review Confirm.
   const usdsBefore = await getTokenBalance(USDS_TOKEN, testAccount);
+  const skyWalletBefore = await getTokenBalance(SKY_TOKEN, testAccount);
   await gotoManagePosition(isolatedPage, 0);
   await isolatedPage.getByTestId('stake-manage-menu-claim').click();
-  await expect(isolatedPage.getByTestId('stake-claim-modal')).toBeVisible();
-  await expect(isolatedPage.getByTestId('stake-claim-checkbox-sky')).toBeVisible({ timeout: 15_000 });
-  await isolatedPage.getByTestId('stake-claim-checkbox-sky').click();
-  await expect(isolatedPage.getByTestId('stake-claim-restake-confirm')).not.toBeVisible();
-  await isolatedPage.getByTestId('stake-claim-confirm').click();
-  await confirmTransactionModal(isolatedPage);
+  await expect(isolatedPage.getByTestId('stake-claim-form')).toBeVisible();
+  await expect(isolatedPage.getByTestId('stake-claim-reward-sky')).toBeVisible({ timeout: 15_000 });
+  await isolatedPage.getByRole('button', { name: 'Claim', exact: true }).click();
+  await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+    timeout: 60_000
+  });
+  await isolatedPage.getByRole('button', { name: 'Done' }).click();
 
   expect(await getEarned(USDS_FARM, urn)).toBe(0n);
   expect((await getTokenBalance(USDS_TOKEN, testAccount)) - usdsBefore).toBe(parseUnits('22.9', 18));
-  expect(await getEarned(SKY_FARM, urn)).toBeGreaterThanOrEqual(parseUnits('31.4', 18));
+  expect(await getEarned(SKY_FARM, urn)).toBeLessThan(WAD); // re-accrual epsilon while staked
+  expect((await getTokenBalance(SKY_TOKEN, testAccount)) - skyWalletBefore).toBeGreaterThanOrEqual(
+    parseUnits('31.4', 18)
+  );
 
-  // Leg 2 — claim & restake the SKY reward: earned drains into vat ink, not
-  // the wallet (D-7, the pass-1 not-exercisable case this spec exists for).
+  // Leg 2 — claim & restake a fresh SKY reward: earned drains into vat ink,
+  // not the wallet (D-7, the pass-1 not-exercisable case this spec exists for).
+  await mintFarmReward(SKY_FARM, urn, parseUnits('31.4', 18));
   const { ink: inkBefore } = await getUrnInkArt(urn);
   const skyBefore = await getTokenBalance(SKY_TOKEN, testAccount);
   await gotoManagePosition(isolatedPage, 0);
   await isolatedPage.getByTestId('stake-manage-menu-claim').click();
-  await expect(isolatedPage.getByTestId('stake-claim-single')).toBeVisible({ timeout: 15_000 });
-  await isolatedPage.getByTestId('stake-claim-restake-confirm').click();
-  await confirmTransactionModal(isolatedPage);
+  await expect(isolatedPage.getByTestId('stake-claim-reward-sky')).toBeVisible({ timeout: 15_000 });
+  await isolatedPage.getByRole('button', { name: 'Claim & Restake SKY' }).click();
+  await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+    timeout: 60_000
+  });
+  await isolatedPage.getByRole('button', { name: 'Done' }).click();
 
   expect(await getEarned(SKY_FARM, urn)).toBeLessThan(WAD); // re-accrual epsilon while staked
   const inkDelta = (await getUrnInkArt(urn)).ink - inkBefore;

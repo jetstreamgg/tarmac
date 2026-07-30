@@ -83,6 +83,8 @@ export type TransactionModalProps = {
   /** Optional badge rendered immediately after the title — e.g. a "Merkl" source chip. */
   titleBadge?: ReactNode;
   onConfirm: () => void;
+  /** Fires for the entry's optional secondary CTA (see `TransactionEntry.secondaryConfirmLabel`). */
+  onSecondaryConfirm?: () => void;
   onRetry?: () => void;
   onBack?: () => void;
   txStatus: TxStatus;
@@ -127,6 +129,7 @@ export function TransactionModal({
   rightHeaderComponent,
   titleBadge,
   onConfirm,
+  onSecondaryConfirm,
   onRetry,
   onBack,
   txStatus,
@@ -216,6 +219,22 @@ export function TransactionModal({
     setStep('transaction');
     onConfirm();
   }, [isEntry, hasReviewStage, onConfirm]);
+
+  // The entry's secondary CTA (entry-only flows — see the contract): same
+  // advance to the wallet screen, firing the secondary action's handler.
+  const handleSecondaryConfirm = useCallback(() => {
+    if (reviewRef.current) {
+      setContentHeight(reviewRef.current.offsetHeight);
+    }
+    setStep('transaction');
+    onSecondaryConfirm?.();
+  }, [onSecondaryConfirm]);
+
+  // Two-CTA entry footer (Figma 1036:214001: secondary "Claim" beside primary
+  // "Claim & Restake SKY", equal widths). Entry-only flows only — a
+  // three-screen entry advances to its single-confirm review.
+  const hasSecondaryConfirm =
+    isEntry && !hasReviewStage && !!entry?.secondaryConfirmLabel && !!onSecondaryConfirm;
 
   const handleRetry = useCallback(() => {
     if (onRetry) {
@@ -436,15 +455,39 @@ export function TransactionModal({
                 className="flex flex-col gap-4"
               >
                 {showBatchToggle && <BatchToggle />}
-                <Button
-                  variant="primary"
-                  size="xl"
-                  className="w-full"
-                  onClick={handleConfirm}
-                  disabled={firstScreenConfirmDisabled}
-                >
-                  {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
-                </Button>
+                {hasSecondaryConfirm ? (
+                  // Comp 1036:214001: two flex-1 CTAs with a 20px gutter.
+                  <div className="flex w-full gap-5">
+                    <Button
+                      variant="secondary"
+                      size="xl"
+                      className="flex-1"
+                      onClick={handleSecondaryConfirm}
+                      disabled={entry?.secondaryConfirmDisabled}
+                    >
+                      {entry?.secondaryConfirmLabel}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="xl"
+                      className="flex-1"
+                      onClick={handleConfirm}
+                      disabled={firstScreenConfirmDisabled}
+                    >
+                      {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="xl"
+                    className="w-full"
+                    onClick={handleConfirm}
+                    disabled={firstScreenConfirmDisabled}
+                  >
+                    {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
+                  </Button>
+                )}
               </motion.div>
             ) : showInlineFailure ? null : (
               <motion.div
