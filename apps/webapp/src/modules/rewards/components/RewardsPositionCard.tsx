@@ -16,7 +16,9 @@ import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
 import {
+  NO_VALUE,
   ProductActions,
+  ProductFigure,
   ProductPercent,
   ProductPositionCard,
   ProductStat,
@@ -27,8 +29,6 @@ import { useClaimRewardsModal } from '@/modules/claim';
 import { useRewardsModal, type RewardsModalArgs } from '../hooks/useRewardsModal';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
 import { RewardsSupplyCard } from './RewardsSupplyCard';
-
-const NO_VALUE = '–';
 
 /**
  * Position-aware action card for the rewards product page (ProductDetailTemplate
@@ -182,28 +182,19 @@ export function RewardsPositionCard({
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
-            {/* The reward mark only tags a real figure — a dash stands alone. */}
             {isPointsFarm ? (
               <ProductStat label={<Trans>Points accrued</Trans>}>
-                {accruedPoints === NO_VALUE ? (
-                  <span className="text-fgSecondary">{NO_VALUE}</span>
-                ) : (
-                  <>
-                    {accruedPoints}
-                    {rewardIcon}
-                  </>
-                )}
+                <ProductFigure value={accruedPoints}>
+                  {accruedPoints}
+                  {rewardIcon}
+                </ProductFigure>
               </ProductStat>
             ) : (
               <ProductStat label={<Trans>Claimable rewards</Trans>}>
-                {accruedRewards === NO_VALUE ? (
-                  <span className="text-fgSecondary">{NO_VALUE}</span>
-                ) : (
-                  <>
-                    {accruedRewards}
-                    {rewardIcon}
-                  </>
-                )}
+                <ProductFigure value={accruedRewards}>
+                  {accruedRewards}
+                  {rewardIcon}
+                </ProductFigure>
               </ProductStat>
             )}
             <ProductStat label={<Trans>Current rate</Trans>}>

@@ -8,7 +8,8 @@ import {
   useErc4626VaultData,
   useMorphoVaultRewards,
   getTokenDecimals,
-  type Token
+  type Token,
+  type VaultProvider
 } from '@/hooks';
 import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -38,11 +39,14 @@ const NO_VALUE = '–';
 export function VaultPositionCard({
   vaultAddress,
   assetToken,
-  vaultName
+  vaultName,
+  provider
 }: {
   vaultAddress: `0x${string}`;
   assetToken: Token;
   vaultName: string;
+  /** Gates the Morpho branding on the no-position card. */
+  provider: VaultProvider;
 }) {
   const chainId = useChainId();
   const { isConnected } = useConnection();
@@ -74,6 +78,7 @@ export function VaultPositionCard({
       <VaultSupplyCard
         assetToken={assetToken}
         vaultName={vaultName}
+        provider={provider}
         netRate={netRate}
         onSupply={() => openSupply(modalArgs)}
       />

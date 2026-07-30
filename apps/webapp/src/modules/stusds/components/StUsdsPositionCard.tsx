@@ -8,8 +8,10 @@ import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnu
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
 import {
+  NO_VALUE,
   ProductActions,
   ProductBadge,
+  ProductFigure,
   ProductPercent,
   ProductPositionCard,
   ProductStat,
@@ -19,8 +21,6 @@ import {
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useStUsdsModal } from '../hooks/useStUsdsModal';
-
-const NO_VALUE = '–';
 
 /**
  * No-position stUSDS entry card: "Supply USDS and earn X%" headline, the
@@ -82,22 +82,26 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
       stats={
         <ProductStatPair>
           <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            {rateLabel}
-            <TokenIcon
-              token={{ symbol: 'stUSDS' }}
-              width={16}
-              showChainIcon={false}
-              className="h-4 w-4 shrink-0"
-            />
+            <ProductFigure value={rateLabel}>
+              {rateLabel}
+              <TokenIcon
+                token={{ symbol: 'stUSDS' }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            {idleBalance}
-            <TokenIcon
-              token={{ symbol: 'USDS' }}
-              width={16}
-              showChainIcon={false}
-              className="h-4 w-4 shrink-0"
-            />
+            <ProductFigure value={idleBalance}>
+              {idleBalance}
+              <TokenIcon
+                token={{ symbol: 'USDS' }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
           </ProductStat>
         </ProductStatPair>
       }

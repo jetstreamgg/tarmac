@@ -15,7 +15,12 @@ import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
-import { productIconSymbol, productStatusType } from '@/components/product/productVisuals';
+import {
+  isMorphoVault,
+  isPendleFixed,
+  productIconSymbol,
+  productStatusType
+} from '@/components/product/productVisuals';
 import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
@@ -141,13 +146,14 @@ export function EarnPage() {
         ),
         status: productStatusType(row),
         // Provider mark beside the name: Morpho for its vaults, Pendle for the
-        // fixed-yield rows (1036:201260 — the Pendle mark was missing).
-        nameSuffix:
-          row.kind === 'vault' && row.id.startsWith('vault-morpho') ? (
-            <Morpho className="h-4 w-4 rounded-sm" />
-          ) : row.kind === 'fixed' ? (
-            <Pendle className="h-4 w-4" />
-          ) : undefined,
+        // fixed-yield rows (1036:201260 — the Pendle mark was missing). The
+        // bare marks here are the table's treatment; portfolio's `ProductGlyph`
+        // is the smaller tiled variant, so only the predicates are shared.
+        nameSuffix: isMorphoVault(row) ? (
+          <Morpho className="h-4 w-4 rounded-sm" />
+        ) : isPendleFixed(row) ? (
+          <Pendle className="h-4 w-4" />
+        ) : undefined,
         supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
         maturityLabel: row.maturity ? formatMaturity(row.maturity) : undefined,
         network: <CellNetworks>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</CellNetworks>,

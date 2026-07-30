@@ -18,7 +18,9 @@ import { HeaderBadge } from '@/components/ui/page-header';
 import { Pendle } from '@/widgets';
 import { PositionHero } from '@/components/product/PositionHero';
 import {
+  NO_VALUE,
   ProductActions,
+  ProductFigure,
   ProductPercent,
   ProductPositionCard,
   ProductStat,
@@ -30,7 +32,6 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
 
-const NO_VALUE = '–';
 const SECONDS_PER_DAY = 86_400;
 
 /**
@@ -111,22 +112,26 @@ function PendleSupplyCard({
       stats={
         <ProductStatPair>
           <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            {rate}
-            <TokenIcon
-              token={{ symbol: `PT-${market.underlyingSymbol}` }}
-              width={16}
-              showChainIcon={false}
-              className="h-4 w-4 shrink-0"
-            />
+            <ProductFigure value={rate}>
+              {rate}
+              <TokenIcon
+                token={{ symbol: `PT-${market.underlyingSymbol}` }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            {idleBalance}
-            <TokenIcon
-              token={{ symbol: 'USDS' }}
-              width={16}
-              showChainIcon={false}
-              className="h-4 w-4 shrink-0"
-            />
+            <ProductFigure value={idleBalance}>
+              {idleBalance}
+              <TokenIcon
+                token={{ symbol: 'USDS' }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
           </ProductStat>
         </ProductStatPair>
       }

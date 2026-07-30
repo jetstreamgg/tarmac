@@ -7,14 +7,14 @@ import { getBannerById } from '@/data/banners/banners';
 import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
 import {
+  NO_VALUE,
   ProductBadge,
+  ProductFigure,
   ProductStat,
   ProductStatPair,
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-
-const NO_VALUE = '–';
 
 /**
  * No-position rewards entry card (the rewards analogue of `SavingsSupplyCard`).
@@ -114,22 +114,26 @@ export function RewardsSupplyCard({
       stats={
         <ProductStatPair>
           <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            {formattedRate}
-            <TokenIcon
-              token={{ symbol: rewardSymbol }}
-              width={16}
-              showChainIcon={false}
-              className="h-4 w-4 shrink-0"
-            />
+            <ProductFigure value={formattedRate}>
+              {formattedRate}
+              <TokenIcon
+                token={{ symbol: rewardSymbol }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            {idleBalance}
-            <TokenIcon
-              token={{ symbol: supplySymbol }}
-              width={16}
-              showChainIcon={false}
-              className="h-4 w-4 shrink-0"
-            />
+            <ProductFigure value={idleBalance}>
+              {idleBalance}
+              <TokenIcon
+                token={{ symbol: supplySymbol }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
           </ProductStat>
         </ProductStatPair>
       }

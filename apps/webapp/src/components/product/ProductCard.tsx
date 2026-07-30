@@ -2,6 +2,9 @@ import { Children, Fragment, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/card';
 
+/** The placeholder every product surface shows for a value it cannot source. */
+export const NO_VALUE = '–';
+
 /**
  * The two CTA cards every product detail page mounts in the
  * `ProductDetailTemplate` "position" slot, plus the pieces they are built from.
@@ -69,7 +72,9 @@ export function ProductStat({
   return (
     <div className={cn('flex min-w-0 flex-col gap-1', className)}>
       <span className="text-fgSecondary text-xs leading-[18px]">{label}</span>
-      <span
+      {/* A div, not a span: the loading states of these stats put a `Skeleton`
+          (itself a div) in this slot. */}
+      <div
         className={cn(
           'text-fgPrimary font-circle flex items-center font-medium',
           size === 'lg'
@@ -78,9 +83,20 @@ export function ProductStat({
         )}
       >
         {children}
-      </span>
+      </div>
     </div>
   );
+}
+
+/**
+ * Guards a figure and the marks that tag it: a value the app cannot source is
+ * the bare dash on fg-secondary, matching every other placeholder in the grid,
+ * so a missing balance never reads as "0 of this token". Callers pass the
+ * figure and its marks as `children`, in comp order.
+ */
+export function ProductFigure({ value, children }: { value: string; children: ReactNode }) {
+  if (value === NO_VALUE) return <span className="text-fgSecondary">{NO_VALUE}</span>;
+  return <>{children}</>;
 }
 
 /**
@@ -117,7 +133,10 @@ export function ProductStatPair({
  * APY stays plain.
  */
 export function ProductPercent({ value }: { value: string }) {
-  if (!value.endsWith('%')) return <>{value}</>;
+  // A rate the app cannot source arrives here as the dash placeholder, which
+  // reads fg-secondary like the rest of the grid rather than inheriting the
+  // value colour.
+  if (!value.endsWith('%')) return <span className="text-fgSecondary">{value}</span>;
   return (
     <span className="whitespace-nowrap">
       {value.slice(0, -1)}

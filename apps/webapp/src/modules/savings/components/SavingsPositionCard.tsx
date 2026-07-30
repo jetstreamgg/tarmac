@@ -8,7 +8,9 @@ import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
 import {
+  NO_VALUE,
   ProductActions,
+  ProductFigure,
   ProductPercent,
   ProductPositionCard,
   ProductStat,
@@ -17,8 +19,6 @@ import {
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useSavingsModal } from '../hooks/useSavingsModal';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
-
-const NO_VALUE = '–';
 
 const formatToken = (value?: bigint) =>
   value === undefined ? NO_VALUE : formatNumber(parseFloat(formatUnits(value, 18)), { maxDecimals: 2 });
@@ -97,13 +97,15 @@ export function SavingsPositionCard() {
           </ProductStatPair>
           <ProductStatPair grow>
             <ProductStat label={<Trans>sUSDS balance</Trans>}>
-              <TokenIcon
-                token={{ symbol: 'sUSDS' }}
-                width={12}
-                showChainIcon={false}
-                className="h-3 w-3 shrink-0"
-              />
-              {susds}
+              <ProductFigure value={susds}>
+                <TokenIcon
+                  token={{ symbol: 'sUSDS' }}
+                  width={12}
+                  showChainIcon={false}
+                  className="h-3 w-3 shrink-0"
+                />
+                {susds}
+              </ProductFigure>
             </ProductStat>
             <ProductStat label={<Trans>Current rate</Trans>}>
               <ProductPercent value={currentRate} />

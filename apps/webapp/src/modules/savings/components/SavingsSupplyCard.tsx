@@ -4,7 +4,9 @@ import { useOverallSkyData, useTokenBalances, type TokenItem } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isL2ChainId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import {
+  NO_VALUE,
   ProductBadge,
+  ProductFigure,
   ProductStat,
   ProductStatPair,
   ProductSupplyCard
@@ -19,8 +21,6 @@ import {
   L2_SUPPLY_ORIGINS,
   type OriginSymbol
 } from './SavingsOriginSelect';
-
-const NO_VALUE = '–';
 
 /**
  * No-position Savings entry card (Figma: undeposited state). Shown when the user
@@ -120,17 +120,21 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
       stats={
         <ProductStatPair>
           <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            {rate}
-            <TokenIcon
-              token={{ symbol: 'sUSDS' }}
-              width={16}
-              showChainIcon={false}
-              className="h-4 w-4 shrink-0"
-            />
+            <ProductFigure value={rate}>
+              {rate}
+              <TokenIcon
+                token={{ symbol: 'sUSDS' }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            {idleBalance}
-            <TokenIconStack symbols={origins} size={16} />
+            <ProductFigure value={idleBalance}>
+              {idleBalance}
+              <TokenIconStack symbols={origins} size={16} />
+            </ProductFigure>
           </ProductStat>
         </ProductStatPair>
       }

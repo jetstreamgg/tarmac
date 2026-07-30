@@ -72,7 +72,9 @@ export function PositionHero({
             )}
           </span>
         </span>
-        {subline && <span className="text-fgSecondary pl-10 text-xs leading-[18px]">{subline}</span>}
+        {/* A div, not a span: /stake puts a `Skeleton` (itself a div) here
+            while its SKY price is loading. */}
+        {subline && <div className="text-fgSecondary pl-10 text-xs leading-[18px]">{subline}</div>}
       </div>
     </div>
   );
