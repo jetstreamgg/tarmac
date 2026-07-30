@@ -70,13 +70,35 @@ export type EarnTableProps = {
   sort: EarnTableSort;
   onSortChange: (column: EarnTableColumn) => void;
   onRowSelect?: (id: string) => void;
+  /**
+   * The "Products unavailable in the US" treatment (1036:201476): logos,
+   * network/supply stacks and the risk pill drop to 50% opacity, the product
+   * name falls to fg-secondary and the values to fg-tertiary, and the row
+   * stops responding to hover or selection. Rows in this state have nowhere to
+   * go — their module's route redirects to /portfolio.
+   */
+  dimmed?: boolean;
+  /**
+   * Namespaces every test id in the table (`{prefix}-row-…`, `{prefix}-sort-…`)
+   * so a second table can coexist on the page without colliding with the
+   * marketplace's. The default keeps the original ids.
+   */
+  testIdPrefix?: string;
 };
 
+const DEFAULT_TEST_ID_PREFIX = 'earn';
+
+/** 50%-opacity wrapper for the icon slots of a dimmed row. */
+function Dim({ dimmed, children }: { dimmed?: boolean; children: ReactNode }) {
+  if (!dimmed) return <>{children}</>;
+  return <span className="flex opacity-50">{children}</span>;
+}
+
 /** The Type=Token cell / accordion-card header: iconbox, name, Supply: subline. */
-function TokenCell({ row }: { row: EarnTableRowItem }) {
+function TokenCell({ row, dimmed }: { row: EarnTableRowItem; dimmed?: boolean }) {
   return (
     <CellToken
-      icon={row.icon}
+      icon={<Dim dimmed={dimmed}>{row.icon}</Dim>}
       status={row.status}
       title={row.name}
       titleSuffix={
@@ -94,11 +116,14 @@ function TokenCell({ row }: { row: EarnTableRowItem }) {
       }
       // Comp 486:22051: the accordion header title is Label 5; the desktop
       // table cell keeps Label 4 from md up.
-      titleClassName="text-sm leading-4 tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]"
+      titleClassName={cn(
+        'text-sm leading-4 tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]',
+        dimmed && 'text-fgSecondary'
+      )}
       subtitle={
         <>
           <Trans>Supply:</Trans>
-          {row.supply}
+          <Dim dimmed={dimmed}>{row.supply}</Dim>
           {row.maturityLabel && (
             <>
               <span aria-hidden>·</span>
@@ -119,18 +144,27 @@ function TokenCell({ row }: { row: EarnTableRowItem }) {
  * hosts the supply widget); a dedicated supply deep-link is a design/product
  * follow-up flagged on APP-371. Sorting has no mobile affordance in the comp,
  * so the sort headers are desktop-only.
+ *
+ * `dimmed` cards keep the accordion (the data is still worth reading) but drop
+ * both actions — neither destination is reachable from a restricted region.
+ * Design has no mobile comp for that section yet (APP-432 item 8).
  */
-function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRowSelect'>) {
+function EarnCardList({
+  rows,
+  onRowSelect,
+  dimmed,
+  testIdPrefix: tid = DEFAULT_TEST_ID_PREFIX
+}: Pick<EarnTableProps, 'rows' | 'onRowSelect' | 'dimmed' | 'testIdPrefix'>) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
-    <div data-testid="earn-opportunities-table" className="flex w-full flex-col gap-0.5">
+    <div data-testid={`${tid}-opportunities-table`} className="flex w-full flex-col gap-0.5">
       {rows.map((row, index) => {
         const isExpanded = expandedId === row.id;
         return (
           <div
             key={row.id}
-            data-testid={`earn-row-${row.id}`}
+            data-testid={`${tid}-row-${row.id}`}
             className={cn(
               'bg-bgSecondary flex flex-col gap-6 p-5 backdrop-blur-[20px]',
               index === 0 && 'rounded-t-3xl',
@@ -139,20 +173,23 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
           >
             <button
               type="button"
-              data-testid={`earn-card-toggle-${row.id}`}
+              data-testid={`${tid}-card-toggle-${row.id}`}
               aria-expanded={isExpanded}
               onClick={() => setExpandedId(isExpanded ? null : row.id)}
               className="flex w-full items-center justify-between gap-3 text-left"
             >
-              <TokenCell row={row} />
+              <TokenCell row={row} dimmed={dimmed} />
               <span className="flex shrink-0 items-center gap-3">
                 <span className="flex flex-col items-end gap-1">
                   <span className="font-graphik text-fgSecondary text-xs leading-[18px]">
                     <Trans>Rate</Trans>
                   </span>
                   <span
-                    data-testid={`earn-card-rate-${row.id}`}
-                    className="font-circle text-fgPrimary text-xs leading-3.5 font-medium tracking-[-0.24px]"
+                    data-testid={`${tid}-card-rate-${row.id}`}
+                    className={cn(
+                      'font-circle text-fgPrimary text-xs leading-3.5 font-medium tracking-[-0.24px]',
+                      dimmed && 'text-fgTertiary'
+                    )}
                   >
                     <NumericValue value={row.rate} isLoading={row.isLoading} />
                   </span>
@@ -169,12 +206,23 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
                 <TransactionCardFieldGrid
                   // Comp 486:22051 expanded grid: Label 6 values (the M5
                   // transaction cards keep their Label 5 default).
-                  valueClassName="text-xs leading-3.5 tracking-[-0.24px]"
+                  valueClassName={cn('text-xs leading-3.5 tracking-[-0.24px]', dimmed && 'text-fgTertiary')}
                   fields={[
-                    ...(row.network ? [{ label: <Trans>Network</Trans>, value: row.network }] : []),
+                    ...(row.network
+                      ? [
+                          {
+                            label: <Trans>Network</Trans>,
+                            value: <Dim dimmed={dimmed}>{row.network}</Dim>
+                          }
+                        ]
+                      : []),
                     {
                       label: <Trans>Risk</Trans>,
-                      value: <RiskTierDetailsTrigger profile={row.riskProfile} />
+                      value: (
+                        <Dim dimmed={dimmed}>
+                          <RiskTierDetailsTrigger profile={row.riskProfile} />
+                        </Dim>
+                      )
                     },
                     {
                       label: <Trans>Rate</Trans>,
@@ -194,19 +242,26 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
                     }
                   ]}
                 />
-                <div className="flex w-full items-center gap-3">
-                  <Button variant="primary" size="m" className="flex-1" onClick={() => onRowSelect?.(row.id)}>
-                    <Trans>Supply</Trans>
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="m"
-                    className="flex-1"
-                    onClick={() => onRowSelect?.(row.id)}
-                  >
-                    <Trans>View details</Trans>
-                  </Button>
-                </div>
+                {!dimmed && (
+                  <div className="flex w-full items-center gap-3">
+                    <Button
+                      variant="primary"
+                      size="m"
+                      className="flex-1"
+                      onClick={() => onRowSelect?.(row.id)}
+                    >
+                      <Trans>Supply</Trans>
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="m"
+                      className="flex-1"
+                      onClick={() => onRowSelect?.(row.id)}
+                    >
+                      <Trans>View details</Trans>
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -222,20 +277,31 @@ function EarnCardList({ rows, onRowSelect }: Pick<EarnTableProps, 'rows' | 'onRo
  * reported via callbacks. Surface, header and hover come from ui/table.
  * Below the md tier it reflows into accordion cards (EarnCardList).
  */
-export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTableProps) {
+export function EarnTable({
+  rows,
+  sort,
+  onSortChange,
+  onRowSelect,
+  dimmed,
+  testIdPrefix: tid = DEFAULT_TEST_ID_PREFIX
+}: EarnTableProps) {
   const { bpi } = useBreakpointIndex();
+  // A dimmed row has no destination, so selection is off regardless of what
+  // the caller passed.
+  const handleRowSelect = dimmed ? undefined : onRowSelect;
 
   const handleRowKeyDown = (event: KeyboardEvent, id: string) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      onRowSelect?.(id);
+      handleRowSelect?.(id);
     }
   };
 
-  if (bpi < BP.md) return <EarnCardList rows={rows} onRowSelect={onRowSelect} />;
+  if (bpi < BP.md)
+    return <EarnCardList rows={rows} onRowSelect={handleRowSelect} dimmed={dimmed} testIdPrefix={tid} />;
 
   return (
-    <Table data-testid="earn-opportunities-table">
+    <Table data-testid={`${tid}-opportunities-table`}>
       <TableHeader>
         <TableRow>
           {COLUMNS.map(column => {
@@ -248,7 +314,7 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
               >
                 <button
                   type="button"
-                  data-testid={`earn-sort-${column.key}`}
+                  data-testid={`${tid}-sort-${column.key}`}
                   onClick={() => onSortChange(column.key)}
                   className={cn(
                     'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
@@ -274,21 +340,30 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
         {rows.map(row => (
           <TableRow
             key={row.id}
-            data-testid={`earn-row-${row.id}`}
-            tabIndex={onRowSelect ? 0 : undefined}
-            onClick={() => onRowSelect?.(row.id)}
+            data-testid={`${tid}-row-${row.id}`}
+            tabIndex={handleRowSelect ? 0 : undefined}
+            onClick={() => handleRowSelect?.(row.id)}
             onKeyDown={event => handleRowKeyDown(event, row.id)}
-            className="cursor-pointer"
+            // The hover tint lives on the cells (TableRow), so neutralizing it
+            // means re-declaring the same variant chain with the resting surface.
+            className={cn(
+              handleRowSelect ? 'cursor-pointer' : 'has-[td]:hover:[&>td]:bg-bgSecondary',
+              dimmed && '[&>td]:text-fgTertiary'
+            )}
           >
             {/* The Figma active-position iconbox (CellToken `active`) is not
                 wired here on purpose: its trigger follows product logic that
                 is not part of the H8 batch. */}
             <TableCell>
-              <TokenCell row={row} />
+              <TokenCell row={row} dimmed={dimmed} />
             </TableCell>
-            <TableCell>{row.network}</TableCell>
             <TableCell>
-              <RiskTierDetailsTrigger profile={row.riskProfile} />
+              <Dim dimmed={dimmed}>{row.network}</Dim>
+            </TableCell>
+            <TableCell>
+              <Dim dimmed={dimmed}>
+                <RiskTierDetailsTrigger profile={row.riskProfile} />
+              </Dim>
             </TableCell>
             <TableCell>
               <NumericValue value={row.rate} isLoading={row.isLoading} />

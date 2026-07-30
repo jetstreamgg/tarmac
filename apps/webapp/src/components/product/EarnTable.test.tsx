@@ -165,6 +165,68 @@ describe('EarnTable — interactive risk profile (APP-396)', () => {
   });
 });
 
+describe('EarnTable — dimmed "unavailable" variant (APP-432 item 8, 1036:201476)', () => {
+  afterEach(() => {
+    breakpoint.isMobile = false;
+    cleanup();
+  });
+
+  const renderDimmed = (onRowSelect = vi.fn()) => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <EarnTable
+          rows={ROWS}
+          sort={{ column: 'rate', direction: 'desc' }}
+          onSortChange={vi.fn()}
+          onRowSelect={onRowSelect}
+          dimmed
+          testIdPrefix="earn-unavailable"
+        />
+      </I18nProvider>
+    );
+    return onRowSelect;
+  };
+
+  it('namespaces its test ids so it can sit beside the marketplace table', () => {
+    renderDimmed();
+
+    expect(screen.getByTestId('earn-unavailable-opportunities-table')).toBeTruthy();
+    expect(screen.getByTestId('earn-unavailable-row-savings')).toBeTruthy();
+    expect(screen.queryByTestId('earn-row-savings')).toBeNull();
+    expect(screen.queryByTestId('earn-sort-rate')).toBeNull();
+  });
+
+  it('never selects a row, by click or keyboard', () => {
+    const onRowSelect = renderDimmed();
+    const row = screen.getByTestId('earn-unavailable-row-savings');
+
+    fireEvent.click(row);
+    fireEvent.keyDown(row, { key: 'Enter' });
+
+    expect(onRowSelect).not.toHaveBeenCalled();
+    expect(row.getAttribute('tabindex')).toBeNull();
+  });
+
+  it('drops the values to fg-tertiary and dims the icon slots', () => {
+    renderDimmed();
+    const row = screen.getByTestId('earn-unavailable-row-savings');
+
+    expect(row.className).toContain('text-fgTertiary');
+    expect(row.querySelectorAll('.opacity-50').length).toBeGreaterThan(0);
+  });
+
+  it('keeps the mobile accordion but drops both actions', () => {
+    breakpoint.isMobile = true;
+    renderDimmed();
+
+    fireEvent.click(screen.getByTestId('earn-unavailable-card-toggle-savings'));
+
+    expect(screen.getByText('TVL')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Supply' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'View details' })).toBeNull();
+  });
+});
+
 describe('EarnTable — NEW badge (APP-395, 1036:201322)', () => {
   afterEach(cleanup);
 
