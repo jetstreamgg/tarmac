@@ -33,7 +33,7 @@ function StatCell({ label, children }: { label: ReactNode; children: ReactNode }
   return (
     <div className="flex flex-col gap-1">
       <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text flex items-center gap-1.5 text-sm font-medium">{children}</span>
+      <span className="text-text font-circle flex items-center gap-1.5 text-sm font-medium">{children}</span>
     </div>
   );
 }
@@ -83,7 +83,7 @@ function LiquidationRecoveryConfirmSummary({
           <span className="text-textSecondary text-sm">
             <Trans>Withdraw amount</Trans>
           </span>
-          <span className="text-text flex items-center gap-2 text-2xl font-medium tracking-tight">
+          <span className="text-text font-circle flex items-center gap-2 text-2xl font-medium tracking-tight">
             <TokenIcon token={{ symbol: 'SKY' }} width={28} className="h-7 w-7" showChainIcon={false} />
             {formatStakeAmount(skyToFree)} SKY
           </span>
@@ -101,7 +101,7 @@ function LiquidationRecoveryConfirmSummary({
           <span className="text-textSecondary text-sm">
             <Trans>Rewards amount ({claim.symbol})</Trans>
           </span>
-          <span className="text-text flex items-center gap-2 text-2xl font-medium tracking-tight">
+          <span className="text-text font-circle flex items-center gap-2 text-2xl font-medium tracking-tight">
             <TokenIcon
               token={{ symbol: claim.symbol }}
               width={28}
@@ -220,11 +220,11 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
         {/* Left panel — refunded/claimable heroes + the historical stat grid. */}
         <div className="flex flex-1 flex-col gap-6 p-8">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-text flex items-center gap-2 text-lg font-medium">
+            <DialogTitle className="text-text font-circle flex items-center gap-2 text-lg font-medium">
               <Trans>Position {urnIndex + 1}</Trans>
               <span
                 data-testid="stake-postmortem-liquidated-chip"
-                className="bg-error/15 text-error rounded-full px-2 py-0.5 text-xs font-medium"
+                className="bg-error/15 text-error font-circle rounded-full px-2 py-0.5 text-xs font-medium"
               >
                 <Trans>Liquidated</Trans>
               </span>
@@ -248,7 +248,7 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
               {vaultLoading ? (
                 <Skeleton className="h-9 w-32" />
               ) : (
-                <span className="text-text flex items-baseline gap-2 text-3xl font-medium tracking-tight">
+                <span className="text-text font-circle flex items-baseline gap-2 text-3xl font-medium tracking-tight">
                   <TokenIcon
                     token={{ symbol: 'SKY' }}
                     width={28}
@@ -272,10 +272,10 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
               {claimableLoading ? (
                 <Skeleton className="h-9 w-32" />
               ) : claims.length === 0 ? (
-                <span className="text-text text-3xl font-medium tracking-tight">{NO_VALUE}</span>
+                <span className="text-text font-circle text-3xl font-medium tracking-tight">{NO_VALUE}</span>
               ) : claims.length === 1 ? (
                 <>
-                  <span className="text-text flex items-baseline gap-2 text-3xl font-medium tracking-tight">
+                  <span className="text-text font-circle flex items-baseline gap-2 text-3xl font-medium tracking-tight">
                     <TokenIcon
                       token={{ symbol: claims[0].symbol }}
                       width={28}
@@ -288,7 +288,7 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
                 </>
               ) : (
                 <>
-                  <span className="text-text flex items-center gap-2 text-3xl font-medium tracking-tight">
+                  <span className="text-text font-circle flex items-center gap-2 text-3xl font-medium tracking-tight">
                     {formatUsd(claimableUsd)}
                     <IconStack size={20}>
                       {claims.map(claim => (
@@ -328,7 +328,10 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
         {/* Right rail — historical context + the bundled recovery CTA. */}
         <div className="bg-surfaceAlt/30 flex w-full flex-col justify-between gap-6 p-8 lg:w-[340px]">
           <div className="flex flex-col gap-4">
-            <h3 className="text-text text-lg font-medium" data-testid="stake-postmortem-liquidated-on">
+            <h3
+              className="text-text font-circle text-lg font-medium"
+              data-testid="stake-postmortem-liquidated-on"
+            >
               {!lastBark ? (
                 <Skeleton className="h-6 w-40" />
               ) : (

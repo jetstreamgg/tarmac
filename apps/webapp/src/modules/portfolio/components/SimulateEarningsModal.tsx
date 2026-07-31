@@ -45,7 +45,7 @@ export function SimulateEarningsModal({
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 pr-8">
-            <DialogTitle className="text-text text-lg font-medium">
+            <DialogTitle className="text-text font-circle text-lg font-medium">
               <Trans>Simulate earnings with Sky Savings</Trans>
             </DialogTitle>
             <Pill>{formatDecimalPercentage(savingsRate)}</Pill>
@@ -105,13 +105,15 @@ function Stat({ label, value, divided }: { label: ReactNode; value: string; divi
       <Text variant="medium" tag="span" className="text-textSecondary">
         {label}
       </Text>
-      <span className="text-text text-lg font-medium">{value}</span>
+      <span className="text-text font-circle text-lg font-medium">{value}</span>
     </div>
   );
 }
 
 function Pill({ children }: { children: ReactNode }) {
   return (
-    <span className="bg-surface text-text rounded-full px-2 py-0.5 text-xs font-medium">{children}</span>
+    <span className="bg-surface text-text font-circle rounded-full px-2 py-0.5 text-xs font-medium">
+      {children}
+    </span>
   );
 }

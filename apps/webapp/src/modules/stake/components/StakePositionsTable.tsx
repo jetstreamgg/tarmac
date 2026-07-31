@@ -66,7 +66,7 @@ function LiquidatedBadge() {
   return (
     <span
       data-testid="stake-position-liquidated-badge"
-      className="bg-error/15 text-error inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+      className="bg-error/15 text-error font-circle inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
     >
       <Liquidated width={16} height={16} />
       <Trans>Liquidation</Trans>

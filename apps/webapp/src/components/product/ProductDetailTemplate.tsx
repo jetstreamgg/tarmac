@@ -143,12 +143,7 @@ function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetai
       <div className="text-fgSecondary font-graphik text-sm leading-[22px]">
         {about.body}
         {about.learnMoreHref && (
-          <a
-            href={about.learnMoreHref}
-            target="_blank"
-            rel="noreferrer"
-            className="text-fgBrand ml-1 font-medium"
-          >
+          <a href={about.learnMoreHref} target="_blank" rel="noreferrer" className="text-fgBrand ml-1">
             <Trans>Learn more</Trans>
           </a>
         )}

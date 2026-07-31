@@ -46,7 +46,7 @@ export function TokenDropdown({
       >
         <VStack className="w-full space-y-2">
           <motion.div variants={positionAnimations}>
-            <Text className="text-selectActive light:text-textSecondary ml-5 text-sm leading-none font-medium">
+            <Text className="text-selectActive light:text-textSecondary font-circle ml-5 text-sm leading-none font-medium">
               <Trans>Select token</Trans>
             </Text>
           </motion.div>
