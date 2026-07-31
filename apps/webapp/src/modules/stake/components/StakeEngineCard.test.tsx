@@ -80,8 +80,9 @@ describe('StakeEngineCard', () => {
     );
     // Rewards rate from the mocked highest rate (0.075 -> 7.50%).
     expect(screen.getByText('7.50%')).toBeTruthy();
-    // Min. borrow amount: dust (RAD) converted to WAD and formatted as USDS.
-    expect(screen.getByText('10,000 USDS')).toBeTruthy();
+    // Min. borrow amount: dust (RAD) converted to WAD. The comp tags the
+    // figure with the USDS mark instead of spelling the symbol out.
+    expect(screen.getByText('10,000')).toBeTruthy();
   });
 
   it('routes the CTA through connect-then-act and sets flow=open with replace', () => {

@@ -118,9 +118,13 @@ export function VaultProductDetail({
       title={
         <span className="flex flex-wrap items-center gap-2">
           {vault.name}
-          <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
-            <Trans>Powered by Morpho</Trans>
-          </HeaderBadge>
+          {/* Only Morpho-provided vaults carry the badge — the sUSDT vault runs
+              on Spark infra and is not a Morpho product. */}
+          {vault.provider === 'morpho' && (
+            <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
+              <Trans>Powered by Morpho</Trans>
+            </HeaderBadge>
+          )}
         </span>
       }
       networkSelector={
@@ -128,7 +132,12 @@ export function VaultProductDetail({
       }
       chart={<VaultDetailChart vaultAddress={vaultAddress} assetToken={vault.assetToken} />}
       position={
-        <VaultPositionCard vaultAddress={vaultAddress} assetToken={vault.assetToken} vaultName={vault.name} />
+        <VaultPositionCard
+          vaultAddress={vaultAddress}
+          assetToken={vault.assetToken}
+          vaultName={vault.name}
+          provider={vault.provider}
+        />
       }
       details={details}
       afterDetails={{ title: <Trans>Strategy</Trans>, body: <VaultStrategy vaultAddress={vaultAddress} /> }}

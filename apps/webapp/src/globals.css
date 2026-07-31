@@ -208,6 +208,13 @@
   /* The /stake mobile summary-card "Cover" wash (comp 1222:16799): Figma types
      the gradient's bottom stop as a raw hex; same value in both themes. */
   --color-brandCover: #756fec;
+  /* DS "gradient-success", the wash the product position cards paint the "%"
+     unit with (Figma 859:41055). The top stop is colors/system/success, i.e.
+     the same value as statusSuccessSolid; only the bottom stop is new. Figma
+     gives the gradient no mode dimension, so it is theme-invariant like the
+     other gradient stop pairs above. */
+  --color-success-gradient-start: #02c2a1;
+  --color-success-gradient-end: #9fde88;
   /* Design-system Patterns/Headers (Figma 5178:37451): the brand glow behind
      the Stake header's Iconbox/Status (5043:59189). Figma types it as a raw
      effect (no variable); same value in both themes for now. */
