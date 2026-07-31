@@ -97,16 +97,20 @@ function ProductTitleIcon({ token }: { token: ProductDetailToken }) {
   );
 }
 
+/* font-medium is load-bearing: font-circle alone falls to `normal` (400), which
+   resolves to Circular Book 450 — the DS has no Circular Book, every Headings-family
+   style is weight 500 (font-weight/label). */
 function SectionHeading({ className, children }: { className?: string; children: ReactNode }) {
-  return <h2 className={cn('text-text font-circle text-lg', className)}>{children}</h2>;
+  return <h2 className={cn('text-text font-circle text-lg font-medium', className)}>{children}</h2>;
 }
 
 /* M6.3 section-heading scale (486:20706): Details/About step down to Label 4,
-   Transactions steps up to Heading 6; both return to the shared 18px at md. */
+   Transactions steps up to Heading 6; both return to Label 3 (18/22, -0.36px,
+   comp 859:35722) at md. */
 const minorHeadingClasses =
-  'text-base leading-[18px] tracking-[-0.32px] md:text-lg md:leading-normal md:tracking-normal';
+  'text-base leading-[18px] tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]';
 const majorHeadingClasses =
-  'text-xl leading-[22px] tracking-[-0.4px] md:text-lg md:leading-normal md:tracking-normal';
+  'text-xl leading-[22px] tracking-[-0.4px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]';
 
 function DetailsSection({ title, details }: { title?: ReactNode; details: ProductDetailRow[] }) {
   return (
