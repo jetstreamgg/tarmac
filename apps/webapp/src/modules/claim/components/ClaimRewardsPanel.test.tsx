@@ -12,6 +12,7 @@ const h = vi.hoisted(() => ({
   sky: [] as ClaimableReward[],
   stake: [] as ClaimableReward[],
   flowCalls: [] as unknown[],
+  flowPrepared: true,
   entry: undefined as { confirmDisabled: boolean } | undefined,
   screenContents: [] as unknown[],
   restakeSeen: false
@@ -58,6 +59,9 @@ vi.mock('wagmi', async importOriginal => {
   return { ...actual, useChainId: () => 1, useChains: () => [{ id: 1, name: 'Ethereum' }] };
 });
 
+// Spread over the real module rather than replaced wholesale: the footer's fee
+// row pulls NetworkFeeValue/NetworkFeeLabel in, and those reach for several more
+// hooks than this panel names itself.
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
@@ -73,7 +77,7 @@ vi.mock('@/hooks', async importOriginal => {
     }),
     useTransactionFlow: (params: { calls: unknown[] }) => {
       h.flowCalls = params.calls;
-      return { execute: vi.fn(), prepared: true };
+      return { execute: vi.fn(), prepared: h.flowPrepared };
     },
     // No WagmiProvider in these renders → the fee row stays a plain value.
     useIsBatchSupported: () => ({
@@ -109,7 +113,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const reward = (source: ClaimSource, id: string, symbol: string, amountUsd = 10): ClaimableReward => ({
   id,
   source,
-  sourceLabel: source === 'merkl' ? 'Merkl' : source === 'sky-rewards' ? 'Sky Rewards' : 'Staking',
+  tokenName: `${symbol} token`,
   tokenSymbol: symbol,
   icon: null,
   formattedAmount: '10.00',
@@ -132,6 +136,7 @@ describe('ClaimRewardsPanel', () => {
     h.sky = [];
     h.stake = [];
     h.flowCalls = [];
+    h.flowPrepared = true;
     h.entry = undefined;
     h.screenContents = [];
     h.restakeSeen = false;
@@ -152,6 +157,7 @@ describe('ClaimRewardsPanel', () => {
 
     expect(h.flowCalls).toHaveLength(3);
     expect(h.entry?.confirmDisabled).toBe(false);
+    expect(screen.getAllByTestId('claim-reward-row')).toHaveLength(3);
   });
 
   it('renders one hero row per reward — amount, USD in parens, token badge (Figma 1036:190108)', () => {
@@ -169,6 +175,37 @@ describe('ClaimRewardsPanel', () => {
     // The QA-round comps draw no per-token selection or source group headers.
     expect(screen.queryByTestId('claim-reward-checkbox')).toBeNull();
     expect(screen.queryByTestId('claim-group-merkl')).toBeNull();
+  });
+
+  it('claims everything in scope — no per-reward opt-out', () => {
+    h.merkl = [reward('merkl', '0xa', 'MORPHO'), reward('merkl', '0xb', 'SKY')];
+    renderPanel({ kind: 'merkl' });
+
+    expect(h.flowCalls).toHaveLength(2);
+    // The redesigned modal (Figma 1036:190105) shows amounts only — the scope
+    // is the selection, so there is nothing to uncheck.
+    expect(screen.queryByTestId('claim-reward-checkbox')).toBeNull();
+  });
+
+  it('keeps confirm disabled until the flow itself is prepared', () => {
+    // The sequential flow's `execute` silently returns without a simulated
+    // request, so an early confirm would walk the modal to the wallet screen
+    // having dispatched nothing — clicking a row's Claim and the CTA straight
+    // after a page load used to hit exactly that.
+    h.merkl = [reward('merkl', '0xa', 'MORPHO')];
+    h.flowPrepared = false;
+    renderPanel({ kind: 'merkl-token', tokenAddress: '0xa' });
+
+    expect(h.flowCalls).toHaveLength(1);
+    expect(h.entry?.confirmDisabled).toBe(true);
+  });
+
+  it('renders a single row for a single-reward scope', () => {
+    h.merkl = [reward('merkl', '0xa', 'MORPHO')];
+    renderPanel({ kind: 'merkl-token', tokenAddress: '0xa' });
+
+    expect(screen.getAllByTestId('claim-reward-row')).toHaveLength(1);
+    expect(screen.getByText(/MORPHO/)).toBeTruthy();
   });
 
   it('pairs [Network fee | Network] in the summary grid (Figma 1036:190091)', () => {
