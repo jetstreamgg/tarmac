@@ -11,7 +11,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useNetworkFee } from '@/hooks';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
@@ -21,26 +21,6 @@ import { buildVaultEntryRows, buildVaultReviewRows } from './vaultModalRows';
 export type { VaultModalPreset } from '../hooks/useVaultTransactionForm';
 
 const NO_VALUE = '–';
-
-/**
- * The vault's single-asset chip beside the percent presets (Figma 859:38126
- * draws the DS Button / Dropdown pill here, but a vault has exactly one
- * underlying asset — no alternative to pick — so this renders the same pill
- * statically, without the chevron affordance).
- */
-function AssetPill({ symbol }: { symbol: string }) {
-  return (
-    <span
-      className="border-glassBorder flex h-7 shrink-0 items-center gap-1 rounded-full border px-1.5"
-      data-testid="vault-modal-asset"
-    >
-      <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="size-4" />
-      <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
-        {symbol}
-      </span>
-    </span>
-  );
-}
 
 /**
  * Editable body for the vault "Supply to / Withdraw from {vault}" modals (Figma
@@ -233,7 +213,11 @@ export function VaultModalForm({
           </>
         }
         onPercent={setPercentAmount}
-        selector={<AssetPill symbol={assetToken.symbol} />}
+        selector={
+          // Figma 859:38126 draws the DS dropdown pill, but a vault has exactly
+          // one underlying asset — the pill collapses to its static chip.
+          <TokenSelectorPill tokens={[assetToken]} selected={assetToken} testId="vault-modal-asset" />
+        }
         error={
           insufficient ? (
             <Text className="text-error text-sm" data-testid="vault-modal-amount-error">

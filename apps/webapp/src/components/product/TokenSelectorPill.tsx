@@ -20,7 +20,8 @@ export function TokenSelectorPill({
 }: {
   tokens: Token[];
   selected: Token;
-  onSelect: (token: Token) => void;
+  /** Unused by the single-option static chip, so optional there. */
+  onSelect?: (token: Token) => void;
   testId: string;
 }) {
   const face = (symbol: string) => (
@@ -48,7 +49,7 @@ export function TokenSelectorPill({
       value={selected.symbol}
       onValueChange={symbol => {
         const next = tokens.find(option => option.symbol === symbol);
-        if (next) onSelect(next);
+        if (next) onSelect?.(next);
       }}
     >
       <SelectTrigger
