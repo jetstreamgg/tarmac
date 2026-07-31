@@ -328,11 +328,13 @@ export function StakePositionsTable({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px] md:font-sans md:leading-normal md:tracking-normal">
+        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <Trans>Active positions</Trans>
         </h3>
+        {/* Label 5 per comp 1036:214062 (Circular Medium 14/16, -0.28px). The comp
+            also puts this on fg-primary; the fgSecondary tint is left as-is. */}
         {allPositions.length > 0 && (
-          <label className="text-textSecondary flex cursor-pointer items-center gap-2 text-sm">
+          <label className="text-textSecondary font-circle flex cursor-pointer items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
             {/* Comp 1222:16843 shortens the label at the phone tier. */}
             <span className="md:hidden">
               <Trans>Hide inactive</Trans>
