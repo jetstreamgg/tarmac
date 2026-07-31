@@ -39,7 +39,7 @@ function ErrorPage(): React.ReactElement {
         <Heading variant="large">Something went wrong</Heading>
 
         <Link to="/">
-          <Button variant="secondary" className="ml-4 mt-4">
+          <Button variant="secondary" className="mt-4 ml-4">
             Back to homepage
           </Button>
         </Link>

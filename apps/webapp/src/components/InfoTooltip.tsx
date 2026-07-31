@@ -38,7 +38,7 @@ export function InfoTooltip({
           </PopoverClose>
         )}
         <div
-          className="scrollbar-thin max-h-[calc(var(--radix-popover-content-available-height)-64px)] overflow-y-auto"
+          className="max-h-[calc(var(--radix-popover-content-available-height)-64px)] scrollbar-thin overflow-y-auto"
           onWheel={e => e.stopPropagation()}
           onTouchMove={e => e.stopPropagation()}
         >
@@ -54,7 +54,7 @@ export function InfoTooltip({
       </TooltipTrigger>
       <TooltipPortal>
         <TooltipContent className={`max-w-[400px] ${contentClassname}`} arrowPadding={10}>
-          <div className="scrollbar-thin max-h-[calc(var(--radix-tooltip-content-available-height)-64px)] overflow-y-auto">
+          <div className="max-h-[calc(var(--radix-tooltip-content-available-height)-64px)] scrollbar-thin overflow-y-auto">
             {typeof content === 'string' ? <p>{content}</p> : content}
           </div>
           <TooltipArrow width={12} height={8} />

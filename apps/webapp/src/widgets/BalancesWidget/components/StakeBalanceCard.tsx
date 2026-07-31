@@ -6,13 +6,7 @@ import {
   useAllStakeUrnAddresses,
   useRewardContractsToClaim
 } from '@/hooks';
-import {
-  formatBigInt,
-  formatDecimalPercentage,
-  formatNumber,
-  isMainnetId,
-  chainId
-} from '@/utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber, isMainnetId, chainId } from '@/utils';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@/widgets/shared/components/ui/card/InteractiveStatsCard';

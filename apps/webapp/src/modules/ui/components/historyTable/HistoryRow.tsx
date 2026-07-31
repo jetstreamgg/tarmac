@@ -48,7 +48,7 @@ const BaseRow = ({
         <div className="flex items-center gap-2">{content[0]}</div>
       </TableCell>
       <TableCell className="flex items-center px-0 lg:px-4 xl:table-cell xl:max-w-10">{content[1]}</TableCell>
-      <TableCell className="pl-2 pr-0 lg:px-4">
+      <TableCell className="pr-0 pl-2 lg:px-4">
         <div className="flex items-center gap-2">{content[2]}</div>
       </TableCell>
       {(typeColumn || statusColumn) && <TableCell className="grow">{content[3]}</TableCell>}

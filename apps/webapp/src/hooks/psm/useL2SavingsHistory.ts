@@ -1,7 +1,13 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import {
+  TRUST_LEVELS,
+  TrustLevelEnum,
+  ModuleEnum,
+  TransactionTypeEnum,
+  HISTORY_STALE_TIME
+} from '../constants';
+import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
@@ -9,7 +15,7 @@ import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { SavingsHistory, SavingsHistoryItem } from '../savings/savings';
 
 async function fetchL2SavingsHistory(
-  urlSubgraph: string,
+  urlIndexer: string,
   chainId: number,
   address?: string,
   tokenAddressMap?: Record<string, { symbol: string }>
@@ -21,46 +27,41 @@ async function fetchL2SavingsHistory(
   }
 
   const sUsdsAddressForChain = TOKENS.susds.address[chainId];
+  const wallet = address.toLowerCase();
   const query = gql`
   {
     usdsIn: Swap(where: {
-      sender: { _ilike: "${address}" },
-      receiver: { _ilike: "${address}" },
-      assetIn: { _ilike: "${sUsdsAddressForChain.toLowerCase()}" },
+      sender: { _eq: "${wallet}" },
+      receiver: { _eq: "${wallet}" },
+      assetIn: { _eq: "${sUsdsAddressForChain.toLowerCase()}" },
       chainId: { _eq: ${chainId} }
-    }) {
-      id
+    }, order_by: { blockTimestamp: desc }) {
       transactionHash
       assetIn
       assetOut
       sender
-      receiver
       amountIn
       amountOut
-      referralCode
       blockTimestamp
     }
     usdsOut: Swap(where: {
-      sender: { _ilike: "${address}" },
-      receiver: { _ilike: "${address}" },
-      assetOut: { _ilike: "${sUsdsAddressForChain.toLowerCase()}" },
+      sender: { _eq: "${wallet}" },
+      receiver: { _eq: "${wallet}" },
+      assetOut: { _eq: "${sUsdsAddressForChain.toLowerCase()}" },
       chainId: { _eq: ${chainId} }
-    }) {
-      id
+    }, order_by: { blockTimestamp: desc }) {
       transactionHash
       assetIn
       assetOut
       sender
-      receiver
       amountIn
       amountOut
-      referralCode
       blockTimestamp
     }
   }
   `;
 
-  const response = (await request(urlSubgraph, query)) as any;
+  const response = (await request(urlIndexer, query)) as any;
 
   const swapsInParsed: SavingsHistory = response.usdsIn
     .map((e: any) => {
@@ -82,7 +83,6 @@ async function fetchL2SavingsHistory(
         type: TransactionTypeEnum.WITHDRAW,
         shares: BigInt(e.amountIn),
         assets: BigInt(e.amountOut),
-        referralCode: e.referralCode,
         token,
         address: e.sender,
         chainId
@@ -110,7 +110,6 @@ async function fetchL2SavingsHistory(
         type: TransactionTypeEnum.SUPPLY,
         assets: BigInt(e.amountIn),
         shares: BigInt(e.amountOut),
-        referralCode: e.referralCode,
         token,
         address: e.sender,
         chainId
@@ -124,18 +123,18 @@ async function fetchL2SavingsHistory(
 }
 
 export function useL2SavingsHistory({
-  subgraphUrl,
+  indexerUrl,
   enabled = true,
   chainId
 }: {
-  subgraphUrl?: string;
+  indexerUrl?: string;
   enabled?: boolean;
   chainId?: number;
 } = {}): ReadHook & { data?: SavingsHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId ?? currentChainId;
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainIdToUse) || '';
+  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainIdToUse) || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
   const {
     data,
@@ -143,9 +142,10 @@ export function useL2SavingsHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph) && enabled && Boolean(tokenAddressMap) && Boolean(address),
-    queryKey: ['L2-savings-history', urlSubgraph, address, chainIdToUse],
-    queryFn: () => fetchL2SavingsHistory(urlSubgraph, chainIdToUse, address, tokenAddressMap)
+    enabled: Boolean(urlIndexer) && enabled && Boolean(tokenAddressMap) && Boolean(address),
+    staleTime: HISTORY_STALE_TIME,
+    queryKey: ['L2-savings-history', urlIndexer, address, chainIdToUse],
+    queryFn: () => fetchL2SavingsHistory(urlIndexer, chainIdToUse, address, tokenAddressMap)
   });
 
   return {
@@ -155,8 +155,8 @@ export function useL2SavingsHistory({
     mutate,
     dataSources: [
       {
-        title: 'Sky Ecosystem subgraph',
-        href: urlSubgraph,
+        title: 'Sky Ecosystem indexer',
+        href: urlIndexer,
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }

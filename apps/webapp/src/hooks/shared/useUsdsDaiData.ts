@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
+import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 
 import { formatBaLabsUrl } from '../helpers';

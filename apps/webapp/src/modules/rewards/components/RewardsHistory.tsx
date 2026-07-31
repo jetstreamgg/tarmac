@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { RewardContract, useRewardsUserHistory, TransactionTypeEnum } from '@/hooks';
+import { RewardContract, useAllRewardsUserHistory, TransactionTypeEnum } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { useFormatDates } from '@/hooks';
 import { t } from '@lingui/core/macro';
@@ -7,16 +7,22 @@ import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';
 import { Supply, Withdraw, Reward } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 
 export function RewardsHistory({ rewardContract }: { rewardContract: RewardContract }) {
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
   const {
     data: allRewardContractsHistory,
     isLoading: rewardContractHistoryLoading,
     error
-  } = useRewardsUserHistory({ rewardContractAddress: rewardContract.contractAddress, subgraphUrl });
-  const rewardContractHistory = allRewardContractsHistory; //TODO: filter this by the reward contract
+  } = useAllRewardsUserHistory({ indexerUrl });
+  const rewardContractHistory = useMemo(
+    () =>
+      allRewardContractsHistory?.filter(
+        item => item.rewardContractAddress?.toLowerCase() === rewardContract.contractAddress.toLowerCase()
+      ),
+    [allRewardContractsHistory, rewardContract.contractAddress]
+  );
   const { i18n } = useLingui();
 
   const memoizedDates = useMemo(

@@ -27,10 +27,6 @@ export type RewardHistory = {
   }[];
 };
 
-export type RewardUserHistoryResponse = {
-  reward: RewardHistory;
-};
-
 export type AllRewardsUserHistoryResponse = {
   rewards: RewardHistory[];
 };

@@ -59,14 +59,7 @@ export function Heading({ variant = 'medium', className, tag = 'h2', ...props }:
 }
 
 type TextVariant =
-  | 'large'
-  | 'medium'
-  | 'small'
-  | 'captionLg'
-  | 'captionSm'
-  | 'button'
-  | 'chartSecondary'
-  | 'terms';
+  'large' | 'medium' | 'small' | 'captionLg' | 'captionSm' | 'button' | 'chartSecondary' | 'terms';
 
 export interface TextProps {
   children: React.ReactNode;

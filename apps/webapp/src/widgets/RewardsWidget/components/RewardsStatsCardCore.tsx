@@ -7,13 +7,7 @@ import { StatsOverviewCardCore } from '@/widgets/shared/components/ui/card/Stats
 import { MotionHStack } from '@/widgets/shared/components/ui/layout/MotionHStack';
 import { PairTokenIcons } from '@/widgets/shared/components/ui/token/PairTokenIcon';
 import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
-import {
-  RewardContract,
-  TOKENS,
-  WriteHook,
-  useRewardsChartInfo,
-  getTokenDecimals
-} from '@/hooks';
+import { RewardContract, TOKENS, WriteHook, useRewardsChartInfo, getTokenDecimals } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage } from '@/utils';
 import { Trans } from '@lingui/react/macro';
 import { motion } from 'motion/react';

@@ -51,7 +51,7 @@ export const SavingsBalanceCard = ({
             {urlMap[chainId] && (
               <ArrowRight
                 size={16}
-                className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100 group-hover/header-link:opacity-100"
+                className="opacity-0 transition-opacity group-hover/header-link:opacity-100 group-hover/interactive-card:opacity-100"
               />
             )}
           </div>

@@ -1,17 +1,17 @@
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { RewardContract, useRewardsUserHistory } from '@/hooks';
+import { RewardContract, useAllRewardsUserHistory } from '@/hooks';
 import { RewardsAction, RewardsFlow, RewardsWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
 import { useSearchParams } from 'react-router-dom';
 import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
   const {
     selectedRewardContract,
     setSelectedRewardContract,
@@ -19,10 +19,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     updateLinkedActionConfig,
     exitLinkedActionMode
   } = useConfigContext();
-  const { mutate: refreshRewardsHistory } = useRewardsUserHistory({
-    rewardContractAddress: selectedRewardContract?.contractAddress || '',
-    subgraphUrl
-  });
+  const { mutate: refreshRewardsHistory } = useAllRewardsUserHistory({ indexerUrl });
 
   const [searchParams, setSearchParams] = useSearchParams();
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as RewardsFlow | undefined;

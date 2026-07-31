@@ -32,7 +32,7 @@ function makeWrapper() {
   );
 }
 
-describe('useSusdtVaultHistory — Sky Ecosystem subgraph (sUSDT)', () => {
+describe('useSusdtVaultHistory — Sky Ecosystem indexer (sUSDT)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useConnection).mockReturnValue({ address: USER } as unknown as ReturnType<
@@ -91,11 +91,12 @@ describe('useSusdtVaultHistory — Sky Ecosystem subgraph (sUSDT)', () => {
     const [, query] = (request as Mock).mock.calls[0];
     expect(query).toContain('SusdtDeposit');
     expect(query).toContain('SusdtWithdraw');
-    expect(query).toContain(`owner: { _ilike: "${USER}" }`);
+    expect(query).toContain(`owner: { _eq: "${USER}" }`);
+    expect(query).toContain('order_by: { blockTimestamp: desc }');
     expect(query).toContain('chainId: { _eq: 1 }');
   });
 
-  it('does not hit the subgraph when no wallet is connected', async () => {
+  it('does not hit the indexer when no wallet is connected', async () => {
     vi.mocked(useConnection).mockReturnValue({ address: undefined } as unknown as ReturnType<
       typeof useConnection
     >);
@@ -106,8 +107,8 @@ describe('useSusdtVaultHistory — Sky Ecosystem subgraph (sUSDT)', () => {
     expect(request).not.toHaveBeenCalled();
   });
 
-  it('surfaces an error when the subgraph request fails', async () => {
-    vi.mocked(request).mockRejectedValueOnce(new Error('subgraph down'));
+  it('surfaces an error when the indexer request fails', async () => {
+    vi.mocked(request).mockRejectedValueOnce(new Error('indexer down'));
 
     const { result } = renderHook(() => useSusdtVaultHistory(), { wrapper: makeWrapper() });
 

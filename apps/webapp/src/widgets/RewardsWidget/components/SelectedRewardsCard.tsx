@@ -2,12 +2,7 @@ import { Skeleton } from '@/widgets/components/ui/skeleton';
 import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { MotionVStack } from '@/widgets/shared/components/ui/layout/MotionVStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
-import {
-  RewardContract,
-  WriteHook,
-  useRewardContractInfo,
-  useRewardsSuppliedBalance
-} from '@/hooks';
+import { RewardContract, WriteHook, useRewardContractInfo, useRewardsSuppliedBalance } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useConnection } from 'wagmi';

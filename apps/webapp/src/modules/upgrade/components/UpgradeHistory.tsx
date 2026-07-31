@@ -6,7 +6,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
-import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
+import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 
 function formatUpgradeAmount(num: bigint) {
   return formatBigInt(absBigInt(num), { compact: true });
@@ -50,13 +50,13 @@ function getTokensAndTexts(row: UpgradeHistoryRow) {
 }
 
 export function UpgradeHistory() {
-  const subgraphUrl = useSubgraphUrl();
+  const indexerUrl = useIndexerUrl();
   const {
     data: upgradeHistory,
     isLoading: upgradeHistoryLoading,
     error
   } = useUpgradeHistory({
-    subgraphUrl
+    indexerUrl
   });
   const { i18n } = useLingui();
 

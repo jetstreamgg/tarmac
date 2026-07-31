@@ -14,7 +14,7 @@ export const TRUST_LEVELS: Record<TrustLevelEnum, TrustLevel> = {
     level: 1,
     title: 'Trust Level 1',
     description:
-      'Data from this trust level can include data from an indexed data solution such as The Graph or Dune Analytics. The on-chain data is indexed by third-parties with varying levels of trust'
+      'Data from this trust level can include data from an indexed data solution such as an Envio indexer or Dune Analytics. The on-chain data is indexed by third-parties with varying levels of trust'
   },
   2: {
     level: 2,
@@ -30,7 +30,10 @@ export enum TrustLevelEnum {
   TWO
 }
 
-export const URL_SKY_SUBGRAPH = 'https://proxy.sky.money/indexer';
+export const URL_SKY_INDEXER = 'https://proxy.sky.money/indexer';
+
+// History is append-only; without this every remount/window focus refires the full history fan-out.
+export const HISTORY_STALE_TIME = 60_000;
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;
