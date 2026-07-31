@@ -377,8 +377,13 @@
   * {
     @apply border-border;
   }
+  /* `antialiased` = -webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
+     grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
+     canvas, which made every Circular Medium surface read a weight above the comp
+     once the real 500 cut shipped. Affects Graphik too — the comps are the target
+     for both families. */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 
   /* Each face declares its real weight. Without the descriptor every face
