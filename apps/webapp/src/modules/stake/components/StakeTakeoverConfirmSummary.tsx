@@ -6,7 +6,7 @@ function AmountBlock({ label, amount, symbol }: { label: React.ReactNode; amount
   return (
     <div className="flex items-end justify-between gap-4">
       <div className="flex flex-col gap-1.5">
-        <span className="text-textSecondary text-sm">{label}</span>
+        <span className="text-fgSecondary text-sm">{label}</span>
         <span className="text-text flex items-center gap-2 text-3xl font-medium tracking-tight">
           <TokenIcon token={{ symbol }} width={28} className="h-7 w-7" showChainIcon={false} />
           {formatBigInt(amount)}
@@ -44,7 +44,7 @@ export function StakeTakeoverConfirmSummary({
       )}
       {rewardSymbol && (
         <div data-testid="stake-takeover-confirm-reward" className="flex items-center justify-between gap-4">
-          <span className="text-textSecondary text-sm">
+          <span className="text-fgSecondary text-sm">
             <Trans>Reward (selected automatically)</Trans>
           </span>
           <span className="bg-surfaceAlt text-text flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">

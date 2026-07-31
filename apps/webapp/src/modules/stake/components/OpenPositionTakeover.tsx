@@ -278,7 +278,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       onBack={reopen?.onBack}
       badge={
         <>
-          <StakeSky className="h-4 w-4 md:h-3.5 md:w-3.5" />
+          <StakeSky className="h-4 w-4" />
           <Trans>SKY Staking</Trans>
         </>
       }
@@ -286,7 +286,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       dataTestId="stake-takeover"
       footer={
         <>
-          <p className="text-fgSecondary md:text-textSecondary flex-1 text-center text-xs leading-[18px] md:max-w-xs md:flex-none md:text-left md:text-sm md:leading-5">
+          {/* 237px is the comp's two-line measure for this copy (1036:209863). */}
+          <p className="text-fgSecondary flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left">
             <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
           </p>
           <Button
@@ -295,7 +296,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
             onClick={launch}
             disabled={confirmDisabled}
             data-testid="stake-takeover-confirm"
-            className="h-12 shrink-0 px-5 text-sm leading-4 tracking-[-0.28px] md:h-14 md:px-10 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
+            // min-w, not w: the comp's 160px button leaves ~80px of text box
+            // inside the 40px insets, and `whitespace-nowrap` from the base
+            // recipe would clip a longer translated label rather than wrap it.
+            className="h-12 shrink-0 px-5 text-sm leading-4 tracking-[-0.28px] md:h-14 md:min-w-40 md:px-10 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
           >
             <Trans>Confirm</Trans>
           </Button>

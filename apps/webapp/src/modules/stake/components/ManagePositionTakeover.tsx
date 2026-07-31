@@ -324,7 +324,7 @@ export function ManagePositionTakeover({
       title={<Trans>Manage a position</Trans>}
       badge={
         <>
-          <StakeSky className="h-3.5 w-3.5" />
+          <StakeSky className="h-4 w-4" />
           <Trans>SKY Staking</Trans>
         </>
       }
