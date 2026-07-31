@@ -11,8 +11,12 @@ import { PENDLE_API_BASE_URL } from './constants';
 export type PendleMarketChartPoint = {
   /** Bucket timestamp in unix seconds */
   timestampSec: number;
-  /** Implied (fixed) APY, decimal (0.045 = 4.5%) */
-  impliedApy: number;
+  /**
+   * Implied (fixed) APY, decimal (0.045 = 4.5%). Undefined for a bucket the
+   * API serves without one — never zero-filled, since consumers average this
+   * series and a filled 0 would silently deflate the mean.
+   */
+  impliedApy?: number;
   /** Underlying APY, decimal */
   underlyingApy?: number;
   /** Market TVL in USD */
@@ -54,7 +58,7 @@ export async function fetchPendleMarketHistoricalData(
   return (json.results ?? [])
     .map(row => ({
       timestampSec: Math.floor(Date.parse(row.timestamp) / 1000),
-      impliedApy: row.impliedApy ?? 0,
+      impliedApy: row.impliedApy,
       underlyingApy: row.underlyingApy,
       tvl: row.tvl
     }))

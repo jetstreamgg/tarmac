@@ -357,10 +357,11 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               // rate on offer has moved, not what an existing position earns:
               // a supplied position is locked at its own rate until maturity.
               rate30d: trailing(
-                (pendleChartResults[chartIndex]?.data ?? []).map(point => ({
-                  rate: point.impliedApy,
-                  timestampSec: point.timestampSec
-                }))
+                (pendleChartResults[chartIndex]?.data ?? []).flatMap(point =>
+                  point.impliedApy !== undefined
+                    ? [{ rate: point.impliedApy, timestampSec: point.timestampSec }]
+                    : []
+                )
               ),
               tvl: stats?.tvl !== undefined ? singleChainAmount(familyMainnetId, stats.tvl) : undefined,
               // The pendle breakdown only lists markets with a non-zero PT
