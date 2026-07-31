@@ -292,6 +292,8 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.03, 1);
   --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
   --ease-bezier-mouse: cubic-bezier(0.4, 0, 0.2, 1);
+  /* The curve the motion comps use for page transitions (easeInOutQuart). */
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
 
   --transition-duration-250: 250ms;
   --transition-duration-350: 350ms;
@@ -790,4 +792,94 @@
    via currentColor. */
 [data-state='open'] > .nav-menu-icon {
   stroke: url(#nav-icon-gradient);
+}
+
+/* Page transitions (Figma: Sky App: UI 1598:75512, view=motion) -------------
+   Navigating between pages crossfades the content while it slides: the
+   outgoing page leaves to the left, the incoming one arrives from the right,
+   always in that direction regardless of which nav item was clicked. The
+   incoming page starts 100ms into the outgoing one so the two overlap — the
+   comp is explicitly a crossfade, not a sequential out-then-in.
+
+   Which navigations animate is decided in pages/router.tsx: it tags real path
+   changes with the `page` transition type, and vetoes search-param-only
+   navigations outright. Everything below is scoped to that type, so in a
+   browser without view-transition-types support nothing matches and the app
+   degrades to today's instant swap. */
+
+/* Load-bearing: with the default root snapshot the pseudo-element overlay
+   covers the viewport and swallows clicks for the whole animation, so a second
+   navigation fired mid-transition is dropped (reproduced during the route-split
+   refactor; `pointer-events: none` on the pseudos alone did not fix it in
+   Chromium). Suppressing the root group leaves `page` as the only participant. */
+:root {
+  view-transition-name: none;
+}
+
+.page-transition {
+  view-transition-name: page;
+}
+
+::view-transition-old(page),
+::view-transition-new(page) {
+  pointer-events: none;
+  /* Pages differ in height and scroll offset. Letting each snapshot keep its
+     own intrinsic size and pin to the top stops the group's box morph from
+     stretching the outgoing page on a tall -> short navigation. */
+  height: auto;
+  object-fit: none;
+  object-position: top left;
+  /* The default cross-fade blends the two snapshots; we animate opacity
+     ourselves, so opt out and composite them normally. */
+  mix-blend-mode: normal;
+}
+::view-transition-image-pair(page) {
+  isolation: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
+    animation: 300ms var(--ease-in-out-quart) both page-slide-out;
+  }
+  :root:active-view-transition-type(page)::view-transition-new(page) {
+    animation: 300ms var(--ease-in-out-quart) 100ms both page-slide-in;
+  }
+}
+
+/* The comp's 120px travel is measured on a 1512px frame, so it is capped
+   against the viewport — at phone widths a literal 120px reads as the page
+   being flung off screen rather than shifting. */
+@keyframes page-slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-1 * min(120px, 8vw)));
+  }
+}
+@keyframes page-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(min(120px, 8vw));
+  }
+}
+
+/* Reduced motion (WCAG 2.3.3): keep a crossfade — the page change still needs
+   to register, and an instant full-page repaint reads as a flash — but drop
+   the translate, which is the part that triggers vestibular discomfort. */
+@media (prefers-reduced-motion: reduce) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
+    animation: 150ms var(--ease-in-out-quart) both page-fade-out;
+  }
+  :root:active-view-transition-type(page)::view-transition-new(page) {
+    animation: 150ms var(--ease-in-out-quart) both page-fade-in;
+  }
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
 }

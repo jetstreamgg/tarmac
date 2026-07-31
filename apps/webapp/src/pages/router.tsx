@@ -38,6 +38,17 @@ export const createAppRouter = (history?: RouterHistory, queryClient: QueryClien
     stringifySearch,
     // Prefetch lazy route chunks when links are hovered/focused
     defaultPreload: 'intent',
+    // Page transitions (Figma: Sky App: UI 1598:75512, view=motion). The
+    // animation itself is CSS on the `page` view-transition group in
+    // globals.css; this only decides which navigations get a transition.
+    //
+    // Object form rather than `true` so the `types` callback can veto: a
+    // navigation that only rewrites search params (network switch, stake urn
+    // index, balance filters) stays on the same page and must not slide.
+    // Returning `false` skips document.startViewTransition altogether.
+    defaultViewTransition: {
+      types: ({ pathChanged }) => (pathChanged ? ['page'] : false)
+    },
     // Full-width routes scroll on the document (no inner-scroll box), so the
     // router owns scroll position: reset to top on new navigations, restore on
     // back/forward. A no-op for boxed routes whose scroll lives in an element.
