@@ -1,41 +1,35 @@
+import { ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { type Token } from '@/hooks';
 import { formatNumber } from '@/utils';
-import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 
 /**
- * Compact amount summary shown on the rewards modal's wallet/status screen
- * ("Confirm in the wallet") — the supply-token icon, the entered amount, and its
- * USD value. Mirrors the savings/vault wallet-screen summaries; the supply token
- * (USDS) is $1-pegged so USD ≈ amount.
+ * "<label> / [icon] <amount> / badge" amount hero for the rewards transaction
+ * modal — the shared hero treatment (DS Modal comp 1310:130565). Two uses:
+ *  - the header above the review breakdown, and
+ *  - the amount summary on the wallet/status screen.
+ * No USD sub-line: the DS hero comps draw label + amount + badge only,
+ * matching the Savings modal.
  */
 export function RewardsAmountSummary({
+  label,
   supplyToken,
   amount,
   decimals
 }: {
+  label: ReactNode;
   supplyToken: Token;
   amount: bigint;
   decimals: number;
 }) {
-  const value = parseFloat(formatUnits(amount, decimals));
-  const formatted = formatNumber(value, { maxDecimals: 2 });
-
+  const formatted = formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 });
   return (
-    <div className="flex items-center gap-3" data-testid="rewards-amount-summary">
-      <TokenIcon
-        token={{ symbol: supplyToken.symbol }}
-        width={40}
-        showChainIcon={false}
-        className="h-10 w-10"
-      />
-      <div className="flex flex-col">
-        <Text className="text-text text-xl font-medium">
-          {formatted} {supplyToken.symbol}
-        </Text>
-        <Text className="text-textSecondary text-sm">${formatted}</Text>
-      </div>
-    </div>
+    <TransactionAmountHero
+      label={label}
+      amount={formatted}
+      symbol={supplyToken.symbol}
+      dataTestId="rewards-amount-summary"
+    />
   );
 }

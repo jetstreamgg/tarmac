@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClaimableReward, ClaimSource } from '../types';
 
@@ -18,8 +18,8 @@ const h = vi.hoisted(() => ({
   restakeSeen: false
 }));
 
-// Each mocked adapter maps its own selected rewards to a stand-in Call ({ to: id }), so
-// de-selection genuinely changes the merged calls the panel forwards to the flow.
+// Each mocked adapter maps its own rewards to a stand-in Call ({ to: id }), so the
+// merged calls the panel forwards to the flow are observable per source.
 vi.mock('../adapters/merklAdapter', () => ({
   merklAdapter: {
     source: 'merkl',
@@ -58,27 +58,6 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return { ...actual, useChainId: () => 1, useChains: () => [{ id: 1, name: 'Ethereum' }] };
 });
-
-// The real hero reaches TokenIcon → `@/widgets`, which needs the un-mocked
-// `@/hooks`. This panel's tests are about the scope→calls merge, not the hero's
-// chrome (that has its own test), so stand it in with its text content.
-vi.mock('@/modules/ui/components/TransactionAmountHero', () => ({
-  TransactionAmountHero: ({
-    amount,
-    symbol,
-    usd,
-    dataTestId
-  }: {
-    amount: string;
-    symbol: string;
-    usd?: string;
-    dataTestId?: string;
-  }) => (
-    <div data-testid={dataTestId}>
-      {amount} {symbol} {usd}
-    </div>
-  )
-}));
 
 // Spread over the real module rather than replaced wholesale: the footer's fee
 // row pulls NetworkFeeValue/NetworkFeeLabel in, and those reach for several more
@@ -125,18 +104,20 @@ vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
   }
 }));
 
+vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+
 import { ClaimRewardsPanel } from './ClaimRewardsPanel';
 import type { ClaimScope } from '../types';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const reward = (source: ClaimSource, id: string, symbol: string): ClaimableReward => ({
+const reward = (source: ClaimSource, id: string, symbol: string, amountUsd = 10): ClaimableReward => ({
   id,
   source,
   tokenName: `${symbol} token`,
   tokenSymbol: symbol,
   icon: null,
   formattedAmount: '10.00',
-  amountUsd: 10,
+  amountUsd,
   chainId: 1
 });
 
@@ -179,6 +160,23 @@ describe('ClaimRewardsPanel', () => {
     expect(screen.getAllByTestId('claim-reward-row')).toHaveLength(3);
   });
 
+  it('renders one hero row per reward — amount, USD in parens, token badge (Figma 1036:190108)', () => {
+    h.merkl = [reward('merkl', '0xa', 'MORPHO', 78.9)];
+    h.sky = [reward('sky-rewards', '0xb', 'SKY', 200.9)];
+    renderPanel();
+
+    const rows = screen.getAllByTestId('claim-reward-row');
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]).getByText('10.00')).toBeTruthy();
+    expect(within(rows[0]).getByText('($78.90)')).toBeTruthy();
+    expect(within(rows[0]).getByText('MORPHO')).toBeTruthy();
+    expect(within(rows[1]).getByText('($200.90)')).toBeTruthy();
+    expect(within(rows[1]).getByText('SKY')).toBeTruthy();
+    // The QA-round comps draw no per-token selection or source group headers.
+    expect(screen.queryByTestId('claim-reward-checkbox')).toBeNull();
+    expect(screen.queryByTestId('claim-group-merkl')).toBeNull();
+  });
+
   it('claims everything in scope — no per-reward opt-out', () => {
     h.merkl = [reward('merkl', '0xa', 'MORPHO'), reward('merkl', '0xb', 'SKY')];
     renderPanel({ kind: 'merkl' });
@@ -208,6 +206,21 @@ describe('ClaimRewardsPanel', () => {
 
     expect(screen.getAllByTestId('claim-reward-row')).toHaveLength(1);
     expect(screen.getByText(/MORPHO/)).toBeTruthy();
+  });
+
+  it('pairs [Network fee | Network] in the summary grid (Figma 1036:190091)', () => {
+    h.merkl = [reward('merkl', '0xa', 'MORPHO')];
+    renderPanel({ kind: 'vault', vaultAddress: '0xvault' });
+
+    const fee = screen.getByTestId('claim-modal-row-Network fee');
+    expect(within(fee).getByText('–')).toBeTruthy();
+    const network = screen.getByTestId('claim-modal-row-Network');
+    expect(within(network).getByText('Ethereum')).toBeTruthy();
+  });
+
+  it('hides the summary grid with no rewards', () => {
+    renderPanel();
+    expect(screen.queryByTestId('claim-modal-row-Network')).toBeNull();
   });
 
   it('offers the restake toggle only in the stake scope with a SKY reward', () => {

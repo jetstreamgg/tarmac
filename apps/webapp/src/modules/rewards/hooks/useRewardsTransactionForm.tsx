@@ -29,6 +29,8 @@ export interface RewardsTransactionForm {
   amount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / staked balance (withdraw). */
   available: bigint;
+  /** Current staked position in the farm (both flows) — feeds the Supply delta cells. */
+  position: bigint;
   isZero: boolean;
   insufficient: boolean;
   amountReady: boolean;
@@ -37,6 +39,7 @@ export interface RewardsTransactionForm {
   transactionScreenContent: ReactNode;
   onInput: (next: string) => void;
   setMaxAmount: () => void;
+  setPercentAmount: (pct: number) => void;
   clearAmount: () => void;
 }
 
@@ -75,13 +78,18 @@ export function useRewardsTransactionForm({
   });
   const { data: suppliedBalance } = useRewardsSuppliedBalance({ contractAddress, address, chainId });
 
-  const available = isSupply ? (walletBalance?.value ?? 0n) : (suppliedBalance ?? 0n);
+  const position = suppliedBalance ?? 0n;
+  const available = isSupply ? (walletBalance?.value ?? 0n) : position;
   const isZero = amount === 0n;
   const insufficient = amount > available;
   const amountReady = isConnected && !isZero && !insufficient;
 
-  const onInput = (next: string) => setValue(next);
+  const onInput = (next: string) => setValue(next.replace(/[^0-9.]/g, ''));
   const setMaxAmount = () => setValue(formatUnits(available, decimals));
+  // The 25/50/100% chips — 100% is the old Max (`withdraw(amount)` is exact, so
+  // the full balance carries no dust risk); the partial presets are plain amounts.
+  const setPercentAmount = (pct: number) =>
+    setValue(formatUnits(pct >= 100 ? available : (available * BigInt(pct)) / 100n, decimals));
   const clearAmount = () => setValue('');
 
   const engineParams: RewardsEngineParams = { flow, contractAddress, supplyToken, amount };
@@ -107,8 +115,15 @@ export function useRewardsTransactionForm({
   );
 
   const transactionScreenContent = useMemo(
-    () => <RewardsAmountSummary supplyToken={supplyToken} amount={amount} decimals={decimals} />,
-    [supplyToken, amount, decimals]
+    () => (
+      <RewardsAmountSummary
+        label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
+        supplyToken={supplyToken}
+        amount={amount}
+        decimals={decimals}
+      />
+    ),
+    [isSupply, supplyToken, amount, decimals]
   );
 
   return {
@@ -118,6 +133,7 @@ export function useRewardsTransactionForm({
     value,
     amount,
     available,
+    position,
     isZero,
     insufficient,
     amountReady,
@@ -126,6 +142,7 @@ export function useRewardsTransactionForm({
     transactionScreenContent,
     onInput,
     setMaxAmount,
+    setPercentAmount,
     clearAmount
   };
 }

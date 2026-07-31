@@ -94,6 +94,8 @@ export interface SavingsTransactionForm {
   // Handlers
   onInput: (raw: string) => void;
   setMaxAmount: () => void;
+  /** Set the amount to a percentage of the available balance; 100 routes through Max (no-dust withdraw). */
+  setPercentAmount: (pct: number) => void;
   switchOrigin: (next: OriginSymbol) => void;
   /** Clear the amount + Max (keeps the selected token) — for a post-success reset. */
   clearAmount: () => void;
@@ -233,12 +235,13 @@ export function useSavingsTransactionForm({
   // so the modal's `updateModalContent` sync stays bounded.
   const transactionScreenContent = useMemo(() => {
     const display = value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0';
+    // No USD sub-line: the DS hero comps (1310:130565 / 859:36161) draw the
+    // label + amount + badge only.
     return (
       <SavingsAmountSummary
         label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
         amount={display}
         symbol={originToken.symbol}
-        usd={value ? display : undefined}
         dataTestId="savings-confirm-summary"
       />
     );
@@ -268,6 +271,20 @@ export function useSavingsTransactionForm({
     setMax(!isSupply);
     setValue(formatUnits(available, originDecimals));
   }, [isSupply, available, originDecimals]);
+
+  // The 25/50/100% chips (Figma 859:36036). 100% is the old Max — same no-dust
+  // withdraw semantics; the partial presets are plain amounts.
+  const setPercentAmount = useCallback(
+    (pct: number) => {
+      if (pct >= 100) {
+        setMaxAmount();
+        return;
+      }
+      setMax(false);
+      setValue(formatUnits((available * BigInt(pct)) / 100n, originDecimals));
+    },
+    [setMaxAmount, available, originDecimals]
+  );
 
   // Switching the origin token resets the amount + Max (the previous amount was
   // denominated in the old token's balance/decimals).
@@ -311,6 +328,7 @@ export function useSavingsTransactionForm({
     toast,
     onInput,
     setMaxAmount,
+    setPercentAmount,
     switchOrigin,
     clearAmount,
     resetToUsds
