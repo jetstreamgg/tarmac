@@ -60,7 +60,7 @@ const asMerklSelection = (rewards: Reward[]): ClaimableReward[] =>
   rewards.map(r => ({
     id: r.tokenAddress,
     source: 'merkl',
-    sourceLabel: 'Merkl',
+    tokenName: 'Morpho token',
     tokenSymbol: r.tokenSymbol,
     icon: null,
     formattedAmount: r.formattedTotalAmount,
@@ -83,7 +83,7 @@ describe('merklAdapter', () => {
       expect(result.current.rewards[0]).toMatchObject({
         id: '0xa',
         source: 'merkl',
-        sourceLabel: 'Merkl',
+        tokenName: 'Morpho token',
         tokenSymbol: 'MORPHO',
         formattedAmount: '22.90',
         amountUsd: 15.78,
