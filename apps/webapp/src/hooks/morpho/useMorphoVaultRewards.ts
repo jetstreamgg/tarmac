@@ -76,11 +76,18 @@ export type MorphoVaultReward = {
   tokenDecimals: number;
   /** Token price in USD */
   tokenPrice: number;
-  /** Total accumulated reward amount (raw bigint) */
+  /**
+   * Gross lifetime reward amount for this vault (raw bigint) — everything the
+   * campaign ever accrued, INCLUDING what has already been claimed. Never render
+   * this as a claimable/available balance (APP-442): what a claim actually pays
+   * out is `amount - claimed`, which is what the claim modal quotes. Anything
+   * user-facing should read through the Merkl claim adapter instead, so the
+   * figure and the transaction come from one source.
+   */
   amount: bigint;
   /** Amount already claimed (raw bigint) */
   claimed: bigint;
-  /** Formatted total amount (e.g., "2.65") */
+  /** Formatted gross amount (e.g., "2.65") — see `amount` */
   formattedAmount: string;
   /** Formatted claimed amount */
   formattedClaimed: string;
@@ -193,7 +200,9 @@ async function fetchMorphoVaultRewards(
     });
   }
 
-  const hasClaimableRewards = morphoRewards.some(r => r.amount > 0n);
+  // Claimable means there is an unclaimed remainder, not that the campaign ever
+  // paid out — a fully claimed reward keeps a non-zero gross `amount` forever.
+  const hasClaimableRewards = morphoRewards.some(r => r.amount > r.claimed);
 
   return {
     rewards: morphoRewards,
