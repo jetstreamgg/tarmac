@@ -53,7 +53,16 @@ export const createAppRouter = (history?: RouterHistory, queryClient: QueryClien
     // `pathChanged` then excludes navigations that only rewrite search params
     // (network switch, stake urn index, balance filters): same page, no slide.
     defaultViewTransition: {
-      types: ({ pathChanged, fromLocation }) => (fromLocation && pathChanged ? ['page'] : false)
+      types: ({ pathChanged, fromLocation }) => {
+        if (!fromLocation || !pathChanged) return false;
+        // Runs synchronously immediately before startViewTransition, which is
+        // the only moment the pre-navigation scroll position is still readable.
+        // The page's outgoing snapshot is the whole tall element, so the CSS
+        // needs this to show the part that was on screen — see the
+        // ::view-transition-group(page) block in globals.css.
+        document.documentElement.style.setProperty('--vt-scroll', `${window.scrollY}px`);
+        return ['page'];
+      }
     },
     // Full-width routes scroll on the document (no inner-scroll box), so the
     // router owns scroll position: reset to top on new navigations, restore on

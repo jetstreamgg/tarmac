@@ -386,15 +386,6 @@
   * {
     @apply border-border;
   }
-  /* The page colour on the canvas. `.app-background` is otherwise the only
-     thing painting it, and it is `position: fixed`, so it doesn't cover the
-     area a view transition's outgoing snapshot uncovers as it slides — that
-     strip fell through to the browser's default white. Also covers overscroll
-     and the gap before first paint. Uniform, so it costs nothing to have it
-     ride along in the root snapshot. */
-  html {
-    background-color: var(--color-pageBackground);
-  }
   /* `antialiased` =-webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
      grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
      canvas, which made every Circular Medium surface read a weight above the comp
@@ -845,32 +836,20 @@
    browser without view-transition-types support nothing matches and the app
    degrades to today's instant swap. */
 
-/* The page rides the ROOT snapshot, which is always exactly the viewport: it
-   holds what was literally on screen, so the scroll offset is baked into the
-   image and there is nothing left for the browser to interpolate. Naming a
-   tall in-flow element instead makes the auto-generated group animation
-   interpolate its viewport-relative box, and since scrollRestoration jumps the
-   document back to the top on a new route, a navigation from a scrolled
-   position slid vertically by the whole scroll delta. Capturing the root also
-   removes the box morph between pages of differing height.
-
-   The chrome that must stay put is lifted out of that snapshot by carrying its
-   own name — a named element is captured as its own group instead of being
-   painted into the root. Their content is identical across the navigation, so
-   their default cross-fade is invisible; the exception is the header, whose
-   active nav pill cross-fades, which is what the comp shows anyway.
-
-   `.app-background` deliberately does NOT get a name. The root snapshot always
-   includes the document canvas, so it is opaque: a background lifted into its
-   own group can only ever sit *below* it and is never visible (naming it left
-   the page flat-coloured for the whole animation). It therefore stays inside
-   the root snapshot and travels with the page — the page colour is uniform so
-   its movement is invisible, and only the soft image layer shifts. */
-.vt-shell-header {
-  view-transition-name: shell-header;
+/* ONLY the page content is captured. Suppressing the root's name is what keeps
+   the background, header and navbar genuinely still: an uncaptured element
+   goes on painting live in the DOM for the whole animation, so it cannot move
+   or change. Capturing the root instead is a trap — the root snapshot always
+   includes the document canvas, so it is opaque, which means (a) the page
+   background travels with the page and (b) anything given its own name can
+   only ever sit *below* it and is never visible. Both were tried; both showed
+   up as the background animating along with the navigation. */
+:root {
+  view-transition-name: none;
 }
-.vt-shell-navbar {
-  view-transition-name: shell-navbar;
+
+.page-transition {
+  view-transition-name: page;
 }
 
 /* The snapshots paint in the top layer, above the whole page, and they
@@ -887,32 +866,47 @@
   pointer-events: none;
 }
 
-/* Groups are siblings in the pseudo tree, painted in capture order — the
-   document's own stacking is NOT carried across — so the chrome's place above
-   the page has to be restated here. */
-::view-transition-group(root) {
-  z-index: 1;
+/* The page wrapper is tall and in flow, so its viewport-relative box moves
+   when scrollRestoration jumps the document back to the top on a new route.
+   The auto-generated group animation interpolates that box, which dragged the
+   whole scroll delta vertically across the transition. Pin the group to the
+   viewport and place the snapshots by hand instead.
+
+   `--vt-scroll` is the scroll position at the moment of navigation, written by
+   the router (pages/router.tsx) in the same synchronous step that starts the
+   transition. A snapshot is the *entire* tall element, so offsetting the
+   outgoing one by that much is what makes it show the part that was actually
+   on screen rather than its top. The incoming page is always at scroll 0, so
+   it needs no offset. */
+::view-transition-group(page) {
+  animation: none;
+  height: 100vh;
 }
-::view-transition-group(shell-header),
-::view-transition-group(shell-navbar) {
-  z-index: 2;
+::view-transition-old(page) {
+  object-position: left calc(-1 * var(--vt-scroll, 0px));
+}
+::view-transition-new(page) {
+  object-position: left top;
 }
 
 /* The default cross-fade blends the two snapshots; we animate opacity
    ourselves, so opt out and composite them normally. */
-::view-transition-image-pair(root) {
+::view-transition-image-pair(page) {
   isolation: auto;
 }
-::view-transition-old(root),
-::view-transition-new(root) {
+::view-transition-old(page),
+::view-transition-new(page) {
+  /* Each snapshot keeps its own size rather than being stretched into the
+     pinned group box. */
+  object-fit: none;
   mix-blend-mode: normal;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :root:active-view-transition-type(page)::view-transition-old(root) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
     animation: 300ms var(--ease-in-out-quart) both page-slide-out;
   }
-  :root:active-view-transition-type(page)::view-transition-new(root) {
+  :root:active-view-transition-type(page)::view-transition-new(page) {
     animation: 300ms var(--ease-in-out-quart) 100ms both page-slide-in;
   }
 }
@@ -937,10 +931,10 @@
    to register, and an instant full-page repaint reads as a flash — but drop
    the translate, which is the part that triggers vestibular discomfort. */
 @media (prefers-reduced-motion: reduce) {
-  :root:active-view-transition-type(page)::view-transition-old(root) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
     animation: 150ms var(--ease-in-out-quart) both page-fade-out;
   }
-  :root:active-view-transition-type(page)::view-transition-new(root) {
+  :root:active-view-transition-type(page)::view-transition-new(page) {
     animation: 150ms var(--ease-in-out-quart) both page-fade-in;
   }
 }

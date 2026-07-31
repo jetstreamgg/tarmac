@@ -29,7 +29,10 @@ export function AppShell() {
       {/* Pages render bare — directly on the page background, no container
           card (V2 Figma) — and scroll on the document. */}
       <AppContainer>
-        <div className="w-full">
+        {/* `page-transition` names this box as the only view-transition group
+            (globals.css), so a route change animates just the page content —
+            everything else keeps painting live and stays still. */}
+        <div className="page-transition w-full">
           <Outlet />
         </div>
       </AppContainer>
