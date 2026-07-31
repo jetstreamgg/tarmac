@@ -11,20 +11,10 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL, singleOrDelta } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type StUsdsModalGridRow = ModalGridCell[];
-
-const singleOrDelta = (
-  base: { label: string } & Partial<ModalGridCell>,
-  before: string,
-  after: string,
-  hasAmount: boolean
-): ModalGridCell =>
-  hasAmount
-    ? ({ ...base, kind: 'delta', before, after } as ModalGridCell)
-    : ({ ...base, kind: 'single', value: before } as ModalGridCell);
 
 /** Display strings for the stUSDS supply/withdraw entry screens. */
 export type StUsdsEntryRowInput = {

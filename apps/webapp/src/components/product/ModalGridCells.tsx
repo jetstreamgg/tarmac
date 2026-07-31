@@ -15,14 +15,8 @@ import type { ModalSummaryCell } from './ModalSummaryGrid';
  */
 export const NETWORK_FEE_LABEL = 'Network fee';
 
-/**
- * One labelled transaction-modal grid cell: a single value, or a before→after
- * delta (Figma "x → y"). The hints are semantic — each module's row builders
- * emit them and `toGridCells` maps them to the DS treatments (12px token
- * icons, the chain icon, the per-product rate accent). Shared by the modal
- * bodies (Savings, vaults, …) so every module draws identical grids.
- */
-export type ModalGridCell = {
+/** The presentation hints shared by every cell kind — see `ModalGridCell`. */
+export type ModalGridCellHints = {
   label: string;
   /** Small pill after the label (Figma Badge, e.g. the slippage "Auto"/"Custom" mode). */
   labelBadge?: string;
@@ -52,12 +46,35 @@ export type ModalGridCell = {
   action?: React.ReactNode;
   /** Interactive element after the label (the upgrade Penalty info popover). */
   labelAction?: React.ReactNode;
-} & (
-  | { kind: 'single'; value: string }
-  | { kind: 'delta'; before: string; after: string }
-  /** `◉ left = ◉ right` — the token-pair equation (upgrade Rate, Figma 1310:130775). */
-  | { kind: 'pair'; left: string; right: string; rightToken: string }
-);
+};
+
+/**
+ * One labelled transaction-modal grid cell: a single value, or a before→after
+ * delta (Figma "x → y"). The hints are semantic — each module's row builders
+ * emit them and `toGridCells` maps them to the DS treatments (12px token
+ * icons, the chain icon, the per-product rate accent). Shared by the modal
+ * bodies (Savings, vaults, …) so every module draws identical grids.
+ */
+export type ModalGridCell = ModalGridCellHints &
+  (
+    | { kind: 'single'; value: string }
+    | { kind: 'delta'; before: string; after: string }
+    /** `◉ left = ◉ right` — the token-pair equation (upgrade Rate, Figma 1310:130775). */
+    | { kind: 'pair'; left: string; right: string; rightToken: string }
+  );
+
+/**
+ * The entry grids' collapse rule, shared by every module's row builders: a
+ * before→after delta once an amount is entered, the current value alone
+ * otherwise.
+ */
+export const singleOrDelta = (
+  base: ModalGridCellHints,
+  before: string,
+  after: string,
+  hasAmount: boolean
+): ModalGridCell =>
+  hasAmount ? { ...base, kind: 'delta', before, after } : { ...base, kind: 'single', value: before };
 
 /** The savings-green treatment on a value's trailing "%" (Figma gradient-savings, per WalletDrawerAssets). */
 function RatePercent({ value }: { value: string }) {
