@@ -6,7 +6,7 @@ import { formatNumber } from '@/utils';
  * N years" badge, so the two can never disagree — change this one date and both
  * follow.
  */
-export const PROTOCOL_START = new Date(Date.UTC(2017, 0, 1));
+export const PROTOCOL_START = new Date(Date.UTC(2017, 11, 18));
 
 /**
  * The `2017` of "…they've been going since 2017". Pre-stringified: as a number

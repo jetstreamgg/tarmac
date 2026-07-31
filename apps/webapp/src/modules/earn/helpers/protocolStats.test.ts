@@ -9,12 +9,12 @@ import {
 
 describe('yearsOperating', () => {
   it('counts whole years since the protocol start', () => {
-    expect(yearsOperating(new Date(Date.UTC(2026, 6, 30)))).toBe(9);
+    expect(yearsOperating(new Date(Date.UTC(2026, 6, 30)))).toBe(8);
   });
 
   it('only ticks over on the anniversary', () => {
-    expect(yearsOperating(new Date(Date.UTC(2025, 11, 31)))).toBe(8);
-    expect(yearsOperating(new Date(Date.UTC(2026, 0, 1)))).toBe(9);
+    expect(yearsOperating(new Date(Date.UTC(2025, 11, 17)))).toBe(7);
+    expect(yearsOperating(new Date(Date.UTC(2025, 11, 18)))).toBe(8);
   });
 
   it('never reports a negative count before the start date', () => {
