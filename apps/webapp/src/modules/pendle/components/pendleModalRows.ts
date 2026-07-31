@@ -11,20 +11,10 @@
 
 import type { ReactNode } from 'react';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL, singleOrDelta } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type PendleModalGridRow = ModalGridCell[];
-
-const singleOrDelta = (
-  base: { label: string } & Partial<ModalGridCell>,
-  before: string,
-  after: string,
-  hasAmount: boolean
-): ModalGridCell =>
-  hasAmount
-    ? ({ ...base, kind: 'delta', before, after } as ModalGridCell)
-    : ({ ...base, kind: 'single', value: before } as ModalGridCell);
 
 /** Display strings for the Pendle supply/withdraw entry screens (Figma 859:41118 / 859:41473). */
 export type PendleEntryRowInput = {
@@ -130,6 +120,8 @@ export type PendleReviewRowInput = {
   slippageMode: string;
   /** Inline gear opening the slippage menu (interactive, passed through opaquely). */
   slippageAction?: ReactNode;
+  /** Quote price impact (absolute), formatted (e.g. "0.02%") — AMM trade risk info. */
+  priceImpact: string;
   /** Network the transaction runs on. */
   network: string;
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
@@ -139,10 +131,12 @@ export type PendleReviewRowInput = {
 /**
  * Grid for the Pendle review stages. Supply (Figma 859:41264): [You'll claim |
  * Claim date], [Total earnings | Fixed rate], [Product | Withdrawal],
- * [Slippage | Network], then Network fee full-width. Withdraw follows
- * 859:41679 with the Slippage cell slotted in ([Withdrawal | Slippage],
- * [Network | Network fee]) — the comp omits slippage, but the sell quote uses
- * it the same way the buy does, so the control must stay reachable.
+ * [Slippage | Price impact], [Network | Network fee]. Withdraw follows
+ * 859:41679 with the Slippage cell slotted in — the comp omits slippage, but
+ * the sell quote uses it the same way the buy does, so the control must stay
+ * reachable. Price impact is also absent from the comps, but the old modal
+ * surfaced it and it's material risk info for an AMM swap, so both reviews
+ * keep it beside Slippage (PR #1773 review).
  */
 export function buildPendleReviewRows(
   flow: 'supply' | 'withdraw',
@@ -154,6 +148,11 @@ export function buildPendleReviewRows(
     labelBadge: input.slippageMode,
     value: input.slippage,
     action: input.slippageAction
+  };
+  const priceImpactCell: ModalGridCell = {
+    kind: 'single',
+    label: 'Price impact',
+    value: input.priceImpact
   };
   const productCell: ModalGridCell = {
     kind: 'single',
@@ -187,8 +186,8 @@ export function buildPendleReviewRows(
         { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' }
       ],
       [productCell, { kind: 'single', label: 'Withdrawal', value: input.withdrawal }],
-      [slippageCell, networkCell],
-      [feeCell]
+      [slippageCell, priceImpactCell],
+      [networkCell, feeCell]
     ];
   }
   return [
@@ -204,6 +203,7 @@ export function buildPendleReviewRows(
     ],
     [productCell, { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' }],
     [{ kind: 'single', label: 'Withdrawal', value: input.withdrawal }, slippageCell],
-    [networkCell, feeCell]
+    [priceImpactCell, networkCell],
+    [feeCell]
   ];
 }

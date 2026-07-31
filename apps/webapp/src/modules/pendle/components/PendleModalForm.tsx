@@ -412,6 +412,8 @@ export function PendleModalForm({
     : NO_VALUE;
   const slippageDisplay = `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`;
   const slippageMode = slippage === defaultSlippage ? t`Auto` : t`Custom`;
+  // |impact| like the legacy modal — direction doesn't matter for risk display.
+  const priceImpactDisplay = quote ? formatDecimalPercentage(Math.abs(quote.priceImpact)) : NO_VALUE;
   const claimAfterDisplay = fmt(claimAfter);
   const earningsAfterDisplay = earningsToMaturity(claimAfter);
   const selectedSymbol = selectedToken.symbol;
@@ -437,6 +439,7 @@ export function PendleModalForm({
               withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
               slippage: slippageDisplay,
               slippageMode,
+              priceImpact: priceImpactDisplay,
               slippageAction: (
                 <SlippageMenu
                   value={slippage}
@@ -474,6 +477,7 @@ export function PendleModalForm({
       slippage,
       defaultSlippage,
       setSlippage,
+      priceImpactDisplay,
       networkName,
       feeCell,
       networkFee

@@ -68,36 +68,40 @@ const reviewInput: PendleReviewRowInput = {
   withdrawal: 'Anytime',
   slippage: '0.50%',
   slippageMode: 'Auto',
+  priceImpact: '0.02%',
   network: 'Ethereum',
   networkFee: '–'
 };
 
 describe('buildPendleReviewRows', () => {
-  it('pairs the supply review cells per Figma 859:41264', () => {
+  it('pairs the supply review cells per Figma 859:41264, with the price-impact cell restored', () => {
     const rows = buildPendleReviewRows('supply', reviewInput);
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
       ["You'll claim", 'Claim date'],
       ['Total earnings', 'Fixed rate'],
       ['Product', 'Withdrawal'],
-      ['Slippage', 'Network'],
-      ['Network fee']
+      ['Slippage', 'Price impact'],
+      ['Network', 'Network fee']
     ]);
     expect(rows[0][0]).toMatchObject({ value: '110,228.22', token: 'USDS' });
     expect(rows[1][0]).toMatchObject({ trend: true, trailingToken: 'USDS' });
     expect(rows[1][1]).toMatchObject({ value: '3.97%', rateAccent: 'savings' });
     expect(rows[2][0]).toMatchObject({ value: 'Pendle sUSDS (PT-sUSDS)', productIcon: 'pendle' });
+    expect(rows[3][1]).toMatchObject({ kind: 'single', value: '0.02%' });
   });
 
-  it('pairs the withdraw review cells per Figma 859:41679 with the slippage cell slotted in', () => {
+  it('pairs the withdraw review cells per Figma 859:41679 with the slippage and price-impact cells slotted in', () => {
     const rows = buildPendleReviewRows('withdraw', { ...reviewInput, withdrawal: 'Instant' });
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
       ["You'll receive", 'Est. earnings (49D)'],
       ['Product', 'Fixed rate'],
       ['Withdrawal', 'Slippage'],
-      ['Network', 'Network fee']
+      ['Price impact', 'Network'],
+      ['Network fee']
     ]);
     expect(rows[0][0]).toMatchObject({ value: '10,000.00', token: 'USDC' });
     expect(rows[2][0]).toMatchObject({ value: 'Instant' });
+    expect(rows[3][0]).toMatchObject({ kind: 'single', value: '0.02%' });
   });
 
   it('carries the slippage mode badge and passes the action through opaquely', () => {
