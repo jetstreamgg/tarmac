@@ -27,10 +27,13 @@ export const L2_SUPPLY_ORIGINS: OriginSymbol[] = ['USDS', 'USDC'];
 export const L2_WITHDRAW_ORIGINS: OriginSymbol[] = ['USDS', 'USDC'];
 
 function OriginOption({ symbol }: { symbol: OriginSymbol }) {
+  // DS Button / Dropdown (859:36036 instance): 16px token icon, Label 5 text.
   return (
-    <span className="flex items-center gap-1.5">
-      <TokenIcon token={{ symbol }} width={20} showChainIcon={false} className="h-5 w-5" />
-      <Text className="font-medium">{symbol}</Text>
+    <span className="flex items-center gap-1">
+      <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
+      <Text className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
+        {symbol}
+      </Text>
     </span>
   );
 }

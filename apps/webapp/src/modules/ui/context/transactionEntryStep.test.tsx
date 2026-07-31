@@ -205,6 +205,60 @@ describe('TransactionModal — editable entry step', () => {
     expect(staleConfirm).not.toHaveBeenCalled();
   });
 
+  it('renders the two-CTA entry footer and routes each CTA to its own handler (Figma 1036:214001)', () => {
+    const onConfirm = vi.fn();
+    const onSecondaryConfirm = vi.fn();
+    renderModal(cb => ({
+      title: 'Claim rewards',
+      entry: {
+        content: <div>rewards</div>,
+        confirmLabel: 'Claim & Restake SKY',
+        confirmDisabled: false,
+        secondaryConfirmLabel: 'Claim',
+        secondaryConfirmDisabled: false
+      },
+      onConfirm,
+      onSecondaryConfirm: () => {
+        onSecondaryConfirm();
+        cb.onMutate();
+      }
+    }));
+
+    expect(screen.queryByRole('button', { name: 'Claim & Restake SKY' })).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Claim' }));
+
+    // The secondary CTA fires its own handler — not the primary's — and
+    // advances to the wallet/status screen like the primary would.
+    expect(onSecondaryConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+  });
+
+  it('gates the secondary CTA on its own disabled flag, pushed live like the primary', () => {
+    const onSecondaryConfirm = vi.fn();
+    const SESSION = 'stake-claim-1';
+    const get = renderModal(() => ({
+      title: 'Claim rewards',
+      sessionId: SESSION,
+      entry: {
+        content: <div>rewards</div>,
+        confirmLabel: 'Claim & Restake SKY',
+        confirmDisabled: false,
+        secondaryConfirmLabel: 'Claim',
+        secondaryConfirmDisabled: true
+      },
+      onConfirm: () => {},
+      onSecondaryConfirm
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Claim' }));
+    expect(onSecondaryConfirm).not.toHaveBeenCalled();
+
+    act(() => get().updateModalContent(SESSION, { entry: { secondaryConfirmDisabled: false } }));
+    fireEvent.click(screen.getByRole('button', { name: 'Claim' }));
+    expect(onSecondaryConfirm).toHaveBeenCalledTimes(1);
+  });
+
   it('review-only configs (no entry) are unchanged: review renders first, confirm advances', () => {
     const onConfirm = vi.fn();
     renderModal(cb => ({

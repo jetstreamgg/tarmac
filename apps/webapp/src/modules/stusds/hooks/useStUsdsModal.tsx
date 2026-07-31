@@ -34,7 +34,12 @@ export function useStUsdsModal({ onSuccess }: UseStUsdsModalOptions = {}) {
           error: t`An error occurred while supplying to stUSDS.`
         },
         sessionId: supplySessionId,
-        entry: { confirmLabel: t`Supply`, confirmDisabled: true },
+        // Three-screen flow (vault-family recipe): the entry advances to the
+        // review; the review's Confirm fires the engine. The body pushes the
+        // review breakdown (`transactionContent`) live.
+        reviewTitle: t`Review supply`,
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
         backgroundContent: <StUsdsModalForm sessionId={supplySessionId} flow="supply" preset={preset} />,
@@ -56,7 +61,9 @@ export function useStUsdsModal({ onSuccess }: UseStUsdsModalOptions = {}) {
           error: t`An error occurred while withdrawing from stUSDS.`
         },
         sessionId: withdrawSessionId,
-        entry: { confirmLabel: t`Withdraw`, confirmDisabled: true },
+        reviewTitle: t`Review withdrawal`,
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        confirmLabel: t`Confirm`,
         backgroundContent: <StUsdsModalForm sessionId={withdrawSessionId} flow="withdraw" preset={preset} />,
         onConfirm: () => {},
         onSuccess

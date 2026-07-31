@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClaimableReward, ClaimSource } from '../types';
 
@@ -17,8 +17,8 @@ const h = vi.hoisted(() => ({
   restakeSeen: false
 }));
 
-// Each mocked adapter maps its own selected rewards to a stand-in Call ({ to: id }), so
-// de-selection genuinely changes the merged calls the panel forwards to the flow.
+// Each mocked adapter maps its own rewards to a stand-in Call ({ to: id }), so the
+// merged calls the panel forwards to the flow are observable per source.
 vi.mock('../adapters/merklAdapter', () => ({
   merklAdapter: {
     source: 'merkl',
@@ -100,18 +100,20 @@ vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
   }
 }));
 
+vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+
 import { ClaimRewardsPanel } from './ClaimRewardsPanel';
 import type { ClaimScope } from '../types';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const reward = (source: ClaimSource, id: string, symbol: string): ClaimableReward => ({
+const reward = (source: ClaimSource, id: string, symbol: string, amountUsd = 10): ClaimableReward => ({
   id,
   source,
   sourceLabel: source === 'merkl' ? 'Merkl' : source === 'sky-rewards' ? 'Sky Rewards' : 'Staking',
   tokenSymbol: symbol,
   icon: null,
   formattedAmount: '10.00',
-  amountUsd: 10,
+  amountUsd,
   chainId: 1
 });
 
@@ -150,27 +152,38 @@ describe('ClaimRewardsPanel', () => {
 
     expect(h.flowCalls).toHaveLength(3);
     expect(h.entry?.confirmDisabled).toBe(false);
-    // Multiple sources → group headers rendered.
-    expect(screen.getByTestId('claim-group-merkl')).toBeTruthy();
-    expect(screen.getByTestId('claim-group-sky-rewards')).toBeTruthy();
   });
 
-  it('drops a de-selected reward from the merged calls', () => {
-    h.merkl = [reward('merkl', '0xa', 'MORPHO'), reward('merkl', '0xb', 'SKY')];
+  it('renders one hero row per reward — amount, USD in parens, token badge (Figma 1036:190108)', () => {
+    h.merkl = [reward('merkl', '0xa', 'MORPHO', 78.9)];
+    h.sky = [reward('sky-rewards', '0xb', 'SKY', 200.9)];
     renderPanel();
-    expect(h.flowCalls).toHaveLength(2);
 
-    fireEvent.click(screen.getAllByTestId('claim-reward-checkbox')[0]);
-    expect(h.flowCalls).toHaveLength(1);
+    const rows = screen.getAllByTestId('claim-reward-row');
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]).getByText('10.00')).toBeTruthy();
+    expect(within(rows[0]).getByText('($78.90)')).toBeTruthy();
+    expect(within(rows[0]).getByText('MORPHO')).toBeTruthy();
+    expect(within(rows[1]).getByText('($200.90)')).toBeTruthy();
+    expect(within(rows[1]).getByText('SKY')).toBeTruthy();
+    // The QA-round comps draw no per-token selection or source group headers.
+    expect(screen.queryByTestId('claim-reward-checkbox')).toBeNull();
+    expect(screen.queryByTestId('claim-group-merkl')).toBeNull();
   });
 
-  it('hides the checkbox and group header for a single reward', () => {
+  it('pairs [Network fee | Network] in the summary grid (Figma 1036:190091)', () => {
     h.merkl = [reward('merkl', '0xa', 'MORPHO')];
     renderPanel({ kind: 'vault', vaultAddress: '0xvault' });
 
-    expect(screen.queryByTestId('claim-reward-checkbox')).toBeNull();
-    expect(screen.queryByTestId('claim-group-merkl')).toBeNull();
-    expect(screen.getByText('MORPHO')).toBeTruthy();
+    const fee = screen.getByTestId('claim-modal-row-Network fee');
+    expect(within(fee).getByText('–')).toBeTruthy();
+    const network = screen.getByTestId('claim-modal-row-Network');
+    expect(within(network).getByText('Ethereum')).toBeTruthy();
+  });
+
+  it('hides the summary grid with no rewards', () => {
+    renderPanel();
+    expect(screen.queryByTestId('claim-modal-row-Network')).toBeNull();
   });
 
   it('offers the restake toggle only in the stake scope with a SKY reward', () => {

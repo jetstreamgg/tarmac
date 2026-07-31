@@ -1,4 +1,3 @@
-import { Zap } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useConnection } from 'wagmi';
@@ -7,12 +6,13 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useIsBatchSupported } from '@/hooks';
 import { BATCH_TX_LEGAL_NOTICE_URL, BATCH_TX_SUPPORTED_WALLETS_URL } from '@/lib/constants';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
+import { LightningFilled } from '@/modules/icons';
 
 const explainerLinkClasses = 'text-fgPrimary hover:underline';
 
 /**
  * "Bundle transactions" section of the nav Menu dropdown (Figma 5069:27496):
- * 16px zap glyph + Label 5 text + S-size switch, Body 7 explainer underneath.
+ * 16px lightning glyph + Label 5 text + S-size switch, Body 7 explainer underneath.
  * The comp shows only the explainer, but the Legal Notice link (and the
  * unsupported-wallet notice with its supporting-wallets link) carry over from
  * the old tooltip — they're disclosures, not decoration.
@@ -30,7 +30,7 @@ export function BatchTransactionsToggle() {
         {/* Label 4 (16/18) in the M4.5 mobile panel, Label 5 (14/16) in the
             desktop dropdown — md is also where the menu surface swaps. */}
         <span className="text-fgPrimary font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:text-sm md:leading-4 md:tracking-[-0.28px]">
-          <Zap size={16} className="text-fgBrand shrink-0" />
+          <LightningFilled boxSize={16} className="text-fgBrand shrink-0" />
           <Trans>Bundle transactions</Trans>
         </span>
         <Switch

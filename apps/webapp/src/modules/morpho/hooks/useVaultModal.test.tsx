@@ -57,8 +57,12 @@ describe('useVaultModal', () => {
     expect(h.launch).toHaveBeenCalledTimes(1);
     const config = h.launch.mock.calls[0][0];
     expect(config.title).toBe('Supply to USDC Risk Capital');
+    expect(config.reviewTitle).toBe('Review supply');
     expect(config.transactionTitle).toBe('Confirm in the wallet');
-    expect(config.entry.confirmLabel).toBe('Supply');
+    // Three-screen sequence: entry advances to the review ("Review"), whose CTA
+    // is the transaction confirm ("Confirm").
+    expect(config.entry.confirmLabel).toBe('Review');
+    expect(config.confirmLabel).toBe('Confirm');
     expect(config.entry.confirmDisabled).toBe(true);
     // The editable body is hosted OUTSIDE the dialog (backgroundContent) so its
     // in-flight hook survives minimize — not inside entry.content.
@@ -75,8 +79,10 @@ describe('useVaultModal', () => {
     expect(h.launch).toHaveBeenCalledTimes(1);
     const config = h.launch.mock.calls[0][0];
     expect(config.title).toBe('Withdraw from USDC Risk Capital');
+    expect(config.reviewTitle).toBe('Review withdrawal');
     expect(config.transactionTitle).toBe('Confirm in the wallet');
-    expect(config.entry.confirmLabel).toBe('Withdraw');
+    expect(config.entry.confirmLabel).toBe('Review');
+    expect(config.confirmLabel).toBe('Confirm');
     expect(config.entry.confirmDisabled).toBe(true);
     expect(config.entry.content).toBeUndefined();
     expect(config.backgroundContent.props.flow).toBe('withdraw');

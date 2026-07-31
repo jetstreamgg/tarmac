@@ -4,13 +4,14 @@ import { useChainId, useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useNetworkFee } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { NetworkFeeValue, useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { Text } from '@/modules/layout/components/Typography';
+import { TokenTransferHero } from '@/components/product/TokenTransferHero';
+import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { usePsmConversion, type UsePsmConversionResult } from './usePsmConversion';
 import { getPsmDecimalsForDirection, type PsmConversionDirection } from './usePsmConversion.helpers';
 import { ConvertReviewContent } from '../components/ConvertReviewContent';
@@ -31,7 +32,7 @@ export interface UseConvertLaunchResult {
   /** The (unmodified) PSM engine state backing the launch — guards, amounts, tokens. */
   conversion: UsePsmConversionResult;
   /** Step labels: optional approve → convert, elided when allowance covers it. */
-  steps: string[];
+  steps: TransactionStep[];
 }
 
 /**
@@ -78,10 +79,13 @@ export function useConvertLaunch({
   );
   const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
 
-  const steps = useMemo<string[]>(
+  // Step 1 renders "Approve ◉ USDS" via the steps model's tokenSymbol chip
+  // (Figma 1036:205564). The convert step's two inline icons aren't supported
+  // (one trailing tokenSymbol only) — plain text, same as the upgrade steps.
+  const steps = useMemo<TransactionStep[]>(
     () =>
       conversion.needsAllowance
-        ? [t`Approve ${originSymbol}`, t`Convert ${originSymbol} to ${targetSymbol}`]
+        ? [{ label: t`Approve`, tokenSymbol: originSymbol }, t`Convert ${originSymbol} to ${targetSymbol}`]
         : [t`Convert ${originSymbol} to ${targetSymbol}`],
     [conversion.needsAllowance, originSymbol, targetSymbol]
   );
@@ -126,10 +130,9 @@ export function useConvertLaunch({
         targetAmount={conversion.targetAmount}
         originDecimals={originDecimals}
         targetDecimals={targetDecimals}
-        chainId={chainId}
         networkName={networkName}
         networkFee={networkFee?.formatted ?? NO_VALUE}
-        feeValue={<NetworkFeeValue fee={networkFee} state={bundleState} />}
+        feeCell={{ fee: networkFee, state: bundleState }}
         promo={
           bundleState.promoVisible ? <BundleSavingsPromo saving={networkFee!.batchSaving!} /> : undefined
         }
@@ -142,7 +145,6 @@ export function useConvertLaunch({
       conversion.targetAmount,
       originDecimals,
       targetDecimals,
-      chainId,
       networkName,
       networkFee?.formatted,
       networkFee?.batchSaving,
@@ -159,22 +161,38 @@ export function useConvertLaunch({
   );
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, originDecimals)), { maxDecimals: 2 })} ${originSymbol}`;
-  const targetLabel = `${formatNumber(parseFloat(formatUnits(conversion.targetAmount, targetDecimals)), { maxDecimals: 2 })} ${targetSymbol}`;
 
-  // Compact wallet/status-screen summary (Figma draws the amounts above the steps).
+  // Wallet/status screen (Figma 1036:205564): the same from → to hero as the
+  // review screen, above the Approve/Convert steps.
   const transactionScreenContent = useMemo(
     () => (
-      <Text className="text-textSecondary text-sm" dataTestId="convert-modal-screen-summary">
-        {amountLabel} → {targetLabel}
-      </Text>
+      <TokenTransferHero
+        from={{
+          symbol: originSymbol,
+          amount: formatNumber(parseFloat(formatUnits(amount, originDecimals)), {
+            minDecimals: 2,
+            maxDecimals: 2
+          })
+        }}
+        to={{
+          symbol: targetSymbol,
+          amount: formatNumber(parseFloat(formatUnits(conversion.targetAmount, targetDecimals)), {
+            minDecimals: 2,
+            maxDecimals: 2
+          })
+        }}
+        testId="convert-modal-screen-summary"
+      />
     ),
-    [amountLabel, targetLabel]
+    [originSymbol, targetSymbol, amount, conversion.targetAmount, originDecimals, targetDecimals]
   );
 
   const launch = useCallback(() => {
     launchModal({
       title: t`Review conversion`,
-      transactionTitle: t`Confirm in the wallet`,
+      // The wallet screen keeps the review title (Figma 1036:205564 draws
+      // "Review conversion" above the steps, not a "Confirm …" variant).
+      transactionTitle: t`Review conversion`,
       subtitles: {
         loading: t`Your conversion is being processed on the blockchain. Please wait.`,
         success: t`You've successfully converted ${amountLabel} to ${targetSymbol}.`,

@@ -1,27 +1,19 @@
-import { t } from '@lingui/core/macro';
-
 /**
- * Pure row builders for the "Review conversion" modal (Figma 486:32223). Rows are
- * *data* (an array), not a fixed JSX block — `ConvertReviewContent` maps them to UI
- * and decorates the `rate`/`network` rows with icons. The id set + order is the
- * Figma contract and is asserted in `convertModalRows.test.ts`.
+ * Pure cell builders for the "Review conversion" modal grid (Figma 1036:205509):
+ * [Rate pair | Network], [Slippage | Fee], then Network fee full-width. Rate,
+ * Slippage and Fee are PSM guarantees (1:1, no slippage, no fees) — the engine
+ * disables the flow before review whenever mainnet tin/tout is non-zero, so the
+ * static values can never lie. Which labels exist and how they pair is the
+ * Figma contract, asserted in `convertModalRows.test.ts`.
  */
 
-/** Distinguishes rows the review body decorates with icons from plain text rows. */
-export type ConvertModalRowKind = 'rate' | 'network' | 'plain';
-
-export type ConvertModalRow = {
-  kind: ConvertModalRowKind;
-  /** Locale-independent identity — the React key and `data-testid` suffix. */
-  id: 'rate' | 'network' | 'slippage' | 'fee' | 'networkFee';
-  label: string;
-  value: string;
-};
+import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
 
 export type ConvertModalRowInput = {
-  /** Origin token symbol (e.g. "USDS"). */
+  /** Origin token symbol (e.g. "USDS") — icons the Rate pair's left side. */
   originSymbol: string;
-  /** Target token symbol (e.g. "USDC"). */
+  /** Target token symbol (e.g. "USDC") — icons the Rate pair's right side. */
   targetSymbol: string;
   /** Network the conversion runs on (e.g. "Ethereum"). */
   network: string;
@@ -30,22 +22,26 @@ export type ConvertModalRowInput = {
 };
 
 /**
- * Rows for the "Review conversion" modal (Figma 486:32223): `Rate` (token-iconed),
- * `Network` (chain-iconed), `Slippage`, `Fee`, `Network fee`. Rate/Slippage/Fee are
- * PSM guarantees (1:1, no slippage, no fees) — the engine disables the flow before
- * review whenever mainnet tin/tout is non-zero, so the static values can never lie.
+ * Grid for the review screen: [Rate ◉1.00 = ◉1.00 | Network], [Slippage | Fee],
+ * then Network fee.
  */
-export function buildConvertModalRows(input: ConvertModalRowInput): ConvertModalRow[] {
+export function buildConvertModalRows(input: ConvertModalRowInput): ModalGridCell[][] {
   return [
-    {
-      kind: 'rate',
-      id: 'rate',
-      label: t`Rate`,
-      value: `1.00 ${input.originSymbol} = 1.00 ${input.targetSymbol}`
-    },
-    { kind: 'network', id: 'network', label: t`Network`, value: input.network },
-    { kind: 'plain', id: 'slippage', label: t`Slippage`, value: '0.00%' },
-    { kind: 'plain', id: 'fee', label: t`Fee`, value: '$0.00' },
-    { kind: 'plain', id: 'networkFee', label: t`Network fee`, value: input.networkFee }
+    [
+      {
+        kind: 'pair',
+        label: 'Rate',
+        token: input.originSymbol,
+        left: '1.00',
+        right: '1.00',
+        rightToken: input.targetSymbol
+      },
+      { kind: 'single', label: 'Network', value: input.network, network: true }
+    ],
+    [
+      { kind: 'single', label: 'Slippage', value: '0.00%' },
+      { kind: 'single', label: 'Fee', value: '$0.00' }
+    ],
+    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }
