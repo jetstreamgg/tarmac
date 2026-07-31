@@ -152,7 +152,8 @@ export function StepsItem({
                 </span>
               )}
             </div>
-            {description && <div className="text-fgSecondary text-sm leading-5">{description}</div>}
+            {/* Body 6 (12/18) per the Steps Item comp (859:36231 description). */}
+            {description && <div className="text-fgSecondary text-xs leading-[18px]">{description}</div>}
           </div>
           {trailingAction && <div className="shrink-0 self-center">{trailingAction}</div>}
         </div>

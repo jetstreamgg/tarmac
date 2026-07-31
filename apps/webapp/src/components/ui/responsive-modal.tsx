@@ -66,6 +66,10 @@ function ResponsiveModalContent({
         className={cn(
           'max-h-[90dvh] overflow-y-auto rounded-t-[24px] px-5 py-6',
           'max-w-full! min-w-0!',
+          // outline-hidden: same suppression DialogContent carries — Radix
+          // focuses the sheet container on open and a non-pointer open makes
+          // that :focus-visible, drawing the UA ring around the whole sheet.
+          'outline-hidden',
           className
         )}
         {...props}

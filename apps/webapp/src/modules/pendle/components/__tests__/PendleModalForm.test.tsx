@@ -105,6 +105,13 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
+    usePendleMarketsApiData: () => ({
+      data: { [MARKET.marketAddress]: { impliedApy: 0.042, expirySec: MARKET.expiry } },
+      isLoading: false,
+      error: undefined,
+      mutate: () => undefined,
+      dataSources: []
+    }),
     useTokenBalance: () => ({
       data: { value: WALLET_BALANCE },
       isLoading: false,
@@ -246,12 +253,26 @@ describe('PendleModalForm', () => {
       expect(hoisted.quoteArgs?.enabled).toBe(true);
     });
 
-    it('shows the quoted PT amount as "You\'ll receive"', () => {
+    it("draws the You'll claim delta from the quoted PT amount", () => {
       renderForm('supply');
       typeAmount('100');
 
-      expect(screen.getByTestId('pendle-modal-receive').textContent).toContain('102');
-      expect(screen.getByTestId('pendle-modal-receive').textContent).toContain('PT-USDG');
+      // 500 PT held + 102 PT quoted out → 500 → 602 at maturity.
+      const claim = screen.getByTestId("pendle-modal-row-You'll claim").textContent;
+      expect(claim).toContain('500');
+      expect(claim).toContain('602');
+    });
+
+    it('shows the entry grid per the Figma pairing with the rate delta', () => {
+      renderForm('supply');
+      typeAmount('100');
+
+      // Implied 4.20% → effective 4.90% from the quote.
+      const rate = screen.getByTestId('pendle-modal-row-Fixed rate').textContent;
+      expect(rate).toContain('4.20%');
+      expect(rate).toContain('4.90%');
+      expect(screen.getByTestId('pendle-modal-row-Claim date').textContent).toBeTruthy();
+      expect(screen.getByTestId('pendle-modal-row-Network fee')).toBeTruthy();
     });
 
     it('keeps confirm disabled until an amount within balance is entered', () => {
@@ -338,14 +359,13 @@ describe('PendleModalForm', () => {
       expect(lastEntryUpdate()?.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDG' }]);
     });
 
-    it('pushes the SlippageMenu into the modal header', () => {
+    it('keeps the slippage control out of the modal header — it lives in the review grid now', () => {
       renderForm('supply');
 
       const headerPush = hoisted.updateModalContent.mock.calls.find(
         ([, partial]) => partial.rightHeaderComponent !== undefined
       );
-      expect(headerPush).toBeTruthy();
-      expect(headerPush?.[0]).toBe('session-1');
+      expect(headerPush).toBeUndefined();
     });
   });
 

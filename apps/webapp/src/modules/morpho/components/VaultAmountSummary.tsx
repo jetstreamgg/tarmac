@@ -1,41 +1,33 @@
+import { ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { type Token } from '@/hooks';
 import { formatNumber } from '@/utils';
-import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 
 /**
- * Compact amount summary shown on the vault modal's wallet/status screen
- * ("Confirm in the wallet") — the asset icon, the entered amount, and its USD
- * value. Mirrors the savings wallet-screen summary; the asset tokens are
- * $1-pegged so USD ≈ amount.
+ * Amount hero for the vault modal's review + wallet/status screens (Figma
+ * 859:38559 / 859:38240): "Supply amount" / "Withdrawal amount" label, 32px
+ * asset icon, Heading-2 amount, and the right-aligned asset badge pill — the
+ * shared `TransactionAmountHero` treatment, mirroring `SavingsAmountSummary`.
  */
 export function VaultAmountSummary({
+  label,
   assetToken,
   amount,
   decimals
 }: {
+  label: ReactNode;
   assetToken: Token;
   amount: bigint;
   decimals: number;
 }) {
-  const value = parseFloat(formatUnits(amount, decimals));
-  const formatted = formatNumber(value, { maxDecimals: 2 });
-
+  const formatted = formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 });
   return (
-    <div className="flex items-center gap-3" data-testid="vault-amount-summary">
-      <TokenIcon
-        token={{ symbol: assetToken.symbol }}
-        width={40}
-        showChainIcon={false}
-        className="h-10 w-10"
-      />
-      <div className="flex flex-col">
-        <Text className="text-text text-xl font-medium">
-          {formatted} {assetToken.symbol}
-        </Text>
-        <Text className="text-textSecondary text-sm">${formatted}</Text>
-      </div>
-    </div>
+    <TransactionAmountHero
+      label={label}
+      amount={formatted}
+      symbol={assetToken.symbol}
+      dataTestId="vault-amount-summary"
+    />
   );
 }

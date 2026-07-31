@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/cn';
 
 /**
  * Shared slippage-settings menu (E1) — a gear trigger opening an Auto/Custom
@@ -51,6 +52,12 @@ export interface SlippageMenuProps {
   max?: number;
   /** Explainer copy under the heading; a generic default is provided. */
   description?: ReactNode;
+  /**
+   * Trigger style override — the default is the standalone header gear; the
+   * modal review grid renders a compact 14px inline gear (Figma 859:41322)
+   * via `[&>svg]:size-3.5`-style classes here.
+   */
+  triggerClassName?: string;
   dataTestId?: string;
 }
 
@@ -61,6 +68,7 @@ export function SlippageMenu({
   min = 0,
   max = 50,
   description,
+  triggerClassName,
   dataTestId = 'slippage-menu'
 }: SlippageMenuProps) {
   // Local raw string state for the input. Storing keystrokes as a string
@@ -100,7 +108,10 @@ export function SlippageMenu({
   return (
     <Popover>
       <PopoverTrigger
-        className="text-textSecondary hover:text-text data-[state=open]:text-text rounded-full p-1.5 transition-colors"
+        className={cn(
+          'text-textSecondary hover:text-text data-[state=open]:text-text rounded-full p-1.5 transition-colors',
+          triggerClassName
+        )}
         aria-label={t`Open slippage settings`}
         data-testid={`${dataTestId}-trigger`}
       >

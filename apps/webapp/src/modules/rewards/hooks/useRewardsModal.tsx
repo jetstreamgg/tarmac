@@ -42,6 +42,7 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
     (args: RewardsModalArgs, preset?: RewardsModalPreset) => {
       launch({
         title: t`Supply to ${args.displayName}`,
+        reviewTitle: t`Review supply`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
           loading: t`Your supply is being processed on the blockchain. Please wait.`,
@@ -49,7 +50,11 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
           error: t`An error occurred while supplying to ${args.displayName}.`
         },
         sessionId: supplySessionId,
-        entry: { confirmLabel: t`Supply`, confirmDisabled: true },
+        // Three-screen flow per the Savings template: the entry advances to the
+        // review; the review's Confirm fires the engine. The body pushes the
+        // review breakdown (`transactionContent`) live.
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
         backgroundContent: (
@@ -75,6 +80,7 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
     (args: RewardsModalArgs, preset?: RewardsModalPreset) => {
       launch({
         title: t`Withdraw from ${args.displayName}`,
+        reviewTitle: t`Review withdrawal`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
           loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
@@ -82,7 +88,8 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
           error: t`An error occurred while withdrawing from ${args.displayName}.`
         },
         sessionId: withdrawSessionId,
-        entry: { confirmLabel: t`Withdraw`, confirmDisabled: true },
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        confirmLabel: t`Confirm`,
         backgroundContent: (
           <RewardsModalForm
             sessionId={withdrawSessionId}

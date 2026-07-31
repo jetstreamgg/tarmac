@@ -41,6 +41,17 @@ export type TransactionEntry = {
   confirmLabel?: string;
   /** Disables the entry's confirm button (e.g. amount is zero / over balance). */
   confirmDisabled?: boolean;
+  /**
+   * Label for an optional second CTA drawn beside the primary one (Figma
+   * 1036:214001: the stake claim entry pairs a secondary "Claim" with the
+   * primary "Claim & Restake SKY"). Only honoured on entry-only flows — a
+   * three-screen flow's entry advances to its review, which has a single
+   * confirm. Clicking advances to the wallet screen and fires the config's
+   * `onSecondaryConfirm`.
+   */
+  secondaryConfirmLabel?: string;
+  /** Disables the secondary CTA independently of the primary one. */
+  secondaryConfirmDisabled?: boolean;
 };
 
 /** Analytics metadata passed by consumers to attribute events correctly. */
@@ -61,6 +72,13 @@ export type TransactionConfig = {
   title: string;
   /** Title for the wallet/status screen (e.g. "Confirm in the wallet"); defaults to `title`. */
   transactionTitle?: string;
+  /**
+   * Title for the review stage of a three-screen flow (e.g. "Review supply");
+   * defaults to `title`. A config carrying both `entry` and `transactionContent`
+   * runs entry → review → transaction; entry-only and review-only configs keep
+   * their two screens.
+   */
+  reviewTitle?: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
   /**
@@ -103,6 +121,13 @@ export type TransactionConfig = {
     error?: string;
   };
   onConfirm: () => void;
+  /**
+   * Fires when the entry's secondary CTA is clicked (see
+   * `TransactionEntry.secondaryConfirmLabel`). A two-action flow routes each
+   * CTA to its own engine and pushes the clicked mode's `steps`/`analytics`
+   * via `updateModalContent` before executing.
+   */
+  onSecondaryConfirm?: () => void;
   onRetry?: () => void;
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
@@ -127,7 +152,10 @@ export type TransactionConfig = {
  * An in-modal entry body uses this to keep its gating + confirm fresh: `entry` is
  * a *partial* merged into the existing entry (so `content` need not be re-pushed,
  * and the body stays mounted), and `onConfirm` / `steps` are swapped to reflect
- * the current amount.
+ * the current amount. A two-action flow additionally pushes the clicked mode's
+ * `steps`/`analytics` (and an `onRetry` routed to the last-clicked engine) at
+ * confirm time — the provider applies updates to its config ref synchronously,
+ * so the engine's `onMutate` (fired in the same click) sees them.
  */
 export type LiveModalUpdate = Partial<
   Pick<
@@ -137,8 +165,11 @@ export type LiveModalUpdate = Partial<
     | 'rightHeaderComponent'
     | 'confirmDisabled'
     | 'onConfirm'
+    | 'onSecondaryConfirm'
+    | 'onRetry'
     | 'steps'
     | 'toast'
+    | 'analytics'
   >
 > & {
   /** Partial entry merged into the existing entry — `content` is preserved if omitted. */

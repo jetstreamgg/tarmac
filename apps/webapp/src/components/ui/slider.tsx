@@ -17,8 +17,15 @@ function Slider({
   min = 0,
   max = 100,
   variant = 'default',
+  valueText,
   ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root> & { variant?: SliderVariant }) {
+}: React.ComponentProps<typeof SliderPrimitive.Root> & {
+  variant?: SliderVariant;
+  /** Spoken value for the thumb (aria-valuetext) — e.g. "25%" where the bare
+   *  number would be ambiguous. Radix puts role="slider" on the THUMB, so this
+   *  cannot be passed through Root's props. */
+  valueText?: string;
+}) {
   const _values = React.useMemo(
     () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
     [value, defaultValue, min, max]
@@ -83,6 +90,7 @@ function Slider({
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
+          aria-valuetext={valueText}
           className={cn(
             'after:bg-sliderDot focus-visible:ring-focusRing relative block size-4 shrink-0 rounded-full transition-[color,box-shadow] after:absolute after:inset-1 after:rounded-full focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:outline-hidden disabled:pointer-events-none',
             isRange
