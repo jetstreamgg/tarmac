@@ -23,6 +23,7 @@ import { WithdrawnEmpty } from './WithdrawnEmpty';
 import { Upgrade } from './Upgrade';
 import { Balances } from './Balances';
 import { Info } from './Info';
+import { LightningFilled } from './LightningFilled';
 import { Close } from './Close';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
@@ -46,6 +47,7 @@ import { ConvertArrows } from './ConvertArrows';
 import { Wallet } from './Wallet';
 import { Pendle } from './Pendle';
 import { Merkl } from './Merkl';
+import { StarsFilled } from './StarsFilled';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
 
@@ -75,6 +77,7 @@ export {
   Upgrade,
   Balances,
   Info,
+  LightningFilled,
   Close,
   BaseChain,
   MainnetChain,
@@ -98,6 +101,7 @@ export {
   Wallet,
   Pendle,
   Merkl,
+  StarsFilled,
   IllustrationStaked,
   IllustrationStakingLogomark
 };

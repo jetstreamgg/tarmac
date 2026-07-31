@@ -106,7 +106,7 @@ describe('SavingsPositionCard — position routing', () => {
     expect(config.transactionTitle).toBe('Confirm in the wallet');
     // It's the editable entry flow, not a read-only review.
     expect(config.entry).toBeDefined();
-    expect(config.entry.confirmLabel).toBe('Supply');
+    expect(config.entry.confirmLabel).toBe('Review');
     expect(config.entry.confirmDisabled).toBe(true);
     // The editable body is hosted OUTSIDE the dialog (backgroundContent) so its
     // in-flight hook survives minimize — not inside entry.content.
@@ -126,7 +126,7 @@ describe('SavingsPositionCard — position routing', () => {
     expect(config.title).toBe('Withdraw from Sky Savings');
     expect(config.transactionTitle).toBe('Confirm in the wallet');
     expect(config.entry).toBeDefined();
-    expect(config.entry.confirmLabel).toBe('Withdraw');
+    expect(config.entry.confirmLabel).toBe('Review');
     expect(config.entry.confirmDisabled).toBe(true);
     expect(config.entry.content).toBeUndefined();
     expect(config.backgroundContent).toBeDefined();

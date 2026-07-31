@@ -1,6 +1,7 @@
-import { ReactNode, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
+import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
   ZERO_ADDRESS,
@@ -13,25 +14,21 @@ import {
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { PositionHero } from '@/components/product/PositionHero';
-import { GainValue } from '@/components/ui/GainValue';
+import {
+  NO_VALUE,
+  ProductActions,
+  ProductFigure,
+  ProductPercent,
+  ProductPositionCard,
+  ProductStat,
+  ProductStatPair
+} from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useClaimRewardsModal } from '@/modules/claim';
 import { useRewardsModal, type RewardsModalArgs } from '../hooks/useRewardsModal';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
 import { RewardsSupplyCard } from './RewardsSupplyCard';
-
-const NO_VALUE = '–';
-
-function StatRow({ label, children }: { label: ReactNode; children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text flex items-center gap-1.5 text-sm font-medium">{children}</span>
-    </div>
-  );
-}
 
 /**
  * Position-aware action card for the rewards product page (ProductDetailTemplate
@@ -135,92 +132,121 @@ export function RewardsPositionCard({
     : NO_VALUE;
   const hasClaimable = (rewardsBalance ?? 0n) > 0n;
 
+  const supplyIcon = (
+    <TokenIcon
+      token={{ symbol: contract.supplyToken.symbol }}
+      width={12}
+      showChainIcon={false}
+      className="h-3 w-3 shrink-0"
+    />
+  );
+  const rewardIcon = (
+    <TokenIcon
+      token={{ symbol: rewardSymbol }}
+      width={12}
+      showChainIcon={false}
+      className="h-3 w-3 shrink-0"
+    />
+  );
+  const currentRate = rate !== undefined && rate > 0 ? formatDecimalPercentage(rate) : NO_VALUE;
+
   return (
-    <Card className="flex flex-col gap-5 p-2" data-testid="rewards-position-card">
-      <PositionHero
-        pillSymbol={rewardSymbol}
-        balanceSymbol={contract.supplyToken.symbol}
-        amount={positionValue}
-      />
-
-      <div className="flex flex-col gap-5 px-3 pb-3">
-        <div className="flex flex-col gap-3">
-          {isPointsFarm ? (
-            <StatRow label={<Trans>Points accrued</Trans>}>
-              <TokenIcon
-                token={{ symbol: rewardSymbol }}
-                width={18}
-                showChainIcon={false}
-                className="h-4.5 w-4.5"
-              />
-              {accruedPoints} {rewardSymbol}
-            </StatRow>
-          ) : (
-            <StatRow label={<Trans>Rewards to be claimed</Trans>}>
-              <TokenIcon
-                token={{ symbol: rewardSymbol }}
-                width={18}
-                showChainIcon={false}
-                className="h-4.5 w-4.5"
-              />
-              {accruedRewards} {rewardSymbol}
-            </StatRow>
-          )}
-          <StatRow label={<Trans>1Y projected earnings</Trans>}>
-            {rate !== undefined && rate > 0 ? (
-              <GainValue value={projectedEarnings} />
+    <ProductPositionCard
+      data-testid="rewards-position-card"
+      hero={
+        <PositionHero
+          pillSymbol={rewardSymbol}
+          balanceSymbol={contract.supplyToken.symbol}
+          amount={positionValue}
+        />
+      }
+      // No comp of its own (APP-432 item 16) — the grid follows the Morpho
+      // vault card, whose claimable-rewards row this farm shares.
+      stats={
+        <>
+          <ProductStatPair grow>
+            <ProductStat label={<Trans>Supply</Trans>}>
+              {supplyIcon}
+              {formatNumber(positionValue, { maxDecimals: 2 })}
+            </ProductStat>
+            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
+              {rate !== undefined && rate > 0 ? (
+                <>
+                  <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+                  {formatNumber(projectedEarnings, { maxDecimals: 2 })}
+                  {supplyIcon}
+                </>
+              ) : (
+                <span className="text-fgSecondary">{NO_VALUE}</span>
+              )}
+            </ProductStat>
+          </ProductStatPair>
+          <ProductStatPair grow>
+            {isPointsFarm ? (
+              <ProductStat label={<Trans>Points accrued</Trans>}>
+                <ProductFigure value={accruedPoints}>
+                  {accruedPoints}
+                  {rewardIcon}
+                </ProductFigure>
+              </ProductStat>
             ) : (
-              <span className="text-textSecondary">{NO_VALUE}</span>
+              <ProductStat label={<Trans>Claimable rewards</Trans>}>
+                <ProductFigure value={accruedRewards}>
+                  {accruedRewards}
+                  {rewardIcon}
+                </ProductFigure>
+              </ProductStat>
             )}
-          </StatRow>
-          <StatRow label={<Trans>Current rate</Trans>}>
-            {rate !== undefined && rate > 0 ? formatDecimalPercentage(rate) : NO_VALUE}
-          </StatRow>
-        </div>
-
-        {isDeprecated && (
-          <p className="text-textSecondary text-sm" data-testid="rewards-position-deprecated">
-            <Trans>SKY Rewards have been disabled and other reward options are available.</Trans>
-          </p>
-        )}
-
-        {/* Supply / Claim rewards / Withdraw — each opens its shared modal. */}
+            <ProductStat label={<Trans>Current rate</Trans>}>
+              <ProductPercent value={currentRate} />
+            </ProductStat>
+          </ProductStatPair>
+        </>
+      }
+      actions={
+        /* Supply / Claim rewards / Withdraw — each opens its shared modal. */
         <div className="flex flex-col gap-3">
-          {!isDeprecated && (
-            <Button
-              variant="primary"
-              size="l"
-              className="w-full"
-              onClick={() => openSupply(modalArgs)}
-              disabled={!isConnected}
-              data-testid="rewards-position-supply"
-            >
-              <Trans>Supply</Trans>
-            </Button>
+          {isDeprecated && (
+            <p className="text-fgSecondary text-xs leading-[18px]" data-testid="rewards-position-deprecated">
+              <Trans>SKY Rewards have been disabled and other reward options are available.</Trans>
+            </p>
           )}
-          {hasClaimable && (
+          {!isDeprecated && (
+            <ProductActions>
+              <Button
+                variant="primary"
+                size="l"
+                onClick={() => openSupply(modalArgs)}
+                disabled={!isConnected}
+                data-testid="rewards-position-supply"
+              >
+                <Trans>Supply</Trans>
+              </Button>
+            </ProductActions>
+          )}
+          <ProductActions>
+            {hasClaimable && (
+              <Button
+                variant="secondary"
+                size="l"
+                onClick={() => openClaim({ kind: 'reward-contract', address: contractAddress })}
+                data-testid="rewards-position-claim"
+              >
+                <Trans>Claim rewards</Trans>
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="l"
-              className="w-full"
-              onClick={() => openClaim({ kind: 'reward-contract', address: contractAddress })}
-              data-testid="rewards-position-claim"
+              onClick={() => openWithdraw(modalArgs)}
+              disabled={!isConnected}
+              data-testid="rewards-position-withdraw"
             >
-              <Trans>Claim rewards</Trans>
+              <Trans>Withdraw</Trans>
             </Button>
-          )}
-          <Button
-            variant="secondary"
-            size="l"
-            className="w-full"
-            onClick={() => openWithdraw(modalArgs)}
-            disabled={!isConnected}
-            data-testid="rewards-position-withdraw"
-          >
-            <Trans>Withdraw</Trans>
-          </Button>
+          </ProductActions>
         </div>
-      </div>
-    </Card>
+      }
+    />
   );
 }
