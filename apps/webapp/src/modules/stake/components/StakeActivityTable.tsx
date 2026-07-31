@@ -4,7 +4,7 @@ import { formatUnits } from 'viem';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { TransactionTypeEnum, useSkyPrice, useStakeHistory } from '@/hooks';
+import { BP, TransactionTypeEnum, useBreakpointIndex, useSkyPrice, useStakeHistory } from '@/hooks';
 import { formatAddress, formatUsd, getEtherscanLink } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
@@ -28,6 +28,8 @@ import {
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
 import { TransactionCard } from '@/components/product/TransactionCard';
+import { filterTriggerClasses } from '@/components/product/FilterSelect';
+import { cn } from '@/lib/cn';
 import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
@@ -305,6 +307,8 @@ const renderCard = (row: ActivityRow) => (
  */
 export function StakeActivityTable({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
   const [filter, setFilter] = useState<'all' | number>('all');
   const { data: stakeHistory, isLoading, error, hasNextPage, fetchNextPage } = useStakeHistory();
   const { priceString: skyPriceString } = useSkyPrice();
@@ -340,7 +344,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
   return (
     <div className="flex flex-col gap-4">
       {/* Phone tier (comp 1222:16962): heading above a full-width pill filter;
-          md restores the heading row with the inline borderless trigger. */}
+          md restores the heading row with the inline trigger. */}
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-4">
         <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px] md:font-sans md:leading-normal md:tracking-normal">
           <Trans>My activity</Trans>
@@ -353,7 +357,14 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
             <SelectTrigger
               data-testid="stake-activity-filter"
               aria-label={t`Filter activity by position`}
-              className="border-glassBorder text-text font-circle md:text-textSecondary md:hover:text-text h-11 w-full justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors focus-visible:ring-0 md:h-auto md:w-auto md:shrink-0 md:justify-normal md:gap-1.5 md:border-none md:p-0 md:font-sans md:leading-normal md:tracking-normal"
+              // Phone tier keeps the comp's full-width 44px pill; from md the
+              // trigger is the DS Button / Dropdown S the other table filters
+              // wear (Figma 1030:59174, APP-443 item 16 — it was borderless).
+              className={
+                isMobile
+                  ? 'border-glassBorder text-text font-circle h-11 w-full shrink-0 justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors focus-visible:ring-0'
+                  : cn(filterTriggerClasses(), 'shrink-0 transition-colors focus-visible:ring-0')
+              }
             >
               <SelectValue>
                 {filter === 'all' ? <Trans>All positions</Trans> : <Trans>Position {filter + 1}</Trans>}

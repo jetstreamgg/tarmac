@@ -46,9 +46,10 @@ export function EarnMarketplaceSection({ rows, isLoading }: { rows: EarnProductR
           <Heading tag="h2" variant="medium">
             <Trans>Earn with Sky</Trans>
           </Heading>
-          <div className="flex gap-2">
-            <CarouselPrevious className={INLINE_ARROW} />
-            <CarouselNext className={INLINE_ARROW} />
+          {/* Same DS Button / Icon pair as the positions carousel. */}
+          <div className="flex gap-1.5">
+            <CarouselPrevious variant="secondary" size="iconS" className={INLINE_ARROW} />
+            <CarouselNext variant="secondary" size="iconS" className={INLINE_ARROW} />
           </div>
         </div>
         <CarouselContent>

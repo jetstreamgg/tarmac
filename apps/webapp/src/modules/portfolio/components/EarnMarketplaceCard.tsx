@@ -7,6 +7,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconboxStatus } from '@/components/ui/iconbox';
+import { RateBadge } from '@/components/ui/RateBadge';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { productIconSymbol, productStatusType } from '@/components/product/productVisuals';
 import { ProductGlyph } from './ProductGlyph';
@@ -48,7 +49,10 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
             {row.name}
           </Text>
           <ProductGlyph id={row.id} kind={row.kind} />
-          {row.rate.value !== undefined && <Badge>{row.rate.formatted}</Badge>}
+          {/* DS Badges / Special — the green rate pill the comps draw here
+              (1036:189284 dark / 1030:58560 light, APP-443 item 1); it was a
+              neutral surface chip. */}
+          {row.rate.value !== undefined && <RateBadge>{row.rate.formatted}</RateBadge>}
         </div>
         {/* TODO(D1): per-product marketing copy has no source yet. */}
         <Text variant="small" className="text-textSecondary">
@@ -89,11 +93,5 @@ function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
       </Text>
       {children}
     </div>
-  );
-}
-
-function Badge({ children }: { children: ReactNode }) {
-  return (
-    <span className="bg-surface text-text rounded-full px-2 py-0.5 text-xs font-medium">{children}</span>
   );
 }

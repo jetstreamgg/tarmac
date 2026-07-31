@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { Children, Fragment, ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
@@ -369,13 +369,30 @@ function Divider() {
   return <div className="border-borderPrimary mt-8 mb-6 border-b" />;
 }
 
+/**
+ * The card's footer figures. From lg the comp (1030:58701) lays them out as
+ * one row of equal columns split by 28px hairlines, 32px clear on each side —
+ * so that tier is a flex row and the dividers come along; below it the stats
+ * keep wrapping in the grid and the dividers drop out entirely (`display:none`
+ * takes them out of grid flow, so they never claim a cell).
+ */
 function FooterStats({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">{children}</div>;
+  const stats = Children.toArray(children);
+  return (
+    <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:flex lg:gap-8">
+      {stats.map((stat, index) => (
+        <Fragment key={index}>
+          {index > 0 && <span className="bg-borderPrimary hidden h-7 w-px shrink-0 self-center lg:block" />}
+          {stat}
+        </Fragment>
+      ))}
+    </div>
+  );
 }
 
 function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5 lg:flex-1">
       <Text variant="medium" className="text-textSecondary">
         {label}
       </Text>

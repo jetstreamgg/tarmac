@@ -5,6 +5,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { ClaimableReward } from '@/modules/claim';
 import { RewardsClaimTable } from './RewardsClaimTable';
 
+// Each rewards section carries its own top margin rather than leaning on a
+// wrapper: both self-hide when empty, and a wrapper would leave a stray gap
+// behind a section that renders null. Same 48/80 section rhythm the rest of
+// the Portfolio page uses (APP-443 item 5).
+const SECTION = 'mt-12 flex flex-col gap-5 md:mt-20';
+
 /**
  * One claimable-rewards section of the Portfolio (Figma 1036:190232 /
  * 1036:190243): a Heading-5 title, an optional "Claim all", and the rewards
@@ -35,7 +41,7 @@ export function PortfolioRewardsSection({
 }) {
   if (isLoading && rewards.length === 0) {
     return (
-      <section data-testid={`${testId}-skeleton`} className="flex flex-col gap-5">
+      <section data-testid={`${testId}-skeleton`} className={SECTION}>
         {/* The pill placeholder holds the heading row at its 40px button height
             so the row doesn't grow when a multi-reward "Claim all" arrives. */}
         <div className="flex min-h-10 items-center justify-between gap-6">
@@ -52,7 +58,7 @@ export function PortfolioRewardsSection({
   const multiple = rewards.length > 1;
 
   return (
-    <section data-testid={testId} className="flex flex-col gap-5">
+    <section data-testid={testId} className={SECTION}>
       <div className="flex min-h-10 items-center justify-between gap-6">
         <Heading>{title}</Heading>
         {multiple && (
