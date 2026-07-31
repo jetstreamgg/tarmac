@@ -6,9 +6,10 @@ import { buttonVariants } from '@/components/ui/button';
 import { formatAmountForInput, parseAmountText, sanitizeAmountText } from '../lib/amountInput';
 
 const PERCENT_CHIPS = [25, 50, 100] as const;
-// Borrow caps the top chip at 75%: staging the exact max puts the position on
-// the liquidation boundary, where fee accrual alone tips it underwater.
-export const BORROW_PERCENT_CHIPS = [25, 50, 75] as const;
+// Borrow chips match the redesign comps (1036:213930): 25/50/100 of the safe
+// max — same ceiling the slider's full-right stop already stages, and the
+// whole-USDS flooring keeps the staged amount just under the boundary.
+export const BORROW_PERCENT_CHIPS = [25, 50, 100] as const;
 
 /**
  * Takeover amount row (hi-fi 486:32657): "Amount" label with a right-aligned

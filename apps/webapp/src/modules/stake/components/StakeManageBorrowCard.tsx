@@ -1,21 +1,27 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { Check, Info, TriangleAlert } from 'lucide-react';
+import { Info, TriangleAlert } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
-import { StakeManageCard, StakeManageDeltaRow } from './StakeManageCard';
+import {
+  StakeManageCard,
+  StakeManageStatCell,
+  StakeManageStatDivider,
+  UpdatedHourlyBadge
+} from './StakeManageCard';
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
 
 const NO_VALUE = '–';
 const WAD = 10n ** 18n;
 
-// Three-dot risk value (UX B.3 delta rows: `•• Medium → ••• High`) — the F3
-// table-meter mapping, unboxed for inline delta rendering.
+// Badges/Risk dash mapping (comp 1036:213853) — the F3 table-meter levels on
+// the boxed three-dash pill the redesign comps draw (dashes only, no text; the
+// level name stays on the aria-label).
 const RISK_DOTS: Record<RiskLevel, { lit: number; color: string }> = {
   [RiskLevel.LOW]: { lit: 1, color: 'bg-bullish' },
   [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-orange-400' },
@@ -23,19 +29,43 @@ const RISK_DOTS: Record<RiskLevel, { lit: number; color: string }> = {
   [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-error' }
 };
 
-export function RiskValue({ riskLevel }: { riskLevel: RiskLevel }) {
+// In-card risk value (comp 1036:213950): the text pill on the DS
+// components/status colours — StakeTakeoverBorrowCard parity. The dash badge
+// below stays the summary strip's rendering (comp 1036:213853).
+const RISK_PILL: Record<RiskLevel, string> = {
+  [RiskLevel.LOW]: 'bg-statusSuccess/10 text-statusSuccess',
+  [RiskLevel.MEDIUM]: 'bg-statusWarning/10 text-statusWarning',
+  [RiskLevel.HIGH]: 'bg-statusError/10 text-statusError',
+  [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
+};
+
+function RiskPill({ riskLevel }: { riskLevel: RiskLevel }) {
+  return (
+    <span
+      className={cn(
+        'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
+        RISK_PILL[riskLevel]
+      )}
+    >
+      {capitalizeFirstLetter(riskLevel.toLowerCase())}
+    </span>
+  );
+}
+
+export function RiskBadge({ riskLevel }: { riskLevel: RiskLevel }) {
   const dots = RISK_DOTS[riskLevel];
   return (
-    <span className="flex items-center gap-1.5">
-      <span className="flex items-center gap-0.5" aria-hidden>
-        {[0, 1, 2].map(dot => (
-          <span
-            key={dot}
-            className={cn('h-1 w-1 rounded-full', dot < dots.lit ? dots.color : 'bg-textSecondary/30')}
-          />
-        ))}
-      </span>
-      {capitalizeFirstLetter(riskLevel.toLowerCase())}
+    <span
+      role="img"
+      aria-label={capitalizeFirstLetter(riskLevel.toLowerCase())}
+      className="border-glassBorder flex h-4 w-fit items-center gap-0.5 rounded-full border px-1.5"
+    >
+      {[0, 1, 2].map(dot => (
+        <span
+          key={dot}
+          className={cn('h-[3px] w-[7px] rounded-full', dot < dots.lit ? dots.color : 'bg-textSecondary/30')}
+        />
+      ))}
     </span>
   );
 }
@@ -158,25 +188,19 @@ export function StakeManageBorrowCard({
           // DISPLAY (the staged value stays exact for wipeAll/buffer math).
           maxDisplayDecimals={2}
           dataTestId="stake-manage-borrow-amount"
+          // Comp 1036:213928: the position line sits above the chips; the
+          // borrow max stays on the slider's right label.
           topRight={
-            isRepay ? (
-              <Trans>max. {formatBigInt(maxRepayable, { compact: true })} USDS</Trans>
-            ) : minCollateralNotMet ? undefined : (
-              <Trans>max. {formatBigInt(maxBorrowable, { compact: true })} USDS</Trans>
-            )
+            <span data-testid="stake-manage-borrowed-line">
+              <Trans>Borrowed:</Trans>{' '}
+              {showDeltas && newDebt !== undefined && newDebt !== existingDebt
+                ? `${formatBigInt(existingDebt)} → ${formatBigInt(newDebt)}`
+                : formatBigInt(existingDebt)}
+            </span>
           }
         />
 
-        <div className="border-textSecondary/10 flex items-center justify-between border-b pb-3 text-sm">
-          <span className="text-textSecondary">
-            <Trans>Borrowed:</Trans>
-          </span>
-          <span className="text-text font-medium" data-testid="stake-manage-borrowed-line">
-            {showDeltas && newDebt !== undefined && newDebt !== existingDebt
-              ? `${formatBigInt(existingDebt)} → ${formatBigInt(newDebt)}`
-              : formatBigInt(existingDebt)}
-          </span>
-        </div>
+        <div className="bg-borderPrimary h-px w-full" aria-hidden />
 
         {shouldShowSlider && !minCollateralNotMet && (
           <div className="flex flex-col gap-2">
@@ -250,27 +274,37 @@ export function StakeManageBorrowCard({
           </p>
         )}
 
-        <div className="flex flex-col">
-          <StakeManageDeltaRow
+        {/* Comp 1036:213936 stat columns: Borrow rate · risk badge · prices,
+            hugging cells split by hairlines. */}
+        <div className="flex flex-wrap items-start gap-4">
+          <StakeManageStatCell
+            label={<Trans>Borrow rate</Trans>}
+            current={collateralData?.stabilityFee ? formatPercent(collateralData.stabilityFee) : NO_VALUE}
+            next={isFullRepay ? '0.00%' : undefined}
+            dataTestId="stake-manage-borrow-rate-row"
+          />
+          <StakeManageStatDivider />
+          <StakeManageStatCell
             label={
               <>
                 <Trans>Liquidation risk</Trans>
-                <Info className="h-3.5 w-3.5" aria-hidden />
+                <Info className="h-3 w-3" aria-hidden />
               </>
             }
-            current={currentRisk ? <RiskValue riskLevel={currentRisk} /> : NO_VALUE}
+            current={currentRisk ? <RiskPill riskLevel={currentRisk} /> : NO_VALUE}
             next={
               showDeltas ? (
                 isFullRepay ? (
                   t`No position`
                 ) : nextRisk && nextRisk !== currentRisk ? (
-                  <RiskValue riskLevel={nextRisk} />
+                  <RiskPill riskLevel={nextRisk} />
                 ) : undefined
               ) : undefined
             }
             dataTestId="stake-manage-risk-row"
           />
-          <StakeManageDeltaRow
+          <StakeManageStatDivider />
+          <StakeManageStatCell
             label={<Trans>Liquidation price</Trans>}
             current={formatPrice(existingVault?.liquidationPrice)}
             next={
@@ -285,29 +319,21 @@ export function StakeManageBorrowCard({
             }
             dataTestId="stake-manage-liq-price-row"
           />
-          <StakeManageDeltaRow
+          <StakeManageStatDivider />
+          <StakeManageStatCell
             label={
               <>
                 <Trans>Protocol SKY Price</Trans>
-                <Info className="h-3.5 w-3.5" aria-hidden />
+                <Info className="h-3 w-3" aria-hidden />
               </>
             }
             // Single value on purpose: the OSM price ignores user input (M13).
             current={
               <>
                 {formatPrice(simulatedVault?.delayedPrice ?? existingVault?.delayedPrice)}
-                <span className="bg-surfaceAlt text-textSecondary flex items-center gap-1 rounded-full px-2 py-0.5 text-xs">
-                  <Check className="h-3 w-3" aria-hidden />
-                  <Trans>Updated hourly</Trans>
-                </span>
+                <UpdatedHourlyBadge />
               </>
             }
-          />
-          <StakeManageDeltaRow
-            label={<Trans>Borrow rate</Trans>}
-            current={collateralData?.stabilityFee ? formatPercent(collateralData.stabilityFee) : NO_VALUE}
-            next={isFullRepay ? '0.00%' : undefined}
-            dataTestId="stake-manage-borrow-rate-row"
           />
         </div>
       </div>

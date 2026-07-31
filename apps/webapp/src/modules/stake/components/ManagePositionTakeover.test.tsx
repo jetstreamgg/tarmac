@@ -364,9 +364,7 @@ describe('ManagePositionTakeover', () => {
     renderSheet({ borrowCard: 'repay' });
 
     expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).disabled).toBe(true);
-    expect(screen.getByTestId('stake-manage-borrow-amount').closest('section')?.textContent).toContain(
-      'max. 0'
-    );
+    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('Borrowed: 0');
     expect(confirmButton().disabled).toBe(true);
   });
 
@@ -392,14 +390,14 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(false);
   });
 
-  it('borrow: the top chip is 75% and stages three quarters of the max', () => {
+  it('borrow: the top chip is 100% and stages the whole-USDS-floored max', () => {
     h.debtCeiling = 40_000n * WAD;
     renderSheet({ borrowCard: 'borrow' });
 
-    expect(screen.queryByTestId('stake-manage-borrow-amount-percent-100')).toBeNull();
-    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-75'));
+    expect(screen.queryByTestId('stake-manage-borrow-amount-percent-75')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-100'));
 
-    expect(h.launchParams?.usdsToBorrow).toBe(30_000n * WAD);
+    expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
   });
 
   it('borrow: above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {

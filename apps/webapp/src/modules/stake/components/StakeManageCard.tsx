@@ -1,12 +1,16 @@
 import { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Switch } from '@/components/ui/switch';
 
 /**
- * Manage-sheet card shell (UX 1050:21454): a segmented mode control in place of
- * the takeover's step number, plus the enable toggle. Disabled cards collapse
- * to their header row — same temporal-states-of-one-screen model as F4.
+ * Manage-sheet card shell (redesign comps 1036:213821+, flows UX 1050:21454):
+ * a segmented mode control in place of the takeover's step number, plus the
+ * enable toggle. Disabled cards collapse to their header row — same
+ * temporal-states-of-one-screen model as F4. Mode pills draw as Tabs Items:
+ * outlined at rest, brand-gradient fill when active (gradient + active stroke
+ * are raw hexes in Figma, no variable).
  */
 export function StakeManageCard<Mode extends string>({
   modes,
@@ -28,10 +32,10 @@ export function StakeManageCard<Mode extends string>({
   return (
     <section
       data-testid={dataTestId}
-      className="bg-glassSurface rounded-card flex flex-col gap-6 p-6 backdrop-blur-[20px]"
+      className="bg-glassSurface rounded-card flex flex-col gap-6 p-5 backdrop-blur-[20px] md:gap-8 md:p-8"
     >
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2" role="group">
+        <div className="flex items-center gap-1.5" role="group">
           {modes.map(mode => (
             <button
               key={mode.value}
@@ -40,8 +44,10 @@ export function StakeManageCard<Mode extends string>({
               aria-pressed={mode.value === activeMode}
               data-testid={`${dataTestId}-mode-${mode.value}`}
               className={cn(
-                'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
-                mode.value === activeMode ? 'bg-surfaceAlt text-text' : 'text-textSecondary hover:text-text'
+                'text-text font-circle flex h-8 items-center rounded-full border px-3 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors',
+                mode.value === activeMode
+                  ? 'border-[#9ca0e5]/40 bg-gradient-to-b from-[#949aff]/20 to-[#504dff]/20'
+                  : 'border-glassBorder hover:bg-surfaceHover'
               )}
             >
               {mode.label}
@@ -56,11 +62,12 @@ export function StakeManageCard<Mode extends string>({
 }
 
 /**
- * Before→after info row (UX B.3): renders the current value alone until a
- * change is staged, then `current → next`. Values arrive pre-formatted; the
- * arrow only appears when the rendered strings differ.
+ * In-card stat cell (comps 1036:213889/213936): Body 6 label over a Label 5
+ * Circular value; a staged change renders `current → next` with both values
+ * white and a muted 12px arrow. Values arrive pre-formatted (token icons
+ * included); the arrow only appears when a next value is passed.
  */
-export function StakeManageDeltaRow({
+export function StakeManageStatCell({
   label,
   current,
   next,
@@ -76,20 +83,29 @@ export function StakeManageDeltaRow({
 }) {
   const hasDelta = next !== undefined;
   return (
-    <div
-      data-testid={dataTestId}
-      className="border-textSecondary/10 flex items-center justify-between gap-4 border-b py-2.5 text-sm last:border-b-0"
-    >
-      <span className="text-textSecondary flex items-center gap-1">{label}</span>
-      <span className="text-text flex items-center gap-2 font-medium">
-        <span className={cn(hasDelta && 'text-textSecondary')}>{current}</span>
+    <div data-testid={dataTestId} className="flex flex-col gap-1">
+      <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
+      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
+        <span className="flex items-center gap-1">{current}</span>
         {hasDelta && (
           <>
-            <ArrowRight className="text-textSecondary h-3.5 w-3.5" aria-hidden />
-            <span className={nextClassName}>{next}</span>
+            <ArrowRight className="text-textSecondary h-3 w-3 shrink-0" aria-hidden />
+            <span className={cn('flex items-center gap-1', nextClassName)}>{next}</span>
           </>
         )}
       </span>
     </div>
   );
 }
+
+/** 32px vertical hairline between hugging stat cells (comps' Vector 461x). */
+export const StakeManageStatDivider = () => (
+  <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
+);
+
+/** Badges XS neutral "Updated hourly" (comp 1594:43606): no icon, 11px Circular on the glass tint. */
+export const UpdatedHourlyBadge = () => (
+  <span className="bg-glassBadge text-textSecondary font-circle flex h-[18px] items-center rounded-full px-2 text-[11px] leading-none font-medium whitespace-nowrap">
+    <Trans>Updated hourly</Trans>
+  </span>
+);
