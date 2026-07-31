@@ -42,12 +42,18 @@ export const createAppRouter = (history?: RouterHistory, queryClient: QueryClien
     // animation itself is CSS on the `page` view-transition group in
     // globals.css; this only decides which navigations get a transition.
     //
-    // Object form rather than `true` so the `types` callback can veto: a
-    // navigation that only rewrites search params (network switch, stake urn
-    // index, balance filters) stays on the same page and must not slide.
+    // Object form rather than `true` so the `types` callback can veto.
     // Returning `false` skips document.startViewTransition altogether.
+    //
+    // `fromLocation` is undefined on the very first load, and the router
+    // derives `pathChanged` as `fromLocation?.pathname !== toLocation.pathname`
+    // — so it reports true there and the app animated itself in on boot.
+    // Requiring a previous location keeps the transition to real navigations.
+    //
+    // `pathChanged` then excludes navigations that only rewrite search params
+    // (network switch, stake urn index, balance filters): same page, no slide.
     defaultViewTransition: {
-      types: ({ pathChanged }) => (pathChanged ? ['page'] : false)
+      types: ({ pathChanged, fromLocation }) => (fromLocation && pathChanged ? ['page'] : false)
     },
     // Full-width routes scroll on the document (no inner-scroll box), so the
     // router owns scroll position: reset to top on new navigations, restore on

@@ -386,16 +386,16 @@
   * {
     @apply border-border;
   }
-  /* Backstop page colour on the document itself. `.app-background` is the only
-     thing that paints the page background, and during a view transition it is
-     lifted out of the DOM into the pseudo-element tree — so without this,
-     anything the snapshots don't cover (the canvas beneath them, and the strip
-     the outgoing page uncovers as it slides) falls through to the browser's
-     default white. Also covers overscroll and the gap before first paint. */
+  /* The page colour on the canvas. `.app-background` is otherwise the only
+     thing painting it, and it is `position: fixed`, so it doesn't cover the
+     area a view transition's outgoing snapshot uncovers as it slides — that
+     strip fell through to the browser's default white. Also covers overscroll
+     and the gap before first paint. Uniform, so it costs nothing to have it
+     ride along in the root snapshot. */
   html {
     background-color: var(--color-pageBackground);
   }
-  /* `antialiased` = -webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
+  /* `antialiased` =-webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
      grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
      canvas, which made every Circular Medium surface read a weight above the comp
      once the real 500 cut shipped. Affects Graphik too — the comps are the target
@@ -785,10 +785,6 @@
   inset: 0;
   z-index: -10;
   pointer-events: none;
-  /* Own view-transition group, so the background is lifted out of the root
-     snapshot and stays put while the page slides across it (see the page
-     transition block at the end of this file). */
-  view-transition-name: shell-background;
   background-color: var(--color-pageBackground);
   background-image: var(--background-image-app-background);
   background-repeat: no-repeat;
@@ -862,15 +858,20 @@
    own name — a named element is captured as its own group instead of being
    painted into the root. Their content is identical across the navigation, so
    their default cross-fade is invisible; the exception is the header, whose
-   active nav pill cross-fades, which is what the comp shows anyway. */
+   active nav pill cross-fades, which is what the comp shows anyway.
+
+   `.app-background` deliberately does NOT get a name. The root snapshot always
+   includes the document canvas, so it is opaque: a background lifted into its
+   own group can only ever sit *below* it and is never visible (naming it left
+   the page flat-coloured for the whole animation). It therefore stays inside
+   the root snapshot and travels with the page — the page colour is uniform so
+   its movement is invisible, and only the soft image layer shifts. */
 .vt-shell-header {
   view-transition-name: shell-header;
 }
 .vt-shell-navbar {
   view-transition-name: shell-navbar;
 }
-/* .app-background carries `view-transition-name: shell-background` in its own
-   rule above, next to the rest of its geometry. */
 
 /* The snapshots paint in the top layer, above the whole page, and they
    hit-test there: without this a click during the ~400ms animation lands on a
@@ -887,13 +888,8 @@
 }
 
 /* Groups are siblings in the pseudo tree, painted in capture order — the
-   document's own stacking is NOT carried across. Without this the background
-   (z-index -10 in the page, but captured after the root) paints *over* the
-   page snapshot and the content area goes blank for the whole animation.
-   Restate the intended order explicitly. */
-::view-transition-group(shell-background) {
-  z-index: 0;
-}
+   document's own stacking is NOT carried across — so the chrome's place above
+   the page has to be restated here. */
 ::view-transition-group(root) {
   z-index: 1;
 }
