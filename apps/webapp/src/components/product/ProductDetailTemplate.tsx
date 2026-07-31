@@ -118,11 +118,14 @@ function DetailsSection({ title, details }: { title?: ReactNode; details: Produc
             key={row.id}
             className="border-borderPrimary flex items-center justify-between gap-4 border-b py-4"
           >
-            <span className="text-fgSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-normal">
+            {/* Desktop comp (859:35723): label Body 5 (Graphik 14/22), value
+                Label 4 (Circular Medium 16/18, -0.32px). Mobile keeps the M6.3
+                step-down — Body 6 labels and Label 5 values (486:20706). */}
+            <span className="text-fgSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-[22px]">
               {row.icon}
               {row.label}
             </span>
-            <span className="text-text font-circle md:font-graphik text-right text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-normal md:tracking-normal">
+            <span className="text-text font-circle text-right text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
               {row.value}
             </span>
           </div>
