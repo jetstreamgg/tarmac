@@ -29,6 +29,11 @@ describe('buildPendleEntryRows', () => {
     ]);
   });
 
+  it('pins the Network cell to the engine chain when one is given', () => {
+    const rows = buildPendleEntryRows({ ...entryInput, networkChainId: 1 });
+    expect(rows[0][1]).toMatchObject({ label: 'Network', network: true, networkChainId: 1 });
+  });
+
   it('draws deltas with the amount entered, including the green-accented rate', () => {
     const rows = buildPendleEntryRows(entryInput);
     expect(rows[0][0]).toMatchObject({

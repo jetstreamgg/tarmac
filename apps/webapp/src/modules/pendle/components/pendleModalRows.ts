@@ -24,6 +24,8 @@ export type PendleEntryRowInput = {
   rateAfter: string;
   /** Network the transaction runs on (e.g. "Ethereum"). */
   network: string;
+  /** Chain the engine runs on, for the Network cell's icon (mainnet/tenderly, not necessarily the connected chain). */
+  networkChainId?: number;
   /** Display symbol for the 12px value icons — USDS on pegged markets. */
   displaySymbol: string;
   /** Position present value before/after the action. */
@@ -61,7 +63,13 @@ export function buildPendleEntryRows(input: PendleEntryRowInput): PendleModalGri
         input.rateAfter,
         input.hasAmount
       ),
-      { kind: 'single', label: 'Network', value: input.network, network: true }
+      {
+        kind: 'single',
+        label: 'Network',
+        value: input.network,
+        network: true,
+        networkChainId: input.networkChainId
+      }
     ],
     [
       singleOrDelta(
@@ -124,6 +132,8 @@ export type PendleReviewRowInput = {
   priceImpact: string;
   /** Network the transaction runs on. */
   network: string;
+  /** Chain the engine runs on, for the Network cell's icon. */
+  networkChainId?: number;
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
   networkFee: string;
 };
@@ -169,7 +179,8 @@ export function buildPendleReviewRows(
     kind: 'single',
     label: 'Network',
     value: input.network,
-    network: true
+    network: true,
+    networkChainId: input.networkChainId
   };
   const feeCell: ModalGridCell = { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee };
 

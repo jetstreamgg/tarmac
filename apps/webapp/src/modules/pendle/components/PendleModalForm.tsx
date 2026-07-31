@@ -359,12 +359,15 @@ export function PendleModalForm({
   const rateAfter = quote ? formatDecimalPercentage(quote.effectiveApy) : rateBefore;
   const hasAmount = amount > 0n && !!quote;
 
-  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  // The Network cells describe where the trade executes — the engine chain,
+  // which the connected chain only matches while Pendle stays mainnet-gated.
+  const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
 
   const entryRows = buildPendleEntryRows({
     rateBefore,
     rateAfter,
     network: networkName,
+    networkChainId: engineChainId,
     displaySymbol,
     supplyBefore: pv(claimBefore),
     supplyAfter: pv(claimAfter),
@@ -450,6 +453,7 @@ export function PendleModalForm({
                 />
               ),
               network: networkName,
+              networkChainId: engineChainId,
               networkFee: networkFee?.formatted ?? NO_VALUE
             }),
             'pendle-modal-row',
@@ -479,6 +483,7 @@ export function PendleModalForm({
       setSlippage,
       priceImpactDisplay,
       networkName,
+      engineChainId,
       feeCell,
       networkFee
     ]

@@ -26,6 +26,12 @@ export type ModalGridCellHints = {
   /** Draw the 12px network (chain) icon before the value. */
   network?: boolean;
   /**
+   * Chain for the network icon when the transaction runs on a different chain
+   * than the connected one (the Pendle engine pins mainnet). Defaults to the
+   * connected chain.
+   */
+  networkChainId?: number;
+  /**
    * Product rate treatment: 'savings' renders the value's trailing "%" through
    * the savings green gradient (deltas accent both values); 'morpho' keeps the
    * value plain and appends the morpho-gradient stars glyph (Figma
@@ -88,10 +94,10 @@ function RatePercent({ value }: { value: string }) {
   );
 }
 
-/** 12px chain icon for the Network cells. */
-function NetworkIcon() {
-  const chainId = useChainId();
-  const src = useChainImage(chainId);
+/** 12px chain icon for the Network cells — the connected chain unless the cell pins one. */
+function NetworkIcon({ chainId }: { chainId?: number }) {
+  const connectedChainId = useChainId();
+  const src = useChainImage(chainId ?? connectedChainId);
   if (!src) return null;
   return <img src={src} alt="" className="size-3 shrink-0 rounded-full" />;
 }
@@ -155,7 +161,7 @@ function CellToken({ symbol, ring }: { symbol: string; ring?: 'default' | 'morph
 /** Renders one grid cell's value: optional icons, then a single value or the before→after delta. */
 export function CellValue({ cell }: { cell: ModalGridCell }) {
   const icon = cell.network ? (
-    <NetworkIcon />
+    <NetworkIcon chainId={cell.networkChainId} />
   ) : cell.trend ? (
     <TrendingUp boxSize={12} className="text-statusSuccessSolid size-3 shrink-0" aria-hidden />
   ) : cell.token ? (
