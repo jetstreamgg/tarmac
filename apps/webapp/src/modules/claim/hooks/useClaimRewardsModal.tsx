@@ -10,13 +10,24 @@ type UseClaimRewardsModalOptions = {
 };
 
 /**
+ * The Sky `getReward` farms are branded "ecosystem rewards" (SPK / GROVE / CLE),
+ * and their modal says so (Figma 1036:190321); every other source claims under
+ * the generic title.
+ */
+function modalTitle(scope: ClaimScope): string {
+  return scope.kind === 'sky-rewards' || scope.kind === 'reward-contract'
+    ? t`Claim ecosystem rewards`
+    : t`Claim rewards`;
+}
+
+/**
  * Reusable trigger for the generalized "Claim rewards" modal. Any surface — the vault
- * position card, the portfolio claim-all, the rewards/stake pages — calls `openClaim`
- * with a `ClaimScope` instead of re-declaring the launch config. The scope narrows what
- * the panel shows: `{kind:'vault',vaultAddress}` surfaces only that vault's Merkl
- * rewards, `{kind:'all'}` the cross-source list, etc. The editable selection body lives
- * in `ClaimRewardsPanel`, mounted as `backgroundContent` so its in-flight flow survives
- * a minimize.
+ * position card, the portfolio reward tables, the rewards/stake pages — calls `openClaim`
+ * with a `ClaimScope` instead of re-declaring the launch config. The scope both narrows
+ * what the panel shows and IS the selection: `{kind:'merkl-token',tokenAddress}` claims
+ * one token, `{kind:'merkl'}` every Merkl token, `{kind:'vault',vaultAddress}` only that
+ * vault's Merkl rewards, etc. The body lives in `ClaimRewardsPanel`, mounted as
+ * `backgroundContent` so its in-flight flow survives a minimize.
  */
 export function useClaimRewardsModal({ onSuccess }: UseClaimRewardsModalOptions = {}) {
   const { launch } = useTransaction();
@@ -25,7 +36,7 @@ export function useClaimRewardsModal({ onSuccess }: UseClaimRewardsModalOptions 
   const openClaim = useCallback(
     (scope: ClaimScope) => {
       launch({
-        title: t`Claim rewards`,
+        title: modalTitle(scope),
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
           loading: t`Your claim is being processed on the blockchain. Please wait.`,

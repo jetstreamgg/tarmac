@@ -49,7 +49,7 @@ const skySelection = (addresses: string[]): ClaimableReward[] =>
   addresses.map(address => ({
     id: address,
     source: 'sky-rewards',
-    sourceLabel: 'Sky Rewards',
+    tokenName: 'Sky token',
     tokenSymbol: 'SKY',
     icon: null,
     formattedAmount: '',
@@ -71,7 +71,7 @@ describe('skyRewardsAdapter', () => {
       expect(result.current.rewards[0]).toMatchObject({
         id: CONTRACT_A,
         source: 'sky-rewards',
-        sourceLabel: 'Sky Rewards',
+        tokenName: 'Sky token',
         tokenSymbol: 'SKY',
         chainId: 1
       });
@@ -138,7 +138,7 @@ describe('skyRewardsAdapter', () => {
         {
           id: '0xmerkltoken',
           source: 'merkl',
-          sourceLabel: 'Merkl',
+          tokenName: 'Morpho token',
           tokenSymbol: 'MORPHO',
           icon: null,
           formattedAmount: '1',

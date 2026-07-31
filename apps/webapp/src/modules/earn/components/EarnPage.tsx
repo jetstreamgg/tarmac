@@ -3,13 +3,14 @@ import { useChains } from 'wagmi';
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho, Pendle } from '@/widgets';
-import { useEarnMarketplace, EarnProductKind, type EarnProductRow } from '@/hooks';
+import { useEarnMarketplace, EarnProductKind, useUsdsDaiData, type EarnProductRow } from '@/hooks';
 import { getChainIcon } from '@/utils';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { QueryParams } from '@/lib/constants';
 import { retainOnNavigate, useAppSearchParams } from '@/lib/navigation';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
+import { Skeleton } from '@/components/ui/skeleton';
 import { IllustrationStaked } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
@@ -26,6 +27,12 @@ import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
 import { partitionByGeoAvailability } from '../helpers/geoAvailability';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
+import {
+  formatCirculation,
+  formatCirculationCoarse,
+  protocolStartYear,
+  yearsOperating
+} from '../helpers/protocolStats';
 import { useEarnTableState } from '../hooks/useEarnTableState';
 import { EarnFeaturedCards } from './EarnFeaturedCards';
 
@@ -117,6 +124,21 @@ export function EarnPage() {
         : partitionByGeoAvailability(rows, isModuleEnabled),
     [rows, isGeoLoading, isModuleEnabled]
   );
+
+  // Hero stat: total USDS + DAI outstanding, the same BA Labs series the
+  // portfolio totals chart and UsdsTotalSupplyCard read (APP-432 item 3). One
+  // row is all the hero needs — the endpoint returns newest-first.
+  const { data: usdsDaiData, isLoading: circulationIsLoading } = useUsdsDaiData({ limit: 1 });
+  // The fetch helper swallows failures into an empty array, so "loaded but
+  // absent" is the error state too: drop the stat rather than show a zero.
+  const parsedTotal = parseFloat(usdsDaiData?.[0]?.total ?? '');
+  const circulation = Number.isFinite(parsedTotal) ? parsedTotal : undefined;
+
+  // Named so the extracted message ids read "{amount} in circulation" rather
+  // than a positional "{0}".
+  const amount = circulation !== undefined ? formatCirculation(circulation) : undefined;
+  const coarseAmount = circulation !== undefined ? formatCirculationCoarse(circulation) : undefined;
+  const years = useMemo(() => String(yearsOperating()), []);
 
   // Slug ↔ chain mapping for the network filter (same normalized names the
   // `network` query param uses).
@@ -225,29 +247,45 @@ export function EarnPage() {
       className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:gap-5 md:py-10"
       data-testid="earn-opportunities"
     >
-      {/* Patterns/Headers, Earn hero type 5031:52345. The badge stats are
-          static marketing copy, straight from the DS mock (same call as the
-          Convert hero's "$0.00 Fees paid") — revisit if a live-stats source
-          gets wired up. */}
+      {/* Patterns/Headers, Earn hero type 5031:52345. */}
       <PageHeaderHero
         className="py-8 md:py-10"
         badges={
           <>
+            {/* Pill-shaped placeholder at the badge's own height (28px, 32px
+                from md) so the hero doesn't reflow when the stat lands. Width
+                is the settled badge's (~160px; it drifts a few px with the
+                figure's digit count) rounded to its sibling's, so the pair
+                reads as balanced while loading. */}
+            {circulationIsLoading ? (
+              <Skeleton className="h-7 w-[164px] rounded-full md:h-8" />
+            ) : amount !== undefined ? (
+              <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
+                <Trans>{amount} in circulation</Trans>
+              </HeaderBadge>
+            ) : null}
             <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
-              <Trans>$11.02B in circulation</Trans>
-            </HeaderBadge>
-            <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
-              <Trans>Operating for 7 years</Trans>
+              <Trans>Operating for {years} years</Trans>
             </HeaderBadge>
           </>
         }
         title={<Trans>Only the best ways to put your stablecoins to work</Trans>}
         subtitleClassName="max-w-[271px] md:max-w-[513px]"
+        // Three standalone sentences, so each is its own translation unit — the
+        // middle one carries the live figure and can drop out entirely.
         subtitle={
-          <Trans>
-            Sky Protocol is where stablecoins go to work — and where they&apos;ve been going since 2017. $11B
-            in circulation. Multiple strategies, one place.
-          </Trans>
+          <>
+            <Trans>
+              Sky Protocol is where stablecoins go to work — and where they&apos;ve been going since{' '}
+              {protocolStartYear}.
+            </Trans>{' '}
+            {circulationIsLoading ? (
+              <Skeleton className="inline-block h-3 w-16 rounded-full align-[-1px]" />
+            ) : coarseAmount !== undefined ? (
+              <Trans>{coarseAmount} in circulation.</Trans>
+            ) : null}{' '}
+            <Trans>Multiple strategies, one place.</Trans>
+          </>
         }
       />
       {/* Restricted products are never featured: their Earn CTA would land on a

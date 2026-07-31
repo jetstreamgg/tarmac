@@ -51,7 +51,7 @@ const stakeSelection = (index: bigint, contracts: string[]): ClaimableReward[] =
   contracts.map(contract => ({
     id: `${index}:${contract.toLowerCase()}`,
     source: 'stake',
-    sourceLabel: 'Staking',
+    tokenName: 'Sky token',
     tokenSymbol: 'SKY',
     icon: null,
     formattedAmount: '',
@@ -83,7 +83,7 @@ describe('stakeAdapter', () => {
       expect(result.current.rewards[0]).toMatchObject({
         id: `0:${SKY_REWARD.toLowerCase()}`,
         source: 'stake',
-        sourceLabel: 'Staking',
+        tokenName: 'Sky token',
         tokenSymbol: 'SKY',
         chainId: 1
       });
@@ -142,7 +142,7 @@ describe('stakeAdapter', () => {
         {
           id: '0xmerkltoken',
           source: 'merkl',
-          sourceLabel: 'Merkl',
+          tokenName: 'Morpho token',
           tokenSymbol: 'MORPHO',
           icon: null,
           formattedAmount: '1',
