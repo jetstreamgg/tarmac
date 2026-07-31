@@ -80,6 +80,7 @@ export function VaultPositionCard({
         vaultName={vaultName}
         provider={provider}
         netRate={netRate}
+        rateData={marketData?.rate}
         onSupply={() => openSupply(modalArgs)}
       />
     );

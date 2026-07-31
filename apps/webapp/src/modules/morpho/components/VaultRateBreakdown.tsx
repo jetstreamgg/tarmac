@@ -1,31 +1,59 @@
 import { ReactNode } from 'react';
 import { AudioLines } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { cn } from '@/lib/cn';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { StarsFilled } from '@/modules/icons';
 import type { MorphoVaultRateData } from '@/hooks';
 
 /**
- * The Morpho "Current Rate" figure, tagged with the DS stars mark and backed
- * by the rate-breakdown tooltip (Figma 1030:60841, APP-443 item 14): the net
- * rate over a hairline, then the native rate and one row per reward
- * incentive. Fees stay out of it — the comp only breaks the rate into what
- * adds up to it.
- *
- * A vault with no incentives has nothing to break down (net == native), so it
- * renders the bare figure with neither mark nor tooltip.
+ * Whether a vault's rate is boosted by reward incentives — i.e. whether there
+ * is anything to mark and to break down. A vault without them has net ==
+ * native, so every surface renders the bare figure.
  */
-export function VaultRateBreakdown({ rate, value }: { rate?: MorphoVaultRateData; value: string }) {
-  const rewards = rate?.rewards ?? [];
-  if (!rate || rewards.length === 0) return <>{value}</>;
+export function hasRateIncentives(rate?: MorphoVaultRateData): rate is MorphoVaultRateData {
+  return !!rate && rate.rewards.length > 0;
+}
+
+/**
+ * The DS stars mark that tags an incentive-boosted rate (Icons/Custom/
+ * stars-filled). 12px wherever the comps draw it — beside the supply card's
+ * Label 3 figure (859:37947) and inside the breakdown rows.
+ */
+export function VaultRateMark({ className }: { className?: string }) {
+  return <StarsFilled className={cn('text-statusInfoSolid size-3 shrink-0', className)} aria-hidden />;
+}
+
+/**
+ * Wraps whatever displays a Morpho net rate in the rate-breakdown tooltip
+ * (Figma 1030:60841, APP-443 item 14): the net rate over a hairline, then the
+ * native rate and one row per reward incentive. Fees stay out of it — the comp
+ * only breaks the rate into what adds up to it.
+ *
+ * Every surface that shows the net rate on a vault product page wears this —
+ * the supply card stat, the chart headline and the Details row — so the mark
+ * and its explanation never appear on one and not the others.
+ */
+export function VaultRateTooltip({
+  rate,
+  className,
+  children
+}: {
+  rate?: MorphoVaultRateData;
+  className?: string;
+  children: ReactNode;
+}) {
+  if (!hasRateIncentives(rate)) return <>{children}</>;
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex cursor-default items-center gap-1.5" data-testid="vault-rate-breakdown">
-          {value}
-          <StarsFilled className="text-statusInfoSolid size-3 shrink-0" aria-hidden />
+        <span
+          className={cn('inline-flex cursor-default items-center gap-1.5', className)}
+          data-testid="vault-rate-breakdown"
+        >
+          {children}
         </span>
       </TooltipTrigger>
       <TooltipPortal>
@@ -37,7 +65,7 @@ export function VaultRateBreakdown({ rate, value }: { rate?: MorphoVaultRateData
           align="end"
         >
           <Row
-            icon={<StarsFilled className="text-statusInfoSolid size-3 shrink-0" aria-hidden />}
+            icon={<VaultRateMark />}
             label={<Trans>Net Rate</Trans>}
             value={rate.formattedNetRate}
             emphasis
@@ -49,7 +77,7 @@ export function VaultRateBreakdown({ rate, value }: { rate?: MorphoVaultRateData
               label={<Trans>Native Rate</Trans>}
               value={rate.formattedRate}
             />
-            {rewards.map(reward => (
+            {rate.rewards.map(reward => (
               <Row
                 key={reward.symbol}
                 icon={
@@ -68,6 +96,19 @@ export function VaultRateBreakdown({ rate, value }: { rate?: MorphoVaultRateData
         </TooltipContent>
       </TooltipPortal>
     </Tooltip>
+  );
+}
+
+/**
+ * The Details-row flavour: the figure followed by the mark, both inside the
+ * tooltip trigger.
+ */
+export function VaultRateBreakdown({ rate, value }: { rate?: MorphoVaultRateData; value: string }) {
+  return (
+    <VaultRateTooltip rate={rate}>
+      {value}
+      <VaultRateMark />
+    </VaultRateTooltip>
   );
 }
 

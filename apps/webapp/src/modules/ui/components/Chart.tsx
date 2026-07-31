@@ -319,6 +319,9 @@ interface ChartProps {
   variant?: 'default' | 'detail';
   /** detail variant: small label above the value (e.g. "Current Rate"). */
   label?: React.ReactNode;
+  /** detail variant: mark rendered after the headline figure (e.g. the Morpho
+   *  vault chart's stars mark, which also carries the rate-breakdown tooltip). */
+  valueSuffix?: React.ReactNode;
   /** detail variant: metric toggle options (e.g. Rate | TVL). */
   metrics?: { value: string; label: React.ReactNode }[];
   activeMetric?: string;
@@ -437,6 +440,7 @@ function DetailHeaderValue({
   prefix,
   isLoading,
   icons,
+  valueSuffix,
   mobile = false
 }: {
   data: Data[];
@@ -448,6 +452,9 @@ function DetailHeaderValue({
   /** Optional mark(s) leading the figure — the Portfolio statistics comp
    *  (1036:189291) puts the series' token logo here. */
   icons?: React.ReactNode;
+  /** Optional mark trailing the figure — the Morpho vault chart tags its rate
+   *  with the DS stars mark the same way the card and Details row do. */
+  valueSuffix?: React.ReactNode;
   /** M6.3 mobile figure: Heading 5 (24/26, Circular Medium). */
   mobile?: boolean;
 }) {
@@ -474,11 +481,12 @@ function DetailHeaderValue({
       {formatted}
     </span>
   );
-  if (!icons) return figure;
+  if (!icons && !valueSuffix) return figure;
   return (
     <span className="flex items-center gap-2">
       {icons}
       {figure}
+      {valueSuffix}
     </span>
   );
 }
@@ -619,6 +627,7 @@ export function Chart({
   tokenSymbols,
   variant = 'default',
   label,
+  valueSuffix,
   metrics,
   activeMetric,
   onMetricChange,
@@ -706,6 +715,7 @@ export function Chart({
                   prefix={prefix}
                   isLoading={isLoading}
                   icons={icons}
+                  valueSuffix={valueSuffix}
                 />
               </div>
             </div>
@@ -725,6 +735,7 @@ export function Chart({
                   prefix={prefix}
                   isLoading={isLoading}
                   icons={icons}
+                  valueSuffix={valueSuffix}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
