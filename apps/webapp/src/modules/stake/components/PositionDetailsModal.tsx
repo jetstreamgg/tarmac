@@ -3,18 +3,16 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import {
   ArrowUpFromLine,
-  ArrowUpRight,
+  BanknoteArrowDown,
+  BanknoteArrowUp,
   ChevronRight,
-  CreditCard,
+  Coins,
+  DoorClosed,
   ExternalLink,
   Gem,
-  HandCoins,
   Info,
-  RefreshCcw,
-  TrendingUp,
   UserRound,
-  X,
-  XCircle
+  X
 } from 'lucide-react';
 import { BP, MD_MEDIA_QUERY, RiskLevel, useBreakpointIndex, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, WAD_PRECISION } from '@/utils';
@@ -23,6 +21,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TrendingUpGradient } from '@/modules/icons';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { RiskScaleMeter } from '@/components/product/RiskMeter';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
@@ -44,28 +43,34 @@ const RISK_PILL_COLOR: Record<RiskLevel, string> = {
   [RiskLevel.LIQUIDATION]: 'bg-error/15 text-error'
 };
 
-// Phone-tier stat cell (comp 1292:63278): Body 6 label over a Label 5 Circular
-// value; the desktop text-sm pair returns at md.
+// Stat cell (comps 1036:214176 desktop / 1292:63278 phone — same recipe at
+// every tier): Body 6 label over a Label 5 Circular value.
 function StatCell({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1 md:min-w-[auto] md:flex-none">
-      <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px] md:text-sm md:leading-normal">
-        {label}
-      </span>
-      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-normal md:tracking-normal">
+      <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
+      <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
         {children}
       </span>
     </div>
   );
 }
 
-// Mobile-only pair scaffolding: at the phone tier the stat grids read as rows
-// of two equal columns split by a hairline; `md:contents` dissolves the row so
-// the cells land back in the desktop grid untouched.
+// Pair scaffolding: at the phone tier the stat grids read as rows of two equal
+// columns split by a hairline; `md:contents` dissolves the row so the cells
+// land back in the desktop grid untouched. The desktop comp draws its own
+// hairlines between columns, so the pair divider stays visible at md except
+// where the pair seam doesn't match a desktop column seam (passed `md:hidden`),
+// and `StatDesktopDivider` fills the desktop-only seams.
 const StatPair = ({ children }: { children: ReactNode }) => (
   <div className="flex items-center gap-6 md:contents">{children}</div>
 );
-const StatPairDivider = () => <span className="bg-borderPrimary h-8 w-px shrink-0 md:hidden" aria-hidden />;
+const StatPairDivider = ({ className }: { className?: string }) => (
+  <span className={cn('bg-borderPrimary h-8 w-px shrink-0 md:self-center', className)} aria-hidden />
+);
+const StatDesktopDivider = () => (
+  <span className="bg-borderPrimary hidden h-8 w-px shrink-0 self-center md:block" aria-hidden />
+);
 
 // Info glyphs the mobile comp adds next to two bottom-strip labels; purely
 // decorative (StakeTakeoverBorrowCard precedent), absent from the desktop comp.
@@ -97,22 +102,17 @@ function MenuRow({
       data-testid={dataTestId}
       className={cn(
         'group flex w-full items-center justify-between gap-3 text-left disabled:cursor-not-allowed disabled:opacity-40',
-        variant === 'panel' ? 'border-textSecondary/10 border-b py-4' : 'h-14'
+        variant === 'panel' ? 'border-borderPrimary border-b py-8' : 'h-14'
       )}
     >
-      <span
-        className={cn(
-          'text-text flex items-center gap-3 text-sm font-medium',
-          variant === 'sheet' && 'font-circle leading-4 tracking-[-0.28px]'
-        )}
-      >
-        <span className="text-textSecondary flex h-5 w-5 items-center justify-center" aria-hidden>
+      <span className="text-text font-circle flex items-center gap-3 text-sm leading-4 font-medium tracking-[-0.28px]">
+        <span className="text-textSecondary flex h-4 w-4 items-center justify-center" aria-hidden>
           {icon}
         </span>
         {label}
         {chip}
       </span>
-      <ChevronRight className="text-textSecondary h-4 w-4" aria-hidden />
+      <ChevronRight className="text-fgQuaternary h-4 w-4" aria-hidden />
     </button>
   );
 }
@@ -177,7 +177,7 @@ function ManageMenuRows({
             draws it enabled (B-Q1/M4, flagged — C16). */}
         <MenuRow
           {...rowProps}
-          icon={<RefreshCcw className="h-4 w-4" />}
+          icon={<Coins className="h-4 w-4" />}
           label={<Trans>Change reward</Trans>}
           disabled
           dataTestId={`stake-manage-menu-change-reward${idSuffix}`}
@@ -202,14 +202,14 @@ function ManageMenuRows({
             />
             <MenuRow
               {...rowProps}
-              icon={<CreditCard className="h-4 w-4" />}
+              icon={<BanknoteArrowDown className="h-4 w-4" />}
               label={<Trans>Borrow more USDS</Trans>}
               disabled
               dataTestId={`stake-manage-menu-borrow${idSuffix}`}
             />
             <MenuRow
               {...rowProps}
-              icon={<HandCoins className="h-4 w-4" />}
+              icon={<BanknoteArrowUp className="h-4 w-4" />}
               label={<Trans>Repay debt</Trans>}
               disabled
               dataTestId={`stake-manage-menu-repay${idSuffix}`}
@@ -226,7 +226,7 @@ function ManageMenuRows({
         {showInactiveBorrowBlock && (
           <MenuRow
             {...rowProps}
-            icon={<XCircle className="h-4 w-4" />}
+            icon={<DoorClosed className="h-4 w-4" />}
             label={<Trans>Close position</Trans>}
             disabled
             dataTestId={`stake-manage-menu-close-position${idSuffix}`}
@@ -250,7 +250,7 @@ function ManageMenuRows({
       {hasDebt && (
         <MenuRow
           {...rowProps}
-          icon={<CreditCard className="h-4 w-4" />}
+          icon={<BanknoteArrowDown className="h-4 w-4" />}
           label={<Trans>Borrow more USDS</Trans>}
           onClick={() => onAction('borrow')}
           dataTestId={`stake-manage-menu-borrow${idSuffix}`}
@@ -259,7 +259,7 @@ function ManageMenuRows({
       {hasDebt && (
         <MenuRow
           {...rowProps}
-          icon={<HandCoins className="h-4 w-4" />}
+          icon={<BanknoteArrowUp className="h-4 w-4" />}
           label={<Trans>Repay debt</Trans>}
           onClick={() => onAction('repay')}
           dataTestId={`stake-manage-menu-repay${idSuffix}`}
@@ -275,7 +275,7 @@ function ManageMenuRows({
       {/* Undesigned flows (B-Q1) — disabled, flagged on APP-312 (M4). */}
       <MenuRow
         {...rowProps}
-        icon={<RefreshCcw className="h-4 w-4" />}
+        icon={<Coins className="h-4 w-4" />}
         label={<Trans>Change reward</Trans>}
         disabled
         dataTestId={`stake-manage-menu-change-reward${idSuffix}`}
@@ -290,7 +290,7 @@ function ManageMenuRows({
       {hasDebt && (
         <MenuRow
           {...rowProps}
-          icon={<XCircle className="h-4 w-4" />}
+          icon={<DoorClosed className="h-4 w-4" />}
           label={<Trans>Close position</Trans>}
           disabled
           dataTestId={`stake-manage-menu-close-position${idSuffix}`}
@@ -300,8 +300,8 @@ function ManageMenuRows({
   );
 }
 
-// The menu's primary CTAs, shared between the desktop panel (xl) and the
-// mobile manage sheet (l, comp 1222:16239).
+// The menu's primary CTAs, shared between the desktop panel (side-by-side,
+// comp 1036:214314) and the mobile manage sheet (stacked, comp 1222:16239).
 function ManageCtas({
   loading,
   isInactive,
@@ -321,7 +321,7 @@ function ManageCtas({
   size?: 'xl' | 'l';
   idSuffix?: string;
 }) {
-  if (loading) return <Skeleton className="h-14 w-full rounded-full" />;
+  if (loading) return <Skeleton className="h-12 w-full rounded-full" />;
   if (isInactive) {
     return (
       <Button
@@ -362,10 +362,12 @@ function ManageCtas({
 }
 
 /**
- * Position-details modal (F5, hi-fi 486:32508 / UX 1050:20860 + 1050:21185;
- * F6 inactive variants 1194:20561 + 1194:21273): two panels — left is the
+ * Position-details modal (redesign comps 1036:214176 debt / 1036:214314 no
+ * debt; flows from F5 hi-fi 486:32508 / UX 1050:20860 + 1050:21185, F6
+ * inactive variants 1194:20561 + 1194:21273): two panels — left is the
  * read-only position detail (heroes, stat grid, liquidation-zone indicator +
- * warning, bottom stat strip), right is the contextual "Manage position" menu.
+ * warning, bottom stat strip), right is the contextual "Manage position" menu
+ * on the darker subsection panel.
  *
  * Phone tier (comps 1292:63278 details / 1222:15571 viewport / 1222:16239
  * sheet): the card fills the viewport minus a 12px inset, the menu panel is
@@ -435,8 +437,12 @@ export function PositionDetailsModal({
   const claimDisabled = detail.claimableLoading || detail.claimableTokenAmount === 0n;
   const claimChip =
     detail.claimableTokenAmount > 0n ? (
-      <span className="bg-surfaceAlt text-text flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
-        {formatBigInt(detail.claimableTokenAmount)} {detail.claimableSymbols[0]}
+      // Badges/Special (comp 1036:214176): gradient pill, amount + 12px token
+      // icon, no symbol text. Gradient hexes are raw in Figma (no variable).
+      // Compact keeps the pill bounded on huge balances (123.46M, not
+      // 123,456,789); maxDecimals caps the sub-10 four-decimal default.
+      <span className="text-text font-circle flex h-5 items-center gap-1 rounded-full bg-gradient-to-r from-[#46CCFC]/20 to-[#EB65CB]/20 px-1.5 text-xs leading-[14px] font-medium tracking-[-0.24px]">
+        {formatBigInt(detail.claimableTokenAmount, { compact: true, maxDecimals: 2 })}
         <TokenIcon
           token={{ symbol: detail.claimableSymbols[0] }}
           width={12}
@@ -471,7 +477,11 @@ export function PositionDetailsModal({
         <DialogContent
           aria-describedby={undefined}
           data-testid="stake-position-details"
-          className="bg-containerDark flex h-[calc(100dvh-24px)] max-h-none w-[calc(100vw-24px)] flex-col gap-0 overflow-y-auto rounded-[20px] p-0 sm:min-w-0 md:h-auto md:max-h-[90vh] md:w-full md:rounded-[24px] lg:max-w-[1042px] lg:flex-row"
+          // sm:p-0 kills the shared DialogContent's sm:px-10/sm:py-8 — the
+          // comp's subsection panel runs full-bleed to the card edges
+          // (1036:214369: x=720 y=0 h=card), so the card itself carries no
+          // padding at any tier; each column brings its own p-8.
+          className="bg-containerDark md:bg-bgSecondary flex h-[calc(100dvh-24px)] max-h-none w-[calc(100vw-24px)] flex-col gap-0 overflow-y-auto rounded-[20px] p-0 sm:min-w-0 sm:p-0 md:h-auto md:max-h-[90vh] md:w-full md:rounded-[28px] lg:max-w-[1042px] lg:flex-row"
           onOpenAutoFocus={event => event.preventDefault()}
           // The manage sheet portals outside this content, so its pointer
           // interactions read as backdrop dismissals here (some only landing
@@ -491,9 +501,13 @@ export function PositionDetailsModal({
           }}
         >
           {/* Left panel — read-only position detail */}
-          <div className="flex flex-1 flex-col gap-6 p-5 md:p-8">
+          {/* justify-between (md): when the menu panel drives the card height —
+              the no-debt comp 1036:214314 — the spare height distributes over
+              the block gaps (title top, hero mid, stats bottom); a full column
+              (debt comp) sits at the 40px minimum rhythm unchanged. */}
+          <div className="flex flex-1 flex-col gap-6 p-5 md:justify-between md:gap-10 md:p-8">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-text font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:font-sans md:text-lg md:leading-normal md:tracking-normal">
+              <DialogTitle className="text-text font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
                 <Trans>Position {urnIndex + 1}</Trans>
                 {isInactive && (
                   <span
@@ -515,11 +529,11 @@ export function PositionDetailsModal({
               </Button>
             </div>
 
-            <div className="mt-2 flex flex-col gap-2 md:mt-0 md:gap-1.5">
-              <span className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
+            <div className="mt-2 flex flex-col gap-2 md:mt-0">
+              <span className="text-textSecondary text-xs leading-[18px]">
                 <Trans>Staked amount</Trans>
               </span>
-              <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:font-sans md:text-4xl md:leading-normal md:tracking-tight">
+              <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]">
                 <TokenIcon
                   token={{ symbol: 'SKY' }}
                   width={32}
@@ -531,13 +545,15 @@ export function PositionDetailsModal({
                 ) : (
                   formatStakeAmount(vault?.collateralAmount ?? 0n)
                 )}
-                <span className="text-textSecondary text-xs leading-[18px] font-normal tracking-normal md:text-sm md:leading-normal md:tracking-tight">
+                <span className="text-textSecondary text-xs leading-[18px] font-normal tracking-normal md:-ml-1">
                   {detail.stakedUsd !== null ? `(~${formatUsd(detail.stakedUsd)})` : ''}
                 </span>
               </span>
             </div>
 
-            <div className="md:border-textSecondary/10 flex flex-col gap-4 md:grid md:grid-cols-3 md:gap-x-5 md:gap-y-4 md:border-y md:py-4">
+            {/* 2×3 desktop grid with vertical hairline seams between columns
+                (comp 1036:214176: 120px, 120px, then the hugging rest). */}
+            <div className="flex flex-col gap-4 md:grid md:grid-cols-[120px_1px_120px_1px_minmax(0,1fr)] md:gap-x-8 md:gap-y-6">
               <StatPair>
                 <StatCell label={<Trans>Rewards rate</Trans>}>
                   {detail.rewardsRate !== null ? formatDecimalPercentage(detail.rewardsRate) : NO_VALUE}
@@ -548,8 +564,8 @@ export function PositionDetailsModal({
                     <>
                       <TokenIcon
                         token={{ symbol: detail.rewardSymbol }}
-                        width={16}
-                        className="h-3 w-3 md:h-4 md:w-4"
+                        width={12}
+                        className="h-3 w-3"
                         showChainIcon={false}
                       />
                       {detail.rewardSymbol}
@@ -558,6 +574,7 @@ export function PositionDetailsModal({
                     NO_VALUE
                   )}
                 </StatCell>
+                <StatDesktopDivider />
               </StatPair>
               <StatPair>
                 <StatCell label={<Trans>Delegating to</Trans>}>
@@ -569,17 +586,17 @@ export function PositionDetailsModal({
                       data-testid="stake-position-delegate-link"
                       className="hover:text-text flex items-center gap-1"
                     >
-                      <span className="flex md:hidden" aria-hidden>
+                      <span className="flex" aria-hidden>
                         <CustomAvatar address={detail.voteDelegate!.toLowerCase()} size={12} />
                       </span>
                       {shortenAddress(detail.voteDelegate!)}
-                      <ExternalLink className="h-3 w-3 md:h-3.5 md:w-3.5" aria-hidden />
+                      <ExternalLink className="h-3 w-3" aria-hidden />
                     </a>
                   ) : (
                     NO_VALUE
                   )}
                 </StatCell>
-                <StatPairDivider />
+                <StatPairDivider className="md:hidden" />
                 <StatCell label={<Trans>Claimable rewards</Trans>}>
                   {detail.claimableLoading ? (
                     <Skeleton className="h-4 w-14" />
@@ -590,14 +607,15 @@ export function PositionDetailsModal({
                         <TokenIcon
                           key={symbol}
                           token={{ symbol }}
-                          width={16}
-                          className="h-3 w-3 md:h-4 md:w-4"
+                          width={12}
+                          className="h-3 w-3"
                           showChainIcon={false}
                         />
                       ))}
                     </>
                   )}
                 </StatCell>
+                <StatDesktopDivider />
               </StatPair>
               <StatPair>
                 <StatCell label={<Trans>Est. annual rewards</Trans>}>
@@ -605,10 +623,19 @@ export function PositionDetailsModal({
                     // Nothing staked accrues nothing — the frame shows a flat $0.00.
                     formatUsd(0)
                   ) : detail.estAnnualRewardsSky !== null && detail.skyPriceUsd !== null ? (
-                    <span className="text-bullish flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3 md:hidden" aria-hidden />
-                      <ArrowUpRight className="hidden h-3.5 w-3.5 md:inline" aria-hidden />
-                      {`+${formatUsd((Number(detail.estAnnualRewardsSky / 10n ** 12n) / 1e6) * detail.skyPriceUsd)}`}
+                    <span className="flex items-center gap-1">
+                      <TrendingUpGradient boxSize={12} className="h-3 w-3 shrink-0" aria-hidden />
+                      {formatUsd(
+                        (Number(detail.estAnnualRewardsSky / 10n ** 12n) / 1e6) * detail.skyPriceUsd
+                      )}
+                      {detail.rewardSymbol && (
+                        <TokenIcon
+                          token={{ symbol: detail.rewardSymbol }}
+                          width={12}
+                          className="h-3 w-3"
+                          showChainIcon={false}
+                        />
+                      )}
                     </span>
                   ) : (
                     NO_VALUE
@@ -621,10 +648,17 @@ export function PositionDetailsModal({
                     // the figure like the claimable cell above does.
                     <Skeleton className="h-4 w-14" />
                   ) : (
-                    <span className="text-bullish flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3 md:hidden" aria-hidden />
-                      <ArrowUpRight className="hidden h-3.5 w-3.5 md:inline" aria-hidden />
-                      {`+${formatUsd(detail.rewardsEarnedUsd)}`}
+                    <span className="flex items-center gap-1">
+                      <TrendingUpGradient boxSize={12} className="h-3 w-3 shrink-0" aria-hidden />
+                      {formatUsd(detail.rewardsEarnedUsd)}
+                      {detail.rewardSymbol && (
+                        <TokenIcon
+                          token={{ symbol: detail.rewardSymbol }}
+                          width={12}
+                          className="h-3 w-3"
+                          showChainIcon={false}
+                        />
+                      )}
                     </span>
                   )}
                 </StatCell>
@@ -633,12 +667,12 @@ export function PositionDetailsModal({
 
             {showInactiveBorrowBlock && (
               <>
-                <div className="bg-borderPrimary my-2 h-px w-full md:hidden" aria-hidden />
-                <div className="flex flex-col gap-2 md:gap-1.5">
-                  <span className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
+                <div className="bg-borderPrimary my-2 h-px w-full md:my-0" aria-hidden />
+                <div className="flex flex-col gap-2">
+                  <span className="text-textSecondary text-xs leading-[18px]">
                     <Trans>Borrowed amount</Trans>
                   </span>
-                  <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:font-sans md:text-4xl md:leading-normal md:tracking-tight">
+                  <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]">
                     <TokenIcon
                       token={{ symbol: 'USDS' }}
                       width={32}
@@ -650,7 +684,7 @@ export function PositionDetailsModal({
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <span className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
+                  <span className="text-textSecondary text-xs leading-[18px]">
                     <Trans>Liquidation risk</Trans>
                   </span>
                   <span
@@ -667,7 +701,7 @@ export function PositionDetailsModal({
 
                 <p
                   data-testid="stake-position-closed-copy"
-                  className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal"
+                  className="text-textSecondary text-xs leading-[18px]"
                 >
                   <Trans>
                     Your position has been closed, SKY has been withdrawn, and the debt has been repaid. To
@@ -675,13 +709,14 @@ export function PositionDetailsModal({
                   </Trans>
                 </p>
 
-                <div className="md:border-textSecondary/10 flex flex-col gap-4 md:grid md:grid-cols-3 md:gap-x-5 md:gap-y-4 md:border-t md:pt-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-10">
                   <StatPair>
                     <StatCell label={<Trans>Borrow rate</Trans>}>
                       {detail.stabilityFee !== undefined ? formatPercent(detail.stabilityFee) : NO_VALUE}
                     </StatCell>
                     <StatPairDivider />
                     <StatCell label={<Trans>Liquidation price</Trans>}>{NO_VALUE}</StatCell>
+                    <StatDesktopDivider />
                   </StatPair>
                   <StatPair>
                     <StatCell
@@ -703,12 +738,12 @@ export function PositionDetailsModal({
 
             {hasDebt && (
               <>
-                <div className="bg-borderPrimary my-2 h-px w-full md:hidden" aria-hidden />
-                <div className="flex flex-col gap-2 md:gap-1.5">
-                  <span className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
+                <div className="bg-borderPrimary my-2 h-px w-full md:my-0" aria-hidden />
+                <div className="flex flex-col gap-2">
+                  <span className="text-textSecondary text-xs leading-[18px]">
                     <Trans>Borrowed amount</Trans>
                   </span>
-                  <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:font-sans md:text-4xl md:leading-normal md:tracking-tight">
+                  <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]">
                     <TokenIcon
                       token={{ symbol: 'USDS' }}
                       width={32}
@@ -716,36 +751,42 @@ export function PositionDetailsModal({
                       showChainIcon={false}
                     />
                     {formatStakeAmount(vault?.debtValue ?? 0n)}
-                    <span className="text-textSecondary text-xs leading-[18px] font-normal tracking-normal md:text-sm md:leading-normal md:tracking-tight">
+                    <span className="text-textSecondary text-xs leading-[18px] font-normal tracking-normal md:-ml-1">
                       {`(${formatUsd(detail.borrowedUsd)})`}
                     </span>
                   </span>
                 </div>
 
-                {/* Real proximity fills the bar; the vault's risk level tints it
-                    (thresholds 0/25/40/80 aren't the bar's even quarters). */}
-                <div data-testid="stake-position-risk-indicator">
-                  <RiskScaleMeter
-                    value={(vault?.liquidationProximityPercentage ?? 0) / 100}
-                    level={vault?.riskLevel}
-                  />
+                {/* Meter + warning read as one block: 20px apart at md (comp
+                    1036:214176), tighter than the 40px section rhythm. */}
+                <div className="flex flex-col gap-6 md:gap-5">
+                  {/* Real proximity fills the bar; the vault's risk level tints it
+                      (thresholds 0/25/40/80 aren't the bar's even quarters). */}
+                  <div data-testid="stake-position-risk-indicator">
+                    <RiskScaleMeter
+                      value={(vault?.liquidationProximityPercentage ?? 0) / 100}
+                      level={vault?.riskLevel}
+                    />
+                  </div>
+
+                  <p
+                    data-testid="stake-position-warning"
+                    className="text-textSecondary text-xs leading-[18px]"
+                  >
+                    <Trans>
+                      If the price of the collateral will go down{' '}
+                      <span className="text-text font-medium">
+                        {dropPercent !== null ? `${dropPercent}%` : NO_VALUE} ({formattedLiqPrice})
+                      </span>
+                      , you&apos;ll get liquidated. If you want to reduce these risks, add collateral or repay
+                      part of your loan.
+                    </Trans>
+                  </p>
                 </div>
 
-                <p
-                  data-testid="stake-position-warning"
-                  className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal"
-                >
-                  <Trans>
-                    If the price of the collateral will go down{' '}
-                    <span className="text-text font-medium">
-                      {dropPercent !== null ? `${dropPercent}%` : NO_VALUE} ({formattedLiqPrice})
-                    </span>
-                    , you&apos;ll get liquidated. If you want to reduce these risks, add collateral or repay
-                    part of your loan.
-                  </Trans>
-                </p>
-
-                <div className="md:border-textSecondary/10 flex flex-col gap-4 md:grid md:grid-cols-4 md:gap-x-5 md:gap-y-4 md:border-t md:pt-4">
+                {/* Bottom strip: hugging cells split by hairlines, no top border
+                    (comp 1036:214176). */}
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-10">
                   <StatPair>
                     <StatCell label={<Trans>Borrow rate</Trans>}>
                       {detail.stabilityFee !== undefined ? formatPercent(detail.stabilityFee) : NO_VALUE}
@@ -773,6 +814,7 @@ export function PositionDetailsModal({
                         NO_VALUE
                       )}
                     </StatCell>
+                    <StatDesktopDivider />
                   </StatPair>
                   <StatPair>
                     <StatCell label={<Trans>Liquidation price</Trans>}>{formattedLiqPrice}</StatCell>
@@ -797,16 +839,22 @@ export function PositionDetailsModal({
 
           {/* Right panel — contextual manage menu (desktop only; the phone tier
               reaches the same rows through the manage sheet below). */}
-          <div className="bg-surfaceAlt/30 hidden w-full flex-col justify-between gap-6 p-8 md:flex lg:w-[340px]">
+          <div className="bg-modalSubsection hidden w-full flex-col justify-between gap-6 p-8 md:flex lg:w-[322px]">
             <div className="flex flex-col">
-              <h3 className="text-text mb-2 text-lg font-medium">
+              <h3 className="text-text font-circle mb-8 text-lg leading-[22px] font-medium tracking-[-0.36px]">
                 <Trans>Manage position</Trans>
               </h3>
-              <ManageMenuRows {...menuRowsProps} variant="panel" />
+              {/* 80px row pitch: py-8 rows with half-padding end caps and no
+                  hairline after the last row (comp 1036:214176). */}
+              <div className="flex flex-col [&>button:first-child]:pt-4 [&>button:last-child]:border-b-0 [&>button:last-child]:pb-4">
+                <ManageMenuRows {...menuRowsProps} variant="panel" />
+              </div>
             </div>
 
-            <div className="flex flex-col gap-3">
-              <ManageCtas {...ctaProps} size="xl" />
+            {/* Side-by-side pair (comp 1036:214314) — equal columns, labels may
+                ellipsize rather than overflow the 322px panel. */}
+            <div className="flex gap-2 [&>button]:min-w-0 [&>button]:flex-1">
+              <ManageCtas {...ctaProps} size="l" />
             </div>
           </div>
 

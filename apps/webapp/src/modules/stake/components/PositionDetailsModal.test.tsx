@@ -194,10 +194,17 @@ describe('PositionDetailsModal', () => {
     const { onClaim } = renderModal();
 
     const row = screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement;
-    expect(row.textContent).toContain('10.9 SKY');
+    // Chip shows the bare amount + token icon (Badges/Special) — no symbol text.
+    expect(row.textContent).toContain('10.9');
+    expect(row.textContent).not.toContain('SKY');
     expect(row.disabled).toBe(false);
     fireEvent.click(row);
     expect(onClaim).toHaveBeenCalled();
+  });
+
+  it('compacts a huge claimable amount in the chip', () => {
+    renderModal({ claimableTokenAmount: parseUnits('123456789', 18) });
+    expect(screen.getByTestId('stake-manage-menu-claim').textContent).toContain('123.46M');
   });
 
   it('disables the claim row while nothing is claimable or the read is loading', () => {
@@ -260,7 +267,7 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
 
     const claimRow = screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement;
     expect(claimRow.disabled).toBe(false);
-    expect(claimRow.textContent).toContain('10.9 SKY');
+    expect(claimRow.textContent).toContain('10.9');
     fireEvent.click(claimRow);
     expect(onClaim).toHaveBeenCalled();
 
