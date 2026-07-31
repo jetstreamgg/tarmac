@@ -203,20 +203,23 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
     (sessionId, partial) => {
       if (sessionId !== activeSessionRef.current) return;
-      setActiveConfig(prev => {
-        if (!prev) return prev;
-        const { entry: entryPatch, ...rest } = partial;
-        const next = { ...prev, ...rest };
-        // Merge the entry partial so an in-modal body can flip confirmDisabled /
-        // refresh its rows WITHOUT re-pushing `content` (which would remount it).
-        // A patch only ever arrives after launch seeded `entry`, so the merge is
-        // a complete TransactionEntry.
-        if (entryPatch) {
-          next.entry = { ...(prev.entry ?? {}), ...entryPatch } as TransactionEntry;
-        }
-        configRef.current = next;
-        return next;
-      });
+      const prev = configRef.current;
+      if (!prev) return;
+      const { entry: entryPatch, ...rest } = partial;
+      const next = { ...prev, ...rest };
+      // Merge the entry partial so an in-modal body can flip confirmDisabled /
+      // refresh its rows WITHOUT re-pushing `content` (which would remount it).
+      // A patch only ever arrives after launch seeded `entry`, so the merge is
+      // a complete TransactionEntry.
+      if (entryPatch) {
+        next.entry = { ...(prev.entry ?? {}), ...entryPatch } as TransactionEntry;
+      }
+      // The ref is assigned synchronously (not inside the setState updater): a
+      // two-action entry pushes the clicked mode's steps/analytics and executes
+      // in the same click, and the engine's onMutate — which also fires
+      // synchronously — reads analytics off this ref.
+      configRef.current = next;
+      setActiveConfig(next);
     },
     []
   );
@@ -515,6 +518,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             onMinimize={minimize}
             title={activeConfig.title}
             transactionTitle={activeConfig.transactionTitle}
+            reviewTitle={activeConfig.reviewTitle}
             subtitles={activeConfig.subtitles}
             transactionContent={activeConfig.transactionContent}
             transactionScreenContent={activeConfig.transactionScreenContent}
@@ -522,6 +526,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             rightHeaderComponent={activeConfig.rightHeaderComponent}
             titleBadge={activeConfig.titleBadge}
             onConfirm={activeConfig.onConfirm}
+            onSecondaryConfirm={activeConfig.onSecondaryConfirm}
             onRetry={handleRetry}
             onBack={resetTransactionProgress}
             txStatus={txStatus}

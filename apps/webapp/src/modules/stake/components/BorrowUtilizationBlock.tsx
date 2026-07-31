@@ -19,7 +19,7 @@ function LegendRow({
   label,
   isLoading,
   error,
-  dotColor = 'bg-textSecondary/50',
+  dotColor = 'bg-fgSecondary/50',
   children
 }: {
   label: ReactNode;
@@ -28,15 +28,17 @@ function LegendRow({
   dotColor?: string;
   children: ReactNode;
 }) {
-  // Phone tier (comp 1222:17089): borderPrimary hairlines under BOTH rows,
-  // 12px token icon, Label 4 values; md restores the desktop legend.
+  // Hairlines under BOTH rows at every tier — the desktop comp closes the
+  // legend under "Available (USDS)" too, which is the border APP-432 item 18
+  // spotted missing (comp 1222:17089 for the phone geometry: 12px token icon,
+  // Label 4 values).
   return (
-    <div className="border-borderPrimary md:border-textSecondary/10 flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3 md:last:border-b-0">
-      <span className="text-textSecondary flex items-center gap-1.5 text-sm leading-[22px] md:gap-2 md:leading-normal">
+    <div className="border-borderPrimary flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3">
+      <span className="text-fgSecondary flex items-center gap-1.5 text-sm leading-[22px] md:gap-2 md:leading-normal">
         <span className={cn('h-1 w-1 shrink-0 rounded-full', dotColor)} aria-hidden />
         {label}
       </span>
-      <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px] md:gap-1.5 md:font-sans md:leading-normal md:tracking-normal">
+      <span className="text-fgPrimary font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px] md:gap-1.5 md:text-base md:leading-[18px] md:tracking-[-0.32px]">
         {isLoading ? (
           <Skeleton className="h-4 w-16" />
         ) : error ? (
@@ -68,16 +70,22 @@ export function BorrowUtilizationBlock() {
 
   return (
     <div data-testid="stake-borrow-utilization" className="flex flex-col">
-      <h3 className="text-text font-circle mb-4 flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:gap-1.5 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
+      <h3 className="text-fgPrimary font-circle mb-4 flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:gap-1.5 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
         <Trans>Borrow Utilization</Trans>
-        <Info className="text-textSecondary h-3 w-3 md:h-4 md:w-4" aria-hidden />
+        <Info className="text-fgSecondary h-3 w-3 md:h-4 md:w-4" aria-hidden />
       </h3>
 
-      <div className="text-text font-circle mb-5 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:mb-3 md:font-sans md:leading-normal md:font-semibold md:tracking-normal">
+      <div className="text-fgPrimary font-circle mb-5 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:mb-3 md:font-sans md:leading-normal md:font-semibold md:tracking-normal">
         {isLoading ? <Skeleton className="h-8 w-24" /> : error ? NO_VALUE : `${utilization.toFixed(1)}%`}
       </div>
 
-      <Progress value={isLoading ? 0 : Math.min(100, utilization)} className="mb-5 h-1.5 md:mb-4 md:h-2" />
+      {/* Flat fg-brand-primary fill per 486:31955 — the DS Progress default is
+          the slider brand gradient, which this comp does not use. */}
+      <Progress
+        value={isLoading ? 0 : Math.min(100, utilization)}
+        indicatorClassName={UTILIZED_COLOR}
+        className="mb-5 h-1.5 md:mb-4 md:h-2"
+      />
 
       <div className="flex flex-col md:gap-3">
         <LegendRow

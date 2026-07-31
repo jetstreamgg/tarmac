@@ -1,34 +1,31 @@
-import { ReactNode, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
+import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
   useVaultMarketData,
   useErc4626VaultData,
   useMorphoVaultRewards,
   getTokenDecimals,
-  type Token
+  type Token,
+  type VaultProvider
 } from '@/hooks';
 import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { PositionHero } from '@/components/product/PositionHero';
-import { GainValue } from '@/components/ui/GainValue';
+import {
+  ProductActions,
+  ProductPositionCard,
+  ProductStat,
+  ProductStatPair
+} from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useClaimRewardsModal } from '@/modules/claim';
 import { useVaultModal } from '../hooks/useVaultModal';
 import { VaultSupplyCard } from './VaultSupplyCard';
 
 const NO_VALUE = '–';
-
-function StatRow({ label, children }: { label: ReactNode; children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text flex items-center gap-1.5 text-sm font-medium">{children}</span>
-    </div>
-  );
-}
 
 /**
  * Position-aware action card for the vault product page (ProductDetailTemplate
@@ -42,11 +39,14 @@ function StatRow({ label, children }: { label: ReactNode; children: ReactNode })
 export function VaultPositionCard({
   vaultAddress,
   assetToken,
-  vaultName
+  vaultName,
+  provider
 }: {
   vaultAddress: `0x${string}`;
   assetToken: Token;
   vaultName: string;
+  /** Gates the Morpho branding on the no-position card. */
+  provider: VaultProvider;
 }) {
   const chainId = useChainId();
   const { isConnected } = useConnection();
@@ -75,94 +75,118 @@ export function VaultPositionCard({
   const hasPosition = userAssets > 0n;
   if (!hasPosition) {
     return (
-      <VaultSupplyCard assetToken={assetToken} netRate={netRate} onSupply={() => openSupply(modalArgs)} />
+      <VaultSupplyCard
+        assetToken={assetToken}
+        vaultName={vaultName}
+        provider={provider}
+        netRate={netRate}
+        onSupply={() => openSupply(modalArgs)}
+      />
     );
   }
 
   // Position value in asset units (USDC is $1-pegged, so it doubles as the USD
   // value used for the projection).
   const positionValue = parseFloat(formatUnits(userAssets, decimals));
-  const shares =
-    vaultData?.userShares !== undefined
-      ? formatNumber(parseFloat(formatUnits(vaultData.userShares, vaultData.decimals)), { maxDecimals: 2 })
-      : NO_VALUE;
   const projectedEarnings = projectAnnualEarnings(positionValue, netRate);
   const reward = rewardsData?.rewards[0];
 
+  const assetIcon = (
+    <TokenIcon
+      token={{ symbol: assetToken.symbol }}
+      width={12}
+      showChainIcon={false}
+      className="h-3 w-3 shrink-0"
+    />
+  );
+
   return (
-    <Card className="flex flex-col gap-5 p-2" data-testid="vault-position-card">
-      <PositionHero pillSymbol={assetToken.symbol} balanceSymbol={assetToken.symbol} amount={positionValue} />
-
-      <div className="flex flex-col gap-5 px-3 pb-3">
+    <ProductPositionCard
+      data-testid="vault-position-card"
+      hero={
+        <PositionHero
+          pillSymbol={assetToken.symbol}
+          balanceSymbol={assetToken.symbol}
+          amount={positionValue}
+        />
+      }
+      stats={
+        <>
+          <ProductStatPair grow>
+            {/* The comp's "Supply" is the deposited principal; with no
+                cost-basis source it restates the position balance the hero
+                shows — same gap as "Already earned" below. */}
+            <ProductStat label={<Trans>Supply</Trans>}>
+              {assetIcon}
+              {formatNumber(positionValue, { maxDecimals: 2 })}
+            </ProductStat>
+            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
+              <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+              {formatNumber(projectedEarnings, { maxDecimals: 2 })}
+              {assetIcon}
+            </ProductStat>
+          </ProductStatPair>
+          <ProductStatPair grow>
+            {/* No cost-basis source yet → dash (PRD: unavailable values read "–"). */}
+            <ProductStat label={<Trans>Already earned</Trans>}>
+              <span className="text-fgSecondary">{NO_VALUE}</span>
+            </ProductStat>
+            <ProductStat label={<Trans>Claimable rewards</Trans>}>
+              {reward ? (
+                <>
+                  {reward.formattedAmount}
+                  <TokenIcon
+                    token={{ symbol: reward.tokenSymbol }}
+                    width={12}
+                    showChainIcon={false}
+                    className="h-3 w-3 shrink-0"
+                  />
+                </>
+              ) : (
+                <span className="text-fgSecondary">{NO_VALUE}</span>
+              )}
+            </ProductStat>
+          </ProductStatPair>
+        </>
+      }
+      actions={
+        /* Supply / Claim rewards / Withdraw — each opens its shared modal. The
+           comp (859:38037) gives Supply the full width over a secondary pair. */
         <div className="flex flex-col gap-3">
-          <StatRow label={<Trans>Shares</Trans>}>
-            <TokenIcon
-              token={{ symbol: assetToken.symbol }}
-              width={18}
-              showChainIcon={false}
-              className="h-4.5 w-4.5"
-            />
-            {shares} {assetToken.symbol}
-          </StatRow>
-          <StatRow label={<Trans>1Y projected earnings</Trans>}>
-            <GainValue value={projectedEarnings} />
-          </StatRow>
-          {/* No cost-basis source yet — placeholder per the redesign. */}
-          <StatRow label={<Trans>Interest earned</Trans>}>
-            <span className="text-textSecondary">TODO</span>
-          </StatRow>
-          <StatRow label={<Trans>Rewards to be claimed</Trans>}>
-            {reward ? (
-              <>
-                <TokenIcon
-                  token={{ symbol: reward.tokenSymbol }}
-                  width={18}
-                  showChainIcon={false}
-                  className="h-4.5 w-4.5"
-                />
-                {reward.formattedAmount} {reward.tokenSymbol}
-              </>
-            ) : (
-              NO_VALUE
+          <ProductActions>
+            <Button
+              variant="primary"
+              size="l"
+              onClick={() => openSupply(modalArgs)}
+              disabled={!isConnected}
+              data-testid="vault-position-supply"
+            >
+              <Trans>Supply</Trans>
+            </Button>
+          </ProductActions>
+          <ProductActions>
+            {rewardsData?.hasClaimableRewards && (
+              <Button
+                variant="secondary"
+                size="l"
+                onClick={() => openClaim({ kind: 'vault', vaultAddress })}
+                data-testid="vault-position-claim"
+              >
+                <Trans>Claim rewards</Trans>
+              </Button>
             )}
-          </StatRow>
-        </div>
-
-        {/* Supply / Claim rewards / Withdraw — each opens its shared modal. */}
-        <div className="flex flex-col gap-3">
-          <Button
-            variant="primary"
-            size="l"
-            className="w-full"
-            onClick={() => openSupply(modalArgs)}
-            disabled={!isConnected}
-            data-testid="vault-position-supply"
-          >
-            <Trans>Supply</Trans>
-          </Button>
-          {rewardsData?.hasClaimableRewards && (
             <Button
               variant="secondary"
               size="l"
-              className="w-full"
-              onClick={() => openClaim({ kind: 'vault', vaultAddress })}
-              data-testid="vault-position-claim"
+              onClick={() => openWithdraw(modalArgs)}
+              disabled={!isConnected}
+              data-testid="vault-position-withdraw"
             >
-              <Trans>Claim rewards</Trans>
+              <Trans>Withdraw</Trans>
             </Button>
-          )}
-          <Button
-            variant="secondary"
-            size="l"
-            className="w-full"
-            onClick={() => openWithdraw(modalArgs)}
-            disabled={!isConnected}
-            data-testid="vault-position-withdraw"
-          >
-            <Trans>Withdraw</Trans>
-          </Button>
+          </ProductActions>
         </div>
-      </div>
-    </Card>
+      }
+    />
   );
 }

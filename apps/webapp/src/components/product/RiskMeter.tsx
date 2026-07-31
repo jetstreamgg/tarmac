@@ -20,7 +20,7 @@ export function RiskMeter({
   className?: string;
 }) {
   // Figma Badges/Risk (Table Cell Type=Risk): 15px bordered pill of three
-  // 8×3 segments; unlit segments are fg-quaternary at 40%.
+  // 8×3 segments; unlit segments are fg-quaternary (1036:201215).
   return (
     <div
       role={label ? 'img' : undefined}
@@ -32,7 +32,7 @@ export function RiskMeter({
       )}
     >
       {segments.map((color, index) => (
-        <span key={index} className={cn('h-[3px] w-2 rounded-[2px]', color ?? 'bg-fgQuaternary/40')} />
+        <span key={index} className={cn('h-[3px] w-2 rounded-[2px]', color ?? 'bg-fgQuaternary')} />
       ))}
     </div>
   );
@@ -159,12 +159,13 @@ export function RiskScaleMeter({
 
 const TIERS: EarnRiskTier[] = ['low', 'moderate', 'advanced'];
 
-// Figma status palette: Low = fg-success, Medium = fg-warning. A 3-lit tier
-// never appears in the Figma patterns — error red pending design confirmation.
+// Figma status palette (1036:201215, which settled the open question the H8
+// tables batch left on the 3-lit tier): Conservative = fg-success,
+// Moderate = fg-warning, Aggressive = fg-error.
 const TIER_COLOR: Record<EarnRiskTier, string> = {
   low: 'bg-statusSuccess',
   moderate: 'bg-statusWarning',
-  advanced: 'bg-error'
+  advanced: 'bg-statusError'
 };
 
 /** Compact product-risk indicator (Figma "Risk profile" cell): N segments lit in the tier color. */

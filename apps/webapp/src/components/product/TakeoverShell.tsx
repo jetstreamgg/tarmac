@@ -6,13 +6,13 @@ const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * Full-screen takeover chrome (hi-fi 486:32657): header row with title + badge
- * and a close button, a scrollable centered card column, and a sticky footer.
- * The one sanctioned ProductDetailTemplate exception (Migration Mechanics §5) —
- * layout + slots only, no data fetching. Sits at z-[46]: above the bottom-
- * anchored app overlays (cookie banner z-40, extensible Banner z-[45]) that
- * would otherwise cover the sticky footer on phones, below the transaction
- * modal (z-50).
+ * Full-screen takeover chrome (hi-fi 486:32657, restyled to 1036:209505):
+ * header row with title + badge and a close button over a scrollable centered
+ * card column that ends with the footer row. The one sanctioned
+ * ProductDetailTemplate exception (Migration Mechanics §5) — layout + slots
+ * only, no data fetching. Sits at z-[46]: above the bottom-anchored app
+ * overlays (cookie banner z-40, extensible Banner z-[45]), below the
+ * transaction modal (z-50).
  */
 export function TakeoverShell({
   title,
@@ -93,12 +93,14 @@ export function TakeoverShell({
       aria-labelledby={titleId}
       tabIndex={-1}
       data-testid={dataTestId}
-      // Same page-background recipe as the shell surface (shellLayoutClasses):
-      // `bg-background` is undefined in the dark scope (known token gap) and
-      // would leave the overlay transparent.
-      className="bg-app-background light:bg-blend-normal fixed inset-0 z-[46] flex flex-col [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity"
+      // The comps draw the takeover as a full-page MODAL over the live page
+      // (APP-432 item 21 — 1036:209505 layers it over `bg-modal`, a render of
+      // /earn), not as a second opaque page: same scrim + blur recipe as the
+      // dialog and sheet overlays. It previously repainted the app background,
+      // which hid the page underneath entirely.
+      className="bg-modalOverlay fixed inset-0 z-[46] flex flex-col backdrop-blur-[100px]"
     >
-      <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:border-b-0 md:px-8 md:py-6 lg:px-16">
+      <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:px-10 md:py-5">
         <div className="flex items-center gap-2 md:gap-3">
           {onBack && (
             <Button
@@ -111,14 +113,17 @@ export function TakeoverShell({
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
+          {/* Label 4 on phones, Label 3 from md up (1369:44362). */}
           <h2
             id={titleId}
-            className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px] md:font-sans md:text-lg md:leading-normal md:tracking-normal"
+            className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]"
           >
             {title}
           </h2>
           {badge && (
-            <span className="bg-surfaceAlt text-text md:text-textSecondary font-circle flex h-6 items-center gap-1 rounded-full py-1 pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px] md:px-2 md:font-sans md:leading-4 md:tracking-normal">
+            // Badges / Illustration (I1369:44421): glass pill, 4px inset around
+            // a 16px logo, Label 6 on fg-primary — one recipe at every tier.
+            <span className="bg-glassBadge text-text font-circle flex items-center gap-1 rounded-[20px] py-1 pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px]">
               {badge}
             </span>
           )}
@@ -134,19 +139,19 @@ export function TakeoverShell({
         </Button>
       </div>
 
+      {/* 610px column, 12px between cards, 64px of air under the header
+          (1036:209509). The footer is the column's last row rather than a
+          sticky bar — the comps scroll it with the content. */}
       <div className="scrollbar-hidden md:scrollbar-thin-always flex-1 overflow-y-auto px-3 md:px-4">
-        <div className="mx-auto flex w-full max-w-[660px] flex-col gap-3 pt-3 pb-4 md:gap-6 md:pt-0 md:pb-8">
+        <div className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16">
           {children}
+          {footer && (
+            <div className="flex items-center justify-between gap-4 px-2 py-4 md:gap-6 md:px-6 md:py-6">
+              {footer}
+            </div>
+          )}
         </div>
       </div>
-
-      {footer && (
-        <div className="px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] md:px-4 md:py-6">
-          <div className="mx-auto flex w-full max-w-[660px] items-center justify-between gap-4 md:gap-6">
-            {footer}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -6,15 +6,16 @@ import { Failure } from './Failure';
 import { RewardsModule } from './RewardsModule';
 import { LinkExternal } from './LinkExternal';
 import { Metrics } from './Metrics';
-import { Reward } from './Reward';
 import { Rewards } from './Rewards';
 import { RewardsEmpty } from './RewardsEmpty';
 import { Savings } from './Savings';
+import { Usds } from './Usds';
 import { Earn } from './Earn';
 import { Supply } from './Supply';
 import { Supplied } from './Supplied';
 import { SuppliedEmpty } from './SuppliedEmpty';
 import { Success } from './Success';
+import { TransactionsEmpty } from './TransactionsEmpty';
 import { Unavailable } from './Unavailable';
 import { Withdraw } from './Withdraw';
 import { Withdrawn } from './Withdrawn';
@@ -22,6 +23,7 @@ import { WithdrawnEmpty } from './WithdrawnEmpty';
 import { Upgrade } from './Upgrade';
 import { Balances } from './Balances';
 import { Info } from './Info';
+import { LightningFilled } from './LightningFilled';
 import { Close } from './Close';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
@@ -45,6 +47,7 @@ import { ConvertArrows } from './ConvertArrows';
 import { Wallet } from './Wallet';
 import { Pendle } from './Pendle';
 import { Merkl } from './Merkl';
+import { StarsFilled } from './StarsFilled';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
 
@@ -57,15 +60,16 @@ export {
   RewardsModule,
   LinkExternal,
   Metrics,
-  Reward,
   Rewards,
   RewardsEmpty,
   Savings,
+  Usds,
   Earn,
   Supply,
   Supplied,
   SuppliedEmpty,
   Success,
+  TransactionsEmpty,
   Unavailable,
   Withdraw,
   Withdrawn,
@@ -73,6 +77,7 @@ export {
   Upgrade,
   Balances,
   Info,
+  LightningFilled,
   Close,
   BaseChain,
   MainnetChain,
@@ -96,6 +101,7 @@ export {
   Wallet,
   Pendle,
   Merkl,
+  StarsFilled,
   IllustrationStaked,
   IllustrationStakingLogomark
 };

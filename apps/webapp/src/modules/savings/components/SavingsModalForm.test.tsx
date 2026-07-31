@@ -52,6 +52,22 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    // The bundling badge asks whether the wallet can batch; these renders have no
+    // WagmiProvider, so answer "no" and the fee row stays a plain value.
+    useIsBatchSupported: () => ({
+      data: false,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
     // The savings position (drives the withdraw balance/Max).
     useSavingsData: () => ({
       data: { userSavingsBalance: 100n * 10n ** 18n, savingsRate: 65n * 10n ** 15n, savingsTvl: 0n },
@@ -97,13 +113,19 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
       steps: ['Supply'],
       prepared: h.prepared,
       isLoading: false,
-      error: null
+      error: null,
+      // Mirrors the real result shape; the form reads these for the fee row's
+      // bundling badge and the "Save X%" promo.
+      calls: [],
+      isBatch: false
     };
   }
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.update }),
+  // txStatus stays IDLE: these tests exercise the live entry pushes, which the
+  // shared hook freezes once a tx is in flight.
+  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
   // No entry slot in these standalone renders → the form renders its body inline.
   useEntrySlot: () => null
 }));
@@ -145,11 +167,14 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { SavingsModalForm } from './SavingsModalForm';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const renderForm = (flow: SavingsLaunchFlow) =>
   render(
     <I18nProvider i18n={i18n}>
-      <SavingsModalForm sessionId="s1" flow={flow} />
+      <TooltipProvider>
+        <SavingsModalForm sessionId="s1" flow={flow} />
+      </TooltipProvider>
     </I18nProvider>
   );
 
@@ -165,7 +190,7 @@ const lastToast = () => {
   return withToast.at(-1)?.[1].toast;
 };
 
-const FIGMA_ROWS = ['Savings rate', 'Supply', '1Y est. earnings', 'Network', 'Network fee'];
+const FIGMA_ROWS = ['Savings rate', 'Network', 'Supply', 'Est. earnings (1Y)', 'Network fee'];
 
 describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   beforeEach(() => {

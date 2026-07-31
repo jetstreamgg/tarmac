@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { i18n } from '@lingui/core';
 import {
   useBatchStakeMulticall,
   useIsBatchSupported,
@@ -19,15 +18,12 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { parseStakeId, stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
-// Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
-import { claimSubtitle, claimTitle } from '../lib/constants';
-import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';
 
 /**
- * Claim confirm-modal step labels, derived from the selection (UX 1050:23881:
- * `1 Claim SKY → 2 Restake SKY`). A plain claim never needs an approval —
+ * Claim confirm-modal step labels, derived from the selection (Figma
+ * 1036:214007: `1 Claim ◉ SKY → 2 Restake ◉ SKY`). A plain claim never needs an approval —
  * nothing is pulled from the owner — so the Approve step only renders on the
  * restake variant (the `lock` leg pulls the claimed SKY back in). The plain
  * variant is exactly the restake variant minus its extra steps (AC).
@@ -50,13 +46,12 @@ export function buildStakeClaimSteps({
 
 export interface UseStakeClaimLaunchParams {
   urnIndex: bigint;
-  /** Stake-source rewards selected in the modal (adapter ids carry urn+contract). */
+  /** Stake-source rewards the modal claims (adapter ids carry urn+contract). */
   selected: ClaimableReward[];
   /** Selection non-empty and the modal ready — gates both engines' prepare. */
   enabled: boolean;
-  /** Review-screen body (per-token reward amount heroes). */
-  transactionContent?: ReactNode;
-  onSuccess?: () => void;
+  /** Session of the already-launched modal — scopes the click-time config pushes. */
+  sessionId: string;
 }
 
 /**
@@ -67,7 +62,13 @@ export interface UseStakeClaimLaunchParams {
  * calldata seam (`useStakeCalldata` with `rewardContractsToClaim` +
  * `restakeSkyRewards`/`restakeSkyAmount` → the unmodified
  * `useBatchStakeMulticall`), byte-identical to the legacy widget's restake
- * multicall (C3). Both engines stay mounted; `launch(restake)` picks per click.
+ * multicall (C3). Both engines stay mounted; `confirm(restake)` picks per click.
+ *
+ * The modal itself is launched at mount by `StakeClaimModal` (the shared modal's
+ * two-CTA entry, Figma 1036:213978); this hook owns the click side: each CTA
+ * pushes the clicked mode's steps + analytics into the live config (the provider
+ * applies them synchronously, so the engine's onMutate sees them) and fires that
+ * mode's engine. `retry` re-fires the last-clicked engine.
  *
  * Legacy semantics preserved (C4/C5, flagged open product decision):
  *  - restake locks into the SAME urn whose rewards are claimed;
@@ -81,14 +82,8 @@ export interface UseStakeClaimLaunchParams {
  * approval math is gated by `isSkyRewardPosition` — both arrive verbatim via
  * the F1 helpers; do not "fix".
  */
-export function useStakeClaimLaunch({
-  urnIndex,
-  selected,
-  enabled,
-  transactionContent,
-  onSuccess
-}: UseStakeClaimLaunchParams) {
-  const { launch: launchModal, txCallbacks } = useTransaction();
+export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: UseStakeClaimLaunchParams) {
+  const { updateModalContent, txCallbacks } = useTransaction();
   const chainId = useChainId();
   const { address } = useConnection();
 
@@ -202,8 +197,13 @@ export function useStakeClaimLaunch({
   );
   const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
 
-  const launch = useCallback(
+  // The last-clicked mode, so a retry after failure re-fires the right engine.
+  const restakeModeRef = useRef(false);
+
+  const confirm = useCallback(
     (restake: boolean) => {
+      restakeModeRef.current = restake;
+
       // Legacy claimTransactionCallbacks parity (C8): claimedRewards carry the
       // raw claim amounts; the action name encodes count × restake.
       const claimedRewards = selectedClaims
@@ -241,25 +241,11 @@ export function useStakeClaimLaunch({
         ...(claimAction != null && { claimAction, claimedRewards })
       };
 
-      launchModal({
-        title: t`Confirm claim`,
-        transactionTitle: i18n._(claimTitle[TxStatus.INITIALIZED]),
-        subtitles: {
-          loading: i18n._(claimSubtitle[TxStatus.LOADING]),
-          success: i18n._(claimSubtitle[TxStatus.SUCCESS]),
-          error: i18n._(claimSubtitle[TxStatus.ERROR])
-        },
-        // Toasts reuse the legacy claim notification copy (C6).
-        toast: {
-          loading: t`Claiming rewards`,
-          success: t`Claim successful`,
-          error: t`Claim failed`
-        },
-        transactionContent,
+      // Push the clicked mode's steps + analytics BEFORE executing — the
+      // provider applies them to its config ref synchronously, so the engine's
+      // onMutate (fired in this same click) tracks the right claimAction.
+      updateModalContent(sessionId, {
         steps: buildStakeClaimSteps({ needsSkyAllowance, claimSymbols, restake }),
-        confirmLabel: t`Confirm`,
-        onConfirm: () => (restake ? restakeExecuteRef : plainExecuteRef).current(),
-        onSuccess,
         analytics: {
           widgetName: 'stake',
           flow: 'manage',
@@ -267,9 +253,11 @@ export function useStakeClaimLaunch({
           data: stakeData
         }
       });
+      (restake ? restakeExecuteRef : plainExecuteRef).current();
     },
     [
-      launchModal,
+      updateModalContent,
+      sessionId,
       urnIndex,
       selectedClaims,
       claimSymbols,
@@ -277,19 +265,29 @@ export function useStakeClaimLaunch({
       restakeSkyAmount,
       shouldUseBatch,
       urnSelectedRewardContract,
-      selectedRewardSymbol,
-      transactionContent,
-      onSuccess
+      selectedRewardSymbol
     ]
   );
 
+  const retry = useCallback(
+    () => (restakeModeRef.current ? restakeExecuteRef : plainExecuteRef).current(),
+    []
+  );
+
   return {
-    launch,
+    confirm,
+    retry,
     restakeAvailable,
     plainPrepared: plainFlow.prepared,
     plainLoading: plainFlow.isLoading,
     restakePrepared: restakeEngine.prepared,
     restakeLoading: restakeEngine.isLoading,
-    calldata
+    calldata,
+    // The plain-claim flow's calls. The modal draws a single fee row but offers two
+    // CTAs (Claim / Claim & Restake); we price the plain claim, which is the one action
+    // always available. Restake's extra cost is not represented — a design gap, not an
+    // oversight.
+    calls: plainFlow.calls ?? [],
+    isBatch: !!plainFlow.isBatch
   };
 }

@@ -2,6 +2,12 @@ import { ReactNode, useCallback } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { StakeSky } from '@/modules/icons';
 import {
+  ProductBadge,
+  ProductStat,
+  ProductStatPair,
+  ProductSupplyCard
+} from '@/components/product/ProductCard';
+import {
   useStakeRewardContracts,
   useMultipleRewardsChartInfo,
   useHighestRateFromChartData,
@@ -14,7 +20,6 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const NO_VALUE = '–';
@@ -41,6 +46,7 @@ function InlineTokenIcon({
   );
 }
 
+/** The engine card's stat pair: the comp (1036:208779) leads each value with its token mark. */
 function Stat({
   label,
   icon,
@@ -55,19 +61,16 @@ function Stat({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1 md:gap-1.5">
-      <span className="text-fgSecondary md:text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
-        {label}
-      </span>
+    <ProductStat size="lg" label={label}>
       {isLoading ? (
         <Skeleton className="h-5 w-20" />
       ) : (
-        <span className="text-text font-circle flex items-center gap-1.5 text-base leading-[18px] font-medium tracking-[-0.32px] md:font-sans md:leading-normal md:tracking-normal">
+        <>
           {!error && icon}
           {error ? NO_VALUE : children}
-        </span>
+        </>
       )}
-    </div>
+    </ProductStat>
   );
 }
 
@@ -105,64 +108,65 @@ export function StakeEngineCard() {
     highestRate !== null && !isNaN(highestRate) ? formatDecimalPercentage(highestRate) : NO_VALUE;
 
   // Min. borrow amount — dust (RAD) from the staking-engine ilk, shown as USDS.
+  // The comp tags the figure with the USDS mark rather than spelling the symbol
+  // out, so the value is the bare number.
   const {
     data: collateralData,
     isLoading: collateralLoading,
     error: collateralError
   } = useCollateralData(getIlkName(2));
   const minBorrow =
-    collateralData?.dust !== undefined
-      ? `${formatBigInt(math.convertRadToWad(collateralData.dust))} USDS`
-      : NO_VALUE;
+    collateralData?.dust !== undefined ? formatBigInt(math.convertRadToWad(collateralData.dust)) : NO_VALUE;
 
-  // Phone tier (comp 1222:17089): tighter 20px paddings, Heading 4 headline
-  // with 20px inline token chips, and an extra 20px above the stats row.
+  // The card follows the shared no-position skeleton (1036:208779); it is the
+  // only one with no blurb between the headline and the stats.
   return (
-    <Card data-testid="stake-engine-card" className="flex flex-col gap-5 p-5 md:gap-8 md:p-8">
-      <span className="bg-surfaceAlt text-fgSecondary md:text-textSecondary font-circle flex h-6 w-fit items-center gap-1 rounded-full py-0.5 pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px] md:pl-1.5 md:font-sans md:leading-4 md:tracking-normal">
-        <StakeSky className="h-3 w-3 md:h-3.5 md:w-3.5" />
-        <Trans>Sky Staking Engine</Trans>
-      </span>
-
-      <h3
-        data-testid="stake-engine-headline"
-        className="text-text font-circle text-[22px] leading-6 font-medium tracking-[-0.44px] md:font-sans md:text-[28px] md:leading-[30px] md:tracking-tight"
-      >
-        <Trans>
-          Stake <InlineTokenIcon symbol="SKY" />
-          SKY to earn rewards, delegate votes and borrow <InlineTokenIcon symbol="USDS" />
-          USDS
-        </Trans>
-      </h3>
-
-      <div className="flex items-center gap-6 pt-5 md:pt-0">
-        <Stat
-          label={<Trans>Rewards rate</Trans>}
-          icon={<InlineTokenIcon symbol="SKY" variant="stat" />}
-          isLoading={rewardsLoading}
+    <ProductSupplyCard
+      data-testid="stake-engine-card"
+      badges={
+        <ProductBadge icon={<StakeSky className="h-3 w-3" />}>
+          <Trans>Sky Staking Engine</Trans>
+        </ProductBadge>
+      }
+      title={
+        <span data-testid="stake-engine-headline">
+          <Trans>
+            Stake <InlineTokenIcon symbol="SKY" />
+            SKY to earn rewards, delegate votes and borrow <InlineTokenIcon symbol="USDS" />
+            USDS
+          </Trans>
+        </span>
+      }
+      stats={
+        <ProductStatPair>
+          <Stat
+            label={<Trans>Rewards rate</Trans>}
+            icon={<InlineTokenIcon symbol="SKY" variant="stat" />}
+            isLoading={rewardsLoading}
+          >
+            {rewardsRate}
+          </Stat>
+          <Stat
+            label={<Trans>Min. borrow amount</Trans>}
+            icon={<InlineTokenIcon symbol="USDS" variant="stat" />}
+            isLoading={collateralLoading}
+            error={collateralError}
+          >
+            {minBorrow}
+          </Stat>
+        </ProductStatPair>
+      }
+      cta={
+        <Button
+          variant="primary"
+          size="l"
+          className="w-full"
+          onClick={onOpenPosition}
+          data-testid="stake-open-position-cta"
         >
-          {rewardsRate}
-        </Stat>
-        <span className="bg-textSecondary/20 h-7 w-px shrink-0" aria-hidden />
-        <Stat
-          label={<Trans>Min. borrow amount</Trans>}
-          icon={<InlineTokenIcon symbol="USDS" variant="stat" />}
-          isLoading={collateralLoading}
-          error={collateralError}
-        >
-          {minBorrow}
-        </Stat>
-      </div>
-
-      <Button
-        variant="primary"
-        size="l"
-        className="w-full"
-        onClick={onOpenPosition}
-        data-testid="stake-open-position-cta"
-      >
-        <Trans>Open a position</Trans>
-      </Button>
-    </Card>
+          <Trans>Open a position</Trans>
+        </Button>
+      }
+    />
   );
 }

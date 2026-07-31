@@ -1,7 +1,9 @@
 import { createRouter, type RouterHistory } from '@tanstack/react-router';
+import type { QueryClient } from '@tanstack/react-query';
 import { routeTree } from '../routeTree.gen';
 import ErrorPage from './ErrorPage';
 import { NotFound } from '../modules/layout/components/NotFound';
+import { queryClient as appQueryClient } from '@/lib/queryClient';
 import type { AppSearchParams } from '../routes/__root';
 
 export type { AppSearchParams } from '../routes/__root';
@@ -23,11 +25,15 @@ const stringifySearch = (search: Record<string, unknown>): string => {
   return str ? `?${str}` : '';
 };
 
-// Factory so tests can boot the app's real router config on a memory history.
-export const createAppRouter = (history?: RouterHistory) =>
+// Factory so tests can boot the app's real router config on a memory history,
+// with their own query client so route-level cache reads stay hermetic.
+export const createAppRouter = (history?: RouterHistory, queryClient: QueryClient = appQueryClient) =>
   createRouter({
     routeTree,
     history,
+    // Handed to every beforeLoad/loader: those run outside React, so routes that
+    // need the query cache take it from here rather than importing the instance.
+    context: { queryClient },
     parseSearch,
     stringifySearch,
     // Prefetch lazy route chunks when links are hovered/focused

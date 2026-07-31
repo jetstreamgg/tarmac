@@ -10,21 +10,22 @@ import { useStakeRewardsRate } from '../hooks/useStakeRewardsRate';
 const NO_VALUE = '–';
 
 // Phone tier (comp 1222:17089): single-column rows with 12px leading icons,
-// Body 5 labels and Label 4 values on borderPrimary hairlines; md restores
-// the desktop 2-column strip.
+// Body 5 labels and Label 5 values on borderPrimary hairlines; md restores
+// the desktop 2-column strip, where values grow to Label 4 (Circular 16/18,
+// -0.32 tracking, fg-primary — comp 1036:208698, APP-432 item 18).
 function DetailRow({ icon, label, children }: { icon: ReactNode; label: ReactNode; children: ReactNode }) {
   return (
-    <div className="border-borderPrimary md:border-textSecondary/10 flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3">
-      <span className="text-textSecondary flex items-center gap-1.5 text-sm leading-[22px] md:gap-2 md:leading-normal">
+    <div className="border-borderPrimary flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3">
+      <span className="text-fgSecondary flex items-center gap-1.5 text-sm leading-[22px] md:gap-2 md:leading-normal">
         <span
-          className="text-textSecondary flex h-3 w-3 items-center justify-center md:h-4 md:w-4 [&>svg]:h-full [&>svg]:w-full"
+          className="text-fgSecondary flex h-3 w-3 items-center justify-center md:h-4 md:w-4 [&>svg]:h-full [&>svg]:w-full"
           aria-hidden
         >
           {icon}
         </span>
         {label}
       </span>
-      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-normal md:tracking-normal">
+      <span className="text-fgPrimary font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
         {children}
       </span>
     </div>
@@ -67,7 +68,7 @@ export function StakeDetailsStrip() {
 
   return (
     <div data-testid="stake-details-strip" className="flex flex-col">
-      <h3 className="text-text font-circle mb-4 text-base leading-[18px] font-medium tracking-[-0.32px] md:mb-2 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
+      <h3 className="text-fgPrimary font-circle mb-4 text-base leading-[18px] font-medium tracking-[-0.32px] md:mb-2 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
         <Trans>Details</Trans>
       </h3>
 
@@ -108,7 +109,7 @@ export function StakeDetailsStrip() {
           label={
             <>
               <Trans>Protocol SKY Price</Trans>
-              <Info className="text-textSecondary h-3.5 w-3.5" aria-hidden />
+              <Info className="text-fgSecondary h-3.5 w-3.5" aria-hidden />
             </>
           }
         >

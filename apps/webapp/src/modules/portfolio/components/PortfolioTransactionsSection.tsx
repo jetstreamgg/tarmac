@@ -7,6 +7,7 @@ import {
   BP,
   ModuleEnum,
   useAllNetworksCombinedHistory,
+  useAvailableTokenRewardContractsForChains,
   useBreakpointIndex,
   useFilteredPortfolioHistory
 } from '@/hooks';
@@ -14,7 +15,8 @@ import { formatAddress, getChainIcon } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Heading } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ConvertArrows, ArrowDown, SavingsSupply } from '@/modules/icons';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
+import { ConvertArrows } from '@/modules/icons';
 import { FilterSelect } from '@/components/product/FilterSelect';
 import {
   ProductTransactionsTable,
@@ -29,7 +31,7 @@ import {
   CellProduct,
   CellStatus
 } from '@/components/ui/table-cells';
-import { PortfolioTxRow, toPortfolioTxRow } from '../helpers/transactionRow';
+import { PortfolioTxRow, RewardTokenLookup, toPortfolioTxRow } from '../helpers/transactionRow';
 
 const ALL = 'all';
 
@@ -61,9 +63,9 @@ function productName(module: ModuleEnum): string {
 function actionIcon(row: PortfolioTxRow): ReactNode {
   if (row.module === ModuleEnum.TRADE) return <ConvertArrows width={16} height={16} />;
   return row.positive === false ? (
-    <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
+    <ArrowUpToLine className="size-4" />
   ) : (
-    <SavingsSupply width={16} height={15} />
+    <ArrowDownToLine className="size-4" />
   );
 }
 
@@ -93,11 +95,11 @@ const networkCell = (row: PortfolioTxRow) => (
 const statusCell = (row: PortfolioTxRow) => <CellStatus status={row.status} />;
 
 const productCell = (row: PortfolioTxRow) => (
-  <CellProduct icon={tokenIcon(row.symbol)} label={productName(row.module)} />
+  <CellProduct icon={tokenIcon(row.iconSymbol)} label={productName(row.module)} />
 );
 
 const suppliedCell = (row: PortfolioTxRow) => (
-  <CellAmount icon={tokenIcon(row.symbol)} amount={`${row.amount} ${row.symbol}`} usd={row.usd} />
+  <CellAmount icon={tokenIcon(row.iconSymbol)} amount={`${row.amount} ${row.symbol}`} usd={row.usd} />
 );
 
 const hashCell = (row: PortfolioTxRow) => (
@@ -109,12 +111,12 @@ const COLUMNS: ProductTransactionColumn<PortfolioTxRow>[] = [
   { id: 'network', header: <Trans>Network</Trans>, width: '0.8fr', cell: networkCell },
   { id: 'status', header: <Trans>Status</Trans>, width: '1fr', cell: statusCell },
   { id: 'product', header: <Trans>Product</Trans>, width: '1fr', cell: productCell },
-  { id: 'supplied', header: <Trans>Supplied</Trans>, width: '1.2fr', cell: suppliedCell },
+  { id: 'supplied', header: <Trans>Amounts</Trans>, width: '1.2fr', cell: suppliedCell },
   { id: 'hash', header: <Trans>Tx hash</Trans>, width: '1fr', cell: hashCell }
 ];
 
 // Mobile card: Action is the header, Tx hash becomes the footer button, and the
-// remaining Network / Status / Product / Supplied columns fold into the 2×2 grid.
+// remaining Network / Status / Product / Amounts columns fold into the 2×2 grid.
 // (The comp mislabels the top grid row "My position" / "APY" — placeholder text
 // carried over from the PositionCard; the real fields are Network / Status.)
 const renderCard = (row: PortfolioTxRow) => (
@@ -124,7 +126,7 @@ const renderCard = (row: PortfolioTxRow) => (
       { label: <Trans>Network</Trans>, value: networkCell(row) },
       { label: <Trans>Status</Trans>, value: statusCell(row) },
       { label: <Trans>Product</Trans>, value: productCell(row) },
-      { label: <Trans>Supplied</Trans>, value: suppliedCell(row) }
+      { label: <Trans>Amounts</Trans>, value: suppliedCell(row) }
     ]}
     link={{ label: <Trans>View transaction</Trans>, href: row.explorerHref }}
   />
@@ -227,7 +229,7 @@ export function PortfolioTransactionsView({
   const triggerClassName = isMobile ? 'w-full' : undefined;
 
   return (
-    <section className="flex flex-col gap-5" data-testid="portfolio-transactions">
+    <section className="flex flex-col gap-8" data-testid="portfolio-transactions">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <Heading variant="small" tag="h2" className="text-fgPrimary">
           <Trans>Transactions</Trans>
@@ -296,11 +298,31 @@ export function PortfolioTransactionsSection() {
     product: product === ALL ? undefined : (product as ModuleEnum)
   });
 
+  // Reward claims only carry the reward contract address; resolve it to the
+  // paid token (SPK / GROVE / …) per chain seen in the history (APP-426 item 7).
+  const getRewardContracts = useAvailableTokenRewardContractsForChains();
+  const rewardTokenByContract = useMemo(() => {
+    const lookup: RewardTokenLookup = {};
+    const chainIds = new Set<number>();
+    for (const item of [...(aggregate.data ?? []), ...(data ?? [])]) {
+      if ('chainId' in item) chainIds.add(item.chainId);
+    }
+    for (const id of chainIds) {
+      for (const contract of getRewardContracts(id)) {
+        lookup[`${id}-${contract.contractAddress.toLowerCase()}`] = contract.rewardToken.symbol;
+      }
+    }
+    return lookup;
+  }, [aggregate.data, data, getRewardContracts]);
+
   const optionRows = useMemo(
-    () => (aggregate.data ?? []).map((item, i) => toPortfolioTxRow(item, i)),
-    [aggregate.data]
+    () => (aggregate.data ?? []).map((item, i) => toPortfolioTxRow(item, i, rewardTokenByContract)),
+    [aggregate.data, rewardTokenByContract]
   );
-  const rows = useMemo(() => (data ?? []).map((item, i) => toPortfolioTxRow(item, i)), [data]);
+  const rows = useMemo(
+    () => (data ?? []).map((item, i) => toPortfolioTxRow(item, i, rewardTokenByContract)),
+    [data, rewardTokenByContract]
+  );
 
   return (
     <PortfolioTransactionsView

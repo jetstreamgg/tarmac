@@ -1,9 +1,20 @@
-import { createRootRoute, redirect } from '@tanstack/react-router';
+import { createRootRouteWithContext, redirect } from '@tanstack/react-router';
+import type { QueryClient } from '@tanstack/react-query';
 import { legacyPathToLocation, legacySearchToLocation } from '@/lib/legacyRedirects';
 
 export type AppSearchParams = Record<string, string>;
 
-export const Route = createRootRoute({
+/**
+ * Dependencies the router hands to route lifecycle callbacks. `beforeLoad` runs
+ * outside the React tree, so hooks like `useQueryClient` are unavailable there —
+ * routes that need the cache (the geo gate) receive the client through context
+ * instead of importing the module instance.
+ */
+export type AppRouterContext = {
+  queryClient: QueryClient;
+};
+
+export const Route = createRootRouteWithContext<AppRouterContext>()({
   // Permissive passthrough: the router's parseSearch already guarantees string values.
   validateSearch: (search): AppSearchParams => search as AppSearchParams,
   // Translate legacy deep links so external links and bookmarks keep working:

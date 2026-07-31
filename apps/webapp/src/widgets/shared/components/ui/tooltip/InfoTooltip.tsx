@@ -34,7 +34,7 @@ export function InfoTooltip({
       <PopoverContent
         align="center"
         side="top"
-        className={`bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl text-[11px] leading-4 font-normal backdrop-blur-[100px] ${contentClassname}`}
+        className={`bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl text-[11px] leading-4 font-normal backdrop-blur-[20px] ${contentClassname}`}
       >
         {shouldShowCloseButton && (
           <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">

@@ -18,10 +18,8 @@ export type ClaimableReward = {
    */
   id: string;
   source: ClaimSource;
-  /** Group header label for the source (e.g. "Merkl", "Sky Rewards", "Staking"). */
+  /** Human label for the source (e.g. "Merkl", "Sky Rewards", "Staking"). */
   sourceLabel: string;
-  /** Optional brand chip rendered next to the source label. */
-  badge?: ReactNode;
   tokenSymbol: string;
   /** Pre-rendered token icon (each source resolves its own). */
   icon: ReactNode;

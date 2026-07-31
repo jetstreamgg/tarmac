@@ -4,7 +4,8 @@ import { Trans } from '@lingui/react/macro';
 import { TransactionTypeEnum, useAllRewardsUserHistory, type RewardContract } from '@/hooks';
 import { formatBigInt, getEtherscanLink, formatAddress } from '@/utils';
 import { absBigInt } from '@/modules/utils/math';
-import { SavingsSupply, ArrowDown, Reward } from '@/modules/icons';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
+import { ClaimRewards } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
 import {
@@ -40,11 +41,11 @@ const actionCell = (row: RewardsTxRow) => (
   <CellAction
     icon={
       row.kind === 'supply' ? (
-        <SavingsSupply width={16} height={15} />
+        <ArrowDownToLine className="size-4" />
       ) : row.kind === 'withdraw' ? (
-        <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
+        <ArrowUpToLine className="size-4" />
       ) : (
-        <Reward width={14} height={14} />
+        <ClaimRewards width={16} height={16} />
       )
     }
     label={ACTION_LABELS[row.kind]}

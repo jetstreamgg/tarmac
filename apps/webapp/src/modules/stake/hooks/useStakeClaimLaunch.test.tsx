@@ -31,7 +31,7 @@ type CapturedFlow = { calls: RawCall[]; enabled: boolean | undefined; shouldUseB
 const h = vi.hoisted(() => ({
   flows: [] as { calls: unknown[]; enabled?: boolean; shouldUseBatch?: boolean }[],
   mockExecute: vi.fn(),
-  launchMock: vi.fn(),
+  updateMock: vi.fn(),
   skyAllowance: 0n as bigint | undefined,
   claims: [] as { contractAddress: `0x${string}`; claimBalance: bigint; rewardSymbol: string }[]
 }));
@@ -111,8 +111,8 @@ vi.mock('@/hooks/rewards/useRewardContractTokens', () => ({
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
-    launch: h.launchMock,
-    updateModalContent: () => undefined,
+    launch: () => undefined,
+    updateModalContent: h.updateMock,
     isModalOpen: false,
     txCallbacks: {
       onMutate: () => undefined,
@@ -164,6 +164,7 @@ const renderLaunch = (params: Partial<Parameters<typeof useStakeClaimLaunch>[0]>
       urnIndex: URN_INDEX,
       selected: [SKY_REWARD, SPK_REWARD],
       enabled: true,
+      sessionId: 's1',
       ...params
     })
   );
@@ -231,7 +232,7 @@ describe('useStakeClaimLaunch — engines', () => {
   beforeEach(() => {
     h.flows = [];
     h.mockExecute.mockClear();
-    h.launchMock.mockClear();
+    h.updateMock.mockClear();
     h.skyAllowance = 0n;
     bothClaims();
   });
@@ -295,55 +296,52 @@ describe('useStakeClaimLaunch — engines', () => {
   });
 });
 
-describe('useStakeClaimLaunch — launch() config', () => {
+describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
   beforeEach(() => {
     h.flows = [];
     h.mockExecute.mockClear();
-    h.launchMock.mockClear();
+    h.updateMock.mockClear();
     h.skyAllowance = 0n;
     bothClaims();
   });
   afterEach(cleanup);
 
-  const launchConfig = () => h.launchMock.mock.calls[0][0];
+  /** The [sessionId, partial] of the last live-update push. */
+  const lastPush = () => {
+    const call = h.updateMock.mock.calls.at(-1)!;
+    expect(call[0]).toBe('s1');
+    return call[1];
+  };
 
-  it('uses the legacy claim msgids and Confirm claim title (plain claim)', () => {
+  it('pushes the plain-claim steps and executes on confirm(false)', () => {
     const { result } = renderLaunch();
-    act(() => result.current.launch(false));
+    act(() => result.current.confirm(false));
 
-    const config = launchConfig();
-    expect(config.title).toBe('Confirm claim');
-    expect(config.transactionTitle).toBe('Claim your rewards');
-    expect(config.subtitles.loading).toBe('Your claim is being processed on the blockchain. Please wait.');
-    expect(config.subtitles.success).toBe('You’ve claimed your rewards');
-    expect(config.steps).toEqual([
+    expect(lastPush().steps).toEqual([
       { label: 'Claim', tokenSymbol: 'SKY' },
       { label: 'Claim', tokenSymbol: 'SPK' }
     ]);
-    expect(config.toast).toEqual({
-      loading: 'Claiming rewards',
-      success: 'Claim successful',
-      error: 'Claim failed'
-    });
+    expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
-  it('adds Approve + Restake steps on the restake launch', () => {
+  it('pushes Approve + Claim + Restake steps on confirm(true)', () => {
     const { result } = renderLaunch();
-    act(() => result.current.launch(true));
+    act(() => result.current.confirm(true));
 
-    expect(launchConfig().steps).toEqual([
+    expect(lastPush().steps).toEqual([
       { label: 'Approve', tokenSymbol: 'SKY' },
       { label: 'Claim', tokenSymbol: 'SKY' },
       { label: 'Claim', tokenSymbol: 'SPK' },
       { label: 'Restake', tokenSymbol: 'SKY' }
     ]);
+    expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
-  it('fires legacy claim analytics: claimAll for a multi-token plain claim', () => {
+  it('pushes legacy claim analytics: claimAll for a multi-token plain claim', () => {
     const { result } = renderLaunch();
-    act(() => result.current.launch(false));
+    act(() => result.current.confirm(false));
 
-    const { analytics } = launchConfig();
+    const { analytics } = lastPush();
     expect(analytics.widgetName).toBe('stake');
     expect(analytics.flow).toBe('manage');
     expect(analytics.action).toBe('claimAll');
@@ -356,27 +354,39 @@ describe('useStakeClaimLaunch — launch() config', () => {
     expect(analytics.data.restakeSkyRewards).toBeUndefined();
   });
 
-  it('fires claimAllAndRestake with the restake amount on the restake launch', () => {
+  it('pushes claimAllAndRestake with the restake amount on the restake confirm', () => {
     const { result } = renderLaunch();
-    act(() => result.current.launch(true));
+    act(() => result.current.confirm(true));
 
-    const { analytics } = launchConfig();
+    const { analytics } = lastPush();
     expect(analytics.action).toBe('claimAllAndRestake');
     expect(analytics.data.restakeSkyAmount).toBe(22.9);
     expect(analytics.data.restakeSkyRewards).toBe(true);
   });
 
-  it('fires claimAndRestake for a single-token restake', () => {
+  it('pushes claimAndRestake for a single-token restake', () => {
     h.claims = [{ contractAddress: SKY_FARM, claimBalance: SKY_CLAIM, rewardSymbol: 'SKY' }];
     const { result } = renderLaunch({ selected: [SKY_REWARD] });
-    act(() => result.current.launch(true));
+    act(() => result.current.confirm(true));
 
-    expect(launchConfig().analytics.action).toBe('claimAndRestake');
-    expect(launchConfig().steps).toEqual([
+    const push = lastPush();
+    expect(push.analytics.action).toBe('claimAndRestake');
+    expect(push.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'SKY' },
       { label: 'Claim', tokenSymbol: 'SKY' },
       { label: 'Restake', tokenSymbol: 'SKY' }
     ]);
+  });
+
+  it('retries the last-clicked engine without a fresh push', () => {
+    const { result } = renderLaunch();
+    act(() => result.current.confirm(true));
+    h.updateMock.mockClear();
+    h.mockExecute.mockClear();
+
+    act(() => result.current.retry());
+    expect(h.mockExecute).toHaveBeenCalledTimes(1);
+    expect(h.updateMock).not.toHaveBeenCalled();
   });
 
   it('exposes restake availability from the selection', () => {

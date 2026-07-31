@@ -1,11 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { SavingsProductDetail } from '@/modules/savings/components/SavingsProductDetail';
 import { Intent } from '@/lib/enums';
+import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 
 // Savings is the first ProductDetailTemplate consumer (C3). Keeps its intent
-// for orchestration/network validation, but renders full-width (bare) like the
-// /earn marketplace instead of the legacy two-pane SavingsPanes.
+// for orchestration/network validation, and renders full-width like the /earn
+// marketplace.
 export const Route = createFileRoute('/_shell/earn/savings')({
+  beforeLoad: ({ context, location, search }) =>
+    requireModuleEnabled(context.queryClient, 'savings', location.searchStr, search),
   component: SavingsProductDetail,
-  staticData: { intent: Intent.SAVINGS_INTENT, fullWidth: true }
+  staticData: { intent: Intent.SAVINGS_INTENT }
 });

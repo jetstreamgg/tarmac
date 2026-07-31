@@ -37,18 +37,15 @@ export function StUsdsProviderNotice({
 
   const isCurve = selectedProvider === StUsdsProviderType.CURVE;
   const isWarning = selectionReason === StUsdsSelectionReason.ALL_BLOCKED;
-  const isInfo =
-    selectionReason === StUsdsSelectionReason.CURVE_ONLY_AVAILABLE ||
-    selectionReason === StUsdsSelectionReason.CURVE_BETTER_RATE;
 
   if (isLoading) {
     return (
       <div
-        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 ${isInfo ? 'bg-accent/10' : 'bg-panel'}`}
+        className="bg-card flex w-full items-center gap-2 rounded-lg px-3 py-2"
         data-testid="stusds-provider-notice"
       >
-        <LoaderCircle className="text-textSecondary h-4 w-4 animate-spin" />
-        <Text variant="small" className="text-textSecondary">
+        <LoaderCircle className="text-fgSecondary h-4 w-4 animate-spin" />
+        <Text variant="small" className="text-fgSecondary">
           <Trans>Fetching rates</Trans>
         </Text>
       </div>
@@ -81,7 +78,11 @@ export function StUsdsProviderNotice({
     percentMatch && (isWarningPremium || isHighPremium || isDiscount) ? (
       <>
         {message.split(percentMatch[0])[0]}
-        <span className={isDiscount ? 'text-bullish' : isHighPremium ? 'text-error' : 'text-amber-400'}>
+        <span
+          className={
+            isDiscount ? 'text-statusSuccessSolid' : isHighPremium ? 'text-statusError' : 'text-statusWarning'
+          }
+        >
           {percentMatch[0]}
         </span>
         {message.split(percentMatch[0])[1]}
@@ -93,13 +94,13 @@ export function StUsdsProviderNotice({
   return (
     <div
       className={`flex w-full items-start gap-2 rounded-lg px-3 py-2 ${
-        isWarning ? 'bg-error/10' : isInfo ? 'bg-accent/10' : 'bg-panel'
+        isWarning ? 'bg-statusError/10' : 'bg-card'
       }`}
       data-testid="stusds-provider-notice"
     >
-      {isCurve && !isWarning && <CurveLogo className="text-textSecondary mt-[3px] h-4 w-4 shrink-0" />}
-      {isWarning && <TriangleAlert className="text-error mt-[3px] h-4 w-4 shrink-0" />}
-      <Text variant="small" className={isWarning ? 'text-error' : 'text-textSecondary'}>
+      {isCurve && !isWarning && <CurveLogo className="text-fgSecondary mt-[3px] h-4 w-4 shrink-0" />}
+      {isWarning && <TriangleAlert className="text-statusError mt-[3px] h-4 w-4 shrink-0" />}
+      <Text variant="small" className={isWarning ? 'text-statusError' : 'text-fgSecondary'}>
         {styledMessage}
       </Text>
     </div>

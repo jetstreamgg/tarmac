@@ -71,7 +71,9 @@ export const PendleReadyToRedeemList = () => {
   if (maturedHeld.length === 0) return null;
 
   return (
-    <section data-testid="pendle-ready-to-redeem">
+    // Own section margin (Portfolio rhythm 48/80): the page can't wrap this in
+    // a spacer because the section renders null when nothing has matured.
+    <section className="mt-12 md:mt-20" data-testid="pendle-ready-to-redeem">
       <Heading tag="h3" variant="medium">
         <Trans>Your matured positions</Trans>
       </Heading>

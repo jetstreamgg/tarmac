@@ -1,5 +1,5 @@
 import { useCallback, useMemo, type ReactNode } from 'react';
-import { formatUnits } from 'viem';
+import { formatUnits, type Call } from 'viem';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
@@ -80,6 +80,10 @@ export interface UseSavingsLaunchResult {
   prepared: boolean;
   isLoading: boolean;
   error: Error | null;
+  /** The routed engine's calls, for estimating the flow's network fee. */
+  calls: Call[];
+  /** Whether those calls go out bundled — the batch costs less than the sequence. */
+  isBatch: boolean;
 }
 
 /**
@@ -380,6 +384,8 @@ export function useSavingsLaunch({
     steps,
     prepared: activeHook.prepared,
     isLoading: activeHook.isLoading,
-    error: activeHook.error
+    error: activeHook.error,
+    calls: activeHook.calls ?? [],
+    isBatch: !!activeHook.isBatch
   };
 }

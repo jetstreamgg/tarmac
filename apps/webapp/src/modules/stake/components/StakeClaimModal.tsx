@@ -1,71 +1,33 @@
-import { ReactNode, useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useChainId, useChains } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { X } from 'lucide-react';
-import { formatUsd } from '@/utils';
+import { i18n } from '@lingui/core';
+import { formatNumber } from '@/utils';
+import { TxStatus } from '@/widgets';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useNetworkFee } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Text } from '@/modules/layout/components/Typography';
+import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
+import { NETWORK_FEE_LABEL, toGridCells } from '@/components/product/ModalGridCells';
+import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
+import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import { stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
+// Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
+import { claimSubtitle } from '../lib/constants';
 
 const NO_VALUE = '–';
 
-function InfoRow({
-  label,
-  dataTestId,
-  children
-}: {
-  label: ReactNode;
-  dataTestId: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-textSecondary">{label}</span>
-      <span className="text-text font-medium" data-testid={dataTestId}>
-        {children}
-      </span>
-    </div>
-  );
-}
-
-/**
- * Review-screen body: one reward hero per selected token. The UX confirm mock
- * (1050:23881) labels its hero "Stake amount" — flagged mock quirk; the label
- * here follows the C.6 recovery-confirm precedent `Rewards amount (SYM)`.
- */
-function StakeClaimConfirmSummary({ selected }: { selected: ClaimableReward[] }) {
-  return (
-    <div data-testid="stake-claim-confirm-summary" className="flex flex-col gap-5">
-      {selected.map(reward => (
-        <div
-          key={reward.id}
-          className="flex flex-col gap-1"
-          data-testid={`stake-claim-summary-${reward.tokenSymbol.toLowerCase()}`}
-        >
-          <span className="text-textSecondary text-sm">
-            <Trans>Rewards amount ({reward.tokenSymbol})</Trans>
-          </span>
-          <span className="text-text flex items-center gap-2 text-2xl font-medium tracking-tight">
-            {reward.icon}
-            {reward.formattedAmount} {reward.tokenSymbol}
-          </span>
-          <span className="text-textSecondary text-xs">{formatUsd(reward.amountUsd)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** SKY first (legacy dropdown sort), stable otherwise — the UX frame order. */
+/** SKY first (legacy dropdown sort), stable otherwise — the claim-execution order. */
 function sortSkyFirst(rewards: ClaimableReward[]): ClaimableReward[] {
   return [...rewards].sort((a, b) => {
     const aIsSky = a.tokenSymbol.toUpperCase() === 'SKY';
@@ -77,23 +39,36 @@ function sortSkyFirst(rewards: ClaimableReward[]): ClaimableReward[] {
   });
 }
 
+/** One reward hero (Figma 1036:213983): 40px icon, Heading-2 amount, USD line, badge. */
+function heroFor(reward: ClaimableReward, testIdPrefix: string, label?: boolean) {
+  return (
+    <TransactionAmountHero
+      key={reward.id}
+      label={label ? <Trans>Claim amount</Trans> : undefined}
+      amount={reward.formattedAmount}
+      symbol={reward.tokenSymbol}
+      usd={formatNumber(reward.amountUsd, { minDecimals: 2, maxDecimals: 2 })}
+      size="lg"
+      dataTestId={`${testIdPrefix}-${reward.tokenSymbol.toLowerCase()}`}
+    />
+  );
+}
+
 /**
- * Claim-rewards modal (F6, UX 1050:23669 / 1050:25394 / 1050:25642): per-token
- * checkbox list (all selected by default; a single reward renders as a hero
- * without checkboxes), Network + Network fee rows, and the two-CTA footer —
- * `Claim` plus `Claim & Restake SKY` while SKY is in the selection. Reads come
- * from D5's stake claim adapter; execution goes through `useStakeClaimLaunch`
- * (plain claim = adapter calls, restake = the F1 calldata seam).
- *
- * `onClose` returns to the position-details modal (C11) — the manage-flow
- * params stay staged; a successful claim clears them and lands on the
- * positions tab (C20).
+ * The claim modal's editable body, mounted as the shared modal's
+ * `backgroundContent` (so its two engines survive a minimize) and portaled into
+ * the entry slot. Renders the reward heroes over [Network fee | Network]
+ * (Figma 1036:213978) and keeps the two-CTA footer live: primary
+ * `Claim & Restake SKY` + secondary `Claim` while a SKY reward is claimable,
+ * a single `Claim` otherwise. The QA comps draw no per-token selection — the
+ * flow claims the urn's full claimable set (the old checkbox list is gone,
+ * same call as the generalized claim modal).
  */
-export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClose: () => void }) {
+function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId: string }) {
   const chainId = useChainId();
   const chains = useChains();
-  const queryClient = useQueryClient();
-  const [, setSearchParams] = useAppSearchParams();
+  const { updateModalContent, txStatus } = useTransaction();
+  const entrySlot = useEntrySlot();
 
   const { rewards: unsortedRewards, isLoading } = stakeAdapter.useClaimable({
     kind: 'stake',
@@ -101,19 +76,142 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
   });
   const rewards = useMemo(() => sortSkyFirst(unsortedRewards), [unsortedRewards]);
 
-  // Default all selected: track only explicit de-selections (D5 panel pattern),
-  // so a late-loading reward arrives selected without a sync effect.
-  const [deselected, setDeselected] = useState<Set<string>>(new Set());
-  const isSelected = (id: string) => !deselected.has(id);
-  const selected = useMemo(() => rewards.filter(reward => isSelected(reward.id)), [rewards, deselected]); // eslint-disable-line react-hooks/exhaustive-deps
+  const {
+    confirm,
+    retry,
+    restakeAvailable,
+    plainPrepared,
+    plainLoading,
+    restakePrepared,
+    restakeLoading,
+    calls,
+    isBatch
+  } = useStakeClaimLaunch({
+    urnIndex: BigInt(urnIndex),
+    selected: rewards,
+    enabled: rewards.length > 0,
+    sessionId
+  });
 
-  const toggle = (id: string) =>
-    setDeselected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  // Read-only: the cell shows a dash until this resolves, and neither CTA waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+
+  const claimDisabled = rewards.length === 0 || !plainPrepared || plainLoading;
+  const restakeDisabled = rewards.length === 0 || !restakePrepared || restakeLoading;
+
+  const handlePlain = useCallback(() => confirm(false), [confirm]);
+  const handleRestake = useCallback(() => confirm(true), [confirm]);
+
+  // Wallet/status screen ("Confirm claim", Figma 1036:214012): the same heroes
+  // relabelled "Claim amount", above the Claim/Restake steps.
+  const transactionScreenContent = useMemo(
+    () => (
+      <div className="flex flex-col gap-8" data-testid="stake-claim-summary">
+        {rewards.map(reward => heroFor(reward, 'stake-claim-summary', true))}
+      </div>
+    ),
+    [rewards]
+  );
+
+  // Keep the entry's CTAs + wallet summary live. While SKY is claimable the
+  // primary CTA is the restake bundle and the plain claim rides secondary
+  // (comp 1036:214001); without SKY the plain claim is the single primary.
+  // Frozen once a CTA fires: the post-claim refetch empties `rewards`, and
+  // pushing that state would blank the executed heroes on the wallet/status
+  // screens (the convert-modal precedent).
+  useEffect(() => {
+    if (txStatus !== TxStatus.IDLE) return;
+    updateModalContent(sessionId, {
+      entry: restakeAvailable
+        ? {
+            confirmLabel: t`Claim & Restake SKY`,
+            confirmDisabled: restakeDisabled,
+            secondaryConfirmLabel: t`Claim`,
+            secondaryConfirmDisabled: claimDisabled
+          }
+        : {
+            confirmLabel: t`Claim`,
+            confirmDisabled: claimDisabled,
+            secondaryConfirmLabel: undefined,
+            secondaryConfirmDisabled: undefined
+          },
+      onConfirm: restakeAvailable ? handleRestake : handlePlain,
+      onSecondaryConfirm: restakeAvailable ? handlePlain : undefined,
+      onRetry: retry,
+      transactionScreenContent
     });
+  }, [
+    updateModalContent,
+    sessionId,
+    txStatus,
+    restakeAvailable,
+    claimDisabled,
+    restakeDisabled,
+    handlePlain,
+    handleRestake,
+    retry,
+    transactionScreenContent
+  ]);
+
+  const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
+
+  // [Network fee | Network] (Figma 1036:213990). The fee cell draws the live
+  // estimate — the plain claim's, per `useStakeClaimLaunch`'s note on the
+  // two-CTA gap — with its tooltip and bundling panel.
+  const gridRows = toGridCells(
+    [
+      [
+        { label: NETWORK_FEE_LABEL, kind: 'single', value: networkFee?.formatted ?? NO_VALUE },
+        { label: t`Network`, kind: 'single', value: networkName, network: true }
+      ]
+    ],
+    'stake-claim-row',
+    { fee: networkFee, state: bundleState }
+  );
+
+  const body = (
+    <div className="flex flex-col gap-8 sm:gap-12" data-testid="stake-claim-form">
+      {isLoading && rewards.length === 0 ? (
+        <Skeleton className="h-20 w-full" />
+      ) : rewards.length === 0 ? (
+        <Text className="text-fgSecondary text-sm leading-5.5">
+          <Trans>There are currently no claimable rewards.</Trans>
+        </Text>
+      ) : (
+        <div className="flex flex-col gap-8">
+          {rewards.map(reward => heroFor(reward, 'stake-claim-reward'))}
+        </div>
+      )}
+
+      {rewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
+
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+    </div>
+  );
+
+  // Display inside the dialog when its entry slot is mounted; otherwise render
+  // inline in the hidden host (keeps the body — and the engines — mounted).
+  return entrySlot ? createPortal(body, entrySlot) : body;
+}
+
+/**
+ * Claim-rewards modal launcher (Figma 1036:213978 entry → 1036:214007 confirm),
+ * on the shared TransactionModal. Launches at mount — the entry body lives in
+ * `StakeClaimPanel` above — and returns to the position-details modal (C11)
+ * when the shared modal closes; a successful claim clears the manage-flow
+ * params and lands on the positions tab (C20) before this ever unmounts.
+ */
+export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClose: () => void }) {
+  const { launch, isModalOpen } = useTransaction();
+  const queryClient = useQueryClient();
+  const [, setSearchParams] = useAppSearchParams();
+  const sessionId = useId();
 
   const onSuccess = useCallback(() => {
     invalidateStakeQueries(queryClient);
@@ -129,121 +227,50 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
     );
   }, [queryClient, setSearchParams]);
 
-  const confirmSummary = useMemo(() => <StakeClaimConfirmSummary selected={selected} />, [selected]);
-
-  const { launch, restakeAvailable, plainPrepared, plainLoading, restakePrepared, restakeLoading } =
-    useStakeClaimLaunch({
-      urnIndex: BigInt(urnIndex),
-      selected,
-      enabled: selected.length > 0,
-      transactionContent: confirmSummary,
-      onSuccess
+  const launchedRef = useRef(false);
+  useEffect(() => {
+    if (launchedRef.current) return;
+    launchedRef.current = true;
+    launch({
+      title: t`Claim rewards`,
+      // Figma 1036:214007 titles the wallet screen "Confirm claim".
+      transactionTitle: t`Confirm claim`,
+      subtitles: {
+        loading: i18n._(claimSubtitle[TxStatus.LOADING]),
+        success: i18n._(claimSubtitle[TxStatus.SUCCESS]),
+        error: i18n._(claimSubtitle[TxStatus.ERROR])
+      },
+      // Toasts reuse the legacy claim notification copy (C6).
+      toast: {
+        loading: t`Claiming rewards`,
+        success: t`Claim successful`,
+        error: t`Claim failed`
+      },
+      sessionId,
+      entry: { confirmLabel: t`Claim`, confirmDisabled: true },
+      backgroundContent: <StakeClaimPanel urnIndex={urnIndex} sessionId={sessionId} />,
+      onConfirm: () => {},
+      onSuccess,
+      // The panel pushes the precise claimAction + amounts at confirm time.
+      analytics: {
+        widgetName: 'stake',
+        flow: 'manage',
+        action: 'claim',
+        data: { module: 'stake', urnIndex }
+      }
     });
+  }, [launch, sessionId, urnIndex, onSuccess]);
 
-  const claimDisabled = selected.length === 0 || !plainPrepared || plainLoading;
-  const restakeDisabled = !restakePrepared || restakeLoading;
+  // Return to the details modal when the shared modal closes. Success never
+  // reaches this: it clears the flow params, unmounting this launcher first.
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (isModalOpen) {
+      wasOpenRef.current = true;
+      return;
+    }
+    if (wasOpenRef.current) onClose();
+  }, [isModalOpen, onClose]);
 
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
-  const showCheckboxes = rewards.length > 1;
-
-  return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
-      <DialogContent
-        aria-describedby={undefined}
-        data-testid="stake-claim-modal"
-        className="bg-containerDark flex w-full max-w-md flex-col gap-6 p-6"
-        onOpenAutoFocus={event => event.preventDefault()}
-      >
-        <div className="flex items-center justify-between">
-          <DialogTitle className="text-text text-lg font-medium">
-            <Trans>Claim rewards</Trans>
-          </DialogTitle>
-          <Button
-            variant="secondary"
-            size="iconM"
-            onClick={onClose}
-            aria-label={t`Close`}
-            data-testid="stake-claim-close"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {isLoading && rewards.length === 0 ? (
-          <Skeleton className="h-20 w-full" />
-        ) : rewards.length === 0 ? (
-          <p className="text-textSecondary text-sm">
-            <Trans>There are currently no claimable rewards.</Trans>
-          </p>
-        ) : !showCheckboxes ? (
-          <div
-            className="text-text flex items-baseline gap-2 text-3xl font-medium tracking-tight"
-            data-testid="stake-claim-single"
-          >
-            <span className="self-center">{rewards[0].icon}</span>
-            {rewards[0].formattedAmount} {rewards[0].tokenSymbol}
-            <span className="text-textSecondary text-sm font-normal">{formatUsd(rewards[0].amountUsd)}</span>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {rewards.map(reward => (
-              <label
-                key={reward.id}
-                data-testid={`stake-claim-row-${reward.tokenSymbol.toLowerCase()}`}
-                className="bg-panel flex cursor-pointer items-center gap-3 rounded-xl p-3"
-              >
-                <Checkbox
-                  data-testid={`stake-claim-checkbox-${reward.tokenSymbol.toLowerCase()}`}
-                  checked={isSelected(reward.id)}
-                  onCheckedChange={() => toggle(reward.id)}
-                  aria-label={reward.tokenSymbol}
-                />
-                {reward.icon}
-                <span className="text-text flex-1 font-medium">{reward.tokenSymbol}</span>
-                <span className="flex flex-col items-end">
-                  <span className="text-text font-medium">{reward.formattedAmount}</span>
-                  <span className="text-textSecondary text-sm">{formatUsd(reward.amountUsd)}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-        )}
-
-        <div className="border-textSecondary/10 flex flex-col gap-3 border-t pt-4">
-          <InfoRow label={<Trans>Network</Trans>} dataTestId="stake-claim-network">
-            {networkName}
-          </InfoRow>
-          {/* Live gas estimate is stubbed like the D5/Savings/Vault modals (C10). */}
-          <InfoRow label={<Trans>Network fee</Trans>} dataTestId="stake-claim-fee">
-            {NO_VALUE}
-          </InfoRow>
-        </div>
-
-        <div className="flex gap-3">
-          <Button
-            variant={restakeAvailable ? 'secondary' : 'primary'}
-            size="xl"
-            className="flex-1"
-            onClick={() => launch(false)}
-            disabled={claimDisabled}
-            data-testid="stake-claim-confirm"
-          >
-            <Trans>Claim</Trans>
-          </Button>
-          {restakeAvailable && (
-            <Button
-              variant="primary"
-              size="xl"
-              className="flex-1"
-              onClick={() => launch(true)}
-              disabled={restakeDisabled}
-              data-testid="stake-claim-restake-confirm"
-            >
-              <Trans>Claim &amp; Restake SKY</Trans>
-            </Button>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+  return null;
 }

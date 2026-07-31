@@ -1,46 +1,62 @@
-import { type ReactNode } from 'react';
+import { useMemo } from 'react';
+import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { type Token, type VaultProvider } from '@/hooks';
+import { type Token, type VaultProvider, useVaultMarketData } from '@/hooks';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
+import { ModalAmountField } from '@/components/product/ModalAmountField';
+import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
+import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useNetworkFee } from '@/hooks';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
+import { buildVaultEntryRows, buildVaultReviewRows } from './vaultModalRows';
 
 export type { VaultModalPreset } from '../hooks/useVaultTransactionForm';
 
 const NO_VALUE = '–';
 
-type ModalRow = { label: ReactNode; value: ReactNode };
-
-function Row({ label, value }: ModalRow) {
+/**
+ * The vault's single-asset chip beside the percent presets (Figma 859:38126
+ * draws the DS Button / Dropdown pill here, but a vault has exactly one
+ * underlying asset — no alternative to pick — so this renders the same pill
+ * statically, without the chevron affordance).
+ */
+function AssetPill({ symbol }: { symbol: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <Text className="text-textSecondary text-sm">{label}</Text>
-      <Text className="text-text text-sm font-medium">{value}</Text>
-    </div>
+    <span
+      className="border-glassBorder flex h-7 shrink-0 items-center gap-1 rounded-full border px-1.5"
+      data-testid="vault-modal-asset"
+    >
+      <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="size-4" />
+      <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
+        {symbol}
+      </span>
+    </span>
   );
 }
 
 /**
- * Editable body for the vault "Supply to / Withdraw from {vault}" modals, mounted
- * as the shared modal's entry screen — the vault analogue of `SavingsModalForm`.
- * One body, two flows. The form model (`useVaultTransactionForm`) is shared; this
- * is the presentation: the amount input + Max + the folded review rows (You'll
- * receive / APY / Est. earnings / Product / Withdrawal / Network fee).
+ * Editable body for the vault "Supply to / Withdraw from {vault}" modals (Figma
+ * 859:38105 / 859:38297 entries, 859:38553 / 859:38234 reviews), mounted as the
+ * shared modal's entry screen — the vault analogue of `SavingsModalForm`. One
+ * body, two flows.
  *
- * NOTE: the design draws a distinct "Review supply" screen between input and the
- * wallet step, but the TransactionContext machinery supports only one first
- * screen (entry OR review) before the wallet/status screen. So — like the savings
- * modal — the review rows are folded into this editable entry; the wallet screen
- * shows the amount summary + the stepped Approve/Supply indicator.
- *
- * Confirm fires the engine `execute` from `useVaultLaunch` directly (the modal is
- * already open); gating/steps/wallet-content/toast are kept live via
- * `updateModalContent` so the body never remounts (input stays focused).
+ * The form model (`useVaultTransactionForm`) owns the amount/Max state and the
+ * ERC-4626 reads; this is the presentation: the DS amount field (label + 24px
+ * asset icon + Heading-3 input, balance + 25/50/100% chips + asset chip) and
+ * the two-column detail grid. The shared modal owns the confirm button and the
+ * three-screen sequence (entry → review → wallet): this body keeps the gating +
+ * review breakdown + step labels + wallet hero + toast titles live via
+ * `updateModalContent` so it never remounts (input stays focused). Confirm on
+ * the review fires the engine `execute` from `useVaultLaunch` — calldata is
+ * unchanged.
  */
 export function VaultModalForm({
   sessionId,
@@ -58,10 +74,13 @@ export function VaultModalForm({
   assetToken: Token;
   vaultName: string;
   provider?: VaultProvider;
-  /** Net APY as a decimal fraction (e.g. 0.0445) for the APY + projected-earnings rows. */
+  /** Net APY as a decimal fraction (e.g. 0.0445) for the rate + projected-earnings cells. */
   netRate?: number;
   preset?: VaultModalPreset;
 }) {
+  const chainId = useChainId();
+  const chains = useChains();
+
   const form = useVaultTransactionForm({ flow, vaultAddress, assetToken, provider, preset });
   const {
     isConnected,
@@ -70,109 +89,166 @@ export function VaultModalForm({
     value,
     amount,
     available,
+    isZero,
     insufficient,
     amountReady,
+    position,
     engineParams,
     toast,
     transactionScreenContent,
     onInput,
-    setMaxAmount
+    setPercentAmount
   } = form;
 
-  const { execute, steps, prepared } = useVaultLaunch(engineParams);
+  const { execute, steps, prepared, calls, isBatch } = useVaultLaunch(engineParams);
+  // Read-only: the row shows a dash until this resolves, and the confirm button never
+  // waits on it.
+  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady
+  });
+
+  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
+  // every render, so depending on its identity would give the review breakdown a
+  // new identity every render — and the live push that carries it would re-enter
+  // the provider on each of its re-renders (the update loop the modal forms guard
+  // against). Same field-by-field list the convert launch hook keeps.
+  const feeCell = useMemo(
+    () => ({ fee: networkFee, state: bundleState }),
+    [
+      networkFee?.formatted,
+      networkFee?.batchSaving,
+      bundleState.ready,
+      bundleState.settled,
+      bundleState.canBundle,
+      bundleState.promoVisible
+    ]
+  );
   const disabled = !amountReady || !prepared;
 
+  // The stars accent marks an incentive-boosted rate, mirroring the vault rate
+  // popover (`MorphoRateBreakdownPopover`) — read from the same market data.
+  const { data: marketData } = useVaultMarketData({ provider, vaultAddress });
+  const boostedRate = (marketData?.rate?.rewards?.length ?? 0) > 0;
+
+  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  const rate = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
+
+  const formatAsset = (units: bigint) =>
+    formatNumber(parseFloat(formatUnits(units, decimals)), { maxDecimals: 2 });
+  const projectEarnings = (units: bigint) =>
+    netRate !== undefined
+      ? formatNumber(projectAnnualEarnings(parseFloat(formatUnits(units, decimals)), netRate), {
+          maxDecimals: 2
+        })
+      : NO_VALUE;
+
+  // Position after the action, clamped at zero for over-withdrawals (the
+  // insufficient gate blocks submission anyway).
+  const positionAfter = isSupply ? position + amount : position > amount ? position - amount : 0n;
+
+  const rows = buildVaultEntryRows({
+    rate,
+    boostedRate,
+    network: networkName,
+    assetSymbol: assetToken.symbol,
+    supplyBefore: formatAsset(position),
+    supplyAfter: formatAsset(positionAfter),
+    earningsBefore: projectEarnings(position),
+    earningsAfter: projectEarnings(positionAfter),
+    hasAmount: !isZero,
+    networkFee: networkFee?.formatted ?? NO_VALUE
+  });
+
+  // Review breakdown (Figma 859:38553 / 859:38234): the amount hero the wallet
+  // screen also draws, over the review grid. Scalar deps keep the memo stable
+  // across unrelated renders (matches the savings form).
+  const amountDisplay = formatAsset(amount);
+  const earningsAfterDisplay = projectEarnings(positionAfter);
+  const transactionContent = useMemo(
+    () => (
+      <div className="flex flex-col gap-8 sm:gap-12" data-testid={`vault-modal-${flow}-review`}>
+        {transactionScreenContent}
+        <ModalSummaryGrid
+          rows={toGridCells(
+            buildVaultReviewRows(flow, {
+              amount: amountDisplay,
+              assetSymbol: assetToken.symbol,
+              estEarnings: earningsAfterDisplay,
+              product: vaultName,
+              rate,
+              boostedRate,
+              withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
+              network: networkName,
+              networkFee: networkFee?.formatted ?? NO_VALUE
+            }),
+            'vault-modal-row',
+            feeCell
+          )}
+          dividerClassName="h-6"
+        />
+      </div>
+    ),
+    [
+      flow,
+      transactionScreenContent,
+      amountDisplay,
+      assetToken.symbol,
+      earningsAfterDisplay,
+      vaultName,
+      rate,
+      boostedRate,
+      networkName,
+      feeCell,
+      networkFee
+    ]
+  );
+
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
-  // keeps the shared modal's confirm gating / step labels / wallet summary / toast
-  // titles in sync, and the entry-slot portal. Returns the slot renderer.
+  // keeps the shared modal's confirm gating / review breakdown / step labels /
+  // wallet summary / toast titles in sync, and the entry-slot portal.
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
     confirmDisabled: disabled,
-    steps,
+    transactionContent,
     transactionScreenContent,
+    steps,
     toast
   });
 
-  // Derived from the parsed engine `amount` (not the raw input) so the preview
-  // matches what's submitted — an input that normalizes to 0n previews 0 too.
-  // USD ≈ amount for the $1-pegged vault assets (USDC/USDS/USDT).
-  const amountUsd = parseFloat(formatUnits(amount, decimals));
-  const apy = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
-  const receiveRow: ModalRow = {
-    label: <Trans>You&apos;ll receive</Trans>,
-    value: `${formatNumber(amountUsd, { maxDecimals: 2 })} ${assetToken.symbol}`
-  };
-  const rows: ModalRow[] = isSupply
-    ? [
-        receiveRow,
-        { label: <Trans>APY</Trans>, value: apy },
-        {
-          label: <Trans>Est. earnings (1Y)</Trans>,
-          value: `$${formatNumber(projectAnnualEarnings(amountUsd, netRate), { maxDecimals: 2 })}`
-        },
-        { label: <Trans>Product</Trans>, value: vaultName },
-        { label: <Trans>Withdrawal</Trans>, value: <Trans>Anytime</Trans> },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
-      ]
-    : [
-        receiveRow,
-        { label: <Trans>Product</Trans>, value: vaultName },
-        { label: <Trans>Network fee</Trans>, value: NO_VALUE }
-      ];
-
   const body = (
-    <div className="flex flex-col gap-3" data-testid={`vault-modal-${flow}-form`}>
-      <div className="bg-panel flex items-center justify-between gap-2 rounded-xl p-3">
-        <input
-          inputMode="decimal"
-          placeholder="0"
-          value={value}
-          onChange={e => onInput(e.target.value)}
-          disabled={!isConnected}
-          aria-label={isSupply ? t`Supply amount` : t`Withdraw amount`}
-          data-testid="vault-modal-amount-input"
-          className="text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-2xl font-medium outline-none disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <div className="text-text flex shrink-0 items-center gap-1.5" data-testid="vault-modal-asset">
-          <TokenIcon
-            token={{ symbol: assetToken.symbol }}
-            width={20}
-            showChainIcon={false}
-            className="h-5 w-5"
-          />
-          <Text className="font-medium">{assetToken.symbol}</Text>
-        </div>
-      </div>
+    <div className="flex flex-col gap-8 sm:gap-12" data-testid={`vault-modal-${flow}-form`}>
+      <ModalAmountField
+        label={<Trans>Amount</Trans>}
+        tokenSymbol={assetToken.symbol}
+        value={value}
+        onInput={onInput}
+        disabled={!isConnected}
+        balance={
+          <>
+            <Trans>Balance</Trans>: {isConnected ? formatAsset(available) : NO_VALUE}
+          </>
+        }
+        onPercent={setPercentAmount}
+        selector={<AssetPill symbol={assetToken.symbol} />}
+        error={
+          insufficient ? (
+            <Text className="text-error text-sm" data-testid="vault-modal-amount-error">
+              {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
+            </Text>
+          ) : undefined
+        }
+        inputAriaLabel={isSupply ? t`Supply amount` : t`Withdraw amount`}
+        inputTestId="vault-modal-amount-input"
+        maxTestId="vault-modal-amount-max"
+      />
 
-      <div className="flex items-center justify-between">
-        <Text className="text-textSecondary text-sm">
-          <Trans>Balance</Trans>:{' '}
-          {isConnected
-            ? formatNumber(parseFloat(formatUnits(available, decimals)), { maxDecimals: 2 })
-            : NO_VALUE}
-        </Text>
-        <button
-          type="button"
-          onClick={setMaxAmount}
-          className="text-textEmphasis text-sm font-medium"
-          data-testid="vault-modal-amount-max"
-        >
-          <Trans>Max</Trans>
-        </button>
-      </div>
+      <ModalSummaryGrid rows={toGridCells(rows, 'vault-modal-row', feeCell)} dividerClassName="h-8" />
 
-      {insufficient && (
-        <Text className="text-error text-sm" data-testid="vault-modal-amount-error">
-          {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
-        </Text>
-      )}
-
-      <div className="flex flex-col gap-3 pt-1">
-        {rows.map((row, index) => (
-          <Row key={index} label={row.label} value={row.value} />
-        ))}
-      </div>
+      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

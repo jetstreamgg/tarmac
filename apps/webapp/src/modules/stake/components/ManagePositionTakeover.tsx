@@ -81,20 +81,38 @@ export function ManagePositionTakeover({
   // Legacy Free.tsx/Repay.tsx simulation inputs, composed (M9).
   const newCollateralAmount = existingCollateral + skyToLock - skyToFree;
   const newDebtValue = existingDebt + usdsToBorrow - usdsToWipe;
-  const {
-    data: simulatedVault,
-    isLoading: simulationLoading,
-    error: simulationError
-  } = useSimulatedVault(
-    newCollateralAmount > 0n ? newCollateralAmount : 0n,
-    newDebtValue > 0n ? newDebtValue : 0n,
+
+  // Live-composed amounts for the slider and display surfaces:
+  // useSimulatedVault's per-amount work is pure math over cached chain reads,
+  // so it can track the raw amounts frame-for-frame while the RPC-bound seams
+  // and validation stay debounced.
+  const liveSkyToLock = state.stakeEnabled && state.stakeMode === 'stake' ? state.skyAmount : 0n;
+  const liveSkyToFree = state.stakeEnabled && state.stakeMode === 'withdraw' ? state.skyAmount : 0n;
+  const liveUsdsToBorrow = state.borrowEnabled && state.borrowMode === 'borrow' ? state.usdsAmount : 0n;
+  const liveUsdsToWipe = state.borrowEnabled && state.borrowMode === 'repay' ? state.usdsAmount : 0n;
+  const liveCollateralAmount = existingCollateral + liveSkyToLock - liveSkyToFree;
+  const liveDebtValue = existingDebt + liveUsdsToBorrow - liveUsdsToWipe;
+  const { data: simulatedVault } = useSimulatedVault(
+    liveCollateralAmount > 0n ? liveCollateralAmount : 0n,
+    liveDebtValue > 0n ? liveDebtValue : 0n,
     existingDebt,
     ilkName
   );
   // Slider floor/ceiling baseline: same collateral, unchanged debt.
   const { data: vaultNoBorrow } = useSimulatedVault(
-    newCollateralAmount > 0n ? newCollateralAmount : 0n,
+    liveCollateralAmount > 0n ? liveCollateralAmount : 0n,
     existingDebt,
+    existingDebt,
+    ilkName
+  );
+  // Debounced simulation for validation, so errors wait for typing to settle.
+  const {
+    data: debouncedVault,
+    isLoading: simulationLoading,
+    error: simulationError
+  } = useSimulatedVault(
+    newCollateralAmount > 0n ? newCollateralAmount : 0n,
+    newDebtValue > 0n ? newDebtValue : 0n,
     existingDebt,
     ilkName
   );
@@ -119,16 +137,16 @@ export function ManagePositionTakeover({
   const isLiquidationError = !!(
     skyToFree &&
     skyToFree > 0n &&
-    simulatedVault?.liquidationProximityPercentage &&
+    debouncedVault?.liquidationProximityPercentage &&
     liquidationThreshold &&
-    simulatedVault.liquidationProximityPercentage > liquidationThreshold
+    debouncedVault.liquidationProximityPercentage > liquidationThreshold
   );
   const isCappedOsmError = !!(
     skyToFree &&
     skyToFree > 0n &&
-    !!simulatedVault?.delayedPrice &&
-    !!simulatedVault?.liquidationPrice &&
-    simulatedVault.liquidationPrice > simulatedVault.delayedPrice
+    !!debouncedVault?.delayedPrice &&
+    !!debouncedVault?.liquidationPrice &&
+    debouncedVault.liquidationPrice > debouncedVault.delayedPrice
   );
   const stakeError =
     state.stakeMode === 'stake'
@@ -166,9 +184,9 @@ export function ManagePositionTakeover({
 
   const minCollateralNotMet =
     state.borrowMode === 'borrow' &&
-    simulatedVault?.collateralAmount !== undefined &&
-    simulatedVault?.minCollateralForDust !== undefined &&
-    simulatedVault.collateralAmount <= simulatedVault.minCollateralForDust;
+    debouncedVault?.collateralAmount !== undefined &&
+    debouncedVault?.minCollateralForDust !== undefined &&
+    debouncedVault.collateralAmount <= debouncedVault.minCollateralForDust;
 
   const maxRepayable = calculateMaxRepayable({
     debtValue: existingDebt,
@@ -306,7 +324,7 @@ export function ManagePositionTakeover({
       title={<Trans>Manage a position</Trans>}
       badge={
         <>
-          <StakeSky className="h-3.5 w-3.5" />
+          <StakeSky className="h-4 w-4" />
           <Trans>SKY Staking</Trans>
         </>
       }
