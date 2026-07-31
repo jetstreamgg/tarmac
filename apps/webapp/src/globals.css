@@ -26,10 +26,17 @@
   --font-sans: GraphikStd;
 
   --color-text: var(--primary-white);
-  --color-textSecondary: rgba(198, 194, 255, 0.8);
+  /* colors/fg/fg-secondary — the same DS variable --color-fgSecondary carries, so
+     the two secondary-text tokens now resolve alike in BOTH modes (light already
+     mapped both onto fg-secondary #3b3952). The pre-redesign value was the
+     translucent lilac rgba(198, 194, 255, 0.8), which left every
+     `text-textSecondary` surface reading a touch more purple — and, being
+     translucent, drifting with whatever sat behind it — than the redesigned
+     `text-fgSecondary` surfaces beside it. textMuted mirrors it, as in light. */
+  --color-textSecondary: #a1a6c4;
   --color-bullish: var(--service-green);
   --color-textEmphasis: var(--primary-pink);
-  --color-textMuted: rgba(198, 194, 255, 0.8);
+  --color-textMuted: #a1a6c4;
   --color-error: var(--service-red);
   --color-textDimmed: rgb(120, 116, 208);
   --color-textDesaturated: rgb(186, 182, 250);
