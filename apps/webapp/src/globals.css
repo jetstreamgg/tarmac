@@ -379,6 +379,15 @@
   * {
     @apply border-border;
   }
+  /* Backstop page colour on the document itself. `.app-background` is the only
+     thing that paints the page background, and during a view transition it is
+     lifted out of the DOM into the pseudo-element tree — so without this,
+     anything the snapshots don't cover (the canvas beneath them, and the strip
+     the outgoing page uncovers as it slides) falls through to the browser's
+     default white. Also covers overscroll and the gap before first paint. */
+  html {
+    background-color: var(--color-pageBackground);
+  }
   body {
     @apply bg-background text-foreground;
   }
@@ -747,6 +756,10 @@
   inset: 0;
   z-index: -10;
   pointer-events: none;
+  /* Own view-transition group, so the background is lifted out of the root
+     snapshot and stays put while the page slides across it (see the page
+     transition block at the end of this file). */
+  view-transition-name: shell-background;
   background-color: var(--color-pageBackground);
   background-image: var(--background-image-app-background);
   background-repeat: no-repeat;
@@ -807,41 +820,74 @@
    browser without view-transition-types support nothing matches and the app
    degrades to today's instant swap. */
 
-/* Load-bearing: with the default root snapshot the pseudo-element overlay
-   covers the viewport and swallows clicks for the whole animation, so a second
-   navigation fired mid-transition is dropped (reproduced during the route-split
-   refactor; `pointer-events: none` on the pseudos alone did not fix it in
-   Chromium). Suppressing the root group leaves `page` as the only participant. */
-:root {
-  view-transition-name: none;
-}
+/* The page rides the ROOT snapshot, which is always exactly the viewport: it
+   holds what was literally on screen, so the scroll offset is baked into the
+   image and there is nothing left for the browser to interpolate. Naming a
+   tall in-flow element instead makes the auto-generated group animation
+   interpolate its viewport-relative box, and since scrollRestoration jumps the
+   document back to the top on a new route, a navigation from a scrolled
+   position slid vertically by the whole scroll delta. Capturing the root also
+   removes the box morph between pages of differing height.
 
-.page-transition {
-  view-transition-name: page;
+   The chrome that must stay put is lifted out of that snapshot by carrying its
+   own name — a named element is captured as its own group instead of being
+   painted into the root. Their content is identical across the navigation, so
+   their default cross-fade is invisible; the exception is the header, whose
+   active nav pill cross-fades, which is what the comp shows anyway. */
+.vt-shell-header {
+  view-transition-name: shell-header;
 }
+.vt-shell-navbar {
+  view-transition-name: shell-navbar;
+}
+/* .app-background carries `view-transition-name: shell-background` in its own
+   rule above, next to the rest of its geometry. */
 
-::view-transition-old(page),
-::view-transition-new(page) {
+/* The snapshots paint in the top layer, above the whole page, and they
+   hit-test there: without this a click during the ~400ms animation lands on a
+   pseudo-element and dies on <html>, so a second navigation fired mid-flight
+   is silently dropped. It must be every pseudo — setting it on
+   `::view-transition` alone does not restore hit-testing in Chromium, which is
+   what made this look unfixable during the route-splitting refactor. */
+::view-transition,
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) {
   pointer-events: none;
-  /* Pages differ in height and scroll offset. Letting each snapshot keep its
-     own intrinsic size and pin to the top stops the group's box morph from
-     stretching the outgoing page on a tall -> short navigation. */
-  height: auto;
-  object-fit: none;
-  object-position: top left;
-  /* The default cross-fade blends the two snapshots; we animate opacity
-     ourselves, so opt out and composite them normally. */
-  mix-blend-mode: normal;
 }
-::view-transition-image-pair(page) {
+
+/* Groups are siblings in the pseudo tree, painted in capture order — the
+   document's own stacking is NOT carried across. Without this the background
+   (z-index -10 in the page, but captured after the root) paints *over* the
+   page snapshot and the content area goes blank for the whole animation.
+   Restate the intended order explicitly. */
+::view-transition-group(shell-background) {
+  z-index: 0;
+}
+::view-transition-group(root) {
+  z-index: 1;
+}
+::view-transition-group(shell-header),
+::view-transition-group(shell-navbar) {
+  z-index: 2;
+}
+
+/* The default cross-fade blends the two snapshots; we animate opacity
+   ourselves, so opt out and composite them normally. */
+::view-transition-image-pair(root) {
   isolation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :root:active-view-transition-type(page)::view-transition-old(page) {
+  :root:active-view-transition-type(page)::view-transition-old(root) {
     animation: 300ms var(--ease-in-out-quart) both page-slide-out;
   }
-  :root:active-view-transition-type(page)::view-transition-new(page) {
+  :root:active-view-transition-type(page)::view-transition-new(root) {
     animation: 300ms var(--ease-in-out-quart) 100ms both page-slide-in;
   }
 }
@@ -866,10 +912,10 @@
    to register, and an instant full-page repaint reads as a flash — but drop
    the translate, which is the part that triggers vestibular discomfort. */
 @media (prefers-reduced-motion: reduce) {
-  :root:active-view-transition-type(page)::view-transition-old(page) {
+  :root:active-view-transition-type(page)::view-transition-old(root) {
     animation: 150ms var(--ease-in-out-quart) both page-fade-out;
   }
-  :root:active-view-transition-type(page)::view-transition-new(page) {
+  :root:active-view-transition-type(page)::view-transition-new(root) {
     animation: 150ms var(--ease-in-out-quart) both page-fade-in;
   }
 }

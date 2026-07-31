@@ -29,11 +29,7 @@ export function AppShell() {
       {/* Pages render bare — directly on the page background, no container
           card (V2 Figma) — and scroll on the document. */}
       <AppContainer>
-        {/* `page-transition` names this box as the only view-transition group
-            (globals.css), so route changes slide just the page content — the
-            header, the fixed background and the mobile navbar sit outside it
-            and stay put. */}
-        <div className="page-transition w-full">
+        <div className="w-full">
           <Outlet />
         </div>
       </AppContainer>

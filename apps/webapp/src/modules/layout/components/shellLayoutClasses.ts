@@ -34,6 +34,9 @@ export const shellHeaderClasses = () =>
     // Mobile tiers get the DS Mobile / Topbar vertical rhythm (16px, 68px bar
     // with the 36px chip row); the desktop tier keeps the legacy 8px.
     'w-full py-3.5 desktop:py-2 desktop:mb-1',
+    // Own view-transition group, so the bar is lifted out of the page's root
+    // snapshot and holds still while the page slides beneath it.
+    'vt-shell-header',
     // Pages scroll on the document, so the header pins as a sticky, see-through
     // frosted bar (Figma: transparent + blur(7px), no opaque fill).
     'sticky top-0 z-30',
