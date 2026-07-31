@@ -94,7 +94,7 @@ export function buildPendleEntryRows(input: PendleEntryRowInput): PendleModalGri
 export type PendleReviewRowInput = {
   /** Display symbol for the 12px value icons — USDS on pegged markets. */
   displaySymbol: string;
-  /** Supply: claimable at maturity after the action. */
+  /** Supply: the whole position's maturity claim after the action (existing PT + this trade's). */
   claimAfter: string;
   /** Market expiry, formatted. */
   claimDate: string;
@@ -129,14 +129,18 @@ export type PendleReviewRowInput = {
 };
 
 /**
- * Grid for the Pendle review stages. Supply (Figma 859:41264): [You'll claim |
- * Claim date], [Total earnings | Fixed rate], [Product | Withdrawal],
- * [Slippage | Price impact], [Network | Network fee]. Withdraw follows
- * 859:41679 with the Slippage cell slotted in — the comp omits slippage, but
- * the sell quote uses it the same way the buy does, so the control must stay
- * reachable. Price impact is also absent from the comps, but the old modal
- * surfaced it and it's material risk info for an AMM swap, so both reviews
- * keep it beside Slippage (PR #1773 review).
+ * Grid for the Pendle review stages. Supply (Figma 859:41264): [Total at
+ * maturity | Claim date], [Total earnings | Fixed rate], [Product |
+ * Withdrawal], [Slippage | Price impact], [Network | Network fee]. The comp
+ * labels the first cell "You'll claim", but its value is the whole position's
+ * maturity claim (existing PT + this trade's) and would read as this trade's
+ * output under that label — "Total at maturity" says what the number is, the
+ * same way the comp's own "Total earnings" does (PR #1773 review). Withdraw
+ * follows 859:41679 with the Slippage cell slotted in — the comp omits
+ * slippage, but the sell quote uses it the same way the buy does, so the
+ * control must stay reachable. Price impact is also absent from the comps, but
+ * the old modal surfaced it and it's material risk info for an AMM swap, so
+ * both reviews keep it beside Slippage (PR #1773 review).
  */
 export function buildPendleReviewRows(
   flow: 'supply' | 'withdraw',
@@ -172,7 +176,7 @@ export function buildPendleReviewRows(
   if (flow === 'supply') {
     return [
       [
-        { kind: 'single', label: "You'll claim", value: input.claimAfter, token: input.displaySymbol },
+        { kind: 'single', label: 'Total at maturity', value: input.claimAfter, token: input.displaySymbol },
         { kind: 'single', label: 'Claim date', value: input.claimDate }
       ],
       [

@@ -77,7 +77,7 @@ describe('buildPendleReviewRows', () => {
   it('pairs the supply review cells per Figma 859:41264, with the price-impact cell restored', () => {
     const rows = buildPendleReviewRows('supply', reviewInput);
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
-      ["You'll claim", 'Claim date'],
+      ['Total at maturity', 'Claim date'],
       ['Total earnings', 'Fixed rate'],
       ['Product', 'Withdrawal'],
       ['Slippage', 'Price impact'],
