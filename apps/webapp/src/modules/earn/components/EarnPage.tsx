@@ -87,7 +87,7 @@ function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem 
 /** The /earn destination: the Earn Opportunities marketplace section (C2). */
 export function EarnPage() {
   const { rows } = useEarnMarketplace();
-  const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
+  const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
   const chains = useChains();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -267,12 +267,28 @@ export function EarnPage() {
       </div>
       {/* "Products unavailable in the US" (1036:201473) — same table, dimmed and
           inert, always last on the page. Hidden entirely when the region (or
-          the active filters) leaves nothing to list. */}
+          the active filters) leaves nothing to list. When the geo lookup never
+          resolved a country we fall back to the restrictive config, so the
+          section names no region and says why instead (PR #1776 review). */}
       {unavailableItems.length > 0 && (
         <section className="flex flex-col gap-6 md:gap-8" data-testid="earn-unavailable">
-          <h2 className={SECTION_HEADING}>
-            <Trans>Products unavailable in the US</Trans>
-          </h2>
+          <div className="flex flex-col gap-2">
+            <h2 className={SECTION_HEADING}>
+              {isRegionVerified ? (
+                <Trans>Products unavailable in the US</Trans>
+              ) : (
+                <Trans>Products unavailable in your region</Trans>
+              )}
+            </h2>
+            {!isRegionVerified && (
+              <p
+                className="text-fgSecondary max-w-[513px] text-xs leading-[18px]"
+                data-testid="earn-unavailable-reason"
+              >
+                <Trans>We couldn&apos;t verify your region, so these products are unavailable.</Trans>
+              </p>
+            )}
+          </div>
           <EarnTable
             rows={unavailableItems}
             sort={sort}

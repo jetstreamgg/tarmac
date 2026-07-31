@@ -18,9 +18,19 @@ const VALID_GEO_VALUES: Record<string, string[]> = {
   ...Object.fromEntries(MODULE_IDS.map(id => [`geo_module_${id}`, ['true', 'false']]))
 };
 
-export const GEO_OVERRIDE_PARAMS: string[] = Object.keys(VALID_GEO_VALUES);
+/**
+ * Forces the resolved country, so the "we couldn't verify your region" state
+ * (`geo_country=XX`) and a verified restricted one (`geo_country=US`) are both
+ * reachable locally — the presets alone can't produce them, since which of the
+ * two you get depends on whether the geo lookup happened to succeed.
+ */
+const GEO_COUNTRY_PARAM = 'geo_country';
+const COUNTRY_CODE_PATTERN = /^[A-Za-z]{2}$/;
+
+export const GEO_OVERRIDE_PARAMS: string[] = [...Object.keys(VALID_GEO_VALUES), GEO_COUNTRY_PARAM];
 
 export function isValidGeoParam(key: string, value: string): boolean {
+  if (key === GEO_COUNTRY_PARAM) return COUNTRY_CODE_PATTERN.test(value);
   return VALID_GEO_VALUES[key]?.includes(value) ?? false;
 }
 
@@ -49,6 +59,12 @@ export function applyGeoOverrides(config: GeoConfig, search?: string): GeoConfig
     for (const id of MODULE_IDS) {
       result.modules[id] = { ...FALLBACK_CONFIG.modules[id] };
     }
+  }
+
+  // Apply the country override on top of the preset
+  const country = params.get(GEO_COUNTRY_PARAM);
+  if (country && isValidGeoParam(GEO_COUNTRY_PARAM, country)) {
+    result.countryCode = country.toUpperCase();
   }
 
   // Apply individual module overrides (highest priority)

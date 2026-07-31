@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { GeoConfigContext } from './GeoConfigContext';
 import { GeoConfig, GeoConfigContextValue, ModuleId } from '../types';
 import { applyGeoOverrides } from '../applyGeoOverrides';
+import { UNKNOWN_COUNTRY_CODE } from '../constants';
 import { GEO_BYPASS, geoConfigQueryOptions } from '../query';
 import { router } from '@/pages/router';
 
@@ -59,6 +60,13 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
         : isLoading
           ? true
           : (effectiveConfig?.isRegionRestricted ?? true),
+      // Bypassed deployments answer for the region themselves; otherwise a
+      // missing or placeholder country code means the lookup never landed.
+      isRegionVerified: GEO_BYPASS
+        ? true
+        : !isLoading &&
+          !!effectiveConfig?.countryCode &&
+          effectiveConfig.countryCode !== UNKNOWN_COUNTRY_CODE,
       isCookieBannerRequired: isLoading ? true : (effectiveConfig?.isCookiesBannerRequired ?? true)
     }),
     [effectiveConfig, isLoading, error, isModuleEnabled, getModuleRestrictionReason]
