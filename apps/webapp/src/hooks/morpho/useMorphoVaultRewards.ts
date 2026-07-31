@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChainId, useConnection } from 'wagmi';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { isTestnetId, formatBigInt } from '@/utils';
@@ -228,7 +228,13 @@ export function useMorphoVaultRewards({
   const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
 
   const queryClient = useQueryClient();
-  const queryKey = ['morpho-vault-rewards', userAddress, vaultAddress, chainId];
+  // Memoized for the same reason useMerklRewards memoizes its key: `mutate`
+  // closes over it, so a fresh array literal per render gives `mutate` a new
+  // identity every render and churns every consumer that depends on it.
+  const queryKey = useMemo(
+    () => ['morpho-vault-rewards', userAddress, vaultAddress, chainId],
+    [userAddress, vaultAddress, chainId]
+  );
 
   const { data, error, isLoading } = useQuery({
     queryKey,
