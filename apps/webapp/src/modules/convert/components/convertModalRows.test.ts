@@ -1,13 +1,8 @@
-import { i18n } from '@lingui/core';
 import { describe, expect, it } from 'vitest';
 import { buildConvertModalRows } from './convertModalRows';
 
-// The `t` macro resolves against the global i18n singleton (not React context).
-i18n.load('en', {});
-i18n.activate('en');
-
 describe('buildConvertModalRows', () => {
-  it('matches the Figma review-modal contract (486:32223): ids, labels, order and values', () => {
+  it('pins the grid: [Rate | Network], [Slippage | Fee], [Network fee] (Figma 1036:205509)', () => {
     const rows = buildConvertModalRows({
       originSymbol: 'USDS',
       targetSymbol: 'USDC',
@@ -15,24 +10,34 @@ describe('buildConvertModalRows', () => {
       networkFee: '–'
     });
 
-    expect(rows).toEqual([
-      { kind: 'rate', id: 'rate', label: 'Rate', value: '1.00 USDS = 1.00 USDC' },
-      { kind: 'network', id: 'network', label: 'Network', value: 'Ethereum' },
-      { kind: 'plain', id: 'slippage', label: 'Slippage', value: '0.00%' },
-      { kind: 'plain', id: 'fee', label: 'Fee', value: '$0.00' },
-      { kind: 'plain', id: 'networkFee', label: 'Network fee', value: '–' }
+    expect(rows.map(row => row.map(cell => cell.label))).toEqual([
+      ['Rate', 'Network'],
+      ['Slippage', 'Fee'],
+      ['Network fee']
     ]);
+
+    const [[rate, network], [slippage, fee], [networkFee]] = rows;
+    expect(rate).toMatchObject({
+      kind: 'pair',
+      token: 'USDS',
+      left: '1.00',
+      right: '1.00',
+      rightToken: 'USDC'
+    });
+    expect(network).toMatchObject({ kind: 'single', value: 'Ethereum', network: true });
+    // PSM guarantees — static by design; the engine halts the flow if they'd be false.
+    expect(slippage).toMatchObject({ kind: 'single', value: '0.00%' });
+    expect(fee).toMatchObject({ kind: 'single', value: '$0.00' });
+    expect(networkFee).toMatchObject({ kind: 'single', value: '–' });
   });
 
-  it('flips token symbols with the direction', () => {
-    const rows = buildConvertModalRows({
+  it('icons the pair with the active direction tokens', () => {
+    const [[rate]] = buildConvertModalRows({
       originSymbol: 'USDC',
       targetSymbol: 'USDS',
       network: 'Base',
       networkFee: '–'
     });
-
-    expect(rows[0].value).toBe('1.00 USDC = 1.00 USDS');
-    expect(rows[1].value).toBe('Base');
+    expect(rate).toMatchObject({ kind: 'pair', token: 'USDC', rightToken: 'USDS' });
   });
 });

@@ -97,7 +97,13 @@ function useStakeClaimable(scope: ClaimScope): ClaimableResult {
         icon: (
           <TokenIcon token={{ symbol: rewardSymbol }} width={32} showChainIcon={false} className="h-8 w-8" />
         ),
-        formattedAmount: formatBigInt(claimBalance, { unit: REWARD_DECIMALS, maxDecimals: 2 }),
+        // The claim-modal comps pin two decimals on the hero amounts ("22.90",
+        // Figma 1036:213986).
+        formattedAmount: formatBigInt(claimBalance, {
+          unit: REWARD_DECIMALS,
+          minDecimals: 2,
+          maxDecimals: 2
+        }),
         amountUsd,
         chainId
       };

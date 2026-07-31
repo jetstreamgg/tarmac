@@ -1,56 +1,21 @@
 import type { ReactNode } from 'react';
 import { formatUnits } from 'viem';
-import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
-import { formatNumber, getChainIcon } from '@/utils';
-import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ArrowDown } from '@/modules/icons';
-import { buildConvertModalRows, type ConvertModalRow } from './convertModalRows';
+import { formatNumber } from '@/utils';
+import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
+import { toGridCells, type ModalGridFee } from '@/components/product/ModalGridCells';
+import { TokenTransferHero } from '@/components/product/TokenTransferHero';
+import { buildConvertModalRows } from './convertModalRows';
 
+// The comps pin two decimals on every amount ("10,000.00", Figma 1036:205517).
 const formatAmount = (amount: bigint, decimals: number) =>
-  formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 });
-
-function TokenChip({ symbol }: { symbol: string }) {
-  return (
-    <span className="bg-glassBadge flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1">
-      <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
-      <Text className="text-text text-sm font-medium">{symbol}</Text>
-    </span>
-  );
-}
-
-function ReviewRow({
-  row,
-  chainId,
-  feeValue
-}: {
-  row: ConvertModalRow;
-  chainId: number;
-  /** Replaces the plain fee string with the bundling badge group on the fee row. */
-  feeValue?: ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between" data-testid={`convert-modal-row-${row.id}`}>
-      <Text className="text-textSecondary text-sm">
-        {row.id === 'networkFee' ? <NetworkFeeLabel /> : row.label}
-      </Text>
-      <span className="text-text flex items-center gap-1.5 text-sm font-medium">
-        {row.kind === 'network' && getChainIcon(chainId, 'h-4 w-4')}
-        {row.id === 'networkFee' && feeValue ? (
-          feeValue
-        ) : (
-          <Text className="text-text text-sm font-medium">{row.value}</Text>
-        )}
-      </span>
-    </div>
-  );
-}
+  formatNumber(parseFloat(formatUnits(amount, decimals)), { minDecimals: 2, maxDecimals: 2 });
 
 /**
- * Read-only body for the "Review conversion" modal (Figma 486:32223), passed to
- * `launch()` as `transactionContent`. From amount → To amount with token chips,
- * then the `buildConvertModalRows` detail rows. Amounts are display-only — the
- * engine (`usePsmConversion`) owns the calldata this screen previews.
+ * Read-only body for the "Review conversion" modal (Figma 1036:205509), passed
+ * to `launch()` as `transactionContent`. The from → to hero over the shared
+ * summary grid ([Rate pair | Network], [Slippage | Fee], Network fee). Amounts
+ * are display-only — the engine (`usePsmConversion`) owns the calldata this
+ * screen previews.
  */
 export function ConvertReviewContent({
   originSymbol,
@@ -59,10 +24,9 @@ export function ConvertReviewContent({
   targetAmount,
   originDecimals,
   targetDecimals,
-  chainId,
   networkName,
   networkFee,
-  feeValue,
+  feeCell,
   promo
 }: {
   originSymbol: string;
@@ -71,11 +35,10 @@ export function ConvertReviewContent({
   targetAmount: bigint;
   originDecimals: number;
   targetDecimals: number;
-  chainId: number;
   networkName: string;
   networkFee: string;
-  /** Bundling badge group for the fee row; falls back to `networkFee` when absent. */
-  feeValue?: ReactNode;
+  /** Live estimate for the fee cell (tooltip + bundling panel); falls back to `networkFee` when absent. */
+  feeCell?: ModalGridFee;
   /** The "Save X%" card, rendered under the rows when bundling is worth pitching. */
   promo?: ReactNode;
 }) {
@@ -87,49 +50,20 @@ export function ConvertReviewContent({
   });
 
   return (
-    <div className="flex flex-col gap-4" data-testid="convert-modal-review">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex min-w-0 items-center gap-2.5">
-            <TokenIcon
-              token={{ symbol: originSymbol }}
-              width={28}
-              showChainIcon={false}
-              className="h-7 w-7 shrink-0"
-            />
-            <Text className="text-text truncate text-2xl font-medium" dataTestId="convert-modal-from-amount">
-              {formatAmount(originAmount, originDecimals)}
-            </Text>
-          </span>
-          <TokenChip symbol={originSymbol} />
-        </div>
-        {/* Icon SVGs don't inherit currentColor — fill must be set explicitly
-            (same convention as the history tables' light:fill-text fill-white). */}
-        <span aria-hidden className="pl-2">
-          <ArrowDown width={10} height={14} className="fill-textSecondary" />
-        </span>
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex min-w-0 items-center gap-2.5">
-            <TokenIcon
-              token={{ symbol: targetSymbol }}
-              width={28}
-              showChainIcon={false}
-              className="h-7 w-7 shrink-0"
-            />
-            <Text className="text-text truncate text-2xl font-medium" dataTestId="convert-modal-to-amount">
-              {formatAmount(targetAmount, targetDecimals)}
-            </Text>
-          </span>
-          <TokenChip symbol={targetSymbol} />
-        </div>
-      </div>
-
-      <div className="border-border flex flex-col gap-3 border-t pt-4">
-        {rows.map(row => (
-          <ReviewRow key={row.id} row={row} chainId={chainId} feeValue={feeValue} />
-        ))}
-      </div>
-
+    <div className="flex flex-col gap-8 sm:gap-12" data-testid="convert-modal-review">
+      <TokenTransferHero
+        from={{
+          symbol: originSymbol,
+          amount: formatAmount(originAmount, originDecimals),
+          testId: 'convert-modal-from-amount'
+        }}
+        to={{
+          symbol: targetSymbol,
+          amount: formatAmount(targetAmount, targetDecimals),
+          testId: 'convert-modal-to-amount'
+        }}
+      />
+      <ModalSummaryGrid rows={toGridCells(rows, 'convert-modal-row', feeCell)} dividerClassName="h-6" />
       {promo}
     </div>
   );

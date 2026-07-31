@@ -47,7 +47,9 @@ export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
           error: t`An error occurred while supplying to ${args.vaultName}.`
         },
         sessionId: supplySessionId,
-        entry: { confirmLabel: t`Supply`, confirmDisabled: true },
+        reviewTitle: t`Review supply`,
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
         backgroundContent: (
@@ -80,7 +82,9 @@ export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
           error: t`An error occurred while withdrawing from ${args.vaultName}.`
         },
         sessionId: withdrawSessionId,
-        entry: { confirmLabel: t`Withdraw`, confirmDisabled: true },
+        reviewTitle: t`Review withdrawal`,
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        confirmLabel: t`Confirm`,
         backgroundContent: (
           <VaultModalForm
             sessionId={withdrawSessionId}

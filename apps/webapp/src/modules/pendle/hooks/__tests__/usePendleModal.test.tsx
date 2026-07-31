@@ -89,7 +89,10 @@ describe('usePendleModal', () => {
     const config = hoisted.launchMock.mock.calls[0][0];
     expect(config.title).toContain('PT-USDG');
     expect(config.sessionId).toBeTruthy();
+    expect(config.reviewTitle).toBe('Review supply');
+    expect(config.entry.confirmLabel).toBe('Review');
     expect(config.entry.confirmDisabled).toBe(true);
+    expect(config.confirmLabel).toBe('Confirm');
     expect(config.backgroundContent).toBeTruthy();
     unmount();
   });
@@ -99,7 +102,10 @@ describe('usePendleModal', () => {
 
     const config = hoisted.launchMock.mock.calls[0][0];
     expect(config.title).toContain('PT-USDG');
+    expect(config.reviewTitle).toBe('Review withdrawal');
+    expect(config.entry.confirmLabel).toBe('Review');
     expect(config.entry.confirmDisabled).toBe(true);
+    expect(config.confirmLabel).toBe('Confirm');
     expect(config.backgroundContent).toBeTruthy();
     unmount();
   });

@@ -38,11 +38,15 @@ export interface VaultTransactionForm {
   isZero: boolean;
   insufficient: boolean;
   amountReady: boolean;
+  /** Supplied position in asset units (ERC-4626 `userAssets`) — feeds the entry deltas. */
+  position: bigint;
   engineParams: VaultEngineParams;
   toast: VaultToastTitles;
   transactionScreenContent: ReactNode;
   onInput: (next: string) => void;
   setMaxAmount: () => void;
+  /** Set the amount to a percentage of the available balance; 100 routes through Max (no-dust withdraw). */
+  setPercentAmount: (pct: number) => void;
   clearAmount: () => void;
 }
 
@@ -101,6 +105,11 @@ export function useVaultTransactionForm({
     // On withdraw, Max redeems the whole share balance; supply just fills the amount.
     setMax(!isSupply);
   };
+  const setPercentAmount = (pct: number) => {
+    if (pct >= 100) return setMaxAmount();
+    setMax(false);
+    setValue(formatUnits((available * BigInt(pct)) / 100n, decimals));
+  };
   const clearAmount = () => {
     setValue('');
     setMax(false);
@@ -137,8 +146,15 @@ export function useVaultTransactionForm({
   );
 
   const transactionScreenContent = useMemo(
-    () => <VaultAmountSummary assetToken={assetToken} amount={amount} decimals={decimals} />,
-    [assetToken, amount, decimals]
+    () => (
+      <VaultAmountSummary
+        label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
+        assetToken={assetToken}
+        amount={amount}
+        decimals={decimals}
+      />
+    ),
+    [isSupply, assetToken, amount, decimals]
   );
 
   return {
@@ -151,11 +167,13 @@ export function useVaultTransactionForm({
     isZero,
     insufficient,
     amountReady,
+    position: vaultData?.userAssets ?? 0n,
     engineParams,
     toast,
     transactionScreenContent,
     onInput,
     setMaxAmount,
+    setPercentAmount,
     clearAmount
   };
 }
