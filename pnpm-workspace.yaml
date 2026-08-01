@@ -2,7 +2,7 @@ packages:
   - apps/*
 
 catalog:
-  '@base-org/account': ~2.5.7
+  '@base-org/account': ~2.4.2
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@coinbase/wallet-sdk': ~4.3.7
   '@eslint/eslintrc': ^3.3.5
@@ -46,7 +46,7 @@ catalog:
   '@vitejs/plugin-react-swc': ^4.3.1
   '@vitest/coverage-v8': ^4.1.9
   '@wagmi/cli': ^2.10.0
-  '@wagmi/core': ^3.5.5
+  '@wagmi/core': ^3.6.4
   '@walletconnect/ethereum-provider': ~2.23.10
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
@@ -92,7 +92,7 @@ catalog:
   vite-plugin-node-polyfills: ^0.28.0
   vite-plugin-simple-html: ^1.1.0
   vitest: ^4.1.9
-  wagmi: ^3.6.21
+  wagmi: ^3.7.4
   zod: ^4.3.6
 
 catalogMode: strict
