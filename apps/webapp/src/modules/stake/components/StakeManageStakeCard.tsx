@@ -6,7 +6,8 @@ import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
-import { StakeManageCard, StakeManageDeltaRow } from './StakeManageCard';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { StakeManageCard, StakeManageStatCell, StakeManageStatDivider } from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 
 const NO_VALUE = '–';
@@ -63,8 +64,19 @@ export function StakeManageStakeCard({
   };
   const onPercentClick = (percent: number) => onSliderChange(percent);
 
+  // Comp values carry a 12px SKY icon instead of the symbol text (1036:213909).
+  const skyIcon = (
+    <TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />
+  );
   const formatSky = (value: bigint | null) =>
-    value !== null ? `${formatBigInt(value, { compact: true })} SKY` : NO_VALUE;
+    value !== null ? (
+      <>
+        {formatBigInt(value, { compact: true })}
+        {skyIcon}
+      </>
+    ) : (
+      NO_VALUE
+    );
 
   return (
     <StakeManageCard
@@ -88,14 +100,19 @@ export function StakeManageStakeCard({
           error={error}
           maxDisplayDecimals={2}
           dataTestId="stake-manage-stake-amount"
+          // Comp 1036:213881: the balance line sits above the chips.
+          topRight={
+            <span className="flex items-center gap-1" data-testid="stake-manage-stake-base">
+              {/* The label is its own flex item so gap-1 spaces both branches
+                  alike — a bare trailing space would double up with the gap
+                  when the skeleton renders. */}
+              <span>{isStake ? t`Balance:` : t`Staked:`}</span>
+              {isStake && walletBalanceLoading ? <Skeleton className="h-4 w-24" /> : formatBigInt(base)}
+            </span>
+          }
         />
 
-        <div className="border-textSecondary/10 flex items-center justify-between border-b pb-3 text-sm">
-          <span className="text-textSecondary">{isStake ? t`Balance:` : t`Staked:`}</span>
-          <span className="text-text font-circle font-medium" data-testid="stake-manage-stake-base">
-            {isStake && walletBalanceLoading ? <Skeleton className="h-4 w-24" /> : formatBigInt(base)}
-          </span>
-        </div>
+        <div className="bg-borderPrimary h-px w-full" aria-hidden />
 
         <div className="flex flex-col gap-2">
           <Slider
@@ -113,22 +130,34 @@ export function StakeManageStakeCard({
           </div>
         </div>
 
-        <div className="flex flex-col">
-          <StakeManageDeltaRow
+        {/* Comp 1036:213889 stat columns: hugging cells split by hairlines. */}
+        <div className="flex flex-wrap items-start gap-4">
+          <StakeManageStatCell
             label={
               <>
                 <Trans>Min. stake amount to borrow</Trans>
-                <Info className="h-3.5 w-3.5" aria-hidden />
+                <Info className="h-3 w-3" aria-hidden />
               </>
             }
-            current={minStakeToBorrow !== undefined ? `${formatBigInt(minStakeToBorrow)} SKY` : NO_VALUE}
+            current={
+              minStakeToBorrow !== undefined ? (
+                <>
+                  {formatBigInt(minStakeToBorrow)}
+                  {skyIcon}
+                </>
+              ) : (
+                NO_VALUE
+              )
+            }
             dataTestId="stake-manage-min-stake"
           />
-          <StakeManageDeltaRow
+          <StakeManageStatDivider />
+          <StakeManageStatCell
             label={<Trans>SKY Rewards rate</Trans>}
             current={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : NO_VALUE}
           />
-          <StakeManageDeltaRow
+          <StakeManageStatDivider />
+          <StakeManageStatCell
             label={<Trans>Est. annual rewards</Trans>}
             current={formatSky(estCurrentSky)}
             next={

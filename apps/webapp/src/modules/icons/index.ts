@@ -48,6 +48,7 @@ import { Wallet } from './Wallet';
 import { Pendle } from './Pendle';
 import { Merkl } from './Merkl';
 import { StarsFilled } from './StarsFilled';
+import { TrendingUpGradient } from './TrendingUpGradient';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
 
@@ -102,6 +103,7 @@ export {
   Pendle,
   Merkl,
   StarsFilled,
+  TrendingUpGradient,
   IllustrationStaked,
   IllustrationStakingLogomark
 };

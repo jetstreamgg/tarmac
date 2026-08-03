@@ -3,7 +3,7 @@ import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { ArrowUpRight, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import {
   getIlkName,
   RISK_LEVEL_THRESHOLDS,
@@ -29,7 +29,8 @@ import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeM
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import { StakeManageStakeCard } from './StakeManageStakeCard';
-import { StakeManageBorrowCard, RiskValue } from './StakeManageBorrowCard';
+import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
+import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 
@@ -349,76 +350,88 @@ export function ManagePositionTakeover({
         </>
       }
     >
-      {/* Position summary strip (UX 1050:21454) */}
+      {/* Position summary strip (comp 1036:213826; flows UX 1050:21454) */}
       <section
         data-testid="stake-manage-position-summary"
-        className="flex flex-col gap-5 px-2"
+        className="flex flex-col gap-8 px-2"
         aria-label="Position summary"
       >
-        <h3 className="text-text font-circle text-lg font-medium">
+        <h3 className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
           <Trans>Position summary</Trans>
         </h3>
-        <div className="flex flex-wrap items-start gap-10">
-          <div className="flex flex-col gap-1">
-            <span className="text-textSecondary text-sm">
+        <div className="flex flex-wrap items-center gap-9">
+          <div className="flex flex-col gap-3.5">
+            <span className="text-textSecondary text-xs leading-[18px]">
               <Trans>Staked amount</Trans>
             </span>
-            <span className="text-text font-circle flex items-center gap-2 text-3xl font-medium tracking-tight">
-              <TokenIcon token={{ symbol: 'SKY' }} width={28} className="h-7 w-7" showChainIcon={false} />
+            <span className="text-text font-circle flex items-center gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
+              <TokenIcon token={{ symbol: 'SKY' }} width={40} className="h-10 w-10" showChainIcon={false} />
               {formatBigInt(existingCollateral)}
             </span>
           </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-textSecondary text-sm">
+          <span className="bg-borderPrimary h-12 w-px shrink-0 self-center" aria-hidden />
+          <div className="flex flex-col gap-3.5">
+            <span className="text-textSecondary text-xs leading-[18px]">
               <Trans>Borrowed amount</Trans>
             </span>
-            <span className="text-text font-circle flex items-center gap-2 text-3xl font-medium tracking-tight">
-              <TokenIcon token={{ symbol: 'USDS' }} width={28} className="h-7 w-7" showChainIcon={false} />
+            <span className="text-text font-circle flex items-center gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
+              <TokenIcon token={{ symbol: 'USDS' }} width={40} className="h-10 w-10" showChainIcon={false} />
               {formatBigInt(existingDebt)}
             </span>
           </div>
         </div>
-        <div className="flex flex-wrap items-start gap-8">
+        <div className="flex flex-wrap items-start gap-4">
           <div className="flex flex-col gap-1">
-            <span className="text-textSecondary text-sm">
+            <span className="text-textSecondary text-xs leading-[18px]">
               <Trans>Rewards earned</Trans>
             </span>
-            <span className="text-bullish font-circle flex items-center gap-1 text-sm font-medium">
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
               {`+${formatUsd(detail.rewardsEarnedUsd)}`}
+              {detail.rewardSymbol && (
+                <TokenIcon
+                  token={{ symbol: detail.rewardSymbol }}
+                  width={12}
+                  className="h-3 w-3"
+                  showChainIcon={false}
+                />
+              )}
             </span>
           </div>
+          <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
           <div className="flex flex-col gap-1">
-            <span className="text-textSecondary text-sm">
+            <span className="text-textSecondary text-xs leading-[18px]">
               <Trans>Liquidation risk</Trans>
             </span>
-            <span className="text-text font-circle text-sm font-medium">
+            <span className="text-text font-circle flex h-4 items-center text-sm leading-4 font-medium tracking-[-0.28px]">
               {existingDebt > 0n && existingVault?.riskLevel ? (
-                <RiskValue riskLevel={existingVault.riskLevel} />
+                <RiskBadge riskLevel={existingVault.riskLevel} />
               ) : (
                 NO_VALUE
               )}
             </span>
           </div>
+          <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
           <div className="flex flex-col gap-1">
-            <span className="text-textSecondary text-sm">
+            <span className="text-textSecondary text-xs leading-[18px]">
               <Trans>Liquidation price</Trans>
             </span>
-            <span className="text-text font-circle text-sm font-medium">
+            <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
               {existingDebt > 0n && existingVault?.liquidationPrice !== undefined
                 ? `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
                 : NO_VALUE}
             </span>
           </div>
+          <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
           <div className="flex flex-col gap-1">
-            <span className="text-textSecondary flex items-center gap-1 text-sm">
+            <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">
               <Trans>Protocol SKY Price</Trans>
-              <Info className="h-3.5 w-3.5" aria-hidden />
+              <Info className="h-3 w-3" aria-hidden />
             </span>
-            <span className="text-text font-circle text-sm font-medium">
+            <span className="text-text font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
               {existingVault?.delayedPrice !== undefined
                 ? `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
                 : NO_VALUE}
+              <UpdatedHourlyBadge />
             </span>
           </div>
         </div>
