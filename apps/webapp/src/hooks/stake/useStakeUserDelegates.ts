@@ -3,6 +3,8 @@ import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useUserDelegates } from '../delegates/useUserDelegates';
 import { useDelegates } from '../delegates/useDelegates';
+import { useDelegateMetadataMapping } from '../delegates/useDelegateMetadataMapping';
+import { findDelegateNameMatches } from '../delegates/utils';
 import { DelegateInfo } from '../delegates/delegate';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { formatEther, getAddress } from 'viem';
@@ -62,12 +64,21 @@ export function useStakeUserDelegates({
   const hasInitiallyOrdered = useRef(false);
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
+  // Search matches delegate names too: names live only in the governance-portal
+  // metadata, so resolve them to addresses here and let the indexer queries
+  // filter by address (pagination and the user/rest split stay server-side).
+  const { data: metadataMapping } = useDelegateMetadataMapping();
+  const nameMatches = useMemo(
+    () => findDelegateNameMatches(metadataMapping, search),
+    [metadataMapping, search]
+  );
+
   const {
     data: userDelegatesData,
     isLoading: isLoadingUserDelegates,
     error: errorUserDelegates,
     mutate: mutateUserDelegates
-  } = useUserDelegates({ chainId, user: user || ZERO_ADDRESS, search, version: 3 });
+  } = useUserDelegates({ chainId, user: user || ZERO_ADDRESS, search, version: 3, nameMatches });
 
   const totalUserDelegates = userDelegatesData?.length || 0;
   const startIndex = (page - 1) * pageSize;
@@ -89,7 +100,8 @@ export function useStakeUserDelegates({
     pageSize: remainingSlots,
     random,
     search,
-    version: 3
+    version: 3,
+    nameMatches
   });
   const isLoading = isLoadingUserDelegates || isLoadingRestDelegates;
   const isDataReady = user && user !== ZERO_ADDRESS && !isLoading && (userDelegatesData || restDelegates);
@@ -100,10 +112,11 @@ export function useStakeUserDelegates({
   const sortDelegatesFn =
     sortType === 'totalDelegated' ? sortDelegatesByTotalDelegatedFn : sortDelegatesByAlignedFn;
 
-  // Reset hasInitiallyOrdered when search changes
+  // Reset hasInitiallyOrdered when the search (or its resolved name matches,
+  // which can land after the metadata fetch) changes
   useEffect(() => {
     hasInitiallyOrdered.current = false;
-  }, [search]);
+  }, [search, nameMatches]);
 
   // Memoize the delegates transformation to prevent unnecessary re-computations
   const delegatesWithTotals = useMemo(() => {
