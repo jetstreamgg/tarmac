@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
@@ -105,42 +106,65 @@ export function PositionManageFlow({
   const { data: positions } = useStakeUserPositions();
   const position = urnIndex !== null ? positions?.find(p => p.index === urnIndex) : undefined;
 
-  if (urnIndex === null) return null;
+  // The views are resolved into one element and handed to a single
+  // AnimatePresence below, rather than returned early from here.
+  //
+  // Closing deletes the urn_index param, which makes this component return
+  // nothing while it is still mounted — so an AnimatePresence around it in the
+  // parent is no help: it preserves this element, this element re-renders
+  // against the new params, and the takeover is gone before it can animate.
+  // The boundary has to sit here, where the child element itself is what gets
+  // preserved, with its props frozen at the moment it left.
+  const resolveView = () => {
+    if (urnIndex === null) return null;
 
-  // Liquidated urns always land on the post-mortem, BEFORE the view dispatch:
-  // a `stake_tab` deep link or a caller-staged `initialSheetInit` mounts the
-  // flow directly in 'sheet', which must not open a manage sheet on a barked
-  // urn. A successful recovery frees the SKY, so the position's next mutation
-  // timestamp overtakes the bark and `isLiquidatedStakePosition` flips to
-  // false on its own — this then falls through to the ordinary views without
-  // any extra transition here.
-  if (position && isLiquidatedStakePosition(position)) {
-    return <LiquidationPostMortemModal urnIndex={urnIndex} onClose={close} />;
-  }
+    // Liquidated urns always land on the post-mortem, BEFORE the view dispatch:
+    // a `stake_tab` deep link or a caller-staged `initialSheetInit` mounts the
+    // flow directly in 'sheet', which must not open a manage sheet on a barked
+    // urn. A successful recovery frees the SKY, so the position's next mutation
+    // timestamp overtakes the bark and `isLiquidatedStakePosition` flips to
+    // false on its own — this then falls through to the ordinary views without
+    // any extra transition here.
+    if (position && isLiquidatedStakePosition(position)) {
+      return <LiquidationPostMortemModal key="postmortem" urnIndex={urnIndex} onClose={close} />;
+    }
 
-  if (view.name === 'claim') {
-    return <StakeClaimModal urnIndex={urnIndex} onClose={onBack} />;
-  }
+    if (view.name === 'claim') {
+      return <StakeClaimModal key="claim" urnIndex={urnIndex} onClose={onBack} />;
+    }
 
-  if (view.name === 'reopen') {
+    if (view.name === 'reopen') {
+      return (
+        <OpenPositionTakeover
+          key="reopen"
+          reopen={{ urnIndex, borrowExpanded: view.borrowExpanded, onBack, onClose: close }}
+        />
+      );
+    }
+
+    if (view.name === 'details') {
+      return (
+        <PositionDetailsModal
+          key="details"
+          urnIndex={urnIndex}
+          onClose={close}
+          onAction={onAction}
+          onClaim={onClaim}
+          onReopen={onReopen}
+        />
+      );
+    }
+
     return (
-      <OpenPositionTakeover
-        reopen={{ urnIndex, borrowExpanded: view.borrowExpanded, onBack, onClose: close }}
-      />
-    );
-  }
-
-  if (view.name === 'details') {
-    return (
-      <PositionDetailsModal
+      <ManagePositionTakeover
+        key="manage"
         urnIndex={urnIndex}
+        init={view.init}
+        onBack={onBack}
         onClose={close}
-        onAction={onAction}
-        onClaim={onClaim}
-        onReopen={onReopen}
       />
     );
-  }
+  };
 
-  return <ManagePositionTakeover urnIndex={urnIndex} init={view.init} onBack={onBack} onClose={close} />;
+  return <AnimatePresence>{resolveView()}</AnimatePresence>;
 }
