@@ -54,7 +54,7 @@ export function DelegateList({
         <input
           type="text"
           value={search}
-          placeholder={t`Search by name or address`}
+          placeholder={t`Search`}
           onChange={event => setSearch(event.target.value)}
           data-testid={`${dataTestIdPrefix}-search`}
           className="text-text placeholder:text-fgTertiary md:placeholder:text-fgSecondary w-full bg-transparent text-sm leading-[22px] outline-none"
