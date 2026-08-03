@@ -61,7 +61,7 @@ export function StakeTakeoverAmountField({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
         <span className="text-fgSecondary text-xs leading-[18px]">{label ?? <Trans>Amount</Trans>}</span>
-        {topRight && <span className="text-fgSecondary text-xs leading-[18px]">{topRight}</span>}
+        {topRight && <span className="text-fgSecondary text-right text-xs leading-[18px]">{topRight}</span>}
       </div>
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">

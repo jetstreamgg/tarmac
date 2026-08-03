@@ -139,6 +139,20 @@ export function StakeManageBorrowCard({
   const inputDisabled = isRepay ? existingDebt === 0n : minCollateralNotMet || debtCeilingReached;
   const hasAmount = amount > 0n;
 
+  // Always-visible cap next to the "Borrowed:" line (pre-redesign behavior):
+  // repay's max is wallet- and dust-aware, and borrow has no slider — and thus
+  // no max label — until the position carries debt.
+  const maxHint = isRepay ? maxRepayable : minCollateralNotMet ? undefined : maxBorrowable;
+
+  // Compact below md (matching the field's own responsive cut) so the line
+  // holds one row on phones; full precision from md up.
+  const borrowedValue = (compact: boolean) => {
+    const newDebt = simulatedVault?.debtValue;
+    return showDeltas && newDebt !== undefined && newDebt !== existingDebt
+      ? `${formatBigInt(existingDebt, { compact })} → ${formatBigInt(newDebt, { compact })}`
+      : formatBigInt(existingDebt, { compact });
+  };
+
   const onPercentClick = (percent: number) => {
     if (isRepay) {
       if (maxRepayable === 0n) return;
@@ -153,7 +167,6 @@ export function StakeManageBorrowCard({
 
   // Delta values (M13): current → simulated, arrow only when they differ.
   const isFullRepay = isRepay && (wipeAll || (hasAmount && amount >= existingDebt));
-  const newDebt = simulatedVault?.debtValue;
   const showDeltas = hasAmount || wipeAll;
 
   const currentRisk = existingVault?.riskLevel;
@@ -188,15 +201,29 @@ export function StakeManageBorrowCard({
           // DISPLAY (the staged value stays exact for wipeAll/buffer math).
           maxDisplayDecimals={2}
           dataTestId="stake-manage-borrow-amount"
-          // Comp 1036:213928: the position line sits above the chips; the
-          // borrow max stays on the slider's right label.
+          // Comp 1036:213928 draws the position line above the chips; the max
+          // rides along after it so the cap stays visible in the states the
+          // slider's right label can't cover (zero-debt borrow, all of repay).
           topRight={
-            <span data-testid="stake-manage-borrowed-line">
-              <Trans>Borrowed:</Trans>{' '}
-              {showDeltas && newDebt !== undefined && newDebt !== existingDebt
-                ? `${formatBigInt(existingDebt)} → ${formatBigInt(newDebt)}`
-                : formatBigInt(existingDebt)}
-            </span>
+            <>
+              <span className="whitespace-nowrap" data-testid="stake-manage-borrowed-line">
+                <Trans>Borrowed:</Trans> <span className="md:hidden">{borrowedValue(true)}</span>
+                <span className="max-md:hidden">{borrowedValue(false)}</span>
+              </span>
+              {maxHint !== undefined && (
+                // nowrap per chunk, with an explicit breakable space between
+                // them (JSX strips the inter-element newline): on narrow
+                // screens the line breaks between the Borrowed and max parts,
+                // never mid-hint.
+                <>
+                  {' '}
+                  <span className="whitespace-nowrap" data-testid="stake-manage-max-hint">
+                    {'· '}
+                    <Trans>max. {formatBigInt(maxHint, { compact: true })} USDS</Trans>
+                  </span>
+                </>
+              )}
+            </>
           }
         />
 
