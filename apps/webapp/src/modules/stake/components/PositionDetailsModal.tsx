@@ -489,7 +489,7 @@ export function PositionDetailsModal({
           // comp's subsection panel runs full-bleed to the card edges
           // (1036:214369: x=720 y=0 h=card), so the card itself carries no
           // padding at any tier; each column brings its own p-8.
-          className="bg-containerDark md:bg-bgSecondary flex h-[calc(100dvh-24px)] max-h-none w-[calc(100vw-24px)] flex-col gap-0 overflow-y-auto rounded-[20px] p-0 sm:min-w-0 sm:p-0 md:h-auto md:max-h-[90vh] md:w-full md:rounded-[28px] lg:max-w-[1042px] lg:flex-row"
+          className="bg-containerDark md:modal-surface flex h-[calc(100dvh-24px)] max-h-none w-[calc(100vw-24px)] flex-col gap-0 overflow-y-auto rounded-[20px] p-0 sm:min-w-0 sm:p-0 md:h-auto md:max-h-[90vh] md:w-full md:rounded-[28px] lg:max-w-[1042px] lg:flex-row"
           onOpenAutoFocus={event => event.preventDefault()}
           // The manage sheet portals outside this content, so its pointer
           // interactions read as backdrop dismissals here (some only landing

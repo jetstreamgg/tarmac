@@ -29,7 +29,7 @@ function SheetOverlay({ className, ...props }: React.ComponentProps<typeof Sheet
         // "background blur-full" (Figma 1292:63542, the mobile Modal Overlay —
         // CSS blur(100px), Figma halves the stored radius 200). Near-transparent
         // modal cards (bg-secondary) rely on this frost to be legible.
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 bg-modalOverlay fixed inset-0 z-50 backdrop-blur-[100px]',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 modal-scrim fixed inset-0 z-50 backdrop-blur-[100px]',
         className
       )}
       {...props}

@@ -309,8 +309,11 @@ export function TransactionModal({
         // bottom Sheet keeps its own top-only rounding. 610px wide with 48px
         // section gaps on the first screens per the comp; the wallet/status
         // screen spaces its sections with per-section padding instead.
+        // `modal-surface` is that bg-secondary tint pre-composited over the
+        // scrim and the page fill (globals.css) rather than layered live over
+        // the page — see the utility for why the glass had to go opaque.
         className={cn(
-          'bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
+          'modal-surface flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
           !isTransaction && 'sm:gap-12'
         )}
         onOpenAutoFocus={e => e.preventDefault()}
