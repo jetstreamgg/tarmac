@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { cn } from '@/lib/cn';
 import { Switch } from '@/components/ui/switch';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
 
@@ -69,14 +68,12 @@ export function StakeManageStatCell({
   label,
   current,
   next,
-  nextClassName,
   dataTestId
 }: {
   label: ReactNode;
   current: ReactNode;
   /** The simulated value; pass undefined (or the same content) for no delta. */
   next?: ReactNode;
-  nextClassName?: string;
   dataTestId?: string;
 }) {
   const hasDelta = next !== undefined;
@@ -88,7 +85,7 @@ export function StakeManageStatCell({
         {hasDelta && (
           <>
             <ArrowRight className="text-textSecondary h-3 w-3 shrink-0" aria-hidden />
-            <span className={cn('flex items-center gap-1', nextClassName)}>{next}</span>
+            <span className="flex items-center gap-1">{next}</span>
           </>
         )}
       </span>
