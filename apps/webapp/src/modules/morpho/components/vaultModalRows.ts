@@ -87,7 +87,7 @@ export type VaultReviewRowInput = {
   rate: string;
   /** Append the morpho stars glyph to the rate. */
   boostedRate: boolean;
-  /** Withdrawal availability — Figma: "Anytime" on supply, "Instant" on withdraw. */
+  /** Withdrawal availability — "Liquidity based" per the risk sheet (RiskTierDetails); diverges from the comp's "Anytime"/"Instant". */
   withdrawal: string;
   /** Network the transaction runs on. */
   network: string;

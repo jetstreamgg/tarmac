@@ -3,7 +3,9 @@ import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { type Token, type VaultProvider, useVaultMarketData } from '@/hooks';
+import { useLingui } from '@lingui/react';
+import { getVaultByAddress, type Token, type VaultProvider, useVaultMarketData } from '@/hooks';
+import { WITHDRAWAL_AVAILABILITY } from '@/components/product/withdrawalAvailability';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
@@ -60,6 +62,12 @@ export function VaultModalForm({
 }) {
   const chainId = useChainId();
   const chains = useChains();
+  const { i18n } = useLingui();
+  // Openable vaults come from the registry, so the lookup only misses on an
+  // unsupported chain; the fallback keeps the provider's wording in that case.
+  const riskProfile =
+    getVaultByAddress(vaultAddress, chainId)?.riskProfile ??
+    (provider === 'morpho' ? 'vault-flagship' : 'vault-tether-savings');
 
   const form = useVaultTransactionForm({ flow, vaultAddress, assetToken, provider, preset });
   const {
@@ -160,7 +168,7 @@ export function VaultModalForm({
               product: vaultName,
               rate,
               boostedRate,
-              withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
+              withdrawal: i18n._(WITHDRAWAL_AVAILABILITY[riskProfile]),
               network: networkName,
               networkFee: networkFee?.formatted ?? NO_VALUE
             }),

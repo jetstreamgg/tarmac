@@ -120,7 +120,7 @@ export type PendleReviewRowInput = {
   product: string;
   /** Underlying symbol for the Product cell's ringed icon. */
   productSymbol: string;
-  /** Withdrawal availability — Figma: "Anytime" on supply, "Instant" on withdraw. */
+  /** Withdrawal availability — supply: "At maturity or via market sell" per the risk sheet (RiskTierDetails, diverging from the comp's "Anytime"); withdraw: "Instant" (the market sell executes now). */
   withdrawal: string;
   /** Current slippage, formatted (e.g. "0.50%"). */
   slippage: string;
