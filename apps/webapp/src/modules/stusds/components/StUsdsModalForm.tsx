@@ -3,7 +3,7 @@ import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { StUsdsProviderType } from '@/hooks';
+import { StUsdsProviderType, TOKENS } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
@@ -11,10 +11,10 @@ import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarni
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
+import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useStUsdsLaunch, type StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
 import { useStUsdsTransactionForm, type StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
@@ -31,25 +31,6 @@ const DECIMALS = 18;
 // Decision-12 standard: amounts pin two decimals (hero + grid + balance line).
 const formatUsds = (units: bigint) =>
   formatNumber(parseFloat(formatUnits(units, DECIMALS)), { minDecimals: 2, maxDecimals: 2 });
-
-/**
- * The static USDS chip beside the percent presets — stUSDS moves exactly one
- * asset, so this renders the DS dropdown pill without the chevron affordance
- * (the vault-modal single-asset precedent).
- */
-function AssetPill() {
-  return (
-    <span
-      className="border-glassBorder flex h-7 shrink-0 items-center gap-1 rounded-full border px-1.5"
-      data-testid="stusds-modal-asset"
-    >
-      <TokenIcon token={{ symbol: 'USDS' }} width={16} showChainIcon={false} className="size-4" />
-      <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
-        USDS
-      </span>
-    </span>
-  );
-}
 
 /**
  * Editable body for the stUSDS "Supply / Withdraw" modals, mounted as the
@@ -267,7 +248,10 @@ export function StUsdsModalForm({
           </>
         }
         onPercent={setPercentAmount}
-        selector={<AssetPill />}
+        selector={
+          // stUSDS moves exactly one asset — the pill collapses to its static chip.
+          <TokenSelectorPill tokens={[TOKENS.usds]} selected={TOKENS.usds} testId="stusds-modal-asset" />
+        }
         error={amountError}
         inputAriaLabel={isSupply ? t`Supply amount` : t`Withdraw amount`}
         inputTestId="stusds-modal-amount-input"

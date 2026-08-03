@@ -118,7 +118,15 @@ export function ProductStatPair({
     <div className={cn('flex items-center gap-6', grow && 'w-full [&>div]:flex-1', className)}>
       {stats.map((stat, index) => (
         <Fragment key={index}>
-          {index > 0 && <span className="bg-borderPrimary h-7 w-px shrink-0" aria-hidden />}
+          {/* Decorative, so it stays out of the a11y tree — the testid is how
+              the tests reach it without querying the container by selector. */}
+          {index > 0 && (
+            <span
+              className="bg-borderPrimary h-7 w-px shrink-0"
+              aria-hidden
+              data-testid="product-stat-divider"
+            />
+          )}
           {stat}
         </Fragment>
       ))}

@@ -89,6 +89,11 @@
      instead. Dark now takes the DS value too (#05041199): APP-416 aligned the
      transaction-modal scrim with the comps, retiring the frozen black/50. */
   --color-modalOverlay: rgba(5, 4, 17, 0.6);
+  /* Modal in-card subsection panel (Figma components/modals/bg-subsection) —
+     the position-details manage panel. Light shares surfaceHover's light value;
+     dark can't reuse surfaceHover (its dark value is a hover tint the DS types
+     differently), hence a dedicated token. */
+  --color-modalSubsection: #09042033;
   /* Design-system button tokens (Figma 5010:7958): dark values are the Figma
      source values — colors/bg/bg-brand-primary + bg-brand-secondary (primary
      hover/pressed fills), colors/border/border-focus (focus ring),
@@ -635,6 +640,7 @@
     --color-flipSurface: #ecf0ff; /* components/modals/bg-item */
     --color-flipRing: #cdd9ff; /* components/modals/border-item */
     --color-modalOverlay: #504dff33; /* components/modals/bg-overlay */
+    --color-modalSubsection: #bcb6ef4d; /* components/modals/bg-subsection — mirrors surfaceHover */
 
     /* H8 table surfaces + the components/status palette the Status/Risk/Token-Idle
        cells share. statusSuccessBorder/statusSuccessSolid/statusInfoSolid are

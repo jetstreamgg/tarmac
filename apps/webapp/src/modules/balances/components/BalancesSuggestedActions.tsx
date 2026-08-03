@@ -510,7 +510,7 @@ export function BalancesSuggestedActions({
                     <Text className="text-text truncate">{resolved.label}</Text>
                     {action.badge && (
                       <span
-                        className={`flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
+                        className={`font-circle flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${
                           action.showMorphoIcon
                             ? 'bg-[#2973FF]/15 text-[#2973FF]'
                             : 'bg-textEmphasis/15 text-textEmphasis'
@@ -600,7 +600,7 @@ export function BalancesSuggestedActions({
                   <div className="flex shrink-0 items-center gap-2">
                     {action.badge && (
                       <span
-                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
+                        className={`font-circle flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${
                           action.showMorphoIcon
                             ? 'bg-[#2973FF]/15 text-[#2973FF]'
                             : 'bg-textEmphasis/15 text-textEmphasis'
@@ -640,7 +640,7 @@ export function BalancesSuggestedActions({
               </Text>
               {action.badge && (
                 <span
-                  className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
+                  className={`font-circle ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${
                     action.showMorphoIcon
                       ? 'bg-[#2973FF]/15 text-[#2973FF]'
                       : 'bg-textEmphasis/15 text-textEmphasis'

@@ -78,7 +78,8 @@ vi.mock('@/hooks', async importOriginal => {
     }),
     useCollateralData: () => ({
       data: {
-        stabilityFee: 0.0851,
+        // 8.51% as the WAD-scaled annual rate the real hook returns.
+        stabilityFee: 851n * 10n ** 14n,
         debtCeiling: h.debtCeilingHeadroom,
         totalDaiDebt: 0n,
         debtCeilingUtilization: 0.5

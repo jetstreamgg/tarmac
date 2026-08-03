@@ -20,7 +20,7 @@ export function SavingsTvlCallout({ tvlUsd, savingsRate }: { tvlUsd: number; sav
       data-testid="savings-tvl-callout"
     >
       <div className="flex flex-col gap-2">
-        <Heading tag="h2" className="text-text text-xl font-medium">
+        <Heading tag="h2" className="text-text font-circle text-xl font-medium">
           <Trans>
             {`$${formatNumber(tvlUsd, { compact: true }).toLowerCase()}`} in stablecoins already earning the
             Sky Savings Rate

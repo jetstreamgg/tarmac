@@ -36,10 +36,15 @@ describe('useEarnMarketplace', () => {
     // Aggregate of all user positions (>= 0; the fork test account holds none).
     expect(result.current.totalDepositedUsd).toBeGreaterThanOrEqual(0);
 
-    // Every row resolved without error and 30D rate stays unwired (TODO C1).
+    // Savings and stUSDS both have live BA Labs history behind them.
+    expect(byId['savings'].rate30d.value).toBeGreaterThan(0);
+    expect(byId['stusds'].rate30d.value).toBeGreaterThan(0);
+
+    // Every row resolved without error and carries a formatted 30D rate — a
+    // percentage where the product has history, '—' where it has none.
     for (const row of result.current.rows) {
       expect(row.error).toBeNull();
-      expect(row.rate30d).toBeUndefined();
+      expect(row.rate30d.formatted).toBeTruthy();
       expect(row.detailPath.startsWith('/')).toBe(true);
       expect(row.networks.length).toBeGreaterThan(0);
     }

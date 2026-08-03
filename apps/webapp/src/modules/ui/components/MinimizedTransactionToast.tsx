@@ -36,7 +36,7 @@ export function MinimizedTransactionToast({
     >
       <span className="shrink-0">{statusIcon[status]}</span>
       <span className="flex flex-col">
-        <Text className="text-text font-medium">{title}</Text>
+        <Text className="text-text font-circle font-medium">{title}</Text>
         {hash && <Text className="text-textSecondary text-sm">{formatAddress(hash, 6, 4)}</Text>}
       </span>
     </button>

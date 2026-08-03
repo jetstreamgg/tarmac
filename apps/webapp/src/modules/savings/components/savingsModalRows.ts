@@ -10,7 +10,7 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL, singleOrDelta } from '@/components/product/ModalGridCells';
 
 /** One labelled grid cell — the shared modal-grid cell model (single or before→after delta). */
 export type SavingsModalCell = ModalGridCell;
@@ -43,16 +43,6 @@ export type SupplyModalRowInput = {
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
   networkFee: string;
 };
-
-const singleOrDelta = (
-  base: { label: string } & Partial<SavingsModalCell>,
-  before: string,
-  after: string,
-  hasAmount: boolean
-): SavingsModalCell =>
-  hasAmount
-    ? ({ ...base, kind: 'delta', before, after } as SavingsModalCell)
-    : ({ ...base, kind: 'single', value: before } as SavingsModalCell);
 
 /**
  * Grid for the "Supply to Sky Savings" entry screen (Figma 859:36036 empty /

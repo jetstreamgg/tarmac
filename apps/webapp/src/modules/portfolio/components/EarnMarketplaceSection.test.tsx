@@ -37,6 +37,7 @@ const row = (over: Partial<EarnProductRow>): EarnProductRow => ({
   networks: [1],
   detailPath: '/earn/savings',
   rate: { value: 0.0375, formatted: '3.75%' },
+  rate30d: { value: 0.036, formatted: '3.60%' },
   isLoading: false,
   error: null,
   ...over

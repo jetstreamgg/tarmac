@@ -20,7 +20,7 @@ export function TransactionNoticeToast({
     <div className="flex w-full items-center gap-4 pr-6" data-testid="transaction-notice-toast">
       <span className="shrink-0">{icon}</span>
       <span className="flex flex-col gap-0.5">
-        <Text className="text-text font-medium">{title}</Text>
+        <Text className="text-text font-circle font-medium">{title}</Text>
         <Text className="text-textSecondary text-sm">{description}</Text>
       </span>
     </div>
