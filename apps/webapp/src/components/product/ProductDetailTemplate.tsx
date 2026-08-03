@@ -137,9 +137,10 @@ function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetai
     <section className="flex flex-col gap-4" data-testid="product-detail-about">
       <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>About</Trans>}</SectionHeading>
       {/* Body 5 on fg-secondary with an inline fg-brand-primary link
-          (Figma 859:35769). textSecondary is the legacy lavender
-          (rgba(198,194,255,.8)), which is what read as purple next to the
-          comp's gray — APP-432 item 10. */}
+          (Figma 859:35769). Named explicitly rather than left to textSecondary:
+          that token used to be the legacy lavender (rgba(198,194,255,.8)) and
+          read as purple next to the comp's gray — APP-432 item 10. Dark has
+          since been flipped onto fg-secondary too, so the two now match. */}
       <div className="text-fgSecondary font-graphik text-sm leading-[22px]">
         {about.body}
         {about.learnMoreHref && (

@@ -162,7 +162,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
         <Stat label={<Trans>Earned this month</Trans>} value={<TodoValue />} />
         <Stat
           label={<Trans>1Y projected earnings</Trans>}
-          value={<GainValue value={displayProjected} className="text-lg font-medium" />}
+          value={<GainValue value={displayProjected} className={LABEL_4} />}
         />
         <Stat
           label={<Trans>Avg. Rate</Trans>}
@@ -266,7 +266,7 @@ function IdleContent({
         />
         <Stat
           label={<Trans>1Y projected earnings</Trans>}
-          value={<GainValue value={displayProjected} className="text-lg font-medium" />}
+          value={<GainValue value={displayProjected} className={LABEL_4} />}
         />
         {/* Always the total — unlike Supplied's "Active positions", this stat
             stays fixed when focusing a single token. */}
@@ -373,10 +373,21 @@ function FooterStats({ children }: { children: ReactNode }) {
   return <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">{children}</div>;
 }
 
+/**
+ * Design-system Label 4 — Circular Medium 16/18, -0.32px — the comp's treatment
+ * for every footer stat value. Same recipe as `label4` in ui/table-cells.
+ * Previously `text-lg font-medium`, which was wrong three ways: Graphik instead
+ * of Circular (no `font-circle`), 18px instead of 16 (18 is the *line height*),
+ * and no tracking.
+ */
+const LABEL_4 = 'font-circle text-base leading-[18px] font-medium tracking-[-0.32px]';
+
 function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Text variant="medium" className="text-textSecondary">
+      {/* Body 6 — Graphik 12/18. `captionSm` is the 12px Graphik variant; the
+          comp's 18px line height has no variant, so it rides in className. */}
+      <Text variant="captionSm" className="text-textSecondary leading-[18px]">
         {label}
       </Text>
       {value}
@@ -385,11 +396,11 @@ function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
 }
 
 function StatValue({ children }: { children: ReactNode }) {
-  return <span className="text-text text-lg font-medium">{children}</span>;
+  return <span className={cn(LABEL_4, 'text-text')}>{children}</span>;
 }
 
 function TodoValue() {
-  return <span className="text-textSecondary text-lg font-medium">TODO</span>;
+  return <span className={cn(LABEL_4, 'text-textSecondary')}>TODO</span>;
 }
 
 /**

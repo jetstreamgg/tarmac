@@ -26,10 +26,17 @@
   --font-sans: GraphikStd;
 
   --color-text: var(--primary-white);
-  --color-textSecondary: rgba(198, 194, 255, 0.8);
+  /* colors/fg/fg-secondary — the same DS variable --color-fgSecondary carries, so
+     the two secondary-text tokens now resolve alike in BOTH modes (light already
+     mapped both onto fg-secondary #3b3952). The pre-redesign value was the
+     translucent lilac rgba(198, 194, 255, 0.8), which left every
+     `text-textSecondary` surface reading a touch more purple — and, being
+     translucent, drifting with whatever sat behind it — than the redesigned
+     `text-fgSecondary` surfaces beside it. textMuted mirrors it, as in light. */
+  --color-textSecondary: #a1a6c4;
   --color-bullish: var(--service-green);
   --color-textEmphasis: var(--primary-pink);
-  --color-textMuted: rgba(198, 194, 255, 0.8);
+  --color-textMuted: #a1a6c4;
   --color-error: var(--service-red);
   --color-textDimmed: rgb(120, 116, 208);
   --color-textDesaturated: rgb(186, 182, 250);
@@ -377,18 +384,40 @@
   * {
     @apply border-border;
   }
+  /* `antialiased` = -webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
+     grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
+     canvas, which made every Circular Medium surface read a weight above the comp
+     once the real 500 cut shipped. Affects Graphik too — the comps are the target
+     for both families. */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 
+  /* Each face declares its real weight. Without the descriptor every face
+     defaults to 400, so the browser has a single candidate per family and
+     resolves every requested weight to it — font-medium et al. render
+     identically to font-normal. The design system uses exactly two weights:
+     Graphik at 400 (body) and Circular at 500 (labels/headings). */
   @font-face {
     font-family: 'GraphikStd';
     src: URL('/fonts/Graphik-Regular-Web.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+  }
+
+  /* Circular XX "Book" is 450 internally, not 400 — hence --font-weight-custom-450. */
+  @font-face {
+    font-family: 'CircleStd';
+    src: URL('/fonts/CircularXXWeb-Book.woff2') format('woff2');
+    font-weight: 450;
+    font-display: swap;
   }
 
   @font-face {
     font-family: 'CircleStd';
-    src: URL('/fonts/CircularXXWeb-Book.woff2') format('woff2');
+    src: URL('/fonts/CircularXXWeb-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-display: swap;
   }
 
   button:not(:disabled),
