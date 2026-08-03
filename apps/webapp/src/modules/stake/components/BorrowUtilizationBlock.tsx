@@ -70,12 +70,12 @@ export function BorrowUtilizationBlock() {
 
   return (
     <div data-testid="stake-borrow-utilization" className="flex flex-col">
-      <h3 className="text-fgPrimary font-circle mb-4 flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:gap-1.5 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
+      <h3 className="text-fgPrimary font-circle mb-4 flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:gap-1.5 md:text-lg md:leading-normal md:tracking-normal">
         <Trans>Borrow Utilization</Trans>
         <Info className="text-fgSecondary h-3 w-3 md:h-4 md:w-4" aria-hidden />
       </h3>
 
-      <div className="text-fgPrimary font-circle mb-5 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:mb-3 md:font-sans md:leading-normal md:font-semibold md:tracking-normal">
+      <div className="text-fgPrimary font-circle mb-5 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:mb-3 md:leading-normal md:tracking-normal">
         {isLoading ? <Skeleton className="h-8 w-24" /> : error ? NO_VALUE : `${utilization.toFixed(1)}%`}
       </div>
 

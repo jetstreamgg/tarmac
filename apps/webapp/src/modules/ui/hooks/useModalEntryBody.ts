@@ -13,6 +13,19 @@ import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 type ModalEntryBodyLive = {
   /** Disables the shared modal's confirm button (amount zero / over balance / nothing selected). */
   confirmDisabled: boolean;
+  /**
+   * Live entry-CTA label. A body that passes it must pass it EVERY render (the
+   * entry merge keeps the last pushed value) — e.g. the upgrade form swaps
+   * "Connect wallet" ↔ "Continue" with the connection state. Omit entirely to
+   * keep the launch-time label.
+   */
+  confirmLabel?: string;
+  /**
+   * Entry-CTA override fired instead of starting the transaction (see
+   * `TransactionEntry.confirmAction`). Always pushed — `undefined` restores
+   * the normal confirm, so an override never outlives its condition.
+   */
+  confirmAction?: () => void;
   /** Read-only breakdown for a three-screen flow's review stage. */
   transactionContent?: ReactNode;
   /** Compact amount summary rendered on the wallet/status screen. */
@@ -49,6 +62,8 @@ export function useModalEntryBody({
   sessionId,
   execute,
   confirmDisabled,
+  confirmLabel,
+  confirmAction,
   transactionContent,
   transactionScreenContent,
   steps,
@@ -79,7 +94,14 @@ export function useModalEntryBody({
     updateModalContent(sessionId, {
       // `confirmDisabled` gates the entry screen via the entry descriptor and the
       // review stage via the top-level field — same value, both screens.
-      entry: { confirmDisabled },
+      // `confirmLabel` merges only when supplied (bodies that don't pass it keep
+      // their launch-time label); `confirmAction` is always pushed so clearing
+      // it (undefined) reliably restores the normal confirm.
+      entry: {
+        confirmDisabled,
+        ...(confirmLabel !== undefined ? { confirmLabel } : {}),
+        confirmAction
+      },
       confirmDisabled,
       onConfirm,
       ...(transactionContent !== undefined ? { transactionContent } : {}),
@@ -91,6 +113,8 @@ export function useModalEntryBody({
     sessionId,
     txStatus,
     confirmDisabled,
+    confirmLabel,
+    confirmAction,
     transactionContent,
     transactionScreenContent,
     steps,

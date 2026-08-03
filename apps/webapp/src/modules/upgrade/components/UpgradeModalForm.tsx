@@ -16,6 +16,7 @@ import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
 import { buildUpgradeModalRows } from './upgradeModalRows';
@@ -118,7 +119,11 @@ export function UpgradeModalForm({
       bundleState.promoVisible
     ]
   );
-  const disabled = !amountReady || !prepared;
+  // Disconnected (APP-446): the modal still opens — the CTA becomes an enabled
+  // "Connect wallet" that opens the connect modal in place (no screen advance,
+  // see `confirmAction`), and reverts to the gated "Continue" once connected.
+  const { openConnectModal } = useConnectModal();
+  const disabled = isConnected && (!amountReady || !prepared);
 
   // The wallet balance is chain state the engine's success doesn't refetch —
   // sync it so the entry screen shows the post-upgrade balance if revisited.
@@ -158,6 +163,8 @@ export function UpgradeModalForm({
     sessionId,
     execute,
     confirmDisabled: disabled,
+    confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
+    confirmAction: isConnected ? undefined : openConnectModal,
     steps,
     transactionScreenContent,
     toast

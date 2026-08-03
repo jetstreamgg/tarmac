@@ -36,10 +36,7 @@ export function AllocateStablecoinsBanner({
         <p className="text-fgSecondary max-w-[248px] text-xs leading-[18px]">
           <Trans>
             That&apos;s what your idle stablecoins can earn at today&apos;s{' '}
-            <span className="text-fgPrimary font-medium">
-              {formatDecimalPercentage(savingsRate)} Sky Savings Rate
-            </span>
-            .
+            <span className="text-fgPrimary">{formatDecimalPercentage(savingsRate)} Sky Savings Rate</span>.
           </Trans>
         </p>
       }

@@ -171,7 +171,9 @@ export function EarnPage() {
         value: symbol.toLowerCase(),
         label: (
           <span className="flex items-center gap-2">
-            <TokenIcon token={{ symbol }} width={16} className="h-4 w-4" />
+            {/* Dropdown rows carry the bare token logo — no chain badge
+                (APP-443 item 11): the network is its own filter. */}
+            <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
             {symbol}
           </span>
         )
@@ -307,10 +309,11 @@ export function EarnPage() {
         selectedProduct={filters.product}
         onProductChange={product => updateFilters({ product })}
       />
-      {/* The mobile comp runs filters straight into the card list — divider is desktop-only. */}
-      <div className="border-borderPrimary hidden border-b md:block" />
-      {/* Comp runs 32px from the filters into the card list (24 gap + 8). */}
-      <div className="mt-2 md:mt-0">
+      {/* No rule between the filter bar and the table — the comp (1030:61244)
+          draws none at either tier (APP-443 item 10); it just runs 32px of
+          clear space from the filters into the table, which is the stack gap
+          plus this margin (24+8 mobile, 20+12 from md). */}
+      <div className="mt-2 md:mt-3">
         <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
       </div>
       {/* "Products unavailable in the US" (1036:201473) — same table, dimmed and

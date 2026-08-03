@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
@@ -6,7 +6,6 @@ import { Trans } from '@lingui/react/macro';
 import {
   useVaultMarketData,
   useErc4626VaultData,
-  useMorphoVaultRewards,
   getTokenDecimals,
   type Token,
   type VaultProvider
@@ -21,7 +20,7 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useClaimRewardsModal } from '@/modules/claim';
+import { merklAdapter, useClaimRewardsModal } from '@/modules/claim';
 import { useVaultModal } from '../hooks/useVaultModal';
 import { VaultSupplyCard } from './VaultSupplyCard';
 
@@ -56,14 +55,23 @@ export function VaultPositionCard({
   const netRate = marketData?.rate?.netRate;
 
   const { data: vaultData, mutate: mutateVault } = useErc4626VaultData({ vaultAddress });
-  const { data: rewardsData, mutate: mutateRewards } = useMorphoVaultRewards({ vaultAddress });
+
+  // Rewards read through the same claim adapter the "Claim rewards" modal uses,
+  // so the amount on this card is by construction the amount the modal quotes
+  // and the distributor pays out (APP-442). Reading Merkl directly here instead
+  // showed the gross cumulative campaign total — everything ever earned,
+  // including what was already claimed — which is not what a claim sends you.
+  // The scope object is memoized: the adapter memoizes its read on scope
+  // identity, so a fresh literal per render would churn every consumer.
+  const claimScope = useMemo(() => ({ kind: 'vault' as const, vaultAddress }), [vaultAddress]);
+  const { rewards, refresh: refreshRewards } = merklAdapter.useClaimable(claimScope);
 
   // Refresh the position + rewards after a supply/withdraw/claim. A no-position
   // supply also flips this card to "My position" once userAssets refetches > 0.
   const refresh = useCallback(() => {
     mutateVault();
-    mutateRewards();
-  }, [mutateVault, mutateRewards]);
+    refreshRewards();
+  }, [mutateVault, refreshRewards]);
 
   const { openSupply, openWithdraw } = useVaultModal({ onSuccess: refresh });
   const { openClaim } = useClaimRewardsModal({ onSuccess: refresh });
@@ -80,6 +88,7 @@ export function VaultPositionCard({
         vaultName={vaultName}
         provider={provider}
         netRate={netRate}
+        rateData={marketData?.rate}
         onSupply={() => openSupply(modalArgs)}
       />
     );
@@ -89,7 +98,9 @@ export function VaultPositionCard({
   // value used for the projection).
   const positionValue = parseFloat(formatUnits(userAssets, decimals));
   const projectedEarnings = projectAnnualEarnings(positionValue, netRate);
-  const reward = rewardsData?.rewards[0];
+  // A vault campaign pays one token today; the stat cell is a single line, so a
+  // second token would only ever surface in the modal (which lists them all).
+  const reward = rewards[0];
 
   const assetIcon = (
     <TokenIcon
@@ -165,7 +176,9 @@ export function VaultPositionCard({
             </Button>
           </ProductActions>
           <ProductActions>
-            {rewardsData?.hasClaimableRewards && (
+            {/* Nothing left to claim → no button. The adapter has already
+                dropped tokens whose campaign total is fully claimed. */}
+            {reward && (
               <Button
                 variant="secondary"
                 size="l"

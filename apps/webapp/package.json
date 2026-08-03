@@ -49,6 +49,7 @@
     "@radix-ui/react-checkbox": "catalog:",
     "@radix-ui/react-collapsible": "catalog:",
     "@radix-ui/react-dialog": "catalog:",
+    "@radix-ui/react-dismissable-layer": "catalog:",
     "@radix-ui/react-popover": "catalog:",
     "@radix-ui/react-progress": "catalog:",
     "@radix-ui/react-radio-group": "catalog:",
