@@ -29,7 +29,7 @@ function SheetOverlay({ className, ...props }: React.ComponentProps<typeof Sheet
         // "background blur-full" (Figma 1292:63542, the mobile Modal Overlay —
         // CSS blur(100px), Figma halves the stored radius 200). Near-transparent
         // modal cards (bg-secondary) rely on this frost to be legible.
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart bg-modalOverlay fixed inset-0 z-50 backdrop-blur-[100px] data-[state=open]:duration-300 data-[state=closed]:duration-300',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart bg-modalOverlay fixed inset-0 z-50 backdrop-blur-[100px] data-[state=closed]:duration-300 data-[state=open]:duration-300',
         className
       )}
       {...props}
@@ -74,7 +74,7 @@ function SheetContent({
           // transitions — enter and exit are keyframe animations — and having
           // both meant the transform kept moving after the animation ended,
           // measurably stretching the open past 400ms.
-          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart data-[state=open]:duration-300 data-[state=closed]:duration-300 fixed z-50 flex flex-col gap-4 shadow-lg',
+          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed z-50 flex flex-col gap-4 shadow-lg data-[state=closed]:duration-300 data-[state=open]:duration-300',
           side === 'right' &&
             'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
           side === 'left' &&

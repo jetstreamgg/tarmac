@@ -332,13 +332,16 @@ function SegmentedPills<T extends string>({
               <motion.span
                 layoutId={`${pillId}-active-pill`}
                 aria-hidden
-                // -z-10 keeps the fill under the label; the button's own
-                // background is transparent, so nothing else needs stacking.
-                className="border-borderBrandDim from-brand2-start to-brand2-end absolute inset-0 -z-10 rounded-full border bg-linear-to-b bg-origin-border"
+                // No negative z-index: the group paints its own well
+                // (bg-pageBackground), and a -z-10 fill sits behind THAT and
+                // disappears entirely. Stacking is by DOM order instead — the
+                // fill is positioned and comes first, the label is positioned
+                // and comes after, so the label wins.
+                className="border-borderBrandDim from-brand2-start to-brand2-end absolute inset-0 rounded-full border bg-linear-to-b bg-origin-border"
                 transition={reduceMotion ? { duration: 0 } : PILL_SLIDE}
               />
             )}
-            {option.label}
+            <span className="relative">{option.label}</span>
           </button>
         );
       })}

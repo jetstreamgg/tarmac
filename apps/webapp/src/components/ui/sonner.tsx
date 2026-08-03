@@ -43,7 +43,8 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
     // siblings — never applied. They are Radix Toast's state model; sonner
     // marks toasts with data-mounted/data-removed and has no data-state at
     // all, so those rules had matched nothing since the sonner migration.
-    toast: 'group flex items-start! gap-3! rounded-2xl! bg-bgTertiary! border-none! shadow-none! text-fgPrimary! p-4! pr-12! backdrop-blur-[20px] min-w-[356px] md:min-w-[420px] max-w-[420px] duration-300! ease-in-out-quart! data-[expanded=false]:overflow-hidden',
+    toast:
+      'group flex items-start! gap-3! rounded-2xl! bg-bgTertiary! border-none! shadow-none! text-fgPrimary! p-4! pr-12! backdrop-blur-[20px] min-w-[356px] md:min-w-[420px] max-w-[420px] duration-300! ease-in-out-quart! data-[expanded=false]:overflow-hidden',
     title: 'font-circle text-base leading-[18px]! font-medium tracking-[-0.32px] text-fgPrimary!',
     description: 'font-graphik text-[11px] leading-4! font-normal text-fgSecondary! mt-1',
     icon: 'size-auto! shrink-0',
