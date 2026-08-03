@@ -7,13 +7,13 @@ catalog:
   '@coinbase/wallet-sdk': ~4.3.7
   '@eslint/eslintrc': ^3.3.5
   '@eslint/js': ^10.0.1
-  '@lingui/cli': ^6.4.0
-  '@lingui/conf': ^6.4.0
-  '@lingui/core': ^6.4.0
-  '@lingui/format-po': ^6.4.0
-  '@lingui/react': ^6.4.0
-  '@lingui/swc-plugin': ^6.5.0
-  '@lingui/vite-plugin': ^6.4.0
+  '@lingui/cli': ^6.6.0
+  '@lingui/conf': ^6.6.0
+  '@lingui/core': ^6.6.0
+  '@lingui/format-po': ^6.6.0
+  '@lingui/react': ^6.6.0
+  '@lingui/swc-plugin': ^6.6.0
+  '@lingui/vite-plugin': ^6.6.0
   '@metamask/connect-evm': ^1.4.0
   '@playwright/test': ^1.61.1
   '@radix-ui/react-accordion': ^1.2.14
@@ -34,16 +34,16 @@ catalog:
   '@safe-global/safe-apps-sdk': ~9.1.0
   '@sentry/react': ^10.62.0
   '@sentry/vite-plugin': ^5.3.0
-  '@tailwindcss/vite': ^4.3.2
-  '@tanstack/eslint-plugin-query': ^5.101.2
-  '@tanstack/react-query': ^5.101.2
+  '@tailwindcss/vite': ^4.3.3
+  '@tanstack/eslint-plugin-query': ^5.101.4
+  '@tanstack/react-query': ^5.101.4
   '@testing-library/dom': ^10.4.1
   '@testing-library/react': ^16.3.2
   '@types/react': ^19.2.17
   '@types/react-dom': ^19.2.3
   '@typescript-eslint/eslint-plugin': ^8.62.1
   '@typescript-eslint/parser': ^8.62.1
-  '@vitejs/plugin-react-swc': ^4.3.1
+  '@vitejs/plugin-react-swc': ^4.3.2
   '@vitest/coverage-v8': ^4.1.9
   '@wagmi/cli': ^2.10.0
   '@wagmi/core': ^3.6.4
@@ -73,8 +73,8 @@ catalog:
   posthog-js: ^1.396.2
   prettier: ^3.9.3
   prettier-plugin-tailwindcss: ^0.8.0
-  react: ^19.2.7
-  react-dom: ^19.2.7
+  react: ^19.2.8
+  react-dom: ^19.2.8
   react-intersection-observer: ^9.16.0
   react-jazzicon: ^1.0.4
   react-markdown: ^10.1.0
@@ -83,12 +83,12 @@ catalog:
   rehype-sanitize: ^6.0.0
   sonner: ^2.0.7
   tailwind-merge: ^3.6.0
-  tailwindcss: ^4.3.2
+  tailwindcss: ^4.3.3
   tailwindcss-animate: ^1.0.7
   tiny-invariant: ^1.3.3
   typescript: ^6.0.3
   viem: ^2.55.8
-  vite: ^8.1.0
+  vite: ^8.1.5
   vite-plugin-node-polyfills: ^0.28.0
   vite-plugin-simple-html: ^1.1.0
   vitest: ^4.1.9
