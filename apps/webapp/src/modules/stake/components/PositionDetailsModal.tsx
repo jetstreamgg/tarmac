@@ -512,7 +512,7 @@ export function PositionDetailsModal({
                 {isInactive && (
                   <span
                     data-testid="stake-position-inactive-chip"
-                    className="bg-surfaceAlt text-textSecondary rounded-full px-2 py-0.5 text-xs font-medium"
+                    className="bg-surfaceAlt text-textSecondary font-circle rounded-full px-2 py-0.5 text-xs font-medium"
                   >
                     <Trans>Inactive</Trans>
                   </span>
@@ -689,7 +689,7 @@ export function PositionDetailsModal({
                   </span>
                   <span
                     data-testid="stake-position-risk-pill"
-                    className="bg-surfaceAlt text-textSecondary w-fit rounded-full px-2 py-0.5 text-xs font-medium"
+                    className="bg-surfaceAlt text-textSecondary font-circle w-fit rounded-full px-2 py-0.5 text-xs font-medium"
                   >
                     <Trans>No position</Trans>
                   </span>
@@ -775,7 +775,7 @@ export function PositionDetailsModal({
                   >
                     <Trans>
                       If the price of the collateral will go down{' '}
-                      <span className="text-text font-medium">
+                      <span className="text-text font-circle font-medium">
                         {dropPercent !== null ? `${dropPercent}%` : NO_VALUE} ({formattedLiqPrice})
                       </span>
                       , you&apos;ll get liquidated. If you want to reduce these risks, add collateral or repay
@@ -804,7 +804,7 @@ export function PositionDetailsModal({
                         <span
                           data-testid="stake-position-risk-pill"
                           className={cn(
-                            'rounded-full px-2 py-0.5 text-xs font-medium capitalize',
+                            'font-circle rounded-full px-2 py-0.5 text-xs font-medium capitalize',
                             RISK_PILL_COLOR[vault.riskLevel]
                           )}
                         >

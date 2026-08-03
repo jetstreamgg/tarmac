@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { QueryParams } from '@/lib/constants';
@@ -9,6 +8,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RateBadge } from '@/components/ui/RateBadge';
 import { useGeoConfig } from '@/modules/geo-config';
 import { useWalletDrawerAssets, type WalletDrawerAsset } from './useWalletDrawerAssets';
 
@@ -139,15 +139,5 @@ function AssetRow({
         </div>
       )}
     </div>
-  );
-}
-
-function RateBadge({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded-full border-[0.5px] border-[#02c2a1] bg-gradient-to-b from-[#02c2a1]/10 to-[#9fde88]/10 px-1.5 py-[3px]">
-      <span className="font-circle bg-gradient-to-b from-[#02c2a1] to-[#9fde88] bg-clip-text text-[11px] leading-3 font-medium text-transparent md:text-xs md:leading-[14px]">
-        {children}
-      </span>
-    </span>
   );
 }

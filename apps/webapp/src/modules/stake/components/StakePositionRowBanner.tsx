@@ -85,7 +85,7 @@ export function StakePositionRowBanner({
       >
         <TriangleAlert className="text-error mt-0.5 h-4 w-4 shrink-0" />
         <div className="flex flex-1 flex-col gap-1">
-          <p className="text-text text-sm font-medium">
+          <p className="text-text font-circle text-sm font-medium">
             <Trans>This position was liquidated</Trans>
           </p>
           <p className="text-textSecondary text-sm">
@@ -120,7 +120,7 @@ export function StakePositionRowBanner({
     >
       <TriangleAlert className="text-error mt-0.5 h-4 w-4 shrink-0" />
       <div className="flex flex-1 flex-col gap-1">
-        <p className="text-text text-sm font-medium">
+        <p className="text-text font-circle text-sm font-medium">
           <Trans>Your liquidation buffer dropped to {dropPercent}%</Trans>
         </p>
         <p className="text-textSecondary text-sm">

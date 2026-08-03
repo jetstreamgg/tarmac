@@ -2,8 +2,7 @@ import { Balances, RewardsModule, Savings, Stake, Expert, Vaults, ConvertArrows,
 import { Intent } from '@/lib/enums';
 import { COMING_SOON_MAP } from '@/lib/constants';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
-import { useGeoConfig } from '@/modules/geo-config';
-import { ModuleId } from '@/modules/geo-config/types';
+import { INTENT_TO_GEO_MODULE, useGeoConfig } from '@/modules/geo-config';
 import { IconProps } from '@/modules/icons/Icon';
 import React from 'react';
 
@@ -29,19 +28,8 @@ export function useWidgetItems(intent: Intent): {
 
   const { isModuleEnabled } = useGeoConfig();
 
-  // Map Intent → ModuleId for geo-config filtering
-  const intentToModule: Partial<Record<Intent, ModuleId>> = {
-    [Intent.SAVINGS_INTENT]: 'savings',
-    [Intent.REWARDS_INTENT]: 'rewards',
-    [Intent.EXPERT_INTENT]: 'expert',
-    [Intent.TRADE_INTENT]: 'trade',
-    [Intent.STAKE_INTENT]: 'stake',
-    [Intent.VAULTS_INTENT]: 'vaults',
-    [Intent.FIXED_INTENT]: 'fixed'
-  };
-
   // If the intent maps to a restricted module, fall back to Balances
-  const restrictedModuleId = intentToModule[intent];
+  const restrictedModuleId = INTENT_TO_GEO_MODULE[intent];
   const effectiveIntent =
     restrictedModuleId && !isModuleEnabled(restrictedModuleId) ? Intent.BALANCES_INTENT : intent;
 
@@ -161,14 +149,14 @@ export function useWidgetItems(intent: Intent): {
     ]
   ]
     .filter(([intent]) => {
-      const moduleId = intentToModule[intent as Intent];
+      const moduleId = INTENT_TO_GEO_MODULE[intent as Intent];
       return !moduleId || isModuleEnabled(moduleId);
     })
     .map(([intent, label, icon, , , description, subItems]) => {
       const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
       const filteredSubItems = (subItems as WidgetSubItem[] | undefined)?.filter(sub => {
         if (!sub.intent) return true;
-        const subModuleId = intentToModule[sub.intent];
+        const subModuleId = INTENT_TO_GEO_MODULE[sub.intent];
         return !subModuleId || isModuleEnabled(subModuleId);
       });
       return [

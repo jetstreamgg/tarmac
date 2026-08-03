@@ -124,8 +124,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const reward = (contract: string, symbol: string, formattedAmount: string, amountUsd: number) => ({
   id: `1:${contract}`,
   source: 'stake' as const,
-  sourceLabel: 'Staking',
   tokenSymbol: symbol,
+  tokenName: `${symbol} token`,
   icon: null,
   formattedAmount,
   amountUsd,

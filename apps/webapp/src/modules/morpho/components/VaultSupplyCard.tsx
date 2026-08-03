@@ -1,9 +1,14 @@
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import { useTokenBalance, getTokenDecimals, type Token, type VaultProvider } from '@/hooks';
+import {
+  useTokenBalance,
+  getTokenDecimals,
+  type MorphoVaultRateData,
+  type Token,
+  type VaultProvider
+} from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
-import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import {
@@ -14,7 +19,7 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { StarsFilled } from '@/modules/icons';
+import { hasRateIncentives, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 import { Morpho } from '@/widgets';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 
@@ -48,6 +53,7 @@ export function VaultSupplyCard({
   vaultName,
   provider,
   netRate,
+  rateData,
   onSupply
 }: {
   assetToken: Token;
@@ -56,6 +62,8 @@ export function VaultSupplyCard({
   provider: VaultProvider;
   /** Net APY as a decimal fraction (e.g. 0.0445). */
   netRate?: number;
+  /** Full rate breakdown; drives the stars mark and its tooltip. */
+  rateData?: MorphoVaultRateData;
   onSupply: () => void;
 }) {
   const chainId = useChainId();
@@ -108,17 +116,20 @@ export function VaultSupplyCard({
         <ProductStatPair>
           <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
             <ProductFigure value={rate}>
-              {rate}
               {/* The rate carries the DS sparkle rather than a token mark — the
-                  vault's yield is not one asset's — tinted with the provider's
-                  colour on Morpho and left neutral elsewhere. */}
-              <StarsFilled
-                className={cn(
-                  'h-3 w-3 shrink-0',
-                  provider === 'morpho' ? 'text-statusInfoSolid' : 'text-fgSecondary'
+                  vault's yield is not one asset's — and hovering it opens the
+                  breakdown (APP-443 item 14; the mark shipped without one).
+                  Both are gated on the rate actually being incentive-boosted,
+                  so an unboosted vault no longer flags a boost it doesn't have
+                  — and never shows a mark the tooltip can't explain. */}
+              <VaultRateTooltip rate={rateData}>
+                {rate}
+                {hasRateIncentives(rateData) && (
+                  <VaultRateMark
+                    className={provider === 'morpho' ? 'text-statusInfoSolid' : 'text-fgSecondary'}
+                  />
                 )}
-                aria-hidden
-              />
+              </VaultRateTooltip>
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>

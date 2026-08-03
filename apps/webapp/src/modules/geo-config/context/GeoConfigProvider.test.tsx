@@ -54,12 +54,13 @@ vi.mock('@/pages/router', () => ({
 const { GeoConfigProvider } = await import('./GeoConfigProvider');
 
 const GeoConfigProbe = () => {
-  const { isRegionRestricted, isModuleEnabled } = useGeoConfig();
+  const { isRegionRestricted, isModuleEnabled, isRegionVerified } = useGeoConfig();
 
   return (
     <>
       <div data-testid="restricted">{String(isRegionRestricted)}</div>
       <div data-testid="savings">{String(isModuleEnabled('savings'))}</div>
+      <div data-testid="verified">{String(isRegionVerified)}</div>
     </>
   );
 };
@@ -95,5 +96,22 @@ describe('GeoConfigProvider', () => {
 
     expect(screen.getByTestId('restricted').textContent).toBe('false');
     expect(screen.getByTestId('savings').textContent).toBe('true');
+  });
+
+  it('reports the region as unverified only when no country resolved', () => {
+    render(
+      <GeoConfigProvider>
+        <GeoConfigProbe />
+      </GeoConfigProvider>
+    );
+
+    expect(screen.getByTestId('verified').textContent).toBe('true');
+
+    act(() => {
+      mockRouter.history.location.search = '?geo_country=XX';
+      routerListeners.forEach(listener => listener());
+    });
+
+    expect(screen.getByTestId('verified').textContent).toBe('false');
   });
 });

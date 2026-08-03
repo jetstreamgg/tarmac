@@ -27,7 +27,7 @@ export function StakeManageDelegateCard({
       className="bg-glassSurface rounded-card flex flex-col gap-6 p-6 backdrop-blur-[20px]"
     >
       <div className="flex items-center justify-between gap-4">
-        <h3 className="text-text text-lg font-medium">
+        <h3 className="text-text font-circle text-lg font-medium">
           <Trans>Change delegate</Trans>
         </h3>
         <Switch

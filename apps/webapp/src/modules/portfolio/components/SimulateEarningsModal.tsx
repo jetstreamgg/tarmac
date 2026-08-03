@@ -1,9 +1,11 @@
 import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Info, X } from 'lucide-react';
+import { Info, TrendingUp, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { RateBadge } from '@/components/ui/RateBadge';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Text } from '@/modules/layout/components/Typography';
 
@@ -36,19 +38,29 @@ export function SimulateEarningsModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[640px]">
-        <DialogClose className="text-textSecondary hover:text-text absolute top-5 right-5 transition-colors">
-          <X className="h-5 w-5" />
-          <span className="sr-only">
-            <Trans>Close</Trans>
-          </span>
+        {/* DS Button / Icon, secondary at 40px — the comp's close control
+            (1030:58457, APP-443 item 17); it was a borderless ghost glyph. */}
+        <DialogClose asChild>
+          <Button
+            variant="secondary"
+            size="iconM"
+            className="absolute top-8 right-8"
+            data-testid="simulate-earnings-close"
+          >
+            <X aria-hidden />
+            <span className="sr-only">
+              <Trans>Close</Trans>
+            </span>
+          </Button>
         </DialogClose>
 
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 pr-8">
-            <DialogTitle className="text-text text-lg font-medium">
+          <div className="flex items-center gap-3 pr-12">
+            <DialogTitle className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
               <Trans>Simulate earnings with Sky Savings</Trans>
             </DialogTitle>
-            <Pill>{formatDecimalPercentage(savingsRate)}</Pill>
+            {/* DS Badges / Special — the rate reads green in the comp. */}
+            <RateBadge>{formatDecimalPercentage(savingsRate)}</RateBadge>
           </div>
           <DialogDescription className="text-textSecondary text-sm">
             <Trans>
@@ -89,7 +101,7 @@ export function SimulateEarningsModal({
           </div>
         </div>
 
-        <div className="border-borderPrimary mt-4 grid grid-cols-3 border-t pt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-y-4">
           <Stat label={<Trans>Daily</Trans>} value={formatUsd(daily)} />
           <Stat label={<Trans>Monthly</Trans>} value={formatUsd(monthly)} divided />
           <Stat label={<Trans>Yearly</Trans>} value={formatUsd(yearly)} divided />
@@ -99,19 +111,24 @@ export function SimulateEarningsModal({
   );
 }
 
+/**
+ * One projection figure. The comp (1030:58467) leads each value with the 16px
+ * green trending-up mark (APP-443 item 17) over a Body 6 label, and splits the
+ * three with 29.5px hairlines rather than full-height column rules.
+ */
 function Stat({ label, value, divided }: { label: ReactNode; value: string; divided?: boolean }) {
   return (
-    <div className={cn('flex flex-col gap-1.5 px-4', divided && 'border-borderPrimary border-l')}>
-      <Text variant="medium" tag="span" className="text-textSecondary">
-        {label}
-      </Text>
-      <span className="text-text text-lg font-medium">{value}</span>
+    <div className={cn('flex items-center gap-10', divided && 'ml-10')}>
+      {divided && <span className="bg-borderPrimary h-[29.5px] w-px shrink-0" aria-hidden />}
+      <div className="flex flex-col gap-0.5">
+        <Text variant="medium" tag="span" className="text-textSecondary">
+          {label}
+        </Text>
+        <span className="text-text font-circle flex items-center gap-1.5 text-lg leading-[22px] font-medium tracking-[-0.36px]">
+          <TrendingUp className="text-bullish h-4 w-4 shrink-0" aria-hidden />
+          {value}
+        </span>
+      </div>
     </div>
-  );
-}
-
-function Pill({ children }: { children: ReactNode }) {
-  return (
-    <span className="bg-surface text-text rounded-full px-2 py-0.5 text-xs font-medium">{children}</span>
   );
 }

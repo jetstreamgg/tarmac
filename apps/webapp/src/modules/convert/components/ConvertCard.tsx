@@ -56,7 +56,7 @@ export function ConvertCard({ form }: { form: ConvertFormModel }) {
             </Text>
             <span className="bg-glassBadge flex items-center gap-1 rounded-full py-1 pr-2 pl-1">
               {getChainIcon(chainId, 'h-4 w-4')}
-              <Text className="text-text text-xs font-medium">{networkName}</Text>
+              <Text className="text-text font-circle text-xs font-medium">{networkName}</Text>
             </span>
           </span>
           <ChevronDown width={16} height={16} className="text-textSecondary" />

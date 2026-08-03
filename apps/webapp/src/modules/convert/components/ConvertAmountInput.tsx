@@ -105,7 +105,7 @@ export function ConvertAmountInput({
           readOnly={!isFrom}
           aria-label={isFrom ? t`Convert amount` : t`Amount received`}
           data-testid={`convert-${side}-amount`}
-          className="text-text placeholder:text-text w-full min-w-0 bg-transparent text-2xl leading-[26px] font-medium tracking-[-0.48px] outline-none md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
+          className="text-text placeholder:text-text font-circle w-full min-w-0 bg-transparent text-2xl leading-[26px] font-medium tracking-[-0.48px] outline-none md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
         />
         <span className="flex shrink-0 items-center gap-1.5">
           {(!isMobile || value === '') && percentButtons}
