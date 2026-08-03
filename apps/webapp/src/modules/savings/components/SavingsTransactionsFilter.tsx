@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { cn } from '@/lib/cn';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { filterTriggerClasses } from '@/components/product/FilterSelect';
 
 /**
  * Action-type filter for the Savings transactions list. `all` shows every
@@ -27,9 +28,10 @@ function FilterLabel({ value, mobileTrigger = false }: { value: SavingsTxFilter;
 /**
  * The transactions filter beside (desktop) or below (mobile) the has-position
  * "Transactions" heading, mounted through the `ProductDetailTemplate`
- * `transactionsAction` slot. Desktop is the Figma `All ▾` text chip (527:7204);
- * below `BP.md` it becomes the comp's full-width bordered pill labelled
- * "All transactions" (M6.3, Figma 486:20830).
+ * `transactionsAction` slot. Desktop is the DS Button / Dropdown S pill the
+ * rest of the app's table filters wear (Figma 1030:59002, APP-443 item 13 —
+ * it used to be a borderless text chip); below `BP.md` it becomes the comp's
+ * full-width bordered pill labelled "All transactions" (M6.3, Figma 486:20830).
  *
  * Purely presentational — it owns no state. The parent (`SavingsProductDetail`)
  * holds the active filter and feeds the same value to `SavingsTransactionsTable`.
@@ -50,11 +52,11 @@ export function SavingsTransactionsFilter({
         data-testid="savings-transactions-filter"
         aria-label={t`Filter transactions`}
         className={cn(
-          'shrink-0 bg-transparent transition-colors focus-visible:ring-0',
+          'shrink-0 transition-colors focus-visible:ring-0',
           isMobile
             ? // Label 6 pill, 12px chevron ([&_svg] outranks the built-in h-4).
-              'border-glassBorder text-text font-circle h-[30px] w-full justify-between rounded-full border py-2 pr-2 pl-3 text-xs leading-[14px] font-medium tracking-[-0.24px] [&_svg]:h-3 [&_svg]:w-3'
-            : 'text-textSecondary hover:text-text font-circle h-auto w-auto gap-1.5 rounded-full border-none p-0 text-sm font-medium'
+              'border-glassBorder text-text font-circle h-[30px] w-full justify-between rounded-full border bg-transparent py-2 pr-2 pl-3 text-xs leading-[14px] font-medium tracking-[-0.24px] [&_svg]:h-3 [&_svg]:w-3'
+            : filterTriggerClasses()
         )}
       >
         <SelectValue>

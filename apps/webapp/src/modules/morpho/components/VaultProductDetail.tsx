@@ -20,6 +20,7 @@ import { VaultDetailChart } from './VaultDetailChart';
 import { VaultStrategy } from './VaultStrategy';
 import { VaultPositionCard } from './VaultPositionCard';
 import { VaultTransactionsTable } from './VaultTransactionsTable';
+import { VaultRateBreakdown } from './VaultRateBreakdown';
 import { trailing30DayRate } from '../helpers/vaultRates';
 
 const NO_VALUE = '–';
@@ -61,7 +62,9 @@ export function VaultProductDetail({
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      value: rate?.formattedNetRate ?? NO_VALUE
+      // Incentive-boosted vaults tag the figure with the DS stars mark and
+      // explain it through the breakdown tooltip (APP-443 item 14).
+      value: <VaultRateBreakdown rate={rate} value={rate?.formattedNetRate ?? NO_VALUE} />
     },
     {
       id: 'rate-30d',

@@ -6,6 +6,7 @@ import { getTokenDecimals, useMorphoVaultChartInfo, useVaultMarketData, type Tok
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { useParseVaultChartData } from '../hooks/useParseVaultChartData';
+import { hasRateIncentives, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 
 type Metric = 'rate' | 'tvl';
 
@@ -79,6 +80,18 @@ export function VaultDetailChart({
         tokenSymbols={isRate ? undefined : [assetToken.symbol]}
         label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
         displayValue={isRate ? liveRate : liveTvl}
+        // The headline plots the same net rate the card and Details row show,
+        // so it wears the same stars mark and breakdown tooltip (APP-443 item
+        // 14). TVL is not a rate — no mark on that metric. The mark is 16px
+        // here rather than the 12px the comps draw beside 14–18px text: no comp
+        // pins it against this 44px figure, and 12px reads as a speck.
+        valueSuffix={
+          isRate && hasRateIncentives(marketData?.rate) ? (
+            <VaultRateTooltip rate={marketData?.rate}>
+              <VaultRateMark className="size-4" />
+            </VaultRateTooltip>
+          ) : undefined
+        }
         tooltipLabel={useHourlyInterval ? 'Hourly average' : 'Daily average'}
         metrics={[
           { value: 'rate', label: <Trans>Rate</Trans> },
