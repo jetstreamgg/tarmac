@@ -552,9 +552,13 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             OUTSIDE the Radix dialog, so minimizing (which unmounts the dialog body)
             never tears down a running transaction. It portals its visible inputs into
             the modal's entry slot when present. See `backgroundContent` in the contract. */}
-        {activeConfig?.backgroundContent && (
+        {/* Held through the exit alongside the modal itself: this is where the
+            widget that portals its inputs into the modal's entry slot lives, so
+            unmounting it on close emptied the modal's body a beat before the
+            modal had finished animating away. */}
+        {modalView?.config.backgroundContent && (
           <div hidden key={`bg-${launchCount}`}>
-            {activeConfig.backgroundContent}
+            {modalView.config.backgroundContent}
           </div>
         )}
         {/* Live state while the modal is up; the retained snapshot while it is
