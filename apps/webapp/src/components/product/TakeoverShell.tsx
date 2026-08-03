@@ -1,7 +1,20 @@
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import { ChevronLeft, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+/**
+ * The takeover opens and closes on the modal comp's motion (Figma: Sky App: UI
+ * 1598:75901): the scrim fades while the card column rises 40px, 300ms,
+ * arriving on quint and leaving on quart. The scrim itself does not travel —
+ * it covers the viewport, so translating it would uncover an edge.
+ *
+ * Callers must render the takeover inside an `AnimatePresence` for the exit
+ * half to run; without one it is unmounted the instant the flow closes.
+ */
+const SCRIM_IN = { duration: 0.3, ease: [0.23, 1, 0.32, 1] } as const;
+const SCRIM_OUT = { duration: 0.3, ease: [0.77, 0, 0.175, 1] } as const;
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -35,6 +48,7 @@ export function TakeoverShell({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const reduceMotion = useReducedMotion();
 
   // Escape-to-close + document scroll lock: syncing with the DOM outside React.
   useEffect(() => {
@@ -95,13 +109,17 @@ export function TakeoverShell({
   // both portalled — and that also keeps it out of reach of any future
   // transform/filter ancestor.
   return createPortal(
-    <div
+    <motion.div
       ref={containerRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       tabIndex={-1}
       data-testid={dataTestId}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
+      transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
       // The comps draw the takeover as a full-page MODAL over the live page
       // (APP-432 item 21 — 1036:209505 layers it over `bg-modal`, a render of
       // /earn), not as a second opaque page: same scrim + blur recipe as the
@@ -152,16 +170,22 @@ export function TakeoverShell({
           (1036:209509). The footer is the column's last row rather than a
           sticky bar — the comps scroll it with the content. */}
       <div className="scrollbar-hidden md:scrollbar-thin-always flex-1 overflow-y-auto px-3 md:px-4">
-        <div className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16">
+        <motion.div
+          className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16"
+          initial={{ y: 40 }}
+          animate={{ y: 0 }}
+          exit={{ y: 40, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
+          transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
+        >
           {children}
           {footer && (
             <div className="flex items-center justify-between gap-4 px-2 py-4 md:gap-6 md:px-6 md:py-6">
               {footer}
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
-    </div>,
+    </motion.div>,
     document.body
   );
 }

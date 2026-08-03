@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
@@ -177,13 +178,18 @@ export function StakeProductPage() {
         </TabsContent>
       </Tabs>
 
-      {isOpenFlow && <OpenPositionTakeover />}
-      {isManageFlow && (
-        <PositionManageFlow
-          initialSheetInit={pendingSheetInit ?? undefined}
-          onInitialSheetInitConsumed={onInitialSheetInitConsumed}
-        />
-      )}
+      {/* The takeovers animate themselves (TakeoverShell), but the flow flags
+          unmount them outright — without an AnimatePresence above the
+          condition, closing one skips its exit entirely. */}
+      <AnimatePresence>{isOpenFlow && <OpenPositionTakeover />}</AnimatePresence>
+      <AnimatePresence>
+        {isManageFlow && (
+          <PositionManageFlow
+            initialSheetInit={pendingSheetInit ?? undefined}
+            onInitialSheetInitConsumed={onInitialSheetInitConsumed}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
