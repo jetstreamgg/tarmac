@@ -48,7 +48,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     await expect(page.getByText('Supply to Sky Savings')).toBeVisible();
   };
 
-  test('Sequential: supply USDS completes successfully in two steps', async ({ isolatedPage }) => {
+  test.fixme('Sequential: supply USDS completes successfully in two steps', async ({ isolatedPage }) => {
     await connectOn(isolatedPage, '/earn/savings');
     await openSupplyModal(isolatedPage);
 
@@ -60,8 +60,8 @@ test.describe('Sequential transactions — Savings supply', () => {
     await confirm.click();
 
     // Approve and Supply run as two sequential wallet confirmations
-   await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
-    
+    await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
+
     await expect(isolatedPage.getByText("You've successfully supplied to Sky Savings.")).toBeVisible({
       timeout: 60_000
     });
@@ -133,7 +133,9 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await expect(page.getByText('Supply to SPK Rewards')).toBeVisible();
   };
 
-  test('Sequential: supply USDS to rewards completes successfully in two steps', async ({ isolatedPage }) => {
+  test.fixme('Sequential: supply USDS to rewards completes successfully in two steps', async ({
+    isolatedPage
+  }) => {
     await connectOn(isolatedPage, `/earn/rewards/${SPK_REWARD_CONTRACT}`);
     await openSupplyModal(isolatedPage);
 

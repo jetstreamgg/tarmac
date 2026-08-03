@@ -46,17 +46,15 @@ const selectOrigin = async (page: Page, symbol: 'USDS' | 'USDC') => {
   await page.getByTestId(`savings-origin-${symbol.toLowerCase()}`).click();
 };
 
-/** Confirms the entry modal and dismisses the success screen. */
-const confirmModal = async (page: Page, label: 'Supply' | 'Withdraw', successText: string) => {
-  const confirm = page.getByRole('dialog').getByRole('button', { name: label, exact: true });
+/** Clicks Review, confirms in the modal and waits for the success status. */
+const reviewAndConfirm = async (page: Page) => {
+  await page.getByText('Review').first().click();
+  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
   await expect(confirm).toBeEnabled({ timeout: 60_000 });
   await confirm.click();
-  await expect(page.getByText(successText)).toBeVisible({ timeout: 60_000 });
-  await page.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByText('Transaction completed successfully.')).toBeVisible({ timeout: 60_000 });
+  await page.getByText('Done').first().click();
 };
-
-const SUPPLY_SUCCESS = "You've successfully supplied to Sky Savings.";
-const WITHDRAW_SUCCESS = "You've successfully withdrawn from Sky Savings.";
 
 export const runL2SavingsTests = async ({ networkName }: { networkName: NetworkName }) => {
   test(`Go to ${networkName} Savings, deposit usds and usdc, withdraw usdc and usds`, async ({
@@ -67,24 +65,24 @@ export const runL2SavingsTests = async ({ networkName }: { networkName: NetworkN
     // supply USDS
     await openSupplyModal(isolatedPage);
     await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
-    await confirmModal(isolatedPage, 'Supply', SUPPLY_SUCCESS);
+    await reviewAndConfirm(isolatedPage);
 
     // supply USDC
     await openSupplyModal(isolatedPage);
     await selectOrigin(isolatedPage, 'USDC');
     await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
-    await confirmModal(isolatedPage, 'Supply', SUPPLY_SUCCESS);
+    await reviewAndConfirm(isolatedPage);
 
     // withdraw USDC
     await openWithdrawModal(isolatedPage);
     await selectOrigin(isolatedPage, 'USDC');
     await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
-    await confirmModal(isolatedPage, 'Withdraw', WITHDRAW_SUCCESS);
+    await reviewAndConfirm(isolatedPage);
 
     // withdraw USDS (9, not 10 — rounding can leave less than the full supply)
     await openWithdrawModal(isolatedPage);
     await isolatedPage.getByTestId('savings-modal-amount-input').fill('9');
-    await confirmModal(isolatedPage, 'Withdraw', WITHDRAW_SUCCESS);
+    await reviewAndConfirm(isolatedPage);
   });
 
   test(`Batch - Go to ${networkName} Savings and perform a batch deposit and a batch withdrawal`, async ({
@@ -95,11 +93,11 @@ export const runL2SavingsTests = async ({ networkName }: { networkName: NetworkN
     // supply USDS (batch wallet: approve+supply land as one bundle)
     await openSupplyModal(isolatedPage);
     await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
-    await confirmModal(isolatedPage, 'Supply', SUPPLY_SUCCESS);
+    await reviewAndConfirm(isolatedPage);
 
     // withdraw USDS
     await openWithdrawModal(isolatedPage);
     await isolatedPage.getByTestId('savings-modal-amount-input').fill('9');
-    await confirmModal(isolatedPage, 'Withdraw', WITHDRAW_SUCCESS);
+    await reviewAndConfirm(isolatedPage);
   });
 };

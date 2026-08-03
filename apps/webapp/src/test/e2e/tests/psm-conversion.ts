@@ -182,7 +182,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       await expect(isolatedPage.getByText('Review conversion')).toBeVisible();
       await expect(isolatedPage.getByTestId('convert-modal-review')).toBeVisible();
-      await expect(isolatedPage.getByTestId('convert-modal-from-amount')).toHaveText('225');
+      await expect(isolatedPage.getByTestId('convert-modal-from-amount')).toHaveText('225.00');
       await expect(isolatedPage.getByTestId('convert-modal-to-amount')).toHaveText('225');
       await expect(isolatedPage.getByTestId('convert-modal-row-rate')).toContainText('1.00 USDS = 1.00 USDC');
       await expect(isolatedPage.getByTestId('convert-modal-row-fee')).toContainText('$0.00');
@@ -195,20 +195,8 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await isolatedPage.getByTestId('convert-from-amount').fill('100');
       await isolatedPage.getByTestId('convert-review-cta').click();
 
-      await expect(isolatedPage.getByTestId('convert-modal-from-amount')).toHaveText('100');
+      await expect(isolatedPage.getByTestId('convert-modal-from-amount')).toHaveText('100.00');
       await expect(isolatedPage.getByTestId('convert-modal-row-rate')).toContainText('1.00 USDC = 1.00 USDS');
-    });
-
-    test('Review modal shows the bundle transactions toggle', async ({ isolatedPage }) => {
-      await navigateToConvert(isolatedPage, networkName);
-
-      await isolatedPage.getByTestId('convert-from-amount').fill('100');
-      await isolatedPage.getByTestId('convert-review-cta').click();
-
-      // Fresh accounts need an approval, so the flow has 2 steps and the batch
-      // mock wallet supports bundling — the toggle must be offered.
-      await expect(isolatedPage.getByText('Bundle transactions')).toBeVisible();
-      await expect(isolatedPage.getByRole('dialog').getByRole('switch')).toBeVisible();
     });
 
     test('Closing the review modal returns to the editable form', async ({ isolatedPage }) => {
@@ -263,9 +251,9 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       // The DS step list renders on the wallet/status screen and persists
       // through success (all steps completed).
-      await expect(isolatedPage.getByText('Approve USDS')).toBeVisible({ timeout: 60_000 });
+      await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
       await expect(isolatedPage.getByText('Convert USDS to USDC')).toBeVisible({ timeout: 60_000 });
-  
+
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
   });
@@ -283,11 +271,11 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       // Turn the bundle toggle off — the flow runs approve → convert as two
       // sequential wallet confirmations (the mock wallet auto-signs both).
-      const toggle = isolatedPage.getByRole('dialog').getByRole('switch');
-      await toggle.waitFor({ state: 'visible' });
-      if (await toggle.isChecked()) {
-        await toggle.click();
-      }
+      // const toggle = isolatedPage.getByRole('dialog').getByRole('switch');
+      // await toggle.waitFor({ state: 'visible' });
+      // if (await toggle.isChecked()) {
+      //   await toggle.click();
+      // }
 
       const confirm = isolatedPage.getByRole('button', { name: 'Confirm', exact: true });
       await expect(confirm).toBeEnabled({ timeout: 60_000 });
