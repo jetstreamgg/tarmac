@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -85,7 +86,15 @@ export function TakeoverShell({
     };
   }, []);
 
-  return (
+  // Portalled to the body because the page wrapper carries a
+  // `view-transition-name` (see the page-transition rules in globals.css), and
+  // a named element breaks `backdrop-filter` for its descendants: rendered in
+  // place, this shell's scrim and blur simply stopped painting and the live
+  // page read straight through the takeover. A full-screen modal belongs at the
+  // body anyway — the dialog and sheet overlays it shares its recipe with are
+  // both portalled — and that also keeps it out of reach of any future
+  // transform/filter ancestor.
+  return createPortal(
     <div
       ref={containerRef}
       role="dialog"
@@ -152,6 +161,7 @@ export function TakeoverShell({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
