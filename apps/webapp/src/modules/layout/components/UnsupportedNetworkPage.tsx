@@ -4,14 +4,14 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { UnsupportedNetwork } from '@/modules/icons/UnsupportedNetwork';
 import { useChains, useSwitchChain } from 'wagmi';
 import { Button } from '@/components/ui/button';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export const UnsupportedNetworkPage = ({ children }: { children: React.ReactNode }) => {
   const chains = useChains();
   const { switchChain } = useSwitchChain();
-  const [, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useAppSearchParams();
 
   const handleSwitchChain = (chainId: number, name: string) => {
     setSearchParams(params => {

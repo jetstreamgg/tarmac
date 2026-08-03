@@ -24,14 +24,14 @@ const mockConfig: GeoConfig = {
 
 const routerListeners = new Set<() => void>();
 const mockRouter = {
-  state: {
+  history: {
     location: {
       search: ''
+    },
+    subscribe: (listener: () => void) => {
+      routerListeners.add(listener);
+      return () => routerListeners.delete(listener);
     }
-  },
-  subscribe: (listener: () => void) => {
-    routerListeners.add(listener);
-    return () => routerListeners.delete(listener);
   }
 };
 
@@ -54,19 +54,20 @@ vi.mock('@/pages/router', () => ({
 const { GeoConfigProvider } = await import('./GeoConfigProvider');
 
 const GeoConfigProbe = () => {
-  const { isRegionRestricted, isModuleEnabled } = useGeoConfig();
+  const { isRegionRestricted, isModuleEnabled, isRegionVerified } = useGeoConfig();
 
   return (
     <>
       <div data-testid="restricted">{String(isRegionRestricted)}</div>
       <div data-testid="savings">{String(isModuleEnabled('savings'))}</div>
+      <div data-testid="verified">{String(isRegionVerified)}</div>
     </>
   );
 };
 
 describe('GeoConfigProvider', () => {
   beforeEach(() => {
-    mockRouter.state.location.search = '';
+    mockRouter.history.location.search = '';
     routerListeners.clear();
   });
 
@@ -81,7 +82,7 @@ describe('GeoConfigProvider', () => {
     expect(screen.getByTestId('savings').textContent).toBe('true');
 
     act(() => {
-      mockRouter.state.location.search = '?geo_mode=restricted&geo_module_savings=true';
+      mockRouter.history.location.search = '?geo_mode=restricted&geo_module_savings=true';
       routerListeners.forEach(listener => listener());
     });
 
@@ -89,11 +90,28 @@ describe('GeoConfigProvider', () => {
     expect(screen.getByTestId('savings').textContent).toBe('true');
 
     act(() => {
-      mockRouter.state.location.search = '';
+      mockRouter.history.location.search = '';
       routerListeners.forEach(listener => listener());
     });
 
     expect(screen.getByTestId('restricted').textContent).toBe('false');
     expect(screen.getByTestId('savings').textContent).toBe('true');
+  });
+
+  it('reports the region as unverified only when no country resolved', () => {
+    render(
+      <GeoConfigProvider>
+        <GeoConfigProbe />
+      </GeoConfigProvider>
+    );
+
+    expect(screen.getByTestId('verified').textContent).toBe('true');
+
+    act(() => {
+      mockRouter.history.location.search = '?geo_country=XX';
+      routerListeners.forEach(listener => listener());
+    });
+
+    expect(screen.getByTestId('verified').textContent).toBe('false');
   });
 });

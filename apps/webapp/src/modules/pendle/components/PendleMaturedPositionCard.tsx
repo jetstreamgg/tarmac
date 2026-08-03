@@ -1,6 +1,12 @@
 import { Trans } from '@lingui/react/macro';
+import { useChainId } from 'wagmi';
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
-import { type PendleMarketConfig, usePendleMaturedPositionEarnings, usePendleRedeemPreview } from '@/hooks';
+import {
+  isPendleChain,
+  type PendleMarketConfig,
+  usePendleMaturedPositionEarnings,
+  usePendleRedeemPreview
+} from '@/hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +44,12 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
 
   const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
 
+  // Redemption signs on mainnet; off-chain the list has already prompted a
+  // network switch, so a still-mismatched chain means the user declined —
+  // keep the position visible but the action disabled instead of letting the
+  // confirm fail with a wallet chain-mismatch error.
+  const onPendleChain = isPendleChain(useChainId());
+
   return (
     <Card variant="stats" data-testid="pendle-matured-position-card">
       <CardHeader>
@@ -72,9 +84,10 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
         )}
         <Button
           variant="primary"
+          size="l"
           className="mt-4 w-full"
           onClick={openRedeemModal}
-          disabled={!isRedeemable || !isPrepared || previewLoading}
+          disabled={!onPendleChain || !isRedeemable || !isPrepared || previewLoading}
           data-testid="pendle-matured-redeem-button"
         >
           {previewLoading ? (

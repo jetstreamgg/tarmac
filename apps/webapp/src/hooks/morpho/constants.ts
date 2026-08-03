@@ -30,30 +30,35 @@ export const MORPHO_VAULTS: MorphoVaultConfig[] = [
     provider: 'morpho',
     name: 'USDT Savings',
     vaultAddress: usdtSavingsVaultAddress,
+    riskProfile: 'vault-usdt-savings',
     assetToken: TOKENS.usdt
   },
   {
     provider: 'morpho',
     name: 'USDS Flagship',
     vaultAddress: usdsFlagshipVaultAddress,
+    riskProfile: 'vault-flagship',
     assetToken: TOKENS.usds
   },
   {
     provider: 'morpho',
     name: 'USDS Risk Capital',
     vaultAddress: usdsRiskCapitalVaultAddress,
+    riskProfile: 'vault-risk-capital',
     assetToken: TOKENS.usds
   },
   {
     provider: 'morpho',
     name: 'USDT Risk Capital',
     vaultAddress: usdtRiskCapitalVaultAddress,
+    riskProfile: 'vault-risk-capital',
     assetToken: TOKENS.usdt
   },
   {
     provider: 'morpho',
     name: 'USDC Risk Capital',
     vaultAddress: usdcRiskCapitalVaultAddress,
+    riskProfile: 'vault-risk-capital',
     assetToken: TOKENS.usdc
   }
 ];
@@ -195,6 +200,39 @@ export const VAULT_V2_HISTORICAL_QUERY = `
     }
   }
 `;
+
+/**
+ * Builds a query for the trailing daily net-APY series of SEVERAL vaults at
+ * once, one aliased `vaultV2ByAddress` selection per address. The marketplace
+ * table needs a 30D rate for every Morpho vault on page load; reusing
+ * VAULT_V2_HISTORICAL_QUERY would mean one request per vault, each carrying the
+ * vault's whole lifetime of TVL + APY. This asks only for the APY series inside
+ * the requested window, in a single round trip.
+ *
+ * Addresses are passed as GraphQL variables (`$a0`, `$a1`, …) rather than
+ * interpolated into the document.
+ */
+export function buildVaultV2ApyWindowQuery(addressCount: number): string {
+  const addressVars = Array.from({ length: addressCount }, (_, i) => `$a${i}: String!`).join(', ');
+  const selections = Array.from(
+    { length: addressCount },
+    (_, i) => `
+    v${i}: vaultV2ByAddress(address: $a${i}, chainId: $chainId) {
+      address
+      historicalState {
+        avgNetApy(options: { startTimestamp: $startTimestamp, endTimestamp: $endTimestamp, interval: DAY }) {
+          x
+          y
+        }
+      }
+    }`
+  ).join('');
+
+  return `
+  query VaultV2ApyWindow($chainId: Int!, $startTimestamp: Int!, $endTimestamp: Int!, ${addressVars}) {${selections}
+  }
+`;
+}
 
 export const VAULT_V2_HISTORICAL_HOURLY_QUERY = `
   query VaultV2HistoryHourly($address: String!, $chainId: Int!, $startTimestamp: Int!, $endTimestamp: Int!) {

@@ -7,6 +7,7 @@ const NOW = 1_700_000_000;
 
 const PT_USDG: PendleMarketConfig = {
   name: 'PT-USDG',
+  slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
   ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548',
   ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1',
@@ -20,6 +21,7 @@ const PT_USDG: PendleMarketConfig = {
 
 const PT_SUSDS: PendleMarketConfig = {
   name: 'PT-sUSDS',
+  slug: 'pt-susds',
   marketAddress: '0x1111111111111111111111111111111111111111',
   ptToken: '0x2222222222222222222222222222222222222222',
   ytToken: '0x3333333333333333333333333333333333333333',

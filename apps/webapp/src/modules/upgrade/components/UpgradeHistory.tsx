@@ -54,7 +54,9 @@ export function UpgradeHistory() {
   const {
     data: upgradeHistory,
     isLoading: upgradeHistoryLoading,
-    error
+    error,
+    hasNextPage,
+    fetchNextPage
   } = useUpgradeHistory({
     indexerUrl
   });
@@ -86,6 +88,9 @@ export function UpgradeHistory() {
       error={error}
       isLoading={upgradeHistoryLoading}
       transactionHeader={t`Details`}
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

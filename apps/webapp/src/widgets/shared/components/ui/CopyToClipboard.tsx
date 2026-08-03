@@ -1,10 +1,4 @@
-import {
-  Tooltip,
-  TooltipArrow,
-  TooltipContent,
-  TooltipPortal,
-  TooltipTrigger
-} from '@/widgets/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/widgets/components/ui/tooltip';
 import { useClipboard } from '@/widgets/shared/hooks/useClipboard';
 import { Text } from './Typography';
 import { Copy } from '@/widgets/shared/components/icons/Icons';
@@ -19,6 +13,7 @@ export function CopyToClipboard({ text }: { text: string }) {
     <Tooltip open={hasCopied}>
       <TooltipTrigger asChild>
         <motion.div
+          data-testid="copy-to-clipboard"
           whileTap={{ scale: 0.8 }}
           initial={AnimationLabels.initial}
           animate={AnimationLabels.animate}
@@ -31,7 +26,6 @@ export function CopyToClipboard({ text }: { text: string }) {
       <TooltipPortal>
         <TooltipContent>
           <Text>Copied</Text>
-          <TooltipArrow />
         </TooltipContent>
       </TooltipPortal>
     </Tooltip>

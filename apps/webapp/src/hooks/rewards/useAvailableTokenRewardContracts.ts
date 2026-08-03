@@ -13,7 +13,7 @@ const REWARD_CONTRACT_CONFIGS = [
     supplyToken: TOKENS.usds,
     rewardToken: TOKENS.sky,
     getAddress: (chainId: number) => usdsSkyRewardAddress[chainId as keyof typeof usdsSkyRewardAddress],
-    name: 'With: USDS Get: SKY',
+    name: 'Earn SKY',
     description: 'Supply USDS, get SKY',
     externalLink: 'https://usds.sky',
     logo: 'https://via.placeholder.com/400x400/04d19a/ffffff?text=SKY',
@@ -23,7 +23,7 @@ const REWARD_CONTRACT_CONFIGS = [
     supplyToken: TOKENS.usds,
     rewardToken: TOKENS.spk,
     getAddress: (chainId: number) => usdsSpkRewardAddress[chainId as keyof typeof usdsSpkRewardAddress],
-    name: 'With: USDS Get: SPK',
+    name: 'Earn SPK',
     description: 'Supply USDS, get SPK',
     externalLink: 'http://spark.fi/',
     logo: 'https://via.placeholder.com/400x400/04d19a/9CD33B?text=SPK'
@@ -32,7 +32,7 @@ const REWARD_CONTRACT_CONFIGS = [
     supplyToken: TOKENS.usds,
     rewardToken: TOKENS.grove,
     getAddress: (chainId: number) => usdsGroveRewardAddress[chainId as keyof typeof usdsGroveRewardAddress],
-    name: 'With: USDS Get: GROVE',
+    name: 'Earn GROVE',
     description: 'Supply USDS, get GROVE',
     externalLink: 'https://grove.finance/',
     logo: 'https://via.placeholder.com/400x400/04d19a/E3D27A?text=GROVE'
@@ -41,7 +41,7 @@ const REWARD_CONTRACT_CONFIGS = [
     supplyToken: TOKENS.usds,
     rewardToken: TOKENS.cle,
     getAddress: (chainId: number) => cleRewardAddress[chainId as keyof typeof cleRewardAddress],
-    name: 'Chronicle Points',
+    name: 'Earn Chronicle Points',
     description: 'Supply USDS, get CLE',
     externalLink: 'https://usds.sky',
     logo: 'https://via.placeholder.com/400x400/04d19a/9CD33B?text=CLE'

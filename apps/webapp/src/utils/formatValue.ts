@@ -16,6 +16,8 @@ type FormatOptions = {
   compact?: boolean;
   amount?: number;
   maxDecimals?: number;
+  /** Pad with trailing zeros up to this many decimals (e.g. 2 → "10,000.00"). */
+  minDecimals?: number;
   showPercentageDecimals?: boolean;
   roundingMode?: 'ceil' | 'floor';
   useGrouping?: boolean;
@@ -36,10 +38,12 @@ export function createNumberFormatter(options?: FormatOptions) {
             : options?.compact
               ? COMPACT_LARGE_NUM_DECIMALS
               : LARGE_NUM_DECIMALS;
+  const minDecimals = options?.minDecimals ?? 0;
   return new Intl.NumberFormat(locale, {
     style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: maxDecimals,
+    minimumFractionDigits: minDecimals,
+    // Intl throws when max < min, so a lone minDecimals wins over the derived max.
+    maximumFractionDigits: Math.max(maxDecimals, minDecimals),
     notation: options?.compact ? 'compact' : undefined,
     compactDisplay: options?.compact ? 'short' : undefined,
     roundingMode: options?.roundingMode || undefined,
@@ -79,6 +83,24 @@ export function formatNumber(amount: number, options?: FormatOptions): string {
   return lessThanSmallest ? '<' + result : result;
 }
 
+/**
+ * Splits a number into its grouped integer part and trailing fraction, so a hero
+ * value can render the whole part large and the decimals small/dimmed
+ * (e.g. `100,000` + `.00026`). Returns an empty `fraction` when there is none.
+ */
+export function splitAmount(value: number, fractionDigits = 5): { whole: string; fraction: string } {
+  const scale = 10 ** fractionDigits;
+  // Round once at the scaled-integer level so a fraction that rounds up to a full
+  // unit (e.g. 0.999996 → 1) carries into the whole part instead of producing
+  // whole "0" / fraction "1".
+  const scaled = Math.round(value * scale);
+  const whole = Math.trunc(scaled / scale);
+  const fractionRaw = scaled - whole * scale;
+  const fraction =
+    fractionRaw > 0 ? String(fractionRaw).padStart(fractionDigits, '0').replace(/0+$/, '') : '';
+  return { whole: formatNumber(whole, { maxDecimals: 0 }), fraction };
+}
+
 export function formatPercent(amount: bigint, options?: FormatOptions): `${number}` {
   // Number is basis points, equivalent to "100%"
   const upperThreshold = 1;
@@ -97,6 +119,22 @@ export function formatPercent(amount: bigint, options?: FormatOptions): `${numbe
 export function formatDecimalPercentage(value: number, decimalPlaces: number = 2): string {
   const percentage = value * 100;
   return `${percentage.toFixed(decimalPlaces)}%`;
+}
+
+/**
+ * Money figure with a `$` prefix and exactly two fraction digits, grouped
+ * (e.g. `$1,000,000.00`). Unlike {@link formatNumber}, decimals are never
+ * dropped — the sign is placed before the symbol (`-$100.00`).
+ */
+export function formatUsd(amount: number): string {
+  const sign = amount < 0 ? '-' : '';
+  const formatted = new Intl.NumberFormat(getSupportedNumberLocale(), {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: true
+  }).format(Math.abs(amount));
+  return `${sign}$${formatted}`;
 }
 
 export function formatBigIntAsCeiledAbsoluteWithSymbol(

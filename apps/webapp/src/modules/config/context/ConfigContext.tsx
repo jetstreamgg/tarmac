@@ -2,62 +2,18 @@ import { createContext } from 'react';
 import { SiteConfig } from '../types/site-config';
 import { UserConfig } from '../types/user-config';
 import { defaultConfig as siteConfig } from '../default-config';
-import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
-import { RewardContract } from '@/hooks';
 import { StakeToken } from '@/modules/stake/constants';
-
-export type LinkedActionConfig = {
-  inputAmount?: string;
-  initialAction?: string | null;
-  linkedAction?: string;
-  showLinkedAction: boolean;
-  sourceToken?: string;
-  targetToken?: string;
-  rewardContract?: string;
-  expertModule?: string;
-  step: number;
-  timestamp?: string;
-};
-
-export enum StepIndicatorStates {
-  CURRENT = 'current',
-  SUCCESS = 'success',
-  COMPLETED = 'completed',
-  FUTURE = 'future'
-}
-
-export enum LinkedActionSteps {
-  UNSTARTED = 0,
-  CURRENT_FUTURE = 1,
-  SUCCESS_FUTURE = 2,
-  COMPLETED_CURRENT = 3,
-  COMPLETED_SUCCESS = 4,
-  COMPLETED_COMPLETED = 5
-}
-
-export const StepMap: Record<LinkedActionSteps, StepIndicatorStates[]> = {
-  [LinkedActionSteps.UNSTARTED]: [],
-  [LinkedActionSteps.CURRENT_FUTURE]: [StepIndicatorStates.CURRENT, StepIndicatorStates.FUTURE],
-  [LinkedActionSteps.SUCCESS_FUTURE]: [StepIndicatorStates.SUCCESS, StepIndicatorStates.FUTURE],
-  [LinkedActionSteps.COMPLETED_CURRENT]: [StepIndicatorStates.COMPLETED, StepIndicatorStates.CURRENT],
-  [LinkedActionSteps.COMPLETED_SUCCESS]: [StepIndicatorStates.COMPLETED, StepIndicatorStates.SUCCESS],
-  [LinkedActionSteps.COMPLETED_COMPLETED]: [StepIndicatorStates.COMPLETED, StepIndicatorStates.FUTURE]
-};
+import { DEFAULT_THEME } from '@/lib/theme';
 
 // Default user config
 export const defaultUserConfig: UserConfig = {
   locale: undefined,
+  theme: DEFAULT_THEME,
   stakeToken: StakeToken.SKY,
   batchEnabled: false, // Default to false to show activation prompt
   expertRiskDisclaimerShown: false,
   expertRiskDisclaimerDismissed: false,
-  stakingSpkDisclaimerDismissed: false,
-  rewardsUsdsSkyDisclaimerDismissed: false
-};
-
-export const defaultLinkedActionConfig = {
-  step: 0,
-  showLinkedAction: false
+  stakingSpkDisclaimerDismissed: false
 };
 
 export interface ConfigContextProps {
@@ -66,32 +22,17 @@ export interface ConfigContextProps {
   loaded: boolean;
   locale: string;
   updateUserConfig: (config: UserConfig) => void;
-  selectedRewardContract?: RewardContract;
-  setSelectedRewardContract: (rewardContract?: RewardContract) => void;
-  selectedStakeUrnIndex: number | undefined;
-  setSelectedStakeUrnIndex: (position: number | undefined) => void;
-  linkedActionConfig: LinkedActionConfig;
-  updateLinkedActionConfig: (config: Partial<LinkedActionConfig>) => void;
-  exitLinkedActionMode: () => void;
   externalLinkModalOpened: boolean;
   setExternalLinkModalOpened: (val: boolean) => void;
   externalLinkModalUrl: string;
   setExternalLinkModalUrl: (val: string) => void;
   onExternalLinkClicked: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  selectedExpertOption: ExpertIntent | undefined;
-  setSelectedExpertOption: (intent: ExpertIntent | undefined) => void;
-  selectedVaultsOption: VaultsIntent | undefined;
-  setSelectedVaultsOption: (intent: VaultsIntent | undefined) => void;
-  selectedConvertOption: ConvertIntent | undefined;
-  setSelectedConvertOption: (intent: ConvertIntent | undefined) => void;
   expertRiskDisclaimerShown: boolean;
   setExpertRiskDisclaimerShown: (shown: boolean) => void;
   expertRiskDisclaimerDismissed: boolean;
   setExpertRiskDisclaimerDismissed: (dismissed: boolean) => void;
   stakingSpkDisclaimerDismissed: boolean;
   setStakingSpkDisclaimerDismissed: (dismissed: boolean) => void;
-  rewardsUsdsSkyDisclaimerDismissed: boolean;
-  setRewardsUsdsSkyDisclaimerDismissed: (dismissed: boolean) => void;
 }
 
 // Zod schema for validating user settings
@@ -108,30 +49,15 @@ export const ConfigContext = createContext<ConfigContextProps>({
   updateUserConfig: () => {
     // do nothing.
   },
-  selectedRewardContract: undefined,
-  setSelectedRewardContract: () => {},
-  selectedStakeUrnIndex: undefined,
-  setSelectedStakeUrnIndex: () => {},
-  updateLinkedActionConfig: () => {},
-  linkedActionConfig: defaultLinkedActionConfig,
-  exitLinkedActionMode: () => {},
   externalLinkModalOpened: false,
   setExternalLinkModalOpened: () => {},
   externalLinkModalUrl: '',
   setExternalLinkModalUrl: () => {},
   onExternalLinkClicked: () => {},
-  selectedExpertOption: undefined,
-  setSelectedExpertOption: () => {},
-  selectedVaultsOption: undefined,
-  setSelectedVaultsOption: () => {},
-  selectedConvertOption: undefined,
-  setSelectedConvertOption: () => {},
   expertRiskDisclaimerShown: false,
   setExpertRiskDisclaimerShown: () => {},
   expertRiskDisclaimerDismissed: false,
   setExpertRiskDisclaimerDismissed: () => {},
   stakingSpkDisclaimerDismissed: false,
-  setStakingSpkDisclaimerDismissed: () => {},
-  rewardsUsdsSkyDisclaimerDismissed: false,
-  setRewardsUsdsSkyDisclaimerDismissed: () => {}
+  setStakingSpkDisclaimerDismissed: () => {}
 });

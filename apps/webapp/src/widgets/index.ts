@@ -10,11 +10,8 @@ export type {
   ExternalWidgetState
 } from './shared/types/widgetState';
 export * from './SavingsWidget/lib/constants';
-export * from './StUSDSWidget/lib/constants';
 export * from './TradeWidget/lib/constants';
 export * from './UpgradeWidget/lib/constants';
-export { RewardsFlow, RewardsScreen, RewardsAction } from './RewardsWidget/lib/constants';
-export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './StakeModuleWidget/lib/constants';
 export {
   VaultFlow,
   VaultAction,
@@ -32,24 +29,17 @@ export {
   PENDLE_BUY_SLIPPAGE_STORAGE_KEY,
   PENDLE_SELL_SLIPPAGE_STORAGE_KEY,
   PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY,
-  PENDLE_DEFAULT_REDEEM_SLIPPAGE
+  PENDLE_DEFAULT_REDEEM_SLIPPAGE,
+  PENDLE_HISTORY_REFRESH_MS
 } from './PendleWidget/lib/constants';
 
-export { SavingsWidget } from './SavingsWidget';
-export { StUSDSWidget } from './StUSDSWidget';
-export { L2SavingsWidget as BaseSavingsWidget } from './L2SavingsWidget';
-export { L2SavingsWidget as ArbitrumSavingsWidget } from './L2SavingsWidget';
-export { L2SavingsWidget } from './L2SavingsWidget';
 export { UpgradeWidget } from './UpgradeWidget';
-export { RewardsWidget } from './RewardsWidget';
 export { TradeWidget } from './TradeWidget';
 export { L2TradeWidget as BaseTradeWidget } from './L2TradeWidget';
 export { L2TradeWidget as ArbitrumTradeWidget } from './L2TradeWidget';
 export { L2TradeWidget } from './L2TradeWidget';
-export { PsmConversionWidget } from './PsmConversionWidget';
 export { BalancesWidget } from './BalancesWidget';
 export type { BalancesWidgetProps } from './BalancesWidget';
-export { StakeModuleWidget } from './StakeModuleWidget/index';
 export { VaultWidget, MorphoVaultWidget } from './VaultWidget';
 export type { VaultWidgetProps, MorphoVaultWidgetProps } from './VaultWidget';
 export { PendleWidget } from './PendleWidget';
@@ -69,7 +59,6 @@ export { VaultPoweredByBadge, MorphoVaultBadge } from './VaultWidget/components/
 export { MorphoRateBreakdownPopover } from './VaultWidget/components/MorphoRateBreakdownPopover';
 export { SparkVaultRate } from './VaultWidget/components/SparkVaultRate';
 export type { TradeToken, NativeCurrency } from './TradeWidget/lib/types';
-export { formatUrnIndex } from './StakeModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';
 export type { WidgetsConfig } from './config/types/widgets-config';
 export { NoResults } from './shared/components/icons/NoResults';
@@ -102,6 +91,7 @@ export {
   Cancel
 } from './shared/components/icons/Icons';
 export { Morpho } from './shared/components/icons/Morpho';
+export { Pendle } from './shared/components/icons/Pendle';
 export { WalletCard } from './BalancesWidget/components/WalletCard';
 export { ModuleCardVariant, ModulesBalances } from './BalancesWidget/components/ModulesBalances';
 export { BalancesHistory } from './BalancesWidget/components/BalancesHistory';

@@ -219,8 +219,10 @@ export function TermsModal() {
     </div>
   );
 
+  // Renders in the navbar wallet slot, so it wears the same DS connect recipe
+  // as WalletChip (Figma 5069:27086): primary button at navbar height.
   const triggerButton = (
-    <Button variant="connect" onClick={termsCheckError ? retryTermsCheck : openModal}>
+    <Button variant="primary" size="m" onClick={termsCheckError ? retryTermsCheck : openModal}>
       <Trans>Connect Wallet</Trans>
     </Button>
   );

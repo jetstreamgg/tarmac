@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -18,7 +18,11 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 backdrop-blur-[12.5px]',
+      // DS effect "background blur-full" (Figma 5579:22935 → CSS blur(100px);
+      // the raw effect stores radius 200, which Figma halves in its CSS
+      // translation): the scrim fully frosts the page; the modal card is a
+      // near-transparent tint over it, so the frosting must come from here.
+      'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 bg-modalOverlay fixed inset-0 z-50 backdrop-blur-[100px]',
       className
     )}
     {...props}
@@ -35,7 +39,11 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-auto min-w-[90%] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-[24px] px-5 py-4 shadow-lg duration-200 sm:min-w-[640px] sm:px-10 sm:py-8',
+        // outline-hidden: Radix focuses the content container when nothing
+        // inside autofocuses, and a non-pointer open (deep link, keyboard)
+        // makes that focus :focus-visible — suppress the panel's UA ring, as
+        // PopoverContent does; interactive children keep their own rings.
+        'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid max-h-[calc(100dvh-2rem)] w-auto min-w-[90%] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain rounded-[24px] px-5 py-4 shadow-lg outline-hidden duration-200 sm:min-w-[640px] sm:px-10 sm:py-8',
         className
       )}
       {...props}
@@ -71,7 +79,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('text-lg leading-none font-semibold tracking-tight', className)}
+    className={cn('font-circle text-lg leading-none font-medium tracking-tight', className)}
     {...props}
   />
 ));

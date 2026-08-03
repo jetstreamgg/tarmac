@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 import { skeletonTransition } from '@/modules/ui/animation/presets';
 import { motion } from 'motion/react';
 

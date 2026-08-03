@@ -1,179 +1,86 @@
-import { describe, it, expect, vi } from 'vitest';
-import { validateSearchParams, rewriteLegacyWidgetParams } from './validateSearchParams';
-import { mainnet } from 'wagmi/chains';
-import { VaultsIntent } from '@/lib/enums';
+import { describe, it, expect } from 'vitest';
+import { validateSearchParams } from './validateSearchParams';
+import { Intent } from '@/lib/enums';
 
-const SPARK_VAULT_ADDRESS = '0x74cb54e082411cfCAEADb00a0765625B10410DAa';
-
-// Runs the validator with widget=vaults so the vault_module branch is active,
-// and exposes the setSelectedVaultsOption spy alongside the mutated params.
-const validateVaultParams = (query: string) => {
+const validateConvertParams = (query: string) => {
   const params = new URLSearchParams(query);
-  const setSelectedVaultsOption = vi.fn();
-  validateSearchParams(
-    params,
-    [],
-    'vaults',
-    vi.fn(),
-    mainnet.id,
-    [mainnet] as [typeof mainnet],
-    vi.fn(),
-    true,
-    setSelectedVaultsOption,
-    vi.fn()
-  );
-  return { params, setSelectedVaultsOption };
+  return validateSearchParams(params, Intent.CONVERT_INTENT);
 };
 
-const validateParams = (query: string) => {
-  const params = new URLSearchParams(query);
-  return validateSearchParams(
-    params,
-    [],
-    'convert',
-    vi.fn(),
-    mainnet.id,
-    [mainnet] as [typeof mainnet],
-    vi.fn(),
-    true,
-    vi.fn(),
-    vi.fn()
-  );
-};
-
-describe('rewriteLegacyWidgetParams', () => {
-  it('rewrites widget=trade to widget=convert&convert_module=trade', () => {
-    const params = new URLSearchParams('widget=trade');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('convert');
-    expect(params.get('convert_module')).toBe('trade');
-  });
-
-  it('rewrites widget=upgrade to widget=convert&convert_module=upgrade', () => {
-    const params = new URLSearchParams('widget=upgrade');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('convert');
-    expect(params.get('convert_module')).toBe('upgrade');
-  });
-
-  it('rewrites widget=upgrade on mainnet to widget=convert&convert_module=upgrade', () => {
-    const params = new URLSearchParams('widget=upgrade&network=ethereum');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('convert');
-    expect(params.get('convert_module')).toBe('upgrade');
-    expect(params.get('network')).toBe('ethereum');
-  });
-
-  it('leaves widget=upgrade unchanged on L2 networks', () => {
-    const params = new URLSearchParams('widget=upgrade&network=base');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('upgrade');
-    expect(params.has('convert_module')).toBe(false);
-    expect(params.get('network')).toBe('base');
-  });
-
-  it('leaves widget=savings unchanged', () => {
-    const params = new URLSearchParams('widget=savings');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('savings');
-    expect(params.has('convert_module')).toBe(false);
-  });
-
-  it('leaves widget=convert&convert_module=trade unchanged', () => {
-    const params = new URLSearchParams('widget=convert&convert_module=trade');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('convert');
-    expect(params.get('convert_module')).toBe('trade');
-  });
-
-  it('does not overwrite existing convert_module', () => {
-    const params = new URLSearchParams('widget=trade&convert_module=upgrade');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('convert');
-    expect(params.get('convert_module')).toBe('upgrade');
-  });
-
-  it('preserves all other params', () => {
-    const params = new URLSearchParams('widget=trade&network=ethereum&flow=revert&source_token=MKR');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('convert');
-    expect(params.get('convert_module')).toBe('trade');
-    expect(params.get('network')).toBe('ethereum');
-    expect(params.get('flow')).toBe('revert');
-    expect(params.get('source_token')).toBe('MKR');
-  });
-
-  it('handles case-insensitive widget values', () => {
-    const params = new URLSearchParams('widget=Trade');
-    rewriteLegacyWidgetParams(params);
-    expect(params.get('widget')).toBe('convert');
-    expect(params.get('convert_module')).toBe('trade');
-  });
-});
-
-describe('validateSearchParams for convert psm', () => {
-  it('keeps USDC source token for convert_module=psm', () => {
-    const params = validateParams('widget=convert&convert_module=psm&source_token=USDC');
-    expect(params.get('convert_module')).toBe('psm');
+describe('validateSearchParams for the convert page', () => {
+  it('keeps USDC source token', () => {
+    const params = validateConvertParams('source_token=USDC');
     expect(params.get('source_token')).toBe('USDC');
   });
 
-  it('keeps USDS source token for convert_module=psm', () => {
-    const params = validateParams('widget=convert&convert_module=psm&source_token=USDS');
-    expect(params.get('convert_module')).toBe('psm');
+  it('keeps USDS source token', () => {
+    const params = validateConvertParams('source_token=USDS');
     expect(params.get('source_token')).toBe('USDS');
   });
 
-  it('removes unsupported source token for convert_module=psm', () => {
-    const params = validateParams('widget=convert&convert_module=psm&source_token=DAI');
-    expect(params.get('convert_module')).toBe('psm');
+  it('removes source tokens outside the PSM pair', () => {
+    const params = validateConvertParams('source_token=DAI');
     expect(params.has('source_token')).toBe(false);
   });
 
-  it('removes target token for convert_module=psm', () => {
-    const params = validateParams('widget=convert&convert_module=psm&target_token=USDS');
-    expect(params.get('convert_module')).toBe('psm');
+  it('removes the legacy trade target token', () => {
+    const params = validateConvertParams('target_token=USDS');
     expect(params.has('target_token')).toBe(false);
   });
 });
 
-describe('validateSearchParams for vault_module', () => {
-  it('preserves vault_module=sky and selects the Spark vaults option', () => {
-    const { params, setSelectedVaultsOption } = validateVaultParams(
-      `widget=vaults&vault_module=sky&vault=${SPARK_VAULT_ADDRESS}`
-    );
-    expect(params.get('vault_module')).toBe('sky');
-    expect(params.get('vault')).toBe(SPARK_VAULT_ADDRESS);
-    expect(setSelectedVaultsOption).toHaveBeenCalledWith(VaultsIntent.SKY_VAULT_INTENT);
+describe('validateSearchParams source token scoping', () => {
+  it('keeps source token on savings', () => {
+    const params = new URLSearchParams('source_token=USDS');
+    validateSearchParams(params, Intent.SAVINGS_INTENT);
+    expect(params.get('source_token')).toBe('USDS');
   });
 
-  it('preserves vault_module=morpho and selects the Morpho vaults option', () => {
-    const { params, setSelectedVaultsOption } = validateVaultParams('widget=vaults&vault_module=morpho');
-    expect(params.get('vault_module')).toBe('morpho');
-    expect(setSelectedVaultsOption).toHaveBeenCalledWith(VaultsIntent.MORPHO_VAULT_INTENT);
+  it('removes source token on modules that do not read it', () => {
+    const params = new URLSearchParams('source_token=USDS');
+    validateSearchParams(params, Intent.BALANCES_INTENT);
+    expect(params.has('source_token')).toBe(false);
   });
+});
 
-  it('deletes an unrecognised vault_module value (no pass-through)', () => {
-    const { params } = validateVaultParams('widget=vaults&vault_module=aave');
-    expect(params.has('vault_module')).toBe(false);
+describe('validateSearchParams removed params', () => {
+  it('strips the legacy details param', () => {
+    const params = new URLSearchParams('details=false');
+    validateSearchParams(params, Intent.BALANCES_INTENT);
+    expect(params.has('details')).toBe(false);
+  });
+});
+
+describe('validateSearchParams upgrade deep link', () => {
+  it('preserves the upgrade param on any module for useUpgradeDeepLink to consume', () => {
+    const params = new URLSearchParams('upgrade=mkr');
+    validateSearchParams(params, Intent.BALANCES_INTENT);
+    expect(params.get('upgrade')).toBe('mkr');
   });
 });
 
 describe('validateSearchParams geo overrides (non-production)', () => {
   it('preserves valid geo override params and strips unrelated unknown params', () => {
-    const params = validateParams('geo_mode=restricted&geo_module_savings=true&foo=bar');
+    const params = validateConvertParams('geo_mode=restricted&geo_module_savings=true&foo=bar');
     expect(params.get('geo_mode')).toBe('restricted');
     expect(params.get('geo_module_savings')).toBe('true');
     expect(params.has('foo')).toBe(false);
   });
 
   it('strips geo_mode with an invalid value', () => {
-    const params = validateParams('geo_mode=invalid');
+    const params = validateConvertParams('geo_mode=invalid');
     expect(params.has('geo_mode')).toBe(false);
   });
 
   it('strips geo_module_* with an invalid value', () => {
-    const params = validateParams('geo_module_savings=maybe');
+    const params = validateConvertParams('geo_module_savings=maybe');
     expect(params.has('geo_module_savings')).toBe(false);
+  });
+
+  it('strips retired navigation params like widget and vault_module', () => {
+    const params = validateConvertParams('widget=convert&vault_module=morpho&convert_module=psm');
+    expect(params.has('widget')).toBe(false);
+    expect(params.has('vault_module')).toBe(false);
+    expect(params.has('convert_module')).toBe(false);
   });
 });

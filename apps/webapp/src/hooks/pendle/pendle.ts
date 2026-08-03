@@ -17,6 +17,12 @@ import { PendleHistoryAction } from './constants';
 export type PendleMarketConfig = {
   /** Display name for the market (e.g. "PT-sUSDS") */
   name: string;
+  /**
+   * URL slug for the market's detail route (`/earn/fixed/:slug`). Unique across
+   * PENDLE_MARKETS (enforced by test). Kept short while unambiguous; a second
+   * market on the same underlying disambiguates itself (e.g. by maturity).
+   */
+  slug: string;
   /** The Pendle Market contract address (mainnet) */
   marketAddress: `0x${string}`;
   /** The PT token contract address */
@@ -173,6 +179,8 @@ export type PendleMarketStats = {
   formattedTvl?: string;
   /** Underlying APY of the SY (decimal) */
   underlyingApy?: number;
+  /** Market liquidity in USD (raw number) */
+  liquidity?: number;
   /** Market expiry as a UNIX timestamp in seconds (matches the on-chain expiry()) */
   expirySec?: number;
   /** Market deployment timestamp in seconds (start of the maturity window) */
@@ -408,8 +416,8 @@ export type PendleCombinedMarketHistoryHook = ReadHook & {
  * `ptAmount` is the raw PT integer (PT decimals = underlying decimals per
  * Pendle convention), so `formatBigInt(amount, { unit: decimals })` renders
  * the same number a user would see on a block explorer or the per-market
- * history table. `marketName` ("PT-sUSDS", …) is the unit shown in the row's
- * right-hand text.
+ * history table. `underlyingSymbol` carries the PT ticker ("PT-sUSDS", …)
+ * shown as the row's right-hand unit.
  */
 export interface PendleHistoryItem {
   blockTimestamp: Date;
@@ -427,9 +435,9 @@ export interface PendleHistoryItem {
   assets: bigint;
   /** Underlying-token decimals — used by formatBigInt at render time. */
   underlyingDecimals: number;
-  /** Underlying-token display symbol (e.g. "sUSDS"). */
+  /** PT ticker ("PT-sUSDS") — the row's unit; amounts are PT-denominated. */
   underlyingSymbol: string;
-  /** Market name for breadcrumb context; not used in the row's right-hand unit. */
+  /** Same PT ticker, for breadcrumb context; `market.name` is the product display name, not a ticker. */
   marketName: string;
   /** Source market address — useful for downstream linking; not currently rendered. */
   marketAddress: `0x${string}`;

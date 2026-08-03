@@ -84,7 +84,7 @@ export const ExternalLinkModal: React.FC = () => {
             <DialogClose asChild>
               <Button
                 variant="secondary"
-                className="flex-1 border bg-transparent hover:bg-[rgb(17,16,31)] active:bg-[rgb(34,32,66)]"
+                className="light:hover:bg-surfaceHover light:active:bg-surfaceAlt flex-1 border bg-transparent hover:bg-[rgb(17,16,31)] active:bg-[rgb(34,32,66)]"
                 onClick={() => handleCancel(false)}
               >
                 <Text>Cancel</Text>

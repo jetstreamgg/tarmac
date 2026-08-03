@@ -150,6 +150,11 @@ export const RewardsBalanceCard = ({
       icon={<img src="/images/rewards_icon_large.svg" alt="Rewards" className="h-full w-full" />}
       url={url}
       logoName="rewards"
+      apyBadge={
+        mostRecentRateNumber && mostRecentRateNumber > 0
+          ? t`Rates up to: ${formatDecimalPercentage(mostRecentRateNumber)}`
+          : undefined
+      }
       content={
         loading ? (
           <Skeleton className="w-32" />

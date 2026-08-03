@@ -9,15 +9,15 @@ import {
 } from 'wagmi';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ListWallet } from '@/components/ui/list';
 import { Text } from '@/modules/layout/components/Typography';
 import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
+import { Trans } from '@lingui/react/macro';
+import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
 import { useIsSafeWallet } from '@/hooks';
 import { WalletIcon } from './WalletIcon';
 import { WALLET_ICONS } from '@/lib/constants';
-import { ConnectWallet } from '@/widgets';
-import { Trans } from '@lingui/react/macro';
-import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
@@ -56,6 +56,22 @@ function isWalletOverlayVisible(): boolean {
     if (el && isOpen(el)) return true;
   }
   return false;
+}
+
+/**
+ * One legal link in the terms line, resolved by name out of the env-driven
+ * footer links so the modal can't drift from the nav's legal rows. Renders the
+ * bare name when the deployment ships no matching link (the env var is
+ * optional, and a dead link would be worse than plain text).
+ */
+function LegalLink({ name }: { name: string }) {
+  const href = getFooterLinks().find(link => link.name === name)?.url;
+  if (!href) return <>{name}</>;
+  return (
+    <a href={sanitizeUrl(href)} target="_blank" rel="noreferrer" className="text-fgBrand hover:underline">
+      {name}
+    </a>
+  );
 }
 
 export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
@@ -189,6 +205,10 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     return false;
   });
 
+  // Rows are the design-system List / Wallet (Figma 5209:38238): the whole
+  // row is the connect button. The legacy "Connecting..." subtitle maps to the
+  // active (loader) state; "Connected" and "Connect via QR" move into the
+  // Label 6 badge slot ("Recent" in Figma — we don't track recency).
   const renderConnectorButton = (connector: Connector) => {
     const isConnecting =
       (connect.isPending && connect.variables?.connector === connector) ||
@@ -198,33 +218,25 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     const isCurrentConnectedConnector = connectedConnector?.uid === connector.uid;
 
     return (
-      <div key={connector.uid} className="flex items-center justify-between gap-3 px-3">
-        <div className="flex items-center gap-3">
-          <WalletIcon connector={connector} iconUrl={icons[connector.uid]} />
-          <div className="flex flex-col items-start">
-            <Text className="text-text text-base font-medium">{connector.name}</Text>
-            {isConnecting && <Text className="text-textSecondary text-sm">{t`Connecting...`}</Text>}
-            {!isReady && !isConnecting && alwaysAvailable.includes(connector.id) && (
-              <Text className="text-textSecondary text-sm">{t`Connect via QR`}</Text>
-            )}
-          </div>
-        </div>
-        <Button
-          key={connector.uid}
-          onClick={() =>
-            isConnectorConnected
-              ? switchConnection.switchConnection({ connector })
-              : connect.connect({ connector })
-          }
-          disabled={
-            !isReady || connect.isPending || switchConnection.isPending || isCurrentConnectedConnector
-          }
-          variant="pill"
-          size="xs"
-        >
-          {isCurrentConnectedConnector ? t`Connected` : t`Connect`}
-        </Button>
-      </div>
+      <ListWallet
+        key={connector.uid}
+        icon={<WalletIcon connector={connector} iconUrl={icons[connector.uid]} className="h-6 w-6" />}
+        name={connector.name}
+        badge={
+          isCurrentConnectedConnector
+            ? t`Connected`
+            : !isReady && !isConnecting && alwaysAvailable.includes(connector.id)
+              ? t`Connect via QR`
+              : undefined
+        }
+        active={isConnecting}
+        onClick={() =>
+          isConnectorConnected
+            ? switchConnection.switchConnection({ connector })
+            : connect.connect({ connector })
+        }
+        disabled={!isReady || connect.isPending || switchConnection.isPending || isCurrentConnectedConnector}
+      />
     );
   };
 
@@ -261,62 +273,61 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
 
   return (
     <Dialog open={open && !hasWalletOverlay} onOpenChange={onOpenChange}>
+      {/* Modal Content per the latest comp (1030:60253, APP-443 item 18): a
+          32px-inset column, 32px between blocks — title row, the wallet lists,
+          then the terms line. The illustration + "Connect to explore Sky
+          Protocol features" block the comp no longer draws is gone. */}
       <DialogContent
         aria-describedby={undefined}
-        className="bg-containerDark max-h-[calc(100dvh-32px)] gap-6 overflow-auto p-4 sm:max-w-[490px] sm:min-w-[490px]"
+        className="bg-containerDark max-h-[calc(100dvh-32px)] gap-8 overflow-auto p-8 sm:max-w-[490px] sm:min-w-[490px]"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
-        <div className="flex items-center justify-between md:pt-2">
-          <DialogTitle className="text-text text-2xl">{t`Connect your wallet`}</DialogTitle>
+        <div className="flex items-center justify-between gap-4">
+          {/* Label 3 (Circular 18/22, -0.36) — it was a 24px heading. */}
+          <DialogTitle className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+            {t`Connect a wallet`}
+          </DialogTitle>
+          {/* DS Button / Icon, secondary at 40px. */}
           <DialogClose asChild>
-            <Button
-              variant="ghost"
-              className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
-              data-testid="connect-modal-close"
-            >
-              <Close className="h-5 w-5" />
+            <Button variant="secondary" size="iconM" data-testid="connect-modal-close">
+              <Close aria-hidden />
             </Button>
           </DialogClose>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="px-2.5 py-1.5">
-            <ConnectWallet width={45} height={55} />
-          </div>
-          <div className="space-y-1">
-            <Text className="text-text">
-              <Trans>Connect to explore Sky Protocol features</Trans>
-            </Text>
-            <ExternalLink
-              href="https://sky.money/"
-              iconSize={12}
-              iconColor="#d298ff"
-              contentClassName="items-center gap-1 text-textEmphasis"
-            >
-              <Trans>Sky Protocol features</Trans>
-            </ExternalLink>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           {installedWallets.length > 0 && (
-            <>
-              <Text className="text-textSecondary text-md font-medium uppercase">{t`Installed Wallets`}</Text>
-              <div className="flex flex-col gap-6">{installedWallets.map(renderConnectorButton)}</div>
-              <Text className="text-textSecondary text-center text-[13px] leading-4">
-                {t`By connecting, you agree to our Terms of Service`}
-              </Text>
-            </>
+            // Section labels are the pattern's Body 6 fg-secondary list titles (Figma 5209:38849).
+            <div className="flex flex-col gap-2">
+              <Text className="text-fgSecondary text-xs leading-[18px]">{t`Connect with`}</Text>
+              {installedWallets.map(renderConnectorButton)}
+            </div>
           )}
 
           {suggestedWallets.length > 0 && (
-            <>
-              <Text className="text-textSecondary text-md font-medium uppercase">{t`Suggested Wallets`}</Text>
-              <div className="flex flex-col gap-6">{suggestedWallets.map(renderConnectorButton)}</div>
-            </>
+            <div className="flex flex-col gap-2">
+              <Text className="text-fgSecondary text-xs leading-[18px]">{t`Other wallets`}</Text>
+              {suggestedWallets.map(renderConnectorButton)}
+            </div>
           )}
         </div>
+
+        {/* The comp closes on the terms line, centred under the lists — it used
+            to sit between them, only appeared when a wallet was installed, and
+            named the terms without linking them.
+
+            The comp writes "Terms of Service"; this says "Terms of Use", which
+            is what the document it points at is actually called and what every
+            other surface in the app calls it. Both URLs come from
+            VITE_FOOTER_LINKS (the same source as the nav's legal rows) rather
+            than being hardcoded here. */}
+        <Text className="text-fgSecondary text-center text-xs leading-[18px]">
+          <Trans>
+            By connecting a wallet, you agree to Sky&apos;s <LegalLink name="Terms of Use" /> and acknowledge
+            its <LegalLink name="Privacy Policy" />.
+          </Trans>
+        </Text>
 
         {(connect.error || switchConnection.error) && (
           <Text className="text-sm text-red-500">{t`Failed to connect. Please try again.`}</Text>

@@ -1,15 +1,16 @@
 import { useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { useChainId, useChains } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { QueryParams, mapQueryParamToIntent, isNewIntent, SUSDT_VAULT_ENABLED } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
-import { isMultichain } from '@/lib/widget-network-map';
+import { ROUTES } from '@/lib/routes';
+import { getMainnetTargetName, isMultichain } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import {
   TOKENS,
   useOverallSkyData,
@@ -32,7 +33,6 @@ import {
   formatDecimalPercentage,
   calculateApyFromStr,
   isTestnetId,
-  isMainnetId,
   chainId as chainIdConstants
 } from '@/utils';
 import {
@@ -42,8 +42,8 @@ import {
   Stake,
   Expert,
   Vaults,
-  Trade,
   Convert,
+  ConvertArrows,
   Pendle
 } from '@/modules/icons';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -83,7 +83,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'vaults',
     subtitle: 'Rates up to {rate}',
     module: 'morpho',
-    url: '?widget=vaults'
+    url: ROUTES.EARN_VAULTS
   },
   {
     label: 'Rewards and Points',
@@ -91,7 +91,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'rewards',
     subtitle: 'Rates up to {rate}',
     module: 'rewards',
-    url: '?widget=rewards'
+    url: ROUTES.EARN_REWARDS
   },
   {
     label: 'Sky Savings Rate (sUSDS)',
@@ -99,7 +99,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'savings',
     subtitle: 'Rate: {rate}',
     module: 'savings',
-    url: '?widget=savings'
+    url: ROUTES.EARN_SAVINGS
   },
   {
     label: 'Tether Savings (sUSDT)',
@@ -107,7 +107,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'sparkVault',
     subtitle: 'Rate: {rate}',
     module: 'morpho',
-    url: `?widget=vaults&vault=${sparkUsdtVaultAddress[mainnet.id]}&vault_module=${vaultModuleForProvider('sky')}`,
+    url: `${ROUTES.EARN_VAULTS}/${vaultModuleForProvider('sky')}/${sparkUsdtVaultAddress[mainnet.id]}`,
     badge: 'New'
   },
   {
@@ -116,7 +116,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     tokens: [],
     rateKey: 'fixedYield',
     module: 'fixedYield',
-    url: '?widget=fixed'
+    url: ROUTES.EARN_FIXED
   },
   {
     label: 'Expert: stUSDS',
@@ -124,7 +124,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'stusds',
     subtitle: 'Rate: {rate}',
     module: 'stusds',
-    url: '?widget=expert&expert_module=stusds'
+    url: ROUTES.EARN_STUSDS
   }
 ];
 
@@ -135,14 +135,14 @@ const SKY_ACTIONS: BalancesAction[] = [
     rateKey: 'staking',
     subtitle: 'Rate: {rate}',
     module: 'stake',
-    url: '?widget=stake'
+    url: '/stake'
   },
   {
     label: 'Borrow USDS',
     tokens: ['USDS'],
     module: 'stake',
     subtitle: 'Minimum borrow amount is 30K USDS',
-    url: '?widget=stake'
+    url: '/stake'
   }
 ];
 
@@ -152,39 +152,43 @@ const TOKEN_ACTIONS: BalancesAction[] = [
     tokens: ['USDC', 'USDS'],
     module: 'convert',
     subtitle: 'Convert USDC and USDS at a fixed 1:1 rate',
-    url: '?widget=convert&convert_module=psm&source_token=USDC'
+    url: '/convert/psm?source_token=USDC'
   },
   {
     label: 'Get USDS',
     tokens: ['USDS'],
     module: 'trade',
-    url: '?widget=convert&convert_module=trade&target_token=USDS'
+    url: '/convert/trade?target_token=USDS'
   },
   {
     label: 'Get SKY',
     tokens: ['SKY'],
     module: 'trade',
-    url: '?widget=convert&convert_module=trade&target_token=SKY'
+    url: '/convert/trade?target_token=SKY'
   },
+  // The upgrade surface is the More-menu modal (APP-413); its parked route is
+  // gone, so these land on Convert — the same place the old stub redirected
+  // to. Launching the modal directly from here is a follow-up: it must first
+  // resolve the mainnet network switch these actions can trigger.
   {
     label: 'Upgrade DAI to USDS',
     tokens: ['DAI', 'USDS'],
     module: 'upgrade',
-    url: '?widget=convert&convert_module=upgrade&source_token=DAI'
+    url: '/convert'
   },
   {
     label: 'Upgrade MKR to SKY',
     tokens: ['MKR', 'SKY'],
     module: 'upgrade',
-    url: '?widget=convert&convert_module=upgrade&source_token=MKR'
+    url: '/convert'
   }
 ];
 
 const MODULE_ICONS: Record<BalancesAction['module'], (props: IconProps) => React.ReactElement> = {
-  convert: Convert,
+  convert: ConvertArrows,
   savings: Savings,
   upgrade: Upgrade,
-  trade: Trade,
+  trade: Convert,
   rewards: RewardsModule,
   stake: Stake,
   stusds: Expert,
@@ -396,16 +400,13 @@ export function BalancesSuggestedActions({
   widget: 'stables' | 'sky' | 'tokens';
   variant?: 'default' | 'card' | 'card-sm';
 }) {
-  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const chainId = useChainId();
   const chains = useChains();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
 
   const connectedChain = chains.find(c => c.id === chainId);
   const networkName = connectedChain ? normalizeUrlParam(connectedChain.name) : 'ethereum';
-
-  // Use current chain if it's mainnet or tenderly, otherwise default to mainnet
-  const mainnetChainId = isMainnetId(chainId) ? chainId : chainIdConstants.mainnet;
 
   // Determine the target network name based on module's network requirements
   const getTargetNetworkName = useCallback(
@@ -414,15 +415,16 @@ export function BalancesSuggestedActions({
 
       const targetIntent = mapQueryParamToIntent(module);
 
-      // For multichain intents, use current network; for mainnet-only, use mainnet
+      // For multichain intents, use current network; for mainnet-only, the
+      // shared mainnet-family target (the config's tenderly fork in non-prod
+      // builds, Ethereum in production).
       if (isMultichain(targetIntent)) {
         return networkName;
       }
 
-      const mainnetChain = chains.find(c => c.id === mainnetChainId);
-      return mainnetChain ? normalizeUrlParam(mainnetChain.name) : 'ethereum';
+      return normalizeUrlParam(getMainnetTargetName(chainId, chains));
     },
-    [networkName, chains, mainnetChainId]
+    [networkName, chains, chainId]
   );
 
   const { isModuleEnabled } = useGeoConfig();
@@ -462,28 +464,29 @@ export function BalancesSuggestedActions({
       const targetNetworkName = getTargetNetworkName(action.module);
       const isNetworkChange = targetNetworkName !== networkName;
 
-      const params = new URLSearchParams(action.url.replace(/^\?/, ''));
-      params.delete(QueryParams.InputAmount);
-      params.set(QueryParams.Network, targetNetworkName);
+      const url = new URL(action.url, 'http://internal');
+      const actionSearch = Object.fromEntries(url.searchParams);
 
       // Show switching UI if changing networks
       if (isNetworkChange) {
         setIsSwitchingNetwork(true);
       }
 
-      setSearchParams(prev => {
-        const next = new URLSearchParams();
-        [QueryParams.Locale, QueryParams.Details].forEach(param => {
-          const value = prev.get(param);
-          if (value !== null) next.set(param, value);
-        });
-        params.forEach((value, key) => {
-          next.set(key, value);
-        });
-        return next;
+      void navigate({
+        to: url.pathname as '/',
+        search: prev => {
+          const next: Record<string, string> = {};
+          [QueryParams.Locale].forEach(param => {
+            const value = prev[param];
+            if (value !== undefined) next[param] = value;
+          });
+          Object.assign(next, actionSearch);
+          next[QueryParams.Network] = targetNetworkName;
+          return next;
+        }
       });
     },
-    [networkName, getTargetNetworkName, setIsSwitchingNetwork, setSearchParams]
+    [networkName, getTargetNetworkName, setIsSwitchingNetwork, navigate]
   );
 
   if (actions.length === 0) return null;
@@ -507,7 +510,7 @@ export function BalancesSuggestedActions({
                     <Text className="text-text truncate">{resolved.label}</Text>
                     {action.badge && (
                       <span
-                        className={`flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
+                        className={`font-circle flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${
                           action.showMorphoIcon
                             ? 'bg-[#2973FF]/15 text-[#2973FF]'
                             : 'bg-textEmphasis/15 text-textEmphasis'
@@ -540,17 +543,7 @@ export function BalancesSuggestedActions({
                       </Text>
                     ))}
                 </div>
-                <div className="flex shrink-0 -space-x-1.5">
-                  {action.tokens.map(symbol => (
-                    <TokenIcon
-                      key={symbol}
-                      token={{ symbol, name: symbol }}
-                      className="h-5 w-5"
-                      width={20}
-                      showChainIcon={false}
-                    />
-                  ))}
-                </div>
+                <TokenIconStack symbols={action.tokens} size={20} className="shrink-0" />
               </button>
             );
           })}
@@ -585,17 +578,7 @@ export function BalancesSuggestedActions({
                       </Text>
                     )}
                   </div>
-                  <div className="flex shrink-0 -space-x-1.5">
-                    {featuredAction.tokens.map(symbol => (
-                      <TokenIcon
-                        key={symbol}
-                        token={{ symbol, name: symbol }}
-                        className="h-5 w-5"
-                        width={20}
-                        showChainIcon={false}
-                      />
-                    ))}
-                  </div>
+                  <TokenIconStack symbols={featuredAction.tokens} size={20} className="shrink-0" />
                 </button>
               );
             })()}
@@ -617,7 +600,7 @@ export function BalancesSuggestedActions({
                   <div className="flex shrink-0 items-center gap-2">
                     {action.badge && (
                       <span
-                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
+                        className={`font-circle flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${
                           action.showMorphoIcon
                             ? 'bg-[#2973FF]/15 text-[#2973FF]'
                             : 'bg-textEmphasis/15 text-textEmphasis'
@@ -627,17 +610,7 @@ export function BalancesSuggestedActions({
                         {action.badge}
                       </span>
                     )}
-                    <div className="flex -space-x-1.5">
-                      {action.tokens.map(symbol => (
-                        <TokenIcon
-                          key={symbol}
-                          token={{ symbol, name: symbol }}
-                          className="h-5 w-5"
-                          width={20}
-                          showChainIcon={false}
-                        />
-                      ))}
-                    </div>
+                    <TokenIconStack symbols={action.tokens} size={20} />
                   </div>
                 </button>
               );
@@ -661,23 +634,13 @@ export function BalancesSuggestedActions({
               className="hover:bg-brandLight/20 flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 px-3 py-2 text-left transition-colors"
             >
               <ModuleIcon boxSize={16} className="text-textSecondary shrink-0" />
-              <div className="flex -space-x-1.5">
-                {action.tokens.map(symbol => (
-                  <TokenIcon
-                    key={symbol}
-                    token={{ symbol, name: symbol }}
-                    className="h-5 w-5"
-                    width={20}
-                    showChainIcon={false}
-                  />
-                ))}
-              </div>
+              <TokenIconStack symbols={action.tokens} size={20} />
               <Text variant="small" className="text-textSecondary">
                 {resolved.label}
               </Text>
               {action.badge && (
                 <span
-                  className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
+                  className={`font-circle ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${
                     action.showMorphoIcon
                       ? 'bg-[#2973FF]/15 text-[#2973FF]'
                       : 'bg-textEmphasis/15 text-textEmphasis'

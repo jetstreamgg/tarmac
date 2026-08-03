@@ -2,10 +2,10 @@ import * as React from 'react';
 import * as TogglePrimitive from '@radix-ui/react-toggle';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 
 const toggleVariants = cva(
-  'inline-flex flex-col items-center rounded-xl justify-center text-sm text-textSecondary font-medium ring-offset-background transition-[background-color,color] after:bg-muted disabled:pointer-events-none disabled:opacity-50 overflow-hidden',
+  'inline-flex flex-col items-center rounded-xl justify-center font-circle text-sm text-textSecondary font-medium ring-offset-background transition-[background-color,color] after:bg-muted disabled:pointer-events-none disabled:opacity-50 overflow-hidden',
   {
     variants: {
       variant: {

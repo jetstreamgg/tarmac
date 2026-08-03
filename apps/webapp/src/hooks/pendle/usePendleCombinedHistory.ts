@@ -33,6 +33,11 @@ function safeStringifyForParse(value: number, decimals: number): string {
 function rowToItem(row: PendleCombinedHistoryRow): PendleHistoryItem {
   const decimals = row.market.underlyingDecimals;
   const assets = parseUnits(safeStringifyForParse(row.ptAmount, decimals) as `${number}`, decimals);
+  // "X PT-sUSDS", not "X USDS" — Pendle's router permits aggregator hops, so
+  // the wallet-side token often differs from the market's underlying. Derived
+  // from the underlying (like PendleAboutContent) because `market.name` is the
+  // product display name ("Fixed Yield"), not a ticker.
+  const ptTicker = `PT-${row.market.underlyingSymbol}`;
   return {
     blockTimestamp: new Date(row.timestamp),
     transactionHash: row.txHash,
@@ -41,10 +46,8 @@ function rowToItem(row: PendleCombinedHistoryRow): PendleHistoryItem {
     chainId: 1,
     assets,
     underlyingDecimals: decimals,
-    // "X PT-sUSDS", not "X USDS" — Pendle's router permits aggregator hops,
-    // so the wallet-side token often differs from the market's underlying.
-    underlyingSymbol: row.market.name,
-    marketName: row.market.name,
+    underlyingSymbol: ptTicker,
+    marketName: ptTicker,
     marketAddress: row.market.marketAddress
   };
 }

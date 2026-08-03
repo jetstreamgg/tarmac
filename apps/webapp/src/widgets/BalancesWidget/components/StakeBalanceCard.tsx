@@ -130,6 +130,13 @@ export const StakeBalanceCard = ({
       }
       url={url}
       logoName="staking"
+      apyBadge={
+        parseFloat(highestRateData?.rate || '0') > 0
+          ? hasMultipleRates
+            ? t`Rates up to: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`
+            : t`Rate: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`
+          : undefined
+      }
       content={
         loading ? (
           <Skeleton className="w-32" />

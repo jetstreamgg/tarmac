@@ -17,6 +17,8 @@ export interface UtilizationBarProps {
   dataTestId?: string;
   popoverTitle?: string;
   popoverDescription?: ReactNode;
+  /** Fill class for the utilized portion; defaults to the neutral gray. */
+  barColor?: string;
 }
 
 export const UtilizationBar = ({
@@ -29,16 +31,13 @@ export const UtilizationBar = ({
   barHeight = 'h-[5px]',
   dataTestId = 'utilization-bar',
   popoverTitle,
-  popoverDescription
+  popoverDescription,
+  barColor = 'bg-textSecondary'
 }: UtilizationBarProps) => {
   const isHighUtilization = utilizationRate > 90;
   // const utilizationColor =
   //   utilizationRate > 90 ? 'text-error' : utilizationRate > 75 ? 'text-orange-400' : 'text-textSecondary';
   const utilizationColor = 'text-textSecondary';
-
-  // const barColor =
-  //   utilizationRate > 90 ? 'bg-error' : utilizationRate > 75 ? 'bg-orange-400' : 'bg-textSecondary';
-  const barColor = 'bg-textSecondary';
 
   return (
     <div className={cn('w-full', className)} data-testid={dataTestId}>
@@ -50,7 +49,7 @@ export const UtilizationBar = ({
               <PopoverInfo
                 title={popoverTitle}
                 description={popoverDescription}
-                iconClassName="text-textSecondary hover:text-white transition-colors"
+                iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
                 iconSize="medium"
               />
             )}

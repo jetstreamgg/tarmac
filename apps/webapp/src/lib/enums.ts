@@ -11,10 +11,6 @@ export enum Intent {
   FIXED_INTENT = 'FIXED_INTENT'
 }
 
-export enum ExpertIntent {
-  STUSDS_INTENT = 'STUSDS_INTENT'
-}
-
 export enum VaultsIntent {
   MORPHO_VAULT_INTENT = 'MORPHO_VAULT_INTENT',
   SKY_VAULT_INTENT = 'SKY_VAULT_INTENT'

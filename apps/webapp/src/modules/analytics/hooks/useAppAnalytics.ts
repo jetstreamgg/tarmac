@@ -44,35 +44,6 @@ export function useAppAnalytics() {
     });
   };
 
-  const trackConvertModuleSelected = useCallback(
-    ({
-      convertModule,
-      previousConvertModule,
-      selectionMethod,
-      entrySurface,
-      chainId
-    }: {
-      convertModule: string;
-      previousConvertModule?: string;
-      selectionMethod: SelectionMethod;
-      entrySurface: string;
-      chainId: number;
-    }) => {
-      safeCapture(posthog, AppEvents.CONVERT_MODULE_SELECTED, {
-        widget_name: 'convert',
-        convert_module: convertModule,
-        ...(previousConvertModule ? { previous_convert_module: previousConvertModule } : {}),
-        selection_method: selectionMethod,
-        entry_surface: entrySurface,
-        chain_id: chainId,
-        chain_name: getChainName(chainId),
-        viewport: getViewport(),
-        flow_id: getFlowId()
-      });
-    },
-    [getChainName, getFlowId, posthog]
-  );
-
   const trackTransactionStarted = useCallback(
     ({
       widgetName,
@@ -154,20 +125,6 @@ export function useAppAnalytics() {
     [posthog, address, getChainName, getFlowId]
   );
 
-  const trackDetailsPaneToggled = ({
-    toggleAction,
-    activeWidget
-  }: {
-    toggleAction: 'open' | 'close';
-    activeWidget: string;
-  }) => {
-    safeCapture(posthog, AppEvents.DETAILS_PANE_TOGGLED, {
-      toggle_action: toggleAction,
-      active_widget: activeWidget,
-      viewport: getViewport()
-    });
-  };
-
   const trackWalletConnected = useCallback(
     ({ walletName }: { walletName: string }) => {
       safeCapture(posthog, AppEvents.WALLET_CONNECTED, {
@@ -190,11 +147,9 @@ export function useAppAnalytics() {
 
   return {
     trackWidgetSelected,
-    trackConvertModuleSelected,
     trackTransactionStarted,
     trackTransactionCompleted,
     trackWidgetReviewViewed,
-    trackDetailsPaneToggled,
     trackWalletConnected,
     trackWalletDisconnected
   };

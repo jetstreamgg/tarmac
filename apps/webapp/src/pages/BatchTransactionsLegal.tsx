@@ -3,7 +3,7 @@ import { Text, Heading } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { HStack } from '@/modules/layout/components/HStack';
-import { Link } from 'react-router-dom';
+import { AppLink } from '@/lib/navigation';
 import { ArrowLeft } from 'lucide-react';
 
 export function BatchTransactionsLegal() {
@@ -14,14 +14,14 @@ export function BatchTransactionsLegal() {
         style={{ borderRadius: '1.5rem' }}
       >
         <div className="flex flex-col gap-4 p-8">
-          <Link to="/" className={'text-textSecondary'}>
+          <AppLink to="/" className={'text-textSecondary'}>
             <HStack className="mb-3 space-x-2">
               <ArrowLeft className="self-center" />
               <Heading tag="h3" variant="small" className="text-textSecondary">
                 <Trans>Back to Home Page</Trans>
               </Heading>
             </HStack>
-          </Link>
+          </AppLink>
           <Heading tag="h2" className="text-text">
             <Trans>Legal Notice</Trans>
           </Heading>

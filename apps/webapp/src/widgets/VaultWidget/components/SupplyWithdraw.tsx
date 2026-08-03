@@ -278,11 +278,11 @@ export const SupplyWithdraw = ({
               </div>
             )}
             {!isVaultDataLoading && isLiquidityDataUnavailable && (
-              <div className="mt-2 ml-3 flex items-start text-white">
+              <div className="text-text mt-2 ml-3 flex items-start">
                 <PopoverRateInfo
                   type="morphoLiquidity"
                   tooltipOverride={liquidityTooltipOverride}
-                  iconClassName="mt-1 shrink-0 text-white"
+                  iconClassName="mt-1 shrink-0 text-text"
                 />
                 <Text variant="small" className="ml-2 flex gap-2">
                   <Trans>
@@ -296,11 +296,11 @@ export const SupplyWithdraw = ({
               isLiquidityConstrained &&
               maxWithdraw !== undefined &&
               maxWithdraw > 0n && (
-                <div className="mt-2 ml-3 flex items-start text-white">
+                <div className="text-text mt-2 ml-3 flex items-start">
                   <PopoverRateInfo
                     type="morphoLiquidity"
                     tooltipOverride={liquidityTooltipOverride}
-                    iconClassName="mt-1 shrink-0 text-white"
+                    iconClassName="mt-1 shrink-0 text-text"
                   />
                   <Text variant="small" className="ml-2 flex gap-2">
                     <Trans>You cannot withdraw your full balance due to current liquidity limits.</Trans>

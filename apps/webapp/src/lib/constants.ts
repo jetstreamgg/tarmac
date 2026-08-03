@@ -1,32 +1,26 @@
-import { RewardsModule, Savings, Trade, Upgrade, Stake, Expert, Vaults, Convert } from '@/modules/icons';
-import { ConvertIntent, ExpertIntent, Intent, FixedIntent, VaultsIntent } from './enums';
+import { Intent, FixedIntent, VaultsIntent } from './enums';
 import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { base, mainnet, arbitrum, unichain, optimism } from 'viem/chains';
-import { tenderly } from '@/data/wagmi/config/config.default';
 
+// Navigation state (module, submodule, entity selection) lives in the path;
+// these are the params that remain query-driven.
 export enum QueryParams {
   Locale = 'lang',
-  Widget = 'widget',
-  Details = 'details',
-  Reward = 'reward',
   UrnIndex = 'urn_index',
   SourceToken = 'source_token',
   TargetToken = 'target_token',
-  LinkedAction = 'linked_action',
-  InputAmount = 'input_amount',
-  Timestamp = 'timestamp',
   Network = 'network',
-  Reset = 'reset',
   Flow = 'flow',
   StakeTab = 'stake_tab',
-  ExpertModule = 'expert_module',
-  Vault = 'vault',
-  VaultModule = 'vault_module',
-  ConvertModule = 'convert_module',
-  Market = 'market',
-  FixedModule = 'fixed_module'
+  Tab = 'tab',
+  /** Earn list supply-token filter, e.g. /earn?token=USDS. */
+  Token = 'token',
+  /**
+   * Deep link to the Upgrade DAI/MKR modal, e.g. /?upgrade=mkr — consumed
+   * (opened + stripped) by useUpgradeDeepLink on any module route.
+   */
+  Upgrade = 'upgrade'
 }
 
 export enum Environment {
@@ -42,7 +36,7 @@ export const IntentMapping = {
   [Intent.SAVINGS_INTENT]: 'savings',
   [Intent.REWARDS_INTENT]: 'rewards',
   [Intent.STAKE_INTENT]: 'stake',
-  [Intent.EXPERT_INTENT]: 'expert',
+  [Intent.EXPERT_INTENT]: 'stusds',
   [Intent.VAULTS_INTENT]: 'vaults',
   [Intent.CONVERT_INTENT]: 'convert',
   [Intent.FIXED_INTENT]: 'fixed'
@@ -52,60 +46,18 @@ export const IntentMapping = {
 export const NEW_INTENTS: Intent[] = [Intent.FIXED_INTENT];
 export const isNewIntent = (intent: Intent): boolean => NEW_INTENTS.includes(intent);
 
-export const ExpertIntentMapping: Record<ExpertIntent, string> = {
-  [ExpertIntent.STUSDS_INTENT]: 'stusds'
-};
-
 export const VaultsIntentMapping: Record<VaultsIntent, string> = {
   [VaultsIntent.MORPHO_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.MORPHO_VAULT_INTENT),
   [VaultsIntent.SKY_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.SKY_VAULT_INTENT)
-};
-
-export const ConvertIntentMapping: Record<ConvertIntent, string> = {
-  [ConvertIntent.PSM_INTENT]: 'psm',
-  [ConvertIntent.UPGRADE_INTENT]: 'upgrade',
-  [ConvertIntent.TRADE_INTENT]: 'trade'
 };
 
 export const FixedIntentMapping: Record<FixedIntent, string> = {
   [FixedIntent.MARKET_INTENT]: 'market'
 };
 
-export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
-  [mainnet.id]: [
-    Intent.BALANCES_INTENT,
-    Intent.REWARDS_INTENT,
-    Intent.SAVINGS_INTENT,
-    Intent.UPGRADE_INTENT,
-    Intent.TRADE_INTENT,
-    Intent.STAKE_INTENT,
-    Intent.EXPERT_INTENT,
-    Intent.VAULTS_INTENT,
-    Intent.CONVERT_INTENT,
-    Intent.FIXED_INTENT
-  ],
-  [tenderly.id]: [
-    Intent.BALANCES_INTENT,
-    Intent.REWARDS_INTENT,
-    Intent.SAVINGS_INTENT,
-    Intent.UPGRADE_INTENT,
-    Intent.TRADE_INTENT,
-    Intent.STAKE_INTENT,
-    Intent.EXPERT_INTENT,
-    Intent.VAULTS_INTENT,
-    Intent.CONVERT_INTENT,
-    Intent.FIXED_INTENT
-  ],
-  [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [unichain.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [optimism.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT]
-};
-
-export const COMING_SOON_MAP: Record<number, Intent[]> = {
-  // Rewards is now treated as a mainnet-only module with auto-switching
-  // [base.id]: [Intent.YOUR_INTENT] // Example of how to add a coming soon intent
-};
+// Moved to a Lingui-free module so the engine layer can import them; re-exported
+// here so existing import sites keep working.
+export { CHAIN_WIDGET_MAP, COMING_SOON_MAP } from './chainAvailability';
 
 export const intentTxt: Record<string, MessageDescriptor> = {
   psm: msg`1:1 conversion`,
@@ -121,23 +73,6 @@ export const intentTxt: Record<string, MessageDescriptor> = {
   pendle: msg`pendle`
 };
 
-export const EXPERT_WIDGET_OPTIONS: {
-  id: ExpertIntent;
-  name: string;
-}[] = [
-  {
-    id: ExpertIntent.STUSDS_INTENT,
-    name: 'stUSDS'
-  }
-];
-
-export const VALID_LINKED_ACTIONS = [
-  IntentMapping[Intent.REWARDS_INTENT],
-  IntentMapping[Intent.SAVINGS_INTENT],
-  IntentMapping[Intent.EXPERT_INTENT],
-  IntentMapping[Intent.VAULTS_INTENT]
-];
-
 export function mapIntentToQueryParam(intent: Intent): string {
   return IntentMapping[intent] || '';
 }
@@ -150,17 +85,6 @@ export function mapQueryParamToIntent(queryParam?: string | null): Intent {
 }
 
 export const REFRESH_DELAY = 1000;
-
-export const linkedActionMetadata = {
-  [IntentMapping[Intent.UPGRADE_INTENT]]: { text: 'Upgrade DAI', icon: Upgrade },
-  [IntentMapping[Intent.TRADE_INTENT]]: { text: 'Trade Tokens', icon: Trade },
-  [IntentMapping[Intent.SAVINGS_INTENT]]: { text: 'Access Savings', icon: Savings },
-  [IntentMapping[Intent.REWARDS_INTENT]]: { text: 'Get Rewards', icon: RewardsModule },
-  [IntentMapping[Intent.STAKE_INTENT]]: { text: 'Stake', icon: Stake },
-  [IntentMapping[Intent.EXPERT_INTENT]]: { text: 'Expert Modules', icon: Expert },
-  [IntentMapping[Intent.VAULTS_INTENT]]: { text: 'Vaults', icon: Vaults },
-  [IntentMapping[Intent.CONVERT_INTENT]]: { text: 'Convert', icon: Convert }
-};
 
 export const ALLOWED_EXTERNAL_DOMAINS = [
   'sky.money',

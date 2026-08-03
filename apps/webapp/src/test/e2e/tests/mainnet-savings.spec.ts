@@ -1,3 +1,5 @@
+// G1 COORDINATION (APP-303 D3): exercises the retired legacy SavingsWidget UI/testids; the savings
+// detail page now drives the inline panel (useSavingsLaunch). Left intact for G1 E2E-migration closeout — do not delete/disable here.
 import { expect, test } from '../fixtures-parallel';
 import { setErc20Balance } from '../utils/setBalance.ts';
 import { NetworkName } from '../utils/constants';
@@ -67,7 +69,7 @@ test('Supply and withdraw from Savings', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
@@ -116,7 +118,7 @@ test('Savings transaction overview shows correct sUSDS preview values', async ({
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // Supply tab: enter 10 USDS and verify both rows of the transaction overview.
@@ -175,7 +177,7 @@ test('supply with insufficient usds balance', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   await isolatedPage.waitForLoadState('domcontentloaded');
@@ -195,7 +197,7 @@ test('withdraw with insufficient savings balance', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
   await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
 
@@ -232,7 +234,7 @@ test('Balance changes after a successful supply', async ({ isolatedPage, testAcc
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
   await isolatedPage.waitForLoadState('domcontentloaded');
   await expect(isolatedPage.getByTestId('supply-input-savings-balance')).not.toHaveText(
@@ -277,7 +279,7 @@ test('Balance changes after a successful withdraw', async ({ isolatedPage }) => 
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // Supply some USDS
@@ -340,7 +342,7 @@ test('supply with enough allowance does not require approval', async ({ isolated
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
   await isolatedPage.getByTestId('supply-input-savings').click();
   await isolatedPage.getByTestId('supply-input-savings').click();
@@ -361,7 +363,7 @@ test('supply without allowance requires approval', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
   await isolatedPage.getByTestId('supply-input-savings').click();
   await isolatedPage.getByTestId('supply-input-savings').click();
@@ -377,7 +379,7 @@ test('if not connected it should show a connect button', async ({ isolatedPage }
   await isolatedPage.goto('/');
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   const widgetConnectButton = isolatedPage
@@ -401,7 +403,7 @@ test('percentage buttons work', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // await get balance
@@ -463,7 +465,7 @@ test('enter amount button should be disabled', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   await expect(
@@ -497,7 +499,7 @@ test('A supply error redirects to the error screen', async ({ isolatedPage }) =>
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
   await isolatedPage.getByTestId('supply-input-savings').click();
   await isolatedPage.getByTestId('supply-input-savings').fill('100');
@@ -521,7 +523,7 @@ test('A withdraw error redirects to the error screen', async ({ isolatedPage }) 
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // Supply some USDS
@@ -554,7 +556,7 @@ test('Details pane shows right data', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // Wait for data point to be ready
@@ -593,7 +595,7 @@ test('Batch - Supply to Savings', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();

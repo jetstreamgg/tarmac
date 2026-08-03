@@ -58,7 +58,7 @@ const createTooltipContent = (
   return {
     title: tooltip?.title || '',
     description: (
-      <Text variant="small" className="leading-5 text-white/80">
+      <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
         {parseMarkdownLinks(tooltip?.tooltip, onExternalLinkClicked)}
       </Text>
     )
@@ -112,7 +112,7 @@ export const PopoverRateInfo = ({
   const defaultContent = content[type];
   const resolvedTitle = tooltipOverride?.title ?? defaultContent.title;
   const resolvedDescription = tooltipOverride?.description ? (
-    <Text variant="small" className="leading-5 text-white/80">
+    <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
       {parseMarkdownLinks(tooltipOverride.description, onExternalLinkClicked)}
     </Text>
   ) : (
@@ -135,7 +135,7 @@ export const PopoverRateInfo = ({
           {resolvedTitle}
         </Heading>
         <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
-          <Close className="h-5 w-5 cursor-pointer text-white" />
+          <Close className="text-text h-5 w-5 cursor-pointer" />
         </PopoverClose>
         <div
           className="mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] scrollbar-thin overflow-y-auto"

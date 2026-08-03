@@ -4,7 +4,7 @@ import { cn } from '@/widgets/lib/utils';
 import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { Warning } from '@/widgets/shared/components/icons/Warning';
-import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } from './tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from './tooltip';
 import { useState } from 'react';
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -29,7 +29,6 @@ const ErrorTooltip = ({ tooltipMessage, error }: { tooltipMessage: string; error
     <TooltipPortal>
       <TooltipContent side="bottom" align="start" className="max-w-64">
         <Text variant="small">{tooltipMessage}</Text>
-        <TooltipArrow width={12} height={8} />
       </TooltipContent>
     </TooltipPortal>
   </Tooltip>
@@ -67,9 +66,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             className={cn(
-              `bg-background flex h-6 w-full px-3 py-0 pl-0 ${
+              `bg-background light:bg-transparent flex h-6 w-full px-3 py-0 pl-0 ${
                 error ? 'text-error' : 'text-text'
-              } focus-visible:ring-ring ring-offset-background placeholder:text-textDimmed text-base leading-tight file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 lg:text-lg lg:leading-normal`,
+              } placeholder:text-textDimmed text-base leading-tight file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 lg:text-lg lg:leading-normal`,
               className
             )}
             ref={ref}

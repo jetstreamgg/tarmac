@@ -2,11 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Set theme before first paint to avoid a flash (FOUC). Mirrors the
+         resolution in src/lib/theme.ts: stored choice, else OS pref, else dark.
+         Also preloads the theme's page background image so the shell doesn't
+         paint on a bare backdrop while the CSS background downloads. -->
+    <script>
+      (function () {
+        try {
+          var stored = JSON.parse(localStorage.getItem('user-settings') || '{}').theme;
+          var theme =
+            stored ||
+            (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark');
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+        var link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href =
+          document.documentElement.dataset.theme === 'light'
+            ? '/images/background-light.webp'
+            : '/images/background-dark.webp';
+        document.head.appendChild(link);
+      })();
+    </script>
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1" />
     <title>Sky | Get rewarded for saving, without giving up control</title>
 
     <!-- Pinned Sites  -->

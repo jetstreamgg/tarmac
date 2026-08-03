@@ -1,11 +1,13 @@
 import { WagmiProvider } from 'wagmi';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { wagmiConfigDev, wagmiConfigMainnet } from '@/data/wagmi/config/config.default';
 import { mockWagmiConfig } from '@/data/wagmi/config/config.e2e';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
+import { DismissableLayerBranch } from '@radix-ui/react-dismissable-layer';
 import { Toaster } from '@/components/ui/sonner';
 import { ToastCloseAll } from '@/components/toast/ToastCloseAll';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -15,6 +17,7 @@ import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersConte
 import { ChainModalProvider } from '@/modules/ui/context/ChainModalContext';
 import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
+import { ConnectThenActProvider } from '@/modules/ui/context/ConnectThenActContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
 import { AnalyticsErrorBoundary } from '@/modules/analytics/AnalyticsErrorBoundary';
@@ -41,26 +44,38 @@ const useTestnetConfig =
 // Use mock config for tests, testnet config for development, mainnet for production
 const config = useMock ? mockWagmiConfig : useTestnetConfig ? wagmiConfigDev : wagmiConfigMainnet;
 
-const queryClient = new QueryClient();
-
 const AppContent = () => {
   return (
     <ConnectedProvider>
       <TermsModalProvider>
-        <BalanceFiltersProvider>
-          <TooltipProvider delayDuration={300}>
-            <ChainModalProvider>
-              <NetworkSwitchProvider>
-                <TransactionProvider>
-                  <ExternalLinkModal />
-                  <Toaster />
-                  <ToastCloseAll />
-                  <RouterProvider router={router} />
-                </TransactionProvider>
-              </NetworkSwitchProvider>
-            </ChainModalProvider>
-          </TooltipProvider>
-        </BalanceFiltersProvider>
+        <ConnectThenActProvider>
+          <BalanceFiltersProvider>
+            <TooltipProvider delayDuration={300}>
+              <ChainModalProvider>
+                <NetworkSwitchProvider>
+                  <TransactionProvider>
+                    <ExternalLinkModal />
+                    {/* Toast tier above the dialog tier (z-50): network/tx
+                        toasts must stay readable over a modal's blurred
+                        overlay (e.g. the auto-switch toast fires as a supply
+                        modal opens). Below the popover (z-100) and tooltip
+                        (z-101) tiers. ToastCloseAll rides one step above the
+                        stack it controls.
+
+                        The DismissableLayerBranch keeps toasts *clickable*
+                        while a modal Radix surface (wallet drawer, any
+                        dialog) is open. */}
+                    <DismissableLayerBranch className="pointer-events-auto">
+                      <Toaster className="!z-[60]" />
+                      <ToastCloseAll />
+                    </DismissableLayerBranch>
+                    <RouterProvider router={router} />
+                  </TransactionProvider>
+                </NetworkSwitchProvider>
+              </ChainModalProvider>
+            </TooltipProvider>
+          </BalanceFiltersProvider>
+        </ConnectThenActProvider>
       </TermsModalProvider>
     </ConnectedProvider>
   );

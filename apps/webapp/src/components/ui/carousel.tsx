@@ -2,7 +2,7 @@ import * as React from 'react';
 import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-react';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 
 type CarouselApi = UseEmblaCarouselType[1];
@@ -273,7 +273,7 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
         onClick={scrollPrev}
         disabled={!canScrollPrev}
         className={cn(
-          'text-white/60 transition-colors hover:text-white',
+          'light:text-textSecondary light:hover:text-text text-white/60 transition-colors hover:text-white',
           !canScrollPrev && 'cursor-not-allowed opacity-30'
         )}
         aria-label="Previous slide"
@@ -289,7 +289,9 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
             onClick={() => scrollTo(index)}
             className={cn(
               'h-2 w-2 rounded-full transition-all',
-              selectedIndex === index ? 'w-6 bg-white' : 'bg-white/30 hover:bg-white/60'
+              selectedIndex === index
+                ? 'light:bg-text w-6 bg-white'
+                : 'light:bg-textDimmed light:hover:bg-textSecondary bg-white/30 hover:bg-white/60'
             )}
             aria-label={`Go to slide ${index + 1}`}
           />
@@ -301,7 +303,7 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
         onClick={scrollNext}
         disabled={!canScrollNext}
         className={cn(
-          'text-white/60 transition-colors hover:text-white',
+          'light:text-textSecondary light:hover:text-text text-white/60 transition-colors hover:text-white',
           !canScrollNext && 'cursor-not-allowed opacity-30'
         )}
         aria-label="Next slide"

@@ -86,6 +86,7 @@ export const SavingsBalanceCard = ({
       url={urlMap[chainId]}
       logoName="savings"
       noChain={true}
+      apyBadge={skySavingsRate > 0 ? t`Rate: ${formatDecimalPercentage(skySavingsRate)}` : undefined}
       content={
         loading ? (
           <Skeleton className="w-32" />

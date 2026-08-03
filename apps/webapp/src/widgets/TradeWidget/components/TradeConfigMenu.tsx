@@ -124,7 +124,7 @@ export const TradeConfigMenu = ({
                   <HStack className="border-selectActive flex items-center rounded-xl border p-2">
                     <input
                       placeholder={t`Custom`}
-                      className="bg-background ring-offset-background placeholder:text-surface text-text w-[55px] [appearance:textfield] text-right text-[14px] leading-tight focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className="bg-background light:bg-transparent ring-offset-background placeholder:text-surface light:placeholder:text-textDimmed text-text w-[55px] [appearance:textfield] text-right text-[14px] leading-tight focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       type="number"
                       min={slippageConfig.min}
                       max={slippageConfig.max}

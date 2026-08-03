@@ -10,6 +10,7 @@ const CHI_1_05 = 1_050_000_000_000_000_000n; // 1.05 sUSDS→USDS rate
 
 const PEGGED_MARKET: PendleMarketConfig = {
   name: 'PT-USDG',
+  slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
   ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548',
   ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1',
@@ -396,6 +397,7 @@ describe('computeMaturedEarnings — PT decimals = underlying decimals (review-f
   // market.
   const PT_USDG_MARKET: PendleMarketConfig = {
     name: 'PT-USDG',
+    slug: 'pt-usdg',
     marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
     ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548',
     ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1',

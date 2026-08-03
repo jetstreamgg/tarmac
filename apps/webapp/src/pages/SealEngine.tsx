@@ -2,7 +2,7 @@ import { Layout } from '@/modules/layout/components/Layout';
 import { Text, Heading, List } from '@/modules/layout/components/Typography';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { HStack } from '@/modules/layout/components/HStack';
-import { Link } from 'react-router-dom';
+import { AppLink } from '@/lib/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { SEAL_ENGINE_V1_ADDRESS } from '@/lib/constants';
 
@@ -29,14 +29,14 @@ export function SealEngine() {
         style={{ borderRadius: '1.5rem' }}
       >
         <div className="flex flex-col gap-4 p-8">
-          <Link to="/" className={'text-textSecondary'}>
+          <AppLink to="/" className={'text-textSecondary'}>
             <HStack className="mb-3 space-x-2">
               <ArrowLeft className="self-center" />
               <Heading tag="h3" variant="small" className="text-textSecondary">
                 Back to Home Page
               </Heading>
             </HStack>
-          </Link>
+          </AppLink>
 
           <Heading tag="h2" className="text-text">
             Withdrawing from the Seal Engine via Etherscan

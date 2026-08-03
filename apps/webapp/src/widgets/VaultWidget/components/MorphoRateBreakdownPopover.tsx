@@ -106,7 +106,9 @@ export function MorphoRateBreakdownPopover({
                 {hasExtraIncentive && <Sparkles className="h-4 w-4" />}
                 <Text
                   className={
-                    hasExtraIncentive ? 'text-bullish text-sm font-medium' : 'text-text text-sm font-medium'
+                    hasExtraIncentive
+                      ? 'text-bullish font-circle text-sm font-medium'
+                      : 'text-text font-circle text-sm font-medium'
                   }
                 >
                   <Trans>Net Rate</Trans>
@@ -114,7 +116,9 @@ export function MorphoRateBreakdownPopover({
               </div>
               <Text
                 className={
-                  hasExtraIncentive ? 'text-bullish text-sm font-medium' : 'text-text text-sm font-medium'
+                  hasExtraIncentive
+                    ? 'text-bullish font-circle text-sm font-medium'
+                    : 'text-text font-circle text-sm font-medium'
                 }
               >
                 ={rateData.formattedNetRate}
