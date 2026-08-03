@@ -152,7 +152,9 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   // e.g. an SPK-earning urn shows the SPK icon — mirrors the table cell.
   const rewardSymbolsHeld =
     toClaim && toClaim.length > 0 ? [...new Set(toClaim.map(reward => reward.rewardSymbol))] : ['SKY'];
-  const rewardIcons = <TokenIconStack symbols={rewardSymbolsHeld} size={16} />;
+  // 12px, matching the USDS mark on the borrow stats beside them and the comp
+  // (1030:59227, APP-443 item 15) — they were 16.
+  const rewardIcons = <TokenIconStack symbols={rewardSymbolsHeld} size={12} />;
 
   // Total rewards earned = already-claimed reward events (subgraph) + still
   // claimable. Claimed amounts are valued through the known reward-contract →

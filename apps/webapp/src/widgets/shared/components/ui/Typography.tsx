@@ -14,7 +14,7 @@ interface TypographyProps {
 
 const ELEMENTS: Record<TypographyElement, string> = {
   h1: 'scroll-m-20 font-normal tracking-tight',
-  h2: 'scroll-m-20 font-medium tracking-tight leading-normal transition-colors',
+  h2: 'scroll-m-20 font-circle font-medium tracking-tight leading-normal transition-colors',
   h3: 'scroll-m-20 font-normal tracking-tight',
   h4: 'scroll-m-20 font-normal tracking-tight',
   p: 'leading-normal text-base',

@@ -7,6 +7,7 @@ import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
+import { DismissableLayerBranch } from '@radix-ui/react-dismissable-layer';
 import { Toaster } from '@/components/ui/sonner';
 import { ToastCloseAll } from '@/components/toast/ToastCloseAll';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -59,9 +60,15 @@ const AppContent = () => {
                         overlay (e.g. the auto-switch toast fires as a supply
                         modal opens). Below the popover (z-100) and tooltip
                         (z-101) tiers. ToastCloseAll rides one step above the
-                        stack it controls. */}
-                    <Toaster className="!z-[60]" />
-                    <ToastCloseAll />
+                        stack it controls.
+
+                        The DismissableLayerBranch keeps toasts *clickable*
+                        while a modal Radix surface (wallet drawer, any
+                        dialog) is open. */}
+                    <DismissableLayerBranch className="pointer-events-auto">
+                      <Toaster className="!z-[60]" />
+                      <ToastCloseAll />
+                    </DismissableLayerBranch>
                     <RouterProvider router={router} />
                   </TransactionProvider>
                 </NetworkSwitchProvider>

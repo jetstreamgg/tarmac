@@ -17,7 +17,7 @@ export function FetchingSpinner({
   return (
     <HStack gap={2} className={classes}>
       <LoadingSpinner className={spinnerClassName} />
-      <Text variant="medium" className="text-text font-medium">
+      <Text variant="medium" className="text-text font-circle font-medium">
         {message}
       </Text>
     </HStack>

@@ -97,7 +97,17 @@ export function useNetworkFee({
   // fall through to the sequential estimate — we can't model economics we can't see.
   const canBundle = batchSupported === true && calls.length > 1;
 
-  const callsKey = useMemo(() => getCallsKey(calls), [calls]);
+  // Wallet-less renders can hand over calls with an arg the engine can only fill
+  // in after connect (the Convert page mounts with no account, so the PSM call's
+  // recipient is undefined and viem's encoder throws). This row is read-only and
+  // must never take the page down — treat "can't encode" as "nothing to estimate".
+  const callsKey = useMemo(() => {
+    try {
+      return getCallsKey(calls);
+    } catch {
+      return null;
+    }
+  }, [calls]);
 
   const {
     data: gasData,
@@ -114,7 +124,7 @@ export function useNetworkFee({
         calls,
         wantsBatch: canBundle
       }),
-    enabled: enabled && !!publicClient && !!address && calls.length > 0,
+    enabled: enabled && !!publicClient && !!address && calls.length > 0 && callsKey !== null,
     staleTime: GAS_STALE_TIME,
     retry: false,
     // The key moves as the amount is typed and again when the call set settles (an

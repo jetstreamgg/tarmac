@@ -18,6 +18,7 @@ import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
+import { PortfolioRewardsSections } from './PortfolioRewardsSections';
 import { PortfolioTransactionsSection } from './PortfolioTransactionsSection';
 import { PortfolioStatistics } from './PortfolioStatistics';
 import { SavingsTvlCallout } from './SavingsTvlCallout';
@@ -167,6 +168,10 @@ export function ConnectedPortfolio() {
           onTabChange={setUserTab}
         />
       </div>
+
+      {/* Claimable ecosystem + Merkl rewards, between the position cards and
+          Transactions per the comp. Each section self-hides when empty. */}
+      <PortfolioRewardsSections />
 
       {/* Portfolio-wide transactions (D8), after the position cards per the comp. */}
       <div className="mt-12 md:mt-20">

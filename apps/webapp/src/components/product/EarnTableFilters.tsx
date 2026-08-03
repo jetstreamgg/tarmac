@@ -1,11 +1,15 @@
 import { ReactNode } from 'react';
-import { Globe, Vault } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex, type EarnRiskTier } from '@/hooks';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
-import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
-import { Convert } from '@/modules/icons';
+import {
+  ALL_NETWORKS_LABEL,
+  ALL_PRODUCTS_LABEL,
+  ALL_STABLECOINS_LABEL,
+  FilterSelect,
+  type FilterOption
+} from '@/components/product/FilterSelect';
 
 export type EarnFilterOption = FilterOption;
 
@@ -41,12 +45,9 @@ export type EarnTableFiltersProps = {
  * item 2). Below md (486:22051) the dropdowns stack full-width under the chips
  * row; from md the single-row toolbar stays as C2 shipped it.
  *
- * The comp tints the glyphs fg-brand-primary against the white label, and
- * pairs each filter with the mark its domain already uses elsewhere in the
- * app: the globe, the Convert nav mark for stablecoins, and the Vault mark the
- * TVL detail rows carry for products.
+ * The glyph labels live in FilterSelect — the Portfolio transactions toolbar
+ * carries the same three.
  */
-const FILTER_ICON = 'text-fgBrand shrink-0';
 export function EarnTableFilters({
   selectedRiskTiers,
   onRiskTierToggle,
@@ -101,12 +102,7 @@ export function EarnTableFilters({
           options={networks}
           selected={selectedNetwork}
           onChange={onNetworkChange}
-          allLabel={
-            <span className="flex items-center gap-1.5">
-              <Globe className={cn('h-3 w-3', FILTER_ICON)} />
-              <Trans>All networks</Trans>
-            </span>
-          }
+          allLabel={ALL_NETWORKS_LABEL}
           testId="earn-filter-network"
           triggerClassName={triggerClassName}
         />
@@ -114,12 +110,7 @@ export function EarnTableFilters({
           options={stablecoins}
           selected={selectedStablecoin}
           onChange={onStablecoinChange}
-          allLabel={
-            <span className="flex items-center gap-1.5">
-              <Convert boxSize={12} className={FILTER_ICON} />
-              <Trans>All stablecoins</Trans>
-            </span>
-          }
+          allLabel={ALL_STABLECOINS_LABEL}
           testId="earn-filter-stablecoin"
           triggerClassName={triggerClassName}
         />
@@ -127,12 +118,7 @@ export function EarnTableFilters({
           options={products}
           selected={selectedProduct}
           onChange={onProductChange}
-          allLabel={
-            <span className="flex items-center gap-1.5">
-              <Vault className={cn('h-3 w-3', FILTER_ICON)} />
-              <Trans>All products</Trans>
-            </span>
-          }
+          allLabel={ALL_PRODUCTS_LABEL}
           testId="earn-filter-product"
           triggerClassName={triggerClassName}
         />

@@ -57,8 +57,11 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
  * Restake (SKY-only) is offered in the stake scope and passed to the stake
  * adapter, which folds the SKY reward back via `lock`.
  *
- * The `scope` narrows what each adapter reads: a vault card passes `{kind:'vault'}`
- * (only Merkl responds), the future portfolio surface passes `{kind:'all'}`, etc.
+ * The `scope` narrows what each adapter reads and is the ONLY selection mechanism: a
+ * table row's Claim passes a single-reward scope (`merkl-token` / `reward-contract`), a
+ * section's Claim all passes the source-wide scope (`merkl` / `sky-rewards`), a vault
+ * card passes `{kind:'vault'}`. Per-reward checkboxes were dropped with the redesigned
+ * modal (Figma 1036:190105 shows none) — everything in scope is always claimed.
  */
 export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; scope: ClaimScope }) {
   const { txCallbacks } = useTransaction();
@@ -106,14 +109,22 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
 
-  // Disabled until there's something to send AND no in-scope source is still
-  // preparing (e.g. Merkl proofs mid-load) — so we never claim a partial subset.
+  // Disabled until there's something to send, no in-scope source is still preparing
+  // (e.g. Merkl proofs mid-load, so we never claim a partial subset of the scope),
+  // AND the flow itself is prepared.
+  //
+  // That last one matters: the sequential flow's `execute` needs a simulated
+  // request and SILENTLY RETURNS (console.log only) without one. Confirming
+  // before the simulation lands therefore walks the modal to the wallet screen
+  // having dispatched nothing at all — reachable by clicking a row's Claim and
+  // the modal CTA straight after a page load. The savings and vault bodies
+  // already gate on their engine's `prepared` the same way.
   const hasRewardsIn = (source: ClaimSource) => allRewards.some(reward => reward.source === source);
   const preparing =
     (hasRewardsIn('merkl') && !merklCalls.prepared) ||
     (hasRewardsIn('sky-rewards') && !skyCalls.prepared) ||
     (hasRewardsIn('stake') && !stakeCalls.prepared);
-  const disabled = calls.length === 0 || preparing;
+  const disabled = calls.length === 0 || preparing || !flow.prepared;
 
   // Memoized so the useModalEntryBody sync effect has stable deps — an inline
   // element here recreates every render and loops updateModalContent →
@@ -170,7 +181,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
       {skyStakeReward && (
         <label className="flex items-center justify-between" data-testid="claim-restake-toggle">
-          <Text className="text-fgPrimary text-sm font-medium">
+          <Text className="text-fgPrimary font-circle text-sm font-medium">
             <Trans>Restake SKY rewards</Trans>
           </Text>
           <Switch checked={effectiveRestake} onCheckedChange={setRestake} aria-label="Restake SKY rewards" />

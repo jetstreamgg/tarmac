@@ -50,6 +50,7 @@ import { Merkl } from './Merkl';
 import { StarsFilled } from './StarsFilled';
 import { SparklesMorpho } from './SparklesMorpho';
 import { TrendingUp } from './TrendingUp';
+import { TrendingUpGradient } from './TrendingUpGradient';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
 
@@ -106,6 +107,7 @@ export {
   StarsFilled,
   SparklesMorpho,
   TrendingUp,
+  TrendingUpGradient,
   IllustrationStaked,
   IllustrationStakingLogomark
 };

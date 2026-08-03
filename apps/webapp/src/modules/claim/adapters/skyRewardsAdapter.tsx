@@ -11,9 +11,8 @@ import {
 import { usdsSkyRewardAbi } from '@/hooks/generated';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { rewardTokenName } from '../tokenNames';
 import type { ClaimAdapter, ClaimableResult, ClaimCallsResult, ClaimableReward, ClaimScope } from '../types';
-
-const SOURCE_LABEL = 'Sky Rewards';
 
 function useSkyRewardsClaimable(scope: ClaimScope): ClaimableResult {
   const chainId = useChainId();
@@ -21,16 +20,17 @@ function useSkyRewardsClaimable(scope: ClaimScope): ClaimableResult {
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const { data: prices } = usePrices();
 
-  // Curve-style StakingRewards contracts only live in the 'all' and per-contract
-  // scopes; a Morpho-vault or staking-urn scope never contains one.
-  const relevant = scope.kind === 'all' || scope.kind === 'reward-contract';
+  // Curve-style StakingRewards contracts only live in the source-wide and
+  // per-contract scopes; a Merkl, Morpho-vault or staking-urn scope never
+  // contains one.
+  const relevant = scope.kind === 'all' || scope.kind === 'sky-rewards' || scope.kind === 'reward-contract';
 
   const rewardContractAddresses = useMemo(
     () => rewardContracts.map(contract => contract.contractAddress as `0x${string}`),
     [rewardContracts]
   );
 
-  const { data, isLoading } = useRewardContractsToClaim({
+  const { data, isLoading, mutate } = useRewardContractsToClaim({
     rewardContractAddresses,
     addresses: address,
     chainId,
@@ -38,7 +38,7 @@ function useSkyRewardsClaimable(scope: ClaimScope): ClaimableResult {
   });
 
   return useMemo(() => {
-    if (!relevant) return { rewards: [], isLoading: false };
+    if (!relevant) return { rewards: [], isLoading: false, refresh: mutate };
 
     const claimable = data ?? [];
     const scoped =
@@ -56,8 +56,8 @@ function useSkyRewardsClaimable(scope: ClaimScope): ClaimableResult {
       return {
         id: contractAddress,
         source: 'sky-rewards',
-        sourceLabel: SOURCE_LABEL,
         tokenSymbol: rewardSymbol,
+        tokenName: rewardTokenName(rewardSymbol),
         icon: (
           <TokenIcon token={{ symbol: rewardSymbol }} width={32} showChainIcon={false} className="h-8 w-8" />
         ),
@@ -67,8 +67,8 @@ function useSkyRewardsClaimable(scope: ClaimScope): ClaimableResult {
       };
     });
 
-    return { rewards, isLoading };
-  }, [relevant, data, scope, rewardContracts, prices, chainId, isLoading]);
+    return { rewards, isLoading, refresh: mutate };
+  }, [relevant, data, scope, rewardContracts, prices, chainId, isLoading, mutate]);
 }
 
 function useSkyRewardsClaimCalls(selected: ClaimableReward[]): ClaimCallsResult {

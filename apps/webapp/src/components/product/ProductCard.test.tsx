@@ -56,25 +56,25 @@ describe('ProductStatPair', () => {
   const stat = (label: string) => <ProductStat label={label}>{label} value</ProductStat>;
 
   it('interleaves one hairline between the stats, never around them', () => {
-    const { container } = render(
+    render(
       <ProductStatPair>
         {stat('Current Rate')}
         {stat('Idle balance')}
       </ProductStatPair>
     );
 
-    const dividers = container.querySelectorAll('[aria-hidden]');
+    const dividers = screen.getAllByTestId('product-stat-divider');
     expect(dividers).toHaveLength(1);
     // Between, not leading or trailing.
-    const row = container.firstElementChild!;
+    const row = dividers[0].parentElement!;
     expect(row.children).toHaveLength(3);
     expect(row.children[1]).toBe(dividers[0]);
   });
 
   it('draws no hairline for a lone stat', () => {
-    const { container } = render(<ProductStatPair>{stat('Current Rate')}</ProductStatPair>);
+    render(<ProductStatPair>{stat('Current Rate')}</ProductStatPair>);
 
-    expect(container.querySelectorAll('[aria-hidden]')).toHaveLength(0);
+    expect(screen.queryAllByTestId('product-stat-divider')).toHaveLength(0);
   });
 
   it('halves the row only when grow is set — the supply card pair stays content-width', () => {
@@ -98,13 +98,14 @@ describe('ProductStatPair', () => {
 
 describe('ProductStat', () => {
   it('puts the value in a div, so a Skeleton (a div) can sit in that slot', () => {
-    const { container } = render(
+    render(
       <ProductStat label="Rewards rate">
         <div data-testid="skeleton" />
       </ProductStat>
     );
 
+    // The slot itself is the assertion — a span here would make the Skeleton
+    // invalid markup (a div inside a span).
     expect(screen.getByTestId('skeleton').parentElement?.tagName).toBe('DIV');
-    expect(container.querySelector('span > div')).toBeNull();
   });
 });
