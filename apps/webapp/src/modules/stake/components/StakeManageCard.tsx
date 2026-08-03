@@ -3,14 +3,16 @@ import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Switch } from '@/components/ui/switch';
+import { tabsTriggerVariants } from '@/components/ui/tabs';
 
 /**
  * Manage-sheet card shell (redesign comps 1036:213821+, flows UX 1050:21454):
  * a segmented mode control in place of the takeover's step number, plus the
  * enable toggle. Disabled cards collapse to their header row — same
- * temporal-states-of-one-screen model as F4. Mode pills draw as Tabs Items:
- * outlined at rest, brand-gradient fill when active (gradient + active stroke
- * are raw hexes in Figma, no variable).
+ * temporal-states-of-one-screen model as F4. Mode pills are the design-system
+ * Tabs chip (Figma 5029:51762) on plain buttons: aria-pressed carries the
+ * toggle semantics, data-state drives the recipe's styling contract (same
+ * non-Radix reuse as EarnTableFilters).
  */
 export function StakeManageCard<Mode extends string>({
   modes,
@@ -42,13 +44,9 @@ export function StakeManageCard<Mode extends string>({
               type="button"
               onClick={() => onModeChange(mode.value)}
               aria-pressed={mode.value === activeMode}
+              data-state={mode.value === activeMode ? 'active' : 'inactive'}
               data-testid={`${dataTestId}-mode-${mode.value}`}
-              className={cn(
-                'text-text font-circle flex h-8 items-center rounded-full border px-3 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors',
-                mode.value === activeMode
-                  ? 'border-[#9ca0e5]/40 bg-gradient-to-b from-[#949aff]/20 to-[#504dff]/20'
-                  : 'border-glassBorder hover:bg-surfaceHover'
-              )}
+              className={tabsTriggerVariants({ variant: 'pill' })}
             >
               {mode.label}
             </button>
