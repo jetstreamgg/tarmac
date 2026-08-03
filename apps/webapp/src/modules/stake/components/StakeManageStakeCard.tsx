@@ -103,7 +103,10 @@ export function StakeManageStakeCard({
           // Comp 1036:213881: the balance line sits above the chips.
           topRight={
             <span className="flex items-center gap-1" data-testid="stake-manage-stake-base">
-              {isStake ? t`Balance:` : t`Staked:`}{' '}
+              {/* The label is its own flex item so gap-1 spaces both branches
+                  alike — a bare trailing space would double up with the gap
+                  when the skeleton renders. */}
+              <span>{isStake ? t`Balance:` : t`Staked:`}</span>
               {isStake && walletBalanceLoading ? <Skeleton className="h-4 w-24" /> : formatBigInt(base)}
             </span>
           }
