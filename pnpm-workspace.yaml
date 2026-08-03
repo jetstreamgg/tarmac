@@ -14,7 +14,7 @@ catalog:
   '@lingui/react': ^6.6.0
   '@lingui/swc-plugin': ^6.6.0
   '@lingui/vite-plugin': ^6.6.0
-  '@metamask/connect-evm': ^1.4.0
+  '@metamask/connect-evm': ^2.1.1
   '@playwright/test': ^1.62.0
   '@radix-ui/react-accordion': ^1.2.20
   '@radix-ui/react-avatar': ^1.2.6
