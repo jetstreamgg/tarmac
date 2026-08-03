@@ -44,7 +44,7 @@ import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
-import { WITHDRAWAL_AVAILABILITY } from '@/components/product/withdrawalAvailability';
+import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -444,7 +444,7 @@ export function PendleModalForm({
               // convention, not the market's marketing name ("Fixed Yield").
               product: `Pendle ${market.underlyingSymbol} (PT-${market.underlyingSymbol})`,
               productSymbol: market.underlyingSymbol,
-              withdrawal: flow === 'supply' ? i18n._(WITHDRAWAL_AVAILABILITY.fixed) : t`Instant`,
+              withdrawal: i18n._(withdrawalWording('fixed', flow)),
               slippage: slippageDisplay,
               slippageMode,
               priceImpact: priceImpactDisplay,

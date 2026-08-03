@@ -5,7 +5,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { StUsdsProviderType, TOKENS } from '@/hooks';
-import { WITHDRAWAL_AVAILABILITY } from '@/components/product/withdrawalAvailability';
+import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
@@ -178,7 +178,7 @@ export function StUsdsModalForm({
               rate: rateDisplay,
               route: isCurveRoute ? t`Curve` : t`Native`,
               routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
-              withdrawal: i18n._(WITHDRAWAL_AVAILABILITY.stusds),
+              withdrawal: i18n._(withdrawalWording('stusds', flow)),
               network: networkName,
               networkFee: networkFee?.formatted ?? NO_VALUE
             }),

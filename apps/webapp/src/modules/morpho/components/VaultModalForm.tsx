@@ -5,7 +5,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { getVaultByAddress, type Token, type VaultProvider, useVaultMarketData } from '@/hooks';
-import { WITHDRAWAL_AVAILABILITY } from '@/components/product/withdrawalAvailability';
+import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
@@ -168,7 +168,7 @@ export function VaultModalForm({
               product: vaultName,
               rate,
               boostedRate,
-              withdrawal: i18n._(WITHDRAWAL_AVAILABILITY[riskProfile]),
+              withdrawal: i18n._(withdrawalWording(riskProfile, flow)),
               network: networkName,
               networkFee: networkFee?.formatted ?? NO_VALUE
             }),

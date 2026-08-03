@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { RiskTierMeter } from './RiskMeter';
-import { WITHDRAWAL_AVAILABILITY } from './withdrawalAvailability';
+import { withdrawalWording } from './withdrawalAvailability';
 
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
@@ -268,7 +268,7 @@ function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: E
           value={<ExposureFactValue symbols={details.exposureTokens} />}
         />
         <FactRow label={<Trans>Liquidation risk</Trans>} value={details.liquidationRisk} />
-        <FactRow label={<Trans>Withdrawals</Trans>} value={i18n._(WITHDRAWAL_AVAILABILITY[profile])} />
+        <FactRow label={<Trans>Withdrawals</Trans>} value={i18n._(withdrawalWording(profile))} />
       </div>
     </>
   );
