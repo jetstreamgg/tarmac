@@ -54,7 +54,7 @@ export function SavingsTransactionsFilter({
           isMobile
             ? // Label 6 pill, 12px chevron ([&_svg] outranks the built-in h-4).
               'border-glassBorder text-text font-circle h-[30px] w-full justify-between rounded-full border py-2 pr-2 pl-3 text-xs leading-[14px] font-medium tracking-[-0.24px] [&_svg]:h-3 [&_svg]:w-3'
-            : 'text-textSecondary hover:text-text h-auto w-auto gap-1.5 rounded-full border-none p-0 text-sm font-medium'
+            : 'text-textSecondary hover:text-text font-circle h-auto w-auto gap-1.5 rounded-full border-none p-0 text-sm font-medium'
         )}
       >
         <SelectValue>

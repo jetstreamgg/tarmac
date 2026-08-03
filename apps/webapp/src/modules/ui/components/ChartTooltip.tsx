@@ -64,7 +64,7 @@ export function ChartTooltip({
             </span>
           )}
           <span className="ml-auto flex items-center gap-2">
-            <span className="text-text text-sm font-medium">
+            <span className="text-text font-circle text-sm font-medium">
               {prefix || ''}
               {`${formatNumber(entry.value)}${symbol && !isPercentage && !hasTokenIcon ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
             </span>

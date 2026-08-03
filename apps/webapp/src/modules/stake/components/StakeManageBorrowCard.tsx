@@ -171,7 +171,7 @@ export function StakeManageBorrowCard({
           <span className="text-textSecondary">
             <Trans>Borrowed:</Trans>
           </span>
-          <span className="text-text font-medium" data-testid="stake-manage-borrowed-line">
+          <span className="text-text font-circle font-medium" data-testid="stake-manage-borrowed-line">
             {showDeltas && newDebt !== undefined && newDebt !== existingDebt
               ? `${formatBigInt(existingDebt)} → ${formatBigInt(newDebt)}`
               : formatBigInt(existingDebt)}
@@ -224,7 +224,7 @@ export function StakeManageBorrowCard({
           >
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" aria-hidden />
             <div className="flex flex-col gap-1 text-sm">
-              <span className="text-text font-medium">
+              <span className="text-text font-circle font-medium">
                 <Trans>More SKY needed to borrow</Trans>
               </span>
               <span className="text-textSecondary">

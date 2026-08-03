@@ -123,7 +123,7 @@ export function SlippageMenu({
       >
         <div className="flex w-full flex-col gap-5">
           <div className="space-y-3">
-            <h3 className="text-text font-medium">
+            <h3 className="text-text font-circle font-medium">
               <Trans>Slippage</Trans>
             </h3>
             <p className="text-textSecondary text-sm leading-relaxed">

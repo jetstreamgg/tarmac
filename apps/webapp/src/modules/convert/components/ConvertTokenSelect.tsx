@@ -13,7 +13,7 @@ function TokenOption({ symbol }: { symbol: ConvertTokenSymbol }) {
   return (
     <span className="flex items-center gap-1">
       <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
-      <Text className="text-sm font-medium">{symbol}</Text>
+      <Text className="font-circle text-sm font-medium">{symbol}</Text>
     </span>
   );
 }

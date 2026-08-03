@@ -355,7 +355,7 @@ export function ManagePositionTakeover({
         className="flex flex-col gap-5 px-2"
         aria-label="Position summary"
       >
-        <h3 className="text-text text-lg font-medium">
+        <h3 className="text-text font-circle text-lg font-medium">
           <Trans>Position summary</Trans>
         </h3>
         <div className="flex flex-wrap items-start gap-10">
@@ -363,7 +363,7 @@ export function ManagePositionTakeover({
             <span className="text-textSecondary text-sm">
               <Trans>Staked amount</Trans>
             </span>
-            <span className="text-text flex items-center gap-2 text-3xl font-medium tracking-tight">
+            <span className="text-text font-circle flex items-center gap-2 text-3xl font-medium tracking-tight">
               <TokenIcon token={{ symbol: 'SKY' }} width={28} className="h-7 w-7" showChainIcon={false} />
               {formatBigInt(existingCollateral)}
             </span>
@@ -372,7 +372,7 @@ export function ManagePositionTakeover({
             <span className="text-textSecondary text-sm">
               <Trans>Borrowed amount</Trans>
             </span>
-            <span className="text-text flex items-center gap-2 text-3xl font-medium tracking-tight">
+            <span className="text-text font-circle flex items-center gap-2 text-3xl font-medium tracking-tight">
               <TokenIcon token={{ symbol: 'USDS' }} width={28} className="h-7 w-7" showChainIcon={false} />
               {formatBigInt(existingDebt)}
             </span>
@@ -383,7 +383,7 @@ export function ManagePositionTakeover({
             <span className="text-textSecondary text-sm">
               <Trans>Rewards earned</Trans>
             </span>
-            <span className="text-bullish flex items-center gap-1 text-sm font-medium">
+            <span className="text-bullish font-circle flex items-center gap-1 text-sm font-medium">
               <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               {`+${formatUsd(detail.rewardsEarnedUsd)}`}
             </span>
@@ -392,7 +392,7 @@ export function ManagePositionTakeover({
             <span className="text-textSecondary text-sm">
               <Trans>Liquidation risk</Trans>
             </span>
-            <span className="text-text text-sm font-medium">
+            <span className="text-text font-circle text-sm font-medium">
               {existingDebt > 0n && existingVault?.riskLevel ? (
                 <RiskValue riskLevel={existingVault.riskLevel} />
               ) : (
@@ -404,7 +404,7 @@ export function ManagePositionTakeover({
             <span className="text-textSecondary text-sm">
               <Trans>Liquidation price</Trans>
             </span>
-            <span className="text-text text-sm font-medium">
+            <span className="text-text font-circle text-sm font-medium">
               {existingDebt > 0n && existingVault?.liquidationPrice !== undefined
                 ? `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
                 : NO_VALUE}
@@ -415,7 +415,7 @@ export function ManagePositionTakeover({
               <Trans>Protocol SKY Price</Trans>
               <Info className="h-3.5 w-3.5" aria-hidden />
             </span>
-            <span className="text-text text-sm font-medium">
+            <span className="text-text font-circle text-sm font-medium">
               {existingVault?.delayedPrice !== undefined
                 ? `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
                 : NO_VALUE}

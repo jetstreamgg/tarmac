@@ -342,7 +342,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
       {/* Phone tier (comp 1222:16962): heading above a full-width pill filter;
           md restores the heading row with the inline borderless trigger. */}
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-4">
-        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px] md:font-sans md:leading-normal md:tracking-normal">
+        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <Trans>My activity</Trans>
         </h3>
         {(positions?.length ?? 0) > 0 && (
@@ -353,7 +353,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
             <SelectTrigger
               data-testid="stake-activity-filter"
               aria-label={t`Filter activity by position`}
-              className="border-glassBorder text-text font-circle md:text-textSecondary md:hover:text-text h-11 w-full justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors focus-visible:ring-0 md:h-auto md:w-auto md:shrink-0 md:justify-normal md:gap-1.5 md:border-none md:p-0 md:font-sans md:leading-normal md:tracking-normal"
+              className="border-glassBorder text-text font-circle md:text-textSecondary md:hover:text-text h-11 w-full justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors focus-visible:ring-0 md:h-auto md:w-auto md:shrink-0 md:justify-normal md:gap-1.5 md:border-none md:p-0 md:leading-normal md:tracking-normal"
             >
               <SelectValue>
                 {filter === 'all' ? <Trans>All positions</Trans> : <Trans>Position {filter + 1}</Trans>}
