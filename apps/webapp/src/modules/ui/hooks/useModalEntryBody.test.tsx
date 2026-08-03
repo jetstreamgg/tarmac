@@ -16,11 +16,23 @@ import { TxStatus } from '@/widgets';
 import { useModalEntryBody } from './useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 
-function Host({ steps, transactionContent }: { steps?: TransactionStep[]; transactionContent?: ReactNode }) {
+function Host({
+  steps,
+  transactionContent,
+  confirmLabel,
+  confirmAction
+}: {
+  steps?: TransactionStep[];
+  transactionContent?: ReactNode;
+  confirmLabel?: string;
+  confirmAction?: () => void;
+}) {
   const renderInSlot = useModalEntryBody({
     sessionId: 's1',
     execute: () => {},
     confirmDisabled: false,
+    confirmLabel,
+    confirmAction,
     steps,
     transactionContent
   });
@@ -70,5 +82,41 @@ describe('useModalEntryBody — live-push freeze once the tx leaves IDLE', () =>
       's1',
       expect.objectContaining({ steps: [{ label: 'Supply' }] })
     );
+  });
+});
+
+describe('useModalEntryBody — entry CTA overrides', () => {
+  beforeEach(() => {
+    h.txStatus = TxStatus.IDLE;
+    h.updateModalContent.mockClear();
+  });
+
+  it('omits confirmLabel from the entry patch when not supplied, keeping the launch-time label', () => {
+    render(<Host />);
+    const entry = h.updateModalContent.mock.calls[0][1].entry;
+    expect('confirmLabel' in entry).toBe(false);
+  });
+
+  it('pushes confirmLabel and confirmAction into the entry patch when supplied', () => {
+    const connect = vi.fn();
+    render(<Host confirmLabel="Connect wallet" confirmAction={connect} />);
+    expect(h.updateModalContent).toHaveBeenCalledWith(
+      's1',
+      expect.objectContaining({
+        entry: expect.objectContaining({ confirmLabel: 'Connect wallet', confirmAction: connect })
+      })
+    );
+  });
+
+  it('always pushes confirmAction so clearing it restores the normal confirm', () => {
+    const connect = vi.fn();
+    const view = render(<Host confirmLabel="Connect wallet" confirmAction={connect} />);
+    h.updateModalContent.mockClear();
+
+    view.rerender(<Host confirmLabel="Continue" />);
+    const entry = h.updateModalContent.mock.calls[0][1].entry;
+    expect('confirmAction' in entry).toBe(true);
+    expect(entry.confirmAction).toBeUndefined();
+    expect(entry.confirmLabel).toBe('Continue');
   });
 });

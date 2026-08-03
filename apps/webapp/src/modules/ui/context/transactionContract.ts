@@ -52,6 +52,14 @@ export type TransactionEntry = {
   secondaryConfirmLabel?: string;
   /** Disables the secondary CTA independently of the primary one. */
   secondaryConfirmDisabled?: boolean;
+  /**
+   * While set, the entry's primary CTA fires this INSTEAD of starting the
+   * transaction — the modal stays on the entry screen and the config's
+   * `onConfirm` doesn't run. Lets a flow surface a prerequisite in the primary
+   * slot (e.g. a disconnected upgrade modal's "Connect wallet") while the form
+   * beneath stays visible; push `undefined` to restore the normal confirm.
+   */
+  confirmAction?: () => void;
 };
 
 /** Analytics metadata passed by consumers to attribute events correctly. */
