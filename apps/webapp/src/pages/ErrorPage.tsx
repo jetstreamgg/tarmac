@@ -1,11 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { Layout } from '../modules/layout/components/Layout';
+import { InsideLayoutContext } from '../modules/layout/components/InsideLayoutContext';
 import { AppLink } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/modules/layout/components/Typography';
 import { reportError } from '@/modules/sentry/reportError';
 
 function ErrorPage({ error }: { error?: unknown }): React.ReactElement {
+  // Route-level errors surface inside the shell's Layout (header included);
+  // wrapping again there would draw the header twice. Only a boundary above the
+  // shell — where no chrome survived the error — supplies its own Layout.
+  const insideLayout = useContext(InsideLayoutContext);
+
   useEffect(() => {
     if (!error) return;
 
@@ -17,19 +23,19 @@ function ErrorPage({ error }: { error?: unknown }): React.ReactElement {
     });
   }, [error]);
 
-  return (
-    <Layout>
-      <div className="my-6 text-center">
-        <Heading variant="large">Something went wrong</Heading>
+  const content = (
+    <div className="my-6 text-center">
+      <Heading variant="large">Something went wrong</Heading>
 
-        <AppLink to="/">
-          <Button variant="secondary" className="mt-4 ml-4">
-            Back to homepage
-          </Button>
-        </AppLink>
-      </div>
-    </Layout>
+      <AppLink to="/">
+        <Button variant="secondary" className="mt-4 ml-4">
+          Back to homepage
+        </Button>
+      </AppLink>
+    </div>
   );
+
+  return insideLayout ? content : <Layout>{content}</Layout>;
 }
 
 export default ErrorPage;
