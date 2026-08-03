@@ -385,11 +385,11 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 20K USDS');
   });
 
-  it('borrow: the max hint stays visible on a debt-free urn, where no slider carries it', () => {
+  it('borrow: a debt-free urn still shows the slider and the max hint', () => {
     h.existingDebt = 0n;
     renderSheet({ borrowCard: 'borrow' });
 
-    expect(screen.queryByTestId('stake-manage-borrow-slider')).toBeNull();
+    expect(screen.getByTestId('stake-manage-borrow-slider')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 300K USDS');
   });
 
