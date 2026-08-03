@@ -11,8 +11,9 @@ type WithdrawalFlow = 'supply' | 'withdraw';
  *
  * `sheet` is the canonical product attribute. A flow override exists only where
  * the answer genuinely differs by flow (Pendle: the PT is locked until maturity,
- * but the withdraw review's market sell executes now) or where the comps spec
- * friendlier supply wording for the same fact (savings/rewards: "Anytime").
+ * but the withdraw review's market sell executes now) or on instant-exit
+ * products, whose supply review uses the comps' friendlier future-looking
+ * "Anytime" for the same fact.
  * 'vault-tether-savings' is PLACEHOLDER copy pending a product assessment,
  * like its RiskTierDetails entry.
  */
@@ -28,7 +29,7 @@ const WITHDRAWAL_AVAILABILITY: Record<
   'rewards-cle': { sheet: msg`Instant`, supply: msg`Anytime` },
   'vault-flagship': { sheet: msg`Liquidity based` },
   'vault-usdt-savings': { sheet: msg`Liquidity based` },
-  'vault-tether-savings': { sheet: msg`Instant` },
+  'vault-tether-savings': { sheet: msg`Instant`, supply: msg`Anytime` },
   'vault-risk-capital': { sheet: msg`Liquidity based` },
   fixed: { sheet: msg`At maturity or via market sell`, withdraw: msg`Instant` },
   stusds: { sheet: msg`Liquidity based` }
