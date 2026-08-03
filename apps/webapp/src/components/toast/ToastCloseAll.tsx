@@ -60,7 +60,7 @@ export const ToastCloseAll = () => {
         className={cn(
           'text-text/70 hover:text-text bg-transparent',
           'flex items-center gap-1 rounded-md',
-          'text-xs font-medium',
+          'font-circle text-xs font-medium',
           'hover:bg-container/30 transition-all',
           // No border or padding on any screen size
           'p-0'

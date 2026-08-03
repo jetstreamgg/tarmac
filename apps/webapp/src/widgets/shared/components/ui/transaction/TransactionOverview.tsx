@@ -149,7 +149,7 @@ export function TransactionOverview({
             <Accordion type="single" collapsible defaultValue="overview" className="mb-2">
               <AccordionItem value="overview">
                 <AccordionTrigger className="py-1">
-                  <Text variant="medium" className="font-medium">
+                  <Text variant="medium" className="font-circle font-medium">
                     {title}
                   </Text>
                 </AccordionTrigger>
@@ -168,7 +168,7 @@ export function TransactionOverview({
             <Accordion type="single" collapsible>
               <AccordionItem value="details">
                 <AccordionTrigger className="py-1">
-                  <Text variant="medium" className="font-medium">
+                  <Text variant="medium" className="font-circle font-medium">
                     {detailsTitle}
                   </Text>
                 </AccordionTrigger>
@@ -197,7 +197,7 @@ export function TransactionOverview({
           <Accordion type="single" collapsible className="p-4" defaultValue="item-1">
             <AccordionItem value="item-1">
               <AccordionTrigger className="py-1">
-                <Text variant="medium" className="font-medium">
+                <Text variant="medium" className="font-circle font-medium">
                   {title}
                 </Text>
               </AccordionTrigger>

@@ -203,7 +203,14 @@ export function TransactionModal({
   // Stable callback ref so registering the entry slot doesn't thrash on re-render.
   const slotRef = useCallback((el: HTMLDivElement | null) => registerEntrySlot?.(el), [registerEntrySlot]);
 
+  const entryConfirmAction = entry?.confirmAction;
   const handleConfirm = useCallback(() => {
+    // An entry-CTA override (e.g. "Connect wallet") runs in place: no screen
+    // advance, no onConfirm — see `TransactionEntry.confirmAction`.
+    if (isEntry && entryConfirmAction) {
+      entryConfirmAction();
+      return;
+    }
     // In the three-screen flow the entry's confirm only advances to the review —
     // nothing fires on-chain until the review's confirm.
     if (isEntry && hasReviewStage) {
@@ -215,7 +222,7 @@ export function TransactionModal({
     }
     setStep('transaction');
     onConfirm();
-  }, [isEntry, hasReviewStage, onConfirm]);
+  }, [isEntry, hasReviewStage, onConfirm, entryConfirmAction]);
 
   // The entry's secondary CTA (entry-only flows — see the contract): same
   // advance to the wallet screen, firing the secondary action's handler.

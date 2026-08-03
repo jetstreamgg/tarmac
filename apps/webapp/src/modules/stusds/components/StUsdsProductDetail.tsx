@@ -10,7 +10,8 @@ import {
   useOverallSkyData,
   useStUsdsCapacityData,
   useStUsdsChartInfo,
-  useStUsdsData
+  useStUsdsData,
+  trailingAverageRate
 } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -56,14 +57,17 @@ export function StUsdsProductDetail() {
     : NO_VALUE;
 
   // 30D Rate = trailing 30-day average of the daily chart series (no dedicated
-  // endpoint — same trailing-average approach as the vault/savings pages).
+  // endpoint). Shared with the marketplace table's 30D Rate column, so the row
+  // and this page always report the same figure.
   const thirtyDayRate = useMemo(() => {
-    const withRate = (chartInfo ?? []).filter(point => point.rate !== undefined);
-    if (withRate.length === 0) return NO_VALUE;
-    const last30 = [...withRate].sort((a, b) => a.blockTimestamp - b.blockTimestamp).slice(-30);
-    const avg =
-      last30.reduce((sum, point) => sum + parseFloat(formatUnits(point.rate!, 18)), 0) / last30.length;
-    return formatDecimalPercentage(avg);
+    const average = trailingAverageRate(
+      (chartInfo ?? []).flatMap(point =>
+        point.rate !== undefined
+          ? [{ rate: parseFloat(formatUnits(point.rate, 18)), timestampSec: point.blockTimestamp }]
+          : []
+      )
+    );
+    return average !== undefined ? formatDecimalPercentage(average) : NO_VALUE;
   }, [chartInfo]);
 
   const utilization =

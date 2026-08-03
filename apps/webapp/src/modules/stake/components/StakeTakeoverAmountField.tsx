@@ -6,8 +6,9 @@ import { buttonVariants } from '@/components/ui/button';
 import { formatAmountForInput, parseAmountText, sanitizeAmountText } from '../lib/amountInput';
 
 const PERCENT_CHIPS = [25, 50, 100] as const;
-// Borrow caps the top chip at 75%: staging the exact max puts the position on
-// the liquidation boundary, where fee accrual alone tips it underwater.
+// Borrow caps the top chip at 75% (APP-426): staging the exact max puts the
+// position on the liquidation boundary, where fee accrual alone tips it
+// underwater.
 export const BORROW_PERCENT_CHIPS = [25, 50, 75] as const;
 
 /**
@@ -60,7 +61,7 @@ export function StakeTakeoverAmountField({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
         <span className="text-fgSecondary text-xs leading-[18px]">{label ?? <Trans>Amount</Trans>}</span>
-        {topRight && <span className="text-fgSecondary text-xs leading-[18px]">{topRight}</span>}
+        {topRight && <span className="text-fgSecondary text-right text-xs leading-[18px]">{topRight}</span>}
       </div>
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">

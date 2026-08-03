@@ -205,6 +205,46 @@ describe('TransactionModal — editable entry step', () => {
     expect(staleConfirm).not.toHaveBeenCalled();
   });
 
+  it('confirmAction overrides the entry CTA: fires in place, no screen advance, no onConfirm — and clearing it restores the confirm', () => {
+    const connect = vi.fn();
+    const onConfirm = vi.fn();
+    const SESSION = 'upgrade-1';
+    const get = renderModal(cb => ({
+      title: 'Upgrade DAI/MKR',
+      sessionId: SESSION,
+      entry: {
+        content: <div>fields</div>,
+        confirmLabel: 'Connect wallet',
+        confirmDisabled: false,
+        confirmAction: connect
+      },
+      // Mirror a real flow: confirm fires the engine, which calls back into the modal.
+      onConfirm: () => {
+        onConfirm();
+        cb.onMutate();
+      }
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Connect wallet' }));
+    // The override ran in place: still on the entry screen, transaction untouched.
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.queryByText(/confirm this transaction in your wallet/i)).toBeNull();
+
+    // The wallet connects: the body pushes the normal confirm back (the
+    // upgrade form's connected state).
+    act(() => {
+      get().updateModalContent(SESSION, {
+        entry: { confirmLabel: 'Continue', confirmAction: undefined }
+      });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+    expect(connect).toHaveBeenCalledTimes(1);
+  });
+
   it('renders the two-CTA entry footer and routes each CTA to its own handler (Figma 1036:214001)', () => {
     const onConfirm = vi.fn();
     const onSecondaryConfirm = vi.fn();

@@ -1864,12 +1864,12 @@ function ChartsSection() {
               <span className="text-fgSecondary text-sm">Maturity</span>
               <span className="text-fgSecondary text-sm">18 Jun 2026</span>
             </div>
-            <span className="text-fgPrimary text-2xl font-medium">85%</span>
+            <span className="text-fgPrimary font-circle text-2xl font-medium">85%</span>
             <Progress value={85} />
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-fgSecondary text-sm">Borrow Utilization</span>
-            <span className="text-fgPrimary text-2xl font-medium">83.5%</span>
+            <span className="text-fgPrimary font-circle text-2xl font-medium">83.5%</span>
             <Progress value={83.5} className="h-2" />
           </div>
         </div>
@@ -1943,7 +1943,7 @@ function ChartsSection() {
               activeId="susds"
               onActiveChange={() => {}}
               size={140}
-              renderCenter={id => <span className="text-text text-sm font-medium">{id}</span>}
+              renderCenter={id => <span className="text-text font-circle text-sm font-medium">{id}</span>}
             />
             <span className="text-fgSecondary text-xs">active (hover)</span>
           </div>
@@ -2013,7 +2013,7 @@ function BannersSection() {
           subtitle={
             <p className="text-fgSecondary max-w-[248px] text-xs leading-[18px]">
               That&apos;s what your idle stablecoins can earn at today&apos;s{' '}
-              <span className="text-fgPrimary font-medium">3.75%</span> Sky Savings Rate.
+              <span className="text-fgPrimary">3.75%</span> Sky Savings Rate.
             </p>
           }
           action={

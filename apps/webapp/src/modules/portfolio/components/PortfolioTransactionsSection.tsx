@@ -16,7 +16,12 @@ import { cn } from '@/lib/cn';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import { ConvertArrows } from '@/modules/icons';
-import { FilterSelect } from '@/components/product/FilterSelect';
+import {
+  ALL_NETWORKS_LABEL,
+  ALL_PRODUCTS_LABEL,
+  ALL_STABLECOINS_LABEL,
+  FilterSelect
+} from '@/components/product/FilterSelect';
 import {
   ProductTransactionsTable,
   ProductTransactionColumn
@@ -241,7 +246,7 @@ export function PortfolioTransactionsView({
             options={networks}
             selected={network}
             onChange={value => changeFilters({ network: value })}
-            allLabel={<Trans>All networks</Trans>}
+            allLabel={ALL_NETWORKS_LABEL}
             triggerClassName={triggerClassName}
           />
           <FilterSelect
@@ -249,7 +254,7 @@ export function PortfolioTransactionsView({
             options={stablecoins}
             selected={stablecoin}
             onChange={value => changeFilters({ stablecoin: value })}
-            allLabel={<Trans>All stablecoins</Trans>}
+            allLabel={ALL_STABLECOINS_LABEL}
             triggerClassName={triggerClassName}
           />
           <FilterSelect
@@ -257,7 +262,7 @@ export function PortfolioTransactionsView({
             options={products}
             selected={product}
             onChange={value => changeFilters({ product: value })}
-            allLabel={<Trans>All products</Trans>}
+            allLabel={ALL_PRODUCTS_LABEL}
             triggerClassName={triggerClassName}
           />
         </div>

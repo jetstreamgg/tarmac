@@ -33,6 +33,7 @@ const savingsRow: EarnProductRow = {
   networks: [1],
   detailPath: '/earn/savings',
   rate: { value: 0.0375, formatted: '3.75%' },
+  rate30d: { value: 0.036, formatted: '3.60%' },
   isLoading: false,
   error: null
 };
@@ -51,6 +52,7 @@ const fixedRow: EarnProductRow = {
   detailPath: '/earn/fixed/susds',
   maturity: 1781740800,
   rate: { value: 0.05, formatted: '5.00%' },
+  rate30d: { value: 0.048, formatted: '4.80%' },
   isLoading: false,
   error: null
 };

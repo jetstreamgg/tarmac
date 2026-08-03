@@ -290,6 +290,7 @@ export { useHistoryFamilyQuery } from './shared/useHistoryFamilyQuery';
 export { useFilteredPortfolioHistory } from './shared/useFilteredPortfolioHistory';
 export { useUsdsDaiData } from './shared/useUsdsDaiData';
 export { useOverallSkyData } from './shared/useOverallSkyData';
+export { trailingAverageRate, type DailyRatePoint } from './shared/trailingRate';
 
 // Earn marketplace (C1 registry + aggregator)
 export { useEarnMarketplace } from './earn/useEarnMarketplace';

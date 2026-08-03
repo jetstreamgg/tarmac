@@ -11,6 +11,7 @@ import {
   rewardsRiskProfile,
   useRewardContractInfo,
   useRewardsChartInfo,
+  trailingAverageRate,
   type RewardContract
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
@@ -97,13 +98,13 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
 
   const { latest, thirtyDayRate } = useMemo(() => {
     const sorted = [...(chartInfo ?? [])].sort((a, b) => b.blockTimestamp - a.blockTimestamp);
-    const last30 = sorted.slice(0, 30);
     return {
       latest: sorted[0],
-      thirtyDayRate:
-        last30.length > 0
-          ? last30.reduce((sum, item) => sum + parseFloat(item.rate), 0) / last30.length
-          : undefined
+      // Shared with the marketplace table's 30D Rate column, so the row and
+      // this page always report the same figure.
+      thirtyDayRate: trailingAverageRate(
+        sorted.map(item => ({ rate: parseFloat(item.rate), timestampSec: item.blockTimestamp }))
+      )
     };
   }, [chartInfo]);
 

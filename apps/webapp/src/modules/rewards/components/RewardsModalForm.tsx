@@ -225,12 +225,7 @@ export function RewardsModalForm({
         }
         onPercent={setPercentAmount}
         selector={
-          <TokenSelectorPill
-            tokens={[supplyToken]}
-            selected={supplyToken}
-            onSelect={() => {}}
-            testId="rewards-modal-asset"
-          />
+          <TokenSelectorPill tokens={[supplyToken]} selected={supplyToken} testId="rewards-modal-asset" />
         }
         error={
           insufficient ? (

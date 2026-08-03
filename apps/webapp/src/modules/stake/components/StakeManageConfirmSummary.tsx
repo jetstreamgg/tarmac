@@ -23,7 +23,7 @@ function AmountHero({
   return (
     <div className="flex flex-col gap-1" data-testid={dataTestId}>
       <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text flex items-center gap-2 text-2xl font-medium tracking-tight">
+      <span className="text-text font-circle flex items-center gap-2 text-2xl font-medium tracking-tight">
         <TokenIcon token={{ symbol }} width={28} className="h-7 w-7" showChainIcon={false} />
         {formatBigInt(amount)} {symbol}
       </span>
@@ -106,7 +106,7 @@ export function StakeManageConfirmSummary({
             <span className="text-textSecondary text-sm">
               <Trans>From</Trans>
             </span>
-            <span className="text-text flex items-center gap-2 text-lg font-medium">
+            <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
               {delegateFrom ? (
                 <>
                   <CustomAvatar address={delegateFrom} size={28} />
@@ -122,7 +122,7 @@ export function StakeManageConfirmSummary({
             <span className="text-textSecondary text-sm">
               <Trans>To</Trans>
             </span>
-            <span className="text-text flex items-center gap-2 text-lg font-medium">
+            <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
               <CustomAvatar address={delegateTo!} size={28} />
               {shortenAddress(delegateTo!)}
             </span>
