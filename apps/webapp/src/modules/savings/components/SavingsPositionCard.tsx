@@ -18,6 +18,7 @@ import {
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useSavingsModal } from '../hooks/useSavingsModal';
+import { useSavingsAccrualRate } from '../hooks/useSavingsAccrualRate';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
 
 const formatToken = (value?: bigint) =>
@@ -46,6 +47,8 @@ export function SavingsPositionCard() {
     token: TOKENS.susds.address[chainId]
   });
   const { data: overall } = useOverallSkyData();
+  // sUSDS appreciates every second; the hero figure shows it happening.
+  const ratePerSecond = useSavingsAccrualRate();
   // Refresh position card + sUSDS balance after a successful supply/withdraw.
   // A no-position supply also flips this card to "My position" once the savings
   // balance refetches above zero.
@@ -76,7 +79,14 @@ export function SavingsPositionCard() {
   return (
     <ProductPositionCard
       data-testid="savings-position-card"
-      hero={<PositionHero pillSymbol="sUSDS" balanceSymbol="USDS" amount={positionValue} />}
+      hero={
+        <PositionHero
+          pillSymbol="sUSDS"
+          balanceSymbol="USDS"
+          amount={positionValue}
+          ratePerSecond={ratePerSecond}
+        />
+      }
       stats={
         <>
           <ProductStatPair grow>
