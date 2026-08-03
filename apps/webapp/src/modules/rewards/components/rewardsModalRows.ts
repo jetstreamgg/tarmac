@@ -10,22 +10,13 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { singleOrDelta } from '@/components/product/ModalGridCells';
 
 /** One labelled grid cell — the shared modal-grid cell model (single or before→after delta). */
 export type RewardsModalCell = ModalGridCell;
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type RewardsModalGridRow = RewardsModalCell[];
-
-const singleOrDelta = (
-  base: { label: string } & Partial<RewardsModalCell>,
-  before: string,
-  after: string,
-  hasAmount: boolean
-): RewardsModalCell =>
-  hasAmount
-    ? ({ ...base, kind: 'delta', before, after } as RewardsModalCell)
-    : ({ ...base, kind: 'single', value: before } as RewardsModalCell);
 
 /** Display strings for the "Supply to {farm}" entry grid. */
 export type RewardsSupplyModalRowInput = {
