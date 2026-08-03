@@ -78,7 +78,8 @@ vi.mock('@/hooks', async importOriginal => {
     }),
     useCollateralData: () => ({
       data: {
-        stabilityFee: 0.0851,
+        // 8.51% as the WAD-scaled annual rate the real hook returns.
+        stabilityFee: 851n * 10n ** 14n,
         debtCeiling: h.debtCeilingHeadroom,
         totalDaiDebt: 0n,
         debtCeilingUtilization: 0.5
@@ -412,16 +413,16 @@ describe('OpenPositionTakeover', () => {
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('borrow: the chips run 25/50/100 and the top chip stages the whole-USDS-floored max', () => {
+  it('borrow: the top chip is 75% and stages three quarters of the max, whole-USDS rounded', () => {
     h.debtCeilingHeadroom = 50n * WAD;
     renderTakeover();
     typeStakeAmount('1000');
 
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
-    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-75')).toBeNull();
-    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-percent-100'));
+    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-100')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-percent-75'));
 
-    expect(h.launchParams?.usdsToBorrow).toBe(50n * WAD);
+    expect(h.launchParams?.usdsToBorrow).toBe(37n * WAD);
   });
 
   it('borrow above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {
