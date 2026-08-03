@@ -207,6 +207,11 @@ describe('PositionDetailsModal', () => {
     expect(screen.getByTestId('stake-manage-menu-claim').textContent).toContain('123.46M');
   });
 
+  it('keeps 4 decimals on a dust claimable instead of collapsing to <0.01', () => {
+    renderModal({ claimableTokenAmount: parseUnits('0.0012', 18) });
+    expect(screen.getByTestId('stake-manage-menu-claim').textContent).toContain('0.0012');
+  });
+
   it('disables the claim row while nothing is claimable or the read is loading', () => {
     renderModal({ claimableTokenAmount: 0n });
     expect((screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement).disabled).toBe(true);

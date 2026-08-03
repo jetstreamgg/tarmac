@@ -30,6 +30,9 @@ import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 
 const NO_VALUE = '–';
 
+/** 0.01 in wad — below this the claim chip keeps 4 decimals instead of "<0.01". */
+const CLAIM_DUST_WAD = 10n ** 16n;
+
 const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
 /** The manage actions F5 implements — rows/CTAs route these to the sheet. */
@@ -440,9 +443,14 @@ export function PositionDetailsModal({
       // Badges/Special (comp 1036:214176): gradient pill, amount + 12px token
       // icon, no symbol text. Gradient hexes are raw in Figma (no variable).
       // Compact keeps the pill bounded on huge balances (123.46M, not
-      // 123,456,789); maxDecimals caps the sub-10 four-decimal default.
+      // 123,456,789); maxDecimals caps the sub-10 four-decimal default —
+      // except under 0.01, where the cap would collapse every dust claimable
+      // to "<0.01"; those keep the 4 decimals so a real 0.0012 stays legible.
       <span className="text-text font-circle flex h-5 items-center gap-1 rounded-full bg-gradient-to-r from-[#46CCFC]/20 to-[#EB65CB]/20 px-1.5 text-xs leading-[14px] font-medium tracking-[-0.24px]">
-        {formatBigInt(detail.claimableTokenAmount, { compact: true, maxDecimals: 2 })}
+        {formatBigInt(detail.claimableTokenAmount, {
+          compact: true,
+          maxDecimals: detail.claimableTokenAmount < CLAIM_DUST_WAD ? 4 : 2
+        })}
         <TokenIcon
           token={{ symbol: detail.claimableSymbols[0] }}
           width={12}
