@@ -54,6 +54,7 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { formatPriceImpact } from '../utils/priceImpact';
 import { buildPendleEntryRows, buildPendleReviewRows } from './pendleModalRows';
 
 export type PendleModalFlow = 'supply' | 'withdraw';
@@ -415,8 +416,9 @@ export function PendleModalForm({
     : NO_VALUE;
   const slippageDisplay = `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`;
   const slippageMode = slippage === defaultSlippage ? t`Auto` : t`Custom`;
-  // |impact| like the legacy modal — direction doesn't matter for risk display.
-  const priceImpactDisplay = quote ? formatDecimalPercentage(Math.abs(quote.priceImpact)) : NO_VALUE;
+  // Sign-flipped like the legacy modal and the redeem sheet, so positive reads
+  // as a cost to the user (PR #1781 review) — see formatPriceImpact.
+  const priceImpactDisplay = formatPriceImpact(quote?.priceImpact) ?? NO_VALUE;
   const claimAfterDisplay = fmt(claimAfter);
   const earningsAfterDisplay = earningsToMaturity(claimAfter);
   const selectedSymbol = selectedToken.symbol;

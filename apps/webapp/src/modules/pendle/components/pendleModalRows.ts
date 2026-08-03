@@ -128,7 +128,10 @@ export type PendleReviewRowInput = {
   slippageMode: string;
   /** Inline gear opening the slippage menu (interactive, passed through opaquely). */
   slippageAction?: ReactNode;
-  /** Quote price impact (absolute), formatted (e.g. "0.02%") — AMM trade risk info. */
+  /**
+   * Quote price impact, formatted under the app-wide inverse convention where
+   * positive = a cost to the user (e.g. "0.020%") — AMM trade risk info.
+   */
   priceImpact: string;
   /** Network the transaction runs on. */
   network: string;

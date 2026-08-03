@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
@@ -63,6 +63,7 @@ const hoisted = vi.hoisted(() => ({
         entry?: { confirmDisabled?: boolean };
         steps?: string[];
         rightHeaderComponent?: unknown;
+        transactionContent?: ReactNode;
       }
     ) => void
   >(() => hoisted.onPush?.()),
@@ -205,6 +206,18 @@ const lastEntryUpdate = () => {
   return calls.at(-1)?.[1];
 };
 
+/** Renders the review-stage grid the form pushed to the shared modal. */
+const renderLastReviewContent = () => {
+  const calls = hoisted.updateModalContent.mock.calls.filter(
+    ([, partial]) => partial.transactionContent !== undefined
+  );
+  return render(
+    <I18nProvider i18n={i18n}>
+      <TooltipProvider>{calls.at(-1)?.[1].transactionContent}</TooltipProvider>
+    </I18nProvider>
+  );
+};
+
 describe('PendleModalForm', () => {
   beforeEach(() => {
     hoisted.quoteArgs = undefined;
@@ -273,6 +286,17 @@ describe('PendleModalForm', () => {
       expect(rate).toContain('4.90%');
       expect(screen.getByTestId('pendle-modal-row-Claim date').textContent).toBeTruthy();
       expect(screen.getByTestId('pendle-modal-row-Network fee')).toBeTruthy();
+    });
+
+    it('shows the review price impact sign-flipped, not absolute', () => {
+      renderForm('supply');
+      typeAmount('100');
+
+      // Quote raw -0.0005: Pendle's negative = unfavorable, displayed positive
+      // under the app-wide convention. An |impact| would print the same string
+      // for a favorable quote, inverting its meaning.
+      const review = renderLastReviewContent();
+      expect(review.getByTestId('pendle-modal-row-Price impact').textContent).toContain('0.050%');
     });
 
     it('keeps confirm disabled until an amount within balance is entered', () => {
