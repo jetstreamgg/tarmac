@@ -552,7 +552,16 @@ export function PositionDetailsModal({
             </div>
 
             {/* 2×3 desktop grid with vertical hairline seams between columns
-                (comp 1036:214176: 120px, 120px, then the hugging rest). */}
+                (comp 1036:214176: 120px, 120px, then the hugging rest). The
+                five tracks read cell│seam│cell│seam│cell and are filled purely
+                by source order once md:contents dissolves the pairs, so each
+                md row must receive exactly five in-flow items — three cells on
+                the 120px/120px/1fr tracks and a divider on each 1px seam:
+                  row 1: rewards rate │ reward token │ delegating-to
+                  row 2: claimable    │ est. annual  │ rewards earned
+                Pair 2's own divider is md:hidden because its seam falls on the
+                row break; adding a cell or dropping a divider without
+                rebalancing this rhythm shifts every later cell one track over. */}
             <div className="flex flex-col gap-4 md:grid md:grid-cols-[120px_1px_120px_1px_minmax(0,1fr)] md:gap-x-8 md:gap-y-6">
               <StatPair>
                 <StatCell label={<Trans>Rewards rate</Trans>}>
