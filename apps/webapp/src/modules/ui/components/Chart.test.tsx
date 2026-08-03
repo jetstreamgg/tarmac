@@ -53,55 +53,43 @@ describe('resolveTooltipLabel', () => {
   });
 });
 
-// APP-443 item 19.4: hovering dims the whole series and relights only the span
-// between the neighbouring data points, never narrower than the DS mock's 44px.
+// APP-443 item 19.4: hovering dims the whole series and relights only the DS
+// mock's 44px window around the hover point.
 describe('HoverDimMask', () => {
-  const renderMask = (pointCount: number) =>
+  const renderMask = () =>
     render(
       <svg>
-        <HoverDimMask id="dim" pointCount={pointCount} />
+        <HoverDimMask id="dim" />
       </svg>
     );
 
-  it('lights the span from the previous data point to the next one', () => {
+  it('dims the plot and lights a 44px window around the hover point', () => {
     h.isActive = true;
     h.coordinate = { x: 300, y: 100 };
-    // 9 points across 800px → a 100px step either side of the cursor.
-    renderMask(9);
+    renderMask();
 
     expect(Number(screen.getByTestId('chart-dim-mask-base').getAttribute('opacity'))).toBeLessThan(1);
 
     const lit = screen.getByTestId('chart-dim-mask-lit');
-    expect(lit.getAttribute('x')).toBe('200');
-    expect(lit.getAttribute('width')).toBe('200');
-    expect(lit.getAttribute('fill')).toBe('white');
-  });
-
-  it('widens a dense series to the minimum window instead of lighting a sliver', () => {
-    h.isActive = true;
-    h.coordinate = { x: 300, y: 100 };
-    // 401 points across 800px → a 2px step, well under the 22px floor.
-    renderMask(401);
-
-    const lit = screen.getByTestId('chart-dim-mask-lit');
     expect(lit.getAttribute('x')).toBe('278');
     expect(lit.getAttribute('width')).toBe('44');
+    expect(lit.getAttribute('fill')).toBe('white');
   });
 
   it('clamps the window to the plot at the edges', () => {
     h.isActive = true;
     h.coordinate = { x: 0, y: 100 };
-    renderMask(9);
+    renderMask();
 
     const lit = screen.getByTestId('chart-dim-mask-lit');
     expect(lit.getAttribute('x')).toBe('0');
-    expect(lit.getAttribute('width')).toBe('100');
+    expect(lit.getAttribute('width')).toBe('22');
   });
 
   it('shows the whole plot at full strength when nothing is hovered', () => {
     h.isActive = false;
     h.coordinate = undefined;
-    renderMask(9);
+    renderMask();
 
     const base = screen.getByTestId('chart-dim-mask-base');
     expect(base.getAttribute('width')).toBe('800');

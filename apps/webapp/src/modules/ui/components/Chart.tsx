@@ -163,22 +163,28 @@ const ACTIVE_DOT = {
 const POST_CURSOR_ALPHA = 0.4;
 
 /**
- * Narrowest half-width of the lit window, in px. The DS mock's mask measures
- * 45px across (Figma 5391:44830), which on its dense series spans well past
- * the neighbouring points; keeping that as a floor stops a year of daily data
- * — ~2px apart — from collapsing the highlight into the hover dot.
+ * Half-width of the lit window, in px — the DS mock's mask measures 45px across
+ * (Figma 5391:44830).
+ *
+ * It is a flat number rather than the distance to the neighbouring data points
+ * the ticket describes, because the series are far denser than they look: the
+ * Morpho rate chart plots 170 hourly points over 779px at 1W and 722 at 1M, so
+ * neighbours sit 1–5px apart and a point-relative window would light little
+ * more than the hover dot. Charts sparse enough for it to matter (the portfolio
+ * protocol statistics, 7–8 points) would swing the other way and light a third
+ * of the plot. One width keeps every chart reading alike.
  */
-const MIN_HALF_WINDOW = 22;
+const HALF_WINDOW = 22;
 
 /**
- * DS Line hover (Figma 5273:12162): the plotted series dims and only the range
- * from the previous data point to the next one stays at full strength.
- * Implemented as a luminance mask on the Area — white keeps the series, gray
- * fades stroke+fill together — so the dimming can't veil the glass card
- * background the way an overlay rect would. Rendered inside the AreaChart,
- * where recharts' chart-context hooks resolve.
+ * DS Line hover (Figma 5273:12162): the plotted series dims and only a window
+ * around the hover point stays at full strength. Implemented as a luminance
+ * mask on the Area — white keeps the series, gray fades stroke+fill together —
+ * so the dimming can't veil the glass card background the way an overlay rect
+ * would. Rendered inside the AreaChart, where recharts' chart-context hooks
+ * resolve.
  */
-export function HoverDimMask({ id, pointCount }: { id: string; pointCount: number }) {
+export function HoverDimMask({ id }: { id: string }) {
   const isActive = useIsTooltipActive();
   const coordinate = useActiveTooltipCoordinate();
   const width = useChartWidth();
@@ -187,12 +193,8 @@ export function HoverDimMask({ id, pointCount }: { id: string; pointCount: numbe
   // full-coverage white mask so the series never flashes hidden.
   const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
 
-  // Points sit on an evenly-spaced band across the plot (category axis, zero
-  // left/right margins), so one step is the distance to either neighbour.
-  const step = pointCount > 1 && width != null ? width / (pointCount - 1) : 0;
-  const halfWindow = Math.max(step, MIN_HALF_WINDOW);
-  const litStart = cursorX != null ? Math.max(cursorX - halfWindow, 0) : 0;
-  const litEnd = cursorX != null && width != null ? Math.min(cursorX + halfWindow, width) : 0;
+  const litStart = cursorX != null ? Math.max(cursorX - HALF_WINDOW, 0) : 0;
+  const litEnd = cursorX != null && width != null ? Math.min(cursorX + HALF_WINDOW, width) : 0;
 
   return (
     <defs>
@@ -622,7 +624,7 @@ function ChartContent({
                 <stop offset="100%" stopColor={seriesColor} stopOpacity="0" />
               </linearGradient>
             </defs>
-            <HoverDimMask id={dimMaskId} pointCount={data.length} />
+            <HoverDimMask id={dimMaskId} />
             <YAxis
               domain={['dataMin', 'dataMax']}
               padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }}
