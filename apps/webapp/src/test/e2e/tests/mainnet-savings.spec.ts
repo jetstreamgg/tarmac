@@ -27,16 +27,15 @@ const openSupplyModal = async (page: Page) => {
   await expect(page.getByText('Supply to Sky Savings')).toBeVisible();
 };
 
-const confirmModal = async (page: Page, label: 'Supply' | 'Withdraw', successText: string) => {
-  const confirm = page.getByRole('dialog').getByRole('button', { name: label, exact: true });
+/** Clicks Review, confirms in the modal and waits for the success status. */
+const reviewAndConfirm = async (page: Page) => {
+  await page.getByText('Review').first().click();
+  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
   await expect(confirm).toBeEnabled({ timeout: 60_000 });
   await confirm.click();
-  await expect(page.getByText(successText)).toBeVisible({ timeout: 60_000 });
-  await page.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByText('Transaction completed successfully.')).toBeVisible({ timeout: 60_000 });
+  await page.getByText('Done').first().click();
 };
-
-const SUPPLY_SUCCESS = "You've successfully supplied to Sky Savings.";
-const WITHDRAW_SUCCESS = "You've successfully withdrawn from Sky Savings.";
 
 test('Savings product page renders the chart, details and transactions', async ({ isolatedPage }) => {
   await navigateToSavings(isolatedPage);
@@ -49,7 +48,7 @@ test('Supply modal validates the amount before enabling Supply', async ({ isolat
   await navigateToSavings(isolatedPage);
   await openSupplyModal(isolatedPage);
 
-  const confirm = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Supply', exact: true });
+  const confirm = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Review', exact: true });
   await expect(confirm).toBeDisabled();
 
   // Over-balance shows the inline error and keeps Supply disabled
@@ -79,7 +78,7 @@ test('Supplies USDS and withdraws it back', async ({ isolatedPage }) => {
 
   await openSupplyModal(isolatedPage);
   await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
-  await confirmModal(isolatedPage, 'Supply', SUPPLY_SUCCESS);
+  await reviewAndConfirm(isolatedPage);
 
   // The position card replaces the supply CTA once a position exists
   await expect(isolatedPage.getByTestId('savings-position-card')).toBeVisible({ timeout: 15_000 });
@@ -88,7 +87,7 @@ test('Supplies USDS and withdraws it back', async ({ isolatedPage }) => {
   await expect(isolatedPage.getByText('Withdraw from Sky Savings')).toBeVisible();
   // Withdraw 9, not 10 — rounding can leave less than the full supply
   await isolatedPage.getByTestId('savings-modal-amount-input').fill('9');
-  await confirmModal(isolatedPage, 'Withdraw', WITHDRAW_SUCCESS);
+  await reviewAndConfirm(isolatedPage);
 });
 
 test('Supplies DAI through the upgrade-and-supply bundle', async ({ isolatedPage }) => {
@@ -98,5 +97,5 @@ test('Supplies DAI through the upgrade-and-supply bundle', async ({ isolatedPage
   await isolatedPage.getByTestId('savings-origin-select').click();
   await isolatedPage.getByTestId('savings-origin-dai').click();
   await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
-  await confirmModal(isolatedPage, 'Supply', SUPPLY_SUCCESS);
+  await reviewAndConfirm(isolatedPage);
 });

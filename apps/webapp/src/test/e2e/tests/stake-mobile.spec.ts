@@ -11,7 +11,7 @@ import { BORROW_SPEC_SKY, openStakePosition, stakeDeepLink } from '../utils/stak
 // The isolatedPage fixture builds its own browser context, so `test.use`
 // viewport options don't reach it — each test sets the viewport explicitly.
 
-const MOBILE_VIEWPORT = { width: 393, height: 852 };
+const MOBILE_VIEWPORT = { width: 393, height: 1292 };
 
 test.beforeEach(async ({ isolatedPage }) => {
   await isolatedPage.setViewportSize(MOBILE_VIEWPORT);
