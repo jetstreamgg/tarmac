@@ -45,7 +45,7 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <Text variant="large" tag="span" className="text-text text-2xl font-medium">
+          <Text variant="large" tag="span" className="text-text font-circle text-2xl font-medium">
             {row.name}
           </Text>
           <ProductGlyph id={row.id} kind={row.kind} />
@@ -64,7 +64,7 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
         <Stat label={<Trans>Risk</Trans>}>
           <div className="flex items-center gap-2">
             <RiskTierDetailsTrigger profile={row.riskProfile} />
-            <span className="text-text text-sm font-medium">{RISK_LABEL[row.risk]}</span>
+            <span className="text-text font-circle text-sm font-medium">{RISK_LABEL[row.risk]}</span>
           </div>
         </Stat>
         <Stat label={<Trans>Supply</Trans>}>

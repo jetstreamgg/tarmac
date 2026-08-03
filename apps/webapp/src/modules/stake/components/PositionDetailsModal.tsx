@@ -52,7 +52,7 @@ function StatCell({ label, children }: { label: ReactNode; children: ReactNode }
       <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px] md:text-sm md:leading-normal">
         {label}
       </span>
-      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:font-sans md:leading-normal md:tracking-normal">
+      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:leading-normal md:tracking-normal">
         {children}
       </span>
     </div>
@@ -102,7 +102,7 @@ function MenuRow({
     >
       <span
         className={cn(
-          'text-text flex items-center gap-3 text-sm font-medium',
+          'text-text font-circle flex items-center gap-3 text-sm font-medium',
           variant === 'sheet' && 'font-circle leading-4 tracking-[-0.28px]'
         )}
       >
@@ -435,7 +435,7 @@ export function PositionDetailsModal({
   const claimDisabled = detail.claimableLoading || detail.claimableTokenAmount === 0n;
   const claimChip =
     detail.claimableTokenAmount > 0n ? (
-      <span className="bg-surfaceAlt text-text flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
+      <span className="bg-surfaceAlt text-text font-circle flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
         {formatBigInt(detail.claimableTokenAmount)} {detail.claimableSymbols[0]}
         <TokenIcon
           token={{ symbol: detail.claimableSymbols[0] }}
@@ -493,12 +493,12 @@ export function PositionDetailsModal({
           {/* Left panel — read-only position detail */}
           <div className="flex flex-1 flex-col gap-6 p-5 md:p-8">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-text font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:font-sans md:text-lg md:leading-normal md:tracking-normal">
+              <DialogTitle className="text-text font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-normal md:tracking-normal">
                 <Trans>Position {urnIndex + 1}</Trans>
                 {isInactive && (
                   <span
                     data-testid="stake-position-inactive-chip"
-                    className="bg-surfaceAlt text-textSecondary rounded-full px-2 py-0.5 text-xs font-medium"
+                    className="bg-surfaceAlt text-textSecondary font-circle rounded-full px-2 py-0.5 text-xs font-medium"
                   >
                     <Trans>Inactive</Trans>
                   </span>
@@ -519,7 +519,7 @@ export function PositionDetailsModal({
               <span className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
                 <Trans>Staked amount</Trans>
               </span>
-              <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:font-sans md:text-4xl md:leading-normal md:tracking-tight">
+              <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:text-4xl md:leading-normal md:tracking-tight">
                 <TokenIcon
                   token={{ symbol: 'SKY' }}
                   width={32}
@@ -638,7 +638,7 @@ export function PositionDetailsModal({
                   <span className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
                     <Trans>Borrowed amount</Trans>
                   </span>
-                  <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:font-sans md:text-4xl md:leading-normal md:tracking-tight">
+                  <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:text-4xl md:leading-normal md:tracking-tight">
                     <TokenIcon
                       token={{ symbol: 'USDS' }}
                       width={32}
@@ -655,7 +655,7 @@ export function PositionDetailsModal({
                   </span>
                   <span
                     data-testid="stake-position-risk-pill"
-                    className="bg-surfaceAlt text-textSecondary w-fit rounded-full px-2 py-0.5 text-xs font-medium"
+                    className="bg-surfaceAlt text-textSecondary font-circle w-fit rounded-full px-2 py-0.5 text-xs font-medium"
                   >
                     <Trans>No position</Trans>
                   </span>
@@ -708,7 +708,7 @@ export function PositionDetailsModal({
                   <span className="text-textSecondary text-xs leading-[18px] md:text-sm md:leading-normal">
                     <Trans>Borrowed amount</Trans>
                   </span>
-                  <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:font-sans md:text-4xl md:leading-normal md:tracking-tight">
+                  <span className="text-text font-circle flex items-baseline gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:gap-2 md:text-4xl md:leading-normal md:tracking-tight">
                     <TokenIcon
                       token={{ symbol: 'USDS' }}
                       width={32}
@@ -737,7 +737,7 @@ export function PositionDetailsModal({
                 >
                   <Trans>
                     If the price of the collateral will go down{' '}
-                    <span className="text-text font-medium">
+                    <span className="text-text font-circle font-medium">
                       {dropPercent !== null ? `${dropPercent}%` : NO_VALUE} ({formattedLiqPrice})
                     </span>
                     , you&apos;ll get liquidated. If you want to reduce these risks, add collateral or repay
@@ -763,7 +763,7 @@ export function PositionDetailsModal({
                         <span
                           data-testid="stake-position-risk-pill"
                           className={cn(
-                            'rounded-full px-2 py-0.5 text-xs font-medium capitalize',
+                            'font-circle rounded-full px-2 py-0.5 text-xs font-medium capitalize',
                             RISK_PILL_COLOR[vault.riskLevel]
                           )}
                         >
@@ -799,7 +799,7 @@ export function PositionDetailsModal({
               reaches the same rows through the manage sheet below). */}
           <div className="bg-surfaceAlt/30 hidden w-full flex-col justify-between gap-6 p-8 md:flex lg:w-[340px]">
             <div className="flex flex-col">
-              <h3 className="text-text mb-2 text-lg font-medium">
+              <h3 className="text-text font-circle mb-2 text-lg font-medium">
                 <Trans>Manage position</Trans>
               </h3>
               <ManageMenuRows {...menuRowsProps} variant="panel" />

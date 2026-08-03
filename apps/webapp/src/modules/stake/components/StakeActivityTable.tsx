@@ -346,7 +346,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
       {/* Phone tier (comp 1222:16962): heading above a full-width pill filter;
           md restores the heading row with the inline trigger. */}
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-4">
-        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px] md:font-sans md:leading-normal md:tracking-normal">
+        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <Trans>My activity</Trans>
         </h3>
         {(positions?.length ?? 0) > 0 && (

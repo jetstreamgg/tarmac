@@ -120,7 +120,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
                     onActivate={() => setActiveId(position.id)}
                     onDeactivate={() => setActiveId(null)}
                   >
-                    <Text variant="medium" tag="span" className="text-text font-medium">
+                    <Text variant="medium" tag="span" className="text-text font-circle font-medium">
                       {position.name}
                     </Text>
                     <Text variant="medium" tag="span" className="text-textSecondary">
@@ -227,7 +227,7 @@ function IdleContent({
                   onActivate={() => setActiveId(token.symbol)}
                   onDeactivate={() => setActiveId(null)}
                 >
-                  <Text variant="medium" tag="span" className="text-text font-medium">
+                  <Text variant="medium" tag="span" className="text-text font-circle font-medium">
                     {token.symbol}
                   </Text>
                   <Text variant="medium" tag="span" className="text-textSecondary">
