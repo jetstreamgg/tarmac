@@ -97,16 +97,20 @@ function ProductTitleIcon({ token }: { token: ProductDetailToken }) {
   );
 }
 
+/* font-medium is load-bearing: font-circle alone falls to `normal` (400), which
+   resolves to Circular Book 450 — the DS has no Circular Book, every Headings-family
+   style is weight 500 (font-weight/label). */
 function SectionHeading({ className, children }: { className?: string; children: ReactNode }) {
-  return <h2 className={cn('text-text font-circle text-lg', className)}>{children}</h2>;
+  return <h2 className={cn('text-text font-circle text-lg font-medium', className)}>{children}</h2>;
 }
 
 /* M6.3 section-heading scale (486:20706): Details/About step down to Label 4,
-   Transactions steps up to Heading 6; both return to the shared 18px at md. */
+   Transactions steps up to Heading 6; both return to Label 3 (18/22, -0.36px,
+   comp 859:35722) at md. */
 const minorHeadingClasses =
-  'text-base leading-[18px] tracking-[-0.32px] md:text-lg md:leading-normal md:tracking-normal';
+  'text-base leading-[18px] tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]';
 const majorHeadingClasses =
-  'text-xl leading-[22px] tracking-[-0.4px] md:text-lg md:leading-normal md:tracking-normal';
+  'text-xl leading-[22px] tracking-[-0.4px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]';
 
 function DetailsSection({ title, details }: { title?: ReactNode; details: ProductDetailRow[] }) {
   return (
@@ -118,11 +122,14 @@ function DetailsSection({ title, details }: { title?: ReactNode; details: Produc
             key={row.id}
             className="border-borderPrimary flex items-center justify-between gap-4 border-b py-4"
           >
-            <span className="text-fgSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-normal">
+            {/* Desktop comp (859:35723): label Body 5 (Graphik 14/22), value
+                Label 4 (Circular Medium 16/18, -0.32px). Mobile keeps the M6.3
+                step-down — Body 6 labels and Label 5 values (486:20706). */}
+            <span className="text-fgSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-[22px]">
               {row.icon}
               {row.label}
             </span>
-            <span className="text-text font-circle md:font-graphik text-right text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-normal md:tracking-normal">
+            <span className="text-text font-circle text-right text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
               {row.value}
             </span>
           </div>
@@ -144,12 +151,7 @@ function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetai
       <div className="text-fgSecondary font-graphik text-sm leading-[22px]">
         {about.body}
         {about.learnMoreHref && (
-          <a
-            href={about.learnMoreHref}
-            target="_blank"
-            rel="noreferrer"
-            className="text-fgBrand ml-1 font-medium"
-          >
+          <a href={about.learnMoreHref} target="_blank" rel="noreferrer" className="text-fgBrand ml-1">
             <Trans>Learn more</Trans>
           </a>
         )}

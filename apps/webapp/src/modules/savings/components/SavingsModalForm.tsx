@@ -163,7 +163,7 @@ export function SavingsModalForm({
       : previewShares !== undefined
         ? `${formatUsds(previewShares)} sUSDS`
         : NO_VALUE
-    : `${value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0'} ${originSymbol}`;
+    : `${formatNumber(parseFloat(formatUnits(amount, originDecimals)), { maxDecimals: 2 })} ${originSymbol}`;
 
   const transactionContent = useMemo(() => {
     const reviewRows = isSupply

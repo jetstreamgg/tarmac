@@ -68,7 +68,7 @@ export function StakeDetailsStrip() {
 
   return (
     <div data-testid="stake-details-strip" className="flex flex-col">
-      <h3 className="text-fgPrimary font-circle mb-4 text-base leading-[18px] font-medium tracking-[-0.32px] md:mb-2 md:font-sans md:text-lg md:leading-normal md:tracking-normal">
+      <h3 className="text-fgPrimary font-circle mb-4 text-base leading-[18px] font-medium tracking-[-0.32px] md:mb-2 md:text-lg md:leading-normal md:tracking-normal">
         <Trans>Details</Trans>
       </h3>
 

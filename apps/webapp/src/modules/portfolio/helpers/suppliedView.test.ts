@@ -15,6 +15,7 @@ const makeRow = (overrides: Partial<EarnProductRow> & Pick<EarnProductRow, 'id'>
   networks: [1],
   detailPath: '/earn/savings',
   rate: { formatted: '0.00%' },
+  rate30d: { formatted: '—' },
   isLoading: false,
   error: null,
   ...overrides

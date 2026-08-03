@@ -30,11 +30,15 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
     const cutoffSec = Math.floor(Date.now() / 1000) - getDayCountFromTimeFrame(timeFrame) * SECONDS_PER_DAY;
     return points
       .filter(point => point.timestampSec >= cutoffSec)
-      .map(point => ({
+      .flatMap(point => {
+        const value = isRate ? point.impliedApy : (point.tvl ?? 0);
+        // A bucket the API serves without a rate is skipped rather than drawn
+        // as a 0% dip. The two fields are independently optional, so this only
+        // ever drops the metric that's actually missing.
+        if (value === undefined) return [];
         // Rate plots percent units (0.045 → 4.5); TVL plots raw USD.
-        value: isRate ? point.impliedApy * 100 : (point.tvl ?? 0),
-        date: new Date(point.timestampSec * 1000)
-      }));
+        return [{ value: isRate ? value * 100 : value, date: new Date(point.timestampSec * 1000) }];
+      });
   }, [points, timeFrame, isRate]);
 
   // Headline reads the canonical current rate (matches the Details grid), not

@@ -54,6 +54,7 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { formatPriceImpact } from '../utils/priceImpact';
 import { buildPendleEntryRows, buildPendleReviewRows } from './pendleModalRows';
 
 export type PendleModalFlow = 'supply' | 'withdraw';
@@ -359,12 +360,15 @@ export function PendleModalForm({
   const rateAfter = quote ? formatDecimalPercentage(quote.effectiveApy) : rateBefore;
   const hasAmount = amount > 0n && !!quote;
 
-  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  // The Network cells describe where the trade executes — the engine chain,
+  // which the connected chain only matches while Pendle stays mainnet-gated.
+  const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
 
   const entryRows = buildPendleEntryRows({
     rateBefore,
     rateAfter,
     network: networkName,
+    networkChainId: engineChainId,
     displaySymbol,
     supplyBefore: pv(claimBefore),
     supplyAfter: pv(claimAfter),
@@ -412,6 +416,9 @@ export function PendleModalForm({
     : NO_VALUE;
   const slippageDisplay = `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`;
   const slippageMode = slippage === defaultSlippage ? t`Auto` : t`Custom`;
+  // Sign-flipped like the legacy modal and the redeem sheet, so positive reads
+  // as a cost to the user (PR #1781 review) — see formatPriceImpact.
+  const priceImpactDisplay = formatPriceImpact(quote?.priceImpact) ?? NO_VALUE;
   const claimAfterDisplay = fmt(claimAfter);
   const earningsAfterDisplay = earningsToMaturity(claimAfter);
   const selectedSymbol = selectedToken.symbol;
@@ -437,6 +444,7 @@ export function PendleModalForm({
               withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
               slippage: slippageDisplay,
               slippageMode,
+              priceImpact: priceImpactDisplay,
               slippageAction: (
                 <SlippageMenu
                   value={slippage}
@@ -447,6 +455,7 @@ export function PendleModalForm({
                 />
               ),
               network: networkName,
+              networkChainId: engineChainId,
               networkFee: networkFee?.formatted ?? NO_VALUE
             }),
             'pendle-modal-row',
@@ -474,7 +483,9 @@ export function PendleModalForm({
       slippage,
       defaultSlippage,
       setSlippage,
+      priceImpactDisplay,
       networkName,
+      engineChainId,
       feeCell,
       networkFee
     ]

@@ -181,7 +181,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
       {skyStakeReward && (
         <label className="flex items-center justify-between" data-testid="claim-restake-toggle">
-          <Text className="text-fgPrimary text-sm font-medium">
+          <Text className="text-fgPrimary font-circle text-sm font-medium">
             <Trans>Restake SKY rewards</Trans>
           </Text>
           <Switch checked={effectiveRestake} onCheckedChange={setRestake} aria-label="Restake SKY rewards" />

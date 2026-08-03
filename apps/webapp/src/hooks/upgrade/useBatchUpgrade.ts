@@ -57,31 +57,38 @@ export function useBatchUpgrade({
   });
   const hasAllowance = allowance !== undefined && allowance >= amount;
 
-  // Calls for the batch transaction
-  const approveCall = getWriteContractCall({
-    to: sourceAddress,
-    abi: erc20Abi,
-    functionName: 'approve',
-    args: [upgraderAddress, amount]
-  });
-
-  const upgradeCall = isDai
-    ? getWriteContractCall({
-        to: upgraderAddress,
-        abi: daiUsdsAbi,
-        functionName: 'daiToUsds',
-        args: [connectedAddress!, amount]
-      })
-    : getWriteContractCall({
-        to: upgraderAddress,
-        abi: mkrSkyAbi,
-        functionName: 'mkrToSky',
-        args: [connectedAddress!, amount]
-      });
-
+  // Calls for the batch transaction. Built only once an address exists: the
+  // upgrade modal opens while disconnected, and an `undefined` recipient in the
+  // args makes consumers that encode the calldata during render (e.g.
+  // useNetworkFee's calls key) throw viem's InvalidAddressError.
   const calls: Call[] = [];
-  if (!hasAllowance) calls.push(approveCall);
-  calls.push(upgradeCall);
+  if (connectedAddress) {
+    if (!hasAllowance) {
+      calls.push(
+        getWriteContractCall({
+          to: sourceAddress,
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [upgraderAddress, amount]
+        })
+      );
+    }
+    calls.push(
+      isDai
+        ? getWriteContractCall({
+            to: upgraderAddress,
+            abi: daiUsdsAbi,
+            functionName: 'daiToUsds',
+            args: [connectedAddress, amount]
+          })
+        : getWriteContractCall({
+            to: upgraderAddress,
+            abi: mkrSkyAbi,
+            functionName: 'mkrToSky',
+            args: [connectedAddress, amount]
+          })
+    );
+  }
 
   const enabled =
     isConnected && amount !== 0n && allowance !== undefined && paramEnabled && !!connectedAddress;

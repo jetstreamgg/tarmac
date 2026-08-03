@@ -236,10 +236,12 @@ export function useStUsdsTransactionForm({
 
   // The from→to hero the review and wallet screens draw: supply is USDS →
   // quoted stUSDS; a withdraw redeems/swaps stUSDS (the quote's input) → USDS.
+  // No quote (loading, refetching, all providers blocked) stays undefined so the
+  // hero shows the placeholder instead of a fabricated 0.00 stUSDS.
   // Scalar deps keep the memo stable (matches the savings/vault forms).
   const quotedStUsds = isSupply
-    ? (providerSelection.selectedQuote?.outputAmount ?? 0n)
-    : (providerSelection.selectedQuote?.inputAmount ?? 0n);
+    ? providerSelection.selectedQuote?.outputAmount
+    : providerSelection.selectedQuote?.inputAmount;
   const transactionScreenContent = useMemo(
     () => <StUsdsAmountSummary flow={flow} amount={debouncedAmount} stUsdsAmount={quotedStUsds} />,
     [flow, debouncedAmount, quotedStUsds]

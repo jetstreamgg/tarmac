@@ -45,33 +45,41 @@ export function ChartTooltip({
   // DS Charts/Line tooltip (Figma 5273:12162): date header over a
   // series-dot · label · value · token-icon row. The leading dot carries the
   // series color; the trailing icon is the series' own token logo.
+  //
+  // Chrome is the app tooltip's (APP-443 item 19): bg-tertiary glass at 16px
+  // radius behind the DS "background blur-full" effect, whose Figma radius of
+  // 200 is CSS `blur(100px)` (Figma states background blur at twice the CSS
+  // value). It used to be the opaque `bg-container` panel at 12px radius.
   return (
-    <div className="bg-container min-w-40 rounded-xl p-3 shadow-lg backdrop-blur-[50px]">
-      <p className="text-textSecondary mb-2 text-xs">{labelFormatter(label)}</p>
+    <div className="bg-bgTertiary flex min-w-40 flex-col gap-1 rounded-2xl p-3 backdrop-blur-[100px]">
+      <p className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
+        {labelFormatter(label)}
+      </p>
       {payload.map((entry, i) => (
         <div key={`tooltip-value-item-${i}`} className="flex items-center gap-4">
           {seriesLabel != null && (
             <span
-              className="text-textSecondary flex items-center gap-2 text-xs"
+              className="text-fgSecondary flex items-center gap-1.5 text-xs leading-[18px]"
               data-testid="chart-tooltip-series-label"
             >
+              {/* 4px square-ish swatch, not the old 8px dot. */}
               <span
-                className="size-2 shrink-0 rounded-full"
+                className="size-1 shrink-0 rounded-[2px]"
                 style={{ backgroundColor: entry.color }}
                 aria-hidden
               />
               {seriesLabel}
             </span>
           )}
-          <span className="ml-auto flex items-center gap-2">
-            <span className="text-text text-sm font-medium">
+          <span className="ml-auto flex items-center gap-1">
+            <span className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
               {prefix || ''}
               {`${formatNumber(entry.value)}${symbol && !isPercentage && !hasTokenIcon ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
             </span>
             {tokenSymbols && tokenSymbols.length > 0 && (
               <TokenIconStack
                 symbols={tokenSymbols}
-                size={16}
+                size={12}
                 className="shrink-0"
                 data-testid="chart-tooltip-token-icon"
               />
@@ -79,7 +87,7 @@ export function ChartTooltip({
           </span>
         </div>
       ))}
-      {(isMin || isMax) && <p className="text-textSecondary mt-1 text-xs">{isMin ? 'Min' : 'Max'}</p>}
+      {(isMin || isMax) && <p className="text-fgSecondary text-xs leading-[18px]">{isMin ? 'Min' : 'Max'}</p>}
     </div>
   );
 }

@@ -145,26 +145,19 @@ const CustomizedLabel = (
   // );
 };
 
-const CustomizedDot = ({
-  cx,
-  cy,
-  stroke,
-  data,
-  index
-}: {
-  cx?: number;
-  cy?: number;
-  stroke?: string;
-  value?: any;
-  index?: number;
-  data?: Data[];
-  fill?: string;
-}) => {
-  if (!data?.length || index === undefined || (!data[index]?.isMin && !data[index]?.isMax)) return null;
-
-  // Only return a label for the max and min
-  return <circle cx={cx} cy={cy} r="4" stroke={stroke} fillOpacity={1} strokeWidth="2" fill={stroke} />;
-};
+/**
+ * DS Charts/Line geometry (Figma 5273:12162), read off the exported vectors.
+ * The resting series carries NO plotted points — the only dot the chart ever
+ * shows is the ringed one under the hover cursor (APP-443 item 19); the min/max
+ * markers it used to draw are gone.
+ */
+const SERIES_STROKE_WIDTH = 1.5;
+/** Hover dot: 12px overall — r 5.25 under a 1.5 ring in the series colour. */
+const ACTIVE_DOT = {
+  r: 5.25,
+  strokeWidth: SERIES_STROKE_WIDTH,
+  fill: 'var(--color-statusBrandBg)'
+} as const;
 
 /** How much of the series' alpha survives past the hover cursor (DS Line hover). */
 const POST_CURSOR_ALPHA = 0.4;
@@ -345,6 +338,9 @@ interface ChartProps {
   variant?: 'default' | 'detail';
   /** detail variant: small label above the value (e.g. "Current Rate"). */
   label?: React.ReactNode;
+  /** detail variant: mark rendered after the headline figure (e.g. the Morpho
+   *  vault chart's stars mark, which also carries the rate-breakdown tooltip). */
+  valueSuffix?: React.ReactNode;
   /** detail variant: metric toggle options (e.g. Rate | TVL). */
   metrics?: { value: string; label: React.ReactNode }[];
   activeMetric?: string;
@@ -462,6 +458,8 @@ function DetailHeaderValue({
   symbol,
   prefix,
   isLoading,
+  icons,
+  valueSuffix,
   mobile = false
 }: {
   data: Data[];
@@ -470,6 +468,12 @@ function DetailHeaderValue({
   symbol?: string;
   prefix?: string;
   isLoading: boolean;
+  /** Optional mark(s) leading the figure — the Portfolio statistics comp
+   *  (1036:189291) puts the series' token logo here. */
+  icons?: React.ReactNode;
+  /** Optional mark trailing the figure — the Morpho vault chart tags its rate
+   *  with the DS stars mark the same way the card and Details row do. */
+  valueSuffix?: React.ReactNode;
   /** M6.3 mobile figure: Heading 5 (24/26, Circular Medium). */
   mobile?: boolean;
 }) {
@@ -480,7 +484,7 @@ function DetailHeaderValue({
   const formatted = `${prefix || ''}${formatNumber(value, { maxDecimals: 2, compact: true })}${
     isPercentage ? '%' : symbol ? ` ${symbol}` : ''
   }`;
-  return (
+  const figure = (
     <span
       data-testid="chart-detail-value"
       // Desktop is Heading 2 (44/48, Circular Medium — Figma 859:35718, whose
@@ -494,6 +498,14 @@ function DetailHeaderValue({
       )}
     >
       {formatted}
+    </span>
+  );
+  if (!icons && !valueSuffix) return figure;
+  return (
+    <span className="flex items-center gap-2">
+      {icons}
+      {figure}
+      {valueSuffix}
     </span>
   );
 }
@@ -576,8 +588,14 @@ function ChartContent({
           <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
           {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
           <Tooltip
-            // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162).
-            cursor={{ stroke: 'var(--color-fgQuaternary)', strokeWidth: 1, strokeDasharray: '4 4' }}
+            // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162 —
+            // border-quaternary, 3/3 dashes with round caps).
+            cursor={{
+              stroke: 'var(--color-borderQuarternary)',
+              strokeWidth: 1,
+              strokeDasharray: '3 3',
+              strokeLinecap: 'round'
+            }}
             content={
               <ChartTooltip
                 symbol={symbol}
@@ -593,16 +611,18 @@ function ChartContent({
           <Area
             dataKey="value"
             stroke={seriesColor}
-            strokeWidth={2.5}
+            strokeWidth={SERIES_STROKE_WIDTH}
+            strokeLinecap="round"
             type="monotone"
             fill={`url(#${gradientId})`}
             // Dim the series past the hover cursor (mask above); the active dot
             // and tooltip render outside the masked layer, so they stay lit.
             mask={`url(#${dimMaskId})`}
             label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
-            dot={<CustomizedDot data={data} stroke={seriesColor} />}
+            // No resting points — the DS plots the bare line.
+            dot={false}
             // Ringed hover dot at the cursor point (Figma 5273:12162).
-            activeDot={{ r: 5, fill: seriesColor, stroke: 'var(--color-container)', strokeWidth: 3 }}
+            activeDot={{ ...ACTIVE_DOT, stroke: seriesColor }}
             // Entrance wipe — see REVEAL_DURATION_MS. Leaving isAnimationActive
             // at its 'auto' default is deliberate: it resolves to off under
             // prefers-reduced-motion (and under SSR), so the reveal needs no
@@ -632,6 +652,7 @@ export function Chart({
   tokenSymbols,
   variant = 'default',
   label,
+  valueSuffix,
   metrics,
   activeMetric,
   onMetricChange,
@@ -718,6 +739,8 @@ export function Chart({
                   symbol={symbol}
                   prefix={prefix}
                   isLoading={isLoading}
+                  icons={icons}
+                  valueSuffix={valueSuffix}
                 />
               </div>
             </div>
@@ -736,6 +759,8 @@ export function Chart({
                   symbol={symbol}
                   prefix={prefix}
                   isLoading={isLoading}
+                  icons={icons}
+                  valueSuffix={valueSuffix}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">

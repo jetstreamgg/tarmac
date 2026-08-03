@@ -11,20 +11,10 @@
 
 import type { ReactNode } from 'react';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL, singleOrDelta } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type PendleModalGridRow = ModalGridCell[];
-
-const singleOrDelta = (
-  base: { label: string } & Partial<ModalGridCell>,
-  before: string,
-  after: string,
-  hasAmount: boolean
-): ModalGridCell =>
-  hasAmount
-    ? ({ ...base, kind: 'delta', before, after } as ModalGridCell)
-    : ({ ...base, kind: 'single', value: before } as ModalGridCell);
 
 /** Display strings for the Pendle supply/withdraw entry screens (Figma 859:41118 / 859:41473). */
 export type PendleEntryRowInput = {
@@ -34,6 +24,8 @@ export type PendleEntryRowInput = {
   rateAfter: string;
   /** Network the transaction runs on (e.g. "Ethereum"). */
   network: string;
+  /** Chain the engine runs on, for the Network cell's icon (mainnet/tenderly, not necessarily the connected chain). */
+  networkChainId?: number;
   /** Display symbol for the 12px value icons — USDS on pegged markets. */
   displaySymbol: string;
   /** Position present value before/after the action. */
@@ -71,7 +63,13 @@ export function buildPendleEntryRows(input: PendleEntryRowInput): PendleModalGri
         input.rateAfter,
         input.hasAmount
       ),
-      { kind: 'single', label: 'Network', value: input.network, network: true }
+      {
+        kind: 'single',
+        label: 'Network',
+        value: input.network,
+        network: true,
+        networkChainId: input.networkChainId
+      }
     ],
     [
       singleOrDelta(
@@ -104,7 +102,7 @@ export function buildPendleEntryRows(input: PendleEntryRowInput): PendleModalGri
 export type PendleReviewRowInput = {
   /** Display symbol for the 12px value icons — USDS on pegged markets. */
   displaySymbol: string;
-  /** Supply: claimable at maturity after the action. */
+  /** Supply: the whole position's maturity claim after the action (existing PT + this trade's). */
   claimAfter: string;
   /** Market expiry, formatted. */
   claimDate: string;
@@ -130,19 +128,32 @@ export type PendleReviewRowInput = {
   slippageMode: string;
   /** Inline gear opening the slippage menu (interactive, passed through opaquely). */
   slippageAction?: ReactNode;
+  /**
+   * Quote price impact, formatted under the app-wide inverse convention where
+   * positive = a cost to the user (e.g. "0.020%") — AMM trade risk info.
+   */
+  priceImpact: string;
   /** Network the transaction runs on. */
   network: string;
+  /** Chain the engine runs on, for the Network cell's icon. */
+  networkChainId?: number;
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
   networkFee: string;
 };
 
 /**
- * Grid for the Pendle review stages. Supply (Figma 859:41264): [You'll claim |
- * Claim date], [Total earnings | Fixed rate], [Product | Withdrawal],
- * [Slippage | Network], then Network fee full-width. Withdraw follows
- * 859:41679 with the Slippage cell slotted in ([Withdrawal | Slippage],
- * [Network | Network fee]) — the comp omits slippage, but the sell quote uses
- * it the same way the buy does, so the control must stay reachable.
+ * Grid for the Pendle review stages. Supply (Figma 859:41264): [Total at
+ * maturity | Claim date], [Total earnings | Fixed rate], [Product |
+ * Withdrawal], [Slippage | Price impact], [Network | Network fee]. The comp
+ * labels the first cell "You'll claim", but its value is the whole position's
+ * maturity claim (existing PT + this trade's) and would read as this trade's
+ * output under that label — "Total at maturity" says what the number is, the
+ * same way the comp's own "Total earnings" does (PR #1773 review). Withdraw
+ * follows 859:41679 with the Slippage cell slotted in — the comp omits
+ * slippage, but the sell quote uses it the same way the buy does, so the
+ * control must stay reachable. Price impact is also absent from the comps, but
+ * the old modal surfaced it and it's material risk info for an AMM swap, so
+ * both reviews keep it beside Slippage (PR #1773 review).
  */
 export function buildPendleReviewRows(
   flow: 'supply' | 'withdraw',
@@ -155,6 +166,11 @@ export function buildPendleReviewRows(
     value: input.slippage,
     action: input.slippageAction
   };
+  const priceImpactCell: ModalGridCell = {
+    kind: 'single',
+    label: 'Price impact',
+    value: input.priceImpact
+  };
   const productCell: ModalGridCell = {
     kind: 'single',
     label: 'Product',
@@ -166,14 +182,15 @@ export function buildPendleReviewRows(
     kind: 'single',
     label: 'Network',
     value: input.network,
-    network: true
+    network: true,
+    networkChainId: input.networkChainId
   };
   const feeCell: ModalGridCell = { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee };
 
   if (flow === 'supply') {
     return [
       [
-        { kind: 'single', label: "You'll claim", value: input.claimAfter, token: input.displaySymbol },
+        { kind: 'single', label: 'Total at maturity', value: input.claimAfter, token: input.displaySymbol },
         { kind: 'single', label: 'Claim date', value: input.claimDate }
       ],
       [
@@ -187,8 +204,8 @@ export function buildPendleReviewRows(
         { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' }
       ],
       [productCell, { kind: 'single', label: 'Withdrawal', value: input.withdrawal }],
-      [slippageCell, networkCell],
-      [feeCell]
+      [slippageCell, priceImpactCell],
+      [networkCell, feeCell]
     ];
   }
   return [
@@ -204,6 +221,7 @@ export function buildPendleReviewRows(
     ],
     [productCell, { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' }],
     [{ kind: 'single', label: 'Withdrawal', value: input.withdrawal }, slippageCell],
-    [networkCell, feeCell]
+    [priceImpactCell, networkCell],
+    [feeCell]
   ];
 }
