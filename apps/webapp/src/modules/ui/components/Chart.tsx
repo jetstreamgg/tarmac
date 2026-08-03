@@ -567,6 +567,7 @@ function ChartContent({
   tokenSymbols,
   chartHeight,
   color,
+  seriesKey,
   isDetail = false
 }: {
   data: Data[];
@@ -581,6 +582,14 @@ function ChartContent({
   tokenSymbols?: string[];
   chartHeight?: number;
   color?: string;
+  /**
+   * Identifies which series is plotted (metric + timeframe). Changing it
+   * remounts the Area so the new series wipes in from the left, rather than
+   * recharts interpolating the old curve into the new one — handed a new
+   * dataset for the same Area, it morphs the path, which is not what the tabs
+   * comp draws.
+   */
+  seriesKey?: string;
   /** detail variant: no date axis under the plot, so it runs to the card floor. */
   isDetail?: boolean;
 }) {
@@ -658,6 +667,7 @@ function ChartContent({
           />
 
           <Area
+            key={seriesKey}
             dataKey="value"
             stroke={seriesColor}
             strokeWidth={SERIES_STROKE_WIDTH}
@@ -880,6 +890,7 @@ export function Chart({
             tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
             tokenSymbols={tokenSymbols}
             color={color}
+            seriesKey={`${activeMetric ?? ''}-${activeTimeframe}`}
           />
         </div>
         {isMobileDetail && (
