@@ -38,7 +38,7 @@ describe('PositionHero', () => {
     renderHero({ balanceSymbol: 'USDS', amount: 100_000, ratePerSecond: SSR_3_75 });
 
     // 100,000 USDS at 3.75% turns its 4th decimal over about once a second.
-    expect(screen.getByText('0000')).not.toBeNull();
+    expect(screen.getByTestId('rolling-digits').textContent).toBe('0000');
     // Each digit gets its own clip window to roll inside — and only the
     // fraction does, so the 44px whole part stays out of them.
     expect(screen.getAllByTestId('rolling-digit')).toHaveLength(4);

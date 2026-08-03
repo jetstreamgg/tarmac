@@ -6,14 +6,19 @@ import { RollingDigits } from './rolling-digits';
 afterEach(cleanup);
 
 describe('RollingDigits', () => {
-  it('reads as one figure to assistive tech, not a string of digits', () => {
+  it('holds exactly one copy of the figure, so it reads and copies whole', () => {
     render(<RollingDigits value="00026" />);
-    expect(screen.getByText('00026')).not.toBeNull();
-    // Every visible glyph is hidden from the accessibility tree.
-    const hidden = screen
-      .getAllByTestId('rolling-digit')
-      .every(digit => digit.getAttribute('aria-hidden') === 'true');
-    expect(hidden).toBe(true);
+    expect(screen.getByTestId('rolling-digits').textContent).toBe('00026');
+  });
+
+  it('hides the outgoing glyph, so a roll in flight cannot intrude on the figure', () => {
+    const { rerender } = render(<RollingDigits value="00026" />);
+    rerender(<RollingDigits value="00027" />);
+
+    // The old glyph is in the DOM for the 200ms it takes to leave, but out of
+    // the accessibility tree the whole time.
+    expect(screen.getByTestId('rolling-digit-out').getAttribute('aria-hidden')).toBe('true');
+    expect(screen.getByTestId('rolling-digit-in').getAttribute('aria-hidden')).toBeNull();
   });
 
   it('rolls only the digit that changed', () => {

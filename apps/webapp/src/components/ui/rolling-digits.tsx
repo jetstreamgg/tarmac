@@ -19,11 +19,11 @@ export function RollingDigits({ value, className }: { value: string; className?:
     // Inline, not inline-flex: flex would drop the letter-spacing the hero
     // figure is tracked with. `tabular-nums` keeps the box widths equal so the
     // number doesn't shuffle sideways as digits turn over.
-    <span className={cn('tabular-nums', className)}>
-      {/* One reading of the whole figure for assistive tech — the per-digit
-          boxes below would otherwise be announced a character at a time. No
-          live region: this changes about once a second. */}
-      <span className="sr-only">{value}</span>
+    <span data-testid="rolling-digits" className={cn('tabular-nums', className)}>
+      {/* The digits are the only copy of the figure in the DOM — adjacent inline
+          spans form one text run, so this still reads and copies as a single
+          number. Only the glyph on its way out is hidden, so a roll in flight
+          can't wedge a stale digit into the middle of it. */}
       {characters.map((character, index) => (
         // Keyed from the right, so a carry (999 → 1,000) leaves every existing
         // digit in the box it already occupies instead of shifting them along.
@@ -52,27 +52,33 @@ function RollingCharacter({ character }: { character: string }) {
 
   // Separators sit between the windows rather than inside one.
   if (!/\d/.test(state.current)) {
-    return <span aria-hidden>{state.current}</span>;
+    return <span>{state.current}</span>;
   }
 
   return (
-    <span aria-hidden data-testid="rolling-digit" className="relative inline-block [clip-path:inset(0)]">
+    <span data-testid="rolling-digit" className="relative inline-block [clip-path:inset(0)]">
       {state.previous !== null && (
         <span
           key={`out-${state.gen}`}
+          aria-hidden
           data-testid="rolling-digit-out"
-          className="motion-safe:animate-digit-roll-out absolute inset-x-0 top-0"
+          // Out of the accessibility tree and out of the selection, so neither a
+          // screen reader nor a copy taken mid-roll picks up the stale digit.
+          className="motion-safe:animate-digit-roll-out absolute inset-x-0 top-0 select-none"
           onAnimationEnd={() => setState(current => ({ ...current, previous: null }))}
         >
           {state.previous}
         </span>
       )}
       {/* In flow, so it sizes the window and sets its baseline; the roll is a
-          transform, which costs no layout. */}
+          transform, which costs no layout. It has to be a box for the transform
+          to apply at all, and specifically an inline-block one: Chrome's
+          selection serialiser puts a newline after every block-level box, which
+          would copy the figure out one digit per line. */}
       <span
         key={`in-${state.gen}`}
         data-testid={state.gen > 0 ? 'rolling-digit-in' : undefined}
-        className={cn('block', state.gen > 0 && 'motion-safe:animate-digit-roll-in')}
+        className={cn('inline-block', state.gen > 0 && 'motion-safe:animate-digit-roll-in')}
       >
         {state.current}
       </span>
