@@ -1140,7 +1140,7 @@ function TradeWidgetWrapped({
     // Compare bigint values directly to avoid precision loss
     const amountHasChanged =
       externalWidgetState?.amount !== undefined &&
-      parseUnits(externalWidgetState.amount, getTokenDecimals(originToken, chainId)) !== originAmount;
+      parseUnits(externalWidgetState.amount || '0', getTokenDecimals(originToken, chainId)) !== originAmount;
 
     if ((tokensHasChanged || amountHasChanged) && txStatus === TxStatus.IDLE) {
       // Handle "Trade to X" case
@@ -1212,7 +1212,7 @@ function TradeWidgetWrapped({
           if (externalWidgetState?.amount !== undefined) {
             if (tokenChanged || amountHasChanged) {
               const newAmount = parseUnits(
-                externalWidgetState.amount,
+                externalWidgetState.amount || '0',
                 getTokenDecimals(newOriginToken, chainId)
               );
               setTimeout(() => {

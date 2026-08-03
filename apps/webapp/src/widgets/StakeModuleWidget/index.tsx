@@ -572,7 +572,7 @@ function StakeModuleWidgetWrapped({
     }
 
     const decimals = getTokenDecimals(TOKENS.sky, chainId);
-    const amount = parseUnits(validatedExternalState.amount, decimals);
+    const amount = parseUnits(validatedExternalState.amount || '0', decimals);
 
     if (tabSide === 'left') {
       setSkyToLock(amount);
