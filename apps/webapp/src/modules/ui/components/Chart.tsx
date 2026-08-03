@@ -153,11 +153,32 @@ const CustomizedLabel = (
  */
 const SERIES_STROKE_WIDTH = 1.5;
 /** Hover dot: 12px overall — r 5.25 under a 1.5 ring in the series colour. */
-const ACTIVE_DOT = {
-  r: 5.25,
-  strokeWidth: SERIES_STROKE_WIDTH,
-  fill: 'var(--color-statusBrandBg)'
-} as const;
+const ACTIVE_DOT_RADIUS = 5.25;
+
+/**
+ * The ringed dot under the hover cursor (Figma 5273:12162).
+ *
+ * Its core is drawn twice: an opaque page-background disc under the
+ * `statusBrandBg` tint. The tint alone is 10% alpha, so the series and the
+ * dashed hover cursor both read straight through the dot — the comp draws it
+ * solid.
+ */
+function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string }) {
+  if (cx == null || cy == null) return null;
+  return (
+    <g data-testid="chart-active-dot">
+      <circle cx={cx} cy={cy} r={ACTIVE_DOT_RADIUS} fill="var(--color-pageBackground)" />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={ACTIVE_DOT_RADIUS}
+        fill="var(--color-statusBrandBg)"
+        stroke={color}
+        strokeWidth={SERIES_STROKE_WIDTH}
+      />
+    </g>
+  );
+}
 
 /** How much of the series' alpha survives outside the hover window (DS Line hover). */
 const POST_CURSOR_ALPHA = 0.4;
@@ -672,7 +693,7 @@ function ChartContent({
               // No resting points — the DS plots the bare line.
               dot={false}
               // Ringed hover dot at the cursor point (Figma 5273:12162).
-              activeDot={{ ...ACTIVE_DOT, stroke: seriesColor }}
+              activeDot={<ActiveDot color={seriesColor} />}
             />
           </AreaChart>
         </ResponsiveContainer>
