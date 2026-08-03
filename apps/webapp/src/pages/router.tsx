@@ -4,6 +4,7 @@ import { routeTree } from '../routeTree.gen';
 import ErrorPage from './ErrorPage';
 import { NotFound } from '../modules/layout/components/NotFound';
 import { queryClient as appQueryClient } from '@/lib/queryClient';
+import { isEarnDrilldown } from '@/lib/routes';
 import type { AppSearchParams } from '../routes/__root';
 
 export type { AppSearchParams } from '../routes/__root';
@@ -53,7 +54,7 @@ export const createAppRouter = (history?: RouterHistory, queryClient: QueryClien
     // `pathChanged` then excludes navigations that only rewrite search params
     // (network switch, stake urn index, balance filters): same page, no slide.
     defaultViewTransition: {
-      types: ({ pathChanged, fromLocation }) => {
+      types: ({ pathChanged, fromLocation, toLocation }) => {
         if (!fromLocation || !pathChanged) return false;
         // Runs synchronously immediately before startViewTransition, which is
         // the only moment the pre-navigation scroll position is still readable.
@@ -61,7 +62,12 @@ export const createAppRouter = (history?: RouterHistory, queryClient: QueryClien
         // needs this to show the part that was on screen — see the
         // ::view-transition-group(page) block in globals.css.
         document.documentElement.style.setProperty('--vt-scroll', `${window.scrollY}px`);
-        return ['page'];
+        // Drilling between the Earn marketplace and a product page travels
+        // vertically instead (Figma: Sky App: UI 1598:77307). The second type
+        // is additive — it only swaps which keyframes run, so the timing,
+        // easing, overlap and snapshot handling stay shared with every other
+        // navigation.
+        return isEarnDrilldown(fromLocation.pathname, toLocation.pathname) ? ['page', 'drill'] : ['page'];
       }
     },
     // Full-width routes scroll on the document (no inner-scroll box), so the

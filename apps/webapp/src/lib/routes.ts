@@ -51,13 +51,33 @@ const INTENT_ROUTES = (Object.entries(PATH_BY_INTENT) as [Intent, RoutePath][])
   .filter(([intent]) => !ALIAS_INTENTS.has(intent))
   .sort(([, a], [, b]) => b.length - a.length);
 
+const normalizePath = (pathname: string) => pathname.toLowerCase().replace(/\/+$/, '');
+
 // Classifies a pathname into the Intent its screen consumes (validation,
 // analytics, network mapping). Returns null for intent-less routes; route
 // existence/404 stays the router's concern.
 export function pathToIntent(pathname: string): Intent | null {
-  const path = pathname.toLowerCase().replace(/\/+$/, '');
+  const path = normalizePath(pathname);
   for (const [intent, base] of INTENT_ROUTES) {
     if (path === base || path.startsWith(`${base}/`)) return intent;
   }
   return null;
+}
+
+/**
+ * True when a navigation moves between the Earn marketplace and one of its
+ * product pages, in either direction — the drill-down that the motion comp
+ * (Figma: Sky App: UI 1598:77307) slides vertically rather than sideways.
+ *
+ * Deliberately narrow: arriving at a product page from anywhere else (the
+ * Portfolio, a deep link, the nav) is a lateral move and keeps the horizontal
+ * slide. There is no product-to-product case to weigh, because every bare
+ * sub-path (/earn/vaults, /earn/rewards, /earn/fixed) redirects to /earn — the
+ * only Earn screens that exist are the marketplace and the product leaves.
+ */
+export function isEarnDrilldown(fromPathname: string, toPathname: string): boolean {
+  const from = normalizePath(fromPathname);
+  const to = normalizePath(toPathname);
+  const isProduct = (path: string) => path.startsWith(`${ROUTES.EARN}/`);
+  return (from === ROUTES.EARN && isProduct(to)) || (to === ROUTES.EARN && isProduct(from));
 }
