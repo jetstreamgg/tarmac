@@ -70,7 +70,7 @@ function Stat({ label, value }: { label: ReactNode; value: string | undefined })
         {label}
       </Text>
       {value ? (
-        <span className="text-text font-medium">{value}</span>
+        <span className="text-text font-circle font-medium">{value}</span>
       ) : (
         <span className="bg-surface h-5 w-24 animate-pulse rounded" />
       )}

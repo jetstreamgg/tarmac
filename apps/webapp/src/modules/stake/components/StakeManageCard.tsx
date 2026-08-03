@@ -40,7 +40,7 @@ export function StakeManageCard<Mode extends string>({
               aria-pressed={mode.value === activeMode}
               data-testid={`${dataTestId}-mode-${mode.value}`}
               className={cn(
-                'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+                'font-circle rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
                 mode.value === activeMode ? 'bg-surfaceAlt text-text' : 'text-textSecondary hover:text-text'
               )}
             >
@@ -81,7 +81,7 @@ export function StakeManageDeltaRow({
       className="border-textSecondary/10 flex items-center justify-between gap-4 border-b py-2.5 text-sm last:border-b-0"
     >
       <span className="text-textSecondary flex items-center gap-1">{label}</span>
-      <span className="text-text flex items-center gap-2 font-medium">
+      <span className="text-text font-circle flex items-center gap-2 font-medium">
         <span className={cn(hasDelta && 'text-textSecondary')}>{current}</span>
         {hasDelta && (
           <>

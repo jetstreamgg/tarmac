@@ -45,7 +45,7 @@ export const StatsAccordionCard = ({
               ) : (
                 <Skeleton className="bg-textSecondary h-5" />
               )}
-              <Text variant="medium" className="font-medium">
+              <Text variant="medium" className="font-circle font-medium">
                 <Trans>{accordionTitle}</Trans>
               </Text>
             </HStack>
