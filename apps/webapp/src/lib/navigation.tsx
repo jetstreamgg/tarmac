@@ -132,6 +132,16 @@ export type SetSearchParams = (
   opts?: { replace?: boolean }
 ) => void;
 
+/**
+ * Key-sorted serialization of a search string or param record, so two sets can
+ * be compared for equivalence without key order counting as a difference.
+ */
+const sortedSearchString = (input: string | Record<string, string>): string => {
+  const params = new URLSearchParams(input);
+  params.sort();
+  return params.toString();
+};
+
 export function useAppSearchParams(): [URLSearchParams, SetSearchParams] {
   const router = useRouter();
   const searchStr = useRouterState({ select: s => s.location.searchStr });
@@ -139,13 +149,27 @@ export function useAppSearchParams(): [URLSearchParams, SetSearchParams] {
 
   const setSearchParams = useCallback<SetSearchParams>(
     (init, opts) => {
-      const next =
-        typeof init === 'function' ? init(new URLSearchParams(router.state.location.searchStr)) : init;
+      const currentSearchStr = router.state.location.searchStr;
+      const next = typeof init === 'function' ? init(new URLSearchParams(currentSearchStr)) : init;
+      const search = Object.fromEntries(next);
+
+      // Bail when the result is the search string the URL already carries.
+      // TanStack skips only the *history write* for such a navigation, not the
+      // work: it still runs a full `load()`, which fires its own view
+      // transition. When that lands mid-navigation the browser skips the
+      // in-flight one, and a skipped transition applies its DOM update
+      // immediately — the new page flashes in before the second transition
+      // animates it. useAppOrchestration re-validates search params on every
+      // intent change and arrives here with nothing to change, so this fired
+      // on every module route (stake, convert, the product pages) but not
+      // between two routes sharing an intent (portfolio <-> earn).
+      if (sortedSearchString(search) === sortedSearchString(currentSearchStr)) return;
+
       void router.navigate({
         // Stay on the current path; passing a search object replaces the whole
         // search string, matching react-router's setSearchParams semantics.
         to: router.state.location.pathname as '/',
-        search: Object.fromEntries(next),
+        search,
         replace: opts?.replace
       });
     },

@@ -304,6 +304,8 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.03, 1);
   --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
   --ease-bezier-mouse: cubic-bezier(0.4, 0, 0.2, 1);
+  /* The curve the motion comps use for page transitions (easeInOutQuart). */
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
 
   --transition-duration-250: 250ms;
   --transition-duration-350: 350ms;
@@ -825,4 +827,146 @@
    via currentColor. */
 [data-state='open'] > .nav-menu-icon {
   stroke: url(#nav-icon-gradient);
+}
+
+/* Page transitions (Figma: Sky App: UI 1598:75512, view=motion) -------------
+   Navigating between pages crossfades the content while it slides: the
+   outgoing page leaves to the left, the incoming one arrives from the right,
+   always in that direction regardless of which nav item was clicked. The
+   incoming page starts 100ms into the outgoing one so the two overlap — the
+   comp is explicitly a crossfade, not a sequential out-then-in.
+
+   Which navigations animate is decided in pages/router.tsx: it tags real path
+   changes with the `page` transition type, and vetoes search-param-only
+   navigations outright. Everything below is scoped to that type. */
+
+/* ONLY the page content is captured. Suppressing the root's name is what keeps
+   the background, header and navbar genuinely still: an uncaptured element
+   goes on painting live in the DOM for the whole animation, so it cannot move
+   or change. Capturing the root instead is a trap — the root snapshot always
+   includes the document canvas, so it is opaque, which means (a) the page
+   background travels with the page and (b) anything given its own name can
+   only ever sit *below* it and is never visible. Both were tried; both showed
+   up as the background animating along with the navigation. */
+:root {
+  view-transition-name: none;
+}
+
+/* Naming the page is gated on transition *types*, not on view transitions at
+   large, because the router only gets to decide anything when types exist:
+   TanStack tests `CSS.supports('selector(:active-view-transition-type(a))')`
+   and, when that fails, starts the transition in its plain callback form —
+   the `types` callback never runs. So in Chrome 111–124, Safari 18.0–18.1 and
+   Firefox 144–146 the vetoes are silently gone, `--vt-scroll` is never
+   written, and the initial boot render animates too. Withholding the name in
+   exactly those browsers leaves nothing captured (the root is suppressed
+   above), which is what actually delivers the instant swap the fallback is
+   supposed to be — the alternative is a UA-default crossfade of the page's
+   top edge whenever a search param changes. The test mirrors TanStack's own,
+   with our real name substituted for its probe. */
+@supports selector(:active-view-transition-type(page)) {
+  .page-transition {
+    view-transition-name: page;
+  }
+}
+
+/* The snapshots paint in the top layer, above the whole page, and they
+   hit-test there: without this a click during the ~400ms animation lands on a
+   pseudo-element and dies on <html>, so a second navigation fired mid-flight
+   is silently dropped. It must be every pseudo — setting it on
+   `::view-transition` alone does not restore hit-testing in Chromium, which is
+   what made this look unfixable during the route-splitting refactor. */
+::view-transition,
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  pointer-events: none;
+}
+
+/* The page wrapper is tall and in flow, so its viewport-relative box moves
+   when scrollRestoration jumps the document back to the top on a new route.
+   The auto-generated group animation interpolates that box, which dragged the
+   whole scroll delta vertically across the transition. Pin the group to the
+   viewport and place the snapshots by hand instead.
+
+   `--vt-scroll` is the scroll position at the moment of navigation, written by
+   the router (pages/router.tsx) in the same synchronous step that starts the
+   transition. A snapshot is the *entire* tall element, so offsetting the
+   outgoing one by that much is what makes it show the part that was actually
+   on screen rather than its top. The incoming page needs no offset because it
+   is always at scroll 0 — which holds only because the router keeps
+   back/forward out of the transition entirely; those are the navigations
+   scrollRestoration starts at an offset, and the reasoning is over there. */
+::view-transition-group(page) {
+  animation: none;
+  /* Dynamic viewport units so the box tracks the visible area under mobile
+     browser toolbars rather than the largest possible one. */
+  height: 100dvh;
+}
+::view-transition-old(page) {
+  object-position: left calc(-1 * var(--vt-scroll, 0px));
+}
+::view-transition-new(page) {
+  object-position: left top;
+}
+
+/* The default cross-fade blends the two snapshots; we animate opacity
+   ourselves, so opt out and composite them normally. */
+::view-transition-image-pair(page) {
+  isolation: auto;
+}
+::view-transition-old(page),
+::view-transition-new(page) {
+  /* Each snapshot keeps its own size rather than being stretched into the
+     pinned group box. */
+  object-fit: none;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
+    animation: 300ms var(--ease-in-out-quart) both page-slide-out;
+  }
+  :root:active-view-transition-type(page)::view-transition-new(page) {
+    animation: 300ms var(--ease-in-out-quart) 100ms both page-slide-in;
+  }
+}
+
+/* The comp's 120px travel is measured on a 1512px frame, so it is capped
+   against the viewport — at phone widths a literal 120px reads as the page
+   being flung off screen rather than shifting. */
+@keyframes page-slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-1 * min(120px, 8vw)));
+  }
+}
+@keyframes page-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(min(120px, 8vw));
+  }
+}
+
+/* Reduced motion (WCAG 2.3.3): keep a crossfade — the page change still needs
+   to register, and an instant full-page repaint reads as a flash — but drop
+   the translate, which is the part that triggers vestibular discomfort. */
+@media (prefers-reduced-motion: reduce) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
+    animation: 150ms var(--ease-in-out-quart) both page-fade-out;
+  }
+  :root:active-view-transition-type(page)::view-transition-new(page) {
+    animation: 150ms var(--ease-in-out-quart) both page-fade-in;
+  }
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
 }
