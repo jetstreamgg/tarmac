@@ -11,6 +11,7 @@ import {
   skyAddress,
   wethAddress,
   sUsdsAddress,
+  usdtAddress,
   usdsL2Address,
   usdcL2Address,
   sUsdsL2Address
@@ -69,6 +70,30 @@ async function setEthBalancesInBulk(
   const result = await response.json();
   if (result.error) {
     throw new Error(`RPC error setting ETH: ${result.error.message}`);
+  }
+}
+
+/**
+ * A freshly forked VNet container can still be cloning when funding starts;
+ * admin RPC writes are rejected with -32006 "invalid vnet container status
+ * cloning." until the clone completes. Poll instead of failing the run.
+ */
+async function retryWhileCloning<T>(fn: () => Promise<T>, network: string): Promise<T> {
+  const maxAttempts = 12;
+  const delayMs = 10_000;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('cloning') || attempt >= maxAttempts) {
+        throw error;
+      }
+      console.log(
+        `  ⏳ ${network} vnet container still cloning, retrying in ${delayMs / 1000}s (${attempt}/${maxAttempts})...`
+      );
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
   }
 }
 
@@ -328,8 +353,9 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
       console.log(`  📡 Accounts need funding on ${network}, proceeding...`);
     }
 
-    // Set ETH balance for all accounts in bulk
-    await setEthBalancesInBulk(rpcUrl, addresses);
+    // Set ETH balance for all accounts in bulk. This is the first admin write
+    // on a fresh fork, so it absorbs the container-cloning window.
+    await retryWhileCloning(() => setEthBalancesInBulk(rpcUrl, addresses), network);
     console.log('  ✓ ETH funded');
 
     const tokensToLog: { address: string; name: string; decimals: number }[] = [];
@@ -344,7 +370,9 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
         { token: mkrAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'MKR' },
         { token: skyAddress[TENDERLY_CHAIN_ID], amount: '100000000', decimals: 18, name: 'SKY' },
         { token: wethAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'WETH' },
-        { token: sUsdsAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'sUSDS' }
+        { token: sUsdsAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'sUSDS' },
+        // USDT feeds the Spark Tether Savings vault spec (vaults-spark.spec.ts)
+        { token: usdtAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 6, name: 'USDT' }
       ];
 
       // Fund each token type in bulk
