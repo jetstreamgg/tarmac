@@ -3,7 +3,9 @@ import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { StUsdsProviderType, TOKENS } from '@/hooks';
+import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
@@ -59,6 +61,7 @@ export function StUsdsModalForm({
 }) {
   const chainId = useChainId();
   const chains = useChains();
+  const { i18n } = useLingui();
 
   const form = useStUsdsTransactionForm({ flow, preset });
   const {
@@ -175,7 +178,7 @@ export function StUsdsModalForm({
               rate: rateDisplay,
               route: isCurveRoute ? t`Curve` : t`Native`,
               routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
-              withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
+              withdrawal: i18n._(withdrawalWording('stusds', flow)),
               network: networkName,
               networkFee: networkFee?.formatted ?? NO_VALUE
             }),

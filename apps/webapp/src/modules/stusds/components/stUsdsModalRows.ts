@@ -79,7 +79,7 @@ export type StUsdsReviewRowInput = {
   route: string;
   /** What executes the route, shown as the cell value (e.g. "stUSDS module" / "Curve pool"). */
   routeDetail: string;
-  /** Withdrawal availability — vault-family standard: "Anytime" on supply, "Instant" on withdraw. */
+  /** Withdrawal availability — "Liquidity based" per the risk sheet (RiskTierDetails); diverges from the vault-family comp's "Anytime"/"Instant". */
   withdrawal: string;
   /** Network the transaction runs on. */
   network: string;

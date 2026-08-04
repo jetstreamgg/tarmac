@@ -5,6 +5,7 @@ import { formatUnits, parseUnits } from 'viem';
 import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import {
   getTokenDecimals,
   PENDLE_ROUTER_V4_ADDRESS,
@@ -43,6 +44,7 @@ import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
+import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -100,6 +102,7 @@ export function PendleModalForm({
 }) {
   const chainId = useChainId();
   const chains = useChains();
+  const { i18n } = useLingui();
   const { isConnected, address } = useConnection();
   const isSupply = flow === 'supply';
   const side = isSupply ? PendleConvertSide.BUY : PendleConvertSide.WITHDRAW;
@@ -441,7 +444,7 @@ export function PendleModalForm({
               // convention, not the market's marketing name ("Fixed Yield").
               product: `Pendle ${market.underlyingSymbol} (PT-${market.underlyingSymbol})`,
               productSymbol: market.underlyingSymbol,
-              withdrawal: flow === 'supply' ? t`Anytime` : t`Instant`,
+              withdrawal: i18n._(withdrawalWording('fixed', flow)),
               slippage: slippageDisplay,
               slippageMode,
               priceImpact: priceImpactDisplay,
