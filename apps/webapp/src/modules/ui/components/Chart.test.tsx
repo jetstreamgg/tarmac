@@ -53,37 +53,48 @@ describe('resolveTooltipLabel', () => {
   });
 });
 
+// APP-443 item 19.4: hovering dims the whole series and relights only the DS
+// mock's 44px window around the hover point.
 describe('HoverDimMask', () => {
-  it('dims the plot past the hover cursor, full strength before it', () => {
-    h.isActive = true;
-    h.coordinate = { x: 300, y: 100 };
+  const renderMask = () =>
     render(
       <svg>
         <HoverDimMask id="dim" />
       </svg>
     );
 
-    const lit = screen.getByTestId('chart-dim-mask-lit');
-    expect(lit.getAttribute('width')).toBe('300');
-    expect(lit.getAttribute('fill')).toBe('white');
+  it('dims the plot and lights a 44px window around the hover point', () => {
+    h.isActive = true;
+    h.coordinate = { x: 300, y: 100 };
+    renderMask();
 
-    const dimmed = screen.getByTestId('chart-dim-mask-dimmed');
-    expect(dimmed.getAttribute('x')).toBe('300');
-    expect(dimmed.getAttribute('width')).toBe('500');
-    expect(Number(dimmed.getAttribute('opacity'))).toBeLessThan(1);
+    expect(Number(screen.getByTestId('chart-dim-mask-base').getAttribute('opacity'))).toBeLessThan(1);
+
+    const lit = screen.getByTestId('chart-dim-mask-lit');
+    expect(lit.getAttribute('x')).toBe('278');
+    expect(lit.getAttribute('width')).toBe('44');
+    expect(lit.getAttribute('fill')).toBe('white');
+  });
+
+  it('clamps the window to the plot at the edges', () => {
+    h.isActive = true;
+    h.coordinate = { x: 0, y: 100 };
+    renderMask();
+
+    const lit = screen.getByTestId('chart-dim-mask-lit');
+    expect(lit.getAttribute('x')).toBe('0');
+    expect(lit.getAttribute('width')).toBe('22');
   });
 
   it('shows the whole plot at full strength when nothing is hovered', () => {
     h.isActive = false;
     h.coordinate = undefined;
-    render(
-      <svg>
-        <HoverDimMask id="dim" />
-      </svg>
-    );
+    renderMask();
 
-    expect(screen.getByTestId('chart-dim-mask-lit').getAttribute('width')).toBe('800');
-    expect(screen.queryByTestId('chart-dim-mask-dimmed')).toBeNull();
+    const base = screen.getByTestId('chart-dim-mask-base');
+    expect(base.getAttribute('width')).toBe('800');
+    expect(Number(base.getAttribute('opacity'))).toBe(1);
+    expect(screen.queryByTestId('chart-dim-mask-lit')).toBeNull();
   });
 });
 
