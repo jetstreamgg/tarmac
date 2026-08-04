@@ -243,6 +243,19 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     expect(screen.queryByTestId('savings-modal-amount-error')).not.toBeNull();
   });
 
+  // The projection the "Est. earnings (1Y)" cell draws: the 100-USDS position at
+  // the mocked 3.75% rate, and what it becomes once an amount is entered.
+  it('projects 1Y earnings from the savings rate, before→after', () => {
+    renderForm('supply');
+    const cell = () => screen.getByTestId('savings-modal-row-Est. earnings (1Y)');
+    // 100 USDS × 3.75%
+    expect(cell().textContent).toContain('3.75');
+
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '100' } });
+    // 200 USDS × 3.75% — the delta's `after`.
+    expect(cell().textContent).toContain('7.5');
+  });
+
   it('offers USDS and DAI origin options on mainnet supply', () => {
     renderForm('supply');
     expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();
@@ -302,6 +315,24 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
     expect(lastDisabled()).toBe(false);
     expect(screen.queryByTestId('savings-modal-amount-error')).toBeNull();
+  });
+
+  // The review grid is pushed to the modal, not rendered inline — assert the
+  // projection on the position the withdrawal leaves behind.
+  it('pushes the post-withdrawal 1Y projection into the review breakdown', () => {
+    renderForm('withdraw');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
+
+    const review = h.update.mock.calls.filter(([, patch]) => patch?.transactionContent).at(-1);
+    const { container } = render(
+      <I18nProvider i18n={i18n}>
+        <TooltipProvider>{review?.[1].transactionContent}</TooltipProvider>
+      </I18nProvider>
+    );
+    // 50 USDS left at 3.75%.
+    expect(
+      container.querySelector('[data-testid="savings-modal-row-Est. earnings (1Y)"]')?.textContent
+    ).toContain('1.88');
   });
 
   it('disables the confirm and flags an error when the amount exceeds the position', () => {
