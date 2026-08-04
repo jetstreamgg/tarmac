@@ -22,7 +22,7 @@ const DialogOverlay = React.forwardRef<
       // the raw effect stores radius 200, which Figma halves in its CSS
       // translation): the scrim fully frosts the page; the modal card is a
       // near-transparent tint over it, so the frosting must come from here.
-      'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 modal-scrim fixed inset-0 z-50 backdrop-blur-[100px]',
+      'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 bg-modalOverlay fixed inset-0 z-50 backdrop-blur-[100px]',
       className
     )}
     {...props}

@@ -767,41 +767,6 @@
   }
 }
 
-/* Modal card surface (Figma components/modals) ----------------------------
-   The DS draws the card as a near-transparent bg-secondary tint over the
-   frosted scrim, and in the comp the page behind that stack is a flat fill, so
-   the card reads as one even colour. The live app puts the photographic
-   .app-background there instead, and its cloud bands are several hundred CSS
-   pixels wide — a 100px backdrop blur is a low-pass filter, so it softens
-   their edges but cannot flatten them. Roughly a third of that variation then
-   survives the scrim (light: 20% alpha) and the card's own alpha (light: 60%)
-   and lands inside the modal as soft diagonal stains. Light is the worst case
-   on both counts, and its image is the high-key sky.
-
-   So the card paints the comp's stack literally rather than sampling the live
-   page: an opaque page-background base, the scrim tint, then the bg-secondary
-   tint. Same resulting colour as the comp (within ~4/255 of what the glass
-   renders today), with nothing left to show through. The scrim keeps its
-   backdrop blur — frosting the page AROUND the card is still the design. */
-@utility modal-surface {
-  background-color: var(--color-pageBackground);
-  background-image:
-    linear-gradient(var(--color-bgSecondary), var(--color-bgSecondary)),
-    linear-gradient(var(--color-modalOverlay), var(--color-modalOverlay));
-}
-
-/* Modal scrim (Figma components/modals/bg-overlay + effect "background
-   blur-full"). Same problem as the card, one layer out: the DS tint is only
-   20% alpha in light, so 80% of the un-flattenable cloud banding described
-   above survives it and the scrim reads as mottled rather than frosted.
-   A wash of the page's own base colour under the tint cuts that amplitude
-   without shifting hue or dropping the whole page a stop darker, which is
-   what raising the tint's alpha would do. */
-@utility modal-scrim {
-  background-color: color-mix(in srgb, var(--color-pageBackground) 55%, transparent);
-  background-image: linear-gradient(var(--color-modalOverlay), var(--color-modalOverlay));
-}
-
 /* App page background (Figma: Backgrounds 5177:37170) ----------------------
    A viewport-fixed layer behind the shell (rendered once in Layout). Fixed
    instead of `background-attachment: fixed` because the latter is broken on
