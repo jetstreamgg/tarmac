@@ -279,6 +279,30 @@
      clobbering Tailwind's builtin rounded-2xl/rounded-xl utilities. */
   --radius-card: 28px;
 
+  /* Full-screen scrim frost (`backdrop-blur-scrim`), shared by the dialog,
+     sheet and takeover overlays.
+
+     The DS effect "background blur-full" (Figma 5579:22935) translates to
+     blur(100px), and that is what the scrims carried. It is the right number
+     against the comps, where the page behind a modal is a flat fill — but a
+     blur is a LOW-PASS filter: it only erases detail smaller than its radius.
+     The cloud banding in background-light.webp runs several hundred CSS pixels
+     wide (and `cover` scales it up further), so 100px merely softened its
+     edges. Around a third of it then survived the scrim's tint and the
+     near-transparent modal card and landed inside the modal as soft diagonal
+     stains — worst in light, which has both the higher-contrast image and the
+     weaker scrim tint.
+
+     300px is past the point where that banding survives: measured across the
+     modal card in light it collapses variation from ~10/255 to ~1/255, while
+     dark — whose banding was already below the scrim's reach — stays within
+     ~4/255 of its old rendering, keeping the soft top-to-bottom falloff that
+     gives the card its lift. Do not read this as "bigger is better": the
+     radius is not monotonic in Chrome (200px measured WORSE than both 100 and
+     300, presumably crossing a downsampling tier), so re-measure rather than
+     nudge this value. */
+  --blur-scrim: 300px;
+
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-slide-down: slide-down 0.2s ease-out;

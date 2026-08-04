@@ -98,7 +98,7 @@ export function TakeoverShell({
       // /earn), not as a second opaque page: same scrim + blur recipe as the
       // dialog and sheet overlays. It previously repainted the app background,
       // which hid the page underneath entirely.
-      className="bg-modalOverlay fixed inset-0 z-[46] flex flex-col backdrop-blur-[100px]"
+      className="bg-modalOverlay backdrop-blur-scrim fixed inset-0 z-[46] flex flex-col"
     >
       <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:px-10 md:py-5">
         <div className="flex items-center gap-2 md:gap-3">
