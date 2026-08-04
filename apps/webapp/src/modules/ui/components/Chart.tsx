@@ -184,6 +184,25 @@ function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string
 const POST_CURSOR_ALPHA = 0.4;
 
 /**
+ * The series' entrance reveal (Figma: Sky App: UI 1598:77307, where the plot
+ * grows from 1px to its full 760px width). recharts draws exactly that by
+ * default — `AreaRevealShape` wipes the curve in left-to-right behind an
+ * animated clip-path — so this only re-times it from recharts' 1500ms/`ease`
+ * to the comp's figures.
+ *
+ * The easing has to be spelled out rather than read from `--ease-in-out-quart`:
+ * recharts parses the string itself to build an easing function, so it never
+ * reaches CSS where a custom property would resolve.
+ *
+ * No delay is paired with this. The reveal is gated by data, not by the clock —
+ * `LoadingErrorWrapper` holds the skeleton until a series exists, so the Area
+ * mounts (and wipes in) only once there is something to draw, which in practice
+ * lands after any page transition has finished.
+ */
+const REVEAL_DURATION_MS = 900;
+const REVEAL_EASING = 'cubic-bezier(0.77,0,0.175,1)';
+
+/**
  * Half-width of the lit window, in px — the DS mock's mask measures 45px across
  * (Figma 5391:44830).
  *
@@ -694,6 +713,12 @@ function ChartContent({
               dot={false}
               // Ringed hover dot at the cursor point (Figma 5273:12162).
               activeDot={<ActiveDot color={seriesColor} />}
+              // Entrance wipe — see REVEAL_DURATION_MS. Leaving isAnimationActive
+              // at its 'auto' default is deliberate: it resolves to off under
+              // prefers-reduced-motion (and under SSR), so the reveal needs no
+              // reduced-motion handling of its own.
+              animationDuration={REVEAL_DURATION_MS}
+              animationEasing={REVEAL_EASING}
             />
           </AreaChart>
         </ResponsiveContainer>

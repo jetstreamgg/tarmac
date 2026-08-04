@@ -949,6 +949,40 @@
   }
 }
 
+/* Drill-down: moving between the Earn marketplace and a product page travels
+   vertically instead of sideways (Figma: Sky App: UI 1598:77307). The router
+   adds a `drill` type alongside `page` for exactly those navigations, so only
+   the keyframes change here — duration, easing and the 100ms overlap are
+   inherited from the rules above, which still match.
+
+   Direction is constant, as in the horizontal case: the outgoing page always
+   leaves upward and the incoming one always arrives from below, whether you
+   are drilling in or going back. The comp's own travel is 40px, small enough
+   that it needs no viewport cap.
+
+   This must stay above the reduced-motion block, which re-declares the
+   `animation` shorthand and so has to win over this animation-name. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(drill)::view-transition-old(page) {
+    animation-name: page-drill-out;
+  }
+  :root:active-view-transition-type(drill)::view-transition-new(page) {
+    animation-name: page-drill-in;
+  }
+}
+@keyframes page-drill-out {
+  to {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+@keyframes page-drill-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
 /* Reduced motion (WCAG 2.3.3): keep a crossfade — the page change still needs
    to register, and an instant full-page repaint reads as a flash — but drop
    the translate, which is the part that triggers vestibular discomfort. */
