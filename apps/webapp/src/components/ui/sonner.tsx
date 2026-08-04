@@ -25,8 +25,26 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
   const bottomOffset =
     bannerHeight > 0 ? BANNER_BOTTOM_MARGIN + bannerHeight + BANNER_TOAST_GAP : SONNER_DEFAULT_OFFSET;
   const defaultClassNames: ToastClassnames = {
+    // Motion (Figma: Sky App: UI 1598:76070): the toast slides its own height
+    // up from the bottom edge and leaves the same way, ~300ms each way on
+    // easeInOutQuart.
+    //
+    // That direction is what sonner already does natively — it drives a `--y`
+    // custom property between translateY(100%) and translateY(0), flipping the
+    // sign on removal — so this only retimes it off sonner's 400ms default.
+    // The `!` is required: sonner's own [data-sonner-toast] rule ships in a
+    // stylesheet it injects at runtime, which lands after ours.
+    //
+    // The comp animates y alone, but sonner's opacity fade is kept
+    // deliberately: the toaster is not a clipping container, so a toast that
+    // only translated would still be visible sitting below its resting place.
+    //
+    // NOTE: the classes removed here — data-[state=open]:animate-in and its
+    // siblings — never applied. They are Radix Toast's state model; sonner
+    // marks toasts with data-mounted/data-removed and has no data-state at
+    // all, so those rules had matched nothing since the sonner migration.
     toast:
-      'group flex items-start! gap-3! rounded-2xl! bg-bgTertiary! border-none! shadow-none! text-fgPrimary! p-4! pr-12! backdrop-blur-[20px] min-w-[356px] md:min-w-[420px] max-w-[420px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-bottom-full data-[expanded=false]:overflow-hidden',
+      'group flex items-start! gap-3! rounded-2xl! bg-bgTertiary! border-none! shadow-none! text-fgPrimary! p-4! pr-12! backdrop-blur-[20px] min-w-[356px] md:min-w-[420px] max-w-[420px] duration-300! ease-in-out-quart! data-[expanded=false]:overflow-hidden',
     title: 'font-circle text-base leading-[18px]! font-medium tracking-[-0.32px] text-fgPrimary!',
     description: 'font-graphik text-[11px] leading-4! font-normal text-fgSecondary! mt-1',
     icon: 'size-auto! shrink-0',

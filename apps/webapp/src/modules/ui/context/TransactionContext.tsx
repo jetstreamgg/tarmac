@@ -68,6 +68,21 @@ export function useEntrySlot() {
   return useContext(EntrySlotContext);
 }
 
+/** The modal's render inputs, retained across its exit animation. */
+type TransactionModalView = {
+  config: TransactionConfig;
+  txStatus: TxStatus;
+  externalLink: string | undefined;
+  currentStep: number;
+};
+
+/**
+ * How long the modal is kept mounted after being told to close, so its exit
+ * animation can play. Matches the dismissal in `components/ui/dialog.tsx`
+ * (and the bottom sheet's, which is the same 300ms).
+ */
+const MODAL_EXIT_MS = 300;
+
 export function TransactionProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   // Minimized = modal hidden but the transaction keeps running. Distinct from
@@ -86,6 +101,17 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   // Config is state so updateModalContent re-renders the modal; ref mirrors it for callback reads.
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
+  // Everything the modal draws arrives as props, so this snapshot of them is
+  // enough to keep it on screen, unchanged, while it animates away.
+  //
+  // It exists because `activeConfig` gates the whole modal subtree and
+  // handleClose clears it synchronously: the modal was being unmounted in the
+  // same tick it was told to close, so its exit animation never ran and it
+  // simply vanished. Holding the last rendered props for the length of that
+  // animation lets Radix play the exit. The teardown itself is untouched —
+  // this deliberately does not defer any of it.
+  const [exitingView, setExitingView] = useState<TransactionModalView | null>(null);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSessionRef = useRef<string | null>(null);
   // Session generation: advanced by launch() and handleClose(), so engine
   // callbacks are bound to the session that rendered them (state) and can spot
@@ -248,6 +274,20 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       notifyRequestAbandoned();
     }
 
+    // Snapshot what is on screen before tearing it down, so the modal can
+    // finish leaving (see exitingView). Dropped once the animation is over, or
+    // immediately superseded if a new transaction launches inside that window.
+    if (configRef.current) {
+      setExitingView({
+        config: configRef.current,
+        txStatus: txStatusRef.current,
+        externalLink,
+        currentStep
+      });
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = setTimeout(() => setExitingView(null), MODAL_EXIT_MS);
+    }
+
     // End the session generation FIRST: an engine the wallet already answered
     // may fire callbacks right after this teardown, and they must see
     // themselves as stale (see sessionGen above).
@@ -262,7 +302,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [txStatus, chainId, trackTransactionCompleted, startNewFlow]);
+  }, [txStatus, chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
+
+  // The exit hold is the only timer here; a provider unmounting mid-dismissal
+  // has nothing left to animate.
+  useEffect(() => () => (exitTimerRef.current ? clearTimeout(exitTimerRef.current) : undefined), []);
 
   // Hide the modal without ending the transaction. Unlike handleClose this keeps
   // activeConfig + txStatus intact (and fires no 'cancelled' analytics), so the
@@ -485,6 +529,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     )
   };
 
+  const modalView: TransactionModalView | null = activeConfig
+    ? { config: activeConfig, txStatus, externalLink, currentStep }
+    : exitingView;
+
   return (
     <TransactionContext.Provider
       value={{
@@ -504,39 +552,47 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             OUTSIDE the Radix dialog, so minimizing (which unmounts the dialog body)
             never tears down a running transaction. It portals its visible inputs into
             the modal's entry slot when present. See `backgroundContent` in the contract. */}
-        {activeConfig?.backgroundContent && (
+        {/* Held through the exit alongside the modal itself: this is where the
+            widget that portals its inputs into the modal's entry slot lives, so
+            unmounting it on close emptied the modal's body a beat before the
+            modal had finished animating away. */}
+        {modalView?.config.backgroundContent && (
           <div hidden key={`bg-${launchCount}`}>
-            {activeConfig.backgroundContent}
+            {modalView.config.backgroundContent}
           </div>
         )}
-        {activeConfig && (
+        {/* Live state while the modal is up; the retained snapshot while it is
+            animating away, which is the only time activeConfig is null here. */}
+        {modalView && (
           <TransactionModal
             key={launchCount}
-            open={open && !minimized}
+            // Already false by the time the snapshot is rendering — that is
+            // what tells Radix to play the exit rather than the enter.
+            open={open && !minimized && !!activeConfig}
             registerEntrySlot={setEntrySlotEl}
             onClose={handleClose}
             onMinimize={minimize}
-            title={activeConfig.title}
-            transactionTitle={activeConfig.transactionTitle}
-            reviewTitle={activeConfig.reviewTitle}
-            subtitles={activeConfig.subtitles}
-            transactionContent={activeConfig.transactionContent}
-            transactionScreenContent={activeConfig.transactionScreenContent}
-            entry={activeConfig.entry}
-            rightHeaderComponent={activeConfig.rightHeaderComponent}
-            titleBadge={activeConfig.titleBadge}
-            onConfirm={activeConfig.onConfirm}
-            onSecondaryConfirm={activeConfig.onSecondaryConfirm}
+            title={modalView.config.title}
+            transactionTitle={modalView.config.transactionTitle}
+            reviewTitle={modalView.config.reviewTitle}
+            subtitles={modalView.config.subtitles}
+            transactionContent={modalView.config.transactionContent}
+            transactionScreenContent={modalView.config.transactionScreenContent}
+            entry={modalView.config.entry}
+            rightHeaderComponent={modalView.config.rightHeaderComponent}
+            titleBadge={modalView.config.titleBadge}
+            onConfirm={modalView.config.onConfirm}
+            onSecondaryConfirm={modalView.config.onSecondaryConfirm}
             onRetry={handleRetry}
             onBack={resetTransactionProgress}
-            txStatus={txStatus}
-            externalLink={externalLink}
-            confirmLabel={activeConfig.confirmLabel}
-            confirmDisabled={activeConfig.confirmDisabled}
-            successLabel={activeConfig.successLabel}
-            errorLabel={activeConfig.errorLabel}
-            steps={activeConfig.steps}
-            currentStep={currentStep}
+            txStatus={modalView.txStatus}
+            externalLink={modalView.externalLink}
+            confirmLabel={modalView.config.confirmLabel}
+            confirmDisabled={modalView.config.confirmDisabled}
+            successLabel={modalView.config.successLabel}
+            errorLabel={modalView.config.errorLabel}
+            steps={modalView.config.steps}
+            currentStep={modalView.currentStep}
           />
         )}
       </EntrySlotContext.Provider>

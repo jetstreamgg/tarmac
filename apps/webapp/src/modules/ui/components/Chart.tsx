@@ -4,7 +4,7 @@ import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@/utils';
-import { useMemo, useState, useRef, useEffect, useId } from 'react';
+import { useMemo, useState, useRef, useEffect, useId, useCallback } from 'react';
 import {
   Area,
   AreaChart,
@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { easeOutExpo } from '../animation/timingFunctions';
 import { positionAnimations } from '../animation/presets';
 import { AnimationLabels } from '../animation/constants';
@@ -200,7 +200,19 @@ const POST_CURSOR_ALPHA = 0.4;
  * lands after any page transition has finished.
  */
 const REVEAL_DURATION_MS = 900;
+/**
+ * The same wipe, replayed when the series is swapped for another one — the
+ * Rate|TVL switch in the tabs comp (Figma: Sky App: UI 1598:76322), where the
+ * outgoing series fades over ~230ms and the incoming one draws itself in over
+ * ~600ms. recharts carries a single animationDuration for both the first
+ * reveal and every replay, so the component steps it down once the opening
+ * wipe has finished.
+ */
+const RE_REVEAL_DURATION_MS = 600;
 const REVEAL_EASING = 'cubic-bezier(0.77,0,0.175,1)';
+
+/** The active pill's slide between segments (tabs comp): 151ms, easeInOut. */
+const PILL_SLIDE = { duration: 0.15, ease: [0.42, 0, 0.58, 1] } as const;
 
 /**
  * Half-width of the lit window, in px — the DS mock's mask measures 45px across
@@ -358,19 +370,51 @@ function SegmentedPills<T extends string>({
   /** Extra classes on each pill (e.g. `flex-1` to split the width evenly). */
   itemClassName?: string;
 }) {
+  // One shared layout element per group, so switching segments slides the
+  // active fill across instead of repainting it in place. The id scopes the
+  // shared element to this group — a page renders several of these (metric and
+  // timeframe, plus their mobile counterparts) and a duplicated layoutId would
+  // make pills fly between groups.
+  const pillId = useId();
+  const reduceMotion = useReducedMotion();
+
   return (
     <div className={cn(tabsListVariants({ variant: 'segmented' }), className)} data-testid={dataTestId}>
-      {options.map(option => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          data-state={value === option.value ? 'active' : 'inactive'}
-          className={cn(tabsTriggerVariants({ variant: 'segmented' }), itemClassName)}
-        >
-          {option.label}
-        </button>
-      ))}
+      {options.map(option => {
+        const isActive = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            data-state={isActive ? 'active' : 'inactive'}
+            className={cn(
+              tabsTriggerVariants({ variant: 'segmented' }),
+              // The recipe paints the active fill and border on the trigger
+              // itself; the travelling element below owns them here. Suppressed
+              // locally rather than in the recipe, which other non-Radix groups
+              // still rely on.
+              'relative data-[state=active]:border-transparent data-[state=active]:bg-none',
+              itemClassName
+            )}
+          >
+            {isActive && (
+              <motion.span
+                layoutId={`${pillId}-active-pill`}
+                aria-hidden
+                // No negative z-index: the group paints its own well
+                // (bg-pageBackground), and a -z-10 fill sits behind THAT and
+                // disappears entirely. Stacking is by DOM order instead — the
+                // fill is positioned and comes first, the label is positioned
+                // and comes after, so the label wins.
+                className="border-borderBrandDim from-brand2-start to-brand2-end absolute inset-0 rounded-full border bg-linear-to-b bg-origin-border"
+                transition={reduceMotion ? { duration: 0 } : PILL_SLIDE}
+              />
+            )}
+            <span className="relative">{option.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -593,6 +637,7 @@ function ChartContent({
   tokenSymbols,
   chartHeight,
   color,
+  seriesKey,
   isDetail = false
 }: {
   data: Data[];
@@ -607,12 +652,32 @@ function ChartContent({
   tokenSymbols?: string[];
   chartHeight?: number;
   color?: string;
+  /**
+   * Identifies which series is plotted (metric + timeframe). Changing it
+   * remounts the Area so the new series wipes in from the left, rather than
+   * recharts interpolating the old curve into the new one — handed a new
+   * dataset for the same Area, it morphs the path, which is not what the tabs
+   * comp draws.
+   */
+  seriesKey?: string;
   /** detail variant: no date axis under the plot, so it runs to the card floor. */
   isDetail?: boolean;
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
   const dimMaskId = useId();
+  // The opening wipe is the slower one; every replay after it — a metric or
+  // timeframe switch, which recharts treats as a fresh entrance — runs at the
+  // tabs comp's shorter figure. Stepped down when the first wipe reports done,
+  // since recharts reads one duration for both.
+  const [revealDuration, setRevealDuration] = useState(REVEAL_DURATION_MS);
+  // Stable identity is load-bearing, not tidiness: recharts rebuilds the
+  // running animation from zero whenever this handler's identity changes
+  // (JavascriptAnimate lists onAnimationEnd in the deps of the effect that
+  // constructs it). Inline, the wipe restarted on every re-render that landed
+  // mid-reveal — on a cold load the series stuttered through two or three
+  // false starts before the real one.
+  const handleRevealEnd = useCallback(() => setRevealDuration(RE_REVEAL_DURATION_MS), []);
   const tooltipPortal = useChartTooltipPortal();
   // The plot box, so the portalled tooltip can turn recharts' chart-space
   // coordinate into viewport pixels.
@@ -699,6 +764,7 @@ function ChartContent({
             />
 
             <Area
+              key={seriesKey}
               dataKey="value"
               stroke={seriesColor}
               strokeWidth={SERIES_STROKE_WIDTH}
@@ -717,8 +783,9 @@ function ChartContent({
               // at its 'auto' default is deliberate: it resolves to off under
               // prefers-reduced-motion (and under SSR), so the reveal needs no
               // reduced-motion handling of its own.
-              animationDuration={REVEAL_DURATION_MS}
+              animationDuration={revealDuration}
               animationEasing={REVEAL_EASING}
+              onAnimationEnd={handleRevealEnd}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -921,6 +988,7 @@ export function Chart({
             tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
             tokenSymbols={tokenSymbols}
             color={color}
+            seriesKey={`${activeMetric ?? ''}-${activeTimeframe}`}
           />
         </div>
         {isMobileDetail && (

@@ -311,8 +311,12 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.03, 1);
   --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
   --ease-bezier-mouse: cubic-bezier(0.4, 0, 0.2, 1);
-  /* The curve the motion comps use for page transitions (easeInOutQuart). */
+  /* The two curves the motion comps are drawn on. Across every comp the
+     pairing is consistent: a surface ARRIVES on quint (decisive, front-loaded)
+     and LEAVES on quart (even), while anything that merely crossfades or
+     travels in both directions uses quart alone. */
   --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
 
   --transition-duration-250: 250ms;
   --transition-duration-350: 350ms;

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
@@ -105,42 +106,85 @@ export function PositionManageFlow({
   const { data: positions } = useStakeUserPositions();
   const position = urnIndex !== null ? positions?.find(p => p.index === urnIndex) : undefined;
 
-  if (urnIndex === null) return null;
-
-  // Liquidated urns always land on the post-mortem, BEFORE the view dispatch:
-  // a `stake_tab` deep link or a caller-staged `initialSheetInit` mounts the
-  // flow directly in 'sheet', which must not open a manage sheet on a barked
-  // urn. A successful recovery frees the SKY, so the position's next mutation
-  // timestamp overtakes the bark and `isLiquidatedStakePosition` flips to
-  // false on its own — this then falls through to the ordinary views without
-  // any extra transition here.
-  if (position && isLiquidatedStakePosition(position)) {
-    return <LiquidationPostMortemModal urnIndex={urnIndex} onClose={close} />;
+  // Closing deletes the params, but StakeProductPage holds this flow mounted
+  // for the exit — so keep drawing whatever was on screen, and let each view
+  // dismiss itself the way it knows how.
+  //
+  // The two families need opposite treatment. The Radix modals must stay
+  // MOUNTED and be told `open={false}`, since that is what makes Radix render a
+  // closing state at all; unmounting them (what used to happen) skips the
+  // dismissal entirely. The motion takeovers are the reverse: their exit runs
+  // by being REMOVED from the AnimatePresence below, so they must go to null.
+  const isOpen = urnIndex !== null;
+  const lastOpen = useRef<{ urnIndex: number; view: ManageView; isPostMortem: boolean } | null>(null);
+  if (urnIndex !== null) {
+    lastOpen.current = {
+      urnIndex,
+      view,
+      isPostMortem: !!position && isLiquidatedStakePosition(position)
+    };
   }
+  const current = lastOpen.current;
 
-  if (view.name === 'claim') {
-    return <StakeClaimModal urnIndex={urnIndex} onClose={onBack} />;
-  }
+  // The views are resolved into one element and handed to a single
+  // AnimatePresence, rather than returned early. One boundary only: nesting a
+  // second one in the parent breaks this one, because closing empties this
+  // presence in the same tick and the outer boundary then unmounts the subtree
+  // before the exit it just started can run.
+  const resolveView = () => {
+    if (!current) return null;
+    const { urnIndex: index, view: currentView, isPostMortem } = current;
 
-  if (view.name === 'reopen') {
-    return (
-      <OpenPositionTakeover
-        reopen={{ urnIndex, borrowExpanded: view.borrowExpanded, onBack, onClose: close }}
-      />
-    );
-  }
+    // Liquidated urns always land on the post-mortem, BEFORE the view dispatch:
+    // a `stake_tab` deep link or a caller-staged `initialSheetInit` mounts the
+    // flow directly in 'sheet', which must not open a manage sheet on a barked
+    // urn. A successful recovery frees the SKY, so the position's next mutation
+    // timestamp overtakes the bark and `isLiquidatedStakePosition` flips to
+    // false on its own — this then falls through to the ordinary views without
+    // any extra transition here.
+    if (isPostMortem) {
+      return <LiquidationPostMortemModal key="postmortem" urnIndex={index} open={isOpen} onClose={close} />;
+    }
 
-  if (view.name === 'details') {
-    return (
-      <PositionDetailsModal
-        urnIndex={urnIndex}
+    if (currentView.name === 'claim') {
+      // Portalled into the transaction modal's entry slot, so it leaves with
+      // that modal rather than on its own.
+      return isOpen ? <StakeClaimModal key="claim" urnIndex={index} onClose={onBack} /> : null;
+    }
+
+    if (currentView.name === 'reopen') {
+      return isOpen ? (
+        <OpenPositionTakeover
+          key="reopen"
+          reopen={{ urnIndex: index, borrowExpanded: currentView.borrowExpanded, onBack, onClose: close }}
+        />
+      ) : null;
+    }
+
+    if (currentView.name === 'details') {
+      return (
+        <PositionDetailsModal
+          key="details"
+          urnIndex={index}
+          open={isOpen}
+          onClose={close}
+          onAction={onAction}
+          onClaim={onClaim}
+          onReopen={onReopen}
+        />
+      );
+    }
+
+    return isOpen ? (
+      <ManagePositionTakeover
+        key="manage"
+        urnIndex={index}
+        init={currentView.init}
+        onBack={onBack}
         onClose={close}
-        onAction={onAction}
-        onClaim={onClaim}
-        onReopen={onReopen}
       />
-    );
-  }
+    ) : null;
+  };
 
-  return <ManagePositionTakeover urnIndex={urnIndex} init={view.init} onBack={onBack} onClose={close} />;
+  return <AnimatePresence>{resolveView()}</AnimatePresence>;
 }

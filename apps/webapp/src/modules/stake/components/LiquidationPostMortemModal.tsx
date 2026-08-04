@@ -129,7 +129,16 @@ function LiquidationRecoveryConfirmSummary({
  * NOT indexed against the bark yet, so those stats render the same NO_VALUE
  * gap as every other undesigned/ungated stat on the sibling details modal.
  */
-export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: number; onClose: () => void }) {
+export function LiquidationPostMortemModal({
+  urnIndex,
+  open = true,
+  onClose
+}: {
+  urnIndex: number;
+  /** Controlled for the same reason as PositionDetailsModal's — see there. */
+  open?: boolean;
+  onClose: () => void;
+}) {
   const chainId = useChainId();
   const queryClient = useQueryClient();
 
@@ -210,7 +219,7 @@ export function LiquidationPostMortemModal({ urnIndex, onClose }: { urnIndex: nu
   const ctaDisabled = !recovery.prepared || recovery.isLoading || !hasRecovery;
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
+    <Dialog open={open} onOpenChange={next => !next && onClose()}>
       <DialogContent
         aria-describedby={undefined}
         data-testid="stake-postmortem-modal"

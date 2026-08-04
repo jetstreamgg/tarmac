@@ -380,12 +380,19 @@ function ManageCtas({
  */
 export function PositionDetailsModal({
   urnIndex,
+  open = true,
   onClose,
   onAction,
   onClaim,
   onReopen
 }: {
   urnIndex: number;
+  /**
+   * Controlled so the modal can be told to close and still be here to animate
+   * it: the flow that owns this used to unmount it on close, which skipped the
+   * dismissal entirely. Defaults to open for callers that mount it on demand.
+   */
+  open?: boolean;
   onClose: () => void;
   onAction: (action: StakeManageAction) => void;
   /** Opens the claim-rewards modal (F6) — row enabled while something is claimable. */
@@ -481,7 +488,7 @@ export function PositionDetailsModal({
 
   return (
     <>
-      <Dialog open onOpenChange={open => !open && onClose()}>
+      <Dialog open={open} onOpenChange={next => !next && onClose()}>
         <DialogContent
           aria-describedby={undefined}
           data-testid="stake-position-details"
