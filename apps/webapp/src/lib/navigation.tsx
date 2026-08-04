@@ -197,5 +197,20 @@ export type AppLinkProps = Omit<ComponentProps<'a'>, 'href'> & {
 
 export function AppLink({ to, replace, ...anchorProps }: AppLinkProps) {
   const { pathname, search, hash } = splitHref(to);
-  return <Link {...anchorProps} to={pathname as '/'} search={search} hash={hash} replace={replace} />;
+  return (
+    <Link
+      {...anchorProps}
+      to={pathname as '/'}
+      // Merged onto the retained params rather than replacing the search
+      // outright: an href without a query string means "this path", not "drop
+      // the network". Dropping it made useAppOrchestration navigate straight
+      // back to put it in, and that second commit landed in the same frame as
+      // the view transition's pending snapshot — so the outgoing page was
+      // captured already showing the incoming one, and only the enter
+      // animation was visible (APP-432 review).
+      search={prev => ({ ...retainOnNavigate(prev), ...search })}
+      hash={hash}
+      replace={replace}
+    />
+  );
 }
