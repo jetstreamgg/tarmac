@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useStakeRewardContracts, useMultipleRewardsChartInfo, type RewardsChartInfoParsed } from '@/hooks';
 
 // Full farm history: the Statistics chart's `All` range and the trailing
@@ -50,10 +50,32 @@ export function useStakeRewardsRate(): StakeRewardsRate {
 
   const parsedRate = winner ? parseFloat(winner.latest.rate) : NaN;
 
+  /**
+   * Both underlying queries hand back `undefined` and re-report loading when
+   * their key changes, not just on the first fetch — the contract list arrives
+   * as a hardcoded placeholder before the indexer's real one replaces it, which
+   * rewrites the farm URLs the chart query is keyed on, and an indexer failure
+   * swaps the whole hook onto its on-chain fallback. Passed straight through,
+   * each of those flips takes the chart back to its skeleton, and the chart
+   * unmounting is what makes its entrance wipe play a second time.
+   *
+   * So the last series that actually resolved is held on to and kept on screen
+   * while the next one loads. Only the true cold start, with nothing resolved
+   * yet, still reports loading.
+   */
+  const lastResolved = useRef<{ series: RewardsChartInfoParsed[]; currentRate: number | null } | null>(null);
+  if (winner) {
+    lastResolved.current = {
+      series: winner.series,
+      currentRate: Number.isFinite(parsedRate) ? parsedRate : null
+    };
+  }
+  const resolved = lastResolved.current;
+
   return {
-    series: winner?.series ?? [],
-    currentRate: Number.isFinite(parsedRate) ? parsedRate : null,
-    isLoading: contractsLoading || chartsLoading,
+    series: resolved?.series ?? [],
+    currentRate: resolved?.currentRate ?? null,
+    isLoading: (contractsLoading || chartsLoading) && !resolved,
     error: error ?? null
   };
 }
