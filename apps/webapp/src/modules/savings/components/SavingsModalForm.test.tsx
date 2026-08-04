@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 i18n.load('en', {});
@@ -329,10 +329,11 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
         <TooltipProvider>{review?.[1].transactionContent}</TooltipProvider>
       </I18nProvider>
     );
+    // Scoped to this render — the entry body still on screen carries the same test id.
     // 50 USDS left at 3.75%.
-    expect(
-      container.querySelector('[data-testid="savings-modal-row-Est. earnings (1Y)"]')?.textContent
-    ).toContain('1.88');
+    expect(within(container).getByTestId('savings-modal-row-Est. earnings (1Y)').textContent).toContain(
+      '1.88'
+    );
   });
 
   it('disables the confirm and flags an error when the amount exceeds the position', () => {
