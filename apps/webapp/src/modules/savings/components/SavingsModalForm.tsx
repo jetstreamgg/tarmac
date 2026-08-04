@@ -3,11 +3,13 @@ import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { formatBigInt, formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
+import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useNetworkFee } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
@@ -60,6 +62,7 @@ export function SavingsModalForm({
 }) {
   const chainId = useChainId();
   const chains = useChains();
+  const { i18n } = useLingui();
 
   // The mainnet supply preview feeds the review's "You'll receive" (ERC-4626
   // convertToShares); L2 covers it with the PSM min-out bound.
@@ -172,7 +175,7 @@ export function SavingsModalForm({
           estEarnings: NO_VALUE,
           product: 'Sky Savings',
           rate: apyDisplay,
-          withdrawal: t`Anytime`,
+          withdrawal: i18n._(withdrawalWording('savings', 'supply')),
           network: networkName,
           networkFee: networkFee?.formatted ?? NO_VALUE
         })
@@ -182,7 +185,7 @@ export function SavingsModalForm({
           estEarnings: NO_VALUE,
           product: 'Sky Savings',
           rate: apyDisplay,
-          withdrawal: t`Instant`,
+          withdrawal: i18n._(withdrawalWording('savings', 'withdraw')),
           network: networkName,
           networkFee: networkFee?.formatted ?? NO_VALUE
         });
@@ -204,7 +207,8 @@ export function SavingsModalForm({
     flow,
     transactionScreenContent,
     feeCell,
-    networkFee
+    networkFee,
+    i18n
   ]);
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that

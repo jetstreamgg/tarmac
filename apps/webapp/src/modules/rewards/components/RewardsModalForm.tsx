@@ -3,12 +3,14 @@ import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { type Token, useNetworkFee } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
+import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
@@ -68,6 +70,7 @@ export function RewardsModalForm({
 }) {
   const chainId = useChainId();
   const chains = useChains();
+  const { i18n } = useLingui();
 
   const form = useRewardsTransactionForm({ flow, contractAddress, supplyToken, preset });
   const {
@@ -161,13 +164,13 @@ export function RewardsModalForm({
       ? buildRewardsSupplyReviewRows({
           ...reviewInput,
           rewardsIn: rewardTokenSymbol,
-          withdrawal: t`Anytime`
+          withdrawal: i18n._(withdrawalWording('rewards', 'supply'))
         })
       : buildRewardsWithdrawReviewRows({
           ...reviewInput,
           youReceive: `${formatNumber(amountUsd, { maxDecimals: 2 })} ${supplyToken.symbol}`,
           receiveToken: supplyToken.symbol,
-          withdrawal: t`Instant`
+          withdrawal: i18n._(withdrawalWording('rewards', 'withdraw'))
         });
     return (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`rewards-modal-${flow}-review`}>
@@ -191,7 +194,8 @@ export function RewardsModalForm({
     flow,
     transactionScreenContent,
     feeCell,
-    networkFee
+    networkFee,
+    i18n
   ]);
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that

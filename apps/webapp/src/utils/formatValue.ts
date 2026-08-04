@@ -88,16 +88,36 @@ export function formatNumber(amount: number, options?: FormatOptions): string {
  * value can render the whole part large and the decimals small/dimmed
  * (e.g. `100,000` + `.00026`). Returns an empty `fraction` when there is none.
  */
-export function splitAmount(value: number, fractionDigits = 5): { whole: string; fraction: string } {
+export function splitAmount(
+  value: number,
+  fractionDigits = 5,
+  options?: {
+    /** Off for a live counter, whose fraction must not change width as it ticks. */
+    trimTrailingZeros?: boolean;
+    /**
+     * Off for a live counter: rounding would show a digit the position hasn't
+     * earned yet, and would tick half a place out of step with the schedule the
+     * counter wakes on.
+     */
+    round?: boolean;
+  }
+): { whole: string; fraction: string } {
+  const { trimTrailingZeros = true, round = true } = options ?? {};
   const scale = 10 ** fractionDigits;
   // Round once at the scaled-integer level so a fraction that rounds up to a full
   // unit (e.g. 0.999996 → 1) carries into the whole part instead of producing
   // whole "0" / fraction "1".
-  const scaled = Math.round(value * scale);
+  const scaled = round ? Math.round(value * scale) : Math.floor(value * scale);
   const whole = Math.trunc(scaled / scale);
   const fractionRaw = scaled - whole * scale;
-  const fraction =
-    fractionRaw > 0 ? String(fractionRaw).padStart(fractionDigits, '0').replace(/0+$/, '') : '';
+  const padded = String(fractionRaw).padStart(fractionDigits, '0');
+  const fraction = trimTrailingZeros
+    ? fractionRaw > 0
+      ? padded.replace(/0+$/, '')
+      : ''
+    : fractionDigits > 0
+      ? padded
+      : '';
   return { whole: formatNumber(whole, { maxDecimals: 0 }), fraction };
 }
 

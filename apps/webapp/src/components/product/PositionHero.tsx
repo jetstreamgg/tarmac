@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { splitAmount } from '@/utils';
+import { useAccruingValue } from '@/hooks/ui';
+import { RollingDigits } from '@/components/ui/rolling-digits';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ProductBadge } from './ProductCard';
 
@@ -19,6 +21,7 @@ export function PositionHero({
   pillLabel,
   balanceSymbol,
   amount,
+  ratePerSecond,
   subline
 }: {
   /** Token tagged on the pill (the product's share/reward token). */
@@ -34,11 +37,29 @@ export function PositionHero({
    * pre-formatted string to render the figure whole (the /stake comp does).
    */
   amount: number | string;
+  /**
+   * Fractional growth per second of a continuously-compounding position. Pass it
+   * and the figure accrues on screen between chain reads, its decimals rolling
+   * over one at a time (Figma 1598:76444). Products that don't appreciate by the
+   * second leave it off and render a still figure.
+   */
+  ratePerSecond?: number;
   /** Optional line under the figure, indented past the token mark (e.g. "~$120,788.90"). */
   subline?: ReactNode;
 }) {
+  const { value, fractionDigits } = useAccruingValue({
+    amount: typeof amount === 'number' ? amount : undefined,
+    ratePerSecond
+  });
+  // The counter picks its own precision from the balance and the rate, so a live
+  // figure formats off that rather than the flat 5 decimals a still one uses.
+  const isAccruing = fractionDigits !== undefined;
   const { whole, fraction } =
-    typeof amount === 'number' ? splitAmount(amount) : { whole: amount, fraction: undefined };
+    typeof amount === 'number'
+      ? isAccruing
+        ? splitAmount(value, fractionDigits, { trimTrailingZeros: false, round: false })
+        : splitAmount(amount)
+      : { whole: amount, fraction: undefined };
 
   return (
     <div className="flex flex-col gap-10 rounded-2xl bg-[linear-gradient(180deg,_rgba(182,179,252,0)_50.24%,_rgba(117,111,236,0.1)_100%)] p-4 md:gap-16 md:p-6">
@@ -67,7 +88,10 @@ export function PositionHero({
             </span>
             {fraction && (
               <span className="text-fgSecondary font-circle text-lg leading-5 font-medium tracking-[-0.36px] md:text-xl md:leading-[22px] md:tracking-[-0.4px]">
-                .{fraction}
+                {/* Only the fraction rolls. The whole part turns over once every
+                    few hours at any realistic rate, so a still carry there costs
+                    nothing and keeps the 44px figure out of the clip windows. */}
+                .{isAccruing ? <RollingDigits value={fraction} /> : fraction}
               </span>
             )}
           </span>

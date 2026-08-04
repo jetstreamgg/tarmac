@@ -286,6 +286,13 @@
   --animate-slide-down-fade: slide-down-fade 0.2s ease-out;
   --animate-slide-up-fade: slide-up-fade 0.2s ease-out;
 
+  /* Odometer roll for a live-accruing figure (Figma 1598:76444): one line-height
+     of travel over 200ms on the comp's easeOut. The outgoing glyph holds its end
+     state until the component drops it, so it can't flash back into the window
+     for a frame. */
+  --animate-digit-roll-in: digit-roll-in 200ms cubic-bezier(0, 0, 0.58, 1);
+  --animate-digit-roll-out: digit-roll-out 200ms cubic-bezier(0, 0, 0.58, 1) forwards;
+
   --max-height-screen-70: calc(100vh - 70px);
 
   --breakpoint-sm: 640px;
@@ -347,6 +354,22 @@
     }
     to {
       height: 0;
+    }
+  }
+  @keyframes digit-roll-in {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes digit-roll-out {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-100%);
     }
   }
   @keyframes slide-down-fade {
