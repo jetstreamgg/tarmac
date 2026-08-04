@@ -48,24 +48,32 @@ const INERT_PAGINATION = {
  * Filter-scoped queries only fire when their filter is selected, and the
  * always-on sources (aggregate, CoW/Morpho/Pendle) are shared with the
  * aggregate's own instances through the react-query cache.
+ *
+ * `products` is a list because one product in the UI can span several modules:
+ * Morpho and sUSDT are both "Vault" (APP-443 item 21), and their history comes
+ * from two different sources that have to be merged behind the one filter.
  */
 export function useFilteredPortfolioHistory({
-  product,
+  products,
   network
 }: {
-  product?: ModuleEnum;
+  products?: ModuleEnum[];
   network?: number;
 }): FilteredPortfolioHistory {
   const currentChainId = useChainId();
   const mainnetChainId = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
   const isMainnetNetwork = network === mainnetChainId;
   const isL2Network = network !== undefined && L2_HISTORY_CHAIN_IDS.includes(network);
-  const family = product !== undefined ? FAMILY_BY_MODULE[product] : undefined;
+  const isFiltered = products !== undefined && products.length > 0;
+  const wants = (module: ModuleEnum) => isFiltered && products.includes(module);
+  // At most one selected module is Envio-backed — the REST-backed ones (Morpho,
+  // Pendle) have no family — so a group needs a single family document.
+  const family = isFiltered ? products.map(module => FAMILY_BY_MODULE[module]).find(Boolean) : undefined;
 
   const aggregate = useAllNetworksCombinedHistory();
   const ethereumCombined = useEthereumCombinedHistory();
   const l2Combined = useL2CombinedHistory(isL2Network ? network : chainIdMap.base, {
-    enabled: product === undefined && isL2Network
+    enabled: !isFiltered && isL2Network
   });
   const familyQuery = useHistoryFamilyQuery({
     family: family ?? 'savings',
@@ -74,7 +82,7 @@ export function useFilteredPortfolioHistory({
   });
 
   // The CoW side of the trade family (mainnet + post-cutoff hybrid chains).
-  const tradeSelected = product === ModuleEnum.TRADE;
+  const tradeSelected = wants(ModuleEnum.TRADE);
   const mainnetCow = useCowswapTradeHistory({
     chainId: 1,
     enabled: tradeSelected && (network === undefined || isMainnetNetwork)
@@ -91,68 +99,71 @@ export function useFilteredPortfolioHistory({
   const morphoHistory = useMorphoVaultHistory();
   const pendleHistory = usePendleCombinedHistory();
 
-  const tradeData = useMemo(() => {
-    const cowItems: CombinedHistoryItem[] = [
-      ...(mainnetCow.data || []),
-      ...(baseCow.data || []).filter(trade => trade.blockTimestamp >= TRADE_CUTOFF_DATES[chainIdMap.base]),
-      ...(arbitrumCow.data || []).filter(
-        trade => trade.blockTimestamp >= TRADE_CUTOFF_DATES[chainIdMap.arbitrum]
-      )
-    ];
-    return [...(familyQuery.data || []), ...clampHistoryPage(cowItems, familyQuery.nextCursor)].sort(
-      (a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
-    );
-  }, [familyQuery.data, familyQuery.nextCursor, mainnetCow.data, baseCow.data, arbitrumCow.data]);
+  // Every REST-backed source the selection asks for, held back to the family
+  // document's completeness floor so rows never insert mid-list on the next
+  // page. With no family document there is no floor and nothing is withheld.
+  const morphoSelected = wants(ModuleEnum.MORPHO);
+  const pendleSelected = wants(ModuleEnum.PENDLE);
+  const restData = useMemo(() => {
+    const items: CombinedHistoryItem[] = [];
+    if (tradeSelected) {
+      items.push(
+        ...(mainnetCow.data || []),
+        ...(baseCow.data || []).filter(trade => trade.blockTimestamp >= TRADE_CUTOFF_DATES[chainIdMap.base]),
+        ...(arbitrumCow.data || []).filter(
+          trade => trade.blockTimestamp >= TRADE_CUTOFF_DATES[chainIdMap.arbitrum]
+        )
+      );
+    }
+    if (morphoSelected) items.push(...(morphoHistory.data || []));
+    if (pendleSelected) items.push(...(pendleHistory.data || []));
+    return items;
+  }, [
+    tradeSelected,
+    morphoSelected,
+    pendleSelected,
+    mainnetCow.data,
+    baseCow.data,
+    arbitrumCow.data,
+    morphoHistory.data,
+    pendleHistory.data
+  ]);
+
+  const filteredData = useMemo(
+    () =>
+      [
+        ...(family !== undefined ? familyQuery.data || [] : []),
+        ...clampHistoryPage(restData, family !== undefined ? familyQuery.nextCursor : undefined)
+      ].sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime()),
+    [family, familyQuery.data, familyQuery.nextCursor, restData]
+  );
 
   // No product filter → the network-scoped (or full) aggregates.
-  if (product === undefined) {
+  if (!isFiltered) {
     if (isMainnetNetwork) return ethereumCombined;
     if (isL2Network) return l2Combined;
     return aggregate;
   }
 
-  switch (product) {
-    case ModuleEnum.MORPHO:
-      return {
-        data: morphoHistory.data || [],
-        isLoading: morphoHistory.isLoading,
-        error: morphoHistory.error,
-        mutate: morphoHistory.mutate,
-        ...INERT_PAGINATION
-      };
-    case ModuleEnum.PENDLE:
-      return {
-        data: pendleHistory.data || [],
-        isLoading: pendleHistory.isLoading,
-        error: pendleHistory.error,
-        mutate: pendleHistory.mutate,
-        ...INERT_PAGINATION
-      };
-    case ModuleEnum.TRADE:
-      return {
-        data: tradeData,
-        isLoading:
-          familyQuery.isLoading || mainnetCow.isLoading || baseCow.isLoading || arbitrumCow.isLoading,
-        error: familyQuery.error || mainnetCow.error || baseCow.error || arbitrumCow.error,
-        mutate: () => {
-          familyQuery.mutate();
-          mainnetCow.mutate();
-          baseCow.mutate();
-          arbitrumCow.mutate();
-        },
-        hasNextPage: Boolean(familyQuery.hasNextPage),
-        isFetchingNextPage: familyQuery.isFetchingNextPage,
-        fetchNextPage: familyQuery.fetchNextPage
-      };
-    default:
-      return {
-        data: familyQuery.data || [],
-        isLoading: familyQuery.isLoading,
-        error: familyQuery.error,
-        mutate: familyQuery.mutate,
-        hasNextPage: Boolean(familyQuery.hasNextPage),
-        isFetchingNextPage: familyQuery.isFetchingNextPage,
-        fetchNextPage: familyQuery.fetchNextPage
-      };
-  }
+  type SelectedSource = { isLoading: boolean; error: Error | null; mutate: () => void };
+  const sources: SelectedSource[] = [];
+  if (family !== undefined) sources.push(familyQuery);
+  if (tradeSelected) sources.push(mainnetCow, baseCow, arbitrumCow);
+  if (morphoSelected) sources.push(morphoHistory);
+  if (pendleSelected) sources.push(pendleHistory);
+
+  return {
+    data: filteredData,
+    isLoading: sources.some(source => source.isLoading),
+    error: sources.map(source => source.error).find(Boolean) ?? null,
+    mutate: () => sources.forEach(source => source.mutate()),
+    // Only the family document paginates; the REST feeds arrive whole.
+    ...(family !== undefined
+      ? {
+          hasNextPage: Boolean(familyQuery.hasNextPage),
+          isFetchingNextPage: familyQuery.isFetchingNextPage,
+          fetchNextPage: familyQuery.fetchNextPage
+        }
+      : INERT_PAGINATION)
+  };
 }
