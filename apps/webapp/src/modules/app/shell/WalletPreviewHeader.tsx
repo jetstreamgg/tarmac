@@ -79,8 +79,10 @@ export function WalletPreviewHeader({
           <div className="flex flex-col gap-0.5">
             <Text
               tag="span"
+              // Label 4 (Figma 1030:60388) / Label 5 on mobile — both Circular
+              // Medium. font-circle alone falls to Book (450).
               className={cn(
-                'font-circle tracking-tight text-[#f2f3f7]',
+                'font-circle font-medium tracking-tight text-[#f2f3f7]',
                 mobile ? 'text-sm leading-4' : 'text-base leading-[18px]'
               )}
             >
@@ -140,8 +142,10 @@ export function WalletPreviewHeader({
           <Text
             tag="span"
             dataTestId="wallet-drawer-total"
+            // Heading 2 / Heading 3 on mobile — Circular Medium, as every
+            // Headings-family style in the DS is.
             className={cn(
-              'font-circle tracking-[-0.02em] text-[#f2f3f7]',
+              'font-circle font-medium tracking-[-0.02em] text-[#f2f3f7]',
               mobile ? 'text-[32px] leading-[35px]' : 'text-[44px] leading-[48px]'
             )}
           >

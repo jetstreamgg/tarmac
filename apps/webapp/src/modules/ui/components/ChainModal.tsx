@@ -111,17 +111,26 @@ export function ChainModal({
               chainId,
               variant === ChainModalVariant.widget ? 'h-5 w-5' : size === 'xs' ? 'h-4 w-4' : 'h-6 w-6'
             )}
-            {showLabel && (
-              <Text
-                className={cn(
-                  'text-text',
-                  size === 'xs' && 'font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]',
-                  labelClassName
-                )}
-              >
-                {client?.chain.name || 'Ethereum'}
-              </Text>
-            )}
+            {showLabel &&
+              (variant === ChainModalVariant.widget ? (
+                <Text className={cn('text-text', labelClassName)}>{client?.chain.name || 'Ethereum'}</Text>
+              ) : (
+                // Label 5 / Circular Medium in every dropdown comp (Figma
+                // 1030:60397, 1030:59254) — which is what dropdownM already
+                // sets, so the label is a bare span and inherits it. A <Text>
+                // here would re-declare Graphik at 16px and win, which is how
+                // the network pill drifted off the comps across all products.
+                // XS steps down to Label 6 (Figma 1030:138802).
+                <span
+                  className={cn(
+                    'text-text',
+                    size === 'xs' && 'text-xs leading-[14px] tracking-[-0.24px]',
+                    labelClassName
+                  )}
+                >
+                  {client?.chain.name || 'Ethereum'}
+                </span>
+              ))}
             {showDropdownIcon &&
               (variant === ChainModalVariant.widget ? (
                 <ChevronDown width={14} height={14} />
