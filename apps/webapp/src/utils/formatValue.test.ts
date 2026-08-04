@@ -97,4 +97,25 @@ describe('splitAmount', () => {
     expect(splitAmount(0.999996)).toEqual({ whole: '1', fraction: '' });
     expect(splitAmount(1.999996)).toEqual({ whole: '2', fraction: '' });
   });
+
+  // A live counter needs a fraction that neither changes width as it ticks nor
+  // shows a digit the position hasn't earned yet.
+  it('keeps the fraction padded when trimming is off', () => {
+    expect(splitAmount(12.5, 4, { trimTrailingZeros: false })).toEqual({
+      whole: '12',
+      fraction: '5000'
+    });
+    expect(splitAmount(42, 4, { trimTrailingZeros: false })).toEqual({
+      whole: '42',
+      fraction: '0000'
+    });
+  });
+
+  it('truncates instead of rounding when rounding is off', () => {
+    expect(splitAmount(0.999996, 5, { round: false })).toEqual({ whole: '0', fraction: '99999' });
+    expect(splitAmount(100000.000269, 4, { trimTrailingZeros: false, round: false })).toEqual({
+      whole: '100,000',
+      fraction: '0002'
+    });
+  });
 });

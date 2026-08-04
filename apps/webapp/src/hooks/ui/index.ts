@@ -1,3 +1,4 @@
+export * from './useAccruingValue';
 export * from './useBreakpoint';
 export * from './useDebounce';
 export * from './useDeltaTimestamps';

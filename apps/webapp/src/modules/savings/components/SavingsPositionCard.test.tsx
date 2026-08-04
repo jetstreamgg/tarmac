@@ -36,6 +36,12 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
+// The live-accrual rate would otherwise reach for the chain (sUSDS `ssr`).
+// 3.75% expressed per second.
+vi.mock('../hooks/useSavingsAccrualRate', () => ({
+  useSavingsAccrualRate: () => Math.expm1(Math.log1p(0.0375) / (365 * 24 * 60 * 60))
+}));
+
 // Stub the leaf cards/bodies — routing is the unit under test, not their internals.
 vi.mock('./SavingsSupplyCard', () => ({
   SavingsSupplyCard: () => <div data-testid="savings-supply-card" />
@@ -91,6 +97,15 @@ describe('SavingsPositionCard — position routing', () => {
     expect(screen.queryByTestId('savings-supply-card')).toBeNull();
     expect(screen.queryByTestId('savings-position-supply')).not.toBeNull();
     expect(screen.queryByTestId('savings-position-withdraw')).not.toBeNull();
+  });
+
+  it('hands the hero the SSR, so the position accrues on screen', () => {
+    h.savingsBalance = 100n * 10n ** 18n;
+    renderCard();
+
+    // 100 USDS at 3.75% earns its 7th decimal about once a second, so that's
+    // the digit the counter rolls — padded, not trimmed, so it can't reflow.
+    expect(screen.getByTestId('rolling-digits').textContent).toBe('0000000');
   });
 
   it('opens the "Supply to Sky Savings" editable modal (entry descriptor) on Supply', () => {
