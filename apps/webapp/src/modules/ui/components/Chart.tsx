@@ -4,7 +4,7 @@ import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@/utils';
-import { useMemo, useState, useRef, useEffect, useId } from 'react';
+import { useMemo, useState, useRef, useEffect, useId, useCallback } from 'react';
 import {
   Area,
   AreaChart,
@@ -671,6 +671,13 @@ function ChartContent({
   // tabs comp's shorter figure. Stepped down when the first wipe reports done,
   // since recharts reads one duration for both.
   const [revealDuration, setRevealDuration] = useState(REVEAL_DURATION_MS);
+  // Stable identity is load-bearing, not tidiness: recharts rebuilds the
+  // running animation from zero whenever this handler's identity changes
+  // (JavascriptAnimate lists onAnimationEnd in the deps of the effect that
+  // constructs it). Inline, the wipe restarted on every re-render that landed
+  // mid-reveal — on a cold load the series stuttered through two or three
+  // false starts before the real one.
+  const handleRevealEnd = useCallback(() => setRevealDuration(RE_REVEAL_DURATION_MS), []);
   const tooltipPortal = useChartTooltipPortal();
   // The plot box, so the portalled tooltip can turn recharts' chart-space
   // coordinate into viewport pixels.
@@ -778,7 +785,7 @@ function ChartContent({
               // reduced-motion handling of its own.
               animationDuration={revealDuration}
               animationEasing={REVEAL_EASING}
-              onAnimationEnd={() => setRevealDuration(RE_REVEAL_DURATION_MS)}
+              onAnimationEnd={handleRevealEnd}
             />
           </AreaChart>
         </ResponsiveContainer>
