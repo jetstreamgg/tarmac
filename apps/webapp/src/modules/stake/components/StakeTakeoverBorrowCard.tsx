@@ -79,7 +79,7 @@ export function StakeTakeoverBorrowCard({
   collateralData: CollateralRiskParameters | undefined;
   error?: string;
 }) {
-  const { sliderValue, handleSliderChange, shouldShowSlider } = useStakeRiskSlider({
+  const { sliderValue, handleSliderChange } = useStakeRiskSlider({
     vault: simulatedVault,
     vaultNoBorrow,
     usdsToBorrow,
@@ -129,7 +129,7 @@ export function StakeTakeoverBorrowCard({
           <span aria-hidden className="border-borderPrimary border-t" />
         </div>
 
-        {shouldShowSlider && !minCollateralNotMet && (
+        {!inputDisabled && (
           <div className="flex flex-col gap-1.5">
             <Slider
               variant="range"

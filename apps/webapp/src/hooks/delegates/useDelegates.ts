@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
 import { getRandomItem } from '@/utils';
 import { useMemo } from 'react';
-import { parseDelegatesFn } from './utils';
+import { buildDelegateSearchCondition, parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchDelegates(
@@ -18,13 +18,15 @@ async function fetchDelegates(
   orderBy?: string,
   orderDirection?: string,
   search?: string,
-  version?: 1 | 2 | 3
+  version?: 1 | 2 | 3,
+  nameMatches?: `0x${string}`[]
 ): Promise<DelegateInfo[] | undefined> {
   const whereConditions: string[] = [`{ chainId: { _eq: ${chainId} } }`];
   if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
   if (exclude?.length)
     whereConditions.push(`{ address: { _nin: [${exclude.map(addr => `"${addr}"`).join(', ')}] } }`);
-  if (search) whereConditions.push(`{ address: { _ilike: "%${search}%" } }`);
+  const searchCondition = buildDelegateSearchCondition(search, nameMatches);
+  if (searchCondition) whereConditions.push(searchCondition);
   const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
   const paginationClause =
@@ -66,6 +68,7 @@ export function useDelegates({
   random,
   search,
   version,
+  nameMatches,
   enabled = true
 }: {
   chainId: number;
@@ -76,6 +79,8 @@ export function useDelegates({
   random?: boolean;
   search?: string;
   version?: 1 | 2 | 3;
+  /** Addresses whose metadata name matches `search` — see findDelegateNameMatches. */
+  nameMatches?: `0x${string}`[];
   enabled?: boolean;
 }): ReadHook & { data?: DelegateInfo[] } {
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
@@ -108,7 +113,8 @@ export function useDelegates({
       random ? randomOrderBy : undefined,
       random ? randomOrderDirection : undefined,
       search,
-      version
+      version,
+      nameMatches
     ],
     queryFn: () =>
       fetchDelegates(
@@ -120,7 +126,8 @@ export function useDelegates({
         randomOrderBy,
         randomOrderDirection,
         search,
-        version
+        version,
+        nameMatches
       )
   });
 

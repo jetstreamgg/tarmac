@@ -4,7 +4,7 @@ import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
-import { parseDelegatesFn } from './utils';
+import { buildDelegateSearchCondition, parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchUserDelegates(
@@ -12,16 +12,16 @@ async function fetchUserDelegates(
   chainId: number,
   user: `0x${string}`,
   search?: string,
-  version?: 1 | 2 | 3
+  version?: 1 | 2 | 3,
+  nameMatches?: `0x${string}`[]
 ): Promise<DelegateInfo[] | undefined> {
   const whereConditions = [
     `{ chainId: { _eq: ${chainId} } }`,
     `{ delegations: { delegator: { _eq: "${user.toLowerCase()}" }, amount: { _gt: "0" } } }`
   ];
   if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
-  if (search) {
-    whereConditions.push(`{ address: { _ilike: "%${search}%" } }`);
-  }
+  const searchCondition = buildDelegateSearchCondition(search, nameMatches);
+  if (searchCondition) whereConditions.push(searchCondition);
   const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
   const query = gql`
@@ -77,13 +77,16 @@ export function useUserDelegates({
   chainId,
   user,
   search,
-  version
+  version,
+  nameMatches
 }: {
   indexerUrl?: string;
   chainId: number;
   user: `0x${string}`;
   search?: string;
   version?: 1 | 2 | 3;
+  /** Addresses whose metadata name matches `search` — see findDelegateNameMatches. */
+  nameMatches?: `0x${string}`[];
 }): ReadHook & { data?: DelegateInfo[] } {
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
@@ -94,8 +97,8 @@ export function useUserDelegates({
     isLoading
   } = useQuery({
     enabled: Boolean(urlIndexer && user.length > 0 && user !== ZERO_ADDRESS),
-    queryKey: ['user-delegates', urlIndexer, chainId, user, search, version],
-    queryFn: () => fetchUserDelegates(urlIndexer, chainId, user, search, version)
+    queryKey: ['user-delegates', urlIndexer, chainId, user, search, version, nameMatches],
+    queryFn: () => fetchUserDelegates(urlIndexer, chainId, user, search, version, nameMatches)
   });
 
   const { data: metadataMapping } = useDelegateMetadataMapping();
