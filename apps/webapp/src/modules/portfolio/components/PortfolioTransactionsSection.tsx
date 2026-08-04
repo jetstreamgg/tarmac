@@ -39,29 +39,30 @@ import { PortfolioTxRow, RewardTokenLookup, toPortfolioTxRow } from '../helpers/
 
 const ALL = 'all';
 
+/**
+ * The products the history is grouped by, in dropdown order.
+ *
+ * A product is not always one module: Morpho and sUSDT are both "Vault", and
+ * keying the filter by module put two identical "Vault" rows in the dropdown
+ * (APP-443 item 21). One entry per product, each owning its module(s), is also
+ * the single source of truth for the Product column's label.
+ */
+export const PRODUCT_GROUPS: { id: string; modules: ModuleEnum[]; label: () => string }[] = [
+  { id: 'savings', modules: [ModuleEnum.SAVINGS], label: () => t`Savings` },
+  { id: 'stusds', modules: [ModuleEnum.STUSDS], label: () => t`stUSDS` },
+  { id: 'vault', modules: [ModuleEnum.MORPHO, ModuleEnum.SUSDT], label: () => t`Vault` },
+  { id: 'fixed', modules: [ModuleEnum.PENDLE], label: () => t`Fixed Yield` },
+  { id: 'rewards', modules: [ModuleEnum.REWARDS], label: () => t`Rewards` },
+  { id: 'stake', modules: [ModuleEnum.STAKE], label: () => t`Staking` },
+  { id: 'upgrade', modules: [ModuleEnum.UPGRADE], label: () => t`Upgrade` },
+  { id: 'trade', modules: [ModuleEnum.TRADE], label: () => t`Trade` }
+];
+
+const groupForModule = (module: ModuleEnum) => PRODUCT_GROUPS.find(g => g.modules.includes(module));
+
 // Human product name per module for the Product column.
 function productName(module: ModuleEnum): string {
-  switch (module) {
-    case ModuleEnum.SAVINGS:
-      return t`Savings`;
-    case ModuleEnum.STUSDS:
-      return t`stUSDS`;
-    case ModuleEnum.MORPHO:
-    case ModuleEnum.SUSDT:
-      return t`Vault`;
-    case ModuleEnum.REWARDS:
-      return t`Rewards`;
-    case ModuleEnum.STAKE:
-      return t`Staking`;
-    case ModuleEnum.UPGRADE:
-      return t`Upgrade`;
-    case ModuleEnum.PENDLE:
-      return t`Fixed Yield`;
-    case ModuleEnum.TRADE:
-      return t`Trade`;
-    default:
-      return '';
-  }
+  return groupForModule(module)?.label() ?? '';
 }
 
 function actionIcon(row: PortfolioTxRow): ReactNode {
@@ -188,10 +189,12 @@ export function PortfolioTransactionsView({
 
   // Filter options derived from what's actually present, so we never offer an
   // empty filter. Stablecoins are limited to rows that carry a USD value.
+  // Products are grouped, so two modules that share a name (Morpho / sUSDT →
+  // "Vault") offer one row that selects both.
   const { networks, stablecoins, products } = useMemo(() => {
     const net = new Map<string, ReactNode>();
     const stable = new Map<string, ReactNode>();
-    const prod = new Map<string, ReactNode>();
+    const groupIds = new Set<string>();
     for (const row of optionRows ?? rows) {
       net.set(
         String(row.chainId),
@@ -209,12 +212,16 @@ export function PortfolioTransactionsView({
           </span>
         );
       }
-      prod.set(row.module, productName(row.module));
+      const group = groupForModule(row.module);
+      if (group) groupIds.add(group.id);
     }
     return {
       networks: [...net].map(([value, label]) => ({ value, label })),
       stablecoins: [...stable].map(([value, label]) => ({ value, label })),
-      products: [...prod].map(([value, label]) => ({ value, label }))
+      products: PRODUCT_GROUPS.filter(group => groupIds.has(group.id)).map(group => ({
+        value: group.id,
+        label: group.label()
+      }))
     };
   }, [optionRows, rows, chainName]);
 
@@ -224,7 +231,7 @@ export function PortfolioTransactionsView({
         row =>
           (network === ALL || String(row.chainId) === network) &&
           (stablecoin === ALL || row.symbol === stablecoin) &&
-          (product === ALL || row.module === product)
+          (product === ALL || groupForModule(row.module)?.id === product)
       ),
     [rows, network, stablecoin, product]
   );
@@ -301,7 +308,7 @@ export function PortfolioTransactionsSection() {
   const aggregate = useAllNetworksCombinedHistory();
   const { data, isLoading, error, hasNextPage, fetchNextPage } = useFilteredPortfolioHistory({
     network: network === ALL ? undefined : Number(network),
-    product: product === ALL ? undefined : (product as ModuleEnum)
+    products: product === ALL ? undefined : PRODUCT_GROUPS.find(g => g.id === product)?.modules
   });
 
   // Reward claims only carry the reward contract address; resolve it to the

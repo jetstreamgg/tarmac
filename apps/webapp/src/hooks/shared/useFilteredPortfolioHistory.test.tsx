@@ -87,7 +87,7 @@ describe('useFilteredPortfolioHistory — source selection', () => {
 
   it('serves the family document for an Envio-backed product filter', () => {
     const { result } = renderHook(() =>
-      useFilteredPortfolioHistory({ product: ModuleEnum.STAKE, network: chainIdMap.mainnet })
+      useFilteredPortfolioHistory({ products: [ModuleEnum.STAKE], network: chainIdMap.mainnet })
     );
 
     expect(result.current.data[0].transactionHash).toBe('0xfamily');
@@ -96,12 +96,42 @@ describe('useFilteredPortfolioHistory — source selection', () => {
   });
 
   it('serves the REST hooks for Morpho and Pendle products', () => {
-    const morpho = renderHook(() => useFilteredPortfolioHistory({ product: ModuleEnum.MORPHO }));
+    const morpho = renderHook(() => useFilteredPortfolioHistory({ products: [ModuleEnum.MORPHO] }));
     expect(morpho.result.current.data[0].transactionHash).toBe('0xmorpho');
     expect(morpho.result.current.hasNextPage).toBe(false);
 
-    const pendle = renderHook(() => useFilteredPortfolioHistory({ product: ModuleEnum.PENDLE }));
+    const pendle = renderHook(() => useFilteredPortfolioHistory({ products: [ModuleEnum.PENDLE] }));
     expect(pendle.result.current.data[0].transactionHash).toBe('0xpendle');
+  });
+
+  // APP-443 item 21: the "Vault" filter is one dropdown row over two modules,
+  // so it has to merge the REST Morpho feed with the Envio sUSDT document.
+  it('merges both vault sources behind the grouped Vault filter', () => {
+    const { result } = renderHook(() =>
+      useFilteredPortfolioHistory({ products: [ModuleEnum.MORPHO, ModuleEnum.SUSDT] })
+    );
+
+    expect(result.current.data.map(i => i.transactionHash).sort()).toEqual(['0xfamily', '0xmorpho']);
+    expect(vi.mocked(useHistoryFamilyQuery).mock.calls[0][0]).toMatchObject({
+      family: 'susdt',
+      enabled: true
+    });
+  });
+
+  it('withholds vault REST rows below the sUSDT document floor', () => {
+    vi.mocked(useHistoryFamilyQuery).mockReturnValue(
+      source({ data: [item(500, '0xsusdt')], nextCursor: 400, hasNextPage: true }) as any
+    );
+    vi.mocked(useMorphoVaultHistory).mockReturnValue(
+      source({ data: [item(450, '0xmorpho-above'), item(350, '0xmorpho-below-floor')] }) as any
+    );
+
+    const { result } = renderHook(() =>
+      useFilteredPortfolioHistory({ products: [ModuleEnum.MORPHO, ModuleEnum.SUSDT] })
+    );
+
+    expect(result.current.data.map(i => i.transactionHash)).toEqual(['0xsusdt', '0xmorpho-above']);
+    expect(result.current.hasNextPage).toBe(true);
   });
 
   it('merges PSM and CoW trades under the PSM floor with per-chain cutoffs', () => {
@@ -127,7 +157,7 @@ describe('useFilteredPortfolioHistory — source selection', () => {
           })
         : source()) as any);
 
-    const { result } = renderHook(() => useFilteredPortfolioHistory({ product: ModuleEnum.TRADE }));
+    const { result } = renderHook(() => useFilteredPortfolioHistory({ products: [ModuleEnum.TRADE] }));
 
     // Pre-cutoff CoW trades are PSM swaps (already in the family doc), and
     // post-cutoff ones older than the PSM floor wait for the next page.
@@ -144,7 +174,7 @@ describe('useFilteredPortfolioHistory — source selection', () => {
 
   it('narrows the CoW feeds when the trade filter is network-scoped', () => {
     renderHook(() =>
-      useFilteredPortfolioHistory({ product: ModuleEnum.TRADE, network: chainIdMap.arbitrum })
+      useFilteredPortfolioHistory({ products: [ModuleEnum.TRADE], network: chainIdMap.arbitrum })
     );
 
     const enabledByChain = Object.fromEntries(
