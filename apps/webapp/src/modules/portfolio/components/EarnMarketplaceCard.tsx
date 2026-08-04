@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import type { EarnProductRow, EarnRiskTier } from '@/hooks';
+import type { EarnProductRow } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
@@ -11,12 +11,6 @@ import { RateBadge } from '@/components/ui/RateBadge';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { productIconSymbol, productStatusType } from '@/components/product/productVisuals';
 import { ProductGlyph } from './ProductGlyph';
-
-const RISK_LABEL: Record<EarnRiskTier, ReactNode> = {
-  low: <Trans>Low</Trans>,
-  moderate: <Trans>Moderate</Trans>,
-  advanced: <Trans>Advanced</Trans>
-};
 
 /**
  * Card version of an Earn marketplace row, shown in the Portfolio "Earn with
@@ -60,15 +54,14 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
         </Text>
       </div>
 
+      {/* Supply leads, Risk follows, and Risk is the bare meter — no tier word
+          beside it (1036:189284 dark / 1030:58560 light, APP-443 item 20). */}
       <div className="mt-auto grid grid-cols-2 gap-4">
-        <Stat label={<Trans>Risk</Trans>}>
-          <div className="flex items-center gap-2">
-            <RiskTierDetailsTrigger profile={row.riskProfile} />
-            <span className="text-text font-circle text-sm font-medium">{RISK_LABEL[row.risk]}</span>
-          </div>
-        </Stat>
         <Stat label={<Trans>Supply</Trans>}>
           <TokenIconStack symbols={row.supplyTokens} size={20} />
+        </Stat>
+        <Stat label={<Trans>Risk</Trans>}>
+          <RiskTierDetailsTrigger profile={row.riskProfile} />
         </Stat>
       </div>
 

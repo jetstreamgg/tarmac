@@ -414,7 +414,7 @@
   * {
     @apply border-border;
   }
-  /* `antialiased` =-webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
+  /* `antialiased` = -webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
      grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
      canvas, which made every Circular Medium surface read a weight above the comp
      once the real 500 cut shipped. Affects Graphik too — the comps are the target
@@ -861,9 +861,7 @@
 
    Which navigations animate is decided in pages/router.tsx: it tags real path
    changes with the `page` transition type, and vetoes search-param-only
-   navigations outright. Everything below is scoped to that type, so in a
-   browser without view-transition-types support nothing matches and the app
-   degrades to today's instant swap. */
+   navigations outright. Everything below is scoped to that type. */
 
 /* ONLY the page content is captured. Suppressing the root's name is what keeps
    the background, header and navbar genuinely still: an uncaptured element
@@ -877,8 +875,22 @@
   view-transition-name: none;
 }
 
-.page-transition {
-  view-transition-name: page;
+/* Naming the page is gated on transition *types*, not on view transitions at
+   large, because the router only gets to decide anything when types exist:
+   TanStack tests `CSS.supports('selector(:active-view-transition-type(a))')`
+   and, when that fails, starts the transition in its plain callback form —
+   the `types` callback never runs. So in Chrome 111–124, Safari 18.0–18.1 and
+   Firefox 144–146 the vetoes are silently gone, `--vt-scroll` is never
+   written, and the initial boot render animates too. Withholding the name in
+   exactly those browsers leaves nothing captured (the root is suppressed
+   above), which is what actually delivers the instant swap the fallback is
+   supposed to be — the alternative is a UA-default crossfade of the page's
+   top edge whenever a search param changes. The test mirrors TanStack's own,
+   with our real name substituted for its probe. */
+@supports selector(:active-view-transition-type(page)) {
+  .page-transition {
+    view-transition-name: page;
+  }
 }
 
 /* The snapshots paint in the top layer, above the whole page, and they
@@ -905,11 +917,15 @@
    the router (pages/router.tsx) in the same synchronous step that starts the
    transition. A snapshot is the *entire* tall element, so offsetting the
    outgoing one by that much is what makes it show the part that was actually
-   on screen rather than its top. The incoming page is always at scroll 0, so
-   it needs no offset. */
+   on screen rather than its top. The incoming page needs no offset because it
+   is always at scroll 0 — which holds only because the router keeps
+   back/forward out of the transition entirely; those are the navigations
+   scrollRestoration starts at an offset, and the reasoning is over there. */
 ::view-transition-group(page) {
   animation: none;
-  height: 100vh;
+  /* Dynamic viewport units so the box tracks the visible area under mobile
+     browser toolbars rather than the largest possible one. */
+  height: 100dvh;
 }
 ::view-transition-old(page) {
   object-position: left calc(-1 * var(--vt-scroll, 0px));

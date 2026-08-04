@@ -153,13 +153,34 @@ const CustomizedLabel = (
  */
 const SERIES_STROKE_WIDTH = 1.5;
 /** Hover dot: 12px overall — r 5.25 under a 1.5 ring in the series colour. */
-const ACTIVE_DOT = {
-  r: 5.25,
-  strokeWidth: SERIES_STROKE_WIDTH,
-  fill: 'var(--color-statusBrandBg)'
-} as const;
+const ACTIVE_DOT_RADIUS = 5.25;
 
-/** How much of the series' alpha survives past the hover cursor (DS Line hover). */
+/**
+ * The ringed dot under the hover cursor (Figma 5273:12162).
+ *
+ * Its core is drawn twice: an opaque page-background disc under the
+ * `statusBrandBg` tint. The tint alone is 10% alpha, so the series and the
+ * dashed hover cursor both read straight through the dot — the comp draws it
+ * solid.
+ */
+function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string }) {
+  if (cx == null || cy == null) return null;
+  return (
+    <g data-testid="chart-active-dot">
+      <circle cx={cx} cy={cy} r={ACTIVE_DOT_RADIUS} fill="var(--color-pageBackground)" />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={ACTIVE_DOT_RADIUS}
+        fill="var(--color-statusBrandBg)"
+        stroke={color}
+        strokeWidth={SERIES_STROKE_WIDTH}
+      />
+    </g>
+  );
+}
+
+/** How much of the series' alpha survives outside the hover window (DS Line hover). */
 const POST_CURSOR_ALPHA = 0.4;
 
 /**
@@ -182,11 +203,26 @@ const REVEAL_DURATION_MS = 900;
 const REVEAL_EASING = 'cubic-bezier(0.77,0,0.175,1)';
 
 /**
- * DS Line hover (Figma 5273:12162): the plotted series keeps full strength up
- * to the hover cursor and dims past it. Implemented as a luminance mask on the
- * Area — white keeps the series, gray fades stroke+fill together — so the
- * dimming can't veil the glass card background the way an overlay rect would.
- * Rendered inside the AreaChart, where recharts' chart-context hooks resolve.
+ * Half-width of the lit window, in px — the DS mock's mask measures 45px across
+ * (Figma 5391:44830).
+ *
+ * It is a flat number rather than the distance to the neighbouring data points
+ * the ticket describes, because the series are far denser than they look: the
+ * Morpho rate chart plots 170 hourly points over 779px at 1W and 722 at 1M, so
+ * neighbours sit 1–5px apart and a point-relative window would light little
+ * more than the hover dot. Charts sparse enough for it to matter (the portfolio
+ * protocol statistics, 7–8 points) would swing the other way and light a third
+ * of the plot. One width keeps every chart reading alike.
+ */
+const HALF_WINDOW = 22;
+
+/**
+ * DS Line hover (Figma 5273:12162): the plotted series dims and only a window
+ * around the hover point stays at full strength. Implemented as a luminance
+ * mask on the Area — white keeps the series, gray fades stroke+fill together —
+ * so the dimming can't veil the glass card background the way an overlay rect
+ * would. Rendered inside the AreaChart, where recharts' chart-context hooks
+ * resolve.
  */
 export function HoverDimMask({ id }: { id: string }) {
   const isActive = useIsTooltipActive();
@@ -197,31 +233,65 @@ export function HoverDimMask({ id }: { id: string }) {
   // full-coverage white mask so the series never flashes hidden.
   const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
 
+  const litStart = cursorX != null ? Math.max(cursorX - HALF_WINDOW, 0) : 0;
+  const litEnd = cursorX != null && width != null ? Math.min(cursorX + HALF_WINDOW, width) : 0;
+
   return (
     <defs>
       <mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={width ?? '100%'} height={height ?? '100%'}>
         <rect
-          data-testid="chart-dim-mask-lit"
+          data-testid="chart-dim-mask-base"
           x={0}
           y={0}
-          width={cursorX ?? width ?? '100%'}
+          width={width ?? '100%'}
           height={height ?? '100%'}
           fill="white"
+          opacity={cursorX != null ? POST_CURSOR_ALPHA : 1}
         />
-        {cursorX != null && width != null && (
+        {cursorX != null && (
           <rect
-            data-testid="chart-dim-mask-dimmed"
-            x={cursorX}
+            data-testid="chart-dim-mask-lit"
+            x={litStart}
             y={0}
-            width={Math.max(width - cursorX, 0)}
+            width={Math.max(litEnd - litStart, 0)}
             height={height ?? '100%'}
             fill="white"
-            opacity={POST_CURSOR_ALPHA}
           />
         )}
       </mask>
     </defs>
   );
+}
+
+/** Id of the body-level layer every chart tooltip renders into. */
+const TOOLTIP_PORTAL_ID = 'chart-tooltip-portal';
+
+/**
+ * The layer the chart tooltip is portalled into (APP-443 item 19.1).
+ *
+ * Rendered inside the chart card, the tooltip's `backdrop-filter` has nothing
+ * to work with: the card carries its own `backdrop-blur`, which makes it a
+ * backdrop root, and a nested backdrop-filter then samples an empty backdrop —
+ * so the plot showed straight through the panel unblurred. Hoisting it to the
+ * body puts it in the same position as every other app tooltip, which is
+ * portalled by Radix, and the frost resolves against the page.
+ */
+function useChartTooltipPortal(): HTMLElement | null {
+  const [portal, setPortal] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let element = document.getElementById(TOOLTIP_PORTAL_ID);
+    if (!element) {
+      element = document.createElement('div');
+      element.id = TOOLTIP_PORTAL_ID;
+      // z-101 matches the app tooltip tier — above the z-100 popovers.
+      element.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:101';
+      document.body.appendChild(element);
+    }
+    setPortal(element);
+  }, []);
+
+  return portal;
 }
 
 const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP) => {
@@ -543,6 +613,10 @@ function ChartContent({
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
   const dimMaskId = useId();
+  const tooltipPortal = useChartTooltipPortal();
+  // The plot box, so the portalled tooltip can turn recharts' chart-space
+  // coordinate into viewport pixels.
+  const plotRef = useRef<HTMLDivElement>(null);
 
   // components/charts/bg-chart2 unless the caller themes the series (e.g. the
   // Stake destination chart's bg-chart1 indigo).
@@ -566,72 +640,89 @@ function ChartContent({
         </VStack>
       }
     >
-      <ResponsiveContainer width={'100%'} height={resolvedHeight}>
-        <AreaChart
-          data={data}
-          margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isDetail ? 0 : isLarge ? 22 : 0, left: 0 }}
-        >
-          <defs>
-            {/* The area wash is one hue fading to nothing at the plot floor
-                (Figma 859:35718). It used to end at 75% — and, on the default
-                teal, to fade into a *different* hue (#00A167 green) — which is
-                what read as the wrong colour and the short gradient in APP-432
-                item 9. */}
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="100%" gradientUnits="objectBoundingBox">
-              <stop offset="0%" stopColor={seriesColor} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={seriesColor} stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <HoverDimMask id={dimMaskId} />
-          <YAxis domain={['dataMin', 'dataMax']} padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }} hide />
-          {/* We can't extract the XAxis component outside of the chart as in the designs */}
-          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
-          {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
-          <Tooltip
-            // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162 —
-            // border-quaternary, 3/3 dashes with round caps).
-            cursor={{
-              stroke: 'var(--color-borderQuarternary)',
-              strokeWidth: 1,
-              strokeDasharray: '3 3',
-              strokeLinecap: 'round'
-            }}
-            content={
-              <ChartTooltip
-                symbol={symbol}
-                isPercentage={isPercentage}
-                labelFormatter={date => formatDate(date, activeTimeframe)}
-                prefix={prefix}
-                tooltipLabel={tooltipLabel}
-                tokenSymbols={tokenSymbols}
-              />
-            }
-          />
+      <div ref={plotRef}>
+        <ResponsiveContainer width={'100%'} height={resolvedHeight}>
+          <AreaChart
+            data={data}
+            margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isDetail ? 0 : isLarge ? 22 : 0, left: 0 }}
+          >
+            <defs>
+              {/* The area wash is one hue fading to nothing at the plot floor
+                  (Figma 859:35718). It used to end at 75% — and, on the default
+                  teal, to fade into a *different* hue (#00A167 green) — which is
+                  what read as the wrong colour and the short gradient in APP-432
+                  item 9. */}
+              <linearGradient
+                id={gradientId}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="100%"
+                gradientUnits="objectBoundingBox"
+              >
+                <stop offset="0%" stopColor={seriesColor} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={seriesColor} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <HoverDimMask id={dimMaskId} />
+            <YAxis
+              domain={['dataMin', 'dataMax']}
+              padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }}
+              hide
+            />
+            {/* We can't extract the XAxis component outside of the chart as in the designs */}
+            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
+            {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
+            <Tooltip
+              // Out of the card so the panel's frost has a backdrop to sample
+              // (see useChartTooltipPortal); the tooltip places itself.
+              portal={tooltipPortal}
+              // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162 —
+              // border-quaternary, 3/3 dashes with round caps).
+              cursor={{
+                stroke: 'var(--color-borderQuarternary)',
+                strokeWidth: 1,
+                strokeDasharray: '3 3',
+                strokeLinecap: 'round'
+              }}
+              content={
+                <ChartTooltip
+                  symbol={symbol}
+                  isPercentage={isPercentage}
+                  labelFormatter={date => formatDate(date, activeTimeframe)}
+                  prefix={prefix}
+                  tooltipLabel={tooltipLabel}
+                  tokenSymbols={tokenSymbols}
+                  anchorRef={plotRef}
+                />
+              }
+            />
 
-          <Area
-            dataKey="value"
-            stroke={seriesColor}
-            strokeWidth={SERIES_STROKE_WIDTH}
-            strokeLinecap="round"
-            type="monotone"
-            fill={`url(#${gradientId})`}
-            // Dim the series past the hover cursor (mask above); the active dot
-            // and tooltip render outside the masked layer, so they stay lit.
-            mask={`url(#${dimMaskId})`}
-            label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
-            // No resting points — the DS plots the bare line.
-            dot={false}
-            // Ringed hover dot at the cursor point (Figma 5273:12162).
-            activeDot={{ ...ACTIVE_DOT, stroke: seriesColor }}
-            // Entrance wipe — see REVEAL_DURATION_MS. Leaving isAnimationActive
-            // at its 'auto' default is deliberate: it resolves to off under
-            // prefers-reduced-motion (and under SSR), so the reveal needs no
-            // reduced-motion handling of its own.
-            animationDuration={REVEAL_DURATION_MS}
-            animationEasing={REVEAL_EASING}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+            <Area
+              dataKey="value"
+              stroke={seriesColor}
+              strokeWidth={SERIES_STROKE_WIDTH}
+              strokeLinecap="round"
+              type="monotone"
+              fill={`url(#${gradientId})`}
+              // Dim everything outside the hover window (mask above); the active
+              // dot renders outside the masked layer, so it stays lit.
+              mask={`url(#${dimMaskId})`}
+              label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
+              // No resting points — the DS plots the bare line.
+              dot={false}
+              // Ringed hover dot at the cursor point (Figma 5273:12162).
+              activeDot={<ActiveDot color={seriesColor} />}
+              // Entrance wipe — see REVEAL_DURATION_MS. Leaving isAnimationActive
+              // at its 'auto' default is deliberate: it resolves to off under
+              // prefers-reduced-motion (and under SSR), so the reveal needs no
+              // reduced-motion handling of its own.
+              animationDuration={REVEAL_DURATION_MS}
+              animationEasing={REVEAL_EASING}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </LoadingErrorWrapper>
   );
 }

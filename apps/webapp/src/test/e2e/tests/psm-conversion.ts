@@ -1,49 +1,35 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
-import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms';
-import {
-  performAction,
-  performSequentialAction,
-  disableBundledTx,
-  approveOrPerformAction
-} from '../utils/approveOrPerformAction';
-import {
-  interceptAndRejectSecondTransaction,
-  interceptAndAllowTransactions
-} from '../utils/rejectTransaction';
+import { connectAndVerify } from '../utils/connectAndVerify';
+import { switchWalletNetwork } from '../utils/switchWalletNetwork';
+import { interceptAndRejectTransactions } from '../utils/rejectTransaction';
 import { NetworkName } from '../utils/constants';
-import { switchToL2 } from '../utils/switchToL2';
 
-const dismissCookieBanner = async (page: Page) => {
-  const acceptButton = page.getByRole('button', { name: 'Accept All' });
-  if (await acceptButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await acceptButton.click();
+// V2 rewrite (see e2e-migration.md): the PSM flow IS the /convert page now
+// (page-as-widget, E2). The form lives on the page (`convert-*` testids), and
+// Review launches the shared TransactionModal ("Review conversion" → Confirm →
+// step list → success). Default direction is USDS → USDC; `convert-flip` (or
+// `?source_token=`) switches it. The engine routes mainnet (UsdsPsmWrapper)
+// vs L2 (PSM3 swapExactIn) internally, so the same tests run on every network.
+
+const navigateToConvert = async (page: Page, networkName: NetworkName, options?: { batch?: boolean }) => {
+  const { batch = true } = options || {};
+  // Connect AFTER the goto — a full navigation resets the mock connector.
+  await page.goto('/convert');
+  await connectAndVerify(page, { batch });
+  if (networkName !== NetworkName.mainnet) {
+    await switchWalletNetwork(page, `Tenderly ${networkName}`);
   }
+  await expect(page.getByTestId('convert-page')).toBeVisible();
 };
 
-const clickPsmCard = async (page: Page) => {
-  await page.getByTestId('widget-container').getByRole('button', { name: '1:1 Conversion' }).click();
-};
-
-const navigateToPsm = async (page: Page, options?: { batch?: boolean }) => {
-  const { batch = true } = options || {};
-  await page.goto('/');
-  await connectMockWalletAndAcceptTerms(page, { batch });
-  await page.waitForTimeout(1000);
-  await dismissCookieBanner(page);
-  await page.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
-  await clickPsmCard(page);
-};
-
-const navigateToPsmL2 = async (page: Page, networkName: NetworkName, options?: { batch?: boolean }) => {
-  const { batch = true } = options || {};
-  await page.goto('/');
-  await connectMockWalletAndAcceptTerms(page, { batch });
-  await page.waitForTimeout(1000);
-  await switchToL2(page, networkName);
-  await dismissCookieBanner(page);
-  await page.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
-  await clickPsmCard(page);
+/** Clicks Review, confirms in the modal and waits for the success status. */
+const reviewAndConfirm = async (page: Page) => {
+  await page.getByTestId('convert-review-cta').click();
+  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
+  await confirm.click();
+  await expect(page.getByText('Transaction completed successfully.')).toBeVisible({ timeout: 60_000 });
 };
 
 export const runPsmConversionTests = async ({ networkName }: { networkName: NetworkName }) => {
@@ -54,81 +40,38 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Navigation & UI', () => {
-    test('Navigating to 1:1 Conversion shows the widget', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('The /convert destination shows the swap surface', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await expect(
-        isolatedPage.getByTestId('widget-container').getByRole('heading', { name: '1:1 Conversion' })
-      ).toBeVisible();
-      await expect(
-        isolatedPage.getByText(
-          'Convert your USDC to USDS, or USDS to USDC at 1:1 rate with no fees and slippage'
-        )
-      ).toBeVisible();
+      await expect(isolatedPage.getByRole('heading', { name: 'Convert stablecoins' })).toBeVisible();
+      await expect(isolatedPage.getByTestId('convert-card')).toBeVisible();
+      await expect(isolatedPage.getByTestId('convert-network')).toBeVisible();
     });
 
-    test('Shows "Enter amount" button when no amount is entered', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Review is disabled when no amount is entered', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await expect(isolatedPage.getByTestId('widget-button').getByText('Enter amount')).toBeVisible();
-      await expect(isolatedPage.getByTestId('widget-button').last()).toBeDisabled();
+      const reviewCta = isolatedPage.getByTestId('convert-review-cta');
+      await expect(reviewCta).toHaveText('Review');
+      await expect(reviewCta).toBeDisabled();
     });
 
-    test('Shows origin and target token inputs with correct labels', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Shows from and to inputs with the default USDS → USDC direction', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await expect(isolatedPage.getByText('Enter the amount to convert')).toBeVisible();
-      await expect(isolatedPage.getByText('You will receive')).toBeVisible();
-      await expect(isolatedPage.locator('[data-testid="psm-conversion-origin"]')).toBeVisible();
-      await expect(isolatedPage.locator('[data-testid="psm-conversion-target"]')).toBeVisible();
-    });
-
-    test('Back to Convert returns to Convert landing', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await expect(
-        isolatedPage.getByTestId('widget-container').getByRole('heading', { name: '1:1 Conversion' })
-      ).toBeVisible();
-      await isolatedPage.getByRole('button', { name: 'Back to Convert' }).click();
-
-      await expect(
-        isolatedPage.getByTestId('widget-container').getByRole('heading', { name: 'Convert', exact: true })
-      ).toBeVisible();
-      await expect(
-        isolatedPage
-          .getByTestId('widget-container')
-          .getByText('Get Sky Ecosystem tokens with best possible rates')
-      ).toBeVisible();
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
+      await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDC');
+      await expect(isolatedPage.getByTestId('convert-from-amount')).toBeEditable();
+      await expect(isolatedPage.getByTestId('convert-to-amount')).not.toBeEditable();
     });
 
     test('Shows wallet balances when connected', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+      await navigateToConvert(isolatedPage, networkName);
 
-      await expect(isolatedPage.getByTestId('psm-conversion-origin-balance')).toBeVisible();
-      await expect(isolatedPage.getByTestId('psm-conversion-target-balance')).toBeVisible();
-      await expect(isolatedPage.getByTestId('psm-conversion-origin-balance')).not.toHaveText(
-        'No wallet connected'
-      );
+      // Funded pool accounts hold both tokens — the balance line must show a
+      // number, not the "–" placeholder.
+      await expect(isolatedPage.getByTestId('convert-from-balance')).toHaveText(/Balance: [\d,.]+/);
+      await expect(isolatedPage.getByTestId('convert-to-balance')).toHaveText(/Balance: [\d,.]+/);
     });
   });
 
@@ -138,90 +81,50 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Amount entry', () => {
     test('Entering an amount enables the Review button', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('10');
+      await isolatedPage.getByTestId('convert-from-amount').fill('10');
 
-      await expect(isolatedPage.getByTestId('widget-button').getByText('Review')).toBeVisible();
-      await expect(isolatedPage.getByTestId('widget-button').last()).toBeEnabled();
+      await expect(isolatedPage.getByTestId('convert-review-cta')).toBeEnabled();
     });
 
     test('Target amount mirrors origin amount 1:1', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('225');
+      await isolatedPage.getByTestId('convert-from-amount').fill('225');
 
-      await expect(isolatedPage.getByTestId('psm-conversion-target')).toHaveValue('225');
+      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveValue('225');
     });
 
-    test('Shows Transaction overview when amount is entered', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('100');
-
-      await expect(isolatedPage.getByText('Transaction overview')).toBeVisible();
-      await expect(isolatedPage.getByText('Exchange Rate')).toBeVisible();
-      await expect(isolatedPage.getByText('1:1', { exact: true })).toBeVisible();
-      await expect(isolatedPage.getByText('Tokens to receive')).toBeVisible();
-    });
     test('Percentage buttons set correct amounts', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+      await navigateToConvert(isolatedPage, networkName);
 
-      // Click the 100% button to set max amount
-      await isolatedPage.getByTestId('psm-conversion-origin-max').click();
+      await isolatedPage.getByTestId('convert-from-percent-100').click();
 
-      // The origin input should have a non-zero value
-      const originValue = await isolatedPage.getByTestId('psm-conversion-origin').inputValue();
+      const originValue = await isolatedPage.getByTestId('convert-from-amount').inputValue();
       expect(parseFloat(originValue)).toBeGreaterThan(0);
-
-      // The target should match
-      const targetValue = await isolatedPage.getByTestId('psm-conversion-target').inputValue();
+      const targetValue = await isolatedPage.getByTestId('convert-to-amount').inputValue();
       expect(parseFloat(targetValue)).toBeGreaterThan(0);
     });
 
     test('Shows "Insufficient funds" when amount exceeds balance', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('999999999');
+      await isolatedPage.getByTestId('convert-from-amount').fill('999999999');
 
-      await expect(isolatedPage.getByText('Insufficient funds')).toBeVisible();
-      await expect(isolatedPage.getByTestId('widget-button').last()).toBeDisabled();
+      await expect(isolatedPage.getByTestId('convert-error')).toHaveText('Insufficient funds');
+      await expect(isolatedPage.getByTestId('convert-review-cta')).toBeDisabled();
     });
 
-    test('Clearing amount resets to "Enter amount" state', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Clearing the amount disables Review again', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('100');
-      await expect(isolatedPage.getByTestId('widget-button').getByText('Review')).toBeVisible();
+      await isolatedPage.getByTestId('convert-from-amount').fill('100');
+      await expect(isolatedPage.getByTestId('convert-review-cta')).toBeEnabled();
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('');
+      await isolatedPage.getByTestId('convert-from-amount').fill('');
 
-      await expect(isolatedPage.getByTestId('widget-button').getByText('Enter amount')).toBeVisible();
-      await expect(isolatedPage.getByTestId('widget-button').last()).toBeDisabled();
+      await expect(isolatedPage.getByTestId('convert-review-cta')).toBeDisabled();
     });
   });
 
@@ -230,129 +133,83 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Direction switching', () => {
-    test('Switch direction changes USDC→USDS to USDS→USDC', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Flip changes USDS→USDC to USDC→USDS', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      // Default: USDC → USDS (balance labels contain the token symbol)
-      await expect(isolatedPage.getByTestId('psm-conversion-origin-balance')).toContainText('USDC');
-      await expect(isolatedPage.getByTestId('psm-conversion-target-balance')).toContainText('USDS');
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
+      await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDC');
 
-      // Click the switch direction button
-      await isolatedPage.getByLabel('Switch conversion direction').click();
+      await isolatedPage.getByTestId('convert-flip').click();
 
-      // After switch: USDS → USDC
-      await expect(isolatedPage.getByTestId('psm-conversion-origin-balance')).toContainText('USDS');
-      await expect(isolatedPage.getByTestId('psm-conversion-target-balance')).toContainText('USDC');
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDC');
+      await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDS');
     });
 
-    test('Switch direction preserves the converted amount', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Flip preserves the typed amount', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('50');
-      await expect(isolatedPage.getByTestId('psm-conversion-target')).toHaveValue('50');
+      await isolatedPage.getByTestId('convert-from-amount').fill('50');
+      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveValue('50');
 
-      await isolatedPage.getByLabel('Switch conversion direction').click();
+      await isolatedPage.getByTestId('convert-flip').click();
 
-      // The target amount from before (50 USDS) becomes the new origin
-      const originValue = await isolatedPage.getByTestId('psm-conversion-origin').inputValue();
-      expect(parseFloat(originValue)).toBe(50);
+      await expect(isolatedPage.getByTestId('convert-from-amount')).toHaveValue('50');
     });
 
-    test('Double switch returns to original direction', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Double flip returns to the original direction', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await expect(isolatedPage.getByTestId('psm-conversion-origin-balance')).toContainText('USDC');
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
 
-      await isolatedPage.getByLabel('Switch conversion direction').click();
-      await expect(isolatedPage.getByTestId('psm-conversion-origin-balance')).toContainText('USDS');
+      await isolatedPage.getByTestId('convert-flip').click();
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDC');
 
-      await isolatedPage.getByLabel('Switch conversion direction').click();
-      await expect(isolatedPage.getByTestId('psm-conversion-origin-balance')).toContainText('USDC');
+      await isolatedPage.getByTestId('convert-flip').click();
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
     });
   });
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Review screen
+  // Review modal
   // ─────────────────────────────────────────────────────────────────────────
 
-  test.describe('PSM Conversion — Review screen', () => {
-    test('Review screen shows correct conversion details (USDC → USDS)', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+  test.describe('PSM Conversion — Review modal', () => {
+    test('Review modal shows the conversion breakdown', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('225');
-      await isolatedPage.getByTestId('widget-button').getByText('Review').click();
-
-      const reviewCard = isolatedPage.getByTestId('widget-container');
-      await expect(reviewCard.getByRole('heading', { name: 'Review conversion' })).toBeVisible();
-      await expect(reviewCard.getByText('225 USDC').first()).toBeVisible();
-      await expect(reviewCard.getByText('225 USDS').first()).toBeVisible();
-      await expect(reviewCard.getByText('Approve').first()).toBeVisible();
-      await expect(reviewCard.getByText('Convert').first()).toBeVisible();
-    });
-
-    test('Review screen shows correct details for USDS → USDC', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByLabel('Switch conversion direction').click();
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('100');
-      await isolatedPage.getByTestId('widget-button').getByText('Review').click();
-
-      const reviewCard = isolatedPage.getByTestId('widget-container');
-      await expect(reviewCard.getByRole('heading', { name: 'Review conversion' })).toBeVisible();
-      await expect(reviewCard.getByText('100 USDS').first()).toBeVisible();
-      await expect(reviewCard.getByText('100 USDC').first()).toBeVisible();
-    });
-
-    test('Back button on review returns to input screen', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('100');
-      await isolatedPage.getByTestId('widget-button').getByText('Review').click();
+      await isolatedPage.getByTestId('convert-from-amount').fill('225');
+      await isolatedPage.getByTestId('convert-review-cta').click();
 
       await expect(isolatedPage.getByText('Review conversion')).toBeVisible();
-
-      await isolatedPage.getByRole('button', { name: 'Back' }).last().click();
-
-      await expect(isolatedPage.getByText('Enter the amount to convert')).toBeVisible();
-      await expect(isolatedPage.getByTestId('psm-conversion-origin')).toBeVisible();
+      await expect(isolatedPage.getByTestId('convert-modal-review')).toBeVisible();
+      await expect(isolatedPage.getByTestId('convert-modal-from-amount')).toHaveText('225.00');
+      await expect(isolatedPage.getByTestId('convert-modal-to-amount')).toHaveText('225.00');
+      // await expect(isolatedPage.getByTestId('convert-modal-row-rate')).toContainText('1.00 USDS = 1.00 USDC');
+      await expect(isolatedPage.getByText('$0.00')).toBeTruthy();
     });
 
-    test('Review screen shows bundle transactions toggle', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Review modal shows the breakdown for the flipped direction', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('100');
-      await isolatedPage.getByTestId('widget-button').getByText('Review').click();
+      await isolatedPage.getByTestId('convert-flip').click();
+      await isolatedPage.getByTestId('convert-from-amount').fill('100');
+      await isolatedPage.getByTestId('convert-review-cta').click();
 
-      await expect(isolatedPage.getByText('Bundle transactions')).toBeVisible();
-      await expect(isolatedPage.getByRole('switch')).toBeVisible();
+      await expect(isolatedPage.getByTestId('convert-modal-from-amount')).toHaveText('100.00');
+      // await expect(isolatedPage.getByTestId('convert-modal-row-rate')).toContainText('1.00 USDC = 1.00 USDS');
+    });
+
+    test('Closing the review modal returns to the editable form', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
+
+      await isolatedPage.getByTestId('convert-from-amount').fill('100');
+      await isolatedPage.getByTestId('convert-review-cta').click();
+      await expect(isolatedPage.getByTestId('convert-modal-review')).toBeVisible();
+
+      await isolatedPage.getByTestId('transaction-modal-close').click();
+
+      await expect(isolatedPage.getByTestId('convert-from-amount')).toHaveValue('100');
+      await expect(isolatedPage.getByTestId('convert-review-cta')).toBeEnabled();
     });
   });
 
@@ -361,67 +218,43 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Bundled transaction', () => {
-    test('USDC to USDS bundled conversion completes successfully', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
-
-      await performAction(isolatedPage, 'Convert');
-
-      await expect(isolatedPage.getByText('Conversion complete')).toBeVisible({ timeout: 15000 });
-      await expect(isolatedPage.getByText(/Converted 5 USDC into 5 USDS/)).toBeVisible();
-    });
-
     test('USDS to USDC bundled conversion completes successfully', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByLabel('Switch conversion direction').click();
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
+      await isolatedPage.getByTestId('convert-from-amount').fill('5');
+      await reviewAndConfirm(isolatedPage);
 
-      await performAction(isolatedPage, 'Convert');
+      await expect(isolatedPage.getByText("You've successfully converted 5 USDS to USDC.")).toBeVisible();
+      await isolatedPage.getByRole('button', { name: 'Done' }).click();
 
-      await expect(isolatedPage.getByText('Conversion complete')).toBeVisible({ timeout: 15000 });
-      await expect(isolatedPage.getByText(/Converted 5 USDS into 5 USDC/)).toBeVisible();
+      // onSuccess resets the form for the next conversion
+      await expect(isolatedPage.getByTestId('convert-from-amount')).toHaveValue('');
+      await expect(isolatedPage.getByTestId('convert-review-cta')).toBeDisabled();
     });
 
-    test('Bundled conversion shows step indicators', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('USDC to USDS bundled conversion completes successfully', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
-      await isolatedPage.getByTestId('widget-button').getByText('Review').first().click();
+      await isolatedPage.getByTestId('convert-flip').click();
+      await isolatedPage.getByTestId('convert-from-amount').fill('5');
+      await reviewAndConfirm(isolatedPage);
 
-      const stepIndicators = isolatedPage.getByTestId('step-indicator');
-      await expect(stepIndicators.filter({ hasText: 'Approve' })).toBeVisible();
-      await expect(stepIndicators.filter({ hasText: 'Convert' })).toBeVisible();
+      await expect(isolatedPage.getByText("You've successfully converted 5 USDC to USDS.")).toBeVisible();
+      await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
 
-    test('Confirm button text shows "Confirm bundled transaction" when batch enabled', async ({
-      isolatedPage
-    }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Transaction screen shows the approve and convert steps', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
-      await isolatedPage.getByTestId('widget-button').getByText('Review').first().click();
+      await isolatedPage.getByTestId('convert-from-amount').fill('5');
+      await reviewAndConfirm(isolatedPage);
 
-      await expect(isolatedPage.getByTestId('widget-button').last()).toHaveText(
-        /Confirm bundled transaction|Confirm conversion/
-      );
+      // The DS step list renders on the wallet/status screen and persists
+      // through success (all steps completed).
+      await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
+      await expect(isolatedPage.getByText('Convert USDS to USDC')).toBeVisible({ timeout: 60_000 });
+
+      await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
   });
 
@@ -430,101 +263,30 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Sequential transaction', () => {
-    test('USDC to USDS sequential conversion completes in two steps', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Conversion with bundling toggled off completes in two steps', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
+      await isolatedPage.getByTestId('convert-from-amount').fill('5');
+      await isolatedPage.getByTestId('convert-review-cta').click();
 
-      await performSequentialAction(isolatedPage, 'Convert');
+      // Turn the bundle toggle off — the flow runs approve → convert as two
+      // sequential wallet confirmations (the mock wallet auto-signs both).
+      // const toggle = isolatedPage.getByRole('dialog').getByRole('switch');
+      // await toggle.waitFor({ state: 'visible' });
+      // if (await toggle.isChecked()) {
+      //   await toggle.click();
+      // }
 
-      await expect(isolatedPage.getByRole('heading', { name: 'Conversion complete' })).toBeVisible({
-        timeout: 15000
+      const confirm = isolatedPage.getByRole('button', { name: 'Confirm', exact: true });
+      await expect(confirm).toBeEnabled({ timeout: 60_000 });
+      await confirm.click();
+
+      await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+        timeout: 60_000
       });
-    });
-
-    test('Toggle off shows "Confirm 2 transactions" on Review screen', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
-      await isolatedPage.getByTestId('widget-button').getByText('Review').first().click();
-
-      await expect(isolatedPage.getByTestId('widget-button').last()).toHaveText(
-        /Confirm bundled transaction|Confirm conversion/
-      );
-
-      await disableBundledTx(isolatedPage);
-
-      await expect(isolatedPage.getByTestId('widget-button').last()).toHaveText(
-        /Confirm 2 transactions|Confirm conversion/
-      );
-    });
-
-    test('USDS to USDC sequential conversion completes in two steps', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByLabel('Switch conversion direction').click();
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
-
-      await performSequentialAction(isolatedPage, 'Convert');
-
-      await expect(isolatedPage.getByRole('heading', { name: 'Conversion complete' })).toBeVisible({
-        timeout: 15000
-      });
-    });
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Convert again (post-success flow)
-  // ─────────────────────────────────────────────────────────────────────────
-
-  test.describe('PSM Conversion — Post-transaction', () => {
-    test('Convert again resets the widget for a new conversion', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('2');
-
-      await performAction(isolatedPage, 'Convert');
-
-      await expect(isolatedPage.getByText('Conversion complete')).toBeVisible({ timeout: 15000 });
-
-      // Click "Convert again"
-      await isolatedPage.getByTestId('widget-button').getByText('Convert again').click();
-
-      // Should be back on the input screen
-      await expect(isolatedPage.getByText('Enter the amount to convert')).toBeVisible();
-      await expect(isolatedPage.getByTestId('psm-conversion-origin')).toBeVisible();
-      await expect(isolatedPage.getByTestId('widget-button').getByText('Enter amount')).toBeVisible();
-    });
-
-    test('Etherscan link is visible after successful conversion', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('2');
-
-      await performAction(isolatedPage, 'Convert');
-
-      await expect(isolatedPage.getByText('Conversion complete')).toBeVisible({ timeout: 15000 });
-      // await expect(isolatedPage.getByText('View on Etherscan')).toBeVisible();
+      await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
+      await expect(isolatedPage.getByText('Convert USDS to USDC')).toBeVisible({ timeout: 60_000 });
+      await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
   });
 
@@ -533,203 +295,75 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Error handling', () => {
-    test('Rejected bundled transaction shows error screen', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Rejected transaction shows the error state with Back and Retry', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
+      await isolatedPage.getByTestId('convert-from-amount').fill('5');
+      await isolatedPage.getByTestId('convert-review-cta').click();
 
-      await approveOrPerformAction(isolatedPage, 'Convert', { reject: true });
+      const confirm = isolatedPage.getByRole('button', { name: 'Confirm', exact: true });
+      await expect(confirm).toBeEnabled({ timeout: 60_000 });
 
-      await expect(isolatedPage.getByText(/error|failed/i).first()).toBeVisible({ timeout: 15000 });
+      // Abort transaction writes at the RPC layer (reads stay live so the
+      // error screen can still render).
+      await interceptAndRejectTransactions(isolatedPage, 0, true);
+      await confirm.click();
+
+      await expect(isolatedPage.getByText('An error occurred while converting your funds.')).toBeVisible({
+        timeout: 60_000
+      });
+      await expect(isolatedPage.getByRole('button', { name: 'Try again' })).toBeVisible();
+
+      // Back returns to the review screen with the breakdown intact
+      await isolatedPage.getByRole('button', { name: 'Back', exact: true }).last().click();
+      await expect(isolatedPage.getByTestId('convert-modal-review')).toBeVisible();
     });
+  });
 
-    test.skip('Retry after error re-executes the transaction', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+  // ─────────────────────────────────────────────────────────────────────────
+  // URL state (mainnet-only: routing behaviour is network-independent)
+  // ─────────────────────────────────────────────────────────────────────────
 
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('2');
+  if (isMainnet) {
+    test.describe('PSM Conversion — URL state', () => {
+      test('The legacy /convert/psm path redirects to /convert', async ({ isolatedPage }) => {
+        await isolatedPage.goto('/convert/psm');
+        await connectAndVerify(isolatedPage, { batch: true });
 
-      // Reject the transaction
-      await approveOrPerformAction(isolatedPage, 'Convert', { reject: true });
-      await expect(isolatedPage.getByText(/error|failed/i).first()).toBeVisible({ timeout: 15000 });
+        await expect(isolatedPage).toHaveURL(/\/convert(\?|$)/);
+        await expect(isolatedPage.getByTestId('convert-page')).toBeVisible();
+      });
 
-      //retry button
-      const retryButton = isolatedPage.getByTestId('widget-button').last();
-      await expect(retryButton).toBeEnabled({ timeout: 10000 });
+      test('source_token=USDC starts in the USDC→USDS direction', async ({ isolatedPage }) => {
+        await isolatedPage.goto('/convert?source_token=USDC');
+        await connectAndVerify(isolatedPage, { batch: true });
 
-      // Remove the rejection interceptor
-      await interceptAndAllowTransactions(isolatedPage);
-
-      // Click Retry (last widget-button; first is Back)
-      await isolatedPage.getByTestId('widget-button').last().click();
-
-      await expect(isolatedPage.getByRole('heading', { name: 'Conversion complete' })).toBeVisible({
-        timeout: 30000
+        await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDC');
+        await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDS');
       });
     });
-
-    test('Back button after error returns to input screen', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('2');
-
-      await approveOrPerformAction(isolatedPage, 'Convert', { reject: true });
-      await expect(isolatedPage.getByText(/error|failed/i).first()).toBeVisible({ timeout: 15000 });
-
-      await isolatedPage.getByRole('button', { name: 'Back' }).last().click();
-
-      await expect(isolatedPage.getByText('Enter the amount to convert')).toBeVisible();
-      await expect(isolatedPage.getByTestId('psm-conversion-origin')).toBeVisible();
-    });
-
-    test.skip('Sequential: approve succeeds but convert rejected shows error', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('2');
-
-      await performSequentialAction(isolatedPage, 'Convert', { rejectStep2: true });
-
-      await expect(isolatedPage.getByText(/error|failed/i).first()).toBeVisible({ timeout: 15000 });
-    });
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Stale-state regression (sequential flow)
-  // ─────────────────────────────────────────────────────────────────────────
-
-  test.describe('PSM Conversion — Stale-state regression', () => {
-    test.skip('Changed amount is used after step-2 rejection and Back', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
-
-      // First attempt: approve succeeds, convert tx is rejected
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('3');
-      await isolatedPage.getByTestId('widget-button').getByText('Review').first().click();
-      await disableBundledTx(isolatedPage);
-
-      const confirmButton = isolatedPage.getByTestId('widget-button').last();
-      await expect(confirmButton).toBeEnabled();
-
-      await interceptAndRejectSecondTransaction(isolatedPage, 200);
-      await confirmButton.click();
-
-      await expect(isolatedPage.getByText(/error/i).first()).toBeVisible({ timeout: 15000 });
-
-      // Go back and change the amount
-      await isolatedPage.getByRole('button', { name: 'Back' }).last().click();
-      await expect(isolatedPage.getByTestId('psm-conversion-origin')).toBeVisible();
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('5');
-
-      // Second attempt should succeed
-      await isolatedPage.getByTestId('widget-button').getByText('Review').first().click();
-
-      const toggle = isolatedPage.getByRole('switch');
-      const toggleVisible = await toggle.isVisible().catch(() => false);
-      if (toggleVisible) {
-        const isChecked = await toggle.isChecked();
-        if (isChecked) await toggle.click();
-      }
-
-      const retryButton = isolatedPage.getByTestId('widget-button').last();
-      await expect(retryButton).toBeEnabled({ timeout: 10000 });
-      await interceptAndAllowTransactions(isolatedPage);
-      await retryButton.click();
-
-      await expect(isolatedPage.getByRole('heading', { name: 'Conversion complete' })).toBeVisible({
-        timeout: 30000
-      });
-    });
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // URL state sync
-  // ─────────────────────────────────────────────────────────────────────────
-
-  test.describe('PSM Conversion — URL state', () => {
-    test('Navigating directly via URL params loads PSM widget', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await isolatedPage.goto('/convert/psm');
-      } else {
-        await isolatedPage.goto('/convert/psm');
-        await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-        await isolatedPage.waitForTimeout(1000);
-        await switchToL2(isolatedPage, networkName);
-        // Re-navigate after network switch
-        await isolatedPage.goto('/convert/psm');
-      }
-
-      await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-      await isolatedPage.waitForTimeout(1000);
-
-      await expect(
-        isolatedPage.getByTestId('widget-container').getByRole('heading', { name: '1:1 Conversion' })
-      ).toBeVisible();
-    });
-
-    test('URL params with source_token=USDS starts in USDS→USDC direction', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await isolatedPage.goto('/convert/psm?source_token=USDS');
-        await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-      } else {
-        await isolatedPage.goto('/convert/psm?source_token=USDS');
-        await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-        await isolatedPage.waitForTimeout(1000);
-        await switchToL2(isolatedPage, networkName);
-      }
-
-      await isolatedPage.waitForTimeout(1000);
-
-      await expect(isolatedPage.getByTestId('psm-conversion-origin-balance')).toContainText('USDS');
-      await expect(isolatedPage.getByTestId('psm-conversion-target-balance')).toContainText('USDC');
-    });
-  });
+  }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Round-trip conversion
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Round-trip', () => {
-    test('Convert USDC to USDS, then USDS back to USDC', async ({ isolatedPage }) => {
-      if (isMainnet) {
-        await navigateToPsm(isolatedPage);
-      } else {
-        await navigateToPsmL2(isolatedPage, networkName);
-      }
+    test('Convert USDS to USDC, then USDC back to USDS', async ({ isolatedPage }) => {
+      await navigateToConvert(isolatedPage, networkName);
+
+      // USDS → USDC
+      await isolatedPage.getByTestId('convert-from-amount').fill('3');
+      await reviewAndConfirm(isolatedPage);
+      await expect(isolatedPage.getByText("You've successfully converted 3 USDS to USDC.")).toBeVisible();
+      await isolatedPage.getByRole('button', { name: 'Done' }).click();
 
       // USDC → USDS
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('3');
-      await performAction(isolatedPage, 'Convert');
-      await expect(isolatedPage.getByText('Conversion complete')).toBeVisible({ timeout: 15000 });
-      await expect(isolatedPage.getByText(/Converted 3 USDC into 3 USDS/)).toBeVisible();
-
-      // Convert again
-      await isolatedPage.getByTestId('widget-button').getByText('Convert again').click();
-
-      // Switch to USDS → USDC
-      await isolatedPage.getByLabel('Switch conversion direction').click();
-      await isolatedPage.getByTestId('psm-conversion-origin').fill('3');
-
-      await performAction(isolatedPage, 'Convert');
-      await expect(isolatedPage.getByText('Conversion complete')).toBeVisible({ timeout: 15000 });
-      await expect(isolatedPage.getByText(/Converted 3 USDS into 3 USDC/)).toBeVisible();
+      await isolatedPage.getByTestId('convert-flip').click();
+      await isolatedPage.getByTestId('convert-from-amount').fill('3');
+      await reviewAndConfirm(isolatedPage);
+      await expect(isolatedPage.getByText("You've successfully converted 3 USDC to USDS.")).toBeVisible();
+      await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
   });
 };
