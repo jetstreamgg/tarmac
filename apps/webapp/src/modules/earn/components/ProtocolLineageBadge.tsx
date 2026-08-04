@@ -32,7 +32,19 @@ const LINEAGE_COPY = (
  * has no hover value in either theme.
  */
 const TRIGGER_CLASSES =
-  'hover:ring-glassBorder focus-visible:ring-ring inline-flex cursor-help rounded-full transition-shadow hover:ring-1 hover:ring-inset focus-visible:ring-1 focus-visible:outline-hidden';
+  'hover:ring-glassBorder focus-visible:ring-ring inline-flex cursor-default rounded-full transition-shadow hover:ring-1 hover:ring-inset focus-visible:ring-1 focus-visible:outline-hidden';
+
+/**
+ * Opens *above* the badge, against the hero's empty top padding — every other
+ * app tooltip opens below its trigger, but this one would then sit on the 44px
+ * hero heading, and the DS surface is glass: 40% white over blur(20px) in
+ * light, 10% lavender in dark. Blurring display type doesn't hide it, it
+ * averages it, so the card picked up a grey cast in light and washed out in
+ * dark — visibly unlike every other tooltip in the app. Deepening the blur
+ * can't fix a luminance difference (100px and 300px were both still grey); a
+ * clean backdrop can, and above the badge there is one.
+ */
+const SIDE = 'top';
 
 /**
  * The Earn hero's years badge (5031:52321), carrying the Maker/DAI lineage on
@@ -60,7 +72,7 @@ export function ProtocolLineageBadge() {
         {/* Touch fallback mirrors the DS tooltip chrome (Figma 5043:57748). */}
         <PopoverContent
           align="center"
-          side="bottom"
+          side={SIDE}
           className="bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl text-[11px] leading-4 font-normal backdrop-blur-[20px]"
         >
           <p>{LINEAGE_COPY}</p>
@@ -81,7 +93,7 @@ export function ProtocolLineageBadge() {
           </button>
         </TooltipTrigger>
         <TooltipPortal>
-          <TooltipContent side="bottom">
+          <TooltipContent side={SIDE}>
             <p>{LINEAGE_COPY}</p>
           </TooltipContent>
         </TooltipPortal>
