@@ -104,13 +104,19 @@ export const useStUsdsTransactions = ({
   // Curve swap for withdraw (stUSDS -> USDS)
   // Input: stUSDS (stUsdsAmount from quote), Output: USDS
   // Note: For normal withdrawals, stUsdsAmount is calculated via get_dx from desired USDS.
-  // For max withdrawals, stUsdsAmount is the user's full stUSDS balance and amount is calculated via get_dy.
+  // For max withdrawals, stUsdsAmount is the user's full stUSDS balance, quoted via get_dy.
+  // minOut must derive from the same quote that produced stUsdsAmount, not from the UI
+  // amount: on max the two are seeded by separate provider selections and can diverge.
   const curveWithdrawSwap = useBatchCurveSwap({
     direction: StUsdsDirection.WITHDRAW,
     inputAmount: stUsdsAmount ?? 0n, // stUSDS to swap (from quote)
-    expectedOutput: amount, // Quoted USDS output (slippage applied internally by hook)
+    expectedOutput,
     shouldUseBatch,
-    enabled: isCurve && widgetState.action === StUSDSAction.WITHDRAW && (stUsdsAmount ?? 0n) > 0n,
+    enabled:
+      isCurve &&
+      widgetState.action === StUSDSAction.WITHDRAW &&
+      (stUsdsAmount ?? 0n) > 0n &&
+      expectedOutput > 0n,
     ...withdrawTransactionCallbacks
   });
 

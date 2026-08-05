@@ -2,11 +2,15 @@
 
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { StUsdsProviderType } from '@/hooks';
+import { StUsdsProviderType, StUsdsDirection } from '@/hooks';
 
 const captured = {
-  batchStUsdsDeposit: undefined as Record<string, unknown> | undefined
+  batchStUsdsDeposit: undefined as Record<string, unknown> | undefined,
+  curveSwaps: [] as Record<string, unknown>[]
 };
+
+const curveWithdrawParams = () =>
+  captured.curveSwaps.find(params => params.direction === StUsdsDirection.WITHDRAW);
 
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
@@ -17,7 +21,10 @@ vi.mock('@/hooks', async importOriginal => {
       return {};
     },
     useStUsdsWithdraw: () => ({}),
-    useBatchCurveSwap: () => ({})
+    useBatchCurveSwap: (params: Record<string, unknown>) => {
+      captured.curveSwaps.push(params);
+      return {};
+    }
   };
 });
 
@@ -57,5 +64,44 @@ describe('useStUsdsTransactions referralCode contract-arg', () => {
   it('forwards undefined when referralCode is undefined', () => {
     renderHook(() => useStUsdsTransactions({ ...baseParams, referralCode: undefined }));
     expect(captured.batchStUsdsDeposit?.referral).toBeUndefined();
+  });
+});
+
+describe('useStUsdsTransactions Curve withdraw slippage baseline', () => {
+  const curveWithdrawParamsBase = {
+    ...baseParams,
+    selectedProvider: StUsdsProviderType.CURVE,
+    referralCode: undefined,
+    stUsdsAmount: 900n * 10n ** 18n
+  };
+
+  beforeEach(() => {
+    captured.curveSwaps = [];
+  });
+
+  // The UI amount and the routed quote are seeded by separate provider selections and can
+  // disagree on a max withdraw. minOut must track the quote whose stUsdsAmount is being swapped.
+  it('uses the routed quote output as the slippage baseline, not the UI amount', () => {
+    renderHook(() =>
+      useStUsdsTransactions({
+        ...curveWithdrawParamsBase,
+        amount: 995n * 10n ** 18n,
+        expectedOutput: 1000n * 10n ** 18n
+      })
+    );
+
+    expect(curveWithdrawParams()?.expectedOutput).toBe(1000n * 10n ** 18n);
+  });
+
+  it('stays disabled when the routed quote output is unavailable', () => {
+    renderHook(() =>
+      useStUsdsTransactions({
+        ...curveWithdrawParamsBase,
+        amount: 995n * 10n ** 18n,
+        expectedOutput: 0n
+      })
+    );
+
+    expect(curveWithdrawParams()?.enabled).toBe(false);
   });
 });
