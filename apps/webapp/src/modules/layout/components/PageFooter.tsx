@@ -5,6 +5,14 @@ import { ExternalLink } from './ExternalLink';
 import { pageGutterClasses } from './shellLayoutClasses';
 
 /**
+ * Which of the deployment's links belong in the footer: the legal documents
+ * only. `VITE_FOOTER_LINKS` also carries non-legal entries — Bug Bounty today —
+ * which stay in the More menu but don't belong beside the legal disclaimer.
+ * Matched on the name, the same vocabulary `TopNav` picks its glyphs from.
+ */
+const isLegalLink = (name: string) => /terms|privacy|risk/i.test(name);
+
+/**
  * The page footer (APP-456 #1): the landing page's legal disclaimer over its
  * bottom row — copyright on the left, legal links on the right.
  *
@@ -18,6 +26,7 @@ import { pageGutterClasses } from './shellLayoutClasses';
  */
 export function PageFooter() {
   const links = getFooterLinks()
+    .filter(link => isLegalLink(link.name))
     .map(link => ({ ...link, url: sanitizeUrl(link.url) }))
     .filter((link): link is { name: string; url: string; highlight?: string } => !!link.url);
 

@@ -56,15 +56,35 @@ describe('PageFooter', () => {
     expect(screen.getByRole('link', { name: 'User Risk Documentation' })).toBeTruthy();
   });
 
-  it('drops links that fail the allow-list sanitizer', () => {
+  // The footer carries the legal documents only; the deployment's non-legal
+  // entries stay in the More menu.
+  it('drops non-legal links such as Bug Bounty', () => {
     mocks.footerLinks = [
       { url: 'https://docs.sky.money/legal-terms', name: 'Terms of Use' },
-      { url: 'http://evil.example.com', name: 'Nope' }
+      { url: 'https://docs.sky.money/legal-terms#privacy-policy', name: 'Privacy Policy' },
+      { url: 'https://docs.sky.money/user-risks', name: 'User Risk Documentation' },
+      { url: 'https://immunefi.com/bug-bounty/sky/information/', name: 'Bug Bounty' }
     ];
 
     render();
 
-    expect(screen.queryByRole('link', { name: 'Nope' })).toBeNull();
+    expect(screen.getAllByRole('link').map(a => a.textContent)).toEqual([
+      'Terms of Use',
+      'Privacy Policy',
+      'User Risk Documentation'
+    ]);
+  });
+
+  it('drops links that fail the allow-list sanitizer', () => {
+    // Legal by name, so only the sanitizer can reject it.
+    mocks.footerLinks = [
+      { url: 'https://docs.sky.money/legal-terms', name: 'Terms of Use' },
+      { url: 'http://evil.example.com', name: 'Privacy Policy' }
+    ];
+
+    render();
+
+    expect(screen.queryByRole('link', { name: 'Privacy Policy' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Terms of Use' })).toBeTruthy();
   });
 
