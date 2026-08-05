@@ -822,6 +822,46 @@
   background-position: center;
 }
 
+/* Progressive blur behind the sticky top bar -------------------------------
+   Two stacked backdrop layers rather than one.
+
+   A masked `backdrop-filter` fades the blurred layer's *opacity*, not its
+   radius: wherever the mask is partial, the sharp original shows through
+   underneath and content crossing the bar reads as a double image rather than
+   as something gently going out of focus. A single feathered layer therefore
+   left headings and stat values legible right behind the nav pills (APP-456
+   #6). Stacking fixes it: each layer's backdrop includes what the layer below
+   already painted, so the radii compound toward the top of the bar while each
+   individual mask stays fully opaque over the stretch it covers.
+
+   - `::before` blurs the whole bar and is the only layer that feathers out, at
+     the very bottom edge where blurred meets sharp.
+   - `::after` adds a second, stronger pass over the top two-thirds — the band
+     the logo, pills and wallet chip sit in — and is fully opaque there.
+
+   Both stay inside the bar's own box: an overhang put a frosted band over page
+   content, visible as an edge below the header (APP-416). The sticky header is
+   the containing block, so no `relative` is needed. */
+.progressive-blur-bar::before,
+.progressive-blur-bar::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: -10;
+  pointer-events: none;
+}
+.progressive-blur-bar::before {
+  height: 100%;
+  backdrop-filter: blur(7px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+}
+.progressive-blur-bar::after {
+  height: 68%;
+  backdrop-filter: blur(10px);
+}
+
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
    selected-icon gradient fill doesn't map to utilities, so it stays here,
    keyed off the link's [aria-current].

@@ -14,12 +14,11 @@ describe('shellHeaderClasses', () => {
   it('pins the header as a see-through, blurred bar', () => {
     const cls = shellHeaderClasses();
     expect(cls).toContain('sticky');
-    expect(cls).toContain('backdrop-blur');
+    // The blur is the stacked-layer recipe in globals.css: one masked layer
+    // ghosted sharp content through wherever the mask was partial (APP-456 #6).
+    expect(cls).toContain('progressive-blur-bar');
     // Transparent, not an opaque slab — scrolling content shows through it.
     expect(cls).not.toContain('bg-container');
-    // Feathered edge: the blur fades out via a gradient mask instead of cutting
-    // off at a hard line where blurred meets sharp content.
-    expect(cls).toContain('mask-image');
   });
 
   // APP-456 #2: the desktop comp (Navbar 1881:51590) is an 88px bar around the

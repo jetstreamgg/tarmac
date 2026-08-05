@@ -3,7 +3,7 @@ import { parseEther } from 'viem';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 
-import { formatBaLabsUrl } from '../helpers';
+import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
 
 type StUsdsChartInfo = {
@@ -42,29 +42,25 @@ function transformBaLabsChartData(results: StUsdsChartInfo[]): StUsdsChartInfoPa
 
 async function fetchStUsdsChartInfo(url: URL): Promise<StUsdsChartInfoParsed[]> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const data: { results: StUsdsChartInfo[] } = await response.json();
-
-    const result = transformBaLabsChartData(data?.results || []);
-
-    return result;
+    // Paged: this endpoint caps a response at 1000 rows whatever p_size asks for.
+    return transformBaLabsChartData(await fetchBaLabsPages<StUsdsChartInfo>(url));
   } catch (error) {
     console.error('Error fetching BaLabs data:', error);
     return [];
   }
 }
 
-export function useStUsdsChartInfo(): ReadHook & { data?: StUsdsChartInfoParsed[] } {
+export function useStUsdsChartInfo(
+  options: { limit?: number } = { limit: 100 }
+): ReadHook & { data?: StUsdsChartInfoParsed[] } {
+  const { limit } = options;
   const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl) {
-    const endpoint = `${baseUrl}/overall/historic/`;
+    // `p_size` is required: without it the endpoint serves its 100-row default,
+    // which silently clipped the detail chart's 1Y and All ranges to the last
+    // ~100 days (APP-456 #5).
+    const endpoint = `${baseUrl}/overall/historic/?p_size=${limit}`;
     url = formatBaLabsUrl(new URL(endpoint));
   }
 

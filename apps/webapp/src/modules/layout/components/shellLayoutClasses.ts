@@ -39,18 +39,12 @@ export const shellHeaderClasses = () =>
     // 4px margin is gone.
     'w-full py-3.5 desktop:py-6',
     // Pages scroll on the document, so the header pins as a sticky, see-through
-    // frosted bar (Figma: transparent + blur(7px), no opaque fill).
+    // frosted bar (Figma: transparent + blur, no opaque fill).
     'sticky top-0 z-30',
-    // Progressive blur: the blur lives on a `::before` overlay behind the nav
-    // content (so logo + pills stay sharp), and a gradient mask feathers it out
-    // toward the bottom. The overlay is confined to the bar itself (100%
-    // height, mask fully transparent by 95%) — the earlier 150% overhang put a
-    // frosted "white glow" band over page content, visible as an edge/color
-    // difference below the header (APP-416); keeping any transition at the
-    // bar's own boundary reads as a normal frosted navbar instead. The sticky
-    // header is the containing block for the absolute pseudo, so no `relative`
-    // is needed.
-    "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-z-10 before:h-full before:backdrop-blur-[7px] before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_40%,transparent_95%)] before:[-webkit-mask-image:linear-gradient(to_bottom,#000_40%,transparent_95%)]"
+    // The blur itself lives on two stacked pseudo-element layers behind the nav
+    // content (so logo + pills stay sharp) — see `.progressive-blur-bar` in
+    // globals.css for why one masked layer wasn't enough.
+    'progressive-blur-bar'
   );
 
 /** The header row content (logo + TopNav) inside the full-bleed bar. */

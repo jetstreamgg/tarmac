@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useStUsdsChartInfo, useStUsdsData } from '@/hooks';
 import { calculateApyFromStr } from '@/utils';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
+import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { useParseStUsdsChartData } from '../hooks/useParseStUsdsChartData';
 
@@ -22,7 +23,15 @@ export function StUsdsDetailChart() {
   const [metric, setMetric] = useState<Metric>('rate');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
-  const { data: chartInfo, isLoading, error } = useStUsdsChartInfo();
+  // The range picker drives the row budget, like every other detail chart —
+  // the endpoint's 100-row default clipped 1Y and All (APP-456 #5).
+  const {
+    data: chartInfo,
+    isLoading,
+    error
+  } = useStUsdsChartInfo({
+    limit: getDayCountFromTimeFrame(timeFrame)
+  });
   const { data: stUsdsData } = useStUsdsData();
 
   const parsed = useParseStUsdsChartData(timeFrame, chartInfo || []);

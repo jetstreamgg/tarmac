@@ -15,6 +15,7 @@ import { TopNav } from '@/modules/app/shell/TopNav';
 import { MobileNavbar } from '@/modules/app/shell/MobileNavbar';
 import { AppLink } from '@/lib/navigation';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
+import { PageFooter } from './PageFooter';
 import { defaultConfig } from '../../config/default-config';
 
 export function Layout({
@@ -71,6 +72,10 @@ export function Layout({
             ) : (
               <AuthWrapper>{children}</AuthWrapper>
             )}
+          </ErrorBoundary>
+
+          <ErrorBoundary variant="small">
+            <PageFooter />
           </ErrorBoundary>
 
           {/* Clearance for the fixed bottom MobileNavbar (60px pill + 16px top
