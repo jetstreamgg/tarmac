@@ -121,12 +121,15 @@ export function useStUsdsLaunch({
     enabled: isSupply && isCurve,
     ...txCallbacks
   });
+  // minOut must derive from the same quote that produced stUsdsAmount: on a max withdraw the UI
+  // amount and the routed quote are seeded by separate provider selections and can diverge.
+  // The zero check matters because calculateMinOutputWithSlippage has no guard of its own.
   const curveWithdraw = useBatchCurveSwap({
     direction: StUsdsDirection.WITHDRAW,
     inputAmount: stUsdsAmount ?? 0n,
-    expectedOutput: amount,
+    expectedOutput,
     shouldUseBatch,
-    enabled: !isSupply && isCurve && (stUsdsAmount ?? 0n) > 0n,
+    enabled: !isSupply && isCurve && (stUsdsAmount ?? 0n) > 0n && expectedOutput > 0n,
     ...txCallbacks
   });
 
