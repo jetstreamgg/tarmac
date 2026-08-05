@@ -11,14 +11,14 @@ import {
 // longer branch. The header pins as a sticky, see-through frosted bar (Figma:
 // transparent + backdrop blur, content shows through).
 describe('shellHeaderClasses', () => {
-  it('pins the header as a see-through, blurred bar', () => {
+  it('pins the header as a see-through bar', () => {
     const cls = shellHeaderClasses();
     expect(cls).toContain('sticky');
-    // The blur is the stacked-layer recipe in globals.css: one masked layer
-    // ghosted sharp content through wherever the mask was partial (APP-456 #6).
-    expect(cls).toContain('progressive-blur-bar');
     // Transparent, not an opaque slab — scrolling content shows through it.
     expect(cls).not.toContain('bg-container');
+    // The blur layers live in `HeaderBlur` and sample the page behind the bar;
+    // isolating the bar would make it a backdrop root and empty that sample.
+    expect(cls).not.toContain('isolate');
   });
 
   // APP-456 #2: the desktop comp (Navbar 1881:51590) is an 88px bar around the

@@ -39,12 +39,13 @@ export const shellHeaderClasses = () =>
     // 4px margin is gone.
     'w-full py-3.5 desktop:py-6',
     // Pages scroll on the document, so the header pins as a sticky, see-through
-    // frosted bar (Figma: transparent + blur, no opaque fill).
-    'sticky top-0 z-30',
-    // The blur itself lives on two stacked pseudo-element layers behind the nav
-    // content (so logo + pills stay sharp) — see `.progressive-blur-bar` in
-    // globals.css for why one masked layer wasn't enough.
-    'progressive-blur-bar'
+    // frosted bar (Figma: transparent + blur, no opaque fill). Being positioned
+    // with a z-index also makes the bar the containing block and stacking
+    // context for the blur layers `HeaderBlur` renders behind the nav content
+    // (so logo + pills stay sharp) — see `.progressive-blur-bar` in globals.css.
+    // Deliberately NOT `isolation: isolate`: that would make the bar a backdrop
+    // root, and the layers would sample an empty backdrop instead of the page.
+    'sticky top-0 z-30'
   );
 
 /** The header row content (logo + TopNav) inside the full-bleed bar. */

@@ -1,6 +1,18 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { i18n } from '@lingui/core';
+import { I18nProvider } from '@lingui/react';
+import { render as rtlRender, screen } from '@testing-library/react';
 import { PageFooter } from './PageFooter';
+
+i18n.load('en', {});
+i18n.activate('en');
+
+const render = () =>
+  rtlRender(
+    <I18nProvider i18n={i18n}>
+      <PageFooter />
+    </I18nProvider>
+  );
 
 const mocks = vi.hoisted(() => ({ footerLinks: [] as { url: string; name: string; highlight?: string }[] }));
 
@@ -18,13 +30,25 @@ beforeEach(() => {
 
 describe('PageFooter', () => {
   it('renders the copyright line for the current year', () => {
-    render(<PageFooter />);
+    render();
 
     expect(screen.getByText(`© ${new Date().getFullYear()} All rights reserved`)).toBeTruthy();
   });
 
+  // The landing footer's first two paragraphs; its third (forward-looking
+  // statements) is deliberately left off.
+  it('renders both disclaimer paragraphs and no more', () => {
+    render();
+
+    const paragraphs = screen.getByTestId('page-footer-disclaimer').querySelectorAll('p');
+    expect(paragraphs).toHaveLength(2);
+    expect(paragraphs[0].textContent).toMatch(/^IMPORTANT DISCLAIMER: Skybase International operates/);
+    expect(paragraphs[1].textContent).toMatch(/^Skybase International does not guarantee any level of yield/);
+    expect(screen.queryByText(/FORWARD-LOOKING STATEMENTS/)).toBeNull();
+  });
+
   it('renders the configured legal links, opening them in a new tab', () => {
-    render(<PageFooter />);
+    render();
 
     const terms = screen.getByRole('link', { name: 'Terms of Use' });
     expect(terms.getAttribute('href')).toBe('https://docs.sky.money/legal-terms');
@@ -38,7 +62,7 @@ describe('PageFooter', () => {
       { url: 'http://evil.example.com', name: 'Nope' }
     ];
 
-    render(<PageFooter />);
+    render();
 
     expect(screen.queryByRole('link', { name: 'Nope' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Terms of Use' })).toBeTruthy();
@@ -47,7 +71,7 @@ describe('PageFooter', () => {
   it('still renders the copyright when no links are configured', () => {
     mocks.footerLinks = [];
 
-    render(<PageFooter />);
+    render();
 
     expect(screen.getByTestId('page-footer')).toBeTruthy();
     expect(screen.queryByRole('link')).toBeNull();

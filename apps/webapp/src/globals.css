@@ -823,43 +823,65 @@
 }
 
 /* Progressive blur behind the sticky top bar -------------------------------
-   Two stacked backdrop layers rather than one.
+   A ramp, not a band: content is sharp where it meets the bar's bottom edge,
+   goes softly out of focus as it rises, and is fully diffuse by the time it
+   passes behind the logo and nav pills.
 
-   A masked `backdrop-filter` fades the blurred layer's *opacity*, not its
-   radius: wherever the mask is partial, the sharp original shows through
-   underneath and content crossing the bar reads as a double image rather than
-   as something gently going out of focus. A single feathered layer therefore
-   left headings and stat values legible right behind the nav pills (APP-456
-   #6). Stacking fixes it: each layer's backdrop includes what the layer below
-   already painted, so the radii compound toward the top of the bar while each
-   individual mask stays fully opaque over the stretch it covers.
+   One masked `backdrop-filter` cannot do this. A mask fades the blurred layer's
+   *opacity*, not its radius, so wherever the mask is partial the sharp original
+   shows through underneath and content reads as a double image rather than as
+   something out of focus (APP-456 #6).
 
-   - `::before` blurs the whole bar and is the only layer that feathers out, at
-     the very bottom edge where blurred meets sharp.
-   - `::after` adds a second, stronger pass over the top two-thirds — the band
-     the logo, pills and wallet chip sit in — and is fully opaque there.
+   So the ramp is six stacked layers with doubling radii. Each samples the
+   composite the layers below it already painted, so the radii accumulate
+   upward (~15px at the top). Each is opaque from the top of the bar down to its
+   own cutoff and then fades out over one 12.5% step, and the cutoffs are
+   staggered — so at any height exactly one layer is mid-fade, and what shows
+   through its partial opacity is the next-weakest blur rather than the sharp
+   original. That is what makes the increase read as continuous instead of as
+   the visible step a two-layer version leaves.
 
-   Both stay inside the bar's own box: an overhang put a frosted band over page
-   content, visible as an edge below the header (APP-416). The sticky header is
-   the containing block, so no `relative` is needed. */
-.progressive-blur-bar::before,
-.progressive-blur-bar::after {
-  content: '';
+   The stack stays inside the bar's own box: an overhang put a frosted band over
+   page content, visible as an edge below the header (APP-416). */
+.progressive-blur-bar {
   position: absolute;
-  inset-inline: 0;
-  top: 0;
+  inset: 0;
   z-index: -10;
   pointer-events: none;
 }
-.progressive-blur-bar::before {
-  height: 100%;
-  backdrop-filter: blur(7px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+.progressive-blur-bar > * {
+  position: absolute;
+  inset: 0;
 }
-.progressive-blur-bar::after {
-  height: 68%;
+.progressive-blur-bar > :nth-child(1) {
+  backdrop-filter: blur(0.5px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 92%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 92%, transparent 100%);
+}
+.progressive-blur-bar > :nth-child(2) {
+  backdrop-filter: blur(1.2px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 84%, transparent 92%);
+  mask-image: linear-gradient(to bottom, #000 84%, transparent 92%);
+}
+.progressive-blur-bar > :nth-child(3) {
+  backdrop-filter: blur(2.5px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 84%);
+  mask-image: linear-gradient(to bottom, #000 76%, transparent 84%);
+}
+.progressive-blur-bar > :nth-child(4) {
+  backdrop-filter: blur(5px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 68%, transparent 76%);
+  mask-image: linear-gradient(to bottom, #000 68%, transparent 76%);
+}
+.progressive-blur-bar > :nth-child(5) {
   backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 68%);
+  mask-image: linear-gradient(to bottom, #000 60%, transparent 68%);
+}
+.progressive-blur-bar > :nth-child(6) {
+  backdrop-filter: blur(16px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 60%);
+  mask-image: linear-gradient(to bottom, #000 52%, transparent 60%);
 }
 
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
