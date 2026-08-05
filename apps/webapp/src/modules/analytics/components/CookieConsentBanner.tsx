@@ -139,7 +139,6 @@ export function CookieConsentBanner() {
                       For more information, see our{' '}
                       <ExternalLink
                         href={privacyLink.url}
-                        skipConfirm
                         showIcon={false}
                         className="underline underline-offset-2"
                       >

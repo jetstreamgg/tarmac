@@ -41,7 +41,6 @@ import { VaultTransactionReview } from './components/VaultTransactionReview';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useVaultTransactions } from './hooks/useVaultTransactions';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
@@ -90,7 +89,6 @@ const VaultWidgetWrapped = ({
 
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
-  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
 
@@ -123,7 +121,6 @@ const VaultWidgetWrapped = ({
   // fallback when the API is empty/down. Morpho keeps reading TVL on-chain (unchanged).
   const vaultTvl =
     provider === 'morpho' ? vaultData?.totalAssets : (marketData?.totalAssets ?? vaultData?.totalAssets);
-  const hasLiquidityData = !isMarketDataLoading && availableLiquidity !== undefined;
 
   // User's underlying asset balance (e.g., USDC balance)
   const { data: assetBalance, refetch: mutateAssetBalance } = useTokenBalance({
@@ -145,44 +142,31 @@ const VaultWidgetWrapped = ({
   // Token decimals for the underlying asset
   const assetDecimals = getTokenDecimals(assetToken, chainId);
 
-  // Deposit-cap enforcement is provider-specific. Spark's vault exposes a real
-  // on-chain supply cap via maxDeposit(user); Morpho V2 vaults return 0n even when
-  // deposits are open, so consulting maxDeposit there would wrongly report every
-  // Morpho vault as "cap reached" and block deposits. Mirror the withdraw side,
-  // which already special-cases Morpho (usesMarketLiquidity below).
-  const enforcesDepositCap = provider !== 'morpho';
-
-  // On-chain ERC-4626 limits → effective input caps (revert-proof, no API needed).
+  // Provider-aware input caps (revert-proof). `computeVaultLimits` owns the whole
+  // split — Morpho's on-chain maxDeposit/maxWithdraw/maxRedeem are stubs that read
+  // 0 for everyone, so its deposit side is uncapped and its withdraw side comes
+  // from the market API's liquidity; Spark's contract reads are authoritative.
+  // Shared with the product-page supply/withdraw modal (`useVaultTransactionForm`)
+  // so both surfaces agree per vault.
   const limits = computeVaultLimits({
+    provider,
     assetBalance: assetBalance?.value,
-    maxDeposit: enforcesDepositCap ? vaultData?.maxDeposit : undefined,
+    maxDeposit: vaultData?.maxDeposit,
     userAssets,
     userShares: vaultData?.userShares,
-    maxWithdraw: vaultData?.maxWithdraw
+    maxWithdraw: vaultData?.maxWithdraw,
+    maxRedeem: vaultData?.maxRedeem,
+    availableLiquidity,
+    liquidityKnown: !isMarketDataLoading
   });
   // Deposit input is clamped to min(walletBalance, remaining cap); a full vault blocks deposits.
   const maxDepositInput = limits.maxDepositInput;
   const depositCapReached = limits.depositCapReached;
-
-  // Withdraw cap source is provider-aware: Morpho derives liquidity from its market
-  // API (drives the liquidity disclaimers); Spark has no such API, so the contract's
-  // on-chain maxWithdraw(user) is authoritative.
-  const usesMarketLiquidity = provider === 'morpho';
-  const maxWithdraw = usesMarketLiquidity
-    ? hasLiquidityData
-      ? userAssets < availableLiquidity
-        ? userAssets
-        : availableLiquidity
-      : !isMarketDataLoading
-        ? userAssets // Fallback: let user attempt full balance, contract enforces limits
-        : undefined
-    : limits.maxWithdrawInput;
-  const isLiquidityConstrained = usesMarketLiquidity
-    ? hasLiquidityData && userAssets > 0n && availableLiquidity < userAssets
-    : userAssets > 0n && limits.maxWithdrawInput < userAssets;
-  // Spark relies on the on-chain cap, so its withdraw limit is never "unavailable".
-  const isLiquidityDataUnavailable =
-    usesMarketLiquidity && !isMarketDataLoading && availableLiquidity === undefined;
+  // Undefined while the liquidity read is in flight, so the balance row holds
+  // back rather than flashing a zero.
+  const maxWithdraw = limits.maxWithdrawInput;
+  const isLiquidityConstrained = limits.isLiquidityConstrained;
+  const isLiquidityDataUnavailable = limits.isLiquidityDataUnavailable;
 
   // Amount state
   const initialAmount =
@@ -234,7 +218,7 @@ const VaultWidgetWrapped = ({
   // Transaction hooks
   const { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem } = useVaultTransactions({
     amount: debouncedAmount,
-    shares: vaultData?.userShares ?? 0n,
+    shares: limits.redeemShares,
     max,
     provider,
     referralCode: REFERRAL_CODE,
@@ -310,14 +294,14 @@ const VaultWidgetWrapped = ({
     debouncedAmount > maxWithdraw &&
     amount !== 0n;
 
-  // Deposit exceeds the vault's remaining cap (distinct from insufficient wallet funds).
-  // Only fires when the contract reports a finite cap (Spark); uncapped vaults (Morpho) skip it.
+  // Deposit exceeds the vault's remaining cap (distinct from insufficient wallet
+  // funds). `maxDepositInput` is min(wallet, cap), so anything over it that the
+  // wallet could still afford is the cap biting — which only happens on providers
+  // with a real on-chain cap (Spark); uncapped vaults (Morpho) never trip it.
   const isOverDepositCap =
     txStatus === TxStatus.IDLE &&
     !!address &&
-    enforcesDepositCap &&
-    vaultData?.maxDeposit !== undefined &&
-    debouncedAmount > vaultData.maxDeposit &&
+    debouncedAmount > maxDepositInput &&
     !isSupplyBalanceError &&
     amount !== 0n;
 
@@ -581,7 +565,6 @@ const VaultWidgetWrapped = ({
           onClickBack={onClickBack}
           showSecondaryButton={showSecondaryButton}
           enabled={enabled}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
       }
     >
@@ -591,7 +574,6 @@ const VaultWidgetWrapped = ({
             <VaultTransactionStatus
               assetToken={assetToken}
               amount={debouncedAmount}
-              onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={shouldUseBatch}
               needsAllowance={needsAllowance}
               needsAllowanceReset={needsAllowanceReset}
@@ -649,7 +631,6 @@ const VaultWidgetWrapped = ({
               onSetMax={setMax}
               tabIndex={tabIndex}
               enabled={enabled}
-              onExternalLinkClicked={onExternalLinkClicked}
               vaultAddress={vaultAddress}
               vaultName={vaultName}
               provider={provider}

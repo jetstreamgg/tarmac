@@ -32,8 +32,12 @@ export const shellSurfaceClasses = () =>
 export const shellHeaderClasses = () =>
   cn(
     // Mobile tiers get the DS Mobile / Topbar vertical rhythm (16px, 68px bar
-    // with the 36px chip row); the desktop tier keeps the legacy 8px.
-    'w-full py-3.5 desktop:py-2 desktop:mb-1',
+    // with the 36px chip row). The desktop tier follows the comp (Navbar
+    // 1881:51590): an 88px bar around the 40px pill row, i.e. 24px above and
+    // below (APP-456 #2 — the previous 8px sat the bar hard against the top
+    // edge). The bar's own padding is the gap to the content now, so the extra
+    // 4px margin is gone.
+    'w-full py-3.5 desktop:py-6',
     // Pages scroll on the document, so the header pins as a sticky, see-through
     // frosted bar (Figma: transparent + blur(7px), no opaque fill).
     'sticky top-0 z-30',

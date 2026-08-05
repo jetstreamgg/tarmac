@@ -53,7 +53,6 @@ type SupplyWithdrawProps = {
   /** Whether the widget is enabled */
   enabled: boolean;
   /** Callback for external link clicks */
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /** Vault contract address for etherscan link */
   vaultAddress?: `0x${string}`;
   /** Display name for the vault */
@@ -97,7 +96,6 @@ export const SupplyWithdraw = ({
   onSetMax,
   tabIndex,
   enabled = true,
-  onExternalLinkClicked,
   vaultAddress,
   vaultName,
   provider = 'morpho',
@@ -158,7 +156,6 @@ export const SupplyWithdraw = ({
           assetDecimals={tokenDecimals}
           shareDecimals={shareDecimals}
           isConnectedAndEnabled={isConnectedAndEnabled}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
 
         <TabsContent value="left">
@@ -316,7 +313,6 @@ export const SupplyWithdraw = ({
           title={t`Transaction overview`}
           isFetching={false}
           fetchingMessage={t`Fetching transaction details`}
-          onExternalLinkClicked={onExternalLinkClicked}
           rateType={provider === 'sky' ? 'sky' : 'morpho'}
           transactionData={[
             {

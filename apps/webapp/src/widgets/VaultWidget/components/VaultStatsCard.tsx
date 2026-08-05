@@ -34,7 +34,6 @@ type VaultStatsCardProps = {
   /** Whether user is connected and widget is enabled */
   isConnectedAndEnabled: boolean;
   /** Callback for external link clicks */
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
 export const VaultStatsCard = ({
@@ -48,8 +47,7 @@ export const VaultStatsCard = ({
   assetSymbol,
   assetDecimals,
   shareDecimals,
-  isConnectedAndEnabled,
-  onExternalLinkClicked
+  isConnectedAndEnabled
 }: VaultStatsCardProps) => {
   const chainId = useChainId();
 
@@ -112,7 +110,6 @@ export const VaultStatsCard = ({
           address={vaultAddress}
           accordionTitle="Vault info"
           accordionContent={accordionContent}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
       }
     />

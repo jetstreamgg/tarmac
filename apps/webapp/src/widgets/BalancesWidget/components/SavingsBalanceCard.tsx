@@ -13,7 +13,6 @@ import { useChainId } from 'wagmi';
 
 export const SavingsBalanceCard = ({
   urlMap,
-  onExternalLinkClicked,
   savingsBalances,
   loading,
   variant = ModuleCardVariant.default
@@ -45,7 +44,6 @@ export const SavingsBalanceCard = ({
             <RateLineWithArrow
               rateText={`Rate: ${formatDecimalPercentage(skySavingsRate)}`}
               popoverType="ssr"
-              onExternalLinkClicked={onExternalLinkClicked}
               showArrow={false}
             />
             {urlMap[chainId] && (

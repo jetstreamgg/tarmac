@@ -14,13 +14,11 @@ import { NoResults } from '@/widgets/shared/components/icons/NoResults';
 import { cn } from '@/widgets/lib/utils';
 
 export const BalancesHistory = ({
-  onExternalLinkClicked,
   showAllNetworks,
   className,
   itemsPerPage = 5,
   useInfiniteScroll = false
 }: {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   showAllNetworks?: boolean;
   className?: string;
   itemsPerPage?: number;
@@ -144,7 +142,6 @@ export const BalancesHistory = ({
                       : undefined) as `0x${string}` | undefined
                 }
                 item={item}
-                onExternalLinkClicked={onExternalLinkClicked}
               />
             </motion.div>
           );

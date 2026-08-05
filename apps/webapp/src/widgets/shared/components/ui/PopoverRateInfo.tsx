@@ -50,25 +50,22 @@ type TooltipOverride = {
 };
 
 // Helper to create tooltip content with consistent styling
-const createTooltipContent = (
-  tooltipId: string,
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void
-): TooltipContent => {
+const createTooltipContent = (tooltipId: string): TooltipContent => {
   const tooltip = getTooltipById(tooltipId);
   return {
     title: tooltip?.title || '',
     description: (
       <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
-        {parseMarkdownLinks(tooltip?.tooltip, onExternalLinkClicked)}
+        {parseMarkdownLinks(tooltip?.tooltip)}
       </Text>
     )
   };
 };
 
-const getContent = (onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void) => {
+const getContent = () => {
   return Object.entries(TOOLTIP_ID_MAP).reduce(
     (acc, [key, tooltipId]) => {
-      acc[key as keyof typeof TOOLTIP_ID_MAP] = createTooltipContent(tooltipId, onExternalLinkClicked);
+      acc[key as keyof typeof TOOLTIP_ID_MAP] = createTooltipContent(tooltipId);
       return acc;
     },
     {} as Record<keyof typeof TOOLTIP_ID_MAP, TooltipContent>
@@ -90,7 +87,6 @@ export function resolvePopoverTooltipKey(raw: string): PopoverTooltipType | unde
 
 export const PopoverRateInfo = ({
   type,
-  onExternalLinkClicked,
   tooltipOverride,
   iconClassName,
   width = 16,
@@ -98,14 +94,13 @@ export const PopoverRateInfo = ({
   popoverClassName
 }: {
   type: PopoverTooltipType;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   tooltipOverride?: TooltipOverride;
   iconClassName?: string;
   width?: number;
   height?: number;
   popoverClassName?: string;
 }) => {
-  const content = getContent(onExternalLinkClicked);
+  const content = getContent();
 
   if (!(type in content)) return null;
 
@@ -113,7 +108,7 @@ export const PopoverRateInfo = ({
   const resolvedTitle = tooltipOverride?.title ?? defaultContent.title;
   const resolvedDescription = tooltipOverride?.description ? (
     <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
-      {parseMarkdownLinks(tooltipOverride.description, onExternalLinkClicked)}
+      {parseMarkdownLinks(tooltipOverride.description)}
     </Text>
   ) : (
     defaultContent.description

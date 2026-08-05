@@ -56,7 +56,6 @@ describe('pathToIntent', () => {
     expect(pathToIntent('/')).toBeNull();
     expect(pathToIntent('/dev')).toBeNull();
     expect(pathToIntent('/seal-engine')).toBeNull();
-    expect(pathToIntent('/batch-transactions-legal-notice')).toBeNull();
     expect(pathToIntent('/bogus')).toBeNull();
   });
 });

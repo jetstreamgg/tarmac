@@ -112,13 +112,11 @@ export const computeVaultBalances = ({
 export const VaultsBalanceCard = ({
   url,
   vaultUrlMap,
-  onExternalLinkClicked,
   variant = ModuleCardVariant.default,
   hideZeroBalances = false
 }: {
   url?: string;
   vaultUrlMap?: Record<string, string>;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   variant?: ModuleCardVariant;
   hideZeroBalances?: boolean;
 }) => {
@@ -212,7 +210,6 @@ export const VaultsBalanceCard = ({
               <RateLineWithArrow
                 rateText={t`Rate: ${(weightedAverageRate * 100).toFixed(2)}%`}
                 popoverType={blendedRatePopoverType}
-                onExternalLinkClicked={onExternalLinkClicked}
                 showArrow={false}
               />
               {url && (
@@ -227,7 +224,6 @@ export const VaultsBalanceCard = ({
               <RateLineWithArrow
                 rateText={t`Rates up to: ${(maxRate * 100).toFixed(2)}%`}
                 popoverType="morpho"
-                onExternalLinkClicked={onExternalLinkClicked}
                 showArrow={false}
               />
               {url && (

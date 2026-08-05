@@ -19,7 +19,6 @@ import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider } from '@/modules/ui/context/ConnectThenActContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
-import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
 import { AnalyticsErrorBoundary } from '@/modules/analytics/AnalyticsErrorBoundary';
 import { CookieConsentProvider } from '@/modules/analytics/context/CookieConsentContext';
 import { PostHogProvider, POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
@@ -54,7 +53,6 @@ const AppContent = () => {
               <ChainModalProvider>
                 <NetworkSwitchProvider>
                   <TransactionProvider>
-                    <ExternalLinkModal />
                     {/* Toast tier above the dialog tier (z-50): network/tx
                         toasts must stay readable over a modal's blurred
                         overlay (e.g. the auto-switch toast fires as a supply

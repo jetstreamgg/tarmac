@@ -16,7 +16,6 @@ import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo'
 
 type PendleStatsCardProps = {
   market: PendleMarketConfig;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
 /**
@@ -28,7 +27,7 @@ type PendleStatsCardProps = {
  * the user the same at-a-glance product info they'd see in the right details
  * pane — useful when the details pane is hidden or on narrow viewports.
  */
-export const PendleStatsCard = ({ market, onExternalLinkClicked }: PendleStatsCardProps) => {
+export const PendleStatsCard = ({ market }: PendleStatsCardProps) => {
   const chainId = useChainId();
   const explorerChainId = isTestnetId(chainId) ? chainId : mainnet.id;
   const { data: allMarketsData, isLoading } = usePendleMarketsApiData();
@@ -85,7 +84,7 @@ export const PendleStatsCard = ({ market, onExternalLinkClicked }: PendleStatsCa
           ) : (
             <>
               <Text className="text-bullish">{apyDisplay}</Text>
-              <PopoverRateInfo type="fixedYield" onExternalLinkClicked={onExternalLinkClicked} />
+              <PopoverRateInfo type="fixedYield" />
             </>
           )}
         </MotionHStack>
@@ -96,7 +95,6 @@ export const PendleStatsCard = ({ market, onExternalLinkClicked }: PendleStatsCa
           address={market.ptToken}
           accordionTitle="Market info"
           accordionContent={accordionContent}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
       }
       className="cursor-default"

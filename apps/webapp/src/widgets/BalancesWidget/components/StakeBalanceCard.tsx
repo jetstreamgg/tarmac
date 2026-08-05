@@ -23,7 +23,6 @@ export const StakeBalanceCard = ({
   loading,
   stakeBalance,
   url,
-  onExternalLinkClicked,
   variant = ModuleCardVariant.default
 }: CardProps) => {
   const currentChainId = useChainId();
@@ -94,7 +93,6 @@ export const StakeBalanceCard = ({
                 : `Rate: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`
             }
             popoverType="srr"
-            onExternalLinkClicked={onExternalLinkClicked}
           />
           {uniqueRewardTokens.length > 0 && <UnclaimedRewards uniqueRewardTokens={uniqueRewardTokens} />}
         </div>

@@ -30,7 +30,6 @@ export const WalletCard = ({
   ensName,
   walletIcon,
   className,
-  onExternalLinkClicked,
   onSwitchAccountClick,
   showExplorerLink = false
 }: {
@@ -40,7 +39,6 @@ export const WalletCard = ({
   ensAvatar?: string | null;
   walletIcon?: React.ReactElement;
   className?: string;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onSwitchAccountClick?: () => void;
   showExplorerLink?: boolean;
 }): React.ReactElement => {
@@ -98,7 +96,6 @@ export const WalletCard = ({
               href={getEtherscanLink(chainId, address, 'address')}
               iconSize={16}
               className="text-textSecondary hover:text-text"
-              onExternalLinkClicked={onExternalLinkClicked}
               dataTestId="wallet-card-explorer"
             />
           )}
@@ -113,7 +110,6 @@ export const WalletCard = ({
               iconSize={11}
               className="text-textEmphasis inline"
               inline
-              onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to Base.</span>
             </ExternalLink>
@@ -129,7 +125,6 @@ export const WalletCard = ({
               iconSize={11}
               className="text-textEmphasis inline"
               inline
-              onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to Arbitrum.</span>
             </ExternalLink>
@@ -145,7 +140,6 @@ export const WalletCard = ({
               iconSize={11}
               className="text-textEmphasis inline"
               inline
-              onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to OP Mainnet.</span>
             </ExternalLink>
@@ -161,7 +155,6 @@ export const WalletCard = ({
               iconSize={11}
               className="text-textEmphasis inline"
               inline
-              onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to Unichain.</span>
             </ExternalLink>

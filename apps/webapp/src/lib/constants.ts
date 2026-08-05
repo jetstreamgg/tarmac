@@ -109,7 +109,12 @@ export const SUSDT_VAULT_ENABLED = import.meta.env.VITE_SUSDT_VAULT_ENABLED === 
 
 export const REFERRAL_CODE: number = Number(import.meta.env.VITE_REFERRAL_CODE) || 0;
 
-export const BATCH_TX_LEGAL_NOTICE_URL = '/batch-transactions-legal-notice';
+// The bundled-transaction legal notice lives in the docs, not in the app: a
+// standalone page the user was navigated *out of* a transaction flow to reach
+// read as a dead end (APP-456 #3). TODO: repoint at the dedicated bundled-
+// transactions docs page once it is published — until then this lands on the
+// Terms of Use, which is the document the notice itself cited.
+export const BATCH_TX_LEGAL_NOTICE_URL = 'https://docs.sky.money/legal-terms';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // Deprecated Seal Engine (LockstakeEngine v1, MKR). The UI was removed; this address backs the

@@ -61,3 +61,5 @@ export function formatBaLabsUrl(url: URL) {
 
   return url;
 }
+
+export { fetchBaLabsPages } from './fetchBaLabsPages';

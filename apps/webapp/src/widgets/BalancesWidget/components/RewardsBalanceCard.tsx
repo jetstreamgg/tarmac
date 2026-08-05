@@ -21,7 +21,6 @@ import { InteractiveStatsCardAlt } from '@/widgets/shared/components/ui/card/Int
 
 export const RewardsBalanceCard = ({
   url,
-  onExternalLinkClicked,
   loading,
   totalUserRewardsSupplied,
   variant = ModuleCardVariant.default
@@ -110,7 +109,6 @@ export const RewardsBalanceCard = ({
             <RateLineWithArrow
               rateText={`Rates up to: ${mostRecentRateNumber ? formatDecimalPercentage(mostRecentRateNumber) : '0%'}`}
               popoverType="str"
-              onExternalLinkClicked={onExternalLinkClicked}
             />
           ) : (
             <></>

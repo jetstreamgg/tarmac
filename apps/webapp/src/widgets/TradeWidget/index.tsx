@@ -65,7 +65,6 @@ import { usePrices } from '@/hooks';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useTradeAnalytics } from './hooks/useTradeAnalytics';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useNotification } from '@/modules/app/hooks/useNotification';
@@ -92,7 +91,6 @@ function TradeWidgetWrapped({
   onBackToConvert
 }: TradeWidgetProps): React.ReactElement {
   const onConnect = useCustomConnectModal();
-  const { onExternalLinkClicked } = useConfigContext();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onNotification = useNotification();
   const chainId = useChainId();
@@ -1542,12 +1540,11 @@ function TradeWidgetWrapped({
           showCancelButton={showCancelOrderButton}
           onClickCancel={onCancelOrderClick}
           cancelLoading={cancelLoading}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
       }
     >
       <div className="mt-[-16px] space-y-0">
-        <TradePoweredBy onExternalLinkClicked={onExternalLinkClicked} />
+        <TradePoweredBy />
       </div>
       <AnimatePresence mode="popLayout" initial={false}>
         {widgetState.screen === TradeScreen.REVIEW && quoteData && originToken && targetToken ? (
@@ -1573,7 +1570,6 @@ function TradeWidgetWrapped({
               lastUpdated={lastUpdated}
               isEthFlow={!!originToken?.isNative}
               ethFlowTxStatus={ethFlowTxStatus}
-              onExternalLinkClicked={onExternalLinkClicked}
               needsUsdtReset={needsUsdtReset}
               isUsdtResetFlow={isUsdtResetFlow}
               isBatchTransaction={batchEnabled}

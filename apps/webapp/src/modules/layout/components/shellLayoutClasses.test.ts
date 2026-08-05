@@ -21,6 +21,15 @@ describe('shellHeaderClasses', () => {
     // off at a hard line where blurred meets sharp content.
     expect(cls).toContain('mask-image');
   });
+
+  // APP-456 #2: the desktop comp (Navbar 1881:51590) is an 88px bar around the
+  // 40px pill row — 24px of breathing room above it, not the 8px that had the
+  // logo nearly touching the viewport edge.
+  it('gives the desktop bar the comp 24px vertical padding', () => {
+    const cls = shellHeaderClasses();
+    expect(cls).toContain('desktop:py-6');
+    expect(cls).not.toContain('desktop:py-2');
+  });
 });
 
 // M3 (APP-369): the page gutter follows the DS grid tiers — 20px on the mobile

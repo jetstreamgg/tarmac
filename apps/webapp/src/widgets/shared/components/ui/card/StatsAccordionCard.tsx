@@ -18,14 +18,12 @@ export const StatsAccordionCard = ({
   chainId,
   address,
   accordionTitle,
-  accordionContent,
-  onExternalLinkClicked
+  accordionContent
 }: {
   chainId: number;
   address?: string;
   accordionTitle: string;
   accordionContent: JSX.Element;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
   return (
     <Accordion type="single" collapsible defaultValue={'info'}>
@@ -38,7 +36,6 @@ export const StatsAccordionCard = ({
                   href={getEtherscanLink(chainId, address, 'address')}
                   iconSize={14}
                   className="text-textEmphasis"
-                  onExternalLinkClicked={onExternalLinkClicked}
                 >
                   View contract
                 </ExternalLink>

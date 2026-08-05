@@ -80,12 +80,7 @@ const getMessage = (
       <Trans>
         Your access is restricted. For more information, please refer to our{' '}
         {Array.isArray(termsLink) && termsLink.length > 0 ? (
-          <ExternalLink
-            skipConfirm
-            className="text-textEmphasis"
-            showIcon={false}
-            href={sanitizeUrl(termsLink[0].url)}
-          >
+          <ExternalLink className="text-textEmphasis" showIcon={false} href={sanitizeUrl(termsLink[0].url)}>
             {termsLink[0].name}
           </ExternalLink>
         ) : (
