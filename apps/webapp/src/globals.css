@@ -217,6 +217,19 @@
   --color-brand3-end: rgba(80, 77, 255, 0.1);
   --color-loader-brand-start: #949aff;
   --color-loader-brand-end: #504dff;
+  /* Loading skeletons (Figma Portfolio/Skeleton loader 1881:51588). The comp
+     types every placeholder block as colors/bg/bg-secondary, so the track is
+     bgSecondary's value restated under its own name — the two are free to
+     diverge later without dragging the table surfaces along. The sweep has no
+     Figma counterpart (the comp is a static render); it inherits the shipped
+     deep indigo in dark and moves to a periwinkle wash in light, where the
+     indigo read as a dark smear across a near-white block. */
+  --color-skeletonTrack: rgba(188, 182, 239, 0.05);
+  --color-skeletonSweep: rgb(76, 61, 158);
+  /* ChartSkeleton's resting line trace. Dark draws it white through an overlay
+     blend; light has to leave both behind (white on white is nothing) and use
+     the periwinkle the rest of the light hairlines are on. */
+  --color-skeletonTrace: #ffffff;
   /* The /stake mobile summary-card "Cover" wash (comp 1222:16799): Figma types
      the gradient's bottom stop as a raw hex; same value in both themes. */
   --color-brandCover: #756fec;
@@ -674,6 +687,17 @@
        theme-invariant in the DS and stay on the @theme default. */
     --color-bgSecondary: #ffffff99; /* colors/bg/bg-secondary */
     --color-bgTertiary: #ffffff66; /* colors/bg/bg-tertiary */
+
+    /* Skeletons. Light does NOT follow bg-secondary the way the other surface
+       tokens do: bg-secondary's light value is #ffffff99, which is also
+       --color-card, so a skeleton on a Card came out white-on-white (measured
+       ~4/255 separation — invisible). Light instead inverts the relationship
+       dark uses, putting the track on a periwinkle tint that reads against
+       both the lavender page and the white card, and making the sweep the
+       white highlight passing over it. */
+    --color-skeletonTrack: rgba(156, 160, 229, 0.2);
+    --color-skeletonSweep: rgba(255, 255, 255, 0.75);
+    --color-skeletonTrace: rgba(156, 160, 229, 0.8);
     --color-badgePrimary: #9ca0e54d; /* components/badges/bg-primary */
     --color-statusSuccess: #00a186; /* components/status/fg-success */
     --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */

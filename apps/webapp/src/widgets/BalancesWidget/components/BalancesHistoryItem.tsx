@@ -16,7 +16,7 @@ import { getTitle } from '../lib/getTitle';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
 import { getHistoryRightText } from '../lib/getHistoryRightText';
 import { Avatar, AvatarImage } from '@/widgets/components/ui/avatar';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useChainImage } from '@/widgets/shared/hooks/useChainImage';
 
 interface BalancesHistoryItemProps {

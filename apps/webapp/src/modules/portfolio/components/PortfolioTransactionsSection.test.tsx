@@ -115,7 +115,7 @@ describe('PortfolioTransactionsView', () => {
 
   it('shows the empty state when there are no transactions', () => {
     renderView([]);
-    expect(screen.queryByText('No transactions yet')).not.toBeNull();
+    expect(screen.queryByText("You don't have any transactions made yet.")).not.toBeNull();
   });
 
   it('renders table rows from `rows` while `optionRows` only feeds the filters', () => {
