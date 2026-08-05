@@ -1,22 +1,13 @@
-/** How many layers the blur ramp is built from — see `.progressive-blur-bar`. */
-const BLUR_LAYERS = 6;
-
 /**
- * The sticky header's progressive blur: a stack of backdrop layers with
- * doubling radii, sitting behind the header content so the logo and nav pills
- * stay sharp while whatever scrolls under the bar goes gradually out of focus.
+ * The sticky header's progressive blur: one masked backdrop layer sitting
+ * behind the header content, so the logo and nav pills stay sharp while
+ * whatever scrolls under the bar goes gradually out of focus.
  *
- * Real elements rather than pseudo-elements because the ramp needs more than
- * the two an element can offer. Everything visual lives in
- * `.progressive-blur-bar` (globals.css), including why a single masked layer
- * can't produce a ramp.
+ * A real element rather than a pseudo-element so it shows up in the inspector
+ * under its own name — a hard edge on an earlier version of this was mistaken
+ * for a header padding bug precisely because it wasn't inspectable. Everything
+ * visual lives in `.progressive-blur-bar` (globals.css).
  */
 export function HeaderBlur() {
-  return (
-    <div aria-hidden data-testid="header-blur" className="progressive-blur-bar">
-      {Array.from({ length: BLUR_LAYERS }, (_, i) => (
-        <div key={i} />
-      ))}
-    </div>
-  );
+  return <div aria-hidden data-testid="header-blur" className="progressive-blur-bar" />;
 }

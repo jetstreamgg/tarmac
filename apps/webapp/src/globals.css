@@ -823,65 +823,28 @@
 }
 
 /* Progressive blur behind the sticky top bar -------------------------------
-   A ramp, not a band: content is sharp where it meets the bar's bottom edge,
-   goes softly out of focus as it rises, and is fully diffuse by the time it
-   passes behind the logo and nav pills.
+   One blurred backdrop layer, masked so it fades out over the bottom quarter of
+   the bar: content is sharp where it meets the bar's bottom edge, softens as it
+   rises, and is fully diffuse by the time it passes behind the logo and pills.
 
-   One masked `backdrop-filter` cannot do this. A mask fades the blurred layer's
-   *opacity*, not its radius, so wherever the mask is partial the sharp original
-   shows through underneath and content reads as a double image rather than as
-   something out of focus (APP-456 #6).
+   The mask fades the layer's *opacity*, not its blur radius, so within that
+   bottom quarter a partially-blurred copy sits over the sharp original. Over
+   22px, right at the boundary where the bar meets live page content, that reads
+   as a fade — which is the point. It is only over a tall band that the same
+   trick reads as a double image, which is what the flat, feathered-to-95%
+   version used to do to headings crossing the whole bar (APP-456 #6).
 
-   So the ramp is six stacked layers with doubling radii. Each samples the
-   composite the layers below it already painted, so the radii accumulate
-   upward (~15px at the top). Each is opaque from the top of the bar down to its
-   own cutoff and then fades out over one 12.5% step, and the cutoffs are
-   staggered — so at any height exactly one layer is mid-fade, and what shows
-   through its partial opacity is the next-weakest blur rather than the sharp
-   original. That is what makes the increase read as continuous instead of as
-   the visible step a two-layer version leaves.
-
-   The stack stays inside the bar's own box: an overhang put a frosted band over
+   The layer stays inside the bar's own box: an overhang put a frosted band over
    page content, visible as an edge below the header (APP-416). */
 .progressive-blur-bar {
   position: absolute;
   inset: 0;
   z-index: -10;
   pointer-events: none;
-}
-.progressive-blur-bar > * {
-  position: absolute;
-  inset: 0;
-}
-.progressive-blur-bar > :nth-child(1) {
-  backdrop-filter: blur(0.5px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 92%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 92%, transparent 100%);
-}
-.progressive-blur-bar > :nth-child(2) {
-  backdrop-filter: blur(1.2px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 84%, transparent 92%);
-  mask-image: linear-gradient(to bottom, #000 84%, transparent 92%);
-}
-.progressive-blur-bar > :nth-child(3) {
-  backdrop-filter: blur(2.5px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 84%);
-  mask-image: linear-gradient(to bottom, #000 76%, transparent 84%);
-}
-.progressive-blur-bar > :nth-child(4) {
-  backdrop-filter: blur(5px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 68%, transparent 76%);
-  mask-image: linear-gradient(to bottom, #000 68%, transparent 76%);
-}
-.progressive-blur-bar > :nth-child(5) {
-  backdrop-filter: blur(10px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 68%);
-  mask-image: linear-gradient(to bottom, #000 60%, transparent 68%);
-}
-.progressive-blur-bar > :nth-child(6) {
-  backdrop-filter: blur(16px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 60%);
-  mask-image: linear-gradient(to bottom, #000 52%, transparent 60%);
+  backdrop-filter: blur(20px);
+  /* Safari still needs the prefix for a masked backdrop layer. */
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 25%);
+  mask-image: linear-gradient(to top, transparent 0%, #000 25%);
 }
 
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
