@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { EarnRiskTier } from '@/hooks';
 import type { EarnTableColumn, EarnTableSort } from '@/components/product/EarnTable';
+import { useRouterState } from '@tanstack/react-router';
 import { QueryParams } from '@/lib/constants';
+import { isEarnMarketplacePath } from '@/lib/routes';
 import { useAppSearchParams } from '@/lib/navigation';
 import { rememberEarnFilterSearch } from '@/lib/earnFilterMemory';
 import {
@@ -58,6 +60,7 @@ type UrlFilterKey = keyof typeof PARAM_BY_FILTER;
  */
 export function useEarnTableState(validOptions: EarnFilterOptionValues) {
   const [searchParams, setSearchParams] = useAppSearchParams();
+  const pathname = useRouterState({ select: state => state.location.pathname });
   const [risk, setRisk] = useState<EarnRiskTier[]>(readStoredRisk);
   const [sort, setSort] = useState<EarnTableSort>(DEFAULT_SORT);
 
@@ -84,9 +87,16 @@ export function useEarnTableState(validOptions: EarnFilterOptionValues) {
 
   // What "Back to products" restores. Written on every change, empty object
   // included — landing on a clean /earn is what wipes a stale memory.
+  //
+  // The pathname guard is load-bearing: `useAppSearchParams` reads the router's
+  // *global* location, so on the way out of the marketplace this component
+  // re-renders once with the destination's search before it unmounts. Without
+  // the guard that render records the product page's (filter-less) search, and
+  // the back link it feeds lands on an unfiltered /earn.
   useEffect(() => {
+    if (!isEarnMarketplacePath(pathname)) return;
     rememberEarnFilterSearch(Object.fromEntries(searchParams));
-  }, [searchParams]);
+  }, [pathname, searchParams]);
 
   // `replace` keeps filter fiddling out of the history stack: back still leaves
   // /earn in one press, while the /earn entry itself carries the latest filters.

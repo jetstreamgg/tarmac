@@ -89,6 +89,11 @@ export function isEarnDrilldown(fromPathname: string, toPathname: string): boole
   return (from === ROUTES.EARN && isProduct(to)) || (to === ROUTES.EARN && isProduct(from));
 }
 
+/** True for the Earn marketplace itself, not one of its product pages. */
+export function isEarnMarketplacePath(pathname: string): boolean {
+  return normalizePath(pathname) === ROUTES.EARN;
+}
+
 const destinationIndex = (pathname: string): number => {
   const path = normalizePath(pathname);
   return DESTINATION_ORDER.findIndex(base => path === base || path.startsWith(`${base}/`));

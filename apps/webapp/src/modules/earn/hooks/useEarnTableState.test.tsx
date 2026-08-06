@@ -41,8 +41,13 @@ async function renderState(initialPath = '/earn') {
     )
   });
   const earnRoute = createRoute({ getParentRoute: () => rootRoute, path: '/earn', component: () => null });
+  const productRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/earn/savings',
+    component: () => null
+  });
   const router = createRouter({
-    routeTree: rootRoute.addChildren([earnRoute]),
+    routeTree: rootRoute.addChildren([earnRoute, productRoute]),
     history: createMemoryHistory({ initialEntries: [initialPath] }),
     parseSearch: searchStr => Object.fromEntries(new URLSearchParams(searchStr)),
     stringifySearch: search => {
@@ -58,7 +63,7 @@ async function renderState(initialPath = '/earn') {
   // The router mounts asynchronously, so nothing has called the hook yet.
   await screen.findByTestId('probe');
   const searchOf = () => Object.fromEntries(new URLSearchParams(router.state.location.searchStr));
-  return { state: captured, searchOf };
+  return { state: captured, searchOf, router };
 }
 
 beforeEach(() => {
@@ -176,5 +181,19 @@ describe('useEarnTableState back-link memory', () => {
     await renderState();
 
     await waitFor(() => expect(recallEarnFilterSearch()).toEqual({}));
+  });
+
+  it('holds the memory while the marketplace is being left for a product page', async () => {
+    // The hook reads the router's global location, so it re-renders with the
+    // product page's (filter-less) search before it unmounts. That render must
+    // not record anything, or the back link would land on an unfiltered /earn.
+    const { router } = await renderState('/earn?token=usdc');
+    await waitFor(() => expect(recallEarnFilterSearch()).toEqual({ token: 'usdc' }));
+
+    await act(async () => {
+      await router.navigate({ to: '/earn/savings' });
+    });
+
+    expect(recallEarnFilterSearch()).toEqual({ token: 'usdc' });
   });
 });
