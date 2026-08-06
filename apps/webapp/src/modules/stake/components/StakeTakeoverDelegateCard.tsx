@@ -72,10 +72,7 @@ export function DelegateList({
           <Trans>No delegates found</Trans>
         </p>
       ) : (
-        <ul
-          className="md:scrollbar-thin-always flex max-h-96 flex-col gap-2 overflow-y-auto"
-          data-testid={`${dataTestIdPrefix}-list`}
-        >
+        <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto" data-testid={`${dataTestIdPrefix}-list`}>
           {delegates.map(delegate => {
             const isSelected = selectedDelegate?.toLowerCase() === delegate.id.toLowerCase();
             return (

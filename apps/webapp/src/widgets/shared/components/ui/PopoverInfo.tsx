@@ -43,7 +43,7 @@ export const PopoverInfo = ({ title, description, iconClassName, iconSize = 'sma
         <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
           <Close className="text-text h-5 w-5 cursor-pointer" />
         </PopoverClose>
-        <div className="mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] scrollbar-thin overflow-y-auto">
+        <div className="mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] overflow-y-auto">
           {typeof description === 'string' ? (
             <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
               {description}

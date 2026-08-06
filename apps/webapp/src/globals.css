@@ -435,6 +435,70 @@
     @apply bg-background text-foreground antialiased;
   }
 
+  /*
+   * Every scrollbar in the app, in one place. `scrollbar-width` and
+   * `scrollbar-color` are INHERITED properties, so this single declaration
+   * reaches every scroll container in the tree — modals, token lists,
+   * tooltips, drawer tabs, the Morpho tables — with no per-container utility
+   * class. It replaces the old scrollbar-thin / scrollbar-thin-always
+   * utilities, which had to be hand-applied at ~20 call sites.
+   *
+   * Deliberately NOT `::-webkit-scrollbar`: declaring that pseudo-element
+   * forces a classic space-taking bar even where the platform would draw an
+   * overlay one, and Chrome ignores it outright once scrollbar-width or
+   * scrollbar-color is set on the same element. The standard properties also
+   * reach Firefox, which has never supported the pseudo family.
+   *
+   * The track is transparent so the bar reads as a thumb floating on the
+   * surface rather than sitting in a groove. There is no way to keep the UA's
+   * default thumb while clearing the track — `scrollbar-color` takes `auto`
+   * or BOTH colors, never one of each — so the thumb is an explicit token.
+   * borderTertiary is theme-aware (lilac 30% dark, periwinkle 75% light),
+   * which is what keeps it visible in light mode; the old utilities hardcoded
+   * --transparent-white-15 and went invisible on light surfaces.
+   */
+  :root * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-borderTertiary) transparent;
+  }
+
+  /*
+   * The viewport bar is the exception: full width, UA-default colors, and
+   * permanently present. Reserving it unconditionally is what stops the
+   * content box changing width between a page that overflows and one that
+   * doesn't (/convert has nothing to scroll) — most visible across the page
+   * view transition, whose two snapshots would otherwise be captured at
+   * different widths.
+   *
+   * `overflow-y: scroll` is what does the reserving. `scrollbar-gutter:
+   * stable` does NOT work here: on <html> in Chrome it computes to `stable`
+   * and reserves nothing, because the root propagates its overflow to the
+   * viewport but is not itself a scroll container, and the gutter property
+   * only applies to scroll containers.
+   *
+   * html is not matched by the `:root *` rule above, so it keeps the initial
+   * `scrollbar-width: auto` and the UA's own colors — the "styled normally"
+   * half of the brief. The track being opaque is what makes the bar visible
+   * on a page with nothing to scroll.
+   */
+  html {
+    overflow-y: scroll;
+  }
+
+  /*
+   * Radix's dialog/sheet scroll lock (react-remove-scroll) injects
+   * `body[data-scroll-locked] { margin-right: 15px !important }` to
+   * compensate for the scrollbar it removes by clipping the body. With the
+   * bar pinned on the root there is nothing to give back, so that margin
+   * lands as a real 15px shift of the whole page on every modal open. Their
+   * style tag is injected into <head> after this file and is itself
+   * !important, so neutralising it needs both the extra specificity and the
+   * !important.
+   */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
+  }
+
   /* Each face declares its real weight. Without the descriptor every face
      defaults to 400, so the browser has a single candidate per family and
      resolves every requested weight to it — font-medium et al. render
@@ -478,10 +542,9 @@
        so the correct scheme is in place by the time anything renders.
 
        This does NOT change whether a scrollbar reserves layout space; that
-       stays an OS/browser decision. It only recolors the bar we already get.
-       It also does not reach the containers using the scrollbar-thin*
-       utilities below: an explicit ::-webkit-scrollbar rule wins over the
-       UA's scheme-derived default. */
+       stays an OS/browser decision. It only recolors the bar we already get,
+       which is what the viewport scrollbar relies on — it is left on the UA's
+       own colors (see the `html` rule near the top of this layer). */
     color-scheme: dark;
 
     --brand-dark-purple: 26 24 85;
@@ -747,38 +810,6 @@
 @utility container {
   margin-inline: auto;
   padding-inline: 2rem;
-}
-
-@utility scrollbar-thin {
-  &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  scrollbar-gutter: stable;
-
-  &:hover::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-15);
-    border: solid 3px transparent;
-    border-radius: 5px;
-  }
-}
-
-@utility scrollbar-thin-always {
-  &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  scrollbar-gutter: stable;
-
-  &::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-15);
-    border: solid 3px transparent;
-    border-radius: 5px;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-20);
-  }
 }
 
 @utility chevron-down {
