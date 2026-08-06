@@ -33,7 +33,6 @@ type TransactionOverviewParams = {
   isFetching: boolean;
   fetchingMessage: string;
   rateType?: 'str' | 'ssr' | 'srr' | 'dtc' | 'stusds' | 'morpho' | 'sky';
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /**
    * Headline rows. When provided, renders as a TWO-accordion layout:
    *   - Section 1 ("title") — these rows, expanded by default
@@ -49,12 +48,10 @@ type TransactionOverviewParams = {
 
 function OverviewRow({
   row,
-  rateType,
-  onExternalLinkClicked
+  rateType
 }: {
   row: TransactionDataRow;
   rateType?: TransactionOverviewParams['rateType'];
-  onExternalLinkClicked?: TransactionOverviewParams['onExternalLinkClicked'];
 }) {
   const {
     label,
@@ -81,11 +78,7 @@ function OverviewRow({
         </Text>
         {(label === 'Rate' || label === 'stUSDS Rate') && rateType && (
           <span className="mt-1">
-            <PopoverRateInfo
-              type={rateType}
-              onExternalLinkClicked={onExternalLinkClicked}
-              iconClassName="text-textSecondary"
-            />
+            <PopoverRateInfo type={rateType} iconClassName="text-textSecondary" />
           </span>
         )}
         {tooltipText && (
@@ -117,7 +110,6 @@ export function TransactionOverview({
   isFetching,
   fetchingMessage,
   rateType = 'ssr',
-  onExternalLinkClicked,
   pinnedData,
   detailsTitle = 'Transaction details',
   transactionData
@@ -155,12 +147,7 @@ export function TransactionOverview({
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
                   {pinnedData!.map(row => (
-                    <OverviewRow
-                      key={row.label}
-                      row={row}
-                      rateType={rateType}
-                      onExternalLinkClicked={onExternalLinkClicked}
-                    />
+                    <OverviewRow key={row.label} row={row} rateType={rateType} />
                   ))}
                 </AccordionContent>
               </AccordionItem>
@@ -174,12 +161,7 @@ export function TransactionOverview({
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
                   {transactionData.map(row => (
-                    <OverviewRow
-                      key={row.label}
-                      row={row}
-                      rateType={rateType}
-                      onExternalLinkClicked={onExternalLinkClicked}
-                    />
+                    <OverviewRow key={row.label} row={row} rateType={rateType} />
                   ))}
                 </AccordionContent>
               </AccordionItem>
@@ -203,12 +185,7 @@ export function TransactionOverview({
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">
                 {transactionData.map(row => (
-                  <OverviewRow
-                    key={row.label}
-                    row={row}
-                    rateType={rateType}
-                    onExternalLinkClicked={onExternalLinkClicked}
-                  />
+                  <OverviewRow key={row.label} row={row} rateType={rateType} />
                 ))}
               </AccordionContent>
             </AccordionItem>

@@ -27,7 +27,6 @@ export enum ModuleCardVariant {
 
 export interface CardProps {
   url?: string;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   chainIds?: number[];
   loading?: boolean;
   error?: string;
@@ -40,7 +39,6 @@ export interface CardProps {
 interface ModulesBalancesProps {
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   chainIds?: number[];
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
@@ -56,7 +54,6 @@ interface ModulesBalancesProps {
 export const ModulesBalances = ({
   rewardsCardUrl,
   savingsCardUrlMap,
-  onExternalLinkClicked,
   chainIds,
   stakeCardUrl,
   stusdsCardUrl,
@@ -354,7 +351,6 @@ export const ModulesBalances = ({
           <RewardsBalanceCard
             key="rewards"
             url={rewardsCardUrl}
-            onExternalLinkClicked={onExternalLinkClicked}
             loading={rewardsLoading}
             totalUserRewardsSupplied={totalUserRewardsSupplied}
             variant={variant}
@@ -365,7 +361,6 @@ export const ModulesBalances = ({
           <SavingsBalanceCard
             key="savings"
             urlMap={savingsCardUrlMap ?? {}}
-            onExternalLinkClicked={onExternalLinkClicked}
             loading={savingsLoading}
             savingsBalances={filteredAndSortedSavingsBalances}
             variant={variant}
@@ -373,13 +368,7 @@ export const ModulesBalances = ({
         );
       case 'stusds':
         return (
-          <ExpertBalanceCard
-            key="stusds"
-            url={stusdsCardUrl}
-            onExternalLinkClicked={onExternalLinkClicked}
-            loading={expertLoading}
-            variant={variant}
-          />
+          <ExpertBalanceCard key="stusds" url={stusdsCardUrl} loading={expertLoading} variant={variant} />
         );
       case 'staking':
         return (
@@ -387,7 +376,6 @@ export const ModulesBalances = ({
             key="staking"
             loading={stakeLoading}
             stakeBalance={totalUserStaked}
-            onExternalLinkClicked={onExternalLinkClicked}
             url={stakeCardUrl}
             variant={variant}
           />
@@ -397,7 +385,6 @@ export const ModulesBalances = ({
           <VaultsBalanceCard
             key="vaults"
             url={vaultsCardUrl}
-            onExternalLinkClicked={onExternalLinkClicked}
             variant={variant}
             hideZeroBalances={hideZeroBalances}
           />
@@ -407,7 +394,6 @@ export const ModulesBalances = ({
           <FixedYieldBalanceCard
             key="fixedYield"
             url={fixedYieldCardUrl}
-            onExternalLinkClicked={onExternalLinkClicked}
             variant={variant}
             hideZeroBalances={hideZeroBalances}
           />

@@ -62,11 +62,9 @@ function TransactionDetail() {
 
 export function TransactionStatus({
   explorerName: paramExplorerName,
-  onExternalLinkClicked,
   transactionDetail
 }: {
   explorerName?: ExplorerName;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   transactionDetail?: React.ReactElement;
 }): React.ReactElement {
   const { txStatus, txTitle, txSubtitle, externalLink, step, stepTwoTitle, showStepIndicator } =
@@ -138,12 +136,7 @@ export function TransactionStatus({
                   txStatus === TxStatus.ERROR ||
                   txStatus === TxStatus.CANCELLED) &&
                 externalLink ? (
-                  <ExternalLink
-                    href={externalLink}
-                    iconSize={14}
-                    className="text-text"
-                    onExternalLinkClicked={onExternalLinkClicked}
-                  >
+                  <ExternalLink href={externalLink} iconSize={14} className="text-text">
                     View on {explorerName}
                   </ExternalLink>
                 ) : (

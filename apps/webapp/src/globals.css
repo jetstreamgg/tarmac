@@ -126,6 +126,14 @@
   --color-fgBrand: #757dff;
   --color-brand2-start: rgba(148, 154, 255, 0.2);
   --color-brand2-end: rgba(80, 77, 255, 0.2);
+  /* Sticky top bar (Figma Navbar 1036:201581 dark / 1030:61380 light, and
+     Mobile / Topbar 551:10137): the bar's `bg` layer is the gradient-navbar
+     fill — components/navbar/bg-gradient-start → -end, top to bottom — over a
+     background blur-md (Figma radius 12 ⇒ CSS blur(6px)). The fill's own fade
+     to near-transparent is what softens the bar's bottom edge; there is no
+     mask in the spec. */
+  --color-navbarGradientStart: #09042080; /* components/navbar/bg-gradient-start */
+  --color-navbarGradientEnd: #09042014; /* components/navbar/bg-gradient-end */
   /* Design-system form-control tokens (Figma Sliders 5246:16073 / Switch
      5044:49116 / Checkbox 5044:49213 / Radio 5044:49317): dark values are the
      Figma source values — colors/fg/fg-quaternary (disabled thumbs/glyphs),
@@ -655,6 +663,11 @@
     --color-glassSurface: #ffffff99; /* colors/bg/bg-secondary */
     --color-glassBadge: #9ca0e533; /* components/badges/bg-secondary */
     --color-glassBorder: #9ca0e566; /* colors/border/border-secondary */
+
+    /* Sticky top bar fill — same gradient, the light mode's own stops
+       (Figma Navbar 1030:61380). */
+    --color-navbarGradientStart: #bcb6ef4d; /* components/navbar/bg-gradient-start */
+    --color-navbarGradientEnd: #bcb6ef0d; /* components/navbar/bg-gradient-end */
 
     /* H5 tabs / H15 list + accordion / navbar foreground */
     --color-borderTertiary: #9ca0e5bf; /* colors/border/border-tertiary */

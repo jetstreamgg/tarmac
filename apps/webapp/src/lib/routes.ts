@@ -15,7 +15,6 @@ export const ROUTES = {
   STAKE: '/stake',
   CONVERT: '/convert',
   SEAL_ENGINE: '/seal-engine',
-  BATCH_TRANSACTIONS_LEGAL_NOTICE: '/batch-transactions-legal-notice',
   DEV: '/dev'
 } as const;
 

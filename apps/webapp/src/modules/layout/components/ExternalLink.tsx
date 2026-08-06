@@ -2,7 +2,6 @@ import React from 'react';
 import { HStack } from './HStack';
 import { LinkExternal } from '@/modules/icons';
 import { cn } from '@/lib/utils';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export function ExternalLink({
   href,
@@ -10,7 +9,6 @@ export function ExternalLink({
   className,
   iconSize = 16,
   showIcon = true,
-  skipConfirm,
   iconClassName,
   iconColor,
   contentClassName
@@ -21,12 +19,9 @@ export function ExternalLink({
   iconSize?: number;
   className?: string;
   iconClassName?: string;
-  skipConfirm?: boolean;
   iconColor?: string;
   contentClassName?: string;
 }): React.ReactElement {
-  const { onExternalLinkClicked } = useConfigContext();
-
   const content = (
     <>
       {children ? children : null}
@@ -36,7 +31,6 @@ export function ExternalLink({
   return (
     <a
       href={href}
-      onClick={skipConfirm ? undefined : onExternalLinkClicked}
       target="_blank"
       rel="noopener noreferrer"
       className={cn('text-text inline-flex items-center', className)}

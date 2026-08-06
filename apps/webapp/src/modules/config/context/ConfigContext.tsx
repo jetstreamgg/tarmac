@@ -22,11 +22,6 @@ export interface ConfigContextProps {
   loaded: boolean;
   locale: string;
   updateUserConfig: (config: UserConfig) => void;
-  externalLinkModalOpened: boolean;
-  setExternalLinkModalOpened: (val: boolean) => void;
-  externalLinkModalUrl: string;
-  setExternalLinkModalUrl: (val: string) => void;
-  onExternalLinkClicked: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   expertRiskDisclaimerShown: boolean;
   setExpertRiskDisclaimerShown: (shown: boolean) => void;
   expertRiskDisclaimerDismissed: boolean;
@@ -49,11 +44,6 @@ export const ConfigContext = createContext<ConfigContextProps>({
   updateUserConfig: () => {
     // do nothing.
   },
-  externalLinkModalOpened: false,
-  setExternalLinkModalOpened: () => {},
-  externalLinkModalUrl: '',
-  setExternalLinkModalUrl: () => {},
-  onExternalLinkClicked: () => {},
   expertRiskDisclaimerShown: false,
   setExpertRiskDisclaimerShown: () => {},
   expertRiskDisclaimerDismissed: false,

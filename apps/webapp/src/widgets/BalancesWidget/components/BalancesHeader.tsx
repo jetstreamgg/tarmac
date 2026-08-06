@@ -4,11 +4,9 @@ import { AssetsNoWalletConnected } from '@/widgets/BalancesWidget/components/Ass
 import { WalletCard } from './WalletCard';
 
 export const BalancesHeader = ({
-  isConnectedAndEnabled,
-  onExternalLinkClicked
+  isConnectedAndEnabled
 }: {
   isConnectedAndEnabled: boolean;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }): React.ReactElement => {
   const { address } = useConnection();
   const { data: ethBalance, isLoading: isEthBalanceLoading } = useBalance({ address });
@@ -18,6 +16,6 @@ export const BalancesHeader = ({
   ) : isEthBalanceLoading || !ethBalance || !address ? (
     <Skeleton className="bg-card h-8" />
   ) : (
-    <WalletCard onExternalLinkClicked={onExternalLinkClicked} />
+    <WalletCard />
   );
 };

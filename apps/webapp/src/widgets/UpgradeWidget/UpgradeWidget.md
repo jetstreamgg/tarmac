@@ -43,5 +43,4 @@ In addition to `WidgetProps`, `UpgradeWidget` component also accepts the followi
   - A callback function that is called when the custom navigation button is clicked.
 - `customNavigationLabel?: string;`
   - A label for the custom navigation button.
-- `onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;`
   - A callback function that is called when an external link is clicked. It receives the click event as an argument.

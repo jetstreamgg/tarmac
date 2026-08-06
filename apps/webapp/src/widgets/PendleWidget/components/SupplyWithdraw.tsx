@@ -53,7 +53,6 @@ type SupplyWithdrawProps = {
   prepareErrorMessage?: string;
   /** User-friendly message for a failed /convert quote request. */
   quoteErrorMessage?: string;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
 export const SupplyWithdraw = ({
@@ -78,8 +77,7 @@ export const SupplyWithdraw = ({
   enabled,
   insufficientFunds,
   prepareErrorMessage,
-  quoteErrorMessage,
-  onExternalLinkClicked
+  quoteErrorMessage
 }: SupplyWithdrawProps) => {
   // Pendle PTs share decimals with the underlying SY (which equals the
   // underlying token's decimals). The user-side token may be USDS (18) or
@@ -155,7 +153,7 @@ export const SupplyWithdraw = ({
           </TabsList>
         </motion.div>
 
-        <PendleStatsCard market={market} onExternalLinkClicked={onExternalLinkClicked} />
+        <PendleStatsCard market={market} />
 
         <TabsContent value={PendleFlow.BUY}>
           <VStack className="items-stretch" gap={3}>
@@ -255,7 +253,6 @@ export const SupplyWithdraw = ({
           title={t`Transaction overview`}
           isFetching={isFetchingQuote || (!quote && !quoteErrorMessage)}
           fetchingMessage={t`Fetching quote from Pendle`}
-          onExternalLinkClicked={onExternalLinkClicked}
           // Section 1 "Transaction overview" (expanded by default) — what the
           // user came for. BUY: amount in, rate, maturity, USDS payout at
           // maturity. SELL: amount in, realized rate, USDS now. Per APP-268.

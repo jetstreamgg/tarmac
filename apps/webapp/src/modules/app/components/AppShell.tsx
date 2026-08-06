@@ -16,6 +16,9 @@ import { useNetworkChangeToast } from '../hooks/useNetworkChangeToast';
  * legacy two-pane composition — a widget-pane column beside a portaled
  * details pane, both scrolling inside a viewport-capped box — is gone, along
  * with the `staticData.fullWidth` switch that used to select between them.
+ *
+ * The view-transition group is named a level up, in `Layout`, so that the page
+ * footer travels with the content it belongs to.
  */
 export function AppShell() {
   const { intent } = useAppOrchestration();
@@ -29,12 +32,7 @@ export function AppShell() {
       {/* Pages render bare — directly on the page background, no container
           card (V2 Figma) — and scroll on the document. */}
       <AppContainer>
-        {/* `page-transition` names this box as the only view-transition group
-            (globals.css), so a route change animates just the page content —
-            everything else keeps painting live and stays still. */}
-        <div className="page-transition w-full">
-          <Outlet />
-        </div>
+        <Outlet />
       </AppContainer>
     </Layout>
   );

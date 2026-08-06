@@ -9,12 +9,7 @@ import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { RateLineWithArrow } from '@/widgets/shared/components/ui/RateLineWithArrow';
 import { InteractiveStatsCardAlt } from '@/widgets/shared/components/ui/card/InteractiveStatsCardAlt';
 
-export const ExpertBalanceCard = ({
-  url,
-  onExternalLinkClicked,
-  loading,
-  variant = ModuleCardVariant.default
-}: CardProps) => {
+export const ExpertBalanceCard = ({ url, loading, variant = ModuleCardVariant.default }: CardProps) => {
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
@@ -42,11 +37,7 @@ export const ExpertBalanceCard = ({
         isRateLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : stUsdsRate > 0 ? (
-          <RateLineWithArrow
-            rateText={t`Rate: ${stUsdsRate.toFixed(2)}%`}
-            popoverType="expert"
-            onExternalLinkClicked={onExternalLinkClicked}
-          />
+          <RateLineWithArrow rateText={t`Rate: ${stUsdsRate.toFixed(2)}%`} popoverType="expert" />
         ) : (
           <></>
         )
