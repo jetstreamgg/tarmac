@@ -9,6 +9,7 @@ import {
   getTokenDecimals,
   mcdDaiAddress,
   psm3L2Address,
+  useBatchPsmSwapAndSavingsSupply,
   useBatchPsmSwapExactIn,
   useBatchPsmSwapExactOut,
   useBatchSavingsSupply,
@@ -16,9 +17,10 @@ import {
   useIsBatchSupported,
   useSavingsAllowance,
   useSavingsWithdraw,
-  useTokenAllowance
+  useTokenAllowance,
+  usdsPsmWrapperAddress
 } from '@/hooks';
-import { formatNumber, isL2ChainId } from '@/utils';
+import { formatNumber, isL2ChainId, math } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
@@ -96,6 +98,9 @@ export interface UseSavingsLaunchResult {
  *  - supply + USDS (mainnet) → `useBatchSavingsSupply` (optional approve → deposit)
  *  - supply + DAI  (mainnet) → `useBatchUpgradeAndSavingsSupply` (optional approve-DAI →
  *    daiToUsds → optional approve-USDS → deposit) — the multi-step path
+ *  - supply + USDC (mainnet) → `useBatchPsmSwapAndSavingsSupply` (optional approve-USDC →
+ *    psmWrapper.sellGem → optional approve-USDS → deposit) — the DAI path's shape with
+ *    the PSM standing in for the upgrade
  *  - supply        (L2)      → `useBatchPsmSwapExactIn` (optional approve →
  *    psm.swapExactIn(token → sUSDS), referralCode as bigint)
  *  - withdraw      (mainnet) → `useSavingsWithdraw` (`max` resolves via maxWithdraw(owner))
@@ -134,8 +139,14 @@ export function useSavingsLaunch({
   const isSupply = flow === 'supply';
   // DAI is a mainnet-only supply origin; on L2 the PSM path takes precedence.
   const isDai = isSupply && !isL2 && originToken.symbol === TOKENS.dai.symbol;
+  // Mainnet USDC routes through the PSM wrapper before the deposit; on L2 USDC is
+  // handled by the PSM3 swapExactIn engine instead.
+  const isMainnetUsdc = isSupply && !isL2 && originToken.symbol === TOKENS.usdc.symbol;
   const isL2Withdraw = !isSupply && isL2;
   const originDecimals = getTokenDecimals(originToken, chainId);
+  // What the USDC supply's USDS legs (approve + deposit) actually spend — the
+  // wrapper mints `amount * 1e12` USDS at a zero fee.
+  const usdcSupplyUsdsAmount = isMainnetUsdc ? math.convertUSDCtoWad(amount) : amount;
 
   // READ ONLY — used solely to label the modal's approve steps. The approve/deposit/swap
   // calls (and the USDT/allowance derivation, landmine #1) are built entirely inside
@@ -162,9 +173,20 @@ export function useSavingsLaunch({
     owner: address,
     spender: psm3L2Address[chainId as keyof typeof psm3L2Address]
   });
+  // Mainnet USDC supply: the USDC → PSM-wrapper allowance (disabled off mainnet:
+  // the wrapper has no address there, so the spender is undefined).
+  const { data: usdcWrapperAllowance } = useTokenAllowance({
+    chainId,
+    contractAddress: TOKENS.usdc.address[chainId],
+    owner: address,
+    spender: usdsPsmWrapperAddress[chainId as keyof typeof usdsPsmWrapperAddress]
+  });
 
-  const needsUsdsApproval = isSupply && usdsAllowance !== undefined && usdsAllowance < amount;
+  // The USDS approve on the USDC path covers the widened wad, not the 6-dec input.
+  const needsUsdsApproval = isSupply && usdsAllowance !== undefined && usdsAllowance < usdcSupplyUsdsAmount;
   const needsDaiApproval = isDai && daiAllowance !== undefined && daiAllowance < amount;
+  const needsUsdcWrapperApproval =
+    isMainnetUsdc && usdcWrapperAllowance !== undefined && usdcWrapperAllowance < amount;
   const needsPsmApproval = isSupply && isL2 && psmAllowance !== undefined && psmAllowance < amount;
   // The sUSDS spent on a withdraw: the whole balance (max) or the exact-out ceiling.
   const withdrawApproveAmount = max ? (sUsdsBalance ?? 0n) : (maxAmountInForWithdraw ?? 0n);
@@ -180,7 +202,7 @@ export function useSavingsLaunch({
   const supplyHook = useBatchSavingsSupply({
     amount,
     ref: referralCode,
-    enabled: isSupply && !isL2 && !isDai,
+    enabled: isSupply && !isL2 && !isDai && !isMainnetUsdc,
     shouldUseBatch,
     ...txCallbacks
   });
@@ -188,6 +210,13 @@ export function useSavingsLaunch({
     amount,
     ref: referralCode,
     enabled: isDai,
+    shouldUseBatch,
+    ...txCallbacks
+  });
+  const usdcSupplyHook = useBatchPsmSwapAndSavingsSupply({
+    amount,
+    ref: referralCode,
+    enabled: isMainnetUsdc,
     shouldUseBatch,
     ...txCallbacks
   });
@@ -236,7 +265,9 @@ export function useSavingsLaunch({
       ? psmSupplyHook
       : isDai
         ? upgradeHook
-        : supplyHook
+        : isMainnetUsdc
+          ? usdcSupplyHook
+          : supplyHook
     : isL2
       ? max
         ? psmWithdrawMaxHook
@@ -248,6 +279,7 @@ export function useSavingsLaunch({
   // allowance is already present so the step indicator advances in lockstep:
   //  - mainnet USDS supply / mainnet withdraw: optional approve → action
   //  - DAI supply: up to 4 (approve-DAI → upgrade → approve-USDS → supply)
+  //  - mainnet USDC supply: up to 4 (approve-USDC → convert → approve-USDS → supply)
   //  - L2 PSM supply/withdraw: optional approve(assetIn → psm3L2) → swap
   // Hoisted from launch() so the editable modal entry body can pass them straight
   // to the shared modal; launch() consumes the same value (behaviour unchanged).
@@ -271,9 +303,16 @@ export function useSavingsLaunch({
               needsUsdsApproval && approveStep('USDS'),
               { label: t`Supply`, tokenSymbol: 'USDS' }
             ].filter(Boolean) as TransactionStep[])
-          : needsUsdsApproval
-            ? [approveStep('USDS'), { label: t`Supply`, tokenSymbol: 'USDS' }]
-            : [{ label: t`Supply`, tokenSymbol: 'USDS' }];
+          : isMainnetUsdc
+            ? ([
+                needsUsdcWrapperApproval && approveStep('USDC'),
+                t`Convert USDC to USDS`,
+                needsUsdsApproval && approveStep('USDS'),
+                { label: t`Supply`, tokenSymbol: 'USDS' }
+              ].filter(Boolean) as TransactionStep[])
+            : needsUsdsApproval
+              ? [approveStep('USDS'), { label: t`Supply`, tokenSymbol: 'USDS' }]
+              : [{ label: t`Supply`, tokenSymbol: 'USDS' }];
     }
     // The withdraw approval is for the sUSDS share token, not `originToken` —
     // it keeps the bare label rather than a wrong chip.
@@ -284,8 +323,10 @@ export function useSavingsLaunch({
     isSupply,
     isL2,
     isDai,
+    isMainnetUsdc,
     needsPsmApproval,
     needsDaiApproval,
+    needsUsdcWrapperApproval,
     needsUsdsApproval,
     needsPsmWithdrawApproval,
     originToken.symbol

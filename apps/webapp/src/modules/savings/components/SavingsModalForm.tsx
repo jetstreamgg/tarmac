@@ -80,6 +80,7 @@ export function SavingsModalForm({
     isZero,
     insufficient,
     amountReady,
+    usdcBlockedReason,
     position,
     apyDisplay,
     rate,
@@ -125,9 +126,9 @@ export function SavingsModalForm({
   const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
   // The position is always USDS-denominated (18-dec — on L2 `userSavingsBalance` is
   // the sUSDS balance pre-converted to USDS). Express the entered amount as a USDS
-  // wad for the before→after delta: USDS/DAI are already 18-dec; an L2 USDC amount
-  // (6-dec) is widened 1:1 (the PSM swaps ≈1:1 — exact figures are stubbed per the
-  // PRD Out of Scope). Mainnet is unchanged (amount === amountWad).
+  // wad for the before→after delta: USDS/DAI are already 18-dec; a USDC amount
+  // (6-dec) is widened 1:1 — exact on mainnet (`sellGem` mints amount × 1e12 at the
+  // zero fee the supply is gated on), approximate on L2 (the PSM swaps ≈1:1).
   const amountWad = originDecimals === 18 ? amount : amount * 10n ** BigInt(18 - originDecimals);
 
   // Position after the action, clamped at zero for over-withdrawals (the
@@ -274,6 +275,17 @@ export function SavingsModalForm({
           insufficient ? (
             <Text className="text-error text-sm" data-testid="savings-modal-amount-error">
               <Trans>Insufficient balance</Trans>
+            </Text>
+          ) : usdcBlockedReason ? (
+            // The USDC leg swaps through the PSM wrapper; when the module is off,
+            // the sell direction is halted, or it charges a fee, say so rather than
+            // leaving Review inert with no explanation.
+            <Text className="text-error text-sm" data-testid="savings-modal-usdc-blocked">
+              {usdcBlockedReason === 'non_zero_fee' ? (
+                <Trans>USDC conversion currently charges a fee. Supply USDS or DAI instead.</Trans>
+              ) : (
+                <Trans>USDC conversion is unavailable right now. Supply USDS or DAI instead.</Trans>
+              )}
             </Text>
           ) : undefined
         }
