@@ -36,11 +36,11 @@ export type SupplyModalRowInput = {
    * so this cell is added "in the spirit of the design" for the L2 swap.
    */
   minReceived?: string;
-  /** 1Y estimated earnings before — stubbed until a projection source exists. */
+  /** 1Y projected earnings on the current position, formatted. */
   earningsBefore: string;
-  /** 1Y estimated earnings after — stubbed until a projection source exists. */
+  /** 1Y projected earnings on the position the supply leaves behind, formatted. */
   earningsAfter: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
+  /** Network fee, formatted. */
   networkFee: string;
 };
 
@@ -91,11 +91,11 @@ export type WithdrawModalRowInput = {
   supplyAfter: string;
   /** When false the Supply / Est. earnings cells collapse to their `before` value. */
   hasAmount: boolean;
-  /** 1Y estimated earnings before — stubbed until a projection source exists. */
+  /** 1Y projected earnings on the current position, formatted. */
   earningsBefore: string;
-  /** 1Y estimated earnings after — stubbed until a projection source exists. */
+  /** 1Y projected earnings on the position the withdrawal leaves behind, formatted. */
   earningsAfter: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
+  /** Network fee, formatted. */
   networkFee: string;
 };
 
@@ -133,7 +133,7 @@ export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsMod
 export type SupplyReviewRowInput = {
   /** sUSDS you'll receive, formatted (e.g. "9,999.99 sUSDS"). */
   youReceive: string;
-  /** 1Y estimated earnings — stubbed until a projection source exists. */
+  /** 1Y projected earnings on the position the supply leaves behind, formatted. */
   estEarnings: string;
   /** Product name (e.g. "Sky Savings"). */
   product: string;
@@ -143,7 +143,7 @@ export type SupplyReviewRowInput = {
   withdrawal: string;
   /** Network the transaction runs on (e.g. "Ethereum"). */
   network: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
+  /** Network fee, formatted. */
   networkFee: string;
 };
 
@@ -156,7 +156,15 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
   return [
     [
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: 'sUSDS' },
-      { kind: 'single', label: 'Est. earnings (1Y)', value: input.estEarnings, trend: true }
+      {
+        kind: 'single',
+        label: 'Est. earnings (1Y)',
+        value: input.estEarnings,
+        trend: true,
+        // The projection is USDS-denominated whatever you supplied — name it, as
+        // the vault and stUSDS reviews do.
+        trailingToken: 'USDS'
+      }
     ],
     [
       { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: 'default' },
@@ -176,7 +184,7 @@ export type WithdrawReviewRowInput = {
   youReceive: string;
   /** Destination token symbol for the You'll receive icon. */
   receiveToken: string;
-  /** 1Y estimated earnings after the withdrawal — stubbed until a projection source exists. */
+  /** 1Y projected earnings on the position the withdrawal leaves behind, formatted. */
   estEarnings: string;
   /** Product name (e.g. "Sky Savings"). */
   product: string;
@@ -186,7 +194,7 @@ export type WithdrawReviewRowInput = {
   withdrawal: string;
   /** Network the transaction runs on. */
   network: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
+  /** Network fee, formatted. */
   networkFee: string;
 };
 
@@ -199,7 +207,13 @@ export function buildWithdrawReviewRows(input: WithdrawReviewRowInput): SavingsM
   return [
     [
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
-      { kind: 'single', label: 'Est. earnings (1Y)', value: input.estEarnings, trend: true }
+      {
+        kind: 'single',
+        label: 'Est. earnings (1Y)',
+        value: input.estEarnings,
+        trend: true,
+        trailingToken: 'USDS'
+      }
     ],
     [
       { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: 'default' },

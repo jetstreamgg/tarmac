@@ -84,7 +84,7 @@ function AssetRow({
             <div className="flex items-center gap-2">
               <Text
                 tag="span"
-                className="font-circle text-text text-base leading-[18px] tracking-tight md:text-lg md:leading-[22px]"
+                className="font-circle text-text text-base leading-[18px] font-medium tracking-tight md:text-lg md:leading-[22px]"
               >
                 {asset.symbol}
               </Text>
@@ -110,7 +110,7 @@ function AssetRow({
         <div className="flex flex-col items-end gap-0.5">
           <Text
             tag="span"
-            className="font-circle text-text text-base leading-[18px] tracking-tight md:text-lg md:leading-[22px]"
+            className="font-circle text-text text-base leading-[18px] font-medium tracking-tight md:text-lg md:leading-[22px]"
           >
             {formatNumber(asset.amount)}
           </Text>

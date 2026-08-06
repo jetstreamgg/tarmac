@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
+import { HOVER_EASE, HOVER_TRACK_MS } from './chartMotion';
 import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Select,
@@ -156,27 +157,84 @@ const SERIES_STROKE_WIDTH = 1.5;
 const ACTIVE_DOT_RADIUS = 5.25;
 
 /**
+ * Every hover element tracks on `transform`, never on SVG geometry: `x1`/`x2`
+ * on a line are not CSS properties at all, and `x`/`width` only became
+ * animatable with SVG 2 geometry properties. One mechanism across all of them,
+ * working everywhere the app already runs. Timing is shared with the tooltip —
+ * see `chartMotion.ts` for why the comp's own durations are not used.
+ */
+const trackTransition = (property: string, reduceMotion: boolean | null) =>
+  reduceMotion ? undefined : `${property} ${HOVER_TRACK_MS}ms ${HOVER_EASE}`;
+
+/**
  * The ringed dot under the hover cursor (Figma 5273:12162).
  *
  * Its core is drawn twice: an opaque page-background disc under the
  * `statusBrandBg` tint. The tint alone is 10% alpha, so the series and the
  * dashed hover cursor both read straight through the dot — the comp draws it
  * solid.
+ *
+ * The circles sit at the origin and the group carries the position, so the dot
+ * can track the hover on `transform` — including the vertical travel as it
+ * rides the series (the comp moves it 13px in y over the same keyframes).
  */
-function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string }) {
+export function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string }) {
+  const reduceMotion = useReducedMotion();
   if (cx == null || cy == null) return null;
   return (
-    <g data-testid="chart-active-dot">
-      <circle cx={cx} cy={cy} r={ACTIVE_DOT_RADIUS} fill="var(--color-pageBackground)" />
+    <g
+      data-testid="chart-active-dot"
+      style={{
+        transform: `translate(${cx}px, ${cy}px)`,
+        transition: trackTransition('transform', reduceMotion)
+      }}
+    >
+      <circle r={ACTIVE_DOT_RADIUS} fill="var(--color-pageBackground)" />
       <circle
-        cx={cx}
-        cy={cy}
         r={ACTIVE_DOT_RADIUS}
         fill="var(--color-statusBrandBg)"
         stroke={color}
         strokeWidth={SERIES_STROKE_WIDTH}
       />
     </g>
+  );
+}
+
+/**
+ * The dashed hover rule (Figma 5273:12162), as a custom cursor so it can track
+ * on `transform`: recharts' default cursor is a `<Curve>` positioned by its
+ * `points`, which land on `x1`/`x2` and cannot be transitioned.
+ */
+export function HoverCursor({
+  points,
+  height,
+  top
+}: {
+  points?: { x: number; y: number }[];
+  height?: number;
+  top?: number;
+}) {
+  const reduceMotion = useReducedMotion();
+  const start = points?.[0];
+  const end = points?.[1];
+  if (!start) return null;
+  return (
+    <line
+      data-testid="chart-hover-cursor"
+      x1={0}
+      x2={0}
+      y1={start.y ?? top ?? 0}
+      y2={end?.y ?? (top ?? 0) + (height ?? 0)}
+      stroke="var(--color-borderQuarternary)"
+      strokeWidth={1}
+      strokeDasharray="3 3"
+      strokeLinecap="round"
+      pointerEvents="none"
+      style={{
+        transform: `translateX(${start.x}px)`,
+        transition: trackTransition('transform', reduceMotion)
+      }}
+    />
   );
 }
 
@@ -241,12 +299,10 @@ export function HoverDimMask({ id }: { id: string }) {
   const coordinate = useActiveTooltipCoordinate();
   const width = useChartWidth();
   const height = useChartHeight();
+  const reduceMotion = useReducedMotion();
   // Pre-layout the chart has no dimensions (and no hover); fall back to a
   // full-coverage white mask so the series never flashes hidden.
   const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
-
-  const litStart = cursorX != null ? Math.max(cursorX - HALF_WINDOW, 0) : 0;
-  const litEnd = cursorX != null && width != null ? Math.min(cursorX + HALF_WINDOW, width) : 0;
 
   return (
     <defs>
@@ -259,15 +315,25 @@ export function HoverDimMask({ id }: { id: string }) {
           height={height ?? '100%'}
           fill="white"
           opacity={cursorX != null ? POST_CURSOR_ALPHA : 1}
+          style={{ transition: trackTransition('opacity', reduceMotion) }}
         />
         {cursorX != null && (
+          /* Full-width window translated into place rather than clamped by
+             recomputing x/width: the mask region is the plot box, so a window
+             that overhangs an edge is clipped to exactly what clamping used to
+             leave visible — and holding the geometry still is what lets the
+             boundary travel with the cursor on `transform`. */
           <rect
             data-testid="chart-dim-mask-lit"
-            x={litStart}
+            x={0}
             y={0}
-            width={Math.max(litEnd - litStart, 0)}
+            width={HALF_WINDOW * 2}
             height={height ?? '100%'}
             fill="white"
+            style={{
+              transform: `translateX(${cursorX - HALF_WINDOW}px)`,
+              transition: trackTransition('transform', reduceMotion)
+            }}
           />
         )}
       </mask>
@@ -743,13 +809,9 @@ function ChartContent({
               // (see useChartTooltipPortal); the tooltip places itself.
               portal={tooltipPortal}
               // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162 —
-              // border-quaternary, 3/3 dashes with round caps).
-              cursor={{
-                stroke: 'var(--color-borderQuarternary)',
-                strokeWidth: 1,
-                strokeDasharray: '3 3',
-                strokeLinecap: 'round'
-              }}
+              // border-quaternary, 3/3 dashes with round caps), drawn by
+              // HoverCursor so it tracks the hover with everything else.
+              cursor={<HoverCursor />}
               content={
                 <ChartTooltip
                   symbol={symbol}

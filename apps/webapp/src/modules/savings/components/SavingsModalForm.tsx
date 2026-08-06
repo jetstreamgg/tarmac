@@ -4,7 +4,7 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { formatBigInt, formatNumber } from '@/utils';
+import { formatBigInt, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -82,6 +82,7 @@ export function SavingsModalForm({
     amountReady,
     position,
     apyDisplay,
+    rate,
     previewShares,
     engineParams,
     transactionScreenContent,
@@ -128,31 +129,46 @@ export function SavingsModalForm({
   // (6-dec) is widened 1:1 (the PSM swaps ≈1:1 — exact figures are stubbed per the
   // PRD Out of Scope). Mainnet is unchanged (amount === amountWad).
   const amountWad = originDecimals === 18 ? amount : amount * 10n ** BigInt(18 - originDecimals);
+
+  // Position after the action, clamped at zero for over-withdrawals (the
+  // insufficient gate blocks submission anyway).
+  const positionAfter = isSupply ? position + amountWad : position > amountWad ? position - amountWad : 0n;
+
+  // 1Y projected earnings, the same simple principal × rate the Savings position
+  // card and every other product modal show. The position is USDS-denominated and
+  // USDS is $1-pegged, so the wad doubles as its USD value. A rate that hasn't
+  // loaded yet keeps the cell on a dash rather than projecting zero.
+  const projectEarnings = (units: bigint) =>
+    rate !== undefined
+      ? formatNumber(projectAnnualEarnings(parseFloat(formatUnits(units, USDS_DECIMALS)), rate), {
+          maxDecimals: 2
+        })
+      : NO_VALUE;
+
   const rows = isSupply
     ? buildSupplyModalRows({
         savingsRate: apyDisplay,
         network: networkName,
         supplyBefore: formatUsds(position),
-        supplyAfter: formatUsds(position + amountWad),
+        supplyAfter: formatUsds(positionAfter),
         hasAmount: !isZero,
         // L2 PSM supply: surface the sUSDS slippage floor once an amount is entered.
         minReceived:
           isL2 && !isZero
             ? formatBigInt(engineParams.minAmountOut ?? 0n, { unit: 18, maxDecimals: 2 })
             : undefined,
-        // 1Y est. earnings has no projection source yet (PRD Out of Scope) — stubbed.
-        earningsBefore: NO_VALUE,
-        earningsAfter: NO_VALUE,
+        earningsBefore: projectEarnings(position),
+        earningsAfter: projectEarnings(positionAfter),
         networkFee: networkFee?.formatted ?? NO_VALUE
       })
     : buildWithdrawModalRows({
         savingsRate: apyDisplay,
         network: networkName,
         supplyBefore: formatUsds(position),
-        supplyAfter: formatUsds(position > amountWad ? position - amountWad : 0n),
+        supplyAfter: formatUsds(positionAfter),
         hasAmount: !isZero,
-        earningsBefore: NO_VALUE,
-        earningsAfter: NO_VALUE,
+        earningsBefore: projectEarnings(position),
+        earningsAfter: projectEarnings(positionAfter),
         networkFee: networkFee?.formatted ?? NO_VALUE
       });
 
@@ -168,11 +184,15 @@ export function SavingsModalForm({
         : NO_VALUE
     : `${formatNumber(parseFloat(formatUnits(amount, originDecimals)), { maxDecimals: 2 })} ${originSymbol}`;
 
+  // The review projects the position the transaction leaves behind. Scalar, so the
+  // memo below stays stable across unrelated renders.
+  const earningsAfterDisplay = projectEarnings(positionAfter);
+
   const transactionContent = useMemo(() => {
     const reviewRows = isSupply
       ? buildSupplyReviewRows({
           youReceive,
-          estEarnings: NO_VALUE,
+          estEarnings: earningsAfterDisplay,
           product: 'Sky Savings',
           rate: apyDisplay,
           withdrawal: i18n._(withdrawalWording('savings', 'supply')),
@@ -182,7 +202,7 @@ export function SavingsModalForm({
       : buildWithdrawReviewRows({
           youReceive,
           receiveToken: originSymbol,
-          estEarnings: NO_VALUE,
+          estEarnings: earningsAfterDisplay,
           product: 'Sky Savings',
           rate: apyDisplay,
           withdrawal: i18n._(withdrawalWording('savings', 'withdraw')),
@@ -201,6 +221,7 @@ export function SavingsModalForm({
   }, [
     isSupply,
     youReceive,
+    earningsAfterDisplay,
     apyDisplay,
     networkName,
     originSymbol,
