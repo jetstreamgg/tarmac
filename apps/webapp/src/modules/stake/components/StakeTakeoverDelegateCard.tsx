@@ -73,7 +73,7 @@ export function DelegateList({
         </p>
       ) : (
         <ul
-          className="scrollbar-hidden md:scrollbar-thin-always flex max-h-96 flex-col gap-2 overflow-y-auto"
+          className="md:scrollbar-thin-always flex max-h-96 flex-col gap-2 overflow-y-auto"
           data-testid={`${dataTestIdPrefix}-list`}
         >
           {delegates.map(delegate => {

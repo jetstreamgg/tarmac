@@ -749,13 +749,6 @@
   padding-inline: 2rem;
 }
 
-@utility scrollbar-hidden {
-  /* Hide scrollbar for Chrome, Safari, and Opera */
-  &::-webkit-scrollbar {
-    width: 0;
-  }
-}
-
 @utility scrollbar-thin {
   &::-webkit-scrollbar {
     width: 10px;
