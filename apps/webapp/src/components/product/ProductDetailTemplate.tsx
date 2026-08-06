@@ -3,6 +3,8 @@ import { ChevronLeft } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { AppLink } from '@/lib/navigation';
+import { ROUTES } from '@/lib/routes';
+import { recallEarnFilterSearch } from '@/lib/earnFilterMemory';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 
@@ -32,6 +34,19 @@ export interface ProductDetailToken {
    * neutral borderTertiary ring. Optional — additive to the frozen C3 contract.
    */
   status?: 'success' | 'info';
+}
+
+/**
+ * Going back to the Earn marketplace restores the filters it was left under
+ * (APP-457). `retainOnNavigate` — which AppLink applies — drops them, so the
+ * href has to carry them; AppLink merges a query string on the href over the
+ * retained params. The memory is written by /earn itself and reads empty when
+ * it was last seen unfiltered, so a clean landing needs no special case.
+ */
+function backToMarketplace(backHref: string): string {
+  if (backHref !== ROUTES.EARN) return backHref;
+  const search = new URLSearchParams(recallEarnFilterSearch()).toString();
+  return search ? `${backHref}?${search}` : backHref;
 }
 
 /** One row of the Details grid. The module supplies icon/label/value. */
@@ -211,7 +226,7 @@ export function ProductDetailTemplate({
           selector drops to its own full-width row 32px under the title. */}
       <div className="flex flex-col gap-4 md:gap-8">
         <AppLink
-          to={backHref}
+          to={backToMarketplace(backHref)}
           className="text-fgSecondary hover:text-fgPrimary font-circle flex w-fit items-center gap-1.5 text-xs leading-[14px] font-medium tracking-[-0.24px] transition-colors md:text-sm md:leading-4 md:tracking-[-0.28px]"
           data-testid="product-detail-back"
         >

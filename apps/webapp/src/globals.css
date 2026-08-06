@@ -871,10 +871,12 @@
 
 /* Page transitions (Figma: Sky App: UI 1598:75512, view=motion) -------------
    Navigating between pages crossfades the content while it slides: the
-   outgoing page leaves to the left, the incoming one arrives from the right,
-   always in that direction regardless of which nav item was clicked. The
-   incoming page starts 100ms into the outgoing one so the two overlap — the
-   comp is explicitly a crossfade, not a sequential out-then-in.
+   outgoing page leaves to the left and the incoming one arrives from the
+   right, or the mirror of that when the navigation runs against the nav's
+   order (APP-457 — the router adds a `reverse` type; see the block below the
+   forward keyframes). The incoming page starts 100ms into the outgoing one so
+   the two overlap — the comp is explicitly a crossfade, not a sequential
+   out-then-in.
 
    Which navigations animate is decided in pages/router.tsx: it tags real path
    changes with the `page` transition type, and vetoes search-param-only
@@ -995,10 +997,9 @@
    the keyframes change here — duration, easing and the 100ms overlap are
    inherited from the rules above, which still match.
 
-   Direction is constant, as in the horizontal case: the outgoing page always
-   leaves upward and the incoming one always arrives from below, whether you
-   are drilling in or going back. The comp's own travel is 40px, small enough
-   that it needs no viewport cap.
+   Drilling *in* leaves upward and arrives from below; coming back out plays
+   the mirror (the `reverse` block below). The comp's own travel is 40px, small
+   enough that it needs no viewport cap.
 
    This must stay above the reduced-motion block, which re-declares the
    `animation` shorthand and so has to win over this animation-name. */
@@ -1020,6 +1021,57 @@
   from {
     opacity: 0;
     transform: translateY(40px);
+  }
+}
+
+/* Reverse: the same two moves played the other way, for navigations that run
+   against the app's order — Earn → Portfolio, or a product page back out to
+   the marketplace (APP-457). Only the keyframes change; duration, easing and
+   the 100ms overlap are still inherited from the `page` rules.
+
+   Source order is load-bearing for the lateral pair: it ties on specificity
+   with the `drill` rules above and has to win. The drill pair below carries
+   both type selectors, so its higher specificity wins over the lateral one
+   regardless of order.
+
+   Note this is *not* the browser's back button — traversals get no transition
+   at all, for the scroll-restoration reason recorded in pages/router.tsx. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(reverse)::view-transition-old(page) {
+    animation-name: page-slide-out-reverse;
+  }
+  :root:active-view-transition-type(reverse)::view-transition-new(page) {
+    animation-name: page-slide-in-reverse;
+  }
+  :root:active-view-transition-type(drill):active-view-transition-type(reverse)::view-transition-old(page) {
+    animation-name: page-drill-out-reverse;
+  }
+  :root:active-view-transition-type(drill):active-view-transition-type(reverse)::view-transition-new(page) {
+    animation-name: page-drill-in-reverse;
+  }
+}
+@keyframes page-slide-out-reverse {
+  to {
+    opacity: 0;
+    transform: translateX(min(120px, 8vw));
+  }
+}
+@keyframes page-slide-in-reverse {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * min(120px, 8vw)));
+  }
+}
+@keyframes page-drill-out-reverse {
+  to {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+@keyframes page-drill-in-reverse {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
   }
 }
 

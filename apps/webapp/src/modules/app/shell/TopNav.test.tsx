@@ -193,24 +193,11 @@ describe('TopNav wallet chip', () => {
   });
 });
 
-// NEW_INTENTS currently contains the Fixed module, which lives under Earn.
+// The "new module" dot was retired with APP-457 (nothing is new right now, and
+// the indicator is not coming back); the nav carries no badge of any kind.
 describe('TopNav new-module dot', () => {
-  it('shows the dot on the destination owning an unseen new module', async () => {
+  it('never renders a dot on a destination', async () => {
     renderTopNav();
-    await screen.findByTestId('nav-earn');
-    expect(screen.queryByTestId('nav-earn-new-dot')).toBeTruthy();
-    expect(screen.queryByTestId('nav-portfolio-new-dot')).toBeNull();
-  });
-
-  it('hides the dot once the new module was seen in a previous session', async () => {
-    localStorage.setItem('seenNewNavIntents', JSON.stringify([Intent.FIXED_INTENT]));
-    renderTopNav();
-    await screen.findByTestId('nav-earn');
-    expect(screen.queryByTestId('nav-earn-new-dot')).toBeNull();
-  });
-
-  it('clears the dot when landing on the new module route', async () => {
-    renderTopNav('/fixed');
     await screen.findByTestId('nav-earn');
     expect(screen.queryByTestId('nav-earn-new-dot')).toBeNull();
   });

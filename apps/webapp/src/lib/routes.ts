@@ -20,6 +20,14 @@ export const ROUTES = {
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];
 
+/**
+ * The four top-level destinations in nav order (plan §4.2). `DESTINATIONS`
+ * (modules/app/shell/destinations.tsx) renders them in exactly this order and a
+ * test holds the two together; the order lives here because the router needs it
+ * outside the React tree, to decide which way a page transition travels.
+ */
+export const DESTINATION_ORDER: RoutePath[] = [ROUTES.PORTFOLIO, ROUTES.EARN, ROUTES.STAKE, ROUTES.CONVERT];
+
 // Intents with their own destination. TRADE/UPGRADE have none: they folded
 // into Convert before this migration and alias to its path.
 const PATH_BY_INTENT: Record<Intent, RoutePath> = {
@@ -79,4 +87,27 @@ export function isEarnDrilldown(fromPathname: string, toPathname: string): boole
   const to = normalizePath(toPathname);
   const isProduct = (path: string) => path.startsWith(`${ROUTES.EARN}/`);
   return (from === ROUTES.EARN && isProduct(to)) || (to === ROUTES.EARN && isProduct(from));
+}
+
+const destinationIndex = (pathname: string): number => {
+  const path = normalizePath(pathname);
+  return DESTINATION_ORDER.findIndex(base => path === base || path.startsWith(`${base}/`));
+};
+
+/**
+ * True when a navigation runs *against* the app's reading order, which the page
+ * transition plays as the mirror of the forward move (APP-457): Earn →
+ * Portfolio is Portfolio → Earn backwards, and a product page → /earn is the
+ * drill-down backwards.
+ *
+ * Laterally that order is the nav's own (DESTINATION_ORDER), so the pages
+ * travel the way the destinations are laid out rather than always one way.
+ * Paths under no destination (`/`, /seal-engine, /dev) have no place in it and
+ * keep the forward direction, which is what every navigation did before.
+ */
+export function isReverseNavigation(fromPathname: string, toPathname: string): boolean {
+  if (isEarnDrilldown(fromPathname, toPathname)) return normalizePath(toPathname) === ROUTES.EARN;
+  const from = destinationIndex(fromPathname);
+  const to = destinationIndex(toPathname);
+  return from >= 0 && to >= 0 && to < from;
 }
