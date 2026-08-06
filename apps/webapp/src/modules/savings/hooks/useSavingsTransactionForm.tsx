@@ -81,6 +81,11 @@ export interface SavingsTransactionForm {
   position: bigint;
   /** Canonical Sky Savings Rate APY, formatted (e.g. "6.50%"). */
   apyDisplay: string;
+  /**
+   * The same rate as a decimal fraction (0.065 = 6.5%), or undefined while it
+   * loads — the projection input behind the modals' "Est. earnings (1Y)".
+   */
+  rate?: number;
   /** Mainnet supply preview: sUSDS shares for the entered amount (when `enablePreview`). */
   previewShares?: bigint;
 
@@ -256,9 +261,8 @@ export function useSavingsTransactionForm({
       : { loading: t`Withdrawing ${label}`, success: t`${label} withdrawn!`, error: t`Withdrawal failed` };
   }, [isSupply, value, originToken.symbol]);
 
-  const apyDisplay = overall?.skySavingsRatecRate
-    ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
-    : NO_VALUE;
+  const rate = overall?.skySavingsRatecRate ? parseFloat(overall.skySavingsRatecRate) : undefined;
+  const apyDisplay = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
 
   const onInput = useCallback((raw: string) => {
     // Typing overrides a previous Max selection.
@@ -322,6 +326,7 @@ export function useSavingsTransactionForm({
     amountReady,
     position,
     apyDisplay,
+    rate,
     previewShares,
     engineParams,
     transactionScreenContent,
