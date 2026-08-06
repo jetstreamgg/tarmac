@@ -277,15 +277,13 @@ export function SavingsModalForm({
               <Trans>Insufficient balance</Trans>
             </Text>
           ) : usdcBlockedReason ? (
-            // The USDC leg swaps through the PSM wrapper; when the module is off,
-            // the sell direction is halted, or it charges a fee, say so rather than
-            // leaving Review inert with no explanation.
+            // The USDC leg swaps through the PSM wrapper; when the module is off, the
+            // sell direction is halted, or it charges a fee, say so rather than leaving
+            // Review inert with no explanation. One message for all three reasons —
+            // "unavailable" is true of each, and the distinction between them is the
+            // Protocol's business, not something the depositor can act on differently.
             <Text className="text-error text-sm" data-testid="savings-modal-usdc-blocked">
-              {usdcBlockedReason === 'non_zero_fee' ? (
-                <Trans>USDC conversion currently charges a fee. Supply USDS or DAI instead.</Trans>
-              ) : (
-                <Trans>USDC conversion is unavailable right now. Supply USDS or DAI instead.</Trans>
-              )}
+              <Trans>USDC conversion is unavailable right now. Supply USDS or DAI instead.</Trans>
             </Text>
           ) : undefined
         }

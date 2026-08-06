@@ -22,11 +22,17 @@ import { useTransactionFlow } from '../shared/useTransactionFlow';
  * Bundled into one EIP-5792 call when the wallet supports it, otherwise sent as up
  * to four sequential transactions — exactly like `useBatchUpgradeAndSavingsSupply`.
  *
- * `amount` is USDC (6-dec). The wrapper mints `amount * 1e12` USDS when `tin` is 0
- * (a nonzero `tin` would take a cut and leave the deposit short, which is why the
- * caller gates the whole path on a zero fee — see `useUsdsPsmSupplyGate`), so the
- * USDS approve + deposit both use that widened wad. There is no dust: 6 → 18
+ * `amount` is USDC (6-dec). The wrapper mints `amount * 1e12` USDS when `tin` is 0,
+ * so the USDS approve + deposit both use that widened wad. There is no dust: 6 → 18
  * decimals is exact.
+ *
+ * PRECONDITION — this hook does NOT read the PSM's switches, so the caller must:
+ * only enable it while the wrapper is live, the sell direction is not halted, and
+ * `tin` is 0. A nonzero `tin` makes `sellGem` return LESS than the wad below, and
+ * the deposit then fails against a swap that has already landed (atomic under
+ * EIP-5792, but stranding USDS in the wallet on the sequential path).
+ * `useUsdcSupplyGate` in `modules/savings/hooks` is that gate; `useSavingsLaunch`
+ * is the only caller and routes through it. Any new caller must do the same.
  */
 export function useBatchPsmSwapAndSavingsSupply({
   amount,

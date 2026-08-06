@@ -308,6 +308,36 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     expect(lastDisabled()).toBe(true);
   });
 
+  it('blocks a USDC supply when the PSM is cased off', () => {
+    h.psmLive = 0n;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).not.toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('holds the confirm while the PSM fee read is still in flight', () => {
+    h.psmTin = undefined;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    // Nothing is known to be wrong yet, so no error copy — but the confirm stays shut
+    // rather than letting a swap out against an unread fee.
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('states one reason for every way the USDC conversion can be unavailable', () => {
+    h.psmTin = 1n;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.getByTestId('savings-modal-usdc-blocked').textContent).toBe(
+      'USDC conversion is unavailable right now. Supply USDS or DAI instead.'
+    );
+  });
+
   it('leaves a USDS supply unaffected by the PSM switches', () => {
     h.psmLive = 0n;
     renderForm('supply');
