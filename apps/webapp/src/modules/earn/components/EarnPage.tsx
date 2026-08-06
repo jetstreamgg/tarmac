@@ -27,14 +27,10 @@ import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
 import { partitionByGeoAvailability } from '../helpers/geoAvailability';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
-import {
-  formatCirculation,
-  formatCirculationCoarse,
-  protocolStartYear,
-  yearsOperating
-} from '../helpers/protocolStats';
+import { formatCirculation, formatCirculationCoarse, protocolStartYear } from '../helpers/protocolStats';
 import { useEarnTableState } from '../hooks/useEarnTableState';
 import { EarnFeaturedCards } from './EarnFeaturedCards';
+import { ProtocolLineageBadge } from './ProtocolLineageBadge';
 
 const NO_VALUE = '–';
 
@@ -138,7 +134,6 @@ export function EarnPage() {
   // than a positional "{0}".
   const amount = circulation !== undefined ? formatCirculation(circulation) : undefined;
   const coarseAmount = circulation !== undefined ? formatCirculationCoarse(circulation) : undefined;
-  const years = useMemo(() => String(yearsOperating()), []);
 
   // Slug ↔ chain mapping for the network filter (same normalized names the
   // `network` query param uses).
@@ -266,9 +261,9 @@ export function EarnPage() {
                 <Trans>{amount} in circulation</Trans>
               </HeaderBadge>
             ) : null}
-            <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
-              <Trans>Operating for {years} years</Trans>
-            </HeaderBadge>
+            {/* Owns its own year count — the badge and the lineage tooltip it
+                carries read the same PROTOCOL_START the subtitle does. */}
+            <ProtocolLineageBadge />
           </>
         }
         title={<Trans>Only the best ways to put your stablecoins to work</Trans>}

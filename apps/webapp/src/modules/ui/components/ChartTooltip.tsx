@@ -1,6 +1,8 @@
 import { RefObject, useLayoutEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
+import { HOVER_EASE, HOVER_FADE_MS, HOVER_TRACK_MS } from './chartMotion';
 
 /** Gap between the hover point and the panel — recharts' own default offset. */
 const CURSOR_OFFSET = 10;
@@ -27,6 +29,7 @@ function useTooltipPlacement(
   anchorRef: RefObject<HTMLElement | null> | undefined
 ) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
   // Only the panel's *size* is tracked, never its position: the panel carries
   // the placement transform, so storing its left/top would re-enter this hook
   // on every animated frame and spin forever.
@@ -74,12 +77,46 @@ function useTooltipPlacement(
       position: 'absolute',
       left: 0,
       top: 0,
-      // Transform, not left/top, so the move is compositor-driven — the same
-      // 400ms glide recharts animates its own wrapper with.
+      // Transform, not left/top, so the move is compositor-driven. The timing
+      // is shared with the cursor, dot and lit window (Chart.tsx) because the
+      // comp moves all four as one — they leave and land together, on quart.
+      // It replaces a 400ms ease-out inherited from recharts' own wrapper,
+      // which left the panel trailing the rest of the hover chrome.
       transform: `translate(${x}px, ${y}px)`,
-      transition: placed ? 'transform 400ms ease-out' : 'none'
+      transition: placed && !reduceMotion ? `transform ${HOVER_TRACK_MS}ms ${HOVER_EASE}` : 'none'
     } as const
   };
+}
+
+/**
+ * Trades one value for another on a ~100ms crossfade (the comp fades its date
+ * and amount over ~96ms, out on quart and in on easeInOut).
+ *
+ * Both copies are stacked in one grid cell so they overlap while they trade —
+ * a sequential fade would read as a flicker, and floating one copy out of flow
+ * would collapse the panel's width mid-move.
+ */
+function Crossfade({ tokenKey, children }: { tokenKey: string; children: React.ReactNode }) {
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion) return <>{children}</>;
+  return (
+    <span className="grid">
+      <AnimatePresence initial={false} mode="sync">
+        <motion.span
+          key={tokenKey}
+          className="col-start-1 row-start-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          // The comp fades the outgoing copy on quart and the incoming one on
+          // easeInOut, so the exit carries its own curve.
+          exit={{ opacity: 0, transition: { duration: HOVER_FADE_MS / 1000, ease: [0.77, 0, 0.175, 1] } }}
+          transition={{ duration: HOVER_FADE_MS / 1000, ease: [0.5, 0, 0.5, 1] }}
+        >
+          {children}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
 }
 
 interface CustomTooltipProps {
@@ -147,7 +184,7 @@ export function ChartTooltip({
       data-testid="chart-tooltip"
     >
       <p className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
-        {labelFormatter(label)}
+        <Crossfade tokenKey={labelFormatter(label)}>{labelFormatter(label)}</Crossfade>
       </p>
       {payload.map((entry, i) => (
         <div key={`tooltip-value-item-${i}`} className="flex items-center gap-4">
@@ -167,8 +204,10 @@ export function ChartTooltip({
           )}
           <span className="ml-auto flex items-center gap-1">
             <span className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
-              {prefix || ''}
-              {`${formatNumber(entry.value)}${symbol && !isPercentage && !hasTokenIcon ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
+              <Crossfade tokenKey={String(entry.value)}>
+                {prefix || ''}
+                {`${formatNumber(entry.value)}${symbol && !isPercentage && !hasTokenIcon ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
+              </Crossfade>
             </span>
             {tokenSymbols && tokenSymbols.length > 0 && (
               <TokenIconStack

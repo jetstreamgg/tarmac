@@ -13,12 +13,13 @@ interface TypographyProps {
 }
 
 const ELEMENTS: Record<TypographyElement, string> = {
-  //TODO: the header text looks the same regardless of what font weight you give it.
-  //to match the designs the headers should be a little less bolded
-  h1: 'scroll-m-20 font-custom-450 tracking-tight',
-  h2: 'scroll-m-20 font-custom-450 tracking-tight leading-normal transition-colors',
-  h3: 'scroll-m-20 font-custom-450 tracking-tight',
-  h4: 'scroll-m-20 font-custom-450 tracking-tight',
+  // No weight here: every heading is reached through <Heading>, whose variant
+  // classes are merged after these and carry the design system's single
+  // heading weight (Circular Medium — see HEADING_VARIANTS).
+  h1: 'scroll-m-20 tracking-tight',
+  h2: 'scroll-m-20 tracking-tight leading-normal transition-colors',
+  h3: 'scroll-m-20 tracking-tight',
+  h4: 'scroll-m-20 tracking-tight',
   p: 'leading-normal font-normal text-base',
   span: 'leading-normal font-normal text-base'
   // ...add other variants as needed
@@ -45,12 +46,16 @@ interface HeadingProps {
   dataTestId?: string;
 }
 
+// Every Heading style in the design system binds font-weight/label = 500, i.e.
+// Circular Medium (Figma "5. Typography"). Without the weight class these fall
+// to `normal`, which resolves to Circular Book (450) — the face is real, so the
+// difference is a subtly lighter heading rather than an obvious fallback.
 const HEADING_VARIANTS: Record<HeadingVariant, string> = {
-  'x-large': 'text-[32px] text-text font-circle leading-10 font-normal',
-  large: 'text-3xl text-text font-circle',
-  medium: 'text-2xl text-text font-circle',
-  small: 'text-lg text-text font-circle',
-  extraSmall: 'text-base text-text font-circle'
+  'x-large': 'text-[32px] text-text font-circle font-medium leading-10',
+  large: 'text-3xl text-text font-circle font-medium',
+  medium: 'text-2xl text-text font-circle font-medium',
+  small: 'text-lg text-text font-circle font-medium',
+  extraSmall: 'text-base text-text font-circle font-medium'
 };
 
 export function Heading({ variant = 'medium', className, tag = 'h2', ...props }: HeadingProps) {
