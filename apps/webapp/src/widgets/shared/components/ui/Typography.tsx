@@ -44,13 +44,13 @@ interface HeadingProps {
   id?: string;
 }
 
+// Circular Medium (font-weight/label = 500) is the only heading weight in the
+// design system; without the class these resolve to Circular Book (450).
 const HEADING_VARIANTS: Record<HeadingVariant, string> = {
-  // TODO: Heading styles should all be Circular Std font
-  // Headings are "book" weight which is 450 but CSS doesn't support that we should choose whichever looks best
-  'x-large': 'text-[32px] text-text font-circle leading-10 font-normal',
-  large: 'text-3xl text-text font-circle',
-  medium: 'text-2xl text-text font-circle',
-  small: 'text-lg text-text font-circle'
+  'x-large': 'text-[32px] text-text font-circle font-medium leading-10',
+  large: 'text-3xl text-text font-circle font-medium',
+  medium: 'text-2xl text-text font-circle font-medium',
+  small: 'text-lg text-text font-circle font-medium'
 };
 
 export function Heading({ variant = 'medium', className, tag = 'h2', ...props }: HeadingProps) {

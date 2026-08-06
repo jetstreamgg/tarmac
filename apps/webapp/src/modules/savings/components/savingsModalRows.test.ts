@@ -14,8 +14,8 @@ const INPUT = {
   supplyBefore: '100',
   supplyAfter: '110',
   hasAmount: true,
-  earningsBefore: '–',
-  earningsAfter: '–',
+  earningsBefore: '6.5',
+  earningsAfter: '7.15',
   networkFee: '–'
 } as const;
 
@@ -25,8 +25,8 @@ const WITHDRAW_INPUT = {
   supplyBefore: '100',
   supplyAfter: '90',
   hasAmount: true,
-  earningsBefore: '–',
-  earningsAfter: '–',
+  earningsBefore: '6.5',
+  earningsAfter: '5.85',
   networkFee: '–'
 } as const;
 
@@ -49,13 +49,13 @@ describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry
   it('marks Supply and Est. earnings as before→after deltas once an amount is entered', () => {
     const cells = byLabel(buildSupplyModalRows(INPUT));
     expect(cells['Supply']).toMatchObject({ kind: 'delta', before: '100', after: '110' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'delta', before: '–', after: '–' });
+    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'delta', before: '6.5', after: '7.15' });
   });
 
   it('collapses the delta cells to their current value with no amount (Figma 859:36036 empty state)', () => {
     const cells = byLabel(buildSupplyModalRows({ ...INPUT, hasAmount: false }));
     expect(cells['Supply']).toMatchObject({ kind: 'single', value: '100' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'single', value: '–' });
+    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'single', value: '6.5' });
   });
 
   it('threads the single-value cells with their presentation hints', () => {
@@ -64,6 +64,7 @@ describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry
     expect(cells['Network']).toMatchObject({ kind: 'single', value: 'Ethereum', network: true });
     expect(cells['Network fee']).toMatchObject({ kind: 'single', value: '–' });
     expect(cells['Supply']).toMatchObject({ token: 'USDS' });
+    expect(cells['Est. earnings (1Y)']).toMatchObject({ token: 'USDS' });
   });
 
   it('omits the L2 "Receive at least" cell on mainnet (no minReceived)', () => {
@@ -98,14 +99,14 @@ describe('buildWithdrawModalRows — "Withdraw from Sky Savings" entry grid', ()
     const cells = byLabel(buildWithdrawModalRows(WITHDRAW_INPUT));
     expect(cells['Savings rate']).toMatchObject({ kind: 'single', value: '6.50%', rateAccent: 'savings' });
     expect(cells['Supply']).toMatchObject({ kind: 'delta', before: '100', after: '90' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'delta', before: '–', after: '–' });
+    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'delta', before: '6.5', after: '5.85' });
   });
 });
 
 describe('buildSupplyReviewRows — Figma 859:36154 "Review supply" grid', () => {
   const REVIEW_INPUT = {
     youReceive: '908.93 sUSDS',
-    estEarnings: '–',
+    estEarnings: '59.09',
     product: 'Sky Savings',
     rate: '3.60%',
     withdrawal: 'Anytime',
@@ -128,7 +129,11 @@ describe('buildSupplyReviewRows — Figma 859:36154 "Review supply" grid', () =>
 
     const cells = byLabel(rows);
     expect(cells["You'll receive"]).toMatchObject({ value: '908.93 sUSDS', token: 'sUSDS' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ value: '–', trend: true });
+    expect(cells['Est. earnings (1Y)']).toMatchObject({
+      value: '59.09',
+      trend: true,
+      trailingToken: 'USDS'
+    });
     expect(cells['Product']).toMatchObject({ value: 'Sky Savings', token: 'sUSDS', productIcon: 'default' });
     expect(cells['Rate']).toMatchObject({ value: '3.60%', rateAccent: 'savings' });
     expect(cells['Withdrawal']).toMatchObject({ value: 'Anytime' });
@@ -140,7 +145,7 @@ describe('buildWithdrawReviewRows — Figma 859:36322 "Review withdrawal" grid',
   const REVIEW_INPUT = {
     youReceive: '908.93 USDS',
     receiveToken: 'USDS',
-    estEarnings: '–',
+    estEarnings: '3.28',
     product: 'Sky Savings',
     rate: '3.60%',
     withdrawal: 'Instant',
@@ -163,7 +168,11 @@ describe('buildWithdrawReviewRows — Figma 859:36322 "Review withdrawal" grid',
 
     const cells = byLabel(rows);
     expect(cells["You'll receive"]).toMatchObject({ value: '908.93 USDS', token: 'USDS' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ value: '–', trend: true });
+    expect(cells['Est. earnings (1Y)']).toMatchObject({
+      value: '3.28',
+      trend: true,
+      trailingToken: 'USDS'
+    });
     expect(cells['Product']).toMatchObject({ value: 'Sky Savings', token: 'sUSDS', productIcon: 'default' });
     expect(cells['Rate']).toMatchObject({ value: '3.60%', rateAccent: 'savings' });
     expect(cells['Withdrawal']).toMatchObject({ value: 'Instant' });

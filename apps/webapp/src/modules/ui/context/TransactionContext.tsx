@@ -6,7 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
-import { useIsSafeWallet } from '@/hooks';
+import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -84,6 +84,14 @@ type TransactionModalView = {
 const MODAL_EXIT_MS = 300;
 
 export function TransactionProvider({ children }: { children: ReactNode }) {
+  // Warm the EIP-5792 capability probe from the provider, which is mounted for the whole
+  // session, so it runs on connect rather than the first time a flow needs the answer.
+  // A multi-call flow genuinely has to know whether the wallet can bundle before it can
+  // pick a route, and paying for that wallet round trip at modal-open time is what makes
+  // a Confirm button sit disabled while nothing visible is happening. Result is shared —
+  // this is the same react-query key every `useIsBatchSupported` caller reads.
+  useIsBatchSupported();
+
   const [open, setOpen] = useState(false);
   // Minimized = modal hidden but the transaction keeps running. Distinct from
   // closed (which tears the transaction down); see minimize()/restore() below.
