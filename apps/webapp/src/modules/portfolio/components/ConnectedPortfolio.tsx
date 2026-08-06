@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useChainId, useChains, useConnection, useEnsName } from 'wagmi';
+import { useGeoConfig } from '@/modules/geo-config';
 import { useNavigate } from '@tanstack/react-router';
 import { mainnet } from 'viem/chains';
 import { Trans } from '@lingui/react/macro';
@@ -15,6 +16,7 @@ import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
 import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
+import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
@@ -33,8 +35,14 @@ import { type PortfolioTab } from './PortfolioTabs';
  */
 export function ConnectedPortfolio() {
   const connectedChainId = useChainId();
-  const { rows, isLoading, totalDepositedUsd } = useEarnMarketplace();
+  const { rows, isLoading } = useEarnMarketplace();
   const { balances, isLoading: balancesLoading } = useStablecoinBalances();
+  // Geo-restricted positions are hidden from every Portfolio surface (APP-484),
+  // so all totals/views build from the visible rows, and the savings promos
+  // (callouts, idle-tab rate stats) drop when the savings module is restricted.
+  const visibleRows = useGeoVisibleRows(rows);
+  const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
+  const savingsAvailable = isGeoLoading || isModuleEnabled('savings');
   const { data: overallSkyData } = useOverallSkyData();
   const { address } = useConnection();
   const chains = useChains();
@@ -49,10 +57,10 @@ export function ConnectedPortfolio() {
   const [userTab, setUserTab] = useState<PortfolioTab | null>(null);
 
   const network = selectedNetwork === 'all' ? 'all' : Number(selectedNetwork);
-  const suppliedView = buildSuppliedView(rows, network);
+  const suppliedView = buildSuppliedView(visibleRows, network);
   const idleView = buildIdleView(balances, network);
   // Best supply rate + venue count per token, for the idle table's rate badge.
-  const idleSupplyInfo = buildIdleSupplyInfo(rows);
+  const idleSupplyInfo = buildIdleSupplyInfo(visibleRows);
 
   // Sky Savings Rate as a decimal fraction (drives the Idle footer + projection).
   const savingsRate = overallSkyData?.skySavingsRatecRate
@@ -62,10 +70,13 @@ export function ConnectedPortfolio() {
 
   // Onboarding callout gates on family-wide totals (ignores the network filter),
   // and only after both data sources settle so it never flashes the wrong state.
+  // Visible totals only: a hidden restricted position mustn't suppress the
+  // callout or claim the Supplied tab for a portfolio that renders as empty.
+  const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
-  const callout = isLoading || balancesLoading ? 'none' : portfolioCallout(totalDepositedUsd, idleTotalUsd);
+  const callout = isLoading || balancesLoading ? 'none' : portfolioCallout(depositedUsd, idleTotalUsd);
 
-  const tab = userTab ?? (!isLoading && totalDepositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
+  const tab = userTab ?? (!isLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
 
   const goToSavings = () => void navigate({ to: ROUTES.EARN_SAVINGS, search: retainOnNavigate });
 
@@ -138,8 +149,10 @@ export function ConnectedPortfolio() {
       {/* Banner and earnings card group: 56/48 below the header, and a tight
           16 between banner and card when a callout shows (1036:188968). */}
       <div className="mt-14 flex flex-col gap-4 md:mt-12">
-        {callout === 'simulate' && <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />}
-        {callout === 'allocate' && (
+        {callout === 'simulate' && savingsAvailable && (
+          <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />
+        )}
+        {callout === 'allocate' && savingsAvailable && (
           <AllocateStablecoinsBanner
             idleUsd={idleTotalUsd}
             savingsRate={savingsRate}
@@ -152,7 +165,7 @@ export function ConnectedPortfolio() {
           suppliedLoading={isLoading}
           idleView={idleView}
           idleLoading={balancesLoading}
-          savingsRate={savingsRate}
+          savingsRate={savingsAvailable ? savingsRate : undefined}
           tab={tab}
           onTabChange={setUserTab}
         />

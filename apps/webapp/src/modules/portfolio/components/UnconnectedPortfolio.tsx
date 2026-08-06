@@ -1,4 +1,5 @@
 import { useEarnMarketplace } from '@/hooks';
+import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { ConnectWalletCard } from './ConnectWalletCard';
 import { EarnMarketplaceSection } from './EarnMarketplaceSection';
 import { PortfolioStatistics } from './PortfolioStatistics';
@@ -10,6 +11,7 @@ import { PortfolioStatistics } from './PortfolioStatistics';
  */
 export function UnconnectedPortfolio() {
   const { rows, isLoading } = useEarnMarketplace();
+  const visibleRows = useGeoVisibleRows(rows);
 
   // The desktop px-calc insets the page to the middle 10 columns of the design
   // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
@@ -19,7 +21,7 @@ export function UnconnectedPortfolio() {
       data-testid="portfolio-page"
     >
       <ConnectWalletCard />
-      <EarnMarketplaceSection rows={rows} isLoading={isLoading} />
+      <EarnMarketplaceSection rows={visibleRows} isLoading={isLoading} />
       <PortfolioStatistics />
     </div>
   );
