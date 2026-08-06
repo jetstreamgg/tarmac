@@ -468,6 +468,22 @@
   }
 
   :root {
+    /* Tells the UA which set of built-in widgets to draw: scrollbars, form
+       controls, and the document canvas. Without it every browser assumes
+       `light` and paints a light-grey scrollbar track down the side of the dark
+       app. Declared on the root because the *viewport* scrollbar takes its
+       scheme from the root element specifically, and keyed on the same
+       data-theme attribute as the palette so the two can never drift — the
+       pre-paint script in index.html sets that attribute before first paint,
+       so the correct scheme is in place by the time anything renders.
+
+       This does NOT change whether a scrollbar reserves layout space; that
+       stays an OS/browser decision. It only recolors the bar we already get.
+       It also does not reach the containers using the scrollbar-thin*
+       utilities below: an explicit ::-webkit-scrollbar rule wins over the
+       UA's scheme-derived default. */
+    color-scheme: dark;
+
     --brand-dark-purple: 26 24 85;
     --brand-middle-purple: 42 25 125;
     --brand-purple: 67 49 233;
@@ -601,6 +617,9 @@
    * dark's lilac (#bcb6ef) to light's periwinkle (#9ca0e5).
    */
   :root[data-theme='light'] {
+    /* Counterpart to the `color-scheme: dark` default above. */
+    color-scheme: light;
+
     /* body base — colors/bg/bg-primary #ecf0ff, colors/fg/fg-primary #2f2d40 */
     --background: 227 100% 96%;
     --foreground: 246 17% 21%;
