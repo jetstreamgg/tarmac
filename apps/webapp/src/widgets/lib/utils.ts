@@ -49,10 +49,11 @@ const amountValidationRule = z
       if (value === undefined) {
         return true;
       }
-      return !isNaN(Number(value)) && Number(value) >= 0;
+      // only plain decimal strings: Number() also admits hex/exponential notation, which parseUnits rejects
+      return value === '' || /^(\d+(\.\d*)?|\.\d+)$/.test(value);
     },
     {
-      error: 'amount must be a number-like string greater than 0'
+      error: 'amount must be a plain decimal string'
     }
   );
 
