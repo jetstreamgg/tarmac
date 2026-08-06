@@ -308,11 +308,12 @@ export function EarnPage() {
       <div className="mt-2 md:mt-3">
         <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
       </div>
-      {/* Escape hatch under the table (Figma 1980:45477): only there once the
-          list is filtered, and the count is what the filters are holding back
-          from the table right above it — the geo-restricted section below keeps
-          its own tally out of it. */}
-      {hasActiveFilters && (
+      {/* Escape hatch under the table (Figma 1980:45477): there once the filters
+          are actually holding rows back, and the count is how many — from the
+          table right above it, the geo-restricted section below keeps its own
+          tally out of it. A filter that hides nothing needs no escape hatch, so
+          the control never reads "(0)". */}
+      {hasActiveFilters && hiddenRowCount > 0 && (
         <Button
           variant="secondary"
           size="m"

@@ -22,7 +22,11 @@ import { DESTINATIONS, navTestId, useActiveDestinationPath, useDestinationLinkPr
 
 // Design-system Button / Navbar (Figma 5010:29059, Default type); active
 // styling keys off the link's aria-current="page".
-const navItemClasses = buttonVariants({ variant: 'navbar', size: 'navbar' });
+// cn(), not the bare recipe: the base cva class carries `rounded-xl` and the
+// navbar size overrides it with `rounded-full`. cva only concatenates, so
+// without tailwind-merge collapsing that pair the pills take whichever radius
+// the stylesheet happens to emit last.
+const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }));
 
 // Menu dropdown row (Figma 5069:27509): 16px glyph + label on fg-primary,
 // 8px apart; rows sit bare on the panel (no pill/tint). The M4.5 mobile panel

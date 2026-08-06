@@ -203,6 +203,19 @@ describe('TopNav new-module dot', () => {
   });
 });
 
+describe('TopNav pill geometry', () => {
+  // The button recipe's base carries `rounded-xl` and the navbar size overrides
+  // it with `rounded-full`. cva only concatenates, so the class list has to go
+  // through cn()/tailwind-merge or both survive and the radius is decided by
+  // whichever utility the stylesheet emits last.
+  it('resolves the radius to the navbar pill, not the base square', async () => {
+    renderTopNav();
+    const link = await screen.findByTestId('nav-earn');
+    expect(link.className).toContain('rounded-full');
+    expect(link.className).not.toContain('rounded-xl');
+  });
+});
+
 describe('TopNav More menu', () => {
   it('lists batch toggle, upgrade shortcut, legal links and cookie settings', async () => {
     vi.stubEnv(
