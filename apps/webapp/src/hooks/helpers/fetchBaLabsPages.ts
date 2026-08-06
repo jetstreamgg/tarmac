@@ -83,6 +83,9 @@ export async function fetchBaLabsPages<T>(url: URL): Promise<T[]> {
     pages.push(results);
   }
 
-  // The last page can overshoot the caller's budget by up to a page.
+  // The last page can overshoot the caller's budget by up to a page. Trimming
+  // from the tail is only right because these endpoints return rows
+  // newest-first, so the head is the recent window every caller asks for — an
+  // ascending endpoint would need the opposite slice.
   return pages.flat().slice(0, wanted);
 }

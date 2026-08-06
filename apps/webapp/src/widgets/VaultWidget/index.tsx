@@ -298,9 +298,15 @@ const VaultWidgetWrapped = ({
   // funds). `maxDepositInput` is min(wallet, cap), so anything over it that the
   // wallet could still afford is the cap biting — which only happens on providers
   // with a real on-chain cap (Spark); uncapped vaults (Morpho) never trip it.
+  //
+  // Gated on the balance having loaded: `maxDepositInput` falls back to 0 while
+  // the read is undefined (initial load, chain switch), and the wallet-funds
+  // check below can't suppress a cap error it doesn't fire for — so an amount
+  // already in the input would flash "exceeds capacity" on an uncapped vault.
   const isOverDepositCap =
     txStatus === TxStatus.IDLE &&
     !!address &&
+    assetBalance?.value !== undefined &&
     debouncedAmount > maxDepositInput &&
     !isSupplyBalanceError &&
     amount !== 0n;

@@ -841,6 +841,12 @@
   inset: 0;
   z-index: -10;
   pointer-events: none;
+  /* Both spellings: unprefixed backdrop-filter only shipped in Safari 18, so
+     without the prefix the bar is fully transparent on Safari <= 17 and page
+     content collides with the nav. Every other blur in the app goes through
+     Tailwind's backdrop-blur-*, which emits the pair itself; this is the one
+     hand-authored rule, and nothing in the build autoprefixes. */
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   /* Safari still needs the prefix for a masked backdrop layer. */
   -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 25%);
