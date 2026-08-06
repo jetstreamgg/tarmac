@@ -30,6 +30,10 @@ export function PageFooter() {
       data-testid="page-footer"
       className={cn(
         'text-fgPrimary mx-auto w-full max-w-[1320px] pt-10 pb-6 text-xs leading-4',
+        // The shell surface is min-h-svh, so on a page shorter than the viewport
+        // the leftover space would otherwise sit below the footer. `mt-auto`
+        // hands that space to the margin instead and the footer rides the bottom.
+        'mt-auto',
         // The row stacks below sm: at 375px the copyright and four link labels
         // don't fit on one line, and wrapping them mid-row reads as a broken
         // grid rather than a footer.

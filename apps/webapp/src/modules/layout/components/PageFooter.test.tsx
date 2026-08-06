@@ -35,6 +35,14 @@ describe('PageFooter', () => {
     expect(screen.getByText(`© ${new Date().getFullYear()} All rights reserved`)).toBeTruthy();
   });
 
+  // The shell column is min-h-svh, so without this a page shorter than the
+  // viewport leaves the footer stranded mid-screen with dead space under it.
+  it('takes the leftover column space so it rides the bottom of short pages', () => {
+    render();
+
+    expect(screen.getByTestId('page-footer').className).toContain('mt-auto');
+  });
+
   // The footer is the landing page's bottom row only — the legal disclaimer
   // that used to sit above it was cut.
   it('renders no disclaimer copy', () => {

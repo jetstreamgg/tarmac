@@ -66,17 +66,34 @@ export function Layout({
             </div>
           </ErrorBoundary>
 
-          <ErrorBoundary>
-            {isConnectedAndAcceptedTerms && !chain ? (
-              <UnsupportedNetworkPage>{children}</UnsupportedNetworkPage>
-            ) : (
-              <AuthWrapper>{children}</AuthWrapper>
-            )}
-          </ErrorBoundary>
+          {/* `page-transition` names this box as the only view-transition group
+            (globals.css), so a route change animates the page and nothing else:
+            the background, header and bottom navbar are uncaptured and keep
+            painting live, which is what holds them still.
 
-          <ErrorBoundary variant="small">
-            <PageFooter />
-          </ErrorBoundary>
+            The footer is inside it. Uncaptured elements paint from the *new*
+            DOM the instant the transition starts, so a footer left outside
+            adopted the incoming page's layout a frame after the click — on a
+            short page → tall page navigation that dropped it off the bottom of
+            the screen while the outgoing page was still sliding out, and it
+            read as the footer vanishing. It belongs to the page anyway.
+
+            flex-1 so the column fills the surface and the footer's `mt-auto`
+            has space to push against; the gap and centering are the ones this
+            box inherited from the surface. */}
+          <div className="page-transition flex w-full flex-1 flex-col items-center gap-y-4">
+            <ErrorBoundary>
+              {isConnectedAndAcceptedTerms && !chain ? (
+                <UnsupportedNetworkPage>{children}</UnsupportedNetworkPage>
+              ) : (
+                <AuthWrapper>{children}</AuthWrapper>
+              )}
+            </ErrorBoundary>
+
+            <ErrorBoundary variant="small">
+              <PageFooter />
+            </ErrorBoundary>
+          </div>
 
           {/* Clearance for the fixed bottom MobileNavbar (60px pill + 16px top
             pad + max(16px, safe-area) bottom pad) so the end of the content can

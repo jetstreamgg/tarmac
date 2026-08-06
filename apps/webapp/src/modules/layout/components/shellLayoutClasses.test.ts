@@ -23,14 +23,22 @@ describe('shellHeaderClasses', () => {
 
   // APP-456 #6: the bar's `bg` layer per the Navbar comps — the gradient-navbar
   // fill (components/navbar/bg-gradient-start → -end) over background blur-md,
-  // Figma radius 12 ⇒ CSS blur(6px). No mask: the fill's own fade to ~5% alpha
-  // is what softens the bottom edge.
+  // Figma radius 12 ⇒ CSS blur(6px). No mask.
   it('carries the comp gradient fill over a 6px backdrop blur', () => {
     const cls = shellHeaderClasses();
     expect(cls).toContain('bg-linear-to-b');
     expect(cls).toContain('from-navbarGradientStart');
-    expect(cls).toContain('to-navbarGradientEnd');
+    expect(cls).toContain('via-navbarGradientEnd');
     expect(cls).toContain('backdrop-blur-[6px]');
+  });
+
+  // The comp's ramp stops at 5% alpha, which left a visible line where the bar
+  // met the page. The DS stops still run over the first three quarters; the
+  // last quarter carries them to nothing so the bar has no edge to see.
+  it('carries the fill to fully transparent at the bottom edge', () => {
+    const cls = shellHeaderClasses();
+    expect(cls).toContain('via-75%');
+    expect(cls).toContain('to-transparent');
   });
 
   // APP-456 #2: the desktop comp (Navbar 1030:61380) is an 88px bar around the

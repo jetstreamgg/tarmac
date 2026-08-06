@@ -43,9 +43,13 @@ export const shellHeaderClasses = () =>
     // itself rather than on a child — `backdrop-filter` filters what is painted
     // *behind* the element, and the bar's own content (logo, pills) paints on
     // top of it untouched, so the child bought nothing the box doesn't already
-    // give us. The gradient's fade to ~5% alpha is what softens the bottom
-    // edge; there is no mask in the spec (APP-456 #6).
-    'bg-linear-to-b from-navbarGradientStart to-navbarGradientEnd backdrop-blur-[6px]',
+    // give us (APP-456 #6).
+    //
+    // The comp's two stops run to 5% alpha, and stopping there left a visible
+    // line where that 5% met the bare page. So the DS ramp plays out over the
+    // first three quarters of the bar and the last quarter carries it to fully
+    // transparent: same bar, no edge to see.
+    'bg-linear-to-b from-navbarGradientStart via-navbarGradientEnd via-75% to-transparent backdrop-blur-[6px]',
     // Pages scroll on the document, so the header pins as a sticky, see-through
     // frosted bar. Note that carrying a backdrop-filter makes the bar a
     // backdrop root for its descendants: anything nested here that wants its
