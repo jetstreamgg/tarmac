@@ -16,7 +16,6 @@ import { MobileNavbar } from '@/modules/app/shell/MobileNavbar';
 import { AppLink } from '@/lib/navigation';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { PageFooter } from './PageFooter';
-import { HeaderBlur } from './HeaderBlur';
 import { defaultConfig } from '../../config/default-config';
 
 export function Layout({
@@ -52,7 +51,6 @@ export function Layout({
         <VStack className={shellSurfaceClasses()}>
           <ErrorBoundary>
             <div className={shellHeaderClasses()}>
-              <HeaderBlur />
               <div className={shellHeaderContentClasses()}>
                 {/* justify-self-start: in the desktop header grid the logo sits
                   in a 1fr flank; without it the anchor stretches across the

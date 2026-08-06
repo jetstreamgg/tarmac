@@ -35,16 +35,14 @@ describe('PageFooter', () => {
     expect(screen.getByText(`© ${new Date().getFullYear()} All rights reserved`)).toBeTruthy();
   });
 
-  // The landing footer's first two paragraphs; its third (forward-looking
-  // statements) is deliberately left off.
-  it('renders both disclaimer paragraphs and no more', () => {
+  // The footer is the landing page's bottom row only — the legal disclaimer
+  // that used to sit above it was cut.
+  it('renders no disclaimer copy', () => {
     render();
 
-    const paragraphs = screen.getByTestId('page-footer-disclaimer').querySelectorAll('p');
-    expect(paragraphs).toHaveLength(2);
-    expect(paragraphs[0].textContent).toMatch(/^IMPORTANT DISCLAIMER: Skybase International operates/);
-    expect(paragraphs[1].textContent).toMatch(/^Skybase International does not guarantee any level of yield/);
-    expect(screen.queryByText(/FORWARD-LOOKING STATEMENTS/)).toBeNull();
+    expect(screen.queryByTestId('page-footer-disclaimer')).toBeNull();
+    expect(screen.queryByText(/IMPORTANT DISCLAIMER/)).toBeNull();
+    expect(screen.getByTestId('page-footer').querySelectorAll('p')).toHaveLength(1);
   });
 
   it('renders the configured legal links, opening them in a new tab', () => {

@@ -16,16 +16,31 @@ describe('shellHeaderClasses', () => {
     expect(cls).toContain('sticky');
     // Transparent, not an opaque slab — scrolling content shows through it.
     expect(cls).not.toContain('bg-container');
-    // The blur layers live in `HeaderBlur` and sample the page behind the bar;
-    // isolating the bar would make it a backdrop root and empty that sample.
+    // The bar's backdrop-filter samples the page behind it; isolating the bar
+    // would make it a backdrop root and empty that sample.
     expect(cls).not.toContain('isolate');
   });
 
-  // APP-456 #2: the desktop comp (Navbar 1881:51590) is an 88px bar around the
-  // 40px pill row — 24px of breathing room above it, not the 8px that had the
-  // logo nearly touching the viewport edge.
-  it('gives the desktop bar the comp 24px vertical padding', () => {
+  // APP-456 #6: the bar's `bg` layer per the Navbar comps — the gradient-navbar
+  // fill (components/navbar/bg-gradient-start → -end) over background blur-md,
+  // Figma radius 12 ⇒ CSS blur(6px). No mask: the fill's own fade to ~5% alpha
+  // is what softens the bottom edge.
+  it('carries the comp gradient fill over a 6px backdrop blur', () => {
     const cls = shellHeaderClasses();
+    expect(cls).toContain('bg-linear-to-b');
+    expect(cls).toContain('from-navbarGradientStart');
+    expect(cls).toContain('to-navbarGradientEnd');
+    expect(cls).toContain('backdrop-blur-[6px]');
+  });
+
+  // APP-456 #2: the desktop comp (Navbar 1030:61380) is an 88px bar around the
+  // 40px pill row — 24px of breathing room above it, not the 8px that had the
+  // logo nearly touching the viewport edge. Mobile takes the DS Mobile / Topbar
+  // 16px (551:10137), which had been rounded down to 14px.
+  it('gives each tier the comp vertical padding', () => {
+    const cls = shellHeaderClasses();
+    expect(cls).toContain('py-4');
+    expect(cls).not.toContain('py-3.5');
     expect(cls).toContain('desktop:py-6');
     expect(cls).not.toContain('desktop:py-2');
   });

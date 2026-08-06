@@ -31,20 +31,26 @@ export const shellSurfaceClasses = () =>
 /** The shell header bar (full-bleed; the row content lives in the inner div). */
 export const shellHeaderClasses = () =>
   cn(
-    // Mobile tiers get the DS Mobile / Topbar vertical rhythm (16px, 68px bar
-    // with the 36px chip row). The desktop tier follows the comp (Navbar
-    // 1881:51590): an 88px bar around the 40px pill row, i.e. 24px above and
-    // below (APP-456 #2 — the previous 8px sat the bar hard against the top
+    // Mobile tiers take the DS Mobile / Topbar padding (551:10137): 16px above
+    // and below the chip row. The desktop tier follows the Navbar comp
+    // (1030:61380 / 1036:201581): an 88px bar around the 40px pill row, i.e.
+    // 24px (APP-456 #2 — the previous 8px sat the bar hard against the top
     // edge). The bar's own padding is the gap to the content now, so the extra
     // 4px margin is gone.
-    'w-full py-3.5 desktop:py-6',
+    'w-full py-4 desktop:py-6',
+    // The bar's own `bg` layer, straight off the comps: the gradient-navbar
+    // fill over background blur-md (Figma radius 12 ⇒ 6px). It lives on the bar
+    // itself rather than on a child — `backdrop-filter` filters what is painted
+    // *behind* the element, and the bar's own content (logo, pills) paints on
+    // top of it untouched, so the child bought nothing the box doesn't already
+    // give us. The gradient's fade to ~5% alpha is what softens the bottom
+    // edge; there is no mask in the spec (APP-456 #6).
+    'bg-linear-to-b from-navbarGradientStart to-navbarGradientEnd backdrop-blur-[6px]',
     // Pages scroll on the document, so the header pins as a sticky, see-through
-    // frosted bar (Figma: transparent + blur, no opaque fill). Being positioned
-    // with a z-index also makes the bar the containing block and stacking
-    // context for the blur layers `HeaderBlur` renders behind the nav content
-    // (so logo + pills stay sharp) — see `.progressive-blur-bar` in globals.css.
-    // Deliberately NOT `isolation: isolate`: that would make the bar a backdrop
-    // root, and the layers would sample an empty backdrop instead of the page.
+    // frosted bar. Note that carrying a backdrop-filter makes the bar a
+    // backdrop root for its descendants: anything nested here that wants its
+    // own backdrop-filter would sample the bar, not the page. Nothing does —
+    // the nav pills are borders and gradients, and both menus portal to body.
     'sticky top-0 z-30'
   );
 

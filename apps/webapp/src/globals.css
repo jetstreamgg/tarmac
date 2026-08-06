@@ -126,6 +126,14 @@
   --color-fgBrand: #757dff;
   --color-brand2-start: rgba(148, 154, 255, 0.2);
   --color-brand2-end: rgba(80, 77, 255, 0.2);
+  /* Sticky top bar (Figma Navbar 1036:201581 dark / 1030:61380 light, and
+     Mobile / Topbar 551:10137): the bar's `bg` layer is the gradient-navbar
+     fill — components/navbar/bg-gradient-start → -end, top to bottom — over a
+     background blur-md (Figma radius 12 ⇒ CSS blur(6px)). The fill's own fade
+     to near-transparent is what softens the bar's bottom edge; there is no
+     mask in the spec. */
+  --color-navbarGradientStart: #09042080; /* components/navbar/bg-gradient-start */
+  --color-navbarGradientEnd: #09042014; /* components/navbar/bg-gradient-end */
   /* Design-system form-control tokens (Figma Sliders 5246:16073 / Switch
      5044:49116 / Checkbox 5044:49213 / Radio 5044:49317): dark values are the
      Figma source values — colors/fg/fg-quaternary (disabled thumbs/glyphs),
@@ -656,6 +664,11 @@
     --color-glassBadge: #9ca0e533; /* components/badges/bg-secondary */
     --color-glassBorder: #9ca0e566; /* colors/border/border-secondary */
 
+    /* Sticky top bar fill — same gradient, the light mode's own stops
+       (Figma Navbar 1030:61380). */
+    --color-navbarGradientStart: #bcb6ef4d; /* components/navbar/bg-gradient-start */
+    --color-navbarGradientEnd: #bcb6ef0d; /* components/navbar/bg-gradient-end */
+
     /* H5 tabs / H15 list + accordion / navbar foreground */
     --color-borderTertiary: #9ca0e5bf; /* colors/border/border-tertiary */
     --color-borderPrimary: #9ca0e54d; /* colors/border/border-primary */
@@ -820,37 +833,6 @@
 [data-theme='light'] .app-background {
   background-size: auto, cover, auto;
   background-position: center;
-}
-
-/* Progressive blur behind the sticky top bar -------------------------------
-   One blurred backdrop layer, masked so it fades out over the bottom quarter of
-   the bar: content is sharp where it meets the bar's bottom edge, softens as it
-   rises, and is fully diffuse by the time it passes behind the logo and pills.
-
-   The mask fades the layer's *opacity*, not its blur radius, so within that
-   bottom quarter a partially-blurred copy sits over the sharp original. Over
-   22px, right at the boundary where the bar meets live page content, that reads
-   as a fade — which is the point. It is only over a tall band that the same
-   trick reads as a double image, which is what the flat, feathered-to-95%
-   version used to do to headings crossing the whole bar (APP-456 #6).
-
-   The layer stays inside the bar's own box: an overhang put a frosted band over
-   page content, visible as an edge below the header (APP-416). */
-.progressive-blur-bar {
-  position: absolute;
-  inset: 0;
-  z-index: -10;
-  pointer-events: none;
-  /* Both spellings: unprefixed backdrop-filter only shipped in Safari 18, so
-     without the prefix the bar is fully transparent on Safari <= 17 and page
-     content collides with the nav. Every other blur in the app goes through
-     Tailwind's backdrop-blur-*, which emits the pair itself; this is the one
-     hand-authored rule, and nothing in the build autoprefixes. */
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-  /* Safari still needs the prefix for a masked backdrop layer. */
-  -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 25%);
-  mask-image: linear-gradient(to top, transparent 0%, #000 25%);
 }
 
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
