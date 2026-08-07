@@ -69,14 +69,17 @@ export function ConnectedPortfolio() {
   const savingsTvlUsd = overallSkyData?.skySavingsRateTvl ? parseFloat(overallSkyData.skySavingsRateTvl) : 0;
 
   // Onboarding callout gates on family-wide totals (ignores the network filter),
-  // and only after both data sources settle so it never flashes the wrong state.
+  // and only after all three data sources settle so it never flashes the wrong
+  // state — geo included, since visibleRows can shrink when the config lands.
   // Visible totals only: a hidden restricted position mustn't suppress the
   // callout or claim the Supplied tab for a portfolio that renders as empty.
   const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
-  const callout = isLoading || balancesLoading ? 'none' : portfolioCallout(depositedUsd, idleTotalUsd);
+  const callout =
+    isLoading || balancesLoading || isGeoLoading ? 'none' : portfolioCallout(depositedUsd, idleTotalUsd);
 
-  const tab = userTab ?? (!isLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
+  const tab =
+    userTab ?? (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
 
   const goToSavings = () => void navigate({ to: ROUTES.EARN_SAVINGS, search: retainOnNavigate });
 
