@@ -162,15 +162,31 @@ export function PortfolioDonutChart({
         viewBox={`0 0 ${size} ${size}`}
         className="pointer-events-none absolute inset-0"
       >
+        {/* Empty case (Figma 5272:12915): the colored band is replaced by an
+            unbroken tinted band at the same radius, so the chart keeps its
+            footprint instead of collapsing to a lone hairline. Both it and the
+            hairline sit on border-secondary. */}
+        {isEmpty && (
+          <circle
+            data-testid="donut-empty-band"
+            cx={cx}
+            cy={cy}
+            r={outerRadius - (THICKNESS * scale) / 2}
+            fill="none"
+            strokeWidth={THICKNESS * scale}
+            className="stroke-glassBorder"
+          />
+        )}
         {sectors.length === 0 || singleFullRing ? (
           <circle
+            data-testid="donut-ring"
             cx={cx}
             cy={cy}
             r={ringRadius}
             fill="none"
             strokeWidth={RING_STROKE}
             className={
-              isEmpty ? 'stroke-textSecondary/25' : ringClass(singleFullRing && activeId === sectors[0]?.id)
+              isEmpty ? 'stroke-glassBorder' : ringClass(singleFullRing && activeId === sectors[0]?.id)
             }
           />
         ) : (
@@ -194,8 +210,10 @@ export function PortfolioDonutChart({
         </div>
       )}
 
+      {/* Label 4 on fg-primary per the empty comp — the old fgSecondary/sm pair
+          read as a disabled chart rather than a deliberate empty state. */}
       {isEmpty && (
-        <div className="text-textSecondary pointer-events-none absolute inset-0 flex items-center justify-center text-sm">
+        <div className="text-fgPrimary font-circle pointer-events-none absolute inset-0 flex items-center justify-center text-base leading-[18px] font-medium tracking-[-0.32px]">
           <Trans>No tokens</Trans>
         </div>
       )}

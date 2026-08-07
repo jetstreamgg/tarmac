@@ -10,7 +10,7 @@ import { MotionHStack } from '@/widgets/shared/components/ui/layout/MotionHStack
 import { MotionVStack } from '@/widgets/shared/components/ui/layout/MotionVStack';
 import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { positionAnimations } from '@/widgets/shared/animation/presets';
 import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
 
@@ -49,7 +49,7 @@ export const PendleStatsCard = ({ market }: PendleStatsCardProps) => {
           <Trans>TVL</Trans>
         </Text>
         {isLoading ? (
-          <Skeleton className="bg-textSecondary h-6 w-20" />
+          <Skeleton className="h-6 w-20" />
         ) : marketData?.formattedTvl ? (
           <Text>{marketData.formattedTvl}</Text>
         ) : (
@@ -80,7 +80,7 @@ export const PendleStatsCard = ({ market }: PendleStatsCardProps) => {
       headerRightContent={
         <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
           {isLoading ? (
-            <Skeleton className="bg-textSecondary h-5 w-16" />
+            <Skeleton className="h-5 w-16" />
           ) : (
             <>
               <Text className="text-bullish">{apyDisplay}</Text>

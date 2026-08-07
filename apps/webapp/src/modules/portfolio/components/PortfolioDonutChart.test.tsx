@@ -16,7 +16,14 @@ const renderChart = (segments: { id: string; color: string; value: number }[], s
   );
 
 /** The inner ring's radius, which every scaled radial constant feeds into. */
-const ringRadius = (container: HTMLElement) => Number(container.querySelector('circle')?.getAttribute('r'));
+const ringRadius = (container: HTMLElement) =>
+  Number(container.querySelector('[data-testid="donut-ring"]')?.getAttribute('r'));
+
+/** The empty case's tinted band: half its stroke inside the outer radius. */
+const emptyBand = (container: HTMLElement) => {
+  const band = container.querySelector('[data-testid="donut-empty-band"]');
+  return band && { r: Number(band.getAttribute('r')), width: Number(band.getAttribute('stroke-width')) };
+};
 
 afterEach(cleanup);
 
@@ -29,6 +36,19 @@ describe('PortfolioDonutChart', () => {
   it('does not render the empty state once a segment is present', () => {
     renderChart([{ id: 'usds', color: '#E9B44C', value: 100 }]);
     expect(screen.queryByText('No tokens')).toBeNull();
+  });
+
+  // Empty comp 5272:12915: the band does not disappear with the data, it goes
+  // flat — same footprint, tinted. Its stroke straddles the outer radius, so
+  // the drawn circle sits half a band-width in.
+  it('replaces the colored arcs with a full tinted band when empty', () => {
+    const { container } = renderChart([], 178);
+    expect(emptyBand(container)).toEqual({ r: 85, width: 8 });
+  });
+
+  it('drops the tinted band once a segment is present', () => {
+    const { container } = renderChart([{ id: 'usds', color: '#E9B44C', value: 100 }], 178);
+    expect(emptyBand(container)).toBeNull();
   });
 
   // The radial geometry scales with `size` so the DS band stays ~4.5% of the

@@ -3,6 +3,8 @@ import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TransactionsEmpty } from '@/modules/icons';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CustomPagination } from '@/modules/ui/components/CustomPagination';
 import { paginate } from './paginate';
@@ -37,6 +39,8 @@ export interface ProductTransactionsTableProps<T> {
   isLoading?: boolean;
   error?: Error | null;
   emptyLabel?: ReactNode;
+  /** DS empty illustration above `emptyLabel`; defaults to the transactions pair. */
+  emptyIllustration?: ReactNode;
   /** Min table width before horizontal scroll kicks in (px). */
   minWidth?: number;
   dataTestId?: string;
@@ -92,6 +96,7 @@ export function ProductTransactionsTable<T>({
   isLoading,
   error,
   emptyLabel,
+  emptyIllustration = <TransactionsEmpty aria-hidden />,
   minWidth = 560,
   dataTestId = 'product-transactions',
   pageSize = 7,
@@ -136,7 +141,11 @@ export function ProductTransactionsTable<T>({
               <Trans>Unable to load transactions, please try again later.</Trans>
             </StateCard>
           ) : allRows.length === 0 ? (
-            <StateCard>{emptyLabel ?? <Trans>No transactions yet.</Trans>}</StateCard>
+            <StateCard>
+              <EmptyState illustration={emptyIllustration}>
+                {emptyLabel ?? <Trans>You don&apos;t have any transactions made yet.</Trans>}
+              </EmptyState>
+            </StateCard>
           ) : (
             pageRows.map((row, index) => (
               <Fragment key={rowKey(row)}>
@@ -206,7 +215,11 @@ export function ProductTransactionsTable<T>({
               <Trans>Unable to load transactions, please try again later.</Trans>
             </StateRow>
           ) : allRows.length === 0 ? (
-            <StateRow colSpan={columns.length}>{emptyLabel ?? <Trans>No transactions yet.</Trans>}</StateRow>
+            <StateRow colSpan={columns.length}>
+              <EmptyState illustration={emptyIllustration}>
+                {emptyLabel ?? <Trans>You don&apos;t have any transactions made yet.</Trans>}
+              </EmptyState>
+            </StateRow>
           ) : (
             pageRows.map((row, index) => {
               const belowRow = renderBelowRow?.(row);

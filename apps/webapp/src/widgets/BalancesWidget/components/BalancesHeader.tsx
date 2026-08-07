@@ -1,5 +1,5 @@
 import { useConnection, useBalance } from 'wagmi';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { AssetsNoWalletConnected } from '@/widgets/BalancesWidget/components/AssetsNoWalletConnected';
 import { WalletCard } from './WalletCard';
 
@@ -14,7 +14,7 @@ export const BalancesHeader = ({
   return !isConnectedAndEnabled ? (
     <AssetsNoWalletConnected />
   ) : isEthBalanceLoading || !ethBalance || !address ? (
-    <Skeleton className="bg-card h-8" />
+    <Skeleton className="h-8" />
   ) : (
     <WalletCard />
   );

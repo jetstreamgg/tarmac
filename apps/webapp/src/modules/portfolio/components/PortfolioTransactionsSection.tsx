@@ -283,7 +283,6 @@ export function PortfolioTransactionsView({
         rowKey={row => row.id}
         isLoading={isLoading}
         error={error}
-        emptyLabel={<Trans>No transactions yet</Trans>}
         renderCard={renderCard}
         onPageChange={(page, totalPages) => {
           // Last loaded page reached while older history exists server-side.

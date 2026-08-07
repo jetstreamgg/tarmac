@@ -9,6 +9,7 @@ import {
   CarouselPrevious,
   CarouselNext
 } from '@/components/ui/carousel';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Heading } from '@/modules/layout/components/Typography';
 import { EarnMarketplaceCard } from './EarnMarketplaceCard';
 
@@ -69,9 +70,9 @@ export function EarnMarketplaceSection({ rows, isLoading }: { rows: EarnProductR
 function CarouselSkeleton() {
   return (
     <div className="desktop:grid-cols-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div className="bg-surface h-[360px] animate-pulse rounded-3xl" />
-      <div className="bg-surface hidden h-[360px] animate-pulse rounded-3xl sm:block" />
-      <div className="bg-surface desktop:block hidden h-[360px] animate-pulse rounded-3xl" />
+      <Skeleton className="h-[360px] rounded-3xl" />
+      <Skeleton className="hidden h-[360px] rounded-3xl sm:block" />
+      <Skeleton className="desktop:block hidden h-[360px] rounded-3xl" />
     </div>
   );
 }
