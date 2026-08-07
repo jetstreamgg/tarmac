@@ -81,6 +81,9 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
   return useCallback(
     (position: SuppliedPosition) => {
       const geoModuleId = geoModuleForIntent(position.intent);
+      // While the geo config loads, isModuleEnabled answers false for every
+      // module — deliberately fail-closed here (the fallback just navigates),
+      // unlike the display hooks, which fail open to avoid blanking the page.
       if (geoModuleId && !isModuleEnabled(geoModuleId)) return undefined;
 
       const requiredChainId = supplyChainFor(position, connectedChainId, chains);
