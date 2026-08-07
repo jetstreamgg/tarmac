@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router';
 import { motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
-import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
 import { DESTINATIONS, useActiveDestinationPath, useDestinationLinkProps } from './destinations';
 import { useHideOnScroll } from './useHideOnScroll';
 
@@ -22,7 +21,6 @@ const mobileNavTestId = (path: string) => `mobile-nav-${path.slice(1)}`;
  */
 export function MobileNavbar() {
   const activePath = useActiveDestinationPath();
-  const { showNewDot } = useNewIntentDots();
   const { searchForIntent, handleNavClick } = useDestinationLinkProps();
   const isHidden = useHideOnScroll();
   const reducedMotion = useReducedMotion();
@@ -91,12 +89,6 @@ export function MobileNavbar() {
                 </motion.span>
               ) : (
                 <span className="sr-only">{destination.label}</span>
-              )}
-              {destination.intents.some(showNewDot) && (
-                <span
-                  data-testid={`${mobileNavTestId(destination.path)}-new-dot`}
-                  className="bg-textEmphasis absolute top-2 right-1/2 h-1.5 w-1.5 translate-x-3.5 rounded-full"
-                />
               )}
             </Link>
           );

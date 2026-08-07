@@ -4,7 +4,7 @@ import { routeTree } from '../routeTree.gen';
 import ErrorPage from './ErrorPage';
 import { NotFound } from '../modules/layout/components/NotFound';
 import { queryClient as appQueryClient } from '@/lib/queryClient';
-import { isEarnDrilldown } from '@/lib/routes';
+import { isEarnDrilldown, isReverseNavigation } from '@/lib/routes';
 import type { AppSearchParams } from '../routes/__root';
 
 export type { AppSearchParams } from '../routes/__root';
@@ -94,11 +94,17 @@ export const createAppRouter = (history?: RouterHistory, queryClient: QueryClien
         // ::view-transition-group(page) block in globals.css.
         document.documentElement.style.setProperty('--vt-scroll', `${window.scrollY}px`);
         // Drilling between the Earn marketplace and a product page travels
-        // vertically instead (Figma: Sky App: UI 1598:77307). The second type
-        // is additive — it only swaps which keyframes run, so the timing,
+        // vertically instead (Figma: Sky App: UI 1598:77307). The extra types
+        // are additive — they only swap which keyframes run, so the timing,
         // easing, overlap and snapshot handling stay shared with every other
         // navigation.
-        return isEarnDrilldown(fromLocation.pathname, toLocation.pathname) ? ['page', 'drill'] : ['page'];
+        const types = isEarnDrilldown(fromLocation.pathname, toLocation.pathname)
+          ? ['page', 'drill']
+          : ['page'];
+        // Moving against the nav's order (or back up out of a product page)
+        // plays the mirror of the forward move — see isReverseNavigation.
+        if (isReverseNavigation(fromLocation.pathname, toLocation.pathname)) types.push('reverse');
+        return types;
       }
     },
     // Full-width routes scroll on the document (no inner-scroll box), so the

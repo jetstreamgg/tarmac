@@ -16,6 +16,10 @@ const h = vi.hoisted(() => ({
   convertedValue: 0n as bigint,
   maxAmountIn: 0n as bigint,
   minAmountOut: 0n as bigint,
+  // Mainnet USDC supply gate (PSM wrapper reads): open module by default.
+  psmLive: 1n as bigint | undefined,
+  psmTin: 0n as bigint | undefined,
+  psmHalted: 0n as bigint | undefined,
   prepared: true,
   execute: vi.fn(),
   update: vi.fn(),
@@ -84,7 +88,12 @@ vi.mock('@/hooks', async importOriginal => {
     useReadSavingsUsds: () => ({ data: undefined }),
     // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
     usePreviewSwapExactIn: () => ({ value: h.convertedValue }),
-    usePreviewSwapExactOut: () => ({ value: h.maxAmountIn })
+    usePreviewSwapExactOut: () => ({ value: h.maxAmountIn }),
+    // Mainnet USDC supply gate: the PSM wrapper's live / fee / halt switches.
+    // Default to an open module (live, zero fee, nothing halted).
+    useUsdsPsmWrapperLive: () => ({ data: h.psmLive }),
+    useUsdsPsmWrapperTin: () => ({ data: h.psmTin }),
+    useUsdsPsmWrapperHalted: () => ({ data: h.psmHalted })
   };
 });
 
@@ -199,6 +208,9 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     h.convertedValue = 0n;
     h.maxAmountIn = 0n;
     h.minAmountOut = 0n;
+    h.psmLive = 1n;
+    h.psmTin = 0n;
+    h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
     h.update.mockClear();
@@ -256,16 +268,82 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     expect(cell().textContent).toContain('7.5');
   });
 
-  it('offers USDS and DAI origin options on mainnet supply', () => {
+  it('offers USDS, DAI and USDC origin options on mainnet supply', () => {
     renderForm('supply');
     expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();
     expect(screen.queryByTestId('origin-opt-DAI')).not.toBeNull();
+    expect(screen.queryByTestId('origin-opt-USDC')).not.toBeNull();
   });
 
   it('routes the supply to the DAI origin token (upgrade-and-supply) when DAI is selected', () => {
     renderForm('supply');
     fireEvent.click(screen.getByTestId('origin-opt-DAI'));
     expect(h.launchParams?.originToken?.symbol).toBe('DAI');
+  });
+
+  it('routes the supply to the USDC origin token (PSM swap-and-supply) at 6 decimals', () => {
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(h.launchParams?.originToken?.symbol).toBe('USDC');
+    // USDC is 6-dec everywhere — the engine must get 10e6, not 10e18.
+    expect(h.launchParams?.amount).toBe(10n * 10n ** 6n);
+  });
+
+  it('blocks a USDC supply (with a reason) when the PSM charges a fee', () => {
+    h.psmTin = 1n; // any nonzero tin leaves the deposit short
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).not.toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('blocks a USDC supply when the PSM sell direction is halted', () => {
+    h.psmHalted = 2n; // SELL_GEM_HALTED
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).not.toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('blocks a USDC supply when the PSM is cased off', () => {
+    h.psmLive = 0n;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).not.toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('holds the confirm while the PSM fee read is still in flight', () => {
+    h.psmTin = undefined;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    // Nothing is known to be wrong yet, so no error copy — but the confirm stays shut
+    // rather than letting a swap out against an unread fee.
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('states one reason for every way the USDC conversion can be unavailable', () => {
+    h.psmTin = 1n;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.getByTestId('savings-modal-usdc-blocked').textContent).toBe(
+      'USDC conversion is unavailable right now. Supply USDS or DAI instead.'
+    );
+  });
+
+  it('leaves a USDS supply unaffected by the PSM switches', () => {
+    h.psmLive = 0n;
+    renderForm('supply');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).toBeNull();
+    expect(lastDisabled()).toBe(false);
   });
 
   it('resets the amount when the origin token is switched', () => {
@@ -284,6 +362,9 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     h.convertedValue = 0n;
     h.maxAmountIn = 0n;
     h.minAmountOut = 0n;
+    h.psmLive = 1n;
+    h.psmTin = 0n;
+    h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
     h.update.mockClear();
@@ -372,6 +453,9 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     h.convertedValue = 200n * 10n ** 18n;
     h.maxAmountIn = 7n * 10n ** 18n; // sUSDS-in ceiling for a specific withdraw
     h.minAmountOut = 49n * 10n ** 17n; // 4.9 sUSDS slippage floor
+    h.psmLive = 1n;
+    h.psmTin = 0n;
+    h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
     h.update.mockClear();

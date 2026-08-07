@@ -145,6 +145,17 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false })
 }));
 
+// The orchestrator mounts `useUsdcSupplyGate` unconditionally (hooks rules), so its
+// three PSM-wrapper reads sit in every flow's tree — off the mainnet-USDC path their
+// verdict is never consulted. Stubbed open so this suite doesn't need a WagmiProvider
+// for reads it doesn't exercise.
+vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
+  useUsdsPsmWrapperLive: () => ({ data: 1n }),
+  useUsdsPsmWrapperTin: () => ({ data: 0n }),
+  useUsdsPsmWrapperTout: () => ({ data: 0n }),
+  useUsdsPsmWrapperHalted: () => ({ data: 0n })
+}));
+
 import { TOKENS, useBatchPsmSwapExactIn, useBatchPsmSwapExactOut, psm3L2Address } from '@/hooks';
 import { useSavingsLaunch } from './useSavingsLaunch';
 

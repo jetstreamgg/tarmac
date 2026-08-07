@@ -8,7 +8,6 @@ import { BP, useBreakpointIndex } from '@/hooks';
 import { buttonVariants } from '@/components/ui/button';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
 import { BATCH_TX_ENABLED } from '@/lib/constants';
-import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
@@ -23,7 +22,11 @@ import { DESTINATIONS, navTestId, useActiveDestinationPath, useDestinationLinkPr
 
 // Design-system Button / Navbar (Figma 5010:29059, Default type); active
 // styling keys off the link's aria-current="page".
-const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'relative');
+// cn(), not the bare recipe: the base cva class carries `rounded-xl` and the
+// navbar size overrides it with `rounded-full`. cva only concatenates, so
+// without tailwind-merge collapsing that pair the pills take whichever radius
+// the stylesheet happens to emit last.
+const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }));
 
 // Menu dropdown row (Figma 5069:27509): 16px glyph + label on fg-primary,
 // 8px apart; rows sit bare on the panel (no pill/tint). The M4.5 mobile panel
@@ -187,7 +190,6 @@ function MoreMenu() {
 /** Final 4-destination top navigation. */
 export function TopNav() {
   const activePath = useActiveDestinationPath();
-  const { showNewDot } = useNewIntentDots();
   const { searchForIntent, handleNavClick } = useDestinationLinkProps();
 
   // At the desktop tier the nav box dissolves (display: contents) so the pill
@@ -230,12 +232,6 @@ export function TopNav() {
             >
               <Icon className="nav-icon h-4 w-4 shrink-0" />
               {destination.label}
-              {destination.intents.some(showNewDot) && (
-                <span
-                  data-testid={`${navTestId(destination.path)}-new-dot`}
-                  className="bg-textEmphasis absolute top-1 right-1 h-1.5 w-1.5 rounded-full"
-                />
-              )}
             </Link>
           );
         })}
