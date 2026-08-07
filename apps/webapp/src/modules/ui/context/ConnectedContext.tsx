@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
-import { useChainId, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
@@ -46,7 +46,6 @@ export const ConnectedContext = createContext<ConnectedContextType>({
 
 export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, address } = useConnection();
-  const chainId = useChainId();
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
@@ -60,7 +59,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     data: authData,
     isLoading: authIsLoading,
     error: authError
-  } = useRestrictedAddressCheck({ address, authUrl, enabled, chainId });
+  } = useRestrictedAddressCheck({ address, authUrl, enabled });
 
   const {
     data: vpnData,
