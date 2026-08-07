@@ -25,6 +25,7 @@ import { Balances } from './Balances';
 import { Info } from './Info';
 import { LightningFilled } from './LightningFilled';
 import { Close } from './Close';
+import { FilterX } from './FilterX';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
 import { ArbitrumChain } from './ArbitrumChain';
@@ -82,6 +83,7 @@ export {
   Info,
   LightningFilled,
   Close,
+  FilterX,
   BaseChain,
   MainnetChain,
   ArbitrumChain,

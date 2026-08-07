@@ -5,6 +5,7 @@ import { BP, useBreakpointIndex } from '@/hooks';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
@@ -440,23 +441,20 @@ function TodoValue() {
  */
 function EarningsSkeleton() {
   return (
-    <div className="mt-6 flex animate-pulse flex-col gap-10 md:gap-8 lg:flex-row lg:justify-between">
+    <div className="mt-6 flex flex-col gap-10 md:gap-8 lg:flex-row lg:justify-between">
       <div className={cn(COLUMN, 'md:gap-6')}>
         <div className="flex flex-col gap-6">
-          <div className="bg-surface h-4 w-28 rounded" />
-          <div className="bg-surface h-10 w-72 max-w-full rounded" />
+          <Skeleton className="h-4 w-28 rounded" />
+          <Skeleton className="h-10 w-72 max-w-full rounded" />
         </div>
         <div className={cn(LEGEND, 'flex flex-col gap-3')}>
-          <div className="bg-surface h-4 w-40 rounded" />
-          <div className="bg-surface h-4 w-36 rounded" />
-          <div className="bg-surface h-4 w-32 rounded" />
+          <Skeleton className="h-4 w-40 rounded" />
+          <Skeleton className="h-4 w-36 rounded" />
+          <Skeleton className="h-4 w-32 rounded" />
         </div>
       </div>
-      <div
-        className={cn(
-          DONUT,
-          'bg-surface mx-auto h-40 w-40 shrink-0 rounded-full md:h-[178px] md:w-[178px] lg:mx-0'
-        )}
+      <Skeleton
+        className={cn(DONUT, 'mx-auto h-40 w-40 shrink-0 rounded-full md:h-[178px] md:w-[178px] lg:mx-0')}
         data-testid="earnings-skeleton-donut"
       />
     </div>

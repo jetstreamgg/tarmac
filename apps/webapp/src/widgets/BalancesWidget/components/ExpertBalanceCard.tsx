@@ -3,7 +3,7 @@ import { formatBigInt, formatNumber, calculateApyFromStr } from '@/utils';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@/widgets/shared/components/ui/card/InteractiveStatsCard';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { RateLineWithArrow } from '@/widgets/shared/components/ui/RateLineWithArrow';

@@ -7,7 +7,7 @@ import {
 import { HStack } from '../layout/HStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getEtherscanLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
 import { positionAnimations } from '@/widgets/shared/animation/presets';
@@ -40,7 +40,7 @@ export const StatsAccordionCard = ({
                   View contract
                 </ExternalLink>
               ) : (
-                <Skeleton className="bg-textSecondary h-5" />
+                <Skeleton className="h-5" />
               )}
               <Text variant="medium" className="font-circle font-medium">
                 <Trans>{accordionTitle}</Trans>

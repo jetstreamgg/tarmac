@@ -82,7 +82,16 @@ import { RiskLevel } from '@/hooks';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
-import { BaseChain, MainnetChain, OptimismChain, Pendle, StakeSky } from '@/modules/icons';
+import {
+  BaseChain,
+  MainnetChain,
+  OptimismChain,
+  Pendle,
+  StakeSky,
+  SuppliedEmpty,
+  TransactionsEmpty
+} from '@/modules/icons';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   Pagination,
@@ -1565,16 +1574,49 @@ function DataSection() {
           <Spec label="progress 40%" className="w-64">
             <Progress value={40} className="w-64" />
           </Spec>
-          <Spec label="skeleton">
+          {/* Every skeleton shape the app renders, on the page surface and again
+              on a Card — the two backdrops a placeholder ever lands on, and the
+              pair a light-mode contrast check has to compare. */}
+          <Spec label="skeleton — text lines">
             <span className="flex w-48 flex-col gap-2">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-2/3" />
             </span>
           </Spec>
+          <Spec label="skeleton — block / pill / circle">
+            <span className="flex items-center gap-3">
+              <Skeleton className="h-12 w-32 rounded-xl" />
+              <Skeleton className="h-10 w-24 rounded-full" />
+              <Skeleton className="h-16 w-16 rounded-full" />
+            </span>
+          </Spec>
+          <Spec label="skeleton — card block">
+            <Skeleton className="h-24 w-48 rounded-[28px]" />
+          </Spec>
+          <Spec label="skeleton — on a Card">
+            <Card className="flex w-48 flex-col gap-3 p-5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-full rounded-xl" />
+            </Card>
+          </Spec>
           <Spec label="avatar fallback">
             <Avatar>
               <AvatarFallback>SK</AvatarFallback>
             </Avatar>
+          </Spec>
+        </Row>
+        <Row>
+          <Spec label="empty state — supplied">
+            <Card className="w-72 p-6">
+              <EmptyState illustration={<SuppliedEmpty aria-hidden />}>No supplied positions yet.</EmptyState>
+            </Card>
+          </Spec>
+          <Spec label="empty state — transactions">
+            <Card className="w-72 p-6">
+              <EmptyState illustration={<TransactionsEmpty aria-hidden />}>
+                You don&apos;t have any transactions made yet.
+              </EmptyState>
+            </Card>
           </Spec>
         </Row>
       </SubSection>

@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { QueryParams } from '@/lib/constants';
@@ -12,7 +11,9 @@ import {
   CarouselNext
 } from '@/components/ui/carousel';
 import { Card } from '@/components/ui/card';
-import { Text } from '@/modules/layout/components/Typography';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SuppliedEmpty } from '@/modules/icons';
 import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
@@ -72,7 +73,7 @@ export function PortfolioPositionsSection({
         {idleLoading && idleView.tokens.length === 0 ? (
           <TableSkeleton />
         ) : idleView.tokens.length === 0 ? (
-          <EmptyState>
+          <EmptyState className="mt-8" illustration={<SuppliedEmpty aria-hidden />}>
             <Trans>No idle stablecoins.</Trans>
           </EmptyState>
         ) : (
@@ -93,7 +94,7 @@ export function PortfolioPositionsSection({
         {suppliedLoading ? (
           <CarouselSkeleton />
         ) : (
-          <EmptyState>
+          <EmptyState className="mt-8" illustration={<SuppliedEmpty aria-hidden />}>
             <Trans>No supplied positions yet.</Trans>
           </EmptyState>
         )}
@@ -131,33 +132,23 @@ export function PortfolioPositionsSection({
   );
 }
 
-function EmptyState({ children }: { children: ReactNode }) {
-  return (
-    <div className="mt-8 flex min-h-[180px] items-center justify-center">
-      <Text variant="medium" className="text-textSecondary">
-        {children}
-      </Text>
-    </div>
-  );
-}
-
 // Skeleton placeholders sized like the loaded cards: an exact-fit grid showing
 // as many cards as the carousel does per tier (1 → 2 → 3), no clipped extras.
 function CarouselSkeleton() {
   return (
     <div className="desktop:grid-cols-3 mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div className="bg-surface h-[280px] animate-pulse rounded-[28px]" />
-      <div className="bg-surface hidden h-[280px] animate-pulse rounded-[28px] sm:block" />
-      <div className="bg-surface desktop:block hidden h-[280px] animate-pulse rounded-[28px]" />
+      <Skeleton className="h-[280px] rounded-[28px]" />
+      <Skeleton className="hidden h-[280px] rounded-[28px] sm:block" />
+      <Skeleton className="desktop:block hidden h-[280px] rounded-[28px]" />
     </div>
   );
 }
 
 function TableSkeleton() {
   return (
-    <Card className="mt-8 flex animate-pulse flex-col gap-4 p-6">
+    <Card className="mt-8 flex flex-col gap-4 p-6">
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="bg-surface h-12 rounded-xl" />
+        <Skeleton key={index} className="h-12 rounded-xl" />
       ))}
     </Card>
   );

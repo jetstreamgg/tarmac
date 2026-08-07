@@ -21,6 +21,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconboxPosition } from '@/components/ui/iconbox';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -315,12 +316,9 @@ export function StakePositionsTable({
         <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <Trans>Active positions</Trans>
         </h3>
-        <div className="flex flex-col items-center gap-4 py-6">
-          <SuppliedEmpty aria-hidden />
-          <p className="text-fgSecondary font-circle max-w-[224px] text-center text-sm leading-4 font-medium tracking-[-0.28px]">
-            <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
-          </p>
-        </div>
+        <EmptyState illustration={<SuppliedEmpty aria-hidden />}>
+          <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
+        </EmptyState>
       </Card>
     );
   }
@@ -361,6 +359,7 @@ export function StakePositionsTable({
         isLoading={isLoading}
         error={error}
         emptyLabel={<Trans>No active positions.</Trans>}
+        emptyIllustration={<SuppliedEmpty aria-hidden />}
         minWidth={720}
         renderCard={renderCard}
         renderBelowRow={position => (
