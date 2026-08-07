@@ -47,7 +47,6 @@ In addition to `WidgetProps`, `TradeWidget` component also accepts the following
   - A list of custom tokens to be used in the widget. If provided, this list will override the default list.
 - `disallowedPairs?: { [key: string]: string[] };`
   - A list of token pairs that are not allowed to be traded.
-- `onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;`
   - A callback function that is called when an external link is clicked. It receives the click event as an argument.
 
 #### Configuring the Trade options

@@ -31,22 +31,31 @@ export const shellSurfaceClasses = () =>
 /** The shell header bar (full-bleed; the row content lives in the inner div). */
 export const shellHeaderClasses = () =>
   cn(
-    // Mobile tiers get the DS Mobile / Topbar vertical rhythm (16px, 68px bar
-    // with the 36px chip row); the desktop tier keeps the legacy 8px.
-    'w-full py-3.5 desktop:py-2 desktop:mb-1',
+    // Mobile tiers take the DS Mobile / Topbar padding (551:10137): 16px above
+    // and below the chip row. The desktop tier follows the Navbar comp
+    // (1030:61380 / 1036:201581): an 88px bar around the 40px pill row, i.e.
+    // 24px (APP-456 #2 — the previous 8px sat the bar hard against the top
+    // edge). The bar's own padding is the gap to the content now, so the extra
+    // 4px margin is gone.
+    'w-full py-4 desktop:py-6',
+    // The bar's own `bg` layer, straight off the comps: the gradient-navbar
+    // fill over background blur-md (Figma radius 12 ⇒ 6px). It lives on the bar
+    // itself rather than on a child — `backdrop-filter` filters what is painted
+    // *behind* the element, and the bar's own content (logo, pills) paints on
+    // top of it untouched, so the child bought nothing the box doesn't already
+    // give us (APP-456 #6).
+    //
+    // The comp's two stops run to 5% alpha, and stopping there left a visible
+    // line where that 5% met the bare page. So the DS ramp plays out over the
+    // first three quarters of the bar and the last quarter carries it to fully
+    // transparent: same bar, no edge to see.
+    'bg-linear-to-b from-navbarGradientStart via-navbarGradientEnd via-75% to-transparent backdrop-blur-[6px]',
     // Pages scroll on the document, so the header pins as a sticky, see-through
-    // frosted bar (Figma: transparent + blur(7px), no opaque fill).
-    'sticky top-0 z-30',
-    // Progressive blur: the blur lives on a `::before` overlay behind the nav
-    // content (so logo + pills stay sharp), and a gradient mask feathers it out
-    // toward the bottom. The overlay is confined to the bar itself (100%
-    // height, mask fully transparent by 95%) — the earlier 150% overhang put a
-    // frosted "white glow" band over page content, visible as an edge/color
-    // difference below the header (APP-416); keeping any transition at the
-    // bar's own boundary reads as a normal frosted navbar instead. The sticky
-    // header is the containing block for the absolute pseudo, so no `relative`
-    // is needed.
-    "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-z-10 before:h-full before:backdrop-blur-[7px] before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_40%,transparent_95%)] before:[-webkit-mask-image:linear-gradient(to_bottom,#000_40%,transparent_95%)]"
+    // frosted bar. Note that carrying a backdrop-filter makes the bar a
+    // backdrop root for its descendants: anything nested here that wants its
+    // own backdrop-filter would sample the bar, not the page. Nothing does —
+    // the nav pills are borders and gradients, and both menus portal to body.
+    'sticky top-0 z-30'
   );
 
 /** The header row content (logo + TopNav) inside the full-bleed bar. */

@@ -34,7 +34,6 @@ type PendleTransactionStatusProps = {
   isBatchTransaction?: boolean;
   /** Index of the currently executing call in the sequential (non-batched) flow. */
   currentCallIndex: number;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
 export const PendleTransactionStatus = ({
@@ -45,8 +44,7 @@ export const PendleTransactionStatus = ({
   quote,
   needsAllowance,
   isBatchTransaction,
-  currentCallIndex,
-  onExternalLinkClicked
+  currentCallIndex
 }: PendleTransactionStatusProps) => {
   const { i18n } = useLingui();
   const chainId = useChainId();
@@ -202,10 +200,5 @@ export const PendleTransactionStatus = ({
     setStepTwoTitle
   ]);
 
-  return (
-    <BatchTransactionStatus
-      onExternalLinkClicked={onExternalLinkClicked}
-      isBatchTransaction={isBatchTransaction}
-    />
-  );
+  return <BatchTransactionStatus isBatchTransaction={isBatchTransaction} />;
 };

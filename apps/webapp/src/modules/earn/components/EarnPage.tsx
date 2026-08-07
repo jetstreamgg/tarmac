@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useChains } from 'wagmi';
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
@@ -7,11 +7,11 @@ import { useEarnMarketplace, EarnProductKind, useUsdsDaiData, type EarnProductRo
 import { getChainIcon } from '@/utils';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
-import { QueryParams } from '@/lib/constants';
-import { retainOnNavigate, useAppSearchParams } from '@/lib/navigation';
+import { retainOnNavigate } from '@/lib/navigation';
+import { Button } from '@/components/ui/button';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { IllustrationStaked } from '@/modules/icons';
+import { FilterX, IllustrationStaked } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
@@ -39,8 +39,13 @@ const EMPTY_ROWS: EarnProductRow[] = [];
 
 const formatUsd = (totalUsd?: number) => (totalUsd !== undefined ? formatUsdCompact(totalUsd) : NO_VALUE);
 
-/** Products carrying the editorial "NEW" marker in the list (1036:201322). */
-const NEW_PRODUCT_IDS = ['savings'];
+/**
+ * Products carrying the editorial "NEW" marker in the list (1036:201322).
+ * Intentionally empty: nothing has launched recently enough to earn it
+ * (APP-457). The badge itself stays wired up for the next product — add its
+ * registry id here.
+ */
+const NEW_PRODUCT_IDS: string[] = [];
 
 /** Heading 6 on mobile (486:22121), Heading 5 on desktop (1036:201309, APP-395). */
 const SECTION_HEADING =
@@ -103,8 +108,6 @@ export function EarnPage() {
   const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
   const chains = useChains();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useAppSearchParams();
-  const tokenParam = searchParams.get(QueryParams.Token);
 
   // Geo split (1036:201400, APP-432 item 8): products whose owning module is
   // restricted in this region drop out of Earn Opportunities and reappear,
@@ -185,29 +188,19 @@ export function EarnPage() {
     [rows]
   );
 
-  const { filters, updateFilters, toggleRiskTier, sort, toggleSort } = useEarnTableState({
-    networks: networkOptions.map(option => option.value),
-    stablecoins: stablecoinOptions.map(option => option.value),
-    products: productOptions.map(option => option.value)
-  });
+  // Stable identity so the filter state (and everything derived from it) isn't
+  // rebuilt on every render.
+  const filterOptionValues = useMemo(
+    () => ({
+      networks: networkOptions.map(option => option.value),
+      stablecoins: stablecoinOptions.map(option => option.value),
+      products: productOptions.map(option => option.value)
+    }),
+    [networkOptions, stablecoinOptions, productOptions]
+  );
 
-  // Deep-link support: /earn?token=USDS preselects the supply-token filter, then
-  // the param is consumed so subsequent manual filter changes aren't overridden.
-  useEffect(() => {
-    if (!tokenParam || stablecoinOptions.length === 0) return;
-    const value = tokenParam.toLowerCase();
-    if (stablecoinOptions.some(option => option.value === value)) {
-      updateFilters({ stablecoin: value });
-    }
-    setSearchParams(
-      prev => {
-        const next = new URLSearchParams(prev);
-        next.delete(QueryParams.Token);
-        return next;
-      },
-      { replace: true }
-    );
-  }, [tokenParam, stablecoinOptions, updateFilters, setSearchParams]);
+  const { filters, updateFilters, toggleRiskTier, clearFilters, hasActiveFilters, sort, toggleSort } =
+    useEarnTableState(filterOptionValues);
 
   // Both tables run through the same filters and share one sort, so the two
   // sections always read as one list split in two.
@@ -220,6 +213,10 @@ export function EarnPage() {
     () => sortEarnRows(filterEarnRows(unavailableRows, filters, chainSlugById), sort),
     [unavailableRows, filters, chainSlugById, sort]
   );
+
+  // What the filters are holding back from the main table — the figure the
+  // "Clear filters" control carries.
+  const hiddenRowCount = availableRows.length - visibleRows.length;
 
   const items = useMemo<EarnTableRowItem[]>(() => visibleRows.map(row => toTableRow(row)), [visibleRows]);
 
@@ -311,6 +308,28 @@ export function EarnPage() {
       <div className="mt-2 md:mt-3">
         <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
       </div>
+      {/* Escape hatch under the table (Figma 1980:45477): there once the filters
+          are actually holding rows back, and the count is how many — from the
+          table right above it, the geo-restricted section below keeps its own
+          tally out of it. A filter that hides nothing needs no escape hatch, so
+          the control never reads "(0)". */}
+      {hasActiveFilters && hiddenRowCount > 0 && (
+        <Button
+          variant="secondary"
+          size="m"
+          onClick={clearFilters}
+          data-testid="earn-clear-filters"
+          // The size recipe tucks a leading glyph in by 8px (the DS pads icons
+          // tighter than text); this comp insets it the full 16, so put the
+          // padding back.
+          className="mx-auto pr-6 [&>svg:first-child]:ml-0"
+        >
+          <FilterX className="size-4" />
+          <span>
+            <Trans>Clear filters</Trans> <span className="text-fgSecondary">({hiddenRowCount})</span>
+          </span>
+        </Button>
+      )}
       {/* "Products unavailable in the US" (1036:201473) — same table, dimmed and
           inert, always last on the page. Hidden entirely when the region (or
           the active filters) leaves nothing to list. When the geo lookup never

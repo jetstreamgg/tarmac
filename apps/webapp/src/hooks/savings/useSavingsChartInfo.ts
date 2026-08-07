@@ -3,7 +3,7 @@ import { parseEther } from 'viem';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { useChainId } from 'wagmi';
-import { formatBaLabsUrl } from '../helpers';
+import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
 import { sUsdsAddress } from './useReadSavingsUsds';
 import { ReadHook } from '../hooks';
 
@@ -30,18 +30,8 @@ function transformBaLabsChartData(results: SavingsChartInfo[]): SavingsChartInfo
 
 async function fetchSavingsChartInfo(url: URL): Promise<SavingsChartInfoParsed[]> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const data: { results: SavingsChartInfo[] } = await response.json();
-
-    const result = transformBaLabsChartData(data?.results || []);
-
-    return result;
+    // Paged: this endpoint caps a response at 1000 rows whatever p_size asks for.
+    return transformBaLabsChartData(await fetchBaLabsPages<SavingsChartInfo>(url));
   } catch (error) {
     console.error('Error fetching BaLabs data:', error);
     return [];

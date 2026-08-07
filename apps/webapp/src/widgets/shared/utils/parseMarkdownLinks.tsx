@@ -35,13 +35,9 @@ function isSafeUrlScheme(url: string): boolean {
  * - Links with unsafe schemes (javascript:, data:, etc.) are rendered as non-clickable text
  *
  * @param text - The text containing markdown links
- * @param onExternalLinkClicked - Optional callback for external link clicks
  * @returns React nodes with parsed links
  */
-export function parseMarkdownLinks(
-  text: string | undefined | null,
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void
-): React.ReactNode {
+export function parseMarkdownLinks(text: string | undefined | null): React.ReactNode {
   if (!text) return '';
 
   const parts: React.ReactNode[] = [];
@@ -96,7 +92,6 @@ export function parseMarkdownLinks(
           href={url}
           className="light:hover:text-text hover:text-white hover:underline"
           showIcon={false}
-          onExternalLinkClicked={onExternalLinkClicked}
         >
           {linkText}
         </ExternalLink>

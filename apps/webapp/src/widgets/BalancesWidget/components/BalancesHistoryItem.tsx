@@ -16,7 +16,7 @@ import { getTitle } from '../lib/getTitle';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
 import { getHistoryRightText } from '../lib/getHistoryRightText';
 import { Avatar, AvatarImage } from '@/widgets/components/ui/avatar';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useChainImage } from '@/widgets/shared/hooks/useChainImage';
 
 interface BalancesHistoryItemProps {
@@ -29,7 +29,6 @@ interface BalancesHistoryItemProps {
   tradeFromToken?: string;
   rewardContract?: `0x${string}`;
   item: CombinedHistoryItem;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }
 
 export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
@@ -41,8 +40,7 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
   savingsToken,
   tradeFromToken,
   rewardContract,
-  item,
-  onExternalLinkClicked
+  item
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const { data: rewardContractTokens, isLoading: isLoadingRewardContractTokens } =
@@ -67,13 +65,7 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
   const curveBadgeSrc = 'history-icons/curve-badge.svg';
 
   return (
-    <ExternalLink
-      href={href}
-      showIcon={false}
-      className="w-full"
-      wrapperClassName="w-full justify-stretch"
-      onExternalLinkClicked={onExternalLinkClicked}
-    >
+    <ExternalLink href={href} showIcon={false} className="w-full" wrapperClassName="w-full justify-stretch">
       <Card
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

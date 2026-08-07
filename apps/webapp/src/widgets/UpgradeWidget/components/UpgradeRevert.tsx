@@ -32,7 +32,6 @@ type Props = WidgetProps & {
   onOriginInputChange: (val: bigint, userTriggered?: boolean) => void;
   onMenuItemChange?: (token: Token) => void;
   isConnectedAndEnabled: boolean;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   disallowedFlow?: string;
   mkrSkyFee?: bigint;
   isFeeLoading?: boolean;

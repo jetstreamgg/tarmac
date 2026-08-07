@@ -124,7 +124,6 @@ describe('legacyPathToLocation', () => {
     expect(legacyPathToLocation('/convert/trade')).toBeNull();
     expect(legacyPathToLocation('/convert/upgrade')).toBeNull();
     expect(legacyPathToLocation('/seal-engine')).toBeNull();
-    expect(legacyPathToLocation('/batch-transactions-legal-notice')).toBeNull();
     expect(legacyPathToLocation('/dev')).toBeNull();
   });
 

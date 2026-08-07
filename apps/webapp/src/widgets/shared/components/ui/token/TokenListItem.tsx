@@ -1,5 +1,5 @@
 import { Button } from '@/widgets/components/ui/button';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { positionAnimations } from '@/widgets/shared/animation/presets';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { HStack } from '../layout/HStack';
@@ -90,8 +90,8 @@ export function TokenListItem({
             <VStack className="h-9 items-end justify-between p-0">
               {isLoading ? (
                 <>
-                  <Skeleton className="bg-surface h-4 w-20" />
-                  <Skeleton className="bg-surface h-4 w-5" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-5" />
                 </>
               ) : (
                 <>

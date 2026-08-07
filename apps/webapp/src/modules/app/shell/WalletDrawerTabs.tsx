@@ -1,7 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trans } from '@lingui/react/macro';
 import { BalancesHistory } from '@/widgets';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { WalletDrawerAssets } from './WalletDrawerAssets';
 
 enum WalletDrawerTab {
@@ -11,8 +10,6 @@ enum WalletDrawerTab {
 
 /** Assets/Activity tabs: wallet token balances with earn CTAs, and the shared history widget. */
 export function WalletDrawerTabs() {
-  const { onExternalLinkClicked } = useConfigContext();
-
   return (
     <Tabs defaultValue={WalletDrawerTab.ASSETS} className="flex min-h-0 flex-1 flex-col">
       {/* Base = the M4.6 mobile panel (20px content inset via the body's pl-3
@@ -35,12 +32,7 @@ export function WalletDrawerTabs() {
         value={WalletDrawerTab.ACTIVITY}
         className="scrollbar-thin-always min-h-0 flex-1 overflow-auto px-2 md:px-4"
       >
-        <BalancesHistory
-          onExternalLinkClicked={onExternalLinkClicked}
-          showAllNetworks={true}
-          className="mt-0"
-          useInfiniteScroll={true}
-        />
+        <BalancesHistory showAllNetworks={true} className="mt-0" useInfiniteScroll={true} />
       </TabsContent>
     </Tabs>
   );

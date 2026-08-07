@@ -10,10 +10,25 @@ import { Chain } from 'viem';
 
 export { cn } from './cn';
 
-export type FooterLink = { url: string; name: string; highlight?: string };
+export type FooterLink = {
+  url: string;
+  name: string;
+  /**
+   * Retired. It only ever marked the promoted Careers button, which APP-456 #4
+   * removed — entries still carrying it are dropped, so the link disappears
+   * without waiting on a deploy-config edit. Kept on the type because the env
+   * var is deployment-owned and may still list it.
+   */
+  highlight?: string;
+};
 
 let footerLinksParseErrorReported = false;
 
+/**
+ * The legal/informational links, parsed from the deployment's
+ * `VITE_FOOTER_LINKS`. Promoted (`highlight`) entries are filtered out — see
+ * {@link FooterLink}.
+ */
 export function getFooterLinks(): FooterLink[] {
   let footerLinks: FooterLink[] = [
     { url: '', name: '' },
@@ -34,7 +49,7 @@ export function getFooterLinks(): FooterLink[] {
       });
     }
   }
-  return footerLinks;
+  return footerLinks.filter(link => link.highlight !== 'true');
 }
 
 /**

@@ -4,6 +4,7 @@ import { useOverallSkyData, useUsdsDaiData } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { PortfolioTotalsChart } from './PortfolioTotalsChart';
@@ -98,7 +99,7 @@ function Stat({
           {value}
         </span>
       ) : (
-        <span className="bg-surface h-5 w-24 animate-pulse rounded" />
+        <Skeleton className="h-5 w-24 rounded" />
       )}
     </div>
   );

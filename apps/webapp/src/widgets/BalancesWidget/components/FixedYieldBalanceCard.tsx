@@ -13,7 +13,7 @@ import {
   InteractiveStatsCardWithMarketAccordion,
   MarketBalanceForAccordion
 } from '@/widgets/shared/components/ui/card/InteractiveStatsCardWithMarketAccordion';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { RateLineWithArrow } from '@/widgets/shared/components/ui/RateLineWithArrow';
 

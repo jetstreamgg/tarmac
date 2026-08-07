@@ -334,6 +334,55 @@ describe('useStUsdsLaunch — Curve withdraw calldata parity', () => {
   });
 });
 
+describe('useStUsdsLaunch — Curve withdraw slippage baseline', () => {
+  beforeEach(() => {
+    h.capturedCalls = [];
+    h.nativeAllowance = HAS_ALLOWANCE;
+    h.curveHasAllowance = { USDS: false, stUSDS: true }; // elide the approve, leaving just the exchange
+  });
+  afterEach(() => cleanup());
+
+  // The parity tests above pass the same value for `amount` and `expectedOutput`, so
+  // they cannot tell which one min_dy came from. On a Max withdraw the two are seeded
+  // by separate provider selections and can disagree: min_dy has to track the quote
+  // whose stUSDS input is actually being swapped, or the floor sits below the real output.
+  it('derives min_dy from the routed quote output, not the UI amount', () => {
+    const UI_AMOUNT = parseUnits('995', 18);
+    const QUOTE_OUT = parseUnits('1000', 18);
+
+    const orch = captureOrchestratorCalls({
+      flow: 'withdraw',
+      amount: UI_AMOUNT,
+      selectedProvider: StUsdsProviderType.CURVE,
+      expectedOutput: QUOTE_OUT,
+      stUsdsAmount: WITHDRAW_STUSDS_IN
+    });
+
+    const minOutput = calculateMinOutputWithSlippage(QUOTE_OUT, STUSDS_PROVIDER_CONFIG.maxSlippageBps);
+    expect(orch.find(c => c.functionName === 'exchange')?.args).toEqual([
+      1n,
+      0n,
+      WITHDRAW_STUSDS_IN,
+      minOutput,
+      TEST_ADDRESS
+    ]);
+  });
+
+  // calculateMinOutputWithSlippage has no zero guard, so an absent quote would encode
+  // min_dy = 0 and accept any output at all.
+  it('routes no swap when the quote output is unavailable', () => {
+    const orch = captureOrchestratorCalls({
+      flow: 'withdraw',
+      amount: parseUnits('995', 18),
+      selectedProvider: StUsdsProviderType.CURVE,
+      expectedOutput: 0n,
+      stUsdsAmount: WITHDRAW_STUSDS_IN
+    });
+
+    expect(orch).toEqual([]);
+  });
+});
+
 describe('useStUsdsLaunch — native withdraw params parity (useWriteContractFlow seam)', () => {
   beforeEach(() => {
     h.capturedCalls = [];
