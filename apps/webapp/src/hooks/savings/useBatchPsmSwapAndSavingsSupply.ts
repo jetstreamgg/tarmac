@@ -31,8 +31,10 @@ import { useTransactionFlow } from '../shared/useTransactionFlow';
  * `tin` is 0. A nonzero `tin` makes `sellGem` return LESS than the wad below, and
  * the deposit then fails against a swap that has already landed (atomic under
  * EIP-5792, but stranding USDS in the wallet on the sequential path).
- * `useUsdcSupplyGate` in `modules/savings/hooks` is that gate; `useSavingsLaunch`
- * is the only caller and routes through it. Any new caller must do the same.
+ * `useUsdcSupplyGate` in `modules/savings/hooks` is that gate, and `useSavingsLaunch`
+ * — the only caller — folds it into the `enabled` it passes here, so nothing that
+ * routes through the orchestrator can arm an ungated engine. Any caller reaching
+ * for this hook directly must do the same.
  */
 export function useBatchPsmSwapAndSavingsSupply({
   amount,

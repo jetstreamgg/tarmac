@@ -24,6 +24,7 @@ import { formatNumber, isL2ChainId, math } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { useUsdcSupplyGate } from './useUsdcSupplyGate';
 
 export type SavingsLaunchFlow = 'supply' | 'withdraw';
 
@@ -100,7 +101,7 @@ export interface UseSavingsLaunchResult {
  *    daiToUsds → optional approve-USDS → deposit) — the multi-step path
  *  - supply + USDC (mainnet) → `useBatchPsmSwapAndSavingsSupply` (optional approve-USDC →
  *    psmWrapper.sellGem → optional approve-USDS → deposit) — the DAI path's shape with
- *    the PSM standing in for the upgrade
+ *    the PSM standing in for the upgrade, armed only while `useUsdcSupplyGate` is open
  *  - supply        (L2)      → `useBatchPsmSwapExactIn` (optional approve →
  *    psm.swapExactIn(token → sUSDS), referralCode as bigint)
  *  - withdraw      (mainnet) → `useSavingsWithdraw` (`max` resolves via maxWithdraw(owner))
@@ -147,6 +148,17 @@ export function useSavingsLaunch({
   // What the USDC supply's USDS legs (approve + deposit) actually spend — the
   // wrapper mints `amount * 1e12` USDS at a zero fee.
   const usdcSupplyUsdsAmount = isMainnetUsdc ? math.convertUSDCtoWad(amount) : amount;
+
+  // The PSM-wrapper switches the USDC leg inherits (live / sell-direction halt /
+  // `tin`). Read HERE, not just in the form layer, so the invariant the engine
+  // declares as a precondition is enforced at the seam that arms it: a nonzero
+  // `tin` makes `sellGem` under-deliver and the sequential path would land the
+  // swap and then fail the deposit. Off mainnet the wrapper has no address, the
+  // reads stay disabled, and the gate never reaches an armed engine (`enabled`
+  // already requires `isMainnetUsdc`). TanStack dedupes these with the form's own
+  // copy, so the surfaces that already gate their confirm pay nothing for it.
+  const usdcGate = useUsdcSupplyGate();
+  const usdcGateOpen = usdcGate.ready && !usdcGate.blockedReason;
 
   // READ ONLY — used solely to label the modal's approve steps. The approve/deposit/swap
   // calls (and the USDT/allowance derivation, landmine #1) are built entirely inside
@@ -216,7 +228,7 @@ export function useSavingsLaunch({
   const usdcSupplyHook = useBatchPsmSwapAndSavingsSupply({
     amount,
     ref: referralCode,
-    enabled: isMainnetUsdc,
+    enabled: isMainnetUsdc && usdcGateOpen,
     shouldUseBatch,
     ...txCallbacks
   });

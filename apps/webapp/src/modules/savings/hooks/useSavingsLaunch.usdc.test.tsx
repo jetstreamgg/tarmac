@@ -25,7 +25,12 @@ const h = vi.hoisted(() => ({
   // (useTokenAllowance, keyed on the spender below). Both derivations live inside
   // the engine; the test only controls the on-chain values they read.
   usdsAllowance: 0n as bigint | undefined,
-  usdcAllowance: 0n as bigint | undefined
+  usdcAllowance: 0n as bigint | undefined,
+  // The three PSM-wrapper switches behind `useUsdcSupplyGate`. Default to the open
+  // path (live, unhalted, free) — the blocked branches are driven per test.
+  live: 1n as bigint | undefined,
+  tin: 0n as bigint | undefined,
+  halted: 0n as bigint | undefined
 }));
 
 type RawCall = {
@@ -149,6 +154,16 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false })
 }));
 
+// The PSM-wrapper reads `useUsdcSupplyGate` is made of. The orchestrator folds the
+// gate into the USDC engine's `enabled`, so these decide whether the engine is armed
+// at all — not just what the form renders.
+vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
+  useUsdsPsmWrapperLive: () => ({ data: h.live }),
+  useUsdsPsmWrapperTin: () => ({ data: h.tin }),
+  useUsdsPsmWrapperTout: () => ({ data: 0n }),
+  useUsdsPsmWrapperHalted: () => ({ data: h.halted })
+}));
+
 import { TOKENS, useBatchPsmSwapAndSavingsSupply } from '@/hooks';
 import { useSavingsLaunch } from './useSavingsLaunch';
 
@@ -194,6 +209,9 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply calldata parity', ()
     h.launchMock.mockClear();
     h.usdsAllowance = 0n;
     h.usdcAllowance = 0n;
+    h.live = 1n;
+    h.tin = 0n;
+    h.halted = 0n;
   });
   afterEach(() => cleanup());
 
@@ -267,6 +285,9 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply launch() config', ()
     h.launchMock.mockClear();
     h.usdsAllowance = 0n;
     h.usdcAllowance = 0n;
+    h.live = 1n;
+    h.tin = 0n;
+    h.halted = 0n;
   });
   afterEach(() => cleanup());
 
@@ -324,5 +345,68 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply launch() config', ()
     expect(h.activeSupplyExecute).toHaveBeenCalledTimes(1);
     expect(h.idleSupplyExecute).not.toHaveBeenCalled();
     expect(h.withdrawExecute).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The PSM gate is not advisory copy — the orchestrator folds it into the engine's
+ * `enabled`, so a closed gate means the swap-and-supply engine is never armed and
+ * `onConfirm` can't send calldata no matter which surface (or future caller) drove
+ * it. Without this the invariant lived only in `SavingsModalForm`'s disabled button:
+ * a nonzero `tin` would land `sellGem` and then fail the deposit, stranding USDS.
+ */
+describe('useSavingsLaunch — the USDC engine is armed only while the PSM gate is open', () => {
+  /** What mainnet's `HALTED()` actually returns — a max-uint256 sentinel, not a flag. */
+  const MAINNET_HALTED_SENTINEL = 2n ** 256n - 1n;
+  const SELL_GEM_HALTED = 2n;
+
+  beforeEach(() => {
+    h.capturedCalls = [];
+    h.activeSupplyExecute.mockClear();
+    h.idleSupplyExecute.mockClear();
+    h.launchMock.mockClear();
+    // Both allowances present, so nothing but the gate can hold the engine back.
+    h.usdsAllowance = HAS_ALLOWANCE;
+    h.usdcAllowance = HAS_ALLOWANCE;
+    h.live = 1n;
+    h.tin = 0n;
+    h.halted = 0n;
+  });
+  afterEach(() => cleanup());
+
+  it.each([
+    ['a nonzero fee (tin > 0)', () => (h.tin = 1n)],
+    ['the wrapper cased off (live !== 1)', () => (h.live = 0n)],
+    ['the sell direction halted', () => (h.halted = SELL_GEM_HALTED)],
+    ['the fee read still in flight', () => (h.tin = undefined)],
+    ['the live read still in flight', () => (h.live = undefined)],
+    ['the HALTED read still in flight', () => (h.halted = undefined)]
+  ])('sends nothing with %s', (_label, close) => {
+    close();
+    const { result } = renderHook(() =>
+      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usdc, amount: AMOUNT, referralCode: REF })
+    );
+
+    // Nothing reached the transaction flow: no engine was enabled.
+    expect(h.capturedCalls).toEqual([]);
+
+    act(() => result.current.launch());
+    h.launchMock.mock.calls[0][0].onConfirm();
+    expect(h.activeSupplyExecute).not.toHaveBeenCalled();
+    expect(h.idleSupplyExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it('arms the engine on mainnet, where HALTED reads as the max-uint sentinel', () => {
+    // The branch production actually takes — max-uint is "no direction halted".
+    h.halted = MAINNET_HALTED_SENTINEL;
+    const { result } = renderHook(() =>
+      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usdc, amount: AMOUNT, referralCode: REF })
+    );
+
+    expect(h.capturedCalls.map(c => c.functionName)).toEqual(['sellGem', 'deposit']);
+
+    act(() => result.current.launch());
+    h.launchMock.mock.calls[0][0].onConfirm();
+    expect(h.activeSupplyExecute).toHaveBeenCalledTimes(1);
   });
 });

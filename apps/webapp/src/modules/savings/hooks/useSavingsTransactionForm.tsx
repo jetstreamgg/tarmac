@@ -213,7 +213,10 @@ export function useSavingsTransactionForm({
   const usdcGate = useUsdcSupplyGate();
   const usdcBlockedReason = isMainnetUsdc ? usdcGate.blockedReason : undefined;
   // Hold the confirm until the PSM reads answer — a fee that hasn't loaded yet
-  // would otherwise let a swap go out that leaves the deposit short.
+  // would otherwise let a swap go out that leaves the deposit short. `useSavingsLaunch`
+  // reads the same gate into the engine's `enabled`, so a blocked path can't execute
+  // even if a surface forgets this; what lives here is the *user-facing* half —
+  // the disabled confirm and the reason rendered under the amount field.
   const usdcGateReady = !isMainnetUsdc || (usdcGate.ready && !usdcGate.blockedReason);
 
   const minAmountOut = useSavingsSupplyMinAmountOut({ amount, originToken });
