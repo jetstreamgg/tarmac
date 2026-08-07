@@ -4,7 +4,7 @@ import { useFormatDates } from '@/hooks';
 import { useLingui } from '@lingui/react';
 import { CustomPagination } from '@/widgets/shared/components/ui/pagination/CustomPagination';
 import { BalancesHistoryItem } from './BalancesHistoryItem';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { VStack } from '@/widgets/shared/components/ui/layout/VStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';

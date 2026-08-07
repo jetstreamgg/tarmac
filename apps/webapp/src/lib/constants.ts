@@ -14,8 +14,20 @@ export enum QueryParams {
   Flow = 'flow',
   StakeTab = 'stake_tab',
   Tab = 'tab',
+  /**
+   * The three URL-driven Earn Opportunities filters (APP-457). They live in the
+   * search string rather than component state so history restores them — the
+   * browser back button and the product page's "Back to products" both land on
+   * an /earn entry that still carries them — while `retainOnNavigate` drops
+   * them, which is what makes the navbar's Earn button a reset. The risk filter
+   * is a saved preference and stays in localStorage.
+   */
   /** Earn list supply-token filter, e.g. /earn?token=USDS. */
   Token = 'token',
+  /** Earn list network filter, a chain slug: /earn?chain=ethereum. */
+  Chain = 'chain',
+  /** Earn list product-kind filter, e.g. /earn?product=savings. */
+  Product = 'product',
   /**
    * Deep link to the Upgrade DAI/MKR modal, e.g. /?upgrade=mkr — consumed
    * (opened + stripped) by useUpgradeDeepLink on any module route.
