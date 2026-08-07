@@ -22,6 +22,7 @@ import { ExternalLink } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ProductTransactionsTable,
@@ -331,12 +332,9 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <Trans>My activity</Trans>
         </h3>
-        <div className="flex flex-col items-center gap-4 py-6">
-          <TransactionsEmpty aria-hidden />
-          <p className="text-fgSecondary font-circle max-w-[224px] text-center text-sm leading-4 font-medium tracking-[-0.28px]">
-            <Trans>You don&apos;t have any transactions made yet.</Trans>
-          </p>
-        </div>
+        <EmptyState illustration={<TransactionsEmpty aria-hidden />}>
+          <Trans>You don&apos;t have any transactions made yet.</Trans>
+        </EmptyState>
       </Card>
     );
   }
@@ -403,7 +401,6 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         onPageChange={(page, totalPages) => {
           if (hasNextPage && page >= totalPages) fetchNextPage();
         }}
-        emptyLabel={<Trans>You don&apos;t have any transactions made yet.</Trans>}
       />
     </div>
   );

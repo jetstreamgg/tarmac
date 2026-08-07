@@ -1,4 +1,4 @@
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart } from '@/widgets/shared/components/icons/BarChart';
 import { ChartPaper } from '@/widgets/shared/components/icons/ChartPaper';
 import { TextPaper } from '@/widgets/shared/components/icons/TextPaper';
