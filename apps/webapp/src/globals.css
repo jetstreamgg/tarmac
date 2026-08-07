@@ -456,47 +456,16 @@
    * borderTertiary is theme-aware (lilac 30% dark, periwinkle 75% light),
    * which is what keeps it visible in light mode; the old utilities hardcoded
    * --transparent-white-15 and went invisible on light surfaces.
+   *
+   * `:root *` and not `*`: html must NOT match, so the page scrollbar keeps
+   * the UA's own width and colors. Body does match, but that is harmless —
+   * the viewport bar reads its styling from the root element, not from body
+   * (measured: body on `thin` still yields a 15px gutter; `thin` on the root
+   * yields 11px).
    */
   :root * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-borderTertiary) transparent;
-  }
-
-  /*
-   * The viewport bar is the exception: full width, UA-default colors, and
-   * permanently present. Reserving it unconditionally is what stops the
-   * content box changing width between a page that overflows and one that
-   * doesn't (/convert has nothing to scroll) — most visible across the page
-   * view transition, whose two snapshots would otherwise be captured at
-   * different widths.
-   *
-   * `overflow-y: scroll` is what does the reserving. `scrollbar-gutter:
-   * stable` does NOT work here: on <html> in Chrome it computes to `stable`
-   * and reserves nothing, because the root propagates its overflow to the
-   * viewport but is not itself a scroll container, and the gutter property
-   * only applies to scroll containers.
-   *
-   * html is not matched by the `:root *` rule above, so it keeps the initial
-   * `scrollbar-width: auto` and the UA's own colors — the "styled normally"
-   * half of the brief. The track being opaque is what makes the bar visible
-   * on a page with nothing to scroll.
-   */
-  html {
-    overflow-y: scroll;
-  }
-
-  /*
-   * Radix's dialog/sheet scroll lock (react-remove-scroll) injects
-   * `body[data-scroll-locked] { margin-right: 15px !important }` to
-   * compensate for the scrollbar it removes by clipping the body. With the
-   * bar pinned on the root there is nothing to give back, so that margin
-   * lands as a real 15px shift of the whole page on every modal open. Their
-   * style tag is injected into <head> after this file and is itself
-   * !important, so neutralising it needs both the extra specificity and the
-   * !important.
-   */
-  html body[data-scroll-locked] {
-    margin-right: 0 !important;
   }
 
   /* Each face declares its real weight. Without the descriptor every face
@@ -542,9 +511,11 @@
        so the correct scheme is in place by the time anything renders.
 
        This does NOT change whether a scrollbar reserves layout space; that
-       stays an OS/browser decision. It only recolors the bar we already get,
-       which is what the viewport scrollbar relies on — it is left on the UA's
-       own colors (see the `html` rule near the top of this layer). */
+       stays an OS/browser decision. It only recolors the bar we already get —
+       which is the whole styling the viewport scrollbar gets, since the
+       `:root *` rule below deliberately does not match html. Verified: the
+       viewport bar takes its width from the root, not from body, so body
+       inheriting `thin` does not narrow it (15px vs 11px measured). */
     color-scheme: dark;
 
     --brand-dark-purple: 26 24 85;
