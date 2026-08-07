@@ -42,6 +42,12 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
+// Unrestricted region: the context's provider-less default answers false for
+// every module, which would resolve all in-place modals to navigation.
+vi.mock('@/modules/geo-config/hooks/useGeoConfig', () => ({
+  useGeoConfig: () => ({ isModuleEnabled: () => true })
+}));
+
 // The savings trigger under test — capture its opener.
 vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
   useSavingsModal: () => ({ openSupply: h.openSupply, openWithdraw: h.openWithdraw })
