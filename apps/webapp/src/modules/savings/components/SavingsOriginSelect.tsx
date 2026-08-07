@@ -8,9 +8,10 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 /**
  * Supply origin tokens. DAI (mainnet) routes `useSavingsLaunch` to the
- * upgrade-and-supply engine (DAI → USDS → deposit); USDC (L2) routes to the PSM
- * swap. Withdraw is USDS-only on mainnet (single option → static chip) and gains a
- * USDS/USDC destination choice on L2 (slice 05).
+ * upgrade-and-supply engine (DAI → USDS → deposit); USDC routes to a PSM swap —
+ * the wrapper's `sellGem` on mainnet, `swapExactIn` on L2 — before the deposit.
+ * Withdraw is USDS-only on mainnet (single option → static chip; the PSM leg is
+ * supply-only) and gains a USDS/USDC destination choice on L2 (slice 05).
  */
 export type OriginSymbol = 'USDS' | 'DAI' | 'USDC';
 
@@ -20,7 +21,7 @@ export const ORIGIN_TOKENS: Record<OriginSymbol, Token> = {
   USDC: TOKENS.usdc
 };
 
-export const MAINNET_SUPPLY_ORIGINS: OriginSymbol[] = ['USDS', 'DAI'];
+export const MAINNET_SUPPLY_ORIGINS: OriginSymbol[] = ['USDS', 'DAI', 'USDC'];
 export const L2_SUPPLY_ORIGINS: OriginSymbol[] = ['USDS', 'USDC'];
 // L2 withdraw lets the user pick the destination token (USDS / USDC); mainnet
 // withdraw is always USDS.
