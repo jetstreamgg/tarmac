@@ -256,8 +256,12 @@ export function VaultModalForm({
           onInput={onInput}
           disabled={!isConnected}
           balance={
+            // "Balance" would lie when liquidity caps the withdrawable amount below
+            // the position (e.g. shows 500 while the user holds 1,000) — call the
+            // figure "Available" in exactly that case, "Balance" everywhere else.
             <>
-              <Trans>Balance</Trans>: {isConnected ? formatAsset(available) : NO_VALUE}
+              {!isSupply && isLiquidityConstrained ? <Trans>Available</Trans> : <Trans>Balance</Trans>}:{' '}
+              {isConnected ? formatAsset(available) : NO_VALUE}
             </>
           }
           onPercent={setPercentAmount}
