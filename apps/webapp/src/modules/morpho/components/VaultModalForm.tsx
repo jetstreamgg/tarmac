@@ -147,13 +147,18 @@ export function VaultModalForm({
       ? { description: t`The amount of ${assetToken.symbol} currently available for instant withdrawal.` }
       : undefined;
 
+  // All withdrawable liquidity is gone: the notice below carries the whole story
+  // (in error red — it blocks the action), so the inline over-limit error is
+  // suppressed rather than repeating the identical sentence under the input.
+  const zeroLiquidity = !isSupply && isLiquidityConstrained && available === 0n;
+
   // Withdraw-only liquidity notice, one of three states (wording mirrors the old
   // widget's SupplyWithdraw): all liquidity gone / liquidity figure unknown /
-  // position partially covered. Amber only for the hard-blocked state.
+  // position partially covered. Error red only for the hard-blocked state.
   const liquidityNotice = !isSupply
-    ? isLiquidityConstrained && available === 0n
+    ? zeroLiquidity
       ? {
-          tone: 'text-amber-400',
+          tone: 'text-error',
           testId: 'vault-modal-liquidity-zero-notice',
           text: <Trans>Withdrawals are temporarily unavailable due to liquidity constraints.</Trans>
         }
@@ -271,19 +276,14 @@ export function VaultModalForm({
             <TokenSelectorPill tokens={[assetToken]} selected={assetToken} testId="vault-modal-asset" />
           }
           error={
-            insufficient ? (
+            insufficient && !zeroLiquidity ? (
               <Text className="text-error text-sm" data-testid="vault-modal-amount-error">
                 {isSupply ? (
                   <Trans>Insufficient balance</Trans>
                 ) : isLiquidityConstrained ? (
-                  available > 0n ? (
-                    <Trans>
-                      Insufficient liquidity. Maximum available is {formatAsset(available)}{' '}
-                      {assetToken.symbol}.
-                    </Trans>
-                  ) : (
-                    <Trans>Withdrawals are temporarily unavailable due to liquidity constraints.</Trans>
-                  )
+                  <Trans>
+                    Insufficient liquidity. Maximum available is {formatAsset(available)} {assetToken.symbol}.
+                  </Trans>
                 ) : (
                   <Trans>Amount exceeds your position</Trans>
                 )}
