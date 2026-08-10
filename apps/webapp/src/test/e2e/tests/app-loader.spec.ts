@@ -23,40 +23,38 @@ const readDecisions = (page: import('@playwright/test').Page) =>
       .map(k => JSON.parse(localStorage.getItem(k)!));
   }, DECISION_PREFIX);
 
+/**
+ * A wallet outside the funded pool: an empty wallet pins the settled decision
+ * to the simulate pitch + Idle tab, where pool accounts carry positions. The
+ * mock connector needs no key, and the loader flow needs no funds.
+ */
+const throwawayAddress = (): string =>
+  `0x${Array.from(crypto.getRandomValues(new Uint8Array(20)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')}`;
+
 test.describe('app loader and portfolio decision cache', () => {
   test('first connect plays the loader once and caches the settled decision', async ({ isolatedPage }) => {
+    // Override the pool account injected by the fixture (page init scripts
+    // run after the context's, so this write wins) with the empty wallet.
+    await isolatedPage.addInitScript((account: string) => {
+      (window as unknown as { __TEST_ACCOUNT__: string }).__TEST_ACCOUNT__ = account;
+    }, throwawayAddress());
     await isolatedPage.goto('/portfolio');
 
     // Disconnected entry: no loader.
     await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0);
 
-    // The connect flow is inlined (rather than the shared helper) so each
-    // stage of the loader/terms ordering can be asserted. The terms modal only
-    // shows for addresses that never signed — acceptance persists per-address
-    // on the staging API and pool addresses recur across runs — so the
-    // must-wait-behind-terms assertion runs when the modal actually appears
-    // (it is also pinned deterministically in the AppLoader component tests).
+    // Terms are auto-accepted in every e2e environment (VITE_SKIP_AUTH_CHECK,
+    // set in .env locally and in all the e2e workflows), so the modal never
+    // appears here and the cover starts the moment the wallet connects —
+    // catch it live (a ~1.6s window). The real terms-modal flow, and the
+    // loader waiting behind it, is pinned deterministically in
+    // AppLoaderTermsFlow.test.tsx at the component level.
     await isolatedPage.getByRole('button', { name: 'Connect Mock Wallet' }).first().click();
+    await expect(isolatedPage.getByTestId('app-loader')).toBeVisible({ timeout: 5000 });
 
-    const termsEnd = isolatedPage.getByTestId('end-of-terms');
-    const termsShown = await termsEnd
-      .waitFor({ state: 'visible', timeout: 5000 })
-      .then(() => true)
-      .catch(() => false);
-    if (termsShown) {
-      // Connected but terms pending: the loader stays down.
-      await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0);
-      await termsEnd.scrollIntoViewIfNeeded();
-      await isolatedPage.getByRole('checkbox').click();
-      await isolatedPage.getByRole('button', { name: 'Agree and Sign' }).click();
-      // Only now does the cover come up — catch it live (a ~1.6s window).
-      // The skip path can't: the cover plays out while the modal wait above
-      // times out, so there it is verified through its traces below.
-      await expect(isolatedPage.getByTestId('app-loader')).toBeVisible({ timeout: 5000 });
-    }
-
-    // Terms settled (signed just now, or in an earlier run): the timeline has
-    // finished and left its traces — overlay unmounted, content revealed.
+    // The timeline hands off to the reveal and the overlay unmounts for good.
     await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0, { timeout: 10_000 });
     await expect(isolatedPage.locator('.page-transition')).toHaveClass(/animate-app-loader-content-reveal/);
     await expect
@@ -65,18 +63,13 @@ test.describe('app loader and portfolio decision cache', () => {
       })
       .not.toBeNull();
 
-    // The queries settle and the outcome lands in the per-address cache. Pool
-    // accounts are funded (a live savings position), so don't pin the outcome
-    // — assert a well-formed decision was written for this wallet.
+    // The queries settle and the outcome lands in the per-address cache. A
+    // fresh wallet is empty by construction, so the outcome is pinned: no
+    // position and nothing idle resolves to the simulate pitch + Idle tab.
     await expect
       .poll(async () => readDecisions(isolatedPage), { timeout: 30_000 })
-      .toMatchObject([
-        {
-          outcome: expect.stringMatching(/^(none|allocate|simulate)$/),
-          tab: expect.stringMatching(/^(supplied|idle)$/),
-          updatedAt: expect.any(Number)
-        }
-      ]);
+      .toMatchObject([{ outcome: 'simulate', tab: 'idle', updatedAt: expect.any(Number) }]);
+    await expect(isolatedPage.getByTestId('savings-tvl-callout')).toBeVisible();
 
     // One-shot: with the page settled and the flag written, the loader never
     // comes back within this page load.
