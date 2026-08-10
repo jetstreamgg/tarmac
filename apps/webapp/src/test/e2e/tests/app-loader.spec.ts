@@ -30,18 +30,40 @@ test.describe('app loader and portfolio decision cache', () => {
     // Disconnected entry: no loader.
     await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0);
 
-    await connectMockWalletAndAcceptTerms(isolatedPage);
+    // The connect flow is inlined (rather than the shared helper) so each
+    // stage of the loader/terms ordering can be asserted. The terms modal only
+    // shows for addresses that never signed — acceptance persists per-address
+    // on the staging API and pool addresses recur across runs — so the
+    // must-wait-behind-terms assertion runs when the modal actually appears
+    // (it is also pinned deterministically in the AppLoader component tests).
+    await isolatedPage.getByRole('button', { name: 'Connect Mock Wallet' }).first().click();
 
-    // The connect helper waits out the cover (~2.2s), so assert its traces:
-    // the played flag is set and the reveal ran on the page content.
+    const termsEnd = isolatedPage.getByTestId('end-of-terms');
+    const termsShown = await termsEnd
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
+    if (termsShown) {
+      // Connected but terms pending: the loader stays down.
+      await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0);
+      await termsEnd.scrollIntoViewIfNeeded();
+      await isolatedPage.getByRole('checkbox').click();
+      await isolatedPage.getByRole('button', { name: 'Agree and Sign' }).click();
+      // Only now does the cover come up — catch it live (a ~1.6s window).
+      // The skip path can't: the cover plays out while the modal wait above
+      // times out, so there it is verified through its traces below.
+      await expect(isolatedPage.getByTestId('app-loader')).toBeVisible({ timeout: 5000 });
+    }
+
+    // Terms settled (signed just now, or in an earlier run): the timeline has
+    // finished and left its traces — overlay unmounted, content revealed.
+    await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0, { timeout: 10_000 });
+    await expect(isolatedPage.locator('.page-transition')).toHaveClass(/animate-app-loader-content-reveal/);
     await expect
       .poll(async () => isolatedPage.evaluate((key: string) => localStorage.getItem(key), PLAYED_KEY), {
         timeout: 10_000
       })
       .not.toBeNull();
-    await expect(isolatedPage.locator('.page-transition')).toHaveClass(/animate-app-loader-content-reveal/);
-    // And it is gone once the timeline finished.
-    await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0);
 
     // The queries settle and the outcome lands in the per-address cache. Pool
     // accounts are funded (a live savings position), so don't pin the outcome
