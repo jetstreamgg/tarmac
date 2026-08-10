@@ -49,6 +49,11 @@ export type VaultLimits = {
   depositCapReached: boolean;
   /** True when the position is larger than what can be withdrawn right now. */
   isLiquidityConstrained: boolean;
+  /**
+   * True when the whole position is withdrawable right now, so a Max
+   * withdrawal may redeem the entire share balance.
+   */
+  isFullPositionWithdrawable: boolean;
   /** True when the provider's liquidity source settled without a figure. */
   isLiquidityDataUnavailable: boolean;
 };
@@ -117,12 +122,15 @@ export function computeVaultLimits({
 
   const redeemShares = usesMarketLiquidity ? shares : min(shares, maxRedeem ?? shares);
 
+  const isFullPositionWithdrawable = maxWithdrawInput !== undefined && maxWithdrawInput === position;
+
   return {
     maxDepositInput,
     maxWithdrawInput,
     redeemShares,
     depositCapReached,
-    isLiquidityConstrained: position > 0n && maxWithdrawInput !== undefined && maxWithdrawInput < position,
+    isLiquidityConstrained: position > 0n && maxWithdrawInput !== undefined && !isFullPositionWithdrawable,
+    isFullPositionWithdrawable,
     isLiquidityDataUnavailable: usesMarketLiquidity && liquidityKnown && availableLiquidity === undefined
   };
 }

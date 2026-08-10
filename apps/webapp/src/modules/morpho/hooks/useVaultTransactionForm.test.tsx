@@ -142,23 +142,34 @@ describe('useVaultTransactionForm Max routing (APP-488)', () => {
     expect(result.current.amountReady).toBe(false);
   });
 
-  it('liquidity figure unknown after settling: flags data-unavailable, Max stays a plain withdraw', () => {
+  it('liquidity figure unknown after settling: input stays open and Max still redeems all', () => {
     setVaultState({ liquidity: undefined });
     const { result } = renderForm();
 
     expect(result.current.isLiquidityDataUnavailable).toBe(true);
-    // Settled-but-empty liquidity falls back to the full position for the cap…
     act(() => result.current.setMaxAmount());
     expect(result.current.value).toBe('1000');
-    // …and the full position is withdrawable as far as we know, so no-dust applies.
+    // Deliberate: withdrawals aren't blocked on missing data — the contract
+    // enforces the real liquidity on submit.
     expect(result.current.engineParams.max).toBe(true);
   });
 
-  it('while the liquidity read is in flight the cap is held back and Max is not redeem-all', () => {
+  it('while the liquidity read is in flight the position backs the input and Max is a plain withdraw', () => {
     setVaultState({ liquidity: undefined, marketLoading: true });
     const { result } = renderForm();
 
-    expect(result.current.available).toBe(0n);
+    // The position stands in until the read lands — not a flashed 0.
+    expect(result.current.available).toBe(POSITION);
+    act(() => result.current.setMaxAmount());
+    expect(result.current.value).toBe('1000');
+    expect(result.current.engineParams.max).toBe(false);
+  });
+
+  it('any liquidity shortfall counts as constrained — the full-cover comparison is exact', () => {
+    setVaultState({ liquidity: POSITION - 1n });
+    const { result } = renderForm();
+
+    expect(result.current.isLiquidityConstrained).toBe(true);
     act(() => result.current.setMaxAmount());
     expect(result.current.engineParams.max).toBe(false);
   });

@@ -107,6 +107,7 @@ export function useVaultTransactionForm({
     maxWithdrawInput,
     redeemShares,
     isLiquidityConstrained,
+    isFullPositionWithdrawable,
     isLiquidityDataUnavailable
   } = computeVaultLimits({
     provider,
@@ -121,7 +122,9 @@ export function useVaultTransactionForm({
   });
 
   const position = vaultData?.userAssets ?? 0n;
-  const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? 0n);
+  // While the liquidity read is in flight the position backs the input (no
+  // "Balance: 0" flash); if liquidity settles lower the insufficient gate re-clamps.
+  const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? position);
   const isZero = amount === 0n;
   const insufficient = amount > available;
   const amountReady = isConnected && !isZero && !insufficient;
@@ -132,11 +135,10 @@ export function useVaultTransactionForm({
   };
   const setMaxAmount = () => {
     setValue(formatUnits(available, decimals));
-    // On withdraw, Max redeems the whole share balance (no dust) — but only when the
-    // full position is withdrawable. Under a liquidity constraint the input is capped
-    // below the position, and a redeem-all would revert against the missing liquidity
-    // (APP-488); the engine must run a plain withdraw of the capped amount instead.
-    setMax(!isSupply && maxWithdrawInput !== undefined && maxWithdrawInput === position);
+    // Max redeems the whole share balance (no dust) only when the full position
+    // is withdrawable; under a liquidity constraint the engine runs a plain
+    // withdraw of the cap instead — a redeem-all would revert (APP-488).
+    setMax(!isSupply && isFullPositionWithdrawable);
   };
   const setPercentAmount = (pct: number) => {
     if (pct >= 100) return setMaxAmount();
