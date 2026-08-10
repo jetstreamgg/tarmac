@@ -2,6 +2,7 @@ import { test as playwrightTest, expect, Browser, TestInfo, Page } from '@playwr
 import { accountPool } from './utils/accountPoolManager';
 import { mockRpcCalls } from './mock-rpc-call';
 import { mockVpnCheck } from './mock-vpn-check';
+import { formatCspViolations, installCspViolationCollector, readCspViolations } from './utils/cspViolations';
 
 type TestFixtures = {
   testAccount: `0x${string}`;
@@ -69,6 +70,8 @@ export const test = playwrightTest.extend<TestFixtures>({
       { account: testAccount }
     );
 
+    await installCspViolationCollector(context);
+
     // Create page from context
     const page = await context.newPage();
 
@@ -83,6 +86,13 @@ export const test = playwrightTest.extend<TestFixtures>({
     process.env.VITE_TEST_WORKER_INDEX = testInfo.workerIndex.toString();
 
     await use(page);
+
+    const cspViolations = await readCspViolations(page);
+    if (cspViolations.length > 0) {
+      throw new Error(
+        `CSP blocked resources (update CONTENT_SECURITY_POLICY in vite.config.ts):\n${formatCspViolations(cspViolations)}`
+      );
+    }
 
     // Cleanup
     delete process.env.VITE_TEST_ACCOUNT;
