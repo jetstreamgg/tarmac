@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   PORTFOLIO_DECISION_TTL_MS,
   hasAnyPortfolioDecision,
@@ -85,5 +85,20 @@ describe('portfolioDecisionCache', () => {
     expect(hasAnyPortfolioDecision()).toBe(false);
     localStorage.setItem(rawKey(OTHER), JSON.stringify({ outcome: 'none', tab: 'supplied', updatedAt: 0 }));
     expect(hasAnyPortfolioDecision()).toBe(true);
+  });
+
+  it('degrades to no-cache when storage is unusable (private mode)', () => {
+    const boom = () => {
+      throw new Error('denied');
+    };
+    vi.spyOn(localStorage, 'getItem').mockImplementation(boom);
+    vi.spyOn(localStorage, 'setItem').mockImplementation(boom);
+    vi.spyOn(localStorage, 'key').mockImplementation(boom);
+
+    expect(() => writePortfolioDecision(ADDRESS, { outcome: 'none', tab: 'supplied' })).not.toThrow();
+    expect(readPortfolioDecision(ADDRESS)).toBeNull();
+    expect(hasAnyPortfolioDecision()).toBe(false);
+
+    vi.restoreAllMocks();
   });
 });

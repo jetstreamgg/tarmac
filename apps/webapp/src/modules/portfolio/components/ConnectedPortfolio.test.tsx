@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConnectedPortfolio } from './ConnectedPortfolio';
 import {
@@ -31,7 +31,10 @@ const h = vi.hoisted(() => {
     supplyRow,
     address: '0x00000000000000000000000000000000000000aa' as string,
     marketplace: { rows: [] as ReturnType<typeof supplyRow>[], isLoading: true },
-    balances: { balances: [] as { amountUsd: number }[], isLoading: true },
+    balances: {
+      balances: [] as { symbol: string; chainId: number; amount: number; amountUsd: number }[],
+      isLoading: true
+    },
     skyData: { data: undefined as Record<string, string> | undefined, isLoading: true },
     geo: { savingsEnabled: true, isLoading: false }
   };
@@ -74,15 +77,25 @@ vi.mock('@/modules/ui/components/TokenIconStack', () => ({
 }));
 
 // The suite exercises which callout/tab the page decides on, so the sections
-// reduce to markers (the earnings card keeps its tab prop for assertions).
+// reduce to markers (the earnings card keeps its tab wiring and the banner its
+// idleUsd prop, for assertions on the decision plumbing).
 vi.mock('./SavingsTvlCallout', () => ({
   SavingsTvlCallout: () => <div data-testid="savings-tvl-callout" />
 }));
 vi.mock('./AllocateStablecoinsBanner', () => ({
-  AllocateStablecoinsBanner: () => <div data-testid="allocate-stablecoins-banner" />
+  AllocateStablecoinsBanner: ({ idleUsd }: { idleUsd: number | undefined }) => (
+    <div
+      data-testid="allocate-stablecoins-banner"
+      data-idle-usd={idleUsd === undefined ? 'loading' : String(idleUsd)}
+    />
+  )
 }));
 vi.mock('./StablecoinEarningsCard', () => ({
-  StablecoinEarningsCard: ({ tab }: { tab: string }) => <div data-testid="earnings-card" data-tab={tab} />
+  StablecoinEarningsCard: ({ tab, onTabChange }: { tab: string; onTabChange: (tab: string) => void }) => (
+    <div data-testid="earnings-card" data-tab={tab}>
+      <button data-testid="pick-supplied-tab" onClick={() => onTabChange('supplied')} />
+    </div>
+  )
 }));
 vi.mock('./PortfolioPositionsSection', () => ({
   PortfolioPositionsSection: () => <div data-testid="positions-section" />
@@ -112,7 +125,10 @@ const setLoading = () => {
 
 const setSettled = ({ depositedUsd, idleUsd }: { depositedUsd: number; idleUsd: number }) => {
   h.marketplace = { rows: depositedUsd > 0 ? [h.supplyRow(depositedUsd)] : [], isLoading: false };
-  h.balances = { balances: [{ amountUsd: idleUsd }], isLoading: false };
+  h.balances = {
+    balances: idleUsd > 0 ? [{ symbol: 'USDS', chainId: 1, amount: idleUsd, amountUsd: idleUsd }] : [],
+    isLoading: false
+  };
   h.skyData = { data: { skySavingsRatecRate: '0.045', skySavingsRateTvl: '2500000000' }, isLoading: false };
   h.geo = { savingsEnabled: true, isLoading: false };
 };
@@ -174,7 +190,10 @@ describe('ConnectedPortfolio decision cache', () => {
 
     expect(screen.getByTestId('savings-tvl-callout')).toBeTruthy();
     expect(screen.getByTestId('earnings-card').getAttribute('data-tab')).toBe('idle');
-    expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ outcome: 'none', tab: 'supplied' });
+    const rewritten = readPortfolioDecision(ADDRESS_A);
+    expect(rewritten).toMatchObject({ outcome: 'none', tab: 'supplied' });
+    // The rewrite restarts the TTL clock too.
+    expect(rewritten!.updatedAt).toBeGreaterThanOrEqual(Date.now() - 5000);
   });
 
   it('treats an expired cache entry as a first visit', () => {
@@ -197,6 +216,69 @@ describe('ConnectedPortfolio decision cache', () => {
     renderPage();
     expect(screen.queryByTestId('savings-tvl-callout')).toBeNull();
     expect(screen.queryByTestId('allocate-stablecoins-banner')).toBeNull();
+  });
+
+  it('renders a cached `none` instantly: no callouts, no statistics', () => {
+    writePortfolioDecision(ADDRESS_A, { outcome: 'none', tab: 'supplied' });
+    renderPage();
+    expect(screen.queryByTestId('savings-tvl-callout')).toBeNull();
+    expect(screen.queryByTestId('allocate-stablecoins-banner')).toBeNull();
+    expect(screen.queryByTestId('portfolio-statistics')).toBeNull();
+    expect(screen.getByTestId('earnings-card').getAttribute('data-tab')).toBe('supplied');
+  });
+
+  it('settling on idle stablecoins writes `allocate` and shows the banner', () => {
+    setSettled({ depositedUsd: 0, idleUsd: 5000 });
+    renderPage();
+    expect(screen.getByTestId('allocate-stablecoins-banner')).toBeTruthy();
+    expect(screen.queryByTestId('savings-tvl-callout')).toBeNull();
+    expect(screen.getByTestId('portfolio-statistics')).toBeTruthy();
+    expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ outcome: 'allocate', tab: 'idle' });
+  });
+
+  it('settling on an empty wallet writes `simulate` and keeps the callout', () => {
+    setSettled({ depositedUsd: 0, idleUsd: 0 });
+    renderPage();
+    expect(screen.getByTestId('savings-tvl-callout')).toBeTruthy();
+    expect(screen.getByTestId('portfolio-statistics')).toBeTruthy();
+    expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ outcome: 'simulate', tab: 'idle' });
+  });
+
+  it('does not write the cache until every source has settled', () => {
+    setSettled({ depositedUsd: 5000, idleUsd: 0 });
+    h.balances = { balances: [], isLoading: true };
+    renderPage();
+    expect(readPortfolioDecision(ADDRESS_A)).toBeNull();
+  });
+
+  it('a manual tab pick beats the cached default', () => {
+    writePortfolioDecision(ADDRESS_A, { outcome: 'allocate', tab: 'idle' });
+    renderPage();
+    expect(screen.getByTestId('earnings-card').getAttribute('data-tab')).toBe('idle');
+    fireEvent.click(screen.getByTestId('pick-supplied-tab'));
+    expect(screen.getByTestId('earnings-card').getAttribute('data-tab')).toBe('supplied');
+  });
+
+  it('keeps the cached callout while the geo config is still loading', () => {
+    writePortfolioDecision(ADDRESS_A, { outcome: 'simulate', tab: 'idle' });
+    h.geo = { savingsEnabled: true, isLoading: true };
+    renderPage();
+    expect(screen.getByTestId('savings-tvl-callout')).toBeTruthy();
+  });
+
+  it('chips the cached allocate banner while figures load, then fills it in', () => {
+    writePortfolioDecision(ADDRESS_A, { outcome: 'allocate', tab: 'idle' });
+    const { rerender } = renderPage();
+    expect(screen.getByTestId('allocate-stablecoins-banner').getAttribute('data-idle-usd')).toBe('loading');
+
+    setSettled({ depositedUsd: 0, idleUsd: 5000 });
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <ConnectedPortfolio key={h.address} />
+      </I18nProvider>
+    );
+    // Figures may land mid-view — only the outcome is frozen.
+    expect(screen.getByTestId('allocate-stablecoins-banner').getAttribute('data-idle-usd')).toBe('5000');
   });
 
   it('an address switch remounts onto the next address cache', () => {

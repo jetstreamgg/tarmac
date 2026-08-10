@@ -136,4 +136,46 @@ describe('useAppLoader', () => {
     render(<Harness />);
     expect(screen.queryByTestId('app-loader')).toBeNull();
   });
+
+  it('stays down while the connected wallet has not accepted terms yet', () => {
+    h.status = 'connected';
+    h.address = ADDRESS;
+    h.acceptedTerms = false;
+    render(<Harness />);
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+    expect(screen.getByTestId('content').className).toBe('');
+  });
+
+  it('plays the cover through even if the reconnect fails midway', () => {
+    h.status = 'reconnecting';
+    const { rerender } = render(<Harness />);
+    expect(screen.getByTestId('app-loader')).toBeTruthy();
+
+    // wagmi gives up on the persisted connection while the icon still spins.
+    h.status = 'disconnected';
+    rerender(<Harness />);
+
+    expect(screen.getByTestId('app-loader')).toBeTruthy();
+    act(() => h.completeCover?.());
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+    expect(screen.getByTestId('content').className).toBe('animate-app-loader-content-reveal');
+  });
+
+  it('is one-shot per page load: never replays after revealing', () => {
+    h.status = 'reconnecting';
+    const { rerender } = render(<Harness />);
+    act(() => h.completeCover?.());
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+
+    // Even wiping the flags and satisfying the mid-session predicate must not
+    // bring the cover back within the same page load.
+    localStorage.clear();
+    h.status = 'connected';
+    h.address = ADDRESS;
+    h.acceptedTerms = true;
+    rerender(<Harness />);
+
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+    expect(screen.getByTestId('content').className).toBe('animate-app-loader-content-reveal');
+  });
 });
