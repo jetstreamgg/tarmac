@@ -6,26 +6,51 @@ import {
   shellSurfaceClasses
 } from './shellLayoutClasses';
 
-// B6: full-width destination routes scroll on the document instead of inside the
-// legacy viewport-capped box, and the header pins as a sticky, see-through
-// frosted bar (Figma: transparent + backdrop blur, content shows through).
+// G5: every route scrolls on the document — the boxed mode (a viewport-capped
+// surface the two-pane routes scrolled inside) is gone, so these helpers no
+// longer branch. The header pins as a sticky, see-through frosted bar (Figma:
+// transparent + backdrop blur, content shows through).
 describe('shellHeaderClasses', () => {
-  it('pins the header as a see-through, blurred bar on full-width routes', () => {
-    const cls = shellHeaderClasses(true);
+  it('pins the header as a see-through bar', () => {
+    const cls = shellHeaderClasses();
     expect(cls).toContain('sticky');
-    expect(cls).toContain('backdrop-blur');
     // Transparent, not an opaque slab — scrolling content shows through it.
     expect(cls).not.toContain('bg-container');
-    // Feathered edge: the blur fades out via a gradient mask instead of cutting
-    // off at a hard line where blurred meets sharp content.
-    expect(cls).toContain('mask-image');
+    // The bar's backdrop-filter samples the page behind it; isolating the bar
+    // would make it a backdrop root and empty that sample.
+    expect(cls).not.toContain('isolate');
   });
 
-  it('leaves the header static (no sticky, no blur) on boxed routes', () => {
-    const cls = shellHeaderClasses(false);
-    expect(cls).not.toContain('sticky');
-    expect(cls).not.toContain('backdrop-blur');
-    expect(cls).not.toContain('mask-image');
+  // APP-456 #6: the bar's `bg` layer per the Navbar comps — the gradient-navbar
+  // fill (components/navbar/bg-gradient-start → -end) over background blur-md,
+  // Figma radius 12 ⇒ CSS blur(6px). No mask.
+  it('carries the comp gradient fill over a 6px backdrop blur', () => {
+    const cls = shellHeaderClasses();
+    expect(cls).toContain('bg-linear-to-b');
+    expect(cls).toContain('from-navbarGradientStart');
+    expect(cls).toContain('via-navbarGradientEnd');
+    expect(cls).toContain('backdrop-blur-[6px]');
+  });
+
+  // The comp's ramp stops at 5% alpha, which left a visible line where the bar
+  // met the page. The DS stops still run over the first three quarters; the
+  // last quarter carries them to nothing so the bar has no edge to see.
+  it('carries the fill to fully transparent at the bottom edge', () => {
+    const cls = shellHeaderClasses();
+    expect(cls).toContain('via-75%');
+    expect(cls).toContain('to-transparent');
+  });
+
+  // APP-456 #2: the desktop comp (Navbar 1030:61380) is an 88px bar around the
+  // 40px pill row — 24px of breathing room above it, not the 8px that had the
+  // logo nearly touching the viewport edge. Mobile takes the DS Mobile / Topbar
+  // 16px (551:10137), which had been rounded down to 14px.
+  it('gives each tier the comp vertical padding', () => {
+    const cls = shellHeaderClasses();
+    expect(cls).toContain('py-4');
+    expect(cls).not.toContain('py-3.5');
+    expect(cls).toContain('desktop:py-6');
+    expect(cls).not.toContain('desktop:py-2');
   });
 });
 
@@ -41,8 +66,8 @@ describe('pageGutterClasses', () => {
 });
 
 describe('shellHeaderContentClasses', () => {
-  it('aligns the full-width header row with the page container at every tier', () => {
-    const cls = shellHeaderContentClasses(true);
+  it('aligns the header row with the page container at every tier', () => {
+    const cls = shellHeaderContentClasses();
     expect(cls).toContain('max-w-[1320px]');
     // Same gutter tiers as the container, or the logo drifts off the content edge.
     expect(cls).toContain('px-5');
@@ -50,34 +75,23 @@ describe('shellHeaderContentClasses', () => {
     expect(cls).toContain('desktop:px-5');
   });
 
-  it('keeps the legacy full-bleed padding on boxed routes', () => {
-    const cls = shellHeaderContentClasses(false);
-    expect(cls).not.toContain('max-w-[1320px]');
-    expect(cls).toContain('sm:px-10');
-  });
-
   // APP-415: the desktop row is the comp's three-flank grid (logo | pills |
   // wallet cluster) so the pill group centers on the content axis instead of
   // the leftover flex space between unequal flanks.
-  it('lays the desktop row out as the three-flank grid in both modes', () => {
-    for (const fullWidth of [true, false]) {
-      const cls = shellHeaderContentClasses(fullWidth);
-      expect(cls).toContain('desktop:grid');
-      expect(cls).toContain('desktop:grid-cols-[1fr_auto_1fr]');
-    }
+  it('lays the desktop row out as the three-flank grid', () => {
+    const cls = shellHeaderContentClasses();
+    expect(cls).toContain('desktop:grid');
+    expect(cls).toContain('desktop:grid-cols-[1fr_auto_1fr]');
   });
 });
 
 describe('shellSurfaceClasses', () => {
-  it('caps the surface to the viewport so it scrolls inside the box on boxed routes', () => {
-    const cls = shellSurfaceClasses(false);
-    expect(cls).toContain('overflow-auto');
-    expect(cls).toContain('max-h-svh');
-  });
-
-  it('drops the viewport cap so the document scrolls on full-width routes', () => {
-    const cls = shellSurfaceClasses(true);
+  it('carries no viewport cap and no inner scroll, so the document scrolls', () => {
+    const cls = shellSurfaceClasses();
     expect(cls).not.toContain('overflow-auto');
     expect(cls).not.toContain('max-h-svh');
+    expect(cls).not.toContain('max-h-screen');
+    // Still fills the viewport so short pages don't collapse the surface.
+    expect(cls).toContain('min-h-svh');
   });
 });

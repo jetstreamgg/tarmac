@@ -20,6 +20,7 @@ import { VaultDetailChart } from './VaultDetailChart';
 import { VaultStrategy } from './VaultStrategy';
 import { VaultPositionCard } from './VaultPositionCard';
 import { VaultTransactionsTable } from './VaultTransactionsTable';
+import { VaultRateBreakdown } from './VaultRateBreakdown';
 import { trailing30DayRate } from '../helpers/vaultRates';
 
 const NO_VALUE = '–';
@@ -61,7 +62,9 @@ export function VaultProductDetail({
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      value: rate?.formattedNetRate ?? NO_VALUE
+      // Incentive-boosted vaults tag the figure with the DS stars mark and
+      // explain it through the breakdown tooltip (APP-443 item 14).
+      value: <VaultRateBreakdown rate={rate} value={rate?.formattedNetRate ?? NO_VALUE} />
     },
     {
       id: 'rate-30d',
@@ -118,9 +121,13 @@ export function VaultProductDetail({
       title={
         <span className="flex flex-wrap items-center gap-2">
           {vault.name}
-          <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
-            <Trans>Powered by Morpho</Trans>
-          </HeaderBadge>
+          {/* Only Morpho-provided vaults carry the badge — the sUSDT vault runs
+              on Spark infra and is not a Morpho product. */}
+          {vault.provider === 'morpho' && (
+            <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
+              <Trans>Powered by Morpho</Trans>
+            </HeaderBadge>
+          )}
         </span>
       }
       networkSelector={
@@ -128,7 +135,12 @@ export function VaultProductDetail({
       }
       chart={<VaultDetailChart vaultAddress={vaultAddress} assetToken={vault.assetToken} />}
       position={
-        <VaultPositionCard vaultAddress={vaultAddress} assetToken={vault.assetToken} vaultName={vault.name} />
+        <VaultPositionCard
+          vaultAddress={vaultAddress}
+          assetToken={vault.assetToken}
+          vaultName={vault.name}
+          provider={vault.provider}
+        />
       }
       details={details}
       afterDetails={{ title: <Trans>Strategy</Trans>, body: <VaultStrategy vaultAddress={vaultAddress} /> }}

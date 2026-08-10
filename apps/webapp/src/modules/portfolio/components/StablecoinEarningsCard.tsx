@@ -1,10 +1,11 @@
-import { ReactNode, useState } from 'react';
+import { Children, Fragment, ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
@@ -54,8 +55,10 @@ export function StablecoinEarningsCard({
   suppliedLoading: boolean;
   idleView: IdleView;
   idleLoading: boolean;
-  /** Current Sky Savings Rate as a decimal fraction (0.0375 = 3.75%). */
-  savingsRate: number;
+  /** Current Sky Savings Rate as a decimal fraction (0.0375 = 3.75%), or
+   * undefined when Savings is geo-restricted — the Idle footer then drops the
+   * rate and projection stats instead of pitching a blocked product. */
+  savingsRate?: number;
   tab: PortfolioTab;
   onTabChange: (tab: PortfolioTab) => void;
 }) {
@@ -120,7 +123,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
                     onActivate={() => setActiveId(position.id)}
                     onDeactivate={() => setActiveId(null)}
                   >
-                    <Text variant="medium" tag="span" className="text-text font-medium">
+                    <Text variant="medium" tag="span" className="text-text font-circle font-medium">
                       {position.name}
                     </Text>
                     <Text variant="medium" tag="span" className="text-textSecondary">
@@ -162,7 +165,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
         <Stat label={<Trans>Earned this month</Trans>} value={<TodoValue />} />
         <Stat
           label={<Trans>1Y projected earnings</Trans>}
-          value={<GainValue value={displayProjected} className="text-lg font-medium" />}
+          value={<GainValue value={displayProjected} className={LABEL_4} />}
         />
         <Stat
           label={<Trans>Avg. Rate</Trans>}
@@ -185,7 +188,7 @@ function IdleContent({
   isLoading
 }: {
   view: IdleView;
-  savingsRate: number;
+  savingsRate?: number;
   isLoading: boolean;
 }) {
   // Hovering a token focuses the card on it (mirrors the Supplied tab).
@@ -197,7 +200,8 @@ function IdleContent({
   const activeToken = activeId ? view.tokens.find(t => t.symbol === activeId) : undefined;
   const activeSymbol = activeToken?.symbol ?? null;
   const displayTotal = activeToken ? activeToken.amountUsd : view.walletBalance;
-  const displayProjected = projectAnnualEarnings(displayTotal, savingsRate);
+  const displayProjected =
+    savingsRate !== undefined ? projectAnnualEarnings(displayTotal, savingsRate) : undefined;
 
   const segments: DonutSegment[] = view.tokens.map(t => ({
     id: t.symbol,
@@ -227,7 +231,7 @@ function IdleContent({
                   onActivate={() => setActiveId(token.symbol)}
                   onDeactivate={() => setActiveId(null)}
                 >
-                  <Text variant="medium" tag="span" className="text-text font-medium">
+                  <Text variant="medium" tag="span" className="text-text font-circle font-medium">
                     {token.symbol}
                   </Text>
                   <Text variant="medium" tag="span" className="text-textSecondary">
@@ -260,14 +264,18 @@ function IdleContent({
       <Divider />
 
       <FooterStats>
-        <Stat
-          label={<Trans>Sky Savings Rate</Trans>}
-          value={<StatValue>{formatDecimalPercentage(savingsRate)}</StatValue>}
-        />
-        <Stat
-          label={<Trans>1Y projected earnings</Trans>}
-          value={<GainValue value={displayProjected} className="text-lg font-medium" />}
-        />
+        {savingsRate !== undefined && (
+          <Stat
+            label={<Trans>Sky Savings Rate</Trans>}
+            value={<StatValue>{formatDecimalPercentage(savingsRate)}</StatValue>}
+          />
+        )}
+        {displayProjected !== undefined && (
+          <Stat
+            label={<Trans>1Y projected earnings</Trans>}
+            value={<GainValue value={displayProjected} className={LABEL_4} />}
+          />
+        )}
         {/* Always the total — unlike Supplied's "Active positions", this stat
             stays fixed when focusing a single token. */}
         <Stat label={<Trans>Idle stablecoins</Trans>} value={<StatValue>{view.idleCount}</StatValue>} />
@@ -369,14 +377,45 @@ function Divider() {
   return <div className="border-borderPrimary mt-8 mb-6 border-b" />;
 }
 
+/**
+ * The card's footer figures. From lg the comp (1030:58701) lays them out as
+ * one row of equal columns split by 28px hairlines, 32px clear on each side —
+ * so that tier is a flex row and the dividers come along; below it the stats
+ * keep wrapping in the grid and the dividers drop out entirely (`display:none`
+ * takes them out of grid flow, so they never claim a cell).
+ */
 function FooterStats({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">{children}</div>;
+  const stats = Children.toArray(children);
+  return (
+    <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:flex lg:gap-8">
+      {stats.map((stat, index) => (
+        <Fragment key={index}>
+          {index > 0 && <span className="bg-borderPrimary hidden h-7 w-px shrink-0 self-center lg:block" />}
+          {stat}
+        </Fragment>
+      ))}
+    </div>
+  );
 }
+
+/**
+ * Design-system Label 4 — Circular Medium 16/18, -0.32px — the comp's treatment
+ * for every footer stat value. Same recipe as `label4` in ui/table-cells.
+ * Previously `text-lg font-medium`, which was wrong three ways: Graphik instead
+ * of Circular (no `font-circle`), 18px instead of 16 (18 is the *line height*),
+ * and no tracking.
+ */
+const LABEL_4 = 'font-circle text-base leading-[18px] font-medium tracking-[-0.32px]';
 
 function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Text variant="medium" className="text-textSecondary">
+    // `lg:flex-1` + `min-w-0`: from lg the footer is a flex row of equal
+    // columns split by hairlines (APP-443 item 7), so each stat has to claim
+    // its share rather than size to content.
+    <div className="flex min-w-0 flex-col gap-1.5 lg:flex-1">
+      {/* Body 6 — Graphik 12/18. `captionSm` is the 12px Graphik variant; the
+          comp's 18px line height has no variant, so it rides in className. */}
+      <Text variant="captionSm" className="text-textSecondary leading-[18px]">
         {label}
       </Text>
       {value}
@@ -385,11 +424,11 @@ function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
 }
 
 function StatValue({ children }: { children: ReactNode }) {
-  return <span className="text-text text-lg font-medium">{children}</span>;
+  return <span className={cn(LABEL_4, 'text-text')}>{children}</span>;
 }
 
 function TodoValue() {
-  return <span className="text-textSecondary text-lg font-medium">TODO</span>;
+  return <span className={cn(LABEL_4, 'text-textSecondary')}>TODO</span>;
 }
 
 /**
@@ -402,23 +441,20 @@ function TodoValue() {
  */
 function EarningsSkeleton() {
   return (
-    <div className="mt-6 flex animate-pulse flex-col gap-10 md:gap-8 lg:flex-row lg:justify-between">
+    <div className="mt-6 flex flex-col gap-10 md:gap-8 lg:flex-row lg:justify-between">
       <div className={cn(COLUMN, 'md:gap-6')}>
         <div className="flex flex-col gap-6">
-          <div className="bg-surface h-4 w-28 rounded" />
-          <div className="bg-surface h-10 w-72 max-w-full rounded" />
+          <Skeleton className="h-4 w-28 rounded" />
+          <Skeleton className="h-10 w-72 max-w-full rounded" />
         </div>
         <div className={cn(LEGEND, 'flex flex-col gap-3')}>
-          <div className="bg-surface h-4 w-40 rounded" />
-          <div className="bg-surface h-4 w-36 rounded" />
-          <div className="bg-surface h-4 w-32 rounded" />
+          <Skeleton className="h-4 w-40 rounded" />
+          <Skeleton className="h-4 w-36 rounded" />
+          <Skeleton className="h-4 w-32 rounded" />
         </div>
       </div>
-      <div
-        className={cn(
-          DONUT,
-          'bg-surface mx-auto h-40 w-40 shrink-0 rounded-full md:h-[178px] md:w-[178px] lg:mx-0'
-        )}
+      <Skeleton
+        className={cn(DONUT, 'mx-auto h-40 w-40 shrink-0 rounded-full md:h-[178px] md:w-[178px] lg:mx-0')}
         data-testid="earnings-skeleton-donut"
       />
     </div>

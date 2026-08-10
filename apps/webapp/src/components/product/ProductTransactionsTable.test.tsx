@@ -193,7 +193,7 @@ describe('ProductTransactionsTable — mobile cards (M5)', () => {
 
   it('shows the empty state on a card surface', () => {
     renderWithCards([]);
-    expect(screen.getByText('No transactions yet.')).toBeTruthy();
+    expect(screen.getByText("You don't have any transactions made yet.")).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
   });
 });

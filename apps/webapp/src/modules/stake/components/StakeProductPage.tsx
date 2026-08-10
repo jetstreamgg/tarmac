@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
@@ -17,6 +18,32 @@ import { StakeStatisticsTab } from './StakeStatisticsTab';
 import { StakeAboutTab } from './StakeAboutTab';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
 import { PositionManageFlow, manageActionInit } from './PositionManageFlow';
+
+/** Matches the takeover dismissal in `components/product/TakeoverShell.tsx`. */
+const TAKEOVER_EXIT_MS = 300;
+
+/**
+ * Keeps a route-driven overlay mounted for the length of its exit animation
+ * after its flag clears, so the overlay's own AnimatePresence has something to
+ * animate. Without it the flag and the overlay's data (the urn index) clear in
+ * the same tick and the whole subtree is gone before any exit can run.
+ */
+function useExitHold(active: boolean, ms: number) {
+  const [held, setHeld] = useState(active);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Opening is immediate; only the release is deferred.
+  if (active && !held) setHeld(true);
+
+  useEffect(() => {
+    if (active || !held) return;
+    timer.current = setTimeout(() => setHeld(false), ms);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [active, held, ms]);
+
+  return held;
+}
 
 // URL tab contract for the Stake destination page: `?tab=` selects the visible
 // tab and always wins; without it (or with an unknown value) the default is
@@ -61,6 +88,7 @@ export function StakeProductPage() {
   // `flow=manage&urn_index=N`; closing returns to a clean URL.
   const isOpenFlow = searchParams.get(QueryParams.Flow) === 'open';
   const isManageFlow = searchParams.get(QueryParams.Flow) === 'manage';
+  const holdManageFlow = useExitHold(isManageFlow, TAKEOVER_EXIT_MS);
 
   // Radix only fires onValueChange for a *different* tab, so clicking the
   // already-active trigger writes nothing — and the statistics default could
@@ -104,7 +132,9 @@ export function StakeProductPage() {
   const isMobile = bpi < BP.md;
 
   return (
-    <div data-testid="stake-product-page" className="flex flex-col gap-16 py-4 md:gap-6 md:py-10">
+    // Desktop comp 1222:15123 sets the title row 96px under the navbar
+    // (APP-426 item 1), hence pt-24 over the sibling pages' pt.
+    <div data-testid="stake-product-page" className="flex flex-col gap-16 py-4 md:gap-6 md:pt-24 md:pb-10">
       {/* Header (Patterns/Headers, Stake type 5043:59183): the DS 64px
           Iconbox / Status beside a Heading 2 title; the DS 17px icon-title gap
           is normalized to 16. The brand glow was dropped from product icons in
@@ -175,8 +205,17 @@ export function StakeProductPage() {
         </TabsContent>
       </Tabs>
 
-      {isOpenFlow && <OpenPositionTakeover />}
-      {isManageFlow && (
+      {/* The takeovers animate themselves (TakeoverShell), but the flow flags
+          unmount them outright — without an AnimatePresence above the
+          condition, closing one skips its exit entirely. */}
+      <AnimatePresence>{isOpenFlow && <OpenPositionTakeover />}</AnimatePresence>
+      {/* Held rather than wrapped in an AnimatePresence of its own: the flow
+          owns one internally (its views swap behind it), and nesting the two
+          breaks the exit. Closing empties the inner presence in the same tick,
+          so an outer boundary sees nothing left to wait for, calls its exit
+          done, and unmounts the subtree out from under the animation that had
+          just started. Holding the mount lets the inner one finish. */}
+      {holdManageFlow && (
         <PositionManageFlow
           initialSheetInit={pendingSheetInit ?? undefined}
           onInitialSheetInitConsumed={onInitialSheetInitConsumed}

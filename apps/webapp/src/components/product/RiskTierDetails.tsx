@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { RiskTierMeter } from './RiskMeter';
+import { withdrawalWording } from './withdrawalAvailability';
 
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
@@ -41,9 +42,9 @@ const RISK_TIER_DETAILS: Record<
   EarnRiskTier,
   { title: ReactNode; litSegments: number; segmentClass: string }
 > = {
-  low: { title: <Trans>Conservative</Trans>, litSegments: 1, segmentClass: 'bg-statusSuccessSolid' },
+  low: { title: <Trans>Conservative</Trans>, litSegments: 1, segmentClass: 'bg-statusSuccess' },
   moderate: { title: <Trans>Moderate</Trans>, litSegments: 2, segmentClass: 'bg-statusWarning' },
-  advanced: { title: <Trans>Aggressive</Trans>, litSegments: 3, segmentClass: 'bg-error' }
+  advanced: { title: <Trans>Aggressive</Trans>, litSegments: 3, segmentClass: 'bg-statusError' }
 };
 
 /**
@@ -61,7 +62,7 @@ const RISK_TIER_DETAILS: Record<
  */
 const RISK_PROFILE_DETAILS: Record<
   EarnRiskProfileId,
-  { description: ReactNode; exposureTokens: string[]; liquidationRisk: ReactNode; withdrawals: ReactNode }
+  { description: ReactNode; exposureTokens: string[]; liquidationRisk: ReactNode }
 > = {
   savings: {
     description: (
@@ -71,16 +72,14 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['USDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Instant</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   rewards: {
     description: (
       <Trans>Supply directly to Sky Protocol and earn rewards. Reward rates vary with emissions.</Trans>
     ),
     exposureTokens: ['USDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Instant</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   'rewards-sky': {
     description: (
@@ -90,8 +89,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['USDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Instant</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   'rewards-spk': {
     description: (
@@ -101,8 +99,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['USDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Instant</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   'rewards-grove': {
     description: (
@@ -112,8 +109,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['USDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Instant</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   'rewards-cle': {
     description: (
@@ -123,8 +119,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['USDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Instant</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   'vault-flagship': {
     description: (
@@ -134,8 +129,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['cbBTC', 'wstETH', 'WETH', 'PT-sUSDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Liquidity based</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   'vault-usdt-savings': {
     description: (
@@ -145,8 +139,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['sUSDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Liquidity based</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   'vault-tether-savings': {
     // PLACEHOLDER — this vault has no row in the APP-396 risk sheet.
@@ -157,8 +150,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['sUSDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Instant</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   'vault-risk-capital': {
     description: (
@@ -168,8 +160,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['stUSDS', 'SKY'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Liquidity based</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   fixed: {
     description: (
@@ -179,8 +170,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['USDS'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>At maturity or via market sell</Trans>
+    liquidationRisk: <Trans>None</Trans>
   },
   stusds: {
     description: (
@@ -190,8 +180,7 @@ const RISK_PROFILE_DETAILS: Record<
       </Trans>
     ),
     exposureTokens: ['SKY'],
-    liquidationRisk: <Trans>None</Trans>,
-    withdrawals: <Trans>Liquidity based</Trans>
+    liquidationRisk: <Trans>None</Trans>
   }
 };
 
@@ -230,7 +219,7 @@ function ExposureFactValue({ symbols }: { symbols: string[] }) {
       </PopoverTrigger>
       <PopoverContent
         side="top"
-        className="font-graphik text-fgPrimary bg-bgTertiary w-auto rounded-2xl px-3 py-2 text-[11px] leading-4 backdrop-blur-[100px]"
+        className="font-graphik text-fgPrimary bg-bgTertiary w-auto rounded-2xl px-3 py-2 text-[11px] leading-4 backdrop-blur-[20px]"
       >
         {names}
       </PopoverContent>
@@ -253,6 +242,7 @@ function FactRow({ label, value }: { label: ReactNode; value: ReactNode }) {
 
 /** Scale + description + divider + fact rows — shared by the tooltip card and the bottom sheet. */
 function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: EarnRiskProfileId }) {
+  const { i18n } = useLingui();
   const severity = RISK_TIER_DETAILS[tier];
   const details = RISK_PROFILE_DETAILS[profile];
 
@@ -265,7 +255,7 @@ function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: E
             data-testid="risk-details-segment"
             className={cn(
               'h-1 flex-1 rounded-full',
-              index < severity.litSegments ? severity.segmentClass : 'bg-bgTertiary'
+              index < severity.litSegments ? severity.segmentClass : 'bg-fgQuaternary'
             )}
           />
         ))}
@@ -278,7 +268,7 @@ function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: E
           value={<ExposureFactValue symbols={details.exposureTokens} />}
         />
         <FactRow label={<Trans>Liquidation risk</Trans>} value={details.liquidationRisk} />
-        <FactRow label={<Trans>Withdrawals</Trans>} value={details.withdrawals} />
+        <FactRow label={<Trans>Withdrawals</Trans>} value={i18n._(withdrawalWording(profile))} />
       </div>
     </>
   );

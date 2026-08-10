@@ -4,29 +4,33 @@ import { formatUnits } from 'viem';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { TransactionTypeEnum, useSkyPrice, useStakeHistory } from '@/hooks';
+import { BP, TransactionTypeEnum, useBreakpointIndex, useSkyPrice, useStakeHistory } from '@/hooks';
 import { formatAddress, formatUsd, getEtherscanLink } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import {
-  SavingsSupply,
-  ArrowDown,
   Stake,
   Delegate,
   Borrow,
   ClaimRewards,
   Liquidated,
   Repaid,
-  SelectRewards
+  SelectRewards,
+  TransactionsEmpty
 } from '@/modules/icons';
 import { ExternalLink } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
 import { TransactionCard } from '@/components/product/TransactionCard';
+import { filterTriggerClasses } from '@/components/product/FilterSelect';
+import { cn } from '@/lib/cn';
 import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
@@ -159,10 +163,10 @@ function verbIcon(verb: StakeActivityVerb) {
     case 'open':
       return <Stake width={16} height={16} />;
     case 'stake':
-      return <SavingsSupply width={14} height={13} />;
+      return <ArrowDownToLine className="size-4" />;
     case 'unstakeRepay':
     case 'unstake':
-      return <ArrowDown width={10} height={14} className="light:fill-text fill-white" />;
+      return <ArrowUpToLine className="size-4" />;
     case 'borrow':
       return <Borrow width={16} height={16} />;
     case 'repay':
@@ -304,6 +308,8 @@ const renderCard = (row: ActivityRow) => (
  */
 export function StakeActivityTable({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
   const [filter, setFilter] = useState<'all' | number>('all');
   const { data: stakeHistory, isLoading, error, hasNextPage, fetchNextPage } = useStakeHistory();
   const { priceString: skyPriceString } = useSkyPrice();
@@ -315,12 +321,30 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
     return filtered.map(group => ({ ...group, skyPrice, chainId }));
   }, [stakeHistory, filter, skyPrice, chainId]);
 
+  // Comp 1036:208685: with no activity at all the empty state is a
+  // self-contained card — the section title moves inside it and there is
+  // no column header row or filter.
+  const isEmpty = !isLoading && !error && (stakeHistory?.length ?? 0) === 0;
+
+  if (isEmpty) {
+    return (
+      <Card data-testid="stake-activity-empty" className="flex flex-col gap-6 p-8">
+        <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+          <Trans>My activity</Trans>
+        </h3>
+        <EmptyState illustration={<TransactionsEmpty aria-hidden />}>
+          <Trans>You don&apos;t have any transactions made yet.</Trans>
+        </EmptyState>
+      </Card>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Phone tier (comp 1222:16962): heading above a full-width pill filter;
-          md restores the heading row with the inline borderless trigger. */}
+          md restores the heading row with the inline trigger. */}
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-4">
-        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px] md:font-sans md:leading-normal md:tracking-normal">
+        <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <Trans>My activity</Trans>
         </h3>
         {(positions?.length ?? 0) > 0 && (
@@ -331,7 +355,14 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
             <SelectTrigger
               data-testid="stake-activity-filter"
               aria-label={t`Filter activity by position`}
-              className="border-glassBorder text-text font-circle md:text-textSecondary md:hover:text-text h-11 w-full justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors focus-visible:ring-0 md:h-auto md:w-auto md:shrink-0 md:justify-normal md:gap-1.5 md:border-none md:p-0 md:font-sans md:leading-normal md:tracking-normal"
+              // Phone tier keeps the comp's full-width 44px pill; from md the
+              // trigger is the DS Button / Dropdown S the other table filters
+              // wear (Figma 1030:59174, APP-443 item 16 — it was borderless).
+              className={
+                isMobile
+                  ? 'border-glassBorder text-text font-circle h-11 w-full shrink-0 justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors focus-visible:ring-0'
+                  : cn(filterTriggerClasses(), 'shrink-0 transition-colors focus-visible:ring-0')
+              }
             >
               <SelectValue>
                 {filter === 'all' ? <Trans>All positions</Trans> : <Trans>Position {filter + 1}</Trans>}
@@ -370,12 +401,6 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         onPageChange={(page, totalPages) => {
           if (hasNextPage && page >= totalPages) fetchNextPage();
         }}
-        emptyLabel={
-          <span data-testid="stake-activity-empty" className="flex flex-col items-center gap-4 py-8">
-            <span className="bg-textSecondary/20 h-10 w-10 rounded-full" aria-hidden />
-            <Trans>You don&apos;t have any transactions made yet.</Trans>
-          </span>
-        }
       />
     </div>
   );

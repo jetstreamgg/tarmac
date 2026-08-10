@@ -1,21 +1,16 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import type { EarnProductRow, EarnRiskTier } from '@/hooks';
+import type { EarnProductRow } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconboxStatus } from '@/components/ui/iconbox';
+import { RateBadge } from '@/components/ui/RateBadge';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { productIconSymbol, productStatusType } from '@/components/product/productVisuals';
 import { ProductGlyph } from './ProductGlyph';
-
-const RISK_LABEL: Record<EarnRiskTier, ReactNode> = {
-  low: <Trans>Low</Trans>,
-  moderate: <Trans>Moderate</Trans>,
-  advanced: <Trans>Advanced</Trans>
-};
 
 /**
  * Card version of an Earn marketplace row, shown in the Portfolio "Earn with
@@ -44,11 +39,14 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <Text variant="large" tag="span" className="text-text text-2xl font-medium">
+          <Text variant="large" tag="span" className="text-text font-circle text-2xl font-medium">
             {row.name}
           </Text>
           <ProductGlyph id={row.id} kind={row.kind} />
-          {row.rate.value !== undefined && <Badge>{row.rate.formatted}</Badge>}
+          {/* DS Badges / Special — the green rate pill the comps draw here
+              (1036:189284 dark / 1030:58560 light, APP-443 item 1); it was a
+              neutral surface chip. */}
+          {row.rate.value !== undefined && <RateBadge>{row.rate.formatted}</RateBadge>}
         </div>
         {/* TODO(D1): per-product marketing copy has no source yet. */}
         <Text variant="small" className="text-textSecondary">
@@ -56,15 +54,14 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
         </Text>
       </div>
 
+      {/* Supply leads, Risk follows, and Risk is the bare meter — no tier word
+          beside it (1036:189284 dark / 1030:58560 light, APP-443 item 20). */}
       <div className="mt-auto grid grid-cols-2 gap-4">
-        <Stat label={<Trans>Risk</Trans>}>
-          <div className="flex items-center gap-2">
-            <RiskTierDetailsTrigger profile={row.riskProfile} />
-            <span className="text-text text-sm font-medium">{RISK_LABEL[row.risk]}</span>
-          </div>
-        </Stat>
         <Stat label={<Trans>Supply</Trans>}>
           <TokenIconStack symbols={row.supplyTokens} size={20} />
+        </Stat>
+        <Stat label={<Trans>Risk</Trans>}>
+          <RiskTierDetailsTrigger profile={row.riskProfile} />
         </Stat>
       </div>
 
@@ -89,11 +86,5 @@ function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
       </Text>
       {children}
     </div>
-  );
-}
-
-function Badge({ children }: { children: ReactNode }) {
-  return (
-    <span className="bg-surface text-text rounded-full px-2 py-0.5 text-xs font-medium">{children}</span>
   );
 }

@@ -15,6 +15,7 @@ import {
 } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { rewardTokenName } from '../tokenNames';
 import type {
   ClaimAdapter,
   ClaimCallOptions,
@@ -24,7 +25,6 @@ import type {
   ClaimScope
 } from '../types';
 
-const SOURCE_LABEL = 'Staking';
 // Stake reward tokens (SKY / SPK / USDS) are all 18-decimal; the claim read exposes
 // no decimals, so format against this shared unit.
 const REWARD_DECIMALS = 18;
@@ -50,7 +50,11 @@ type UrnReward = { contractAddress: `0x${string}`; claimBalance: bigint; rewardS
  * per stake reward contract. Both adapter hooks call this (react-query dedupes the
  * underlying reads); it is disabled — and returns nothing — when `index` is absent.
  */
-function useStakeUrnRewards(index: bigint | undefined): { rewards: UrnReward[]; isLoading: boolean } {
+function useStakeUrnRewards(index: bigint | undefined): {
+  rewards: UrnReward[];
+  isLoading: boolean;
+  refresh: () => void;
+} {
   const chainId = useChainId();
   const { data: urnAddress } = useStakeUrnAddress(index ?? 0n);
   const { data: stakeRewardContracts } = useStakeRewardContracts();
@@ -60,7 +64,7 @@ function useStakeUrnRewards(index: bigint | undefined): { rewards: UrnReward[]; 
     [stakeRewardContracts]
   );
 
-  const { data, isLoading } = useRewardContractsToClaim({
+  const { data, isLoading, mutate } = useRewardContractsToClaim({
     rewardContractAddresses,
     addresses: urnAddress,
     chainId,
@@ -72,17 +76,17 @@ function useStakeUrnRewards(index: bigint | undefined): { rewards: UrnReward[]; 
   // case) — a fresh `[]` here would bust useStakeClaimable's memo every render
   // and, through the panel's merged-rewards chain, loop its modal-content sync.
   const rewards = useMemo(() => (data as UrnReward[] | undefined) ?? [], [data]);
-  return { rewards, isLoading };
+  return { rewards, isLoading, refresh: mutate };
 }
 
 function useStakeClaimable(scope: ClaimScope): ClaimableResult {
   const chainId = useChainId();
   const index = scope.kind === 'stake' ? scope.index : undefined;
-  const { rewards, isLoading } = useStakeUrnRewards(index);
+  const { rewards, isLoading, refresh } = useStakeUrnRewards(index);
   const { data: prices } = usePrices();
 
   return useMemo(() => {
-    if (index === undefined) return { rewards: [], isLoading: false };
+    if (index === undefined) return { rewards: [], isLoading: false, refresh };
 
     const mapped: ClaimableReward[] = rewards.map(({ contractAddress, claimBalance, rewardSymbol }) => {
       const price = prices?.[rewardSymbol]?.price;
@@ -92,19 +96,25 @@ function useStakeClaimable(scope: ClaimScope): ClaimableResult {
       return {
         id: makeStakeId(index, contractAddress),
         source: 'stake',
-        sourceLabel: SOURCE_LABEL,
         tokenSymbol: rewardSymbol,
+        tokenName: rewardTokenName(rewardSymbol),
         icon: (
           <TokenIcon token={{ symbol: rewardSymbol }} width={32} showChainIcon={false} className="h-8 w-8" />
         ),
-        formattedAmount: formatBigInt(claimBalance, { unit: REWARD_DECIMALS, maxDecimals: 2 }),
+        // The claim-modal comps pin two decimals on the hero amounts ("22.90",
+        // Figma 1036:213986).
+        formattedAmount: formatBigInt(claimBalance, {
+          unit: REWARD_DECIMALS,
+          minDecimals: 2,
+          maxDecimals: 2
+        }),
         amountUsd,
         chainId
       };
     });
 
-    return { rewards: mapped, isLoading };
-  }, [index, rewards, prices, chainId, isLoading]);
+    return { rewards: mapped, isLoading, refresh };
+  }, [index, rewards, prices, chainId, isLoading, refresh]);
 }
 
 function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOptions): ClaimCallsResult {

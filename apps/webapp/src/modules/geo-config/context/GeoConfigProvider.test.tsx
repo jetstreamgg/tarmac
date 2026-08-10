@@ -35,10 +35,14 @@ const mockRouter = {
   }
 };
 
+// Mutable so tests can put the query in its loading state; the factory only
+// closes over it, reading happens at render time.
+const queryState = { isLoading: false };
+
 vi.mock('@tanstack/react-query', () => ({
   useQuery: () => ({
-    data: mockConfig,
-    isLoading: false,
+    data: queryState.isLoading ? undefined : mockConfig,
+    isLoading: queryState.isLoading,
     error: null
   })
 }));
@@ -54,12 +58,13 @@ vi.mock('@/pages/router', () => ({
 const { GeoConfigProvider } = await import('./GeoConfigProvider');
 
 const GeoConfigProbe = () => {
-  const { isRegionRestricted, isModuleEnabled } = useGeoConfig();
+  const { isRegionRestricted, isModuleEnabled, isRegionVerified } = useGeoConfig();
 
   return (
     <>
       <div data-testid="restricted">{String(isRegionRestricted)}</div>
       <div data-testid="savings">{String(isModuleEnabled('savings'))}</div>
+      <div data-testid="verified">{String(isRegionVerified)}</div>
     </>
   );
 };
@@ -68,6 +73,22 @@ describe('GeoConfigProvider', () => {
   beforeEach(() => {
     mockRouter.history.location.search = '';
     routerListeners.clear();
+    queryState.isLoading = false;
+  });
+
+  it('answers every module as disabled while the config loads (fail closed)', () => {
+    queryState.isLoading = true;
+    render(
+      <GeoConfigProvider>
+        <GeoConfigProbe />
+      </GeoConfigProvider>
+    );
+
+    // Action gates (e.g. the Portfolio supply resolver) rely on this default:
+    // no module may read as enabled before the region is known.
+    expect(screen.getByTestId('savings').textContent).toBe('false');
+    expect(screen.getByTestId('restricted').textContent).toBe('true');
+    expect(screen.getByTestId('verified').textContent).toBe('false');
   });
 
   it('recomputes geo overrides when the router search changes', () => {
@@ -95,5 +116,22 @@ describe('GeoConfigProvider', () => {
 
     expect(screen.getByTestId('restricted').textContent).toBe('false');
     expect(screen.getByTestId('savings').textContent).toBe('true');
+  });
+
+  it('reports the region as unverified only when no country resolved', () => {
+    render(
+      <GeoConfigProvider>
+        <GeoConfigProbe />
+      </GeoConfigProvider>
+    );
+
+    expect(screen.getByTestId('verified').textContent).toBe('true');
+
+    act(() => {
+      mockRouter.history.location.search = '?geo_country=XX';
+      routerListeners.forEach(listener => listener());
+    });
+
+    expect(screen.getByTestId('verified').textContent).toBe('false');
   });
 });

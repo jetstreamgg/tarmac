@@ -16,8 +16,6 @@ declare module '@tanstack/react-router' {
     convertIntent?: ConvertIntent;
     vaultsIntent?: VaultsIntent;
     fixedIntent?: FixedIntent;
-    // Destination pages render full-width instead of inside the widget-pane column.
-    fullWidth?: boolean;
   }
 }
 
@@ -70,11 +68,6 @@ export function useRouteVaultsIntent(): VaultsIntent | undefined {
 
 export function useRouteFixedIntent(): FixedIntent | undefined {
   return useDeepestStaticData('fixedIntent') as FixedIntent | undefined;
-}
-
-/** Whether the current route renders full-width (destination pages) instead of in the pane column. */
-export function useRouteFullWidth(): boolean {
-  return (useDeepestStaticData('fullWidth') as boolean | undefined) ?? false;
 }
 
 export type RouteEntityParams = {
@@ -139,6 +132,16 @@ export type SetSearchParams = (
   opts?: { replace?: boolean }
 ) => void;
 
+/**
+ * Key-sorted serialization of a search string or param record, so two sets can
+ * be compared for equivalence without key order counting as a difference.
+ */
+const sortedSearchString = (input: string | Record<string, string>): string => {
+  const params = new URLSearchParams(input);
+  params.sort();
+  return params.toString();
+};
+
 export function useAppSearchParams(): [URLSearchParams, SetSearchParams] {
   const router = useRouter();
   const searchStr = useRouterState({ select: s => s.location.searchStr });
@@ -146,13 +149,27 @@ export function useAppSearchParams(): [URLSearchParams, SetSearchParams] {
 
   const setSearchParams = useCallback<SetSearchParams>(
     (init, opts) => {
-      const next =
-        typeof init === 'function' ? init(new URLSearchParams(router.state.location.searchStr)) : init;
+      const currentSearchStr = router.state.location.searchStr;
+      const next = typeof init === 'function' ? init(new URLSearchParams(currentSearchStr)) : init;
+      const search = Object.fromEntries(next);
+
+      // Bail when the result is the search string the URL already carries.
+      // TanStack skips only the *history write* for such a navigation, not the
+      // work: it still runs a full `load()`, which fires its own view
+      // transition. When that lands mid-navigation the browser skips the
+      // in-flight one, and a skipped transition applies its DOM update
+      // immediately — the new page flashes in before the second transition
+      // animates it. useAppOrchestration re-validates search params on every
+      // intent change and arrives here with nothing to change, so this fired
+      // on every module route (stake, convert, the product pages) but not
+      // between two routes sharing an intent (portfolio <-> earn).
+      if (sortedSearchString(search) === sortedSearchString(currentSearchStr)) return;
+
       void router.navigate({
         // Stay on the current path; passing a search object replaces the whole
         // search string, matching react-router's setSearchParams semantics.
         to: router.state.location.pathname as '/',
-        search: Object.fromEntries(next),
+        search,
         replace: opts?.replace
       });
     },
@@ -180,5 +197,20 @@ export type AppLinkProps = Omit<ComponentProps<'a'>, 'href'> & {
 
 export function AppLink({ to, replace, ...anchorProps }: AppLinkProps) {
   const { pathname, search, hash } = splitHref(to);
-  return <Link {...anchorProps} to={pathname as '/'} search={search} hash={hash} replace={replace} />;
+  return (
+    <Link
+      {...anchorProps}
+      to={pathname as '/'}
+      // Merged onto the retained params rather than replacing the search
+      // outright: an href without a query string means "this path", not "drop
+      // the network". Dropping it made useAppOrchestration navigate straight
+      // back to put it in, and that second commit landed in the same frame as
+      // the view transition's pending snapshot — so the outgoing page was
+      // captured already showing the incoming one, and only the enter
+      // animation was visible (APP-432 review).
+      search={prev => ({ ...retainOnNavigate(prev), ...search })}
+      hash={hash}
+      replace={replace}
+    />
+  );
 }

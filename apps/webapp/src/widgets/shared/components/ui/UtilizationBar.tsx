@@ -1,7 +1,7 @@
 import { AlertCircle } from 'lucide-react';
 import { HStack } from './layout/HStack';
 import { Text } from './Typography';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/widgets/lib/utils';
 import { PopoverInfo } from './PopoverInfo';
 import { ReactNode } from 'react';
@@ -55,7 +55,7 @@ export const UtilizationBar = ({
             )}
           </HStack>
           {isLoading ? (
-            <Skeleton className="bg-textSecondary h-6 w-10" />
+            <Skeleton className="h-6 w-10" />
           ) : (
             <HStack className="items-center" gap={1}>
               <Text className={utilizationColor} dataTestId={`${dataTestId}-percentage`}>

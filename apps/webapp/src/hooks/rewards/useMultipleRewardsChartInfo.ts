@@ -3,7 +3,7 @@ import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 
-import { formatBaLabsUrl } from '../helpers';
+import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
 
 type RewardsChartInfo = {
   apr: string;
@@ -45,44 +45,18 @@ function transformBaLabsChartData(results: RewardsChartInfo[]): RewardsChartInfo
 }
 
 async function fetchRewardsChartInfo(urls: URL[]): Promise<RewardsChartInfoParsed[][]> {
-  const results = urls.map(() => [] as RewardsChartInfoParsed[]);
+  // Each farm is fetched independently (and paged — the endpoint caps a response
+  // at 1000 rows whatever p_size asks for) so one farm's failure leaves the
+  // others' series intact.
+  const settled = await Promise.allSettled(urls.map(url => fetchBaLabsPages<RewardsChartInfo>(url)));
 
-  const settledResponses = await Promise.allSettled(
-    urls.map(url =>
-      fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-    )
-  );
-
-  await Promise.all(
-    settledResponses.map(async (response, index) => {
-      if (response.status !== 'fulfilled') {
-        console.warn('Failed to fetch BaLabs data', { url: urls[index]?.href, error: response.reason });
-        return;
-      }
-
-      if (!response.value.ok) {
-        console.warn('Received non-ok response from BaLabs', {
-          url: urls[index]?.href,
-          status: response.value.status
-        });
-        return;
-      }
-
-      try {
-        const parsed: { results: RewardsChartInfo[] } = await response.value.json();
-        results[index] = transformBaLabsChartData(parsed?.results || []);
-      } catch (error) {
-        console.warn('Failed to parse BaLabs response', { url: urls[index]?.href, error });
-      }
-    })
-  );
-
-  return results;
+  return settled.map((result, index) => {
+    if (result.status !== 'fulfilled') {
+      console.warn('Failed to fetch BaLabs data', { url: urls[index]?.href, error: result.reason });
+      return [];
+    }
+    return transformBaLabsChartData(result.value);
+  });
 }
 
 export function useMultipleRewardsChartInfo({

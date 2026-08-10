@@ -8,7 +8,6 @@ import { BP, useBreakpointIndex } from '@/hooks';
 import { buttonVariants } from '@/components/ui/button';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
 import { BATCH_TX_ENABLED } from '@/lib/constants';
-import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
@@ -23,7 +22,11 @@ import { DESTINATIONS, navTestId, useActiveDestinationPath, useDestinationLinkPr
 
 // Design-system Button / Navbar (Figma 5010:29059, Default type); active
 // styling keys off the link's aria-current="page".
-const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'relative');
+// cn(), not the bare recipe: the base cva class carries `rounded-xl` and the
+// navbar size overrides it with `rounded-full`. cva only concatenates, so
+// without tailwind-merge collapsing that pair the pills take whichever radius
+// the stylesheet happens to emit last.
+const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }));
 
 // Menu dropdown row (Figma 5069:27509): 16px glyph + label on fg-primary,
 // 8px apart; rows sit bare on the panel (no pill/tint). The M4.5 mobile panel
@@ -124,7 +127,9 @@ function MoreMenu() {
   ) : (
     <Menu size={16} className="nav-menu-icon" />
   );
-  const triggerClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'w-10 px-0');
+  // shrink-0: the trigger sits in the chip cluster's shrink chain (M2.2) and
+  // must keep its 40px circle — the wallet chip is the only flexible member.
+  const triggerClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'w-10 shrink-0 px-0');
 
   // M4.5 (Figma 536:26429): below md the popover becomes a bottom-anchored
   // floating panel — 12px viewport insets (the DS in-situ inset), 24px radius,
@@ -185,7 +190,6 @@ function MoreMenu() {
 /** Final 4-destination top navigation. */
 export function TopNav() {
   const activePath = useActiveDestinationPath();
-  const { showNewDot } = useNewIntentDots();
   const { searchForIntent, handleNavClick } = useDestinationLinkProps();
 
   // At the desktop tier the nav box dissolves (display: contents) so the pill
@@ -193,7 +197,7 @@ export function TopNav() {
   // (APP-415) — the nav landmark itself stays in the accessibility tree. Below
   // desktop it's the flex row of the DS Mobile / Topbar layout.
   return (
-    <nav className="desktop:contents flex w-full items-center gap-3" data-testid="top-nav">
+    <nav className="desktop:contents flex w-full min-w-0 items-center gap-3" data-testid="top-nav">
       {/* Shared gradient for the selected nav icon (dark mode); referenced by
           fill: url(#nav-icon-gradient) in globals.css. Bounding-box units span
           each glyph exactly (Figma's per-icon ramp), which relies on every nav
@@ -228,20 +232,17 @@ export function TopNav() {
             >
               <Icon className="nav-icon h-4 w-4 shrink-0" />
               {destination.label}
-              {destination.intents.some(showNewDot) && (
-                <span
-                  data-testid={`${navTestId(destination.path)}-new-dot`}
-                  className="bg-textEmphasis absolute top-1 right-1 h-1.5 w-1.5 rounded-full"
-                />
-              )}
             </Link>
           );
         })}
       </div>
       {/* With the pill group hidden on mobile, ml-auto keeps the chip cluster
           pinned right (the DS Mobile / Topbar layout: logo · wallet · menu).
-          At desktop it's the right grid flank instead, pinned by justify-self. */}
-      <div className="desktop:ml-0 desktop:justify-self-end ml-auto flex items-center gap-3">
+          At desktop it's the right grid flank instead, pinned by justify-self.
+          min-w-0 lets the wallet chip shrink-truncate below 340px instead of
+          pushing the row past the viewport (M2.2); the desktop grid keeps
+          min-width:auto so a long chip still nudges the pills (APP-415). */}
+      <div className="desktop:ml-0 desktop:justify-self-end desktop:min-w-[auto] ml-auto flex min-w-0 items-center gap-3">
         <WalletChip />
         {import.meta.env.VITE_USE_MOCK_WALLET === 'true' && <MockConnectButton />}
         <MoreMenu />

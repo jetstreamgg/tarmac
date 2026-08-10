@@ -85,7 +85,8 @@ vi.mock('@/hooks', async importOriginal => {
     }),
     useCollateralData: () => ({
       data: {
-        stabilityFee: 0.0851,
+        // 8.51% as the WAD-scaled annual rate the real hook returns.
+        stabilityFee: 851n * 10n ** 14n,
         debtCeiling: h.debtCeiling,
         totalDaiDebt: 0n,
         debtCeilingUtilization: 0.5
@@ -364,10 +365,41 @@ describe('ManagePositionTakeover', () => {
     renderSheet({ borrowCard: 'repay' });
 
     expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).disabled).toBe(true);
-    expect(screen.getByTestId('stake-manage-borrow-amount').closest('section')?.textContent).toContain(
-      'max. 0'
-    );
+    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('Borrowed: 0');
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 0 USDS');
     expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('repay: the max hint is wallet-aware, not the debt (Repay maxRepayable port)', () => {
+    // 30k debt but only 20k USDS in the wallet; the 10k remainder clears the
+    // dust floor, so the real cap is the balance — the "Borrowed:" line alone
+    // would overstate it by 10k.
+    h.usdsBalance = 20_000n * WAD;
+    h.dust = 10_000n * WAD;
+    renderSheet({ borrowCard: 'repay' });
+
+    // Both responsive variants render (CSS hides one per breakpoint): compact
+    // below md, full from md up.
+    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('30K');
+    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('30,000');
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 20K USDS');
+  });
+
+  it('borrow: a debt-free urn still shows the slider and the max hint', () => {
+    h.existingDebt = 0n;
+    renderSheet({ borrowCard: 'borrow' });
+
+    expect(screen.getByTestId('stake-manage-borrow-slider')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 300K USDS');
+  });
+
+  it('borrow: below the min collateral the warning owns the state and the max hint hides', () => {
+    h.existingDebt = 0n;
+    h.existingCollateral = 1_000_000n * WAD;
+    renderSheet({ borrowCard: 'borrow' });
+
+    expect(screen.getByTestId('stake-manage-min-collateral-warning')).toBeTruthy();
+    expect(screen.queryByTestId('stake-manage-max-hint')).toBeNull();
   });
 
   it('borrow: amount reaches the seam and the borrowed line shows the delta', () => {
@@ -378,19 +410,28 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('→');
   });
 
-  it('borrow: the 100% chip at a binding debt ceiling keeps Confirm enabled (boundary)', () => {
-    // Ceiling headroom (40k) below the collateral max (3M/10 = 300k) → the
-    // 100% chip stages exactly the headroom. Equality must stay valid: with
-    // the old strict < gate, Confirm went dead with no error at the very max
-    // the card itself advertised.
+  it('borrow: staging exactly the ceiling headroom keeps Confirm enabled (boundary)', () => {
+    // Ceiling headroom (40k) below the collateral max (3M/10 = 300k).
+    // Equality must stay valid: with the old strict < gate, Confirm went dead
+    // with no error at the very max the card itself advertised.
     h.debtCeiling = 40_000n * WAD;
     renderSheet({ borrowCard: 'borrow' });
 
-    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-100'));
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '40000' } });
 
     expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
     expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
     expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('borrow: the top chip is 75% and stages three quarters of the max', () => {
+    h.debtCeiling = 40_000n * WAD;
+    renderSheet({ borrowCard: 'borrow' });
+
+    expect(screen.queryByTestId('stake-manage-borrow-amount-percent-100')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-75'));
+
+    expect(h.launchParams?.usdsToBorrow).toBe(30_000n * WAD);
   });
 
   it('borrow: above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {

@@ -2,59 +2,10 @@ import { ReactElement, ReactNode, useCallback, useMemo, useSyncExternalStore } f
 import { useQuery } from '@tanstack/react-query';
 import { GeoConfigContext } from './GeoConfigContext';
 import { GeoConfig, GeoConfigContextValue, ModuleId } from '../types';
-import { FALLBACK_CONFIG } from '../constants';
 import { applyGeoOverrides } from '../applyGeoOverrides';
+import { UNKNOWN_COUNTRY_CODE } from '../constants';
+import { GEO_BYPASS, geoConfigQueryOptions } from '../query';
 import { router } from '@/pages/router';
-import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
-import { reportError } from '@/modules/sentry/reportError';
-
-// When true, bypass geo-restrictions entirely (for local development or
-// Cloudflare Access-gated private deployments like app-private.sky.money)
-const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true' || isPrivateDeployment();
-
-// Endpoint URL - use staging for now, will be configured via env var
-const GEO_CONFIG_URL = import.meta.env.VITE_GEO_CONFIG_URL || 'https://staging-api.sky.money/geo-config';
-
-async function fetchGeoConfig(): Promise<GeoConfig> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-  try {
-    const res = await fetch(GEO_CONFIG_URL, {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      reportError(new Error(`Geo config fetch failed with status ${res.status}`), {
-        module: 'geo-config',
-        flow: 'fetch-config',
-        action: 'fetch',
-        type: 'http_error',
-        statusCode: res.status
-      });
-      return FALLBACK_CONFIG;
-    }
-    return res.json();
-  } catch (error) {
-    clearTimeout(timeoutId);
-    // AbortError (DOMException code 20) is expected and already handled: either the
-    // 5s timeout above fired on a slow/filtered network, or the user navigated away
-    // mid-flight. We fall back to FALLBACK_CONFIG either way, so it's non-actionable
-    // noise — don't report it (WEBAPP-5M). Genuine failures still surface: non-ok
-    // responses are reported as `http_error` in the branch above.
-    const isAbortError = error instanceof Error && error.name === 'AbortError';
-    if (!isAbortError) {
-      reportError(error, {
-        module: 'geo-config',
-        flow: 'fetch-config',
-        action: 'fetch',
-        type: 'request_error'
-      });
-    }
-    return FALLBACK_CONFIG;
-  }
-}
 
 function getGeoOverrideSearch(): string {
   return router.history.location.search || (typeof window !== 'undefined' ? window.location.search : '');
@@ -66,13 +17,8 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
     isLoading,
     error
   } = useQuery<GeoConfig>({
-    queryKey: ['geo-config'],
-    queryFn: fetchGeoConfig,
-    enabled: !GEO_BYPASS,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000)
+    ...geoConfigQueryOptions,
+    enabled: !GEO_BYPASS
   });
 
   const locationSearch = useSyncExternalStore(
@@ -114,6 +60,13 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
         : isLoading
           ? true
           : (effectiveConfig?.isRegionRestricted ?? true),
+      // Bypassed deployments answer for the region themselves; otherwise a
+      // missing or placeholder country code means the lookup never landed.
+      isRegionVerified: GEO_BYPASS
+        ? true
+        : !isLoading &&
+          !!effectiveConfig?.countryCode &&
+          effectiveConfig.countryCode !== UNKNOWN_COUNTRY_CODE,
       isCookieBannerRequired: isLoading ? true : (effectiveConfig?.isCookiesBannerRequired ?? true)
     }),
     [effectiveConfig, isLoading, error, isModuleEnabled, getModuleRestrictionReason]

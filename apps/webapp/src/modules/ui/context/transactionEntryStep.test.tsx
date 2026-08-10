@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, type ReactNode } from 'react';
+import { StrictMode, useEffect, useRef, useState, type ReactNode } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -64,12 +64,29 @@ function Harness({
   const api = useTransaction();
   const { launch, txCallbacks } = api;
   const started = useRef(false);
+  // The config's closures must drive the LIVE session's callbacks: real
+  // engines capture the current value when they fire, and callbacks are bound
+  // to the session generation that rendered them — a config baked with the
+  // pre-launch object would be stale. Delegate through a ref instead.
+  const cbRef = useRef(txCallbacks);
+  useEffect(() => {
+    cbRef.current = txCallbacks;
+  });
+  const [liveCb] = useState<ReturnType<typeof useTransaction>['txCallbacks']>(() => ({
+    onMutate: () => cbRef.current.onMutate(),
+    onStart: hash => cbRef.current.onStart(hash),
+    onSuccess: hash => cbRef.current.onSuccess(hash),
+    onError: (error, hash) => cbRef.current.onError(error, hash)
+  }));
+  // Report the latest api on every render (post-launch callbacks included).
+  useEffect(() => {
+    onReady(api);
+  });
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    launch(build(txCallbacks));
-    onReady(api);
-  }, [launch, txCallbacks, build, onReady, api]);
+    launch(build(liveCb));
+  }, [launch, build, liveCb]);
   return null;
 }
 
@@ -186,6 +203,100 @@ describe('TransactionModal — editable entry step', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Supply' }));
     expect(freshConfirm).toHaveBeenCalledTimes(1);
     expect(staleConfirm).not.toHaveBeenCalled();
+  });
+
+  it('confirmAction overrides the entry CTA: fires in place, no screen advance, no onConfirm — and clearing it restores the confirm', () => {
+    const connect = vi.fn();
+    const onConfirm = vi.fn();
+    const SESSION = 'upgrade-1';
+    const get = renderModal(cb => ({
+      title: 'Upgrade DAI/MKR',
+      sessionId: SESSION,
+      entry: {
+        content: <div>fields</div>,
+        confirmLabel: 'Connect wallet',
+        confirmDisabled: false,
+        confirmAction: connect
+      },
+      // Mirror a real flow: confirm fires the engine, which calls back into the modal.
+      onConfirm: () => {
+        onConfirm();
+        cb.onMutate();
+      }
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Connect wallet' }));
+    // The override ran in place: still on the entry screen, transaction untouched.
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.queryByText(/confirm this transaction in your wallet/i)).toBeNull();
+
+    // The wallet connects: the body pushes the normal confirm back (the
+    // upgrade form's connected state).
+    act(() => {
+      get().updateModalContent(SESSION, {
+        entry: { confirmLabel: 'Continue', confirmAction: undefined }
+      });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+    expect(connect).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the two-CTA entry footer and routes each CTA to its own handler (Figma 1036:214001)', () => {
+    const onConfirm = vi.fn();
+    const onSecondaryConfirm = vi.fn();
+    renderModal(cb => ({
+      title: 'Claim rewards',
+      entry: {
+        content: <div>rewards</div>,
+        confirmLabel: 'Claim & Restake SKY',
+        confirmDisabled: false,
+        secondaryConfirmLabel: 'Claim',
+        secondaryConfirmDisabled: false
+      },
+      onConfirm,
+      onSecondaryConfirm: () => {
+        onSecondaryConfirm();
+        cb.onMutate();
+      }
+    }));
+
+    expect(screen.queryByRole('button', { name: 'Claim & Restake SKY' })).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Claim' }));
+
+    // The secondary CTA fires its own handler — not the primary's — and
+    // advances to the wallet/status screen like the primary would.
+    expect(onSecondaryConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+  });
+
+  it('gates the secondary CTA on its own disabled flag, pushed live like the primary', () => {
+    const onSecondaryConfirm = vi.fn();
+    const SESSION = 'stake-claim-1';
+    const get = renderModal(() => ({
+      title: 'Claim rewards',
+      sessionId: SESSION,
+      entry: {
+        content: <div>rewards</div>,
+        confirmLabel: 'Claim & Restake SKY',
+        confirmDisabled: false,
+        secondaryConfirmLabel: 'Claim',
+        secondaryConfirmDisabled: true
+      },
+      onConfirm: () => {},
+      onSecondaryConfirm
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Claim' }));
+    expect(onSecondaryConfirm).not.toHaveBeenCalled();
+
+    act(() => get().updateModalContent(SESSION, { entry: { secondaryConfirmDisabled: false } }));
+    fireEvent.click(screen.getByRole('button', { name: 'Claim' }));
+    expect(onSecondaryConfirm).toHaveBeenCalledTimes(1);
   });
 
   it('review-only configs (no entry) are unchanged: review renders first, confirm advances', () => {

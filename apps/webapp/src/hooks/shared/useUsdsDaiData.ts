@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 
-import { formatBaLabsUrl } from '../helpers';
+import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
 
 type UsdsDaiApiResponse = {
@@ -36,18 +36,9 @@ function transformBaLabsData(results: UsdsDaiApiResponse[]): UsdsDaiChartInfo[] 
 
 async function fetchUsdsDaiData(url: URL): Promise<UsdsDaiChartInfo[]> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const data: { results: UsdsDaiApiResponse[] } = await response.json();
-
-    const result = transformBaLabsData(data?.results || []);
-
-    return result;
+    // Paged: this endpoint caps a response at 1000 rows whatever p_size asks for,
+    // which cut the All-time chart off at Nov 2023 (APP-456 #5).
+    return transformBaLabsData(await fetchBaLabsPages<UsdsDaiApiResponse>(url));
   } catch (error) {
     console.error('Error fetching BaLabs data:', error);
     return [];

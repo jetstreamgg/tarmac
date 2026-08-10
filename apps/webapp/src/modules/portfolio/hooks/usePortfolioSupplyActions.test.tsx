@@ -15,6 +15,8 @@ const h = vi.hoisted(() => ({
   chainId: 1,
   // Production-shaped chain list by default; the dev-build test adds the fork.
   chains: [{ id: 1 }, { id: 8453 }, { id: 10 }] as { id: number }[],
+  // Geo modules disabled for the region; empty = unrestricted (the default).
+  geoDisabledModules: new Set<string>(),
   switchChainAsync: vi.fn(),
   setIsAutoSwitching: vi.fn(),
   setAutoSwitchIntent: vi.fn()
@@ -24,6 +26,10 @@ vi.mock('wagmi', () => ({
   useChainId: () => h.chainId,
   useChains: () => h.chains,
   useSwitchChain: () => ({ switchChainAsync: h.switchChainAsync })
+}));
+
+vi.mock('@/modules/geo-config/hooks/useGeoConfig', () => ({
+  useGeoConfig: () => ({ isModuleEnabled: (moduleId: string) => !h.geoDisabledModules.has(moduleId) })
 }));
 
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
@@ -129,6 +135,7 @@ describe('usePortfolioSupplyActions', () => {
     h.setAutoSwitchIntent.mockClear();
     h.chainId = 1;
     h.chains = [{ id: 1 }, { id: 8453 }, { id: 10 }];
+    h.geoDisabledModules.clear();
     h.pendleMarket.expiry = 4102444800;
   });
   afterEach(() => cleanup());
@@ -387,5 +394,38 @@ describe('usePortfolioSupplyActions', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions());
     expect(result.current(position('fixed', { id: 'fixed-0x404', address: '0x404' }))).toBeUndefined();
     expect(h.openPendleSupply).not.toHaveBeenCalled();
+  });
+
+  it('returns undefined for a savings position when the savings module is geo-restricted (caller navigates to the guarded route)', () => {
+    h.geoDisabledModules.add('savings');
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+
+    expect(result.current(position('savings'))).toBeUndefined();
+    expect(h.openSavingsSupply).not.toHaveBeenCalled();
+  });
+
+  it('gates every in-place modal family by its own geo module', () => {
+    // kind → its geo ModuleId (stusds rides the expert module).
+    const families = [
+      ['rewards', 'rewards', { id: 'rewards-spk', address: '0xFA12' }],
+      ['vault', 'vaults', { id: 'vault-morpho-0xabc', address: '0xABC' }],
+      ['stusds', 'expert', {}],
+      ['fixed', 'fixed', { id: 'fixed-0x9c5', address: '0x9C5' }]
+    ] as const;
+
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    for (const [kind, moduleId, over] of families) {
+      expect(result.current(position(kind, over))).toBeTypeOf('function');
+      h.geoDisabledModules.add(moduleId);
+      expect(result.current(position(kind, over))).toBeUndefined();
+    }
+  });
+
+  it('leaves other modules resolvable while one is geo-restricted', () => {
+    h.geoDisabledModules.add('savings');
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+
+    result.current(position('stusds'))!();
+    expect(h.openStUsdsSupply).toHaveBeenCalledTimes(1);
   });
 });

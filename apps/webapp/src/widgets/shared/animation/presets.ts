@@ -1,5 +1,5 @@
-import { Transition, Variant, Variants } from 'motion/react';
-import { bezierIconIn, bezierIconOut, bezierSkeleton, easeOutExpo } from './timingFunctions';
+import { Variant, Variants } from 'motion/react';
+import { bezierIconIn, bezierIconOut, easeOutExpo } from './timingFunctions';
 import { AnimationLabels } from './constants';
 
 export const cardInInitial: Variant = {
@@ -97,12 +97,9 @@ export const buttonsAnimations: Variants = {
   [AnimationLabels.exit]: buttonsOutExit
 };
 
-export const skeletonTransition: Transition = {
-  duration: 2.5,
-  repeat: Infinity,
-  ease: bezierSkeleton,
-  repeatDelay: 0.5
-};
+// Defined once at the app level; re-exported so widgets code can keep importing it
+// from this module.
+export { skeletonTransition } from '@/modules/ui/animation/presets';
 
 const iconInInitial: Variant = {
   scale: 1.12,

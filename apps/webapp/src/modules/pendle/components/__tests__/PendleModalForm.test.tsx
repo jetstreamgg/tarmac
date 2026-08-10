@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
@@ -63,6 +63,7 @@ const hoisted = vi.hoisted(() => ({
         entry?: { confirmDisabled?: boolean };
         steps?: string[];
         rightHeaderComponent?: unknown;
+        transactionContent?: ReactNode;
       }
     ) => void
   >(() => hoisted.onPush?.()),
@@ -91,8 +92,22 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
     usePendleUserPtBalances: () => ({
       data: { [MARKET.marketAddress]: PT_BALANCE },
+      isLoading: false,
+      error: undefined,
+      mutate: () => undefined,
+      dataSources: []
+    }),
+    usePendleMarketsApiData: () => ({
+      data: { [MARKET.marketAddress]: { impliedApy: 0.042, expirySec: MARKET.expiry } },
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
@@ -172,11 +187,14 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { PendleModalForm } from '../PendleModalForm';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const renderForm = (flow: 'supply' | 'withdraw') =>
   render(
     <I18nProvider i18n={i18n}>
-      <PendleModalForm sessionId="session-1" flow={flow} market={MARKET} />
+      <TooltipProvider>
+        <PendleModalForm sessionId="session-1" flow={flow} market={MARKET} />
+      </TooltipProvider>
     </I18nProvider>
   );
 
@@ -186,6 +204,18 @@ const typeAmount = (value: string) =>
 const lastEntryUpdate = () => {
   const calls = hoisted.updateModalContent.mock.calls.filter(([, partial]) => partial.entry !== undefined);
   return calls.at(-1)?.[1];
+};
+
+/** Renders the review-stage grid the form pushed to the shared modal. */
+const renderLastReviewContent = () => {
+  const calls = hoisted.updateModalContent.mock.calls.filter(
+    ([, partial]) => partial.transactionContent !== undefined
+  );
+  return render(
+    <I18nProvider i18n={i18n}>
+      <TooltipProvider>{calls.at(-1)?.[1].transactionContent}</TooltipProvider>
+    </I18nProvider>
+  );
 };
 
 describe('PendleModalForm', () => {
@@ -208,7 +238,9 @@ describe('PendleModalForm', () => {
 
     render(
       <I18nProvider i18n={i18n}>
-        <Host />
+        <TooltipProvider>
+          <Host />
+        </TooltipProvider>
       </I18nProvider>
     );
 
@@ -234,12 +266,37 @@ describe('PendleModalForm', () => {
       expect(hoisted.quoteArgs?.enabled).toBe(true);
     });
 
-    it('shows the quoted PT amount as "You\'ll receive"', () => {
+    it("draws the You'll claim delta from the quoted PT amount", () => {
       renderForm('supply');
       typeAmount('100');
 
-      expect(screen.getByTestId('pendle-modal-receive').textContent).toContain('102');
-      expect(screen.getByTestId('pendle-modal-receive').textContent).toContain('PT-USDG');
+      // 500 PT held + 102 PT quoted out → 500 → 602 at maturity.
+      const claim = screen.getByTestId("pendle-modal-row-You'll claim").textContent;
+      expect(claim).toContain('500');
+      expect(claim).toContain('602');
+    });
+
+    it('shows the entry grid per the Figma pairing with the rate delta', () => {
+      renderForm('supply');
+      typeAmount('100');
+
+      // Implied 4.20% → effective 4.90% from the quote.
+      const rate = screen.getByTestId('pendle-modal-row-Fixed rate').textContent;
+      expect(rate).toContain('4.20%');
+      expect(rate).toContain('4.90%');
+      expect(screen.getByTestId('pendle-modal-row-Claim date').textContent).toBeTruthy();
+      expect(screen.getByTestId('pendle-modal-row-Network fee')).toBeTruthy();
+    });
+
+    it('shows the review price impact sign-flipped, not absolute', () => {
+      renderForm('supply');
+      typeAmount('100');
+
+      // Quote raw -0.0005: Pendle's negative = unfavorable, displayed positive
+      // under the app-wide convention. An |impact| would print the same string
+      // for a favorable quote, inverting its meaning.
+      const review = renderLastReviewContent();
+      expect(review.getByTestId('pendle-modal-row-Price impact').textContent).toContain('0.050%');
     });
 
     it('keeps confirm disabled until an amount within balance is entered', () => {
@@ -326,14 +383,13 @@ describe('PendleModalForm', () => {
       expect(lastEntryUpdate()?.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDG' }]);
     });
 
-    it('pushes the SlippageMenu into the modal header', () => {
+    it('keeps the slippage control out of the modal header — it lives in the review grid now', () => {
       renderForm('supply');
 
       const headerPush = hoisted.updateModalContent.mock.calls.find(
         ([, partial]) => partial.rightHeaderComponent !== undefined
       );
-      expect(headerPush).toBeTruthy();
-      expect(headerPush?.[0]).toBe('session-1');
+      expect(headerPush).toBeUndefined();
     });
   });
 

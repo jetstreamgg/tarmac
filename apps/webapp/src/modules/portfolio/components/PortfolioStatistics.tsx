@@ -4,7 +4,9 @@ import { useOverallSkyData, useUsdsDaiData } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Heading, Text } from '@/modules/layout/components/Typography';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { PortfolioTotalsChart } from './PortfolioTotalsChart';
 
 const INSIGHTS_URL = 'https://info.skyeco.com/';
@@ -33,8 +35,8 @@ export function PortfolioStatistics() {
 
   return (
     <section data-testid="portfolio-statistics">
-      <Heading tag="h2" variant="medium" className="mb-6">
-        <Trans>Statistics</Trans>
+      <Heading tag="h2" variant="medium" className="mb-8">
+        <Trans>Sky Protocol Statistics</Trans>
       </Heading>
 
       <Card className="p-6">
@@ -46,13 +48,25 @@ export function PortfolioStatistics() {
 
         <div className="border-borderPrimary my-6 border-b" />
 
+        {/* Comp footer (1036:189291): the three figures 40px apart, split by
+            28px hairlines, with the CTA pushed to the far right. */}
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="flex flex-wrap gap-x-12 gap-y-4">
-            <Stat label={<Trans>Total supply</Trans>} value={totalSupply} />
+          <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
+            <Stat
+              label={<Trans>Total supply</Trans>}
+              value={totalSupply}
+              // 2.2: the supply figure carries the USDS mark.
+              icon={
+                <TokenIcon token={{ symbol: 'USDS' }} width={16} showChainIcon={false} className="size-4" />
+              }
+            />
+            <StatDivider />
             <Stat label={<Trans>Savings TVL</Trans>} value={savingsTvl} />
+            <StatDivider />
             <Stat label={<Trans>Rewards TVL</Trans>} value={rewardsTvl} />
           </div>
-          <Button asChild variant="primary" size="l" className="w-fit">
+          {/* 2.4: the comp draws this as the secondary button. */}
+          <Button asChild variant="secondary" size="l" className="w-fit">
             <a href={INSIGHTS_URL} target="_blank" rel="noreferrer">
               <Trans>Get more insights</Trans>
             </a>
@@ -63,17 +77,35 @@ export function PortfolioStatistics() {
   );
 }
 
-function Stat({ label, value }: { label: ReactNode; value: string | undefined }) {
+function Stat({
+  label,
+  value,
+  icon
+}: {
+  label: ReactNode;
+  value: string | undefined;
+  /** 16px mark leading the figure (only the supply stat carries one). */
+  icon?: ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-0.5">
       <Text variant="medium" className="text-textSecondary">
         {label}
       </Text>
       {value ? (
-        <span className="text-text font-medium">{value}</span>
+        // Label 4 (Circular 16/18, -0.32) per the comp.
+        <span className="text-text font-circle flex items-center gap-1 text-base leading-[18px] font-medium tracking-[-0.32px]">
+          {icon}
+          {value}
+        </span>
       ) : (
-        <span className="bg-surface h-5 w-24 animate-pulse rounded" />
+        <Skeleton className="h-5 w-24 rounded" />
       )}
     </div>
   );
+}
+
+/** 28px hairline between two footer figures; drops out once they wrap. */
+function StatDivider() {
+  return <span className="bg-borderPrimary hidden h-7 w-px shrink-0 sm:block" aria-hidden />;
 }

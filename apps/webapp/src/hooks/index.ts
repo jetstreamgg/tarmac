@@ -19,6 +19,7 @@ export { useSsrAssetsToShares } from './savings/useSsrAssetsToShares';
 export { useMultiChainSavingsBalances } from './savings/useMultiChainSavingsBalances';
 export { useBatchSavingsSupply } from './savings/useBatchSavingsSupply';
 export { useBatchUpgradeAndSavingsSupply } from './savings/useBatchUpgradeAndSavingsSupply';
+export { useBatchPsmSwapAndSavingsSupply } from './savings/useBatchPsmSwapAndSavingsSupply';
 
 // stUSDS
 export {
@@ -290,6 +291,7 @@ export { useHistoryFamilyQuery } from './shared/useHistoryFamilyQuery';
 export { useFilteredPortfolioHistory } from './shared/useFilteredPortfolioHistory';
 export { useUsdsDaiData } from './shared/useUsdsDaiData';
 export { useOverallSkyData } from './shared/useOverallSkyData';
+export { trailingAverageRate, type DailyRatePoint } from './shared/trailingRate';
 
 // Earn marketplace (C1 registry + aggregator)
 export { useEarnMarketplace } from './earn/useEarnMarketplace';
@@ -527,6 +529,8 @@ export { contracts, l2Contracts } from './contracts';
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
+export { useNetworkFee } from './shared/useNetworkFee';
+export type { NetworkFeeData, UseNetworkFeeParameters } from './shared/useNetworkFee';
 
 // UI utility hooks
 export * from './ui';

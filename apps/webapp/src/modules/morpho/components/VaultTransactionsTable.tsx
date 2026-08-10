@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useMorphoVaultHistory, getTokenDecimals, TransactionTypeEnum } from '@/hooks';
 import { formatBigInt, getEtherscanLink, formatAddress } from '@/utils';
 import { absBigInt } from '@/modules/utils/math';
-import { SavingsSupply, ArrowDown } from '@/modules/icons';
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import {
   ProductTransactionsTable,
@@ -30,13 +30,7 @@ type VaultTxRow = {
 // absolute Time column). Column-driven, so it diverges from Savings freely.
 const actionCell = (row: VaultTxRow, sublabel?: string) => (
   <CellAction
-    icon={
-      row.isSupply ? (
-        <SavingsSupply width={16} height={15} />
-      ) : (
-        <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
-      )
-    }
+    icon={row.isSupply ? <ArrowDownToLine className="size-4" /> : <ArrowUpToLine className="size-4" />}
     label={row.isSupply ? <Trans>Supply</Trans> : <Trans>Withdrawal</Trans>}
     sublabel={sublabel}
   />

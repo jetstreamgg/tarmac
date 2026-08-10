@@ -1,8 +1,9 @@
-import { ReactNode, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
 import { format } from 'date-fns';
+import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
   TOKENS,
@@ -13,23 +14,25 @@ import {
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { HeaderBadge } from '@/components/ui/page-header';
+import { Pendle } from '@/widgets';
 import { PositionHero } from '@/components/product/PositionHero';
+import {
+  NO_VALUE,
+  ProductActions,
+  ProductFigure,
+  ProductPercent,
+  ProductPositionCard,
+  ProductStat,
+  ProductStatPair,
+  ProductSupplyCard
+} from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
 
-const NO_VALUE = '–';
 const SECONDS_PER_DAY = 86_400;
-
-function StatRow({ label, children }: { label: ReactNode; children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text flex items-center gap-1.5 text-sm font-medium">{children}</span>
-    </div>
-  );
-}
 
 /**
  * No-position Pendle entry card (Figma 486:33862): "Supply USDS/USDC and earn
@@ -69,77 +72,81 @@ function PendleSupplyCard({
       ? formatNumber(parseFloat(formatUnits(balance.value, 18)), { maxDecimals: 2 })
       : NO_VALUE;
 
-  return (
-    <Card className="flex flex-col gap-6 p-6" data-testid="pendle-supply-card">
-      <h3 className="text-text text-2xl leading-snug font-medium">
-        <Trans>
-          Supply{' '}
-          <span className="whitespace-nowrap">
-            <TokenIcon
-              token={{ symbol: 'USDS' }}
-              width={24}
-              showChainIcon={false}
-              className="mr-1 inline-block h-6 w-6 -translate-y-0.5 align-middle"
-            />
-            USDS
-          </span>{' '}
-          /{' '}
-          <span className="whitespace-nowrap">
-            <TokenIcon
-              token={{ symbol: 'USDC' }}
-              width={24}
-              showChainIcon={false}
-              className="mr-1 inline-block h-6 w-6 -translate-y-0.5 align-middle"
-            />
-            USDC
-          </span>{' '}
-          and earn {rate} APY
-        </Trans>
-      </h3>
+  const inlineToken = (symbol: string) => (
+    <span className="whitespace-nowrap">
+      <TokenIcon
+        token={{ symbol }}
+        width={24}
+        showChainIcon={false}
+        className="mr-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6"
+      />
+      {symbol}
+    </span>
+  );
 
-      <p className="text-textSecondary text-sm leading-relaxed">
+  return (
+    <ProductSupplyCard
+      data-testid="pendle-supply-card"
+      badges={
+        /* The comp (859:40958) pairs the category badge with the provider one. */
+        <div className="flex flex-wrap items-center gap-2">
+          <HeaderBadge size="s" className="pl-2">
+            <Trans>Fixed yield</Trans>
+          </HeaderBadge>
+          <HeaderBadge size="s" icon={<Pendle className="size-4" />}>
+            <Trans>Powered by Pendle</Trans>
+          </HeaderBadge>
+        </div>
+      }
+      title={
+        <Trans>
+          Supply {inlineToken('USDS')} / {inlineToken('USDC')} and earn {rate} APY
+        </Trans>
+      }
+      description={
         <Trans>
           Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
           maturity. Fix your yield at {rate} APY for the next {remainingDays} days.
         </Trans>
-      </p>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-textSecondary text-sm">
-            <Trans>Current Rate</Trans>
-          </span>
-          <span className="text-text flex items-center gap-1.5 font-medium">
-            {rate}
-            <TokenIcon
-              token={{ symbol: `PT-${market.underlyingSymbol}` }}
-              width={18}
-              showChainIcon={false}
-              className="h-4.5 w-4.5"
-            />
-          </span>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-textSecondary text-sm">
-            <Trans>Idle balance</Trans>
-          </span>
-          <span className="text-text flex items-center gap-1.5 font-medium">
-            {idleBalance}
-            <TokenIcon token={{ symbol: 'USDS' }} width={18} showChainIcon={false} className="h-4.5 w-4.5" />
-          </span>
-        </div>
-      </div>
-
-      <Button
-        variant="primary"
-        size="l"
-        className="w-full"
-        onClick={onSupplyOrConnect}
-        data-testid="pendle-supply-cta"
-      >
-        <Trans>Supply</Trans>
-      </Button>
-    </Card>
+      }
+      stats={
+        <ProductStatPair>
+          <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
+            <ProductFigure value={rate}>
+              {rate}
+              <TokenIcon
+                token={{ symbol: `PT-${market.underlyingSymbol}` }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
+          </ProductStat>
+          <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
+            <ProductFigure value={idleBalance}>
+              {idleBalance}
+              <TokenIcon
+                token={{ symbol: 'USDS' }}
+                width={16}
+                showChainIcon={false}
+                className="h-4 w-4 shrink-0"
+              />
+            </ProductFigure>
+          </ProductStat>
+        </ProductStatPair>
+      }
+      cta={
+        <Button
+          variant="primary"
+          size="l"
+          className="w-full"
+          onClick={onSupplyOrConnect}
+          data-testid="pendle-supply-cta"
+        >
+          <Trans>Supply</Trans>
+        </Button>
+      }
+    />
   );
 }
 
@@ -190,41 +197,55 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   // PT decimals match the underlying's (Pendle convention).
   const positionValue = parseFloat(formatUnits(ptBalance, market.underlyingDecimals));
   // At maturity 1 PT redeems 1 USDS on pegged markets — the claimable amount.
-  const claimAmount =
-    market.usdsEquivalence === 'pegged'
-      ? `${formatNumber(positionValue, { maxDecimals: 2 })} USDS`
-      : `${formatNumber(positionValue, { maxDecimals: 2 })} ${market.underlyingSymbol}`;
+  // The comp (859:41055) tags the figure with a token mark instead of spelling
+  // the symbol out, so only the number is formatted here.
+  const claimAmount = formatNumber(positionValue, { maxDecimals: 2 });
+  const claimSymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
+
+  const fixedRate = stats?.impliedApy !== undefined ? formatDecimalPercentage(stats.impliedApy) : NO_VALUE;
 
   return (
-    <Card className="flex flex-col gap-5 p-2" data-testid="pendle-position-card">
-      <PositionHero
-        pillSymbol={`PT-${market.underlyingSymbol}`}
-        balanceSymbol={`PT-${market.underlyingSymbol}`}
-        amount={positionValue}
-      />
-
-      <div className="flex flex-col gap-5 px-3 pb-3">
-        <div className="flex flex-col gap-3">
-          {/* No cost-basis source for active positions yet — placeholder per the
-              redesign (matches the vault card's earned-interest gap). */}
-          <StatRow label={<Trans>Current earnings</Trans>}>
-            <span className="text-textSecondary">{NO_VALUE}</span>
-          </StatRow>
-          <StatRow label={<Trans>You&apos;ll claim</Trans>}>
-            <TokenIcon token={{ symbol: 'USDS' }} width={18} showChainIcon={false} className="h-4.5 w-4.5" />
-            {claimAmount}
-          </StatRow>
-          <StatRow label={<Trans>Claim date</Trans>}>{claimDateLabel}</StatRow>
-          <StatRow label={<Trans>Fixed APY</Trans>}>
-            {stats?.impliedApy !== undefined ? formatDecimalPercentage(stats.impliedApy) : NO_VALUE}
-          </StatRow>
-        </div>
-
-        <div className="flex flex-col gap-3">
+    <ProductPositionCard
+      data-testid="pendle-position-card"
+      hero={
+        <PositionHero
+          pillSymbol={`PT-${market.underlyingSymbol}`}
+          balanceSymbol={`PT-${market.underlyingSymbol}`}
+          amount={positionValue}
+        />
+      }
+      stats={
+        <>
+          <ProductStatPair grow>
+            {/* No cost-basis source for active positions yet — placeholder per
+                the redesign (matches the vault card's already-earned gap). */}
+            <ProductStat label={<Trans>Current earnings</Trans>}>
+              <span className="text-fgSecondary">{NO_VALUE}</span>
+            </ProductStat>
+            <ProductStat label={<Trans>You&apos;ll claim</Trans>}>
+              <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+              {claimAmount}
+              <TokenIcon
+                token={{ symbol: claimSymbol }}
+                width={12}
+                showChainIcon={false}
+                className="h-3 w-3 shrink-0"
+              />
+            </ProductStat>
+          </ProductStatPair>
+          <ProductStatPair grow>
+            <ProductStat label={<Trans>Claim date</Trans>}>{claimDateLabel}</ProductStat>
+            <ProductStat label={<Trans>Fixed rate</Trans>}>
+              <ProductPercent value={fixedRate} />
+            </ProductStat>
+          </ProductStatPair>
+        </>
+      }
+      actions={
+        <ProductActions>
           <Button
             variant="primary"
             size="l"
-            className="w-full"
             onClick={() => openSupply(market)}
             disabled={!isConnected}
             data-testid="pendle-position-supply"
@@ -234,15 +255,14 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
           <Button
             variant="secondary"
             size="l"
-            className="w-full"
             onClick={() => openWithdraw(market)}
             disabled={!isConnected}
             data-testid="pendle-position-withdraw"
           >
             <Trans>Withdraw</Trans>
           </Button>
-        </div>
-      </div>
-    </Card>
+        </ProductActions>
+      }
+    />
   );
 }

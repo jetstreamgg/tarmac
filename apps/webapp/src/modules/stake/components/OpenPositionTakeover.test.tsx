@@ -78,7 +78,8 @@ vi.mock('@/hooks', async importOriginal => {
     }),
     useCollateralData: () => ({
       data: {
-        stabilityFee: 0.0851,
+        // 8.51% as the WAD-scaled annual rate the real hook returns.
+        stabilityFee: 851n * 10n ** 14n,
         debtCeiling: h.debtCeilingHeadroom,
         totalDaiDebt: 0n,
         debtCeilingUtilization: 0.5
@@ -294,6 +295,51 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(500n * WAD);
   });
 
+  it('the stake slider tracks the typed share of the balance (1036:209724)', () => {
+    renderTakeover();
+
+    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
+    expect(slider?.getAttribute('aria-valuenow')).toBe('0');
+
+    // Balance is 1000 SKY, so a quarter of it puts the thumb at 25%.
+    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
+    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
+
+    // Typing past the balance pins the thumb rather than running it off-track.
+    typeStakeAmount('5000');
+    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
+  });
+
+  it('the stake slider still reads whole percents on a dust-bearing balance', () => {
+    // Staging floors, so a balance that is not a round multiple of 100 wei used
+    // to read back one percent LOW (25% chip → thumb at 24) when the projection
+    // floored as well. Real balances are all of this shape.
+    h.balance = 1234567891234567891234n;
+    renderTakeover();
+
+    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
+    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
+    expect(slider?.getAttribute('aria-valuetext')).toBe('25%');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-100'));
+    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
+  });
+
+  it('dragging the stake slider stages the matching share of the balance', () => {
+    renderTakeover();
+
+    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
+    (slider as HTMLElement).focus();
+    // One keyboard step off zero is 1% of the 1000 SKY balance.
+    fireEvent.keyDown(slider as HTMLElement, { key: 'ArrowRight' });
+
+    expect(slider?.getAttribute('aria-valuenow')).toBe('1');
+    expect((screen.getByTestId('stake-takeover-stake-amount') as HTMLInputElement).value).toBe('10');
+    expect(h.launchParams?.skyToLock).toBe(10n * WAD);
+  });
+
   it('shows the est. annual rewards from the selected farm rate', () => {
     renderTakeover();
 
@@ -351,21 +397,32 @@ describe('OpenPositionTakeover', () => {
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('borrow: the 100% chip at a binding debt ceiling keeps Confirm enabled (boundary)', () => {
-    // Ceiling headroom (50) below the collateral max (1000/10 = 100) → the
-    // 100% chip stages exactly the headroom. Equality must stay valid: with
-    // the old strict < gate, Confirm went dead with no error at the very max
-    // the card itself advertised.
+  it('borrow: staging exactly the ceiling headroom keeps Confirm enabled (boundary)', () => {
+    // Ceiling headroom (50) below the collateral max (1000/10 = 100).
+    // Equality must stay valid: with the old strict < gate, Confirm went dead
+    // with no error at the very max the card itself advertised.
     h.debtCeilingHeadroom = 50n * WAD;
     renderTakeover();
     typeStakeAmount('1000');
 
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
-    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-percent-100'));
+    fireEvent.change(screen.getByTestId('stake-takeover-borrow-amount'), { target: { value: '50' } });
 
     expect(h.launchParams?.usdsToBorrow).toBe(50n * WAD);
     expect(screen.queryByTestId('stake-takeover-borrow-amount-error')).toBeNull();
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('borrow: the top chip is 75% and stages three quarters of the max, whole-USDS rounded', () => {
+    h.debtCeilingHeadroom = 50n * WAD;
+    renderTakeover();
+    typeStakeAmount('1000');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-100')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-percent-75'));
+
+    expect(h.launchParams?.usdsToBorrow).toBe(37n * WAD);
   });
 
   it('borrow above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {

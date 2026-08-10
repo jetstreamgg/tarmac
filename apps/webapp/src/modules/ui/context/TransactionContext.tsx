@@ -6,7 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
-import { useIsSafeWallet } from '@/hooks';
+import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -68,7 +68,30 @@ export function useEntrySlot() {
   return useContext(EntrySlotContext);
 }
 
+/** The modal's render inputs, retained across its exit animation. */
+type TransactionModalView = {
+  config: TransactionConfig;
+  txStatus: TxStatus;
+  externalLink: string | undefined;
+  currentStep: number;
+};
+
+/**
+ * How long the modal is kept mounted after being told to close, so its exit
+ * animation can play. Matches the dismissal in `components/ui/dialog.tsx`
+ * (and the bottom sheet's, which is the same 300ms).
+ */
+const MODAL_EXIT_MS = 300;
+
 export function TransactionProvider({ children }: { children: ReactNode }) {
+  // Warm the EIP-5792 capability probe from the provider, which is mounted for the whole
+  // session, so it runs on connect rather than the first time a flow needs the answer.
+  // A multi-call flow genuinely has to know whether the wallet can bundle before it can
+  // pick a route, and paying for that wallet round trip at modal-open time is what makes
+  // a Confirm button sit disabled while nothing visible is happening. Result is shared —
+  // this is the same react-query key every `useIsBatchSupported` caller reads.
+  useIsBatchSupported();
+
   const [open, setOpen] = useState(false);
   // Minimized = modal hidden but the transaction keeps running. Distinct from
   // closed (which tears the transaction down); see minimize()/restore() below.
@@ -86,7 +109,51 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   // Config is state so updateModalContent re-renders the modal; ref mirrors it for callback reads.
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
+  // Everything the modal draws arrives as props, so this snapshot of them is
+  // enough to keep it on screen, unchanged, while it animates away.
+  //
+  // It exists because `activeConfig` gates the whole modal subtree and
+  // handleClose clears it synchronously: the modal was being unmounted in the
+  // same tick it was told to close, so its exit animation never ran and it
+  // simply vanished. Holding the last rendered props for the length of that
+  // animation lets Radix play the exit. The teardown itself is untouched —
+  // this deliberately does not defer any of it.
+  const [exitingView, setExitingView] = useState<TransactionModalView | null>(null);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSessionRef = useRef<string | null>(null);
+  // Session generation: advanced by launch() and handleClose(), so engine
+  // callbacks are bound to the session that rendered them (state) and can spot
+  // that it has since ended (ref). An in-flight write outlives its host — the
+  // wallet can accept in the same instant the user dismisses the modal — and
+  // without this check the orphaned engine's onStart stamped LOADING onto the
+  // torn-down provider (no modal left to restore), bricking every later
+  // launch() on the in-progress guard until a reload; after an
+  // abandon-then-relaunch it would corrupt the NEW session instead.
+  const [sessionGen, setSessionGen] = useState(0);
+  const sessionGenRef = useRef(0);
+  // The generation of the write currently in flight, latched at onMutate.
+  //
+  // The closure check above only sheds a stale callback when the engine is
+  // still HOLDING an old render's closure — true for flows hosted in
+  // `backgroundContent` (savings, stUSDS, rewards, vault, claim, upgrade,
+  // pendle supply/withdraw): close unmounts the host and freezes its closures
+  // at the pre-bump generation. The review-first flows (convert, pendle
+  // redeem, the stake takeovers) keep their engine host mounted on the page,
+  // so it re-renders after teardown and react-query hands the LIVE mutation
+  // the newest options (MutationObserver.setOptions pushes into a pending
+  // Mutation, and useWriteContractFlow's receipt effect closes over the
+  // current render) — a late callback from an abandoned write would arrive
+  // carrying the CURRENT generation and sail through.
+  //
+  // onMutate is the one callback that always fires synchronously from the
+  // user's confirm, so the generation it records is the session that actually
+  // started the write, whatever the host's mount state. The settle callbacks
+  // check that instead of trusting their own closure. Null until the first
+  // write of the page's life, where it falls back to the closure check alone.
+  const writeGenRef = useRef<number | null>(null);
+  // Hash of the write this session is tracking, latched at onStart, so a
+  // settle carrying a DIFFERENT hash is recognisable as another transaction's.
+  const writeHashRef = useRef<string | undefined>(undefined);
   // Mirrors txStatus for reads inside callbacks (avoids setState-inside-updater impurity).
   const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
@@ -103,7 +170,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       // One BROADCAST transaction at a time: it's on-chain and will resolve, so
       // don't start a new session — bring the pending modal back into view and
       // say why. Launching here would remount the host and strand the running tx.
-      if (txStatusRef.current === TxStatus.LOADING) {
+      // The configRef check is self-healing defense: LOADING with no live
+      // session has nothing to restore, so fall through to a fresh launch
+      // instead of blocking forever.
+      if (txStatusRef.current === TxStatus.LOADING && configRef.current) {
         setMinimized(false);
         toastWithClose(
           () => (
@@ -138,6 +208,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
         notifyRequestAbandoned();
       }
 
+      sessionGenRef.current += 1;
+      setSessionGen(sessionGenRef.current);
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveConfig(config);
@@ -165,20 +237,23 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
     (sessionId, partial) => {
       if (sessionId !== activeSessionRef.current) return;
-      setActiveConfig(prev => {
-        if (!prev) return prev;
-        const { entry: entryPatch, ...rest } = partial;
-        const next = { ...prev, ...rest };
-        // Merge the entry partial so an in-modal body can flip confirmDisabled /
-        // refresh its rows WITHOUT re-pushing `content` (which would remount it).
-        // A patch only ever arrives after launch seeded `entry`, so the merge is
-        // a complete TransactionEntry.
-        if (entryPatch) {
-          next.entry = { ...(prev.entry ?? {}), ...entryPatch } as TransactionEntry;
-        }
-        configRef.current = next;
-        return next;
-      });
+      const prev = configRef.current;
+      if (!prev) return;
+      const { entry: entryPatch, ...rest } = partial;
+      const next = { ...prev, ...rest };
+      // Merge the entry partial so an in-modal body can flip confirmDisabled /
+      // refresh its rows WITHOUT re-pushing `content` (which would remount it).
+      // A patch only ever arrives after launch seeded `entry`, so the merge is
+      // a complete TransactionEntry.
+      if (entryPatch) {
+        next.entry = { ...(prev.entry ?? {}), ...entryPatch } as TransactionEntry;
+      }
+      // The ref is assigned synchronously (not inside the setState updater): a
+      // two-action entry pushes the clicked mode's steps/analytics and executes
+      // in the same click, and the engine's onMutate — which also fires
+      // synchronously — reads analytics off this ref.
+      configRef.current = next;
+      setActiveConfig(next);
     },
     []
   );
@@ -207,6 +282,25 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       notifyRequestAbandoned();
     }
 
+    // Snapshot what is on screen before tearing it down, so the modal can
+    // finish leaving (see exitingView). Dropped once the animation is over, or
+    // immediately superseded if a new transaction launches inside that window.
+    if (configRef.current) {
+      setExitingView({
+        config: configRef.current,
+        txStatus: txStatusRef.current,
+        externalLink,
+        currentStep
+      });
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = setTimeout(() => setExitingView(null), MODAL_EXIT_MS);
+    }
+
+    // End the session generation FIRST: an engine the wallet already answered
+    // may fire callbacks right after this teardown, and they must see
+    // themselves as stale (see sessionGen above).
+    sessionGenRef.current += 1;
+    setSessionGen(sessionGenRef.current);
     setOpen(false);
     setMinimized(false);
     setTxStatus(TxStatus.IDLE);
@@ -216,7 +310,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [txStatus, chainId, trackTransactionCompleted, startNewFlow]);
+  }, [txStatus, chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
+
+  // The exit hold is the only timer here; a provider unmounting mid-dismissal
+  // has nothing left to animate.
+  useEffect(() => () => (exitTimerRef.current ? clearTimeout(exitTimerRef.current) : undefined), []);
 
   // Hide the modal without ending the transaction. Unlike handleClose this keeps
   // activeConfig + txStatus intact (and fires no 'cancelled' analytics), so the
@@ -272,8 +370,39 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     configRef.current?.onConfirm();
   }, [resetTransactionProgress]);
 
+  // A settle callback belongs to the running session only if BOTH its closure
+  // and the write it reports on were made in the current generation (see
+  // writeGenRef). Either mismatch means the caller is an engine from a session
+  // that was closed or abandoned, and it must drop itself.
+  const isStaleWrite = useCallback(
+    (gen: number) =>
+      gen !== sessionGenRef.current ||
+      (writeGenRef.current !== null && writeGenRef.current !== sessionGenRef.current),
+    []
+  );
+
+  // A settle for a hash other than the one this session broadcast is another
+  // transaction's — an abandoned write landing while a new one is in flight.
+  // Skipped for Safe wallets, where the two hashes differ legitimately: the
+  // engine reports the safeTxHash at onStart and the real transaction hash at
+  // onSuccess. `isSafeWallet` is the broader test of the two (it also covers a
+  // Safe address reached through another connector), so this only ever errs
+  // towards accepting a settle — never towards dropping a real one.
+  const isForeignHash = useCallback(
+    (hash?: string) => !isSafeWallet && !!hash && !!writeHashRef.current && hash !== writeHashRef.current,
+    [isSafeWallet]
+  );
+
+  // Each callback closes over the `sessionGen` of the render that created it
+  // and drops itself when the generation has moved on — the caller is an
+  // engine from a session that was closed or abandoned.
   const txCallbacks: TxCallbacks = {
     onMutate: useCallback(() => {
+      if (sessionGen !== sessionGenRef.current) return;
+      // Latch the write to this session; the settle callbacks check it. Fires
+      // synchronously from the user's confirm, so it can trust its closure.
+      writeGenRef.current = sessionGenRef.current;
+      writeHashRef.current = undefined;
       // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
       if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
         setCurrentStep(s => s + 1);
@@ -294,10 +423,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           data: analytics.data
         });
       }
-    }, [chainId, trackTransactionStarted]),
+    }, [sessionGen, chainId, trackTransactionStarted]),
 
     onStart: useCallback(
       (hash?: string) => {
+        if (isStaleWrite(sessionGen)) return;
+        writeHashRef.current = hash;
         setTxStatus(TxStatus.LOADING);
         txStatusRef.current = TxStatus.LOADING;
         if (hash) {
@@ -305,11 +436,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           txHashRef.current = hash;
         }
       },
-      [chainId, address, isSafeWallet]
+      [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
     ),
 
     onSuccess: useCallback(
       (hash?: string) => {
+        if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
         setTxStatus(TxStatus.SUCCESS);
         txStatusRef.current = TxStatus.SUCCESS;
         if (hash) {
@@ -334,11 +466,21 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
         configRef.current?.onSuccess?.();
       },
-      [chainId, address, isSafeWallet, trackTransactionCompleted, startNewFlow]
+      [
+        sessionGen,
+        chainId,
+        address,
+        isSafeWallet,
+        trackTransactionCompleted,
+        startNewFlow,
+        isStaleWrite,
+        isForeignHash
+      ]
     ),
 
     onError: useCallback(
       (error: Error, hash?: string) => {
+        if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
         setTxStatus(TxStatus.ERROR);
         txStatusRef.current = TxStatus.ERROR;
         if (hash) {
@@ -382,9 +524,22 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
         configRef.current?.onError?.();
       },
-      [chainId, address, isSafeWallet, trackTransactionCompleted, startNewFlow]
+      [
+        sessionGen,
+        chainId,
+        address,
+        isSafeWallet,
+        trackTransactionCompleted,
+        startNewFlow,
+        isStaleWrite,
+        isForeignHash
+      ]
     )
   };
+
+  const modalView: TransactionModalView | null = activeConfig
+    ? { config: activeConfig, txStatus, externalLink, currentStep }
+    : exitingView;
 
   return (
     <TransactionContext.Provider
@@ -405,37 +560,47 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             OUTSIDE the Radix dialog, so minimizing (which unmounts the dialog body)
             never tears down a running transaction. It portals its visible inputs into
             the modal's entry slot when present. See `backgroundContent` in the contract. */}
-        {activeConfig?.backgroundContent && (
+        {/* Held through the exit alongside the modal itself: this is where the
+            widget that portals its inputs into the modal's entry slot lives, so
+            unmounting it on close emptied the modal's body a beat before the
+            modal had finished animating away. */}
+        {modalView?.config.backgroundContent && (
           <div hidden key={`bg-${launchCount}`}>
-            {activeConfig.backgroundContent}
+            {modalView.config.backgroundContent}
           </div>
         )}
-        {activeConfig && (
+        {/* Live state while the modal is up; the retained snapshot while it is
+            animating away, which is the only time activeConfig is null here. */}
+        {modalView && (
           <TransactionModal
             key={launchCount}
-            open={open && !minimized}
+            // Already false by the time the snapshot is rendering — that is
+            // what tells Radix to play the exit rather than the enter.
+            open={open && !minimized && !!activeConfig}
             registerEntrySlot={setEntrySlotEl}
             onClose={handleClose}
             onMinimize={minimize}
-            title={activeConfig.title}
-            transactionTitle={activeConfig.transactionTitle}
-            subtitles={activeConfig.subtitles}
-            transactionContent={activeConfig.transactionContent}
-            transactionScreenContent={activeConfig.transactionScreenContent}
-            entry={activeConfig.entry}
-            rightHeaderComponent={activeConfig.rightHeaderComponent}
-            titleBadge={activeConfig.titleBadge}
-            onConfirm={activeConfig.onConfirm}
+            title={modalView.config.title}
+            transactionTitle={modalView.config.transactionTitle}
+            reviewTitle={modalView.config.reviewTitle}
+            subtitles={modalView.config.subtitles}
+            transactionContent={modalView.config.transactionContent}
+            transactionScreenContent={modalView.config.transactionScreenContent}
+            entry={modalView.config.entry}
+            rightHeaderComponent={modalView.config.rightHeaderComponent}
+            titleBadge={modalView.config.titleBadge}
+            onConfirm={modalView.config.onConfirm}
+            onSecondaryConfirm={modalView.config.onSecondaryConfirm}
             onRetry={handleRetry}
             onBack={resetTransactionProgress}
-            txStatus={txStatus}
-            externalLink={externalLink}
-            confirmLabel={activeConfig.confirmLabel}
-            confirmDisabled={activeConfig.confirmDisabled}
-            successLabel={activeConfig.successLabel}
-            errorLabel={activeConfig.errorLabel}
-            steps={activeConfig.steps}
-            currentStep={currentStep}
+            txStatus={modalView.txStatus}
+            externalLink={modalView.externalLink}
+            confirmLabel={modalView.config.confirmLabel}
+            confirmDisabled={modalView.config.confirmDisabled}
+            successLabel={modalView.config.successLabel}
+            errorLabel={modalView.config.errorLabel}
+            steps={modalView.config.steps}
+            currentStep={modalView.currentStep}
           />
         )}
       </EntrySlotContext.Provider>

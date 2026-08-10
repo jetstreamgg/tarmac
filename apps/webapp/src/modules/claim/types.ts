@@ -6,23 +6,22 @@ export type ClaimSource = 'merkl' | 'sky-rewards' | 'stake';
 
 /**
  * One claimable reward, normalized across the three engines (Merkl distributor,
- * Sky `getReward` StakingRewards, and the SKY Staking Engine) so the panel can
- * render a single grouped checkbox list regardless of source. The selected subset
- * is turned back into raw calldata by the owning adapter's `useClaimCalls`.
+ * Sky `getReward` StakingRewards, and the SKY Staking Engine) so both the modal
+ * panel and the Portfolio reward tables can render any source the same way. The
+ * scoped set is turned back into raw calldata by the owning adapter's
+ * `useClaimCalls`.
  */
 export type ClaimableReward = {
   /**
-   * Stable identity WITHIN a source — used as the React key and the selection key.
+   * Stable identity WITHIN a source — used as the React key and the row key.
    * E.g. the Merkl reward-token address, a sky reward-contract address, or
    * `${urnIndex}:${rewardContract}` for a staking position.
    */
   id: string;
   source: ClaimSource;
-  /** Group header label for the source (e.g. "Merkl", "Sky Rewards", "Staking"). */
-  sourceLabel: string;
-  /** Optional brand chip rendered next to the source label. */
-  badge?: ReactNode;
   tokenSymbol: string;
+  /** Full token name for the table's subtitle line (e.g. "Spark token"). */
+  tokenName: string;
   /** Pre-rendered token icon (each source resolves its own). */
   icon: ReactNode;
   formattedAmount: string;
@@ -33,12 +32,23 @@ export type ClaimableReward = {
 
 /**
  * What slice of the user's rewards a panel launch targets. A scope-per-launch
- * surface (the vault position card) passes a narrow scope; the cross-source
- * claim-all modal passes `{ kind: 'all' }`. Each adapter maps the scope onto its
- * own read (a Merkl-only scope yields nothing for the sky/stake adapters, etc.).
+ * surface (the vault position card) passes a narrow scope; a section's "Claim
+ * all" passes the source-wide scope (`merkl` / `sky-rewards`). Each adapter maps
+ * the scope onto its own read (a Merkl scope yields nothing for the sky/stake
+ * adapters, etc.).
+ *
+ * `all` spans every source at once; nothing launches it today (the Portfolio
+ * splits Merkl and ecosystem rewards into two sections, each with its own
+ * "Claim all"), but the panel still supports it.
  */
 export type ClaimScope =
   | { kind: 'all' }
+  /** Every Merkl reward token — the Merkl section's "Claim all". */
+  | { kind: 'merkl' }
+  /** One Merkl reward token — a Merkl table row's "Claim". */
+  | { kind: 'merkl-token'; tokenAddress: `0x${string}` }
+  /** Every Sky `getReward` contract — the Ecosystem section's "Claim all". */
+  | { kind: 'sky-rewards' }
   | { kind: 'vault'; vaultAddress: `0x${string}` }
   | { kind: 'reward-contract'; address: `0x${string}` }
   | { kind: 'stake'; index: bigint };
@@ -47,6 +57,8 @@ export type ClaimScope =
 export type ClaimableResult = {
   rewards: ClaimableReward[];
   isLoading: boolean;
+  /** Refetches the underlying read — surfaces call it after a successful claim. */
+  refresh: () => void;
 };
 
 /** Result of an adapter's calldata build for its selected subset. */

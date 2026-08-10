@@ -90,10 +90,6 @@ vi.mock('./NetworkSelector', () => ({
   NetworkSelector: () => <div data-testid="wallet-drawer-network" />
 }));
 
-vi.mock('@/modules/config/hooks/useConfigContext', () => ({
-  useConfigContext: () => ({ onExternalLinkClicked: undefined })
-}));
-
 // The drawer's balance/rate wiring has its own coverage; the components under
 // test consume the aggregated shape.
 vi.mock('./useWalletDrawerAssets', () => ({

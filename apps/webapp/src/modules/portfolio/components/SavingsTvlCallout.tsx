@@ -41,7 +41,7 @@ export function SavingsTvlCallout({
       data-testid="savings-tvl-callout"
     >
       <div className="flex flex-col gap-2">
-        <Heading tag="h2" className="text-text text-xl font-medium">
+        <Heading tag="h2" className="text-text font-circle text-xl font-medium">
           {/* While the figure loads the whole heading wears the skeleton dress:
               transparent copy over per-line pills (box-decoration-clone gives
               each wrapped line its own), so the height always matches. */}

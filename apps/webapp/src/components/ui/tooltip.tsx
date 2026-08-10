@@ -5,7 +5,10 @@ import { cn } from '@/lib/cn';
 
 // Design-system Tooltip (Figma Components/Tooltip 5043:57748). The content
 // chrome is the shared recipe of every type — bg-tertiary glass at 16px
-// radius, 16px padding — and the base typography is the Simple type
+// radius, 16px padding, and the DS `background blur-2xl` effect, whose Figma
+// radius of 40 is CSS `blur(20px)` (Figma states background blur at twice the
+// CSS value) — the same frost the glass cards carry. The base typography is
+// the Simple type
 // (5043:58208): Body 7 on fg-primary, 260px max (228px text + padding).
 // Titled types (Default 5043:58197) compose a Label 5 heading above
 // fg-secondary body copy inside; the DS draws no arrow on any tooltip.
@@ -36,7 +39,7 @@ const TooltipContent = React.forwardRef<
       // z-101: tooltips are the topmost transient layer — they must clear the
       // app PopoverContent (z-100, e.g. the nav More menu hosting the theme
       // and batch toggles), not just the z-50 dialog/sheet/select tier.
-      'bg-bgTertiary text-fgPrimary font-graphik animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-101 max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[100px]',
+      'bg-bgTertiary text-fgPrimary font-graphik animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-101 max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
       className
     )}
     {...props}

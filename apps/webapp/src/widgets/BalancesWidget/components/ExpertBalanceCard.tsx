@@ -3,18 +3,13 @@ import { formatBigInt, formatNumber, calculateApyFromStr } from '@/utils';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@/widgets/shared/components/ui/card/InteractiveStatsCard';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { RateLineWithArrow } from '@/widgets/shared/components/ui/RateLineWithArrow';
 import { InteractiveStatsCardAlt } from '@/widgets/shared/components/ui/card/InteractiveStatsCardAlt';
 
-export const ExpertBalanceCard = ({
-  url,
-  onExternalLinkClicked,
-  loading,
-  variant = ModuleCardVariant.default
-}: CardProps) => {
+export const ExpertBalanceCard = ({ url, loading, variant = ModuleCardVariant.default }: CardProps) => {
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
@@ -42,11 +37,7 @@ export const ExpertBalanceCard = ({
         isRateLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : stUsdsRate > 0 ? (
-          <RateLineWithArrow
-            rateText={t`Rate: ${stUsdsRate.toFixed(2)}%`}
-            popoverType="expert"
-            onExternalLinkClicked={onExternalLinkClicked}
-          />
+          <RateLineWithArrow rateText={t`Rate: ${stUsdsRate.toFixed(2)}%`} popoverType="expert" />
         ) : (
           <></>
         )

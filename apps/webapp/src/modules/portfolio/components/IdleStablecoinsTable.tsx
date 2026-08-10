@@ -69,7 +69,7 @@ export function IdleStablecoinsTable({
 
   if (bpi < BP.md) {
     return (
-      <div data-testid="idle-stablecoins-table" className="mt-6 flex w-full flex-col gap-0.5">
+      <div data-testid="idle-stablecoins-table" className="mt-8 flex w-full flex-col gap-0.5">
         {tokens.map((token, index) => (
           <div
             key={token.symbol}
@@ -96,7 +96,7 @@ export function IdleStablecoinsTable({
   }
 
   return (
-    <div className="mt-6">
+    <div className="mt-8">
       <Table data-testid="idle-stablecoins-table">
         <TableHeader>
           <TableRow>

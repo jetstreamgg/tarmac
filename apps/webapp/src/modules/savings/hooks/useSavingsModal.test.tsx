@@ -41,7 +41,11 @@ describe('useSavingsModal', () => {
     expect(h.launchMock).toHaveBeenCalledTimes(1);
     const config: LaunchConfig = h.launchMock.mock.calls[0][0];
     expect(config.title).toBe('Supply to Sky Savings');
-    expect(config.entry).toEqual({ confirmLabel: 'Supply', confirmDisabled: true });
+    // Three-screen flow: the entry advances to the review ("Review"), the
+    // review's Confirm fires the engine.
+    expect(config.entry).toEqual({ confirmLabel: 'Review', confirmDisabled: true });
+    expect(config.reviewTitle).toBe('Review supply');
+    expect(config.confirmLabel).toBe('Confirm');
     expect(config.onSuccess).toBe(onSuccess);
     expect(typeof config.sessionId).toBe('string');
 
@@ -70,7 +74,8 @@ describe('useSavingsModal', () => {
     const supplyCfg: LaunchConfig = h.launchMock.mock.calls[0][0];
     const withdrawCfg: LaunchConfig = h.launchMock.mock.calls[1][0];
     expect(withdrawCfg.title).toBe('Withdraw from Sky Savings');
-    expect(withdrawCfg.entry).toEqual({ confirmLabel: 'Withdraw', confirmDisabled: true });
+    expect(withdrawCfg.entry).toEqual({ confirmLabel: 'Review', confirmDisabled: true });
+    expect(withdrawCfg.reviewTitle).toBe('Review withdrawal');
     expect((withdrawCfg.backgroundContent as BodyElement).props.flow).toBe('withdraw');
     // Sibling sessions must differ so their live updates never cross-talk.
     expect(withdrawCfg.sessionId).not.toBe(supplyCfg.sessionId);

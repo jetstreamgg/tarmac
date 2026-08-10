@@ -82,7 +82,16 @@ import { RiskLevel } from '@/hooks';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
-import { BaseChain, MainnetChain, OptimismChain, Pendle, Stake } from '@/modules/icons';
+import {
+  BaseChain,
+  MainnetChain,
+  OptimismChain,
+  Pendle,
+  StakeSky,
+  SuppliedEmpty,
+  TransactionsEmpty
+} from '@/modules/icons';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   Pagination,
@@ -1083,7 +1092,7 @@ function TablesSection() {
               />
             </CellSpecimenRow>
             <CellSpecimenRow name="Position">
-              <CellPosition icon={<Stake width={16} height={16} />} label="Position 1" />
+              <CellPosition icon={<StakeSky width={16} height={16} />} label="Position 1" />
             </CellSpecimenRow>
             <CellSpecimenRow name="Action">
               <CellAction
@@ -1460,7 +1469,7 @@ function TablesSection() {
             </TableRow>
             <TableRow>
               <TableCell>
-                <CellPosition icon={<Stake width={16} height={16} />} label="Position 1" />
+                <CellPosition icon={<StakeSky width={16} height={16} />} label="Position 1" />
               </TableCell>
               <TableCell>
                 <CellAmountWithToken
@@ -1565,16 +1574,49 @@ function DataSection() {
           <Spec label="progress 40%" className="w-64">
             <Progress value={40} className="w-64" />
           </Spec>
-          <Spec label="skeleton">
+          {/* Every skeleton shape the app renders, on the page surface and again
+              on a Card — the two backdrops a placeholder ever lands on, and the
+              pair a light-mode contrast check has to compare. */}
+          <Spec label="skeleton — text lines">
             <span className="flex w-48 flex-col gap-2">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-2/3" />
             </span>
           </Spec>
+          <Spec label="skeleton — block / pill / circle">
+            <span className="flex items-center gap-3">
+              <Skeleton className="h-12 w-32 rounded-xl" />
+              <Skeleton className="h-10 w-24 rounded-full" />
+              <Skeleton className="h-16 w-16 rounded-full" />
+            </span>
+          </Spec>
+          <Spec label="skeleton — card block">
+            <Skeleton className="h-24 w-48 rounded-[28px]" />
+          </Spec>
+          <Spec label="skeleton — on a Card">
+            <Card className="flex w-48 flex-col gap-3 p-5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-full rounded-xl" />
+            </Card>
+          </Spec>
           <Spec label="avatar fallback">
             <Avatar>
               <AvatarFallback>SK</AvatarFallback>
             </Avatar>
+          </Spec>
+        </Row>
+        <Row>
+          <Spec label="empty state — supplied">
+            <Card className="w-72 p-6">
+              <EmptyState illustration={<SuppliedEmpty aria-hidden />}>No supplied positions yet.</EmptyState>
+            </Card>
+          </Spec>
+          <Spec label="empty state — transactions">
+            <Card className="w-72 p-6">
+              <EmptyState illustration={<TransactionsEmpty aria-hidden />}>
+                You don&apos;t have any transactions made yet.
+              </EmptyState>
+            </Card>
           </Spec>
         </Row>
       </SubSection>
@@ -1699,10 +1741,10 @@ function IconboxSection() {
       <SubSection title="Position — default / inactive">
         <div className="flex items-center gap-6">
           <IconboxPosition>
-            <Stake width={16} height={16} />
+            <StakeSky width={16} height={16} />
           </IconboxPosition>
           <IconboxPosition inactive>
-            <Stake width={16} height={16} />
+            <StakeSky width={16} height={16} />
           </IconboxPosition>
         </div>
       </SubSection>
@@ -1864,12 +1906,12 @@ function ChartsSection() {
               <span className="text-fgSecondary text-sm">Maturity</span>
               <span className="text-fgSecondary text-sm">18 Jun 2026</span>
             </div>
-            <span className="text-fgPrimary text-2xl font-medium">85%</span>
+            <span className="text-fgPrimary font-circle text-2xl font-medium">85%</span>
             <Progress value={85} />
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-fgSecondary text-sm">Borrow Utilization</span>
-            <span className="text-fgPrimary text-2xl font-medium">83.5%</span>
+            <span className="text-fgPrimary font-circle text-2xl font-medium">83.5%</span>
             <Progress value={83.5} className="h-2" />
           </div>
         </div>
@@ -1943,7 +1985,7 @@ function ChartsSection() {
               activeId="susds"
               onActiveChange={() => {}}
               size={140}
-              renderCenter={id => <span className="text-text text-sm font-medium">{id}</span>}
+              renderCenter={id => <span className="text-text font-circle text-sm font-medium">{id}</span>}
             />
             <span className="text-fgSecondary text-xs">active (hover)</span>
           </div>
@@ -1979,7 +2021,7 @@ function BannersSection() {
       <div className="flex max-w-[1032px] flex-col gap-6">
         <PromoBanner
           illustration={
-            <img src="/illustrations/illustration-connect-wallet.png" alt="" className="size-full" />
+            <img src="/illustrations/illustration-connect-glass-panels.png" alt="" className="size-full" />
           }
           heading={
             <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
@@ -2013,7 +2055,7 @@ function BannersSection() {
           subtitle={
             <p className="text-fgSecondary max-w-[248px] text-xs leading-[18px]">
               That&apos;s what your idle stablecoins can earn at today&apos;s{' '}
-              <span className="text-fgPrimary font-medium">3.75%</span> Sky Savings Rate.
+              <span className="text-fgPrimary">3.75%</span> Sky Savings Rate.
             </p>
           }
           action={
@@ -2187,7 +2229,7 @@ function TooltipReplica({ className, children }: { className?: string; children:
   return (
     <div
       className={cn(
-        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[100px]',
+        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
         className
       )}
     >

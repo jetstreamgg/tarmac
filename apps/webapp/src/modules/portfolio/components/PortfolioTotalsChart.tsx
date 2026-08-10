@@ -3,6 +3,7 @@ import { parseUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { useUsdsDaiData, useSkySavingsRateHistoricData } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { useParseTokenChartData } from '@/modules/ui/hooks/useParseTokenChartData';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -70,6 +71,7 @@ export function PortfolioTotalsChart() {
   const ssrChart = useParseTokenChartData(timeFrame, ssrInput);
 
   const isUsds = metric === 'usds';
+  const tokenSymbols = isUsds ? ['USDS', 'DAI'] : ['USDS'];
 
   return (
     <ErrorBoundary variant="small">
@@ -80,7 +82,12 @@ export function PortfolioTotalsChart() {
         isLoading={isUsds ? usdsLoading : ssrLoading}
         error={isUsds ? usdsError : ssrError}
         symbol="USDS"
-        tokenSymbols={isUsds ? ['USDS', 'DAI'] : ['USDS']}
+        tokenSymbols={tokenSymbols}
+        // The comp (1036:189291) leads the headline figure with the series'
+        // 32px token mark (APP-443 item 2.1).
+        icons={<TokenIconStack symbols={tokenSymbols} size={32} className="shrink-0" />}
+        // …and plots the series in the brand indigo, not the default teal (2.3).
+        color="var(--color-chart1)"
         label={isUsds ? <Trans>Total USDS and DAI</Trans> : <Trans>Total Sky Savings Supply</Trans>}
         // Metric pills read "USDS"/"Savings" — too terse next to the value, so
         // the tooltip names the series like the header does.

@@ -17,21 +17,23 @@ const formatBalance = (balance: bigint | undefined, decimals: number) =>
     : formatNumber(parseFloat(formatUnits(balance, decimals)), { maxDecimals: 2 });
 
 /**
- * One side of the Convert card (Figma 486:31204/486:31210): a translucent
- * glass panel with the large amount top-left, USD value below it, token chip
- * top-right and balance below-right. The origin side is editable and offers
- * 25/50/100% shortcuts next to the chip; the target side is display-only (the
- * PSM rate is fixed, so the amount is always derived).
+ * One side of the Convert card (Figma 1036:205437, which supersedes the
+ * 486:31204/486:31210 frames this was built from): a translucent glass panel
+ * of two rows — the side label with the balance right-aligned beside it, then
+ * the large amount with the 25/50/100% shortcuts and the token chip to its
+ * right. The origin side is editable; the target side is display-only (the PSM
+ * rate is fixed, so the amount is always derived).
  *
- * The USD line mirrors the token amount 1:1 — both PSM tokens are USD
- * stablecoins and the swap is fee-free, the same simplification the legacy
- * widget made. The "0.00" placeholder renders in the primary text colour per
- * the Figma default frame (fg-primary, not the muted secondary).
+ * The redraw moved the balance up from the meta row and retired the USD line
+ * the meta row carried — the comp has no second figure, and with both PSM
+ * tokens being USD stablecoins on a fee-free 1:1 swap it only ever restated the
+ * amount. The "0.00" placeholder keeps the primary text colour per the comp's
+ * default frame (fg-primary, not the muted secondary).
  *
- * Phone tier (comps 1295:24298/25268, M6.9): 16px panel padding, Heading 3
- * amount, and the percent chips move from beside the token chip down to the
- * meta row, yielding to the USD value once an amount is typed — the top row
- * always keeps the input + token chip so the input can't be squeezed out.
+ * Phone tier (comps 1295:24298/25268, M6.9): 16px panel padding, a smaller
+ * amount, and — because three chips plus the token chip cannot share a 360px
+ * row with a typed figure — the percent chips still yield once an amount is
+ * entered.
  */
 export function ConvertAmountInput({
   side,
@@ -58,7 +60,6 @@ export function ConvertAmountInput({
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const isFrom = side === 'from';
-  const usdValue = `$${value === '' ? '0.00' : formatNumber(parseFloat(value) || 0, { maxDecimals: 2 })}`;
 
   const percentButtons = isFrom && isConnected && onPercentClick && (
     <span className="flex items-center gap-1.5">
@@ -79,9 +80,21 @@ export function ConvertAmountInput({
 
   return (
     <div
-      className="bg-glassSurface flex flex-col gap-1 p-4 backdrop-blur-[20px] md:px-8 md:py-6"
+      className="bg-glassSurface flex flex-col gap-2 p-4 backdrop-blur-[20px] md:gap-[9px] md:px-8 md:py-7"
       data-testid={`convert-${side}`}
     >
+      {/* Body 5 meta row: side label left, balance right (1036:205449). */}
+      <div className="flex items-center justify-between gap-2">
+        <Text className="text-fgSecondary text-xs md:text-sm md:leading-[22px]">
+          {isFrom ? <Trans>From</Trans> : <Trans>To</Trans>}
+        </Text>
+        <Text
+          className="text-fgSecondary text-xs md:text-sm md:leading-[22px]"
+          dataTestId={`convert-${side}-balance`}
+        >
+          <Trans>Balance</Trans>: {isConnected ? formatBalance(balance, decimals) : NO_VALUE}
+        </Text>
+      </div>
       <div className="flex items-center justify-between gap-3">
         <input
           inputMode="decimal"
@@ -92,22 +105,12 @@ export function ConvertAmountInput({
           readOnly={!isFrom}
           aria-label={isFrom ? t`Convert amount` : t`Amount received`}
           data-testid={`convert-${side}-amount`}
-          className="text-text placeholder:text-text w-full min-w-0 bg-transparent text-2xl leading-[26px] font-medium tracking-[-0.48px] outline-none md:text-[32px] md:leading-9 md:tracking-normal"
+          className="text-text placeholder:text-text font-circle w-full min-w-0 bg-transparent text-2xl leading-[26px] font-medium tracking-[-0.48px] outline-none md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
         />
         <span className="flex shrink-0 items-center gap-1.5">
-          {!isMobile && percentButtons}
+          {(!isMobile || value === '') && percentButtons}
           <ConvertTokenSelect value={symbol} onChange={onTokenChange} dataTestId={`convert-${side}-token`} />
         </span>
-      </div>
-      <div className="flex h-10 items-center justify-between gap-2 md:h-auto">
-        {isMobile && value === '' && percentButtons ? (
-          percentButtons
-        ) : (
-          <Text className="text-textSecondary text-xs md:text-sm">{usdValue}</Text>
-        )}
-        <Text className="text-textSecondary text-xs md:text-sm" dataTestId={`convert-${side}-balance`}>
-          <Trans>Balance</Trans>: {isConnected ? formatBalance(balance, decimals) : NO_VALUE}
-        </Text>
       </div>
     </div>
   );

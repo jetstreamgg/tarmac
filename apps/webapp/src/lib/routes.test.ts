@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Intent } from './enums';
 import { IntentMapping } from './constants';
-import { ROUTES, intentToPath, pathToIntent } from './routes';
+import { ROUTES, intentToPath, isEarnDrilldown, isReverseNavigation, pathToIntent } from './routes';
 
 // TRADE/UPGRADE fold into Convert: intentToPath aliases them, so they sit
 // outside the strict inverse and pathToIntent never returns them.
@@ -56,8 +56,87 @@ describe('pathToIntent', () => {
     expect(pathToIntent('/')).toBeNull();
     expect(pathToIntent('/dev')).toBeNull();
     expect(pathToIntent('/seal-engine')).toBeNull();
-    expect(pathToIntent('/batch-transactions-legal-notice')).toBeNull();
     expect(pathToIntent('/bogus')).toBeNull();
+  });
+});
+
+describe('isEarnDrilldown', () => {
+  it('holds drilling from the marketplace into any product page', () => {
+    expect(isEarnDrilldown(ROUTES.EARN, ROUTES.EARN_SAVINGS)).toBe(true);
+    expect(isEarnDrilldown(ROUTES.EARN, ROUTES.EARN_STUSDS)).toBe(true);
+    expect(isEarnDrilldown(ROUTES.EARN, '/earn/vaults/morpho/0xabc')).toBe(true);
+    expect(isEarnDrilldown(ROUTES.EARN, '/earn/rewards/usds-skyfarm')).toBe(true);
+    expect(isEarnDrilldown(ROUTES.EARN, '/earn/fixed/spk-usds')).toBe(true);
+  });
+
+  it('holds going back up, so both directions travel vertically', () => {
+    expect(isEarnDrilldown(ROUTES.EARN_SAVINGS, ROUTES.EARN)).toBe(true);
+    expect(isEarnDrilldown('/earn/vaults/morpho/0xabc', ROUTES.EARN)).toBe(true);
+  });
+
+  it('rejects lateral moves into a product page from outside Earn', () => {
+    expect(isEarnDrilldown(ROUTES.PORTFOLIO, ROUTES.EARN_SAVINGS)).toBe(false);
+    expect(isEarnDrilldown(ROUTES.STAKE, '/earn/vaults/morpho/0xabc')).toBe(false);
+    expect(isEarnDrilldown(ROUTES.EARN_SAVINGS, ROUTES.PORTFOLIO)).toBe(false);
+  });
+
+  it('rejects product-to-product moves and navigations that skip the marketplace', () => {
+    expect(isEarnDrilldown(ROUTES.EARN_SAVINGS, ROUTES.EARN_STUSDS)).toBe(false);
+    expect(isEarnDrilldown('/earn/vaults/morpho/0xabc', '/earn/vaults/spark/0xdef')).toBe(false);
+  });
+
+  it('rejects navigations that never leave the marketplace or a product page', () => {
+    expect(isEarnDrilldown(ROUTES.EARN, ROUTES.EARN)).toBe(false);
+    expect(isEarnDrilldown(ROUTES.EARN_SAVINGS, ROUTES.EARN_SAVINGS)).toBe(false);
+  });
+
+  it('rejects paths that merely start with the Earn segment', () => {
+    expect(isEarnDrilldown(ROUTES.EARN, '/earnings')).toBe(false);
+    expect(isEarnDrilldown('/earnings', ROUTES.EARN)).toBe(false);
+  });
+
+  it('normalizes trailing slashes and case, as pathToIntent does', () => {
+    expect(isEarnDrilldown('/earn/', '/earn/savings/')).toBe(true);
+    expect(isEarnDrilldown('/Earn', '/Earn/Savings')).toBe(true);
+  });
+});
+
+describe('isReverseNavigation', () => {
+  it('reverses a drill back out to the marketplace, not the drill in', () => {
+    expect(isReverseNavigation(ROUTES.EARN, ROUTES.EARN_SAVINGS)).toBe(false);
+    expect(isReverseNavigation(ROUTES.EARN, '/earn/vaults/morpho/0xabc')).toBe(false);
+    expect(isReverseNavigation(ROUTES.EARN_SAVINGS, ROUTES.EARN)).toBe(true);
+    expect(isReverseNavigation('/earn/vaults/morpho/0xabc', '/earn/')).toBe(true);
+  });
+
+  it('follows the nav order for lateral moves', () => {
+    expect(isReverseNavigation(ROUTES.PORTFOLIO, ROUTES.EARN)).toBe(false);
+    expect(isReverseNavigation(ROUTES.EARN, ROUTES.CONVERT)).toBe(false);
+    expect(isReverseNavigation(ROUTES.EARN, ROUTES.PORTFOLIO)).toBe(true);
+    expect(isReverseNavigation(ROUTES.CONVERT, ROUTES.STAKE)).toBe(true);
+  });
+
+  it('places a nested route at its destination', () => {
+    // A product page counts as Earn, so leaving it sideways still reads off the
+    // nav order rather than falling back to forward.
+    expect(isReverseNavigation(ROUTES.EARN_SAVINGS, ROUTES.PORTFOLIO)).toBe(true);
+    expect(isReverseNavigation(ROUTES.PORTFOLIO, '/earn/vaults/morpho/0xabc')).toBe(false);
+    expect(isReverseNavigation('/convert/psm', ROUTES.STAKE)).toBe(true);
+  });
+
+  it('keeps the forward direction when either side sits under no destination', () => {
+    expect(isReverseNavigation('/seal-engine', ROUTES.PORTFOLIO)).toBe(false);
+    expect(isReverseNavigation(ROUTES.CONVERT, '/dev')).toBe(false);
+    expect(isReverseNavigation('/', ROUTES.PORTFOLIO)).toBe(false);
+  });
+
+  it('keeps the forward direction within one destination', () => {
+    expect(isReverseNavigation(ROUTES.EARN_SAVINGS, ROUTES.EARN_STUSDS)).toBe(false);
+    expect(isReverseNavigation('/convert/psm', '/convert/trade')).toBe(false);
+  });
+
+  it('normalizes trailing slashes and case', () => {
+    expect(isReverseNavigation('/Earn/', '/Portfolio')).toBe(true);
   });
 });
 

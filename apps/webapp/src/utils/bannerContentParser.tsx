@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { PopoverRateInfo, resolvePopoverTooltipKey } from '@/widgets';
 import { Trans } from '@lingui/react/macro';
@@ -6,8 +7,14 @@ import { Trans } from '@lingui/react/macro';
 /**
  * Parses banner description text and replaces tooltip placeholders with React components
  * Supports patterns like [(PSM)](#tooltip-psm) which get replaced with <PopoverRateInfo type="psm" />
+ *
+ * `textClassName` merges into the wrapping <Text> so callers can override the
+ * default 13px/18 body when their comp asks for different type.
  */
-export function parseBannerContent(description: string | React.ReactNode): React.ReactNode {
+export function parseBannerContent(
+  description: string | React.ReactNode,
+  textClassName?: string
+): React.ReactNode {
   // If it's already a React element, return as is
   if (React.isValidElement(description)) {
     return description;
@@ -25,7 +32,7 @@ export function parseBannerContent(description: string | React.ReactNode): React
   if (!tooltipPattern.test(description)) {
     // No tooltips found, return the plain text
     return (
-      <Text variant="small" className="leading-[18px]">
+      <Text variant="small" className={cn('leading-[18px]', textClassName)}>
         <Trans>{description}</Trans>
       </Text>
     );
@@ -71,7 +78,7 @@ export function parseBannerContent(description: string | React.ReactNode): React
 
   // Wrap in Text component with Trans for internationalization
   return (
-    <Text variant="small" className="leading-[18px]">
+    <Text variant="small" className={cn('leading-[18px]', textClassName)}>
       <Trans>{parts}</Trans>
     </Text>
   );

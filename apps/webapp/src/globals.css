@@ -26,10 +26,17 @@
   --font-sans: GraphikStd;
 
   --color-text: var(--primary-white);
-  --color-textSecondary: rgba(198, 194, 255, 0.8);
+  /* colors/fg/fg-secondary — the same DS variable --color-fgSecondary carries, so
+     the two secondary-text tokens now resolve alike in BOTH modes (light already
+     mapped both onto fg-secondary #3b3952). The pre-redesign value was the
+     translucent lilac rgba(198, 194, 255, 0.8), which left every
+     `text-textSecondary` surface reading a touch more purple — and, being
+     translucent, drifting with whatever sat behind it — than the redesigned
+     `text-fgSecondary` surfaces beside it. textMuted mirrors it, as in light. */
+  --color-textSecondary: #a1a6c4;
   --color-bullish: var(--service-green);
   --color-textEmphasis: var(--primary-pink);
-  --color-textMuted: rgba(198, 194, 255, 0.8);
+  --color-textMuted: #a1a6c4;
   --color-error: var(--service-red);
   --color-textDimmed: rgb(120, 116, 208);
   --color-textDesaturated: rgb(186, 182, 250);
@@ -82,6 +89,11 @@
      instead. Dark now takes the DS value too (#05041199): APP-416 aligned the
      transaction-modal scrim with the comps, retiring the frozen black/50. */
   --color-modalOverlay: rgba(5, 4, 17, 0.6);
+  /* Modal in-card subsection panel (Figma components/modals/bg-subsection) —
+     the position-details manage panel. Light shares surfaceHover's light value;
+     dark can't reuse surfaceHover (its dark value is a hover tint the DS types
+     differently), hence a dedicated token. */
+  --color-modalSubsection: #09042033;
   /* Design-system button tokens (Figma 5010:7958): dark values are the Figma
      source values — colors/bg/bg-brand-primary + bg-brand-secondary (primary
      hover/pressed fills), colors/border/border-focus (focus ring),
@@ -114,6 +126,14 @@
   --color-fgBrand: #757dff;
   --color-brand2-start: rgba(148, 154, 255, 0.2);
   --color-brand2-end: rgba(80, 77, 255, 0.2);
+  /* Sticky top bar (Figma Navbar 1036:201581 dark / 1030:61380 light, and
+     Mobile / Topbar 551:10137): the bar's `bg` layer is the gradient-navbar
+     fill — components/navbar/bg-gradient-start → -end, top to bottom — over a
+     background blur-md (Figma radius 12 ⇒ CSS blur(6px)). The fill's own fade
+     to near-transparent is what softens the bar's bottom edge; there is no
+     mask in the spec. */
+  --color-navbarGradientStart: #09042080; /* components/navbar/bg-gradient-start */
+  --color-navbarGradientEnd: #09042014; /* components/navbar/bg-gradient-end */
   /* Design-system form-control tokens (Figma Sliders 5246:16073 / Switch
      5044:49116 / Checkbox 5044:49213 / Radio 5044:49317): dark values are the
      Figma source values — colors/fg/fg-quaternary (disabled thumbs/glyphs),
@@ -148,18 +168,39 @@
      shared by the Status/Risk/Token-Idle cells: fg/bg/border-success,
      fg-warning (risk Medium segments) and fg/bg-brand (Pending badge).
      statusSuccessSolid is colors/system/success (#02c2a1), the active-position
-     dot; statusSuccessBorder doubles as the position-iconbox ring. G2 filled the
-     row surfaces and the fg/bg status pairs from the DS light mode;
+     dot and the active position-iconbox glyph. G2 filled the row surfaces
+     and the fg/bg status pairs from the DS light mode;
      statusSuccessBorder and statusSuccessSolid are theme-invariant. */
   --color-bgSecondary: rgba(188, 182, 239, 0.05);
   --color-bgTertiary: rgba(188, 182, 239, 0.1);
+  /* components/badges/bg-primary — the action-iconbox disc. Coincides with
+     bg-secondary in dark but diverges in light (periwinkle vs white glass),
+     so it needs its own token. */
+  --color-badgePrimary: rgba(188, 182, 239, 0.05);
   --color-statusSuccess: #40e3c8;
   --color-statusSuccessBg: rgba(2, 194, 161, 0.1);
   --color-statusSuccessBorder: rgba(2, 194, 161, 0.2);
   --color-statusSuccessSolid: #02c2a1;
+  /* components/iconbox/bg-position-green + border-position-green (Figma
+     Iconbox/Position 5051:145321). Numerically the dark statusSuccessBg/Border
+     pair, but they need their own tokens: the DS holds the position iconbox at
+     0.1/0.2 in BOTH modes, while components/status/bg-success doubles to
+     #02c2a133 in light. Theme-invariant — no light override below. */
+  --color-iconboxPositionBg: rgba(2, 194, 161, 0.1);
+  --color-iconboxPosition: rgba(2, 194, 161, 0.2);
   --color-statusWarning: #ffc044;
+  /* components/status/fg-error (APP-432 item 6 — the risk meters' Aggressive
+     tier). Distinct from the legacy `--color-error` (--service-red #ff6d6d),
+     which the pre-redesign widgets still read for validation copy. */
+  --color-statusError: #f83c3b;
   --color-statusBrand: #9ca9ff;
   --color-statusBrandBg: rgba(156, 160, 229, 0.1);
+  /* components/charts/bg-chart1 + bg-chart2 (Figma DS Charts/Line 5041:7043):
+     the two series tints — brand indigo and teal. Consumed as `var()` from
+     recharts SVG props, not as Tailwind utilities. Theme-invariant: the DS
+     charts carry no light mode. */
+  --color-chart1: #757dff;
+  --color-chart2: #1dd9ba;
   /* Iconbox status rings + info dot (Figma Components/Iconbox 5017:7858).
      Figma types the rings by product — Pendle mint / Morpho blue — as raw
      hexes (no variable); promoted here under the system color each pairs
@@ -184,9 +225,29 @@
   --color-brand3-end: rgba(80, 77, 255, 0.1);
   --color-loader-brand-start: #949aff;
   --color-loader-brand-end: #504dff;
+  /* Loading skeletons (Figma Portfolio/Skeleton loader 1881:51588). The comp
+     types every placeholder block as colors/bg/bg-secondary, so the track is
+     bgSecondary's value restated under its own name — the two are free to
+     diverge later without dragging the table surfaces along. The sweep has no
+     Figma counterpart (the comp is a static render); it inherits the shipped
+     deep indigo in dark and moves to a periwinkle wash in light, where the
+     indigo read as a dark smear across a near-white block. */
+  --color-skeletonTrack: rgba(188, 182, 239, 0.05);
+  --color-skeletonSweep: rgb(76, 61, 158);
+  /* ChartSkeleton's resting line trace. Dark draws it white through an overlay
+     blend; light has to leave both behind (white on white is nothing) and use
+     the periwinkle the rest of the light hairlines are on. */
+  --color-skeletonTrace: #ffffff;
   /* The /stake mobile summary-card "Cover" wash (comp 1222:16799): Figma types
      the gradient's bottom stop as a raw hex; same value in both themes. */
   --color-brandCover: #756fec;
+  /* DS "gradient-success", the wash the product position cards paint the "%"
+     unit with (Figma 859:41055). The top stop is colors/system/success, i.e.
+     the same value as statusSuccessSolid; only the bottom stop is new. Figma
+     gives the gradient no mode dimension, so it is theme-invariant like the
+     other gradient stop pairs above. */
+  --color-success-gradient-start: #02c2a1;
+  --color-success-gradient-end: #9fde88;
   /* Design-system Patterns/Headers (Figma 5178:37451): the brand glow behind
      the Stake header's Iconbox/Status (5043:59189). Figma types it as a raw
      effect (no variable); same value in both themes for now. */
@@ -246,6 +307,13 @@
   --animate-slide-down-fade: slide-down-fade 0.2s ease-out;
   --animate-slide-up-fade: slide-up-fade 0.2s ease-out;
 
+  /* Odometer roll for a live-accruing figure (Figma 1598:76444): one line-height
+     of travel over 200ms on the comp's easeOut. The outgoing glyph holds its end
+     state until the component drops it, so it can't flash back into the window
+     for a frame. */
+  --animate-digit-roll-in: digit-roll-in 200ms cubic-bezier(0, 0, 0.58, 1);
+  --animate-digit-roll-out: digit-roll-out 200ms cubic-bezier(0, 0, 0.58, 1) forwards;
+
   --max-height-screen-70: calc(100vh - 70px);
 
   --breakpoint-sm: 640px;
@@ -264,6 +332,12 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.03, 1);
   --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
   --ease-bezier-mouse: cubic-bezier(0.4, 0, 0.2, 1);
+  /* The two curves the motion comps are drawn on. Across every comp the
+     pairing is consistent: a surface ARRIVES on quint (decisive, front-loaded)
+     and LEAVES on quart (even), while anything that merely crossfades or
+     travels in both directions uses quart alone. */
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
 
   --transition-duration-250: 250ms;
   --transition-duration-350: 350ms;
@@ -301,6 +375,22 @@
     }
     to {
       height: 0;
+    }
+  }
+  @keyframes digit-roll-in {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes digit-roll-out {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-100%);
     }
   }
   @keyframes slide-down-fade {
@@ -349,18 +439,40 @@
   * {
     @apply border-border;
   }
+  /* `antialiased` = -webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
+     grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
+     canvas, which made every Circular Medium surface read a weight above the comp
+     once the real 500 cut shipped. Affects Graphik too — the comps are the target
+     for both families. */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 
+  /* Each face declares its real weight. Without the descriptor every face
+     defaults to 400, so the browser has a single candidate per family and
+     resolves every requested weight to it — font-medium et al. render
+     identically to font-normal. The design system uses exactly two weights:
+     Graphik at 400 (body) and Circular at 500 (labels/headings). */
   @font-face {
     font-family: 'GraphikStd';
     src: URL('/fonts/Graphik-Regular-Web.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+  }
+
+  /* Circular XX "Book" is 450 internally, not 400 — hence --font-weight-custom-450. */
+  @font-face {
+    font-family: 'CircleStd';
+    src: URL('/fonts/CircularXXWeb-Book.woff2') format('woff2');
+    font-weight: 450;
+    font-display: swap;
   }
 
   @font-face {
     font-family: 'CircleStd';
-    src: URL('/fonts/CircularXXWeb-Book.woff2') format('woff2');
+    src: URL('/fonts/CircularXXWeb-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-display: swap;
   }
 
   button:not(:disabled),
@@ -565,6 +677,11 @@
     --color-glassBadge: #9ca0e533; /* components/badges/bg-secondary */
     --color-glassBorder: #9ca0e566; /* colors/border/border-secondary */
 
+    /* Sticky top bar fill — same gradient, the light mode's own stops
+       (Figma Navbar 1030:61380). */
+    --color-navbarGradientStart: #bcb6ef4d; /* components/navbar/bg-gradient-start */
+    --color-navbarGradientEnd: #bcb6ef0d; /* components/navbar/bg-gradient-end */
+
     /* H5 tabs / H15 list + accordion / navbar foreground */
     --color-borderTertiary: #9ca0e5bf; /* colors/border/border-tertiary */
     --color-borderPrimary: #9ca0e54d; /* colors/border/border-primary */
@@ -576,15 +693,29 @@
     --color-flipSurface: #ecf0ff; /* components/modals/bg-item */
     --color-flipRing: #cdd9ff; /* components/modals/border-item */
     --color-modalOverlay: #504dff33; /* components/modals/bg-overlay */
+    --color-modalSubsection: #bcb6ef4d; /* components/modals/bg-subsection — mirrors surfaceHover */
 
     /* H8 table surfaces + the components/status palette the Status/Risk/Token-Idle
        cells share. statusSuccessBorder/statusSuccessSolid/statusInfoSolid are
        theme-invariant in the DS and stay on the @theme default. */
     --color-bgSecondary: #ffffff99; /* colors/bg/bg-secondary */
     --color-bgTertiary: #ffffff66; /* colors/bg/bg-tertiary */
+
+    /* Skeletons. Light does NOT follow bg-secondary the way the other surface
+       tokens do: bg-secondary's light value is #ffffff99, which is also
+       --color-card, so a skeleton on a Card came out white-on-white (measured
+       ~4/255 separation — invisible). Light instead inverts the relationship
+       dark uses, putting the track on a periwinkle tint that reads against
+       both the lavender page and the white card, and making the sweep the
+       white highlight passing over it. */
+    --color-skeletonTrack: rgba(156, 160, 229, 0.2);
+    --color-skeletonSweep: rgba(255, 255, 255, 0.75);
+    --color-skeletonTrace: rgba(156, 160, 229, 0.8);
+    --color-badgePrimary: #9ca0e54d; /* components/badges/bg-primary */
     --color-statusSuccess: #00a186; /* components/status/fg-success */
     --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */
     --color-statusWarning: #dd6102; /* components/status/fg-warning */
+    --color-statusError: #e51f1d; /* components/status/fg-error */
     --color-statusBrand: #4836f5; /* components/status/fg-brand */
     --color-statusBrandBg: #9ca0e54d; /* components/status/bg-brand */
 
@@ -760,4 +891,232 @@
    via currentColor. */
 [data-state='open'] > .nav-menu-icon {
   stroke: url(#nav-icon-gradient);
+}
+
+/* Page transitions (Figma: Sky App: UI 1598:75512, view=motion) -------------
+   Navigating between pages crossfades the content while it slides: the
+   outgoing page leaves to the left and the incoming one arrives from the
+   right, or the mirror of that when the navigation runs against the nav's
+   order (APP-457 — the router adds a `reverse` type; see the block below the
+   forward keyframes). The incoming page starts 100ms into the outgoing one so
+   the two overlap — the comp is explicitly a crossfade, not a sequential
+   out-then-in.
+
+   Which navigations animate is decided in pages/router.tsx: it tags real path
+   changes with the `page` transition type, and vetoes search-param-only
+   navigations outright. Everything below is scoped to that type. */
+
+/* ONLY the page content is captured. Suppressing the root's name is what keeps
+   the background, header and navbar genuinely still: an uncaptured element
+   goes on painting live in the DOM for the whole animation, so it cannot move
+   or change. Capturing the root instead is a trap — the root snapshot always
+   includes the document canvas, so it is opaque, which means (a) the page
+   background travels with the page and (b) anything given its own name can
+   only ever sit *below* it and is never visible. Both were tried; both showed
+   up as the background animating along with the navigation. */
+:root {
+  view-transition-name: none;
+}
+
+/* Naming the page is gated on transition *types*, not on view transitions at
+   large, because the router only gets to decide anything when types exist:
+   TanStack tests `CSS.supports('selector(:active-view-transition-type(a))')`
+   and, when that fails, starts the transition in its plain callback form —
+   the `types` callback never runs. So in Chrome 111–124, Safari 18.0–18.1 and
+   Firefox 144–146 the vetoes are silently gone, `--vt-scroll` is never
+   written, and the initial boot render animates too. Withholding the name in
+   exactly those browsers leaves nothing captured (the root is suppressed
+   above), which is what actually delivers the instant swap the fallback is
+   supposed to be — the alternative is a UA-default crossfade of the page's
+   top edge whenever a search param changes. The test mirrors TanStack's own,
+   with our real name substituted for its probe. */
+@supports selector(:active-view-transition-type(page)) {
+  .page-transition {
+    view-transition-name: page;
+  }
+}
+
+/* The snapshots paint in the top layer, above the whole page, and they
+   hit-test there: without this a click during the ~400ms animation lands on a
+   pseudo-element and dies on <html>, so a second navigation fired mid-flight
+   is silently dropped. It must be every pseudo — setting it on
+   `::view-transition` alone does not restore hit-testing in Chromium, which is
+   what made this look unfixable during the route-splitting refactor. */
+::view-transition,
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  pointer-events: none;
+}
+
+/* The page wrapper is tall and in flow, so its viewport-relative box moves
+   when scrollRestoration jumps the document back to the top on a new route.
+   The auto-generated group animation interpolates that box, which dragged the
+   whole scroll delta vertically across the transition. Pin the group to the
+   viewport and place the snapshots by hand instead.
+
+   `--vt-scroll` is the scroll position at the moment of navigation, written by
+   the router (pages/router.tsx) in the same synchronous step that starts the
+   transition. A snapshot is the *entire* tall element, so offsetting the
+   outgoing one by that much is what makes it show the part that was actually
+   on screen rather than its top. The incoming page needs no offset because it
+   is always at scroll 0 — which holds only because the router keeps
+   back/forward out of the transition entirely; those are the navigations
+   scrollRestoration starts at an offset, and the reasoning is over there. */
+::view-transition-group(page) {
+  animation: none;
+  /* Dynamic viewport units so the box tracks the visible area under mobile
+     browser toolbars rather than the largest possible one. */
+  height: 100dvh;
+}
+::view-transition-old(page) {
+  object-position: left calc(-1 * var(--vt-scroll, 0px));
+}
+::view-transition-new(page) {
+  object-position: left top;
+}
+
+/* The default cross-fade blends the two snapshots; we animate opacity
+   ourselves, so opt out and composite them normally. */
+::view-transition-image-pair(page) {
+  isolation: auto;
+}
+::view-transition-old(page),
+::view-transition-new(page) {
+  /* Each snapshot keeps its own size rather than being stretched into the
+     pinned group box. */
+  object-fit: none;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
+    animation: 300ms var(--ease-in-out-quart) both page-slide-out;
+  }
+  :root:active-view-transition-type(page)::view-transition-new(page) {
+    animation: 300ms var(--ease-in-out-quart) 100ms both page-slide-in;
+  }
+}
+
+/* The comp's 120px travel is measured on a 1512px frame, so it is capped
+   against the viewport — at phone widths a literal 120px reads as the page
+   being flung off screen rather than shifting. */
+@keyframes page-slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-1 * min(120px, 8vw)));
+  }
+}
+@keyframes page-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(min(120px, 8vw));
+  }
+}
+
+/* Drill-down: moving between the Earn marketplace and a product page travels
+   vertically instead of sideways (Figma: Sky App: UI 1598:77307). The router
+   adds a `drill` type alongside `page` for exactly those navigations, so only
+   the keyframes change here — duration, easing and the 100ms overlap are
+   inherited from the rules above, which still match.
+
+   Drilling *in* leaves upward and arrives from below; coming back out plays
+   the mirror (the `reverse` block below). The comp's own travel is 40px, small
+   enough that it needs no viewport cap.
+
+   This must stay above the reduced-motion block, which re-declares the
+   `animation` shorthand and so has to win over this animation-name. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(drill)::view-transition-old(page) {
+    animation-name: page-drill-out;
+  }
+  :root:active-view-transition-type(drill)::view-transition-new(page) {
+    animation-name: page-drill-in;
+  }
+}
+@keyframes page-drill-out {
+  to {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+@keyframes page-drill-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+/* Reverse: the same two moves played the other way, for navigations that run
+   against the app's order — Earn → Portfolio, or a product page back out to
+   the marketplace (APP-457). Only the keyframes change; duration, easing and
+   the 100ms overlap are still inherited from the `page` rules.
+
+   Source order is load-bearing for the lateral pair: it ties on specificity
+   with the `drill` rules above and has to win. The drill pair below carries
+   both type selectors, so its higher specificity wins over the lateral one
+   regardless of order.
+
+   Note this is *not* the browser's back button — traversals get no transition
+   at all, for the scroll-restoration reason recorded in pages/router.tsx. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(reverse)::view-transition-old(page) {
+    animation-name: page-slide-out-reverse;
+  }
+  :root:active-view-transition-type(reverse)::view-transition-new(page) {
+    animation-name: page-slide-in-reverse;
+  }
+  :root:active-view-transition-type(drill):active-view-transition-type(reverse)::view-transition-old(page) {
+    animation-name: page-drill-out-reverse;
+  }
+  :root:active-view-transition-type(drill):active-view-transition-type(reverse)::view-transition-new(page) {
+    animation-name: page-drill-in-reverse;
+  }
+}
+@keyframes page-slide-out-reverse {
+  to {
+    opacity: 0;
+    transform: translateX(min(120px, 8vw));
+  }
+}
+@keyframes page-slide-in-reverse {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * min(120px, 8vw)));
+  }
+}
+@keyframes page-drill-out-reverse {
+  to {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+@keyframes page-drill-in-reverse {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+
+/* Reduced motion (WCAG 2.3.3): keep a crossfade — the page change still needs
+   to register, and an instant full-page repaint reads as a flash — but drop
+   the translate, which is the part that triggers vestibular discomfort. */
+@media (prefers-reduced-motion: reduce) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
+    animation: 150ms var(--ease-in-out-quart) both page-fade-out;
+  }
+  :root:active-view-transition-type(page)::view-transition-new(page) {
+    animation: 150ms var(--ease-in-out-quart) both page-fade-in;
+  }
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
 }

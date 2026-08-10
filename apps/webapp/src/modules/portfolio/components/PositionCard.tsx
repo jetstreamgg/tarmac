@@ -54,7 +54,10 @@ export function PositionCard({
   const projected = projectAnnualEarnings(position.amountUsd, position.rate);
 
   return (
-    <Card className="flex flex-col gap-7 p-5" data-testid="position-card">
+    // Phone keeps the mobile comp's 20px inset / 28px block rhythm
+    // (486:20195); from md the desktop comp (1030:58714, APP-443 item 8) takes
+    // over with a 32/28 inset and 40px between blocks.
+    <Card className="flex flex-col gap-7 p-5 md:gap-10 md:px-8 md:py-7" data-testid="position-card">
       {/* DS Iconbox/Status: 64px box, borderTertiary ring, 48px token inside. */}
       <div className="flex items-start justify-between">
         <IconboxStatus size="l" type={productStatusType(position)} dot={!!productStatusType(position)}>
@@ -109,7 +112,8 @@ export function PositionCard({
             label={<Trans>1Y projected earnings</Trans>}
             value={
               <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>
-                <TrendingUp className="text-bullish h-3 w-3 shrink-0 md:h-4 md:w-4" />
+                {/* 12px at every tier — both comps draw it that size. */}
+                <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
                 {formatUsd(projected)}
               </span>
             }
@@ -169,14 +173,15 @@ function NetworkBadge({ chainIds }: { chainIds: number[] }) {
 
 function Stat({ label, value, className }: { label: ReactNode; value: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
+    <div className={cn('flex flex-col gap-1', className)}>
       <span className={statLabel}>{label}</span>
       {value}
     </div>
   );
 }
 
-/** Short vertical divider between the two stats in a row (per-row, not full-height). */
+/** Short vertical divider between the two stats in a row: 29.5px, centred in
+ *  the 38px row rather than stretched to it (both comps). */
 function StatDivider() {
-  return <div className="bg-border mx-5 w-px self-stretch" />;
+  return <div className="bg-border mx-5 h-[29.5px] w-px shrink-0 self-center" />;
 }

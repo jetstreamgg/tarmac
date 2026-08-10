@@ -27,7 +27,6 @@ import { positionAnimations } from '@/widgets/shared/animation/presets';
 export const VaultTransactionStatus = ({
   assetToken,
   amount,
-  onExternalLinkClicked,
   isBatchTransaction,
   needsAllowance,
   needsAllowanceReset,
@@ -36,7 +35,6 @@ export const VaultTransactionStatus = ({
 }: {
   amount: bigint;
   assetToken: Token;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   isBatchTransaction?: boolean;
   needsAllowance: boolean;
   needsAllowanceReset: boolean;
@@ -239,7 +237,6 @@ export const VaultTransactionStatus = ({
 
   return (
     <BatchTransactionStatus
-      onExternalLinkClicked={onExternalLinkClicked}
       isBatchTransaction={isBatchTransaction}
       customSteps={resetSteps}
       totalSteps={totalSteps}

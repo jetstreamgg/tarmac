@@ -266,7 +266,12 @@ export function useMerklRewards(): MerklRewardsHook {
   const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
 
   const queryClient = useQueryClient();
-  const queryKey = ['merkl-rewards-all', userAddress, chainId];
+  // Memoized because `mutate` closes over it: a fresh array literal per render gives
+  // `mutate` a new identity every render, which busts the claim adapter's memo (its
+  // `rewards` array churns even when empty) and, through ClaimRewardsPanel's
+  // transactionScreenContent → useModalEntryBody effect → updateModalContent, spins
+  // any open claim modal in an unbounded re-render loop.
+  const queryKey = useMemo(() => ['merkl-rewards-all', userAddress, chainId], [userAddress, chainId]);
 
   const {
     data: apiData,

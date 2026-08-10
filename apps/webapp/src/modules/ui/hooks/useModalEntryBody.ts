@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { TxStatus } from '@/widgets';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import type { TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
@@ -12,6 +13,21 @@ import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 type ModalEntryBodyLive = {
   /** Disables the shared modal's confirm button (amount zero / over balance / nothing selected). */
   confirmDisabled: boolean;
+  /**
+   * Live entry-CTA label. A body that passes it must pass it EVERY render (the
+   * entry merge keeps the last pushed value) — e.g. the upgrade form swaps
+   * "Connect wallet" ↔ "Continue" with the connection state. Omit entirely to
+   * keep the launch-time label.
+   */
+  confirmLabel?: string;
+  /**
+   * Entry-CTA override fired instead of starting the transaction (see
+   * `TransactionEntry.confirmAction`). Always pushed — `undefined` restores
+   * the normal confirm, so an override never outlives its condition.
+   */
+  confirmAction?: () => void;
+  /** Read-only breakdown for a three-screen flow's review stage. */
+  transactionContent?: ReactNode;
   /** Compact amount summary rendered on the wallet/status screen. */
   transactionScreenContent?: ReactNode;
   /** Steps for multi-step flows (labels or `{ label, tokenSymbol }` chips). */
@@ -46,11 +62,14 @@ export function useModalEntryBody({
   sessionId,
   execute,
   confirmDisabled,
+  confirmLabel,
+  confirmAction,
+  transactionContent,
   transactionScreenContent,
   steps,
   toast
 }: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
-  const { updateModalContent } = useTransaction();
+  const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
 
   // `execute` is rebuilt every render; read the latest from a ref so `onConfirm`
@@ -64,16 +83,45 @@ export function useModalEntryBody({
   // Keep the shared modal's confirm gating + handler + wallet summary (+ optional
   // step labels / toast titles) live. Merged into the entry (never replacing
   // `content`), so the body stays mounted; bounded to its listed deps, so it can't
-  // loop on provider re-renders.
+  // loop on provider re-renders. Frozen once the tx leaves IDLE: mid-flight
+  // refetches (allowance after an approve, balances after success) rebuild the
+  // body's steps/summaries, and pushing that state would collapse the executed
+  // step list and amounts on the wallet/status/failure screens (the convert and
+  // stake-claim precedent). Pushes resume when the status resets to IDLE (back
+  // from a failure returns to an editable entry).
   useEffect(() => {
+    if (txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
-      entry: { confirmDisabled },
+      // `confirmDisabled` gates the entry screen via the entry descriptor and the
+      // review stage via the top-level field — same value, both screens.
+      // `confirmLabel` merges only when supplied (bodies that don't pass it keep
+      // their launch-time label); `confirmAction` is always pushed so clearing
+      // it (undefined) reliably restores the normal confirm.
+      entry: {
+        confirmDisabled,
+        ...(confirmLabel !== undefined ? { confirmLabel } : {}),
+        confirmAction
+      },
+      confirmDisabled,
       onConfirm,
+      ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
       ...(toast !== undefined ? { toast } : {})
     });
-  }, [sessionId, confirmDisabled, transactionScreenContent, steps, toast, onConfirm, updateModalContent]);
+  }, [
+    sessionId,
+    txStatus,
+    confirmDisabled,
+    confirmLabel,
+    confirmAction,
+    transactionContent,
+    transactionScreenContent,
+    steps,
+    toast,
+    onConfirm,
+    updateModalContent
+  ]);
 
   // Display inside the dialog when its entry slot is mounted; otherwise render
   // inline in the hidden host (keeps the body — and its engine hook — mounted).

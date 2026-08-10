@@ -95,18 +95,23 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     chainId
   });
 
-  // Debounced amounts drive simulation, approval sizing and calldata — the
+  // Debounced amounts drive approval sizing, calldata and validation — the
   // legacy widget's exact arrangement (typing doesn't thrash the RPC reads).
   const debouncedSkyToLock = useDebounce(state.skyToLock);
   const debouncedUsdsToBorrow = useDebounce(state.usdsToBorrow);
 
+  // Live simulation for the slider and display surfaces: useSimulatedVault's
+  // per-amount work is pure math over cached chain reads, so it can track the
+  // raw amounts frame-for-frame while the RPC-bound seams stay debounced.
+  const { data: simulatedVault } = useSimulatedVault(state.skyToLock, state.usdsToBorrow, 0n, ilkName);
+  // Same simulation with no new debt — feeds the slider's floor math.
+  const { data: vaultNoBorrow } = useSimulatedVault(state.skyToLock, 0n, 0n, ilkName);
+  // Debounced simulation for validation, so errors wait for typing to settle.
   const {
-    data: simulatedVault,
+    data: debouncedVault,
     isLoading: simulationLoading,
     error: simulationError
   } = useSimulatedVault(debouncedSkyToLock, debouncedUsdsToBorrow, 0n, ilkName);
-  // Same simulation with no new debt — feeds the slider's floor math.
-  const { data: vaultNoBorrow } = useSimulatedVault(debouncedSkyToLock, 0n, 0n, ilkName);
   const { data: collateralData } = useCollateralData(ilkName);
 
   // A-Q2 (recorded on APP-311): the baseline takeover has no reward picker; the
@@ -160,9 +165,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       : availableBorrowFromDebtCeiling;
 
   const minCollateralNotMet =
-    simulatedVault?.collateralAmount !== undefined &&
-    simulatedVault?.minCollateralForDust !== undefined &&
-    simulatedVault.collateralAmount <= simulatedVault.minCollateralForDust;
+    debouncedVault?.collateralAmount !== undefined &&
+    debouncedVault?.minCollateralForDust !== undefined &&
+    debouncedVault.collateralAmount <= debouncedVault.minCollateralForDust;
 
   // Validity — legacy Lock.tsx / Borrow.tsx effects, computed during render.
   const hasSufficientBalance = !!skyBalance && state.skyToLock <= skyBalance.value;
@@ -186,7 +191,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       : minCollateralNotMet
         ? undefined
         : debouncedUsdsToBorrow > 0n
-          ? formatSimulationErrorMessage(simulationError?.message, simulatedVault?.dust)
+          ? formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust)
           : undefined;
 
   const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
@@ -273,7 +278,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       onBack={reopen?.onBack}
       badge={
         <>
-          <StakeSky className="h-4 w-4 md:h-3.5 md:w-3.5" />
+          <StakeSky className="h-4 w-4" />
           <Trans>SKY Staking</Trans>
         </>
       }
@@ -281,7 +286,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       dataTestId="stake-takeover"
       footer={
         <>
-          <p className="text-fgSecondary md:text-textSecondary flex-1 text-center text-xs leading-[18px] md:max-w-xs md:flex-none md:text-left md:text-sm md:leading-5">
+          {/* 237px is the comp's two-line measure for this copy (1036:209863). */}
+          <p className="text-fgSecondary flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left">
             <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
           </p>
           <Button
@@ -290,7 +296,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
             onClick={launch}
             disabled={confirmDisabled}
             data-testid="stake-takeover-confirm"
-            className="h-12 shrink-0 px-5 text-sm leading-4 tracking-[-0.28px] md:h-14 md:px-10 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
+            // min-w, not w: the comp's 160px button leaves ~80px of text box
+            // inside the 40px insets, and `whitespace-nowrap` from the base
+            // recipe would clip a longer translated label rather than wrap it.
+            className="h-12 shrink-0 px-5 text-sm leading-4 tracking-[-0.28px] md:h-14 md:min-w-40 md:px-10 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
           >
             <Trans>Confirm</Trans>
           </Button>

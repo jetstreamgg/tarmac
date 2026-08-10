@@ -49,8 +49,12 @@ describe('useStUsdsModal', () => {
     const config = h.launch.mock.calls[0][0];
     expect(config.title).toBe('Supply to stUSDS');
     expect(config.transactionTitle).toBe('Confirm in the wallet');
-    expect(config.entry.confirmLabel).toBe('Supply');
+    // Three-screen flow: the entry advances to the review ("Review"), the
+    // review's Confirm fires the engine.
+    expect(config.entry.confirmLabel).toBe('Review');
     expect(config.entry.confirmDisabled).toBe(true);
+    expect(config.reviewTitle).toBe('Review supply');
+    expect(config.confirmLabel).toBe('Confirm');
     // The editable body is hosted OUTSIDE the dialog (backgroundContent) so its
     // in-flight hook survives minimize — not inside entry.content.
     expect(config.entry.content).toBeUndefined();
@@ -67,8 +71,10 @@ describe('useStUsdsModal', () => {
     const config = h.launch.mock.calls[0][0];
     expect(config.title).toBe('Withdraw from stUSDS');
     expect(config.transactionTitle).toBe('Confirm in the wallet');
-    expect(config.entry.confirmLabel).toBe('Withdraw');
+    expect(config.entry.confirmLabel).toBe('Review');
     expect(config.entry.confirmDisabled).toBe(true);
+    expect(config.reviewTitle).toBe('Review withdrawal');
+    expect(config.confirmLabel).toBe('Confirm');
     expect(config.entry.content).toBeUndefined();
     expect(config.backgroundContent.props.flow).toBe('withdraw');
   });

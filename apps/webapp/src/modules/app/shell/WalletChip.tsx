@@ -5,7 +5,6 @@ import { useConnection, useDisconnect, useEnsAvatar, useEnsName } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
-import { Text } from '@/modules/layout/components/Typography';
 import { TermsModal } from '@/modules/ui/components/TermsModal';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
@@ -39,7 +38,10 @@ export function WalletChip() {
   );
 
   return (
-    <div data-testid="wallet-chip">
+    // min-w-0 continues the topbar's shrink chain (M2.2): below 340px the chip
+    // gives up width instead of overflowing the viewport. Scoped off at the
+    // desktop grid, where chip width intentionally squeezes the flanks (APP-415).
+    <div data-testid="wallet-chip" className="desktop:min-w-[auto] min-w-0">
       {!isAuthorized ? (
         <UnauthorizedPage authData={authData} vpnData={vpnData}>
           {connectButton}
@@ -56,14 +58,22 @@ export function WalletChip() {
           <Button
             variant="navbar"
             size="navbarWallet"
+            className="desktop:max-w-none max-w-full"
             data-state={showDrawer ? 'open' : 'closed'}
             onClick={() => setShowDrawer(true)}
           >
-            <CustomAvatar address={address} size={24} />
+            {/* Jazzicon's inline-sized div is shrinkable; the wrapper keeps the
+                24px circle out of the chip's shrink chain (only the label gives). */}
+            <span className="flex shrink-0">
+              <CustomAvatar address={address} size={24} />
+            </span>
             {/* DS Mobile / Topbar keeps the name at phone width; the cap stops
                 long ENS names from squeezing the logo out at 360px. Addresses
-                swap to the short trim there instead of ellipsis-truncating. */}
-            <Text className="max-w-24 truncate sm:max-w-none">
+                swap to the short trim there instead of ellipsis-truncating.
+                A bare span, not <Text>: the whole navbar is Label 5 / Circular
+                Medium (Figma 1036:189127) and navbarWallet already sets it —
+                a Text variant would re-declare Graphik at 16px on top. */}
+            <span className="max-w-24 min-w-0 truncate sm:max-w-none">
               {ensName ? (
                 `${isSafeWallet ? 'safe:' : ''}${ensName}`
               ) : (
@@ -72,7 +82,7 @@ export function WalletChip() {
                   <span className="hidden sm:inline">{`${isSafeWallet ? 'safe:' : ''}${formatAddress(address)}`}</span>
                 </>
               )}
-            </Text>
+            </span>
             <ChevronDown className={cn('h-4 w-4 transition-transform', showDrawer && 'rotate-180')} />
           </Button>
           <WalletPreviewDrawer

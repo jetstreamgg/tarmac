@@ -3,7 +3,7 @@ import { parseEther } from 'viem';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 
-import { formatBaLabsUrl } from '../helpers';
+import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
 
 type TokenChartInfo = {
@@ -35,18 +35,8 @@ function transformBaLabsChartData(results: TokenChartInfo[]): TokenChartInfoPars
 
 async function fetchTokenChartInfo(url: URL): Promise<TokenChartInfoParsed[]> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const data: { results: TokenChartInfo[] } = await response.json();
-
-    const result = transformBaLabsChartData(data?.results || []);
-
-    return result;
+    // Paged: this endpoint caps a response at 1000 rows whatever p_size asks for.
+    return transformBaLabsChartData(await fetchBaLabsPages<TokenChartInfo>(url));
   } catch (error) {
     console.error('Error fetching BaLabs data:', error);
     return [];

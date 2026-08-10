@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useStakeRewardContracts, useMultipleRewardsChartInfo, type RewardsChartInfoParsed } from '@/hooks';
 
 // Full farm history: the Statistics chart's `All` range and the trailing
@@ -6,7 +6,7 @@ import { useStakeRewardContracts, useMultipleRewardsChartInfo, type RewardsChart
 const FULL_HISTORY_LIMIT = 9999;
 
 export type StakeRewardsRate = {
-  /** Historic rate series of the winning farm (ascending fetch order preserved). */
+  /** Best rate available on each day, ascending by timestamp. */
   series: RewardsChartInfoParsed[];
   /** Latest rate of the winning farm as a decimal fraction (0.0569 = 5.69%). */
   currentRate: number | null;
@@ -17,11 +17,20 @@ export type StakeRewardsRate = {
 /**
  * The staking-engine rewards rate the Statistics tab shows (product call on the
  * F1 review: the rate surfaces show what stakers earn, not the borrow rate).
- * Winner selection mirrors `useHighestRateFromChartData` — the farm whose most
+ * `currentRate` mirrors `useHighestRateFromChartData` — the farm whose most
  * recent datapoint has the highest rate, first-highest on ties — so the chart
  * hero and details rows always agree with the promo card's `Rewards rate`.
- * Unlike that hook this one also returns the winner's full historic series,
- * which the chart plots and the 6M mean averages.
+ * Unlike that hook this one also returns a historic series, which the chart
+ * plots and the 6M mean averages.
+ *
+ * The series is the *best rate available on each day*, taken across all farms,
+ * rather than the winning farm's own history. Farms are added over time, so
+ * plotting only today's winner truncated the chart at that farm's launch — the
+ * `All` range started later than `1Y` did, and later than the borrow-rate and
+ * TVL series sharing the same card, which read a single engine-wide endpoint
+ * (APP-456 #5). Per-day best also matches what the hero claims: the rate a
+ * staker could earn, which by construction agrees with `currentRate` on the
+ * newest day.
  */
 export function useStakeRewardsRate(): StakeRewardsRate {
   const { data: rewardContracts, isLoading: contractsLoading } = useStakeRewardContracts();
@@ -50,10 +59,51 @@ export function useStakeRewardsRate(): StakeRewardsRate {
 
   const parsedRate = winner ? parseFloat(winner.latest.rate) : NaN;
 
+  /**
+   * Per-day best rate across every farm. Keyed on the raw timestamp, which the
+   * farms share (one daily point each, same datetime), so the merge is an exact
+   * match rather than a bucketing heuristic.
+   */
+  const bestByDay = useMemo(() => {
+    const byTimestamp = new Map<number, RewardsChartInfoParsed>();
+    for (const series of rewardsChartInfo ?? []) {
+      for (const point of series ?? []) {
+        if (point.rate === undefined || point.rate === null) continue;
+        const incumbent = byTimestamp.get(point.blockTimestamp);
+        if (!incumbent || parseFloat(point.rate) > parseFloat(incumbent.rate)) {
+          byTimestamp.set(point.blockTimestamp, point);
+        }
+      }
+    }
+    return [...byTimestamp.values()].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
+  }, [rewardsChartInfo]);
+
+  /**
+   * Both underlying queries hand back `undefined` and re-report loading when
+   * their key changes, not just on the first fetch — the contract list arrives
+   * as a hardcoded placeholder before the indexer's real one replaces it, which
+   * rewrites the farm URLs the chart query is keyed on, and an indexer failure
+   * swaps the whole hook onto its on-chain fallback. Passed straight through,
+   * each of those flips takes the chart back to its skeleton, and the chart
+   * unmounting is what makes its entrance wipe play a second time.
+   *
+   * So the last series that actually resolved is held on to and kept on screen
+   * while the next one loads. Only the true cold start, with nothing resolved
+   * yet, still reports loading.
+   */
+  const lastResolved = useRef<{ series: RewardsChartInfoParsed[]; currentRate: number | null } | null>(null);
+  if (winner) {
+    lastResolved.current = {
+      series: bestByDay,
+      currentRate: Number.isFinite(parsedRate) ? parsedRate : null
+    };
+  }
+  const resolved = lastResolved.current;
+
   return {
-    series: winner?.series ?? [],
-    currentRate: Number.isFinite(parsedRate) ? parsedRate : null,
-    isLoading: contractsLoading || chartsLoading,
+    series: resolved?.series ?? [],
+    currentRate: resolved?.currentRate ?? null,
+    isLoading: (contractsLoading || chartsLoading) && !resolved,
     error: error ?? null
   };
 }

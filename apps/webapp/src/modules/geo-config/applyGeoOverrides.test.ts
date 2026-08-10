@@ -112,6 +112,18 @@ describe('applyGeoOverrides', () => {
     });
   });
 
+  describe('geo_country', () => {
+    it('forces the resolved country code, uppercased', () => {
+      expect(applyGeoOverrides(mockConfig, '?geo_country=xx').countryCode).toBe('XX');
+      expect(applyGeoOverrides(mockConfig, '?geo_mode=restricted&geo_country=US').countryCode).toBe('US');
+    });
+
+    it('ignores values that are not two-letter codes', () => {
+      expect(applyGeoOverrides(mockConfig, '?geo_country=USA').countryCode).toBe('US');
+      expect(applyGeoOverrides(mockConfig, '?geo_country=1').countryCode).toBe('US');
+    });
+  });
+
   describe('priority', () => {
     it('geo_module_* overrides geo_mode', () => {
       const result = applyGeoOverrides(mockConfig, '?geo_mode=restricted&geo_module_savings=true');

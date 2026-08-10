@@ -9,6 +9,7 @@ import {
   CarouselPrevious,
   CarouselNext
 } from '@/components/ui/carousel';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Heading } from '@/modules/layout/components/Typography';
 import { EarnMarketplaceCard } from './EarnMarketplaceCard';
 
@@ -46,9 +47,10 @@ export function EarnMarketplaceSection({ rows, isLoading }: { rows: EarnProductR
           <Heading tag="h2" variant="medium">
             <Trans>Earn with Sky</Trans>
           </Heading>
-          <div className="flex gap-2">
-            <CarouselPrevious className={INLINE_ARROW} />
-            <CarouselNext className={INLINE_ARROW} />
+          {/* Same DS Button / Icon pair as the positions carousel. */}
+          <div className="flex gap-1.5">
+            <CarouselPrevious variant="secondary" size="iconS" className={INLINE_ARROW} />
+            <CarouselNext variant="secondary" size="iconS" className={INLINE_ARROW} />
           </div>
         </div>
         <CarouselContent>
@@ -68,9 +70,9 @@ export function EarnMarketplaceSection({ rows, isLoading }: { rows: EarnProductR
 function CarouselSkeleton() {
   return (
     <div className="desktop:grid-cols-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div className="bg-surface h-[360px] animate-pulse rounded-3xl" />
-      <div className="bg-surface hidden h-[360px] animate-pulse rounded-3xl sm:block" />
-      <div className="bg-surface desktop:block hidden h-[360px] animate-pulse rounded-3xl" />
+      <Skeleton className="h-[360px] rounded-3xl" />
+      <Skeleton className="hidden h-[360px] rounded-3xl sm:block" />
+      <Skeleton className="desktop:block hidden h-[360px] rounded-3xl" />
     </div>
   );
 }

@@ -11,7 +11,10 @@ const buttonVariants = cva(
   // --tw-gradient-from/to are @property-registered colors, so listing them
   // here lets gradient-stop changes (the primary/secondary state fills)
   // cross-fade; background-image itself never interpolates.
-  'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-[background-color,background-image,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
+  // font-circle on the base (not only the xl/l/m/s size recipes): defaultVariants
+  // sets size='default', so a <Button> with no size prop would otherwise fall
+  // through to Graphik. Every button in the comps is Circular.
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-circle text-sm font-medium ring-offset-background transition-[background-color,background-image,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
   {
     variants: {
       variant: {
@@ -59,7 +62,7 @@ const buttonVariants = cva(
         // Design-system Button / Dropdown (Figma 5019:4105): same glass pill,
         // but hover also fills (bg-tertiary) and active means "menu open".
         dropdown:
-          'text-text border border-glassBorder bg-origin-border hover:border-borderTertiary hover:bg-glassBadge focus-visible:ring-focusRing focus-visible:ring-offset-0 data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
+          'text-fgPrimary border border-glassBorder bg-origin-border hover:border-borderTertiary hover:bg-glassBadge focus-visible:ring-focusRing focus-visible:ring-offset-0 data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
         // Design-system Button / Mini (Figma 5051:168712): compact chip.
         // Hover/pressed drop the border in Figma; border-transparent keeps the
         // geometry stable while the fill shows through (bg paints the border

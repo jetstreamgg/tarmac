@@ -133,8 +133,10 @@ const SelectItem = React.forwardRef<
     {...props}
   >
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    {/* The checkmark takes fg-brand-primary, not the row's fg-primary
+        (Figma 1036:201601 / 1036:205471 — APP-432 items 7 and 17). */}
     {!hideIndicator && (
-      <SelectPrimitive.ItemIndicator className="ml-auto flex size-4 items-center justify-center">
+      <SelectPrimitive.ItemIndicator className="text-fgBrand ml-auto flex size-4 items-center justify-center">
         <Check className="size-4" />
       </SelectPrimitive.ItemIndicator>
     )}

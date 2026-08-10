@@ -4,7 +4,7 @@ import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@/utils';
-import { useMemo, useState, useRef, useEffect, useId } from 'react';
+import { useMemo, useState, useRef, useEffect, useId, useCallback } from 'react';
 import {
   Area,
   AreaChart,
@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
+import { HOVER_EASE, HOVER_TRACK_MS } from './chartMotion';
 import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Select,
@@ -31,7 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { easeOutExpo } from '../animation/timingFunctions';
 import { positionAnimations } from '../animation/presets';
 import { AnimationLabels } from '../animation/constants';
@@ -145,42 +146,160 @@ const CustomizedLabel = (
   // );
 };
 
-const CustomizedDot = ({
-  cx,
-  cy,
-  stroke,
-  data,
-  index
+/**
+ * DS Charts/Line geometry (Figma 5273:12162), read off the exported vectors.
+ * The resting series carries NO plotted points — the only dot the chart ever
+ * shows is the ringed one under the hover cursor (APP-443 item 19); the min/max
+ * markers it used to draw are gone.
+ */
+const SERIES_STROKE_WIDTH = 1.5;
+/** Hover dot: 12px overall — r 5.25 under a 1.5 ring in the series colour. */
+const ACTIVE_DOT_RADIUS = 5.25;
+
+/**
+ * Every hover element tracks on `transform`, never on SVG geometry: `x1`/`x2`
+ * on a line are not CSS properties at all, and `x`/`width` only became
+ * animatable with SVG 2 geometry properties. One mechanism across all of them,
+ * working everywhere the app already runs. Timing is shared with the tooltip —
+ * see `chartMotion.ts` for why the comp's own durations are not used.
+ */
+const trackTransition = (property: string, reduceMotion: boolean | null) =>
+  reduceMotion ? undefined : `${property} ${HOVER_TRACK_MS}ms ${HOVER_EASE}`;
+
+/**
+ * The ringed dot under the hover cursor (Figma 5273:12162).
+ *
+ * Its core is drawn twice: an opaque page-background disc under the
+ * `statusBrandBg` tint. The tint alone is 10% alpha, so the series and the
+ * dashed hover cursor both read straight through the dot — the comp draws it
+ * solid.
+ *
+ * The circles sit at the origin and the group carries the position, so the dot
+ * can track the hover on `transform` — including the vertical travel as it
+ * rides the series (the comp moves it 13px in y over the same keyframes).
+ */
+export function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string }) {
+  const reduceMotion = useReducedMotion();
+  if (cx == null || cy == null) return null;
+  return (
+    <g
+      data-testid="chart-active-dot"
+      style={{
+        transform: `translate(${cx}px, ${cy}px)`,
+        transition: trackTransition('transform', reduceMotion)
+      }}
+    >
+      <circle r={ACTIVE_DOT_RADIUS} fill="var(--color-pageBackground)" />
+      <circle
+        r={ACTIVE_DOT_RADIUS}
+        fill="var(--color-statusBrandBg)"
+        stroke={color}
+        strokeWidth={SERIES_STROKE_WIDTH}
+      />
+    </g>
+  );
+}
+
+/**
+ * The dashed hover rule (Figma 5273:12162), as a custom cursor so it can track
+ * on `transform`: recharts' default cursor is a `<Curve>` positioned by its
+ * `points`, which land on `x1`/`x2` and cannot be transitioned.
+ */
+export function HoverCursor({
+  points,
+  height,
+  top
 }: {
-  cx?: number;
-  cy?: number;
-  stroke?: string;
-  value?: any;
-  index?: number;
-  data?: Data[];
-  fill?: string;
-}) => {
-  if (!data?.length || index === undefined || (!data[index]?.isMin && !data[index]?.isMax)) return null;
+  points?: { x: number; y: number }[];
+  height?: number;
+  top?: number;
+}) {
+  const reduceMotion = useReducedMotion();
+  const start = points?.[0];
+  const end = points?.[1];
+  if (!start) return null;
+  return (
+    <line
+      data-testid="chart-hover-cursor"
+      x1={0}
+      x2={0}
+      y1={start.y ?? top ?? 0}
+      y2={end?.y ?? (top ?? 0) + (height ?? 0)}
+      stroke="var(--color-borderQuarternary)"
+      strokeWidth={1}
+      strokeDasharray="3 3"
+      strokeLinecap="round"
+      pointerEvents="none"
+      style={{
+        transform: `translateX(${start.x}px)`,
+        transition: trackTransition('transform', reduceMotion)
+      }}
+    />
+  );
+}
 
-  // Only return a label for the max and min
-  return <circle cx={cx} cy={cy} r="4" stroke={stroke} fillOpacity={1} strokeWidth="2" fill={stroke} />;
-};
-
-/** How much of the series' alpha survives past the hover cursor (DS Line hover). */
+/** How much of the series' alpha survives outside the hover window (DS Line hover). */
 const POST_CURSOR_ALPHA = 0.4;
 
 /**
- * DS Line hover (Figma 5273:12162): the plotted series keeps full strength up
- * to the hover cursor and dims past it. Implemented as a luminance mask on the
- * Area — white keeps the series, gray fades stroke+fill together — so the
- * dimming can't veil the glass card background the way an overlay rect would.
- * Rendered inside the AreaChart, where recharts' chart-context hooks resolve.
+ * The series' entrance reveal (Figma: Sky App: UI 1598:77307, where the plot
+ * grows from 1px to its full 760px width). recharts draws exactly that by
+ * default — `AreaRevealShape` wipes the curve in left-to-right behind an
+ * animated clip-path — so this only re-times it from recharts' 1500ms/`ease`
+ * to the comp's figures.
+ *
+ * The easing has to be spelled out rather than read from `--ease-in-out-quart`:
+ * recharts parses the string itself to build an easing function, so it never
+ * reaches CSS where a custom property would resolve.
+ *
+ * No delay is paired with this. The reveal is gated by data, not by the clock —
+ * `LoadingErrorWrapper` holds the skeleton until a series exists, so the Area
+ * mounts (and wipes in) only once there is something to draw, which in practice
+ * lands after any page transition has finished.
+ */
+const REVEAL_DURATION_MS = 900;
+/**
+ * The same wipe, replayed when the series is swapped for another one — the
+ * Rate|TVL switch in the tabs comp (Figma: Sky App: UI 1598:76322), where the
+ * outgoing series fades over ~230ms and the incoming one draws itself in over
+ * ~600ms. recharts carries a single animationDuration for both the first
+ * reveal and every replay, so the component steps it down once the opening
+ * wipe has finished.
+ */
+const RE_REVEAL_DURATION_MS = 600;
+const REVEAL_EASING = 'cubic-bezier(0.77,0,0.175,1)';
+
+/** The active pill's slide between segments (tabs comp): 151ms, easeInOut. */
+const PILL_SLIDE = { duration: 0.15, ease: [0.42, 0, 0.58, 1] } as const;
+
+/**
+ * Half-width of the lit window, in px — the DS mock's mask measures 45px across
+ * (Figma 5391:44830).
+ *
+ * It is a flat number rather than the distance to the neighbouring data points
+ * the ticket describes, because the series are far denser than they look: the
+ * Morpho rate chart plots 170 hourly points over 779px at 1W and 722 at 1M, so
+ * neighbours sit 1–5px apart and a point-relative window would light little
+ * more than the hover dot. Charts sparse enough for it to matter (the portfolio
+ * protocol statistics, 7–8 points) would swing the other way and light a third
+ * of the plot. One width keeps every chart reading alike.
+ */
+const HALF_WINDOW = 22;
+
+/**
+ * DS Line hover (Figma 5273:12162): the plotted series dims and only a window
+ * around the hover point stays at full strength. Implemented as a luminance
+ * mask on the Area — white keeps the series, gray fades stroke+fill together —
+ * so the dimming can't veil the glass card background the way an overlay rect
+ * would. Rendered inside the AreaChart, where recharts' chart-context hooks
+ * resolve.
  */
 export function HoverDimMask({ id }: { id: string }) {
   const isActive = useIsTooltipActive();
   const coordinate = useActiveTooltipCoordinate();
   const width = useChartWidth();
   const height = useChartHeight();
+  const reduceMotion = useReducedMotion();
   // Pre-layout the chart has no dimensions (and no hover); fall back to a
   // full-coverage white mask so the series never flashes hidden.
   const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
@@ -189,27 +308,68 @@ export function HoverDimMask({ id }: { id: string }) {
     <defs>
       <mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={width ?? '100%'} height={height ?? '100%'}>
         <rect
-          data-testid="chart-dim-mask-lit"
+          data-testid="chart-dim-mask-base"
           x={0}
           y={0}
-          width={cursorX ?? width ?? '100%'}
+          width={width ?? '100%'}
           height={height ?? '100%'}
           fill="white"
+          opacity={cursorX != null ? POST_CURSOR_ALPHA : 1}
+          style={{ transition: trackTransition('opacity', reduceMotion) }}
         />
-        {cursorX != null && width != null && (
+        {cursorX != null && (
+          /* Full-width window translated into place rather than clamped by
+             recomputing x/width: the mask region is the plot box, so a window
+             that overhangs an edge is clipped to exactly what clamping used to
+             leave visible — and holding the geometry still is what lets the
+             boundary travel with the cursor on `transform`. */
           <rect
-            data-testid="chart-dim-mask-dimmed"
-            x={cursorX}
+            data-testid="chart-dim-mask-lit"
+            x={0}
             y={0}
-            width={Math.max(width - cursorX, 0)}
+            width={HALF_WINDOW * 2}
             height={height ?? '100%'}
             fill="white"
-            opacity={POST_CURSOR_ALPHA}
+            style={{
+              transform: `translateX(${cursorX - HALF_WINDOW}px)`,
+              transition: trackTransition('transform', reduceMotion)
+            }}
           />
         )}
       </mask>
     </defs>
   );
+}
+
+/** Id of the body-level layer every chart tooltip renders into. */
+const TOOLTIP_PORTAL_ID = 'chart-tooltip-portal';
+
+/**
+ * The layer the chart tooltip is portalled into (APP-443 item 19.1).
+ *
+ * Rendered inside the chart card, the tooltip's `backdrop-filter` has nothing
+ * to work with: the card carries its own `backdrop-blur`, which makes it a
+ * backdrop root, and a nested backdrop-filter then samples an empty backdrop —
+ * so the plot showed straight through the panel unblurred. Hoisting it to the
+ * body puts it in the same position as every other app tooltip, which is
+ * portalled by Radix, and the frost resolves against the page.
+ */
+function useChartTooltipPortal(): HTMLElement | null {
+  const [portal, setPortal] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let element = document.getElementById(TOOLTIP_PORTAL_ID);
+    if (!element) {
+      element = document.createElement('div');
+      element.id = TOOLTIP_PORTAL_ID;
+      // z-101 matches the app tooltip tier — above the z-100 popovers.
+      element.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:101';
+      document.body.appendChild(element);
+    }
+    setPortal(element);
+  }, []);
+
+  return portal;
 }
 
 const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP) => {
@@ -276,19 +436,51 @@ function SegmentedPills<T extends string>({
   /** Extra classes on each pill (e.g. `flex-1` to split the width evenly). */
   itemClassName?: string;
 }) {
+  // One shared layout element per group, so switching segments slides the
+  // active fill across instead of repainting it in place. The id scopes the
+  // shared element to this group — a page renders several of these (metric and
+  // timeframe, plus their mobile counterparts) and a duplicated layoutId would
+  // make pills fly between groups.
+  const pillId = useId();
+  const reduceMotion = useReducedMotion();
+
   return (
     <div className={cn(tabsListVariants({ variant: 'segmented' }), className)} data-testid={dataTestId}>
-      {options.map(option => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          data-state={value === option.value ? 'active' : 'inactive'}
-          className={cn(tabsTriggerVariants({ variant: 'segmented' }), itemClassName)}
-        >
-          {option.label}
-        </button>
-      ))}
+      {options.map(option => {
+        const isActive = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            data-state={isActive ? 'active' : 'inactive'}
+            className={cn(
+              tabsTriggerVariants({ variant: 'segmented' }),
+              // The recipe paints the active fill and border on the trigger
+              // itself; the travelling element below owns them here. Suppressed
+              // locally rather than in the recipe, which other non-Radix groups
+              // still rely on.
+              'relative data-[state=active]:border-transparent data-[state=active]:bg-none',
+              itemClassName
+            )}
+          >
+            {isActive && (
+              <motion.span
+                layoutId={`${pillId}-active-pill`}
+                aria-hidden
+                // No negative z-index: the group paints its own well
+                // (bg-pageBackground), and a -z-10 fill sits behind THAT and
+                // disappears entirely. Stacking is by DOM order instead — the
+                // fill is positioned and comes first, the label is positioned
+                // and comes after, so the label wins.
+                className="border-borderBrandDim from-brand2-start to-brand2-end absolute inset-0 rounded-full border bg-linear-to-b bg-origin-border"
+                transition={reduceMotion ? { duration: 0 } : PILL_SLIDE}
+              />
+            )}
+            <span className="relative">{option.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -326,6 +518,9 @@ interface ChartProps {
   variant?: 'default' | 'detail';
   /** detail variant: small label above the value (e.g. "Current Rate"). */
   label?: React.ReactNode;
+  /** detail variant: mark rendered after the headline figure (e.g. the Morpho
+   *  vault chart's stars mark, which also carries the rate-breakdown tooltip). */
+  valueSuffix?: React.ReactNode;
   /** detail variant: metric toggle options (e.g. Rate | TVL). */
   metrics?: { value: string; label: React.ReactNode }[];
   activeMetric?: string;
@@ -443,6 +638,8 @@ function DetailHeaderValue({
   symbol,
   prefix,
   isLoading,
+  icons,
+  valueSuffix,
   mobile = false
 }: {
   data: Data[];
@@ -451,6 +648,12 @@ function DetailHeaderValue({
   symbol?: string;
   prefix?: string;
   isLoading: boolean;
+  /** Optional mark(s) leading the figure — the Portfolio statistics comp
+   *  (1036:189291) puts the series' token logo here. */
+  icons?: React.ReactNode;
+  /** Optional mark trailing the figure — the Morpho vault chart tags its rate
+   *  with the DS stars mark the same way the card and Details row do. */
+  valueSuffix?: React.ReactNode;
   /** M6.3 mobile figure: Heading 5 (24/26, Circular Medium). */
   mobile?: boolean;
 }) {
@@ -461,15 +664,28 @@ function DetailHeaderValue({
   const formatted = `${prefix || ''}${formatNumber(value, { maxDecimals: 2, compact: true })}${
     isPercentage ? '%' : symbol ? ` ${symbol}` : ''
   }`;
-  return (
+  const figure = (
     <span
       data-testid="chart-detail-value"
+      // Desktop is Heading 2 (44/48, Circular Medium — Figma 859:35718, whose
+      // header block measures 22px of label over a 48px figure); the phone tier
+      // keeps its own Heading 5 from M6.3.
       className={cn(
-        'text-text text-2xl',
-        mobile ? 'font-circle leading-[26px] font-medium tracking-[-0.48px]' : 'font-semibold lg:text-[28px]'
+        'text-text font-circle font-medium',
+        mobile
+          ? 'text-2xl leading-[26px] tracking-[-0.48px]'
+          : 'text-[44px] leading-[48px] tracking-[-0.88px]'
       )}
     >
       {formatted}
+    </span>
+  );
+  if (!icons && !valueSuffix) return figure;
+  return (
+    <span className="flex items-center gap-2">
+      {icons}
+      {figure}
+      {valueSuffix}
     </span>
   );
 }
@@ -486,7 +702,9 @@ function ChartContent({
   tooltipLabel,
   tokenSymbols,
   chartHeight,
-  color
+  color,
+  seriesKey,
+  isDetail = false
 }: {
   data: Data[];
   isLarge: boolean;
@@ -500,10 +718,40 @@ function ChartContent({
   tokenSymbols?: string[];
   chartHeight?: number;
   color?: string;
+  /**
+   * Identifies which series is plotted (metric + timeframe). Changing it
+   * remounts the Area so the new series wipes in from the left, rather than
+   * recharts interpolating the old curve into the new one — handed a new
+   * dataset for the same Area, it morphs the path, which is not what the tabs
+   * comp draws.
+   */
+  seriesKey?: string;
+  /** detail variant: no date axis under the plot, so it runs to the card floor. */
+  isDetail?: boolean;
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
   const dimMaskId = useId();
+  // The opening wipe is the slower one; every replay after it — a metric or
+  // timeframe switch, which recharts treats as a fresh entrance — runs at the
+  // tabs comp's shorter figure. Stepped down when the first wipe reports done,
+  // since recharts reads one duration for both.
+  const [revealDuration, setRevealDuration] = useState(REVEAL_DURATION_MS);
+  // Stable identity is load-bearing, not tidiness: recharts rebuilds the
+  // running animation from zero whenever this handler's identity changes
+  // (JavascriptAnimate lists onAnimationEnd in the deps of the effect that
+  // constructs it). Inline, the wipe restarted on every re-render that landed
+  // mid-reveal — on a cold load the series stuttered through two or three
+  // false starts before the real one.
+  const handleRevealEnd = useCallback(() => setRevealDuration(RE_REVEAL_DURATION_MS), []);
+  const tooltipPortal = useChartTooltipPortal();
+  // The plot box, so the portalled tooltip can turn recharts' chart-space
+  // coordinate into viewport pixels.
+  const plotRef = useRef<HTMLDivElement>(null);
+
+  // components/charts/bg-chart2 unless the caller themes the series (e.g. the
+  // Stake destination chart's bg-chart1 indigo).
+  const seriesColor = color ?? 'var(--color-chart2)';
 
   // Single source of truth for the plot height so the loading skeleton
   // reserves the same space as the rendered chart (no layout shift on load).
@@ -523,62 +771,87 @@ function ChartContent({
         </VStack>
       }
     >
-      <ResponsiveContainer width={'100%'} height={resolvedHeight}>
-        <AreaChart
-          data={data}
-          margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isLarge ? 22 : 0, left: 0 }}
-        >
-          <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="100%" gradientUnits="objectBoundingBox">
-              {color ? (
-                <>
-                  <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-                  <stop offset="75%" stopColor={color} stopOpacity="0" />
-                </>
-              ) : (
-                <>
-                  <stop offset="5%" stopColor="#1DD9BA" stopOpacity={0.25} />
-                  <stop offset="75%" stopColor="#00A167" stopOpacity="0" />
-                </>
-              )}
-            </linearGradient>
-          </defs>
-          <HoverDimMask id={dimMaskId} />
-          <YAxis domain={['dataMin', 'dataMax']} padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }} hide />
-          {/* We can't extract the XAxis component outside of the chart as in the designs */}
-          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
-          {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
-          <Tooltip
-            // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162).
-            cursor={{ stroke: 'var(--color-fgQuaternary)', strokeWidth: 1, strokeDasharray: '4 4' }}
-            content={
-              <ChartTooltip
-                symbol={symbol}
-                isPercentage={isPercentage}
-                labelFormatter={date => formatDate(date, activeTimeframe)}
-                prefix={prefix}
-                tooltipLabel={tooltipLabel}
-                tokenSymbols={tokenSymbols}
-              />
-            }
-          />
+      <div ref={plotRef}>
+        <ResponsiveContainer width={'100%'} height={resolvedHeight}>
+          <AreaChart
+            data={data}
+            margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isDetail ? 0 : isLarge ? 22 : 0, left: 0 }}
+          >
+            <defs>
+              {/* The area wash is one hue fading to nothing at the plot floor
+                  (Figma 859:35718). It used to end at 75% — and, on the default
+                  teal, to fade into a *different* hue (#00A167 green) — which is
+                  what read as the wrong colour and the short gradient in APP-432
+                  item 9. */}
+              <linearGradient
+                id={gradientId}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="100%"
+                gradientUnits="objectBoundingBox"
+              >
+                <stop offset="0%" stopColor={seriesColor} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={seriesColor} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <HoverDimMask id={dimMaskId} />
+            <YAxis
+              domain={['dataMin', 'dataMax']}
+              padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }}
+              hide
+            />
+            {/* We can't extract the XAxis component outside of the chart as in the designs */}
+            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={false} />
+            {/* Uncomment tooltip if we want to track day by day with the mouse cursor */}
+            <Tooltip
+              // Out of the card so the panel's frost has a backdrop to sample
+              // (see useChartTooltipPortal); the tooltip places itself.
+              portal={tooltipPortal}
+              // DS hover cursor: a faint dashed vertical rule (Figma 5273:12162 —
+              // border-quaternary, 3/3 dashes with round caps), drawn by
+              // HoverCursor so it tracks the hover with everything else.
+              cursor={<HoverCursor />}
+              content={
+                <ChartTooltip
+                  symbol={symbol}
+                  isPercentage={isPercentage}
+                  labelFormatter={date => formatDate(date, activeTimeframe)}
+                  prefix={prefix}
+                  tooltipLabel={tooltipLabel}
+                  tokenSymbols={tokenSymbols}
+                  anchorRef={plotRef}
+                />
+              }
+            />
 
-          <Area
-            dataKey="value"
-            stroke={color ?? '#1DD9BA'}
-            strokeWidth={2.5}
-            type="monotone"
-            fill={`url(#${gradientId})`}
-            // Dim the series past the hover cursor (mask above); the active dot
-            // and tooltip render outside the masked layer, so they stay lit.
-            mask={`url(#${dimMaskId})`}
-            label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
-            dot={<CustomizedDot data={data} stroke={color ?? '#1DD9BA'} />}
-            // Ringed hover dot at the cursor point (Figma 5273:12162).
-            activeDot={{ r: 5, fill: color ?? '#1DD9BA', stroke: 'var(--color-container)', strokeWidth: 3 }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+            <Area
+              key={seriesKey}
+              dataKey="value"
+              stroke={seriesColor}
+              strokeWidth={SERIES_STROKE_WIDTH}
+              strokeLinecap="round"
+              type="monotone"
+              fill={`url(#${gradientId})`}
+              // Dim everything outside the hover window (mask above); the active
+              // dot renders outside the masked layer, so it stays lit.
+              mask={`url(#${dimMaskId})`}
+              label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
+              // No resting points — the DS plots the bare line.
+              dot={false}
+              // Ringed hover dot at the cursor point (Figma 5273:12162).
+              activeDot={<ActiveDot color={seriesColor} />}
+              // Entrance wipe — see REVEAL_DURATION_MS. Leaving isAnimationActive
+              // at its 'auto' default is deliberate: it resolves to off under
+              // prefers-reduced-motion (and under SSR), so the reveal needs no
+              // reduced-motion handling of its own.
+              animationDuration={revealDuration}
+              animationEasing={REVEAL_EASING}
+              onAnimationEnd={handleRevealEnd}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </LoadingErrorWrapper>
   );
 }
@@ -599,6 +872,7 @@ export function Chart({
   tokenSymbols,
   variant = 'default',
   label,
+  valueSuffix,
   metrics,
   activeMetric,
   onMetricChange,
@@ -653,13 +927,16 @@ export function Chart({
     <>
       <Card
         data-testid={dataTestId}
+        // Desktop detail is the comp's 32px-padded block (859:35718: header at
+        // 32/32, a 760-wide plot, 32px under it); the phone tier and the
+        // default variant keep their own full-bleed plot inside a p-0 card.
         className={cn(
-          'relative overflow-hidden p-0',
-          isDetail ? (isMobileDetail ? 'pb-5' : 'pb-3') : 'bg-cardLight h-[288px] lg:h-[220px] lg:p-0'
+          'relative overflow-hidden',
+          isDetail ? (isMobileDetail ? 'p-0 pb-5' : 'p-8') : 'bg-cardLight h-[288px] p-0 lg:h-[220px] lg:p-0'
         )}
         ref={containerRef}
       >
-        <CardHeader className="p-5 pb-0">
+        <CardHeader className={cn(isDetail && !isMobileDetail ? 'p-0' : 'p-5 pb-0')}>
           {isMobileDetail ? (
             <div className="flex w-full flex-col gap-5">
               {metrics && activeMetric !== undefined && onMetricChange && (
@@ -682,16 +959,18 @@ export function Chart({
                   symbol={symbol}
                   prefix={prefix}
                   isLoading={isLoading}
+                  icons={icons}
+                  valueSuffix={valueSuffix}
                 />
               </div>
             </div>
           ) : isDetail ? (
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
+                {/* Body 5 on fg-secondary, flush against the figure (859:35718);
+                    it was 13px on the selectActive periwinkle. */}
                 {label && (
-                  <span className="text-selectActive light:text-textSecondary text-[13px] leading-none">
-                    {label}
-                  </span>
+                  <span className="text-fgSecondary font-graphik text-sm leading-[22px]">{label}</span>
                 )}
                 <DetailHeaderValue
                   data={data}
@@ -700,6 +979,8 @@ export function Chart({
                   symbol={symbol}
                   prefix={prefix}
                   isLoading={isLoading}
+                  icons={icons}
+                  valueSuffix={valueSuffix}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -753,7 +1034,7 @@ export function Chart({
         </CardHeader>
         <div
           data-testid={dataTestId ? `${dataTestId}-plot` : undefined}
-          className={cn(isMobileDetail && 'px-5')}
+          className={cn(isMobileDetail && 'px-5', isDetail && !isMobileDetail && 'pt-2')}
         >
           <ChartContent
             data={data}
@@ -764,10 +1045,12 @@ export function Chart({
             activeTimeframe={activeTimeframe}
             isLoading={isLoading}
             error={error}
-            chartHeight={isDetail ? (isMobileDetail ? 203 : 280) : undefined}
+            isDetail={isDetail}
+            chartHeight={isDetail ? (isMobileDetail ? 203 : 263) : undefined}
             tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
             tokenSymbols={tokenSymbols}
             color={color}
+            seriesKey={`${activeMetric ?? ''}-${activeTimeframe}`}
           />
         </div>
         {isMobileDetail && (

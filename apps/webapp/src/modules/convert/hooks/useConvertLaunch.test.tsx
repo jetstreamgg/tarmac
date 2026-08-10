@@ -43,6 +43,22 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
+  useIsBatchSupported: () => ({
+    data: false,
+    isLoading: false,
+    error: null,
+    mutate: () => {},
+    dataSources: []
+  })
+}));
+
+vi.mock('@/hooks/shared/useNetworkFee', () => ({
+  // The fee row is read-only and network-backed; these tests render without a
+  // WagmiProvider, so stub it to the un-resolved state the row falls back on.
+  useNetworkFee: () => ({ data: undefined, isLoading: false, error: null, mutate: () => {}, dataSources: [] })
+}));
+
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: h.launchMock,
@@ -72,7 +88,11 @@ vi.mock('./usePsmConversion', () => ({
       isLoading: h.isLoading,
       disabledReason: h.disabledReason,
       execute: h.execute,
-      mutatePocketBalance: h.mutatePocketBalance
+      mutatePocketBalance: h.mutatePocketBalance,
+      // Mirrors the real result shape; the review content reads these for the fee
+      // row's bundling badge and the "Save X%" promo.
+      calls: [],
+      isBatch: false
     };
   }
 }));
@@ -113,7 +133,8 @@ describe('useConvertLaunch', () => {
   it('labels a two-step approve → convert flow when allowance is needed', () => {
     h.needsAllowance = true;
     const { result } = renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
-    expect(result.current.steps).toEqual(['Approve USDS', 'Convert USDS to USDC']);
+    // The approve step carries tokenSymbol so the steps list renders "Approve ◉ USDS" (Figma 1036:205564).
+    expect(result.current.steps).toEqual([{ label: 'Approve', tokenSymbol: 'USDS' }, 'Convert USDS to USDC']);
   });
 
   it('collapses to a single convert step when allowance covers the amount', () => {
@@ -132,7 +153,8 @@ describe('useConvertLaunch', () => {
     const config = h.launchMock.mock.calls[0][0];
     expect(config).toMatchObject({
       title: 'Review conversion',
-      transactionTitle: 'Confirm in the wallet',
+      // The wallet screen keeps the review title (Figma 1036:205564).
+      transactionTitle: 'Review conversion',
       confirmLabel: 'Confirm',
       confirmDisabled: false,
       steps: ['Convert USDS to USDC'],

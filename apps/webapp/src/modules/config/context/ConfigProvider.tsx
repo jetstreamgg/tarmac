@@ -1,6 +1,6 @@
-import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactElement, ReactNode, useEffect, useMemo, useState } from 'react';
 import { UserConfig } from '../types/user-config';
-import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
+import { USER_SETTINGS_KEY } from '@/lib/constants';
 import { dynamicActivate } from '@/utils';
 import { applyTheme, getSystemTheme } from '@/lib/theme';
 import { i18n } from '@lingui/core';
@@ -11,8 +11,6 @@ import { reportError } from '@/modules/sentry/reportError';
 export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const [userConfig, setUserConfig] = useState<UserConfig>(defaultUserConfig);
   const [loaded, setLoaded] = useState<boolean>(false);
-  const [externalLinkModalOpened, setExternalLinkModalOpened] = useState(false);
-  const [externalLinkModalUrl, setExternalLinkModalUrl] = useState('');
 
   // Check the user settings on load, and set locale
   useEffect(() => {
@@ -70,21 +68,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     return locale;
   }, [userConfig]);
 
-  const onExternalLinkClicked = useCallback(
-    (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-      const href = e.currentTarget.getAttribute('href');
-      if (!href) return;
-
-      const hrefUrl = new URL(href);
-      if (!ALLOWED_EXTERNAL_DOMAINS.includes(hrefUrl.hostname)) {
-        e.preventDefault();
-        setExternalLinkModalUrl(href);
-        setExternalLinkModalOpened(true);
-      }
-    },
-    [setExternalLinkModalUrl, setExternalLinkModalOpened]
-  );
-
   const setExpertRiskDisclaimerShown = (shown: boolean) => {
     updateUserConfig({
       ...userConfig,
@@ -114,11 +97,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         updateUserConfig,
         loaded,
         locale,
-        externalLinkModalOpened,
-        setExternalLinkModalOpened,
-        externalLinkModalUrl,
-        setExternalLinkModalUrl,
-        onExternalLinkClicked,
         expertRiskDisclaimerShown: userConfig.expertRiskDisclaimerShown ?? false,
         setExpertRiskDisclaimerShown,
         expertRiskDisclaimerDismissed: userConfig.expertRiskDisclaimerDismissed ?? false,

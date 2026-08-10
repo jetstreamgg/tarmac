@@ -1,8 +1,10 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { AppLink } from '@/lib/navigation';
+import { ROUTES } from '@/lib/routes';
+import { recallEarnFilterSearch } from '@/lib/earnFilterMemory';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 
@@ -32,6 +34,19 @@ export interface ProductDetailToken {
    * neutral borderTertiary ring. Optional — additive to the frozen C3 contract.
    */
   status?: 'success' | 'info';
+}
+
+/**
+ * Going back to the Earn marketplace restores the filters it was left under
+ * (APP-457). `retainOnNavigate` — which AppLink applies — drops them, so the
+ * href has to carry them; AppLink merges a query string on the href over the
+ * retained params. The memory is written by /earn itself and reads empty when
+ * it was last seen unfiltered, so a clean landing needs no special case.
+ */
+export function backToMarketplace(backHref: string): string {
+  if (backHref !== ROUTES.EARN) return backHref;
+  const search = new URLSearchParams(recallEarnFilterSearch()).toString();
+  return search ? `${backHref}?${search}` : backHref;
 }
 
 /** One row of the Details grid. The module supplies icon/label/value. */
@@ -97,16 +112,20 @@ function ProductTitleIcon({ token }: { token: ProductDetailToken }) {
   );
 }
 
+/* font-medium is load-bearing: font-circle alone falls to `normal` (400), which
+   resolves to Circular Book 450 — the DS has no Circular Book, every Headings-family
+   style is weight 500 (font-weight/label). */
 function SectionHeading({ className, children }: { className?: string; children: ReactNode }) {
-  return <h2 className={cn('text-text font-circle text-lg', className)}>{children}</h2>;
+  return <h2 className={cn('text-text font-circle text-lg font-medium', className)}>{children}</h2>;
 }
 
 /* M6.3 section-heading scale (486:20706): Details/About step down to Label 4,
-   Transactions steps up to Heading 6; both return to the shared 18px at md. */
+   Transactions steps up to Heading 6; both return to Label 3 (18/22, -0.36px,
+   comp 859:35722) at md. */
 const minorHeadingClasses =
-  'text-base leading-[18px] tracking-[-0.32px] md:text-lg md:leading-normal md:tracking-normal';
+  'text-base leading-[18px] tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]';
 const majorHeadingClasses =
-  'text-xl leading-[22px] tracking-[-0.4px] md:text-lg md:leading-normal md:tracking-normal';
+  'text-xl leading-[22px] tracking-[-0.4px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]';
 
 function DetailsSection({ title, details }: { title?: ReactNode; details: ProductDetailRow[] }) {
   return (
@@ -118,11 +137,14 @@ function DetailsSection({ title, details }: { title?: ReactNode; details: Produc
             key={row.id}
             className="border-borderPrimary flex items-center justify-between gap-4 border-b py-4"
           >
-            <span className="text-textSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-normal">
+            {/* Desktop comp (859:35723): label Body 5 (Graphik 14/22), value
+                Label 4 (Circular Medium 16/18, -0.32px). Mobile keeps the M6.3
+                step-down — Body 6 labels and Label 5 values (486:20706). */}
+            <span className="text-fgSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-[22px]">
               {row.icon}
               {row.label}
             </span>
-            <span className="text-text font-circle md:font-graphik text-right text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-normal md:tracking-normal">
+            <span className="text-text font-circle text-right text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
               {row.value}
             </span>
           </div>
@@ -136,15 +158,15 @@ function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetai
   return (
     <section className="flex flex-col gap-4" data-testid="product-detail-about">
       <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>About</Trans>}</SectionHeading>
-      <div className="text-textSecondary text-sm leading-relaxed">
+      {/* Body 5 on fg-secondary with an inline fg-brand-primary link
+          (Figma 859:35769). Named explicitly rather than left to textSecondary:
+          that token used to be the legacy lavender (rgba(198,194,255,.8)) and
+          read as purple next to the comp's gray — APP-432 item 10. Dark has
+          since been flipped onto fg-secondary too, so the two now match. */}
+      <div className="text-fgSecondary font-graphik text-sm leading-[22px]">
         {about.body}
         {about.learnMoreHref && (
-          <a
-            href={about.learnMoreHref}
-            target="_blank"
-            rel="noreferrer"
-            className="text-text mt-1 inline-block font-medium underline"
-          >
+          <a href={about.learnMoreHref} target="_blank" rel="noreferrer" className="text-fgBrand ml-1">
             <Trans>Learn more</Trans>
           </a>
         )}
@@ -195,6 +217,11 @@ export function ProductDetailTemplate({
   transactionsAction,
   dataTestId = 'product-detail'
 }: ProductDetailTemplateProps) {
+  // Snapshot at mount rather than reading storage on every render: the memory
+  // can't change while a product page is up (only /earn writes it), so this is
+  // a value, not a subscription.
+  const [backTo] = useState(() => backToMarketplace(backHref));
+
   return (
     <div className="flex w-full flex-col gap-8 py-4 md:py-10" data-testid={dataTestId}>
       {/* Header (Patterns/Headers, Savings type 5039:35173): Label 5 back-link
@@ -204,7 +231,7 @@ export function ProductDetailTemplate({
           selector drops to its own full-width row 32px under the title. */}
       <div className="flex flex-col gap-4 md:gap-8">
         <AppLink
-          to={backHref}
+          to={backTo}
           className="text-fgSecondary hover:text-fgPrimary font-circle flex w-fit items-center gap-1.5 text-xs leading-[14px] font-medium tracking-[-0.24px] transition-colors md:text-sm md:leading-4 md:tracking-[-0.28px]"
           data-testid="product-detail-back"
         >

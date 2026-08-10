@@ -149,12 +149,10 @@ describe('TransactionModal — per-screen content + chrome (Figma "Confirm in th
     expect(screen.queryByText('Approve USDS')).toBeNull();
   });
 
-  it('header back arrow on the first (review) screen closes the modal', () => {
+  it('draws no back arrow on the flow’s first screen (Figma 859:36036: title + close only)', () => {
     renderModal(reviewConfig());
     expect(screen.getByText('Review supply')).toBeTruthy();
 
-    fireEvent.click(screen.getByTestId('transaction-modal-back'));
-
-    expect(screen.queryByText('Review supply')).toBeNull();
+    expect(screen.queryByTestId('transaction-modal-back')).toBeNull();
   });
 });

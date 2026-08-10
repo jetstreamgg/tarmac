@@ -57,6 +57,8 @@ export interface StUsdsTransactionForm {
   amountReady: boolean;
   /** Current module rate as a decimal fraction (e.g. 0.065), for the APY row. */
   rate: number | undefined;
+  /** USDS-denominated position value, for the entry grid's before→after deltas. */
+  position: bigint;
   engineParams: StUsdsEngineParams;
   providerSelection: StUsdsProviderSelectionResult;
   /** Price impact of the selected Curve quote (bps). */
@@ -73,6 +75,7 @@ export interface StUsdsTransactionForm {
   transactionScreenContent: ReactNode;
   onInput: (next: string) => void;
   setMaxAmount: () => void;
+  setPercentAmount: (pct: number) => void;
 }
 
 /**
@@ -193,6 +196,14 @@ export function useStUsdsTransactionForm({
     setMax(!isSupply);
     setImpactAccepted(false);
   };
+  // The 25/50/100% chips — 100% routes through Max so the withdraw keeps the
+  // whole-share-balance redemption (no dust) the old Max link wired.
+  const setPercentAmount = (pct: number) => {
+    if (pct >= 100) return setMaxAmount();
+    setMax(false);
+    setValue(formatUnits((available * BigInt(pct)) / 100n, DECIMALS));
+    setImpactAccepted(false);
+  };
 
   const engineParams: StUsdsEngineParams = {
     flow,
@@ -223,9 +234,17 @@ export function useStUsdsTransactionForm({
     [isSupply, amountLabel]
   );
 
+  // The from→to hero the review and wallet screens draw: supply is USDS →
+  // quoted stUSDS; a withdraw redeems/swaps stUSDS (the quote's input) → USDS.
+  // No quote (loading, refetching, all providers blocked) stays undefined so the
+  // hero shows the placeholder instead of a fabricated 0.00 stUSDS.
+  // Scalar deps keep the memo stable (matches the savings/vault forms).
+  const quotedStUsds = isSupply
+    ? providerSelection.selectedQuote?.outputAmount
+    : providerSelection.selectedQuote?.inputAmount;
   const transactionScreenContent = useMemo(
-    () => <StUsdsAmountSummary amount={debouncedAmount} />,
-    [debouncedAmount]
+    () => <StUsdsAmountSummary flow={flow} amount={debouncedAmount} stUsdsAmount={quotedStUsds} />,
+    [flow, debouncedAmount, quotedStUsds]
   );
 
   return {
@@ -241,6 +260,7 @@ export function useStUsdsTransactionForm({
     debouncePending,
     amountReady,
     rate,
+    position: stUsdsData?.userSuppliedUsds ?? 0n,
     engineParams,
     providerSelection,
     priceImpactBps,
@@ -253,6 +273,7 @@ export function useStUsdsTransactionForm({
     toast,
     transactionScreenContent,
     onInput,
-    setMaxAmount
+    setMaxAmount,
+    setPercentAmount
   };
 }

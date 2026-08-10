@@ -1,11 +1,15 @@
 import { ReactNode } from 'react';
-import { Globe } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex, type EarnRiskTier } from '@/hooks';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
-import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
-import { ConvertArrows, Vaults } from '@/modules/icons';
+import {
+  ALL_NETWORKS_LABEL,
+  ALL_PRODUCTS_LABEL,
+  ALL_STABLECOINS_LABEL,
+  FilterSelect,
+  type FilterOption
+} from '@/components/product/FilterSelect';
 
 export type EarnFilterOption = FilterOption;
 
@@ -36,9 +40,13 @@ export type EarnTableFiltersProps = {
 
 /**
  * Filter bar of the Earn Opportunities section: risk pills + the three
- * dropdowns. Below md (486:22051) the dropdowns stack full-width under the
- * chips row and grow a leading glyph; from md the single-row toolbar stays as
- * C2 shipped it.
+ * dropdowns, each carrying its leading glyph at every tier (Figma 1036:201239
+ * draws them on the desktop toolbar too — they were mobile-only until APP-432
+ * item 2). Below md (486:22051) the dropdowns stack full-width under the chips
+ * row; from md the single-row toolbar stays as C2 shipped it.
+ *
+ * The glyph labels live in FilterSelect — the Portfolio transactions toolbar
+ * carries the same three.
  */
 export function EarnTableFilters({
   selectedRiskTiers,
@@ -94,12 +102,7 @@ export function EarnTableFilters({
           options={networks}
           selected={selectedNetwork}
           onChange={onNetworkChange}
-          allLabel={
-            <span className="flex items-center gap-1.5">
-              <Globe className="h-3 w-3 md:hidden" />
-              <Trans>All networks</Trans>
-            </span>
-          }
+          allLabel={ALL_NETWORKS_LABEL}
           testId="earn-filter-network"
           triggerClassName={triggerClassName}
         />
@@ -107,12 +110,7 @@ export function EarnTableFilters({
           options={stablecoins}
           selected={selectedStablecoin}
           onChange={onStablecoinChange}
-          allLabel={
-            <span className="flex items-center gap-1.5">
-              <ConvertArrows boxSize={12} className="md:hidden" />
-              <Trans>All stablecoins</Trans>
-            </span>
-          }
+          allLabel={ALL_STABLECOINS_LABEL}
           testId="earn-filter-stablecoin"
           triggerClassName={triggerClassName}
         />
@@ -120,12 +118,7 @@ export function EarnTableFilters({
           options={products}
           selected={selectedProduct}
           onChange={onProductChange}
-          allLabel={
-            <span className="flex items-center gap-1.5">
-              <Vaults boxSize={12} className="md:hidden" />
-              <Trans>All products</Trans>
-            </span>
-          }
+          allLabel={ALL_PRODUCTS_LABEL}
           testId="earn-filter-product"
           triggerClassName={triggerClassName}
         />

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { Call } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   StUsdsDirection,
@@ -40,6 +41,10 @@ export interface UseStUsdsLaunchResult {
   prepared: boolean;
   isLoading: boolean;
   error: Error | null;
+  /** The routed engine's calls, for estimating the flow's network fee. */
+  calls: Call[];
+  /** Whether those calls go out bundled — the batch costs less than the sequence. */
+  isBatch: boolean;
 }
 
 /**
@@ -116,12 +121,15 @@ export function useStUsdsLaunch({
     enabled: isSupply && isCurve,
     ...txCallbacks
   });
+  // minOut must derive from the same quote that produced stUsdsAmount: on a max withdraw the UI
+  // amount and the routed quote are seeded by separate provider selections and can diverge.
+  // The zero check matters because calculateMinOutputWithSlippage has no guard of its own.
   const curveWithdraw = useBatchCurveSwap({
     direction: StUsdsDirection.WITHDRAW,
     inputAmount: stUsdsAmount ?? 0n,
-    expectedOutput: amount,
+    expectedOutput,
     shouldUseBatch,
-    enabled: !isSupply && isCurve && (stUsdsAmount ?? 0n) > 0n,
+    enabled: !isSupply && isCurve && (stUsdsAmount ?? 0n) > 0n && expectedOutput > 0n,
     ...txCallbacks
   });
 
@@ -150,6 +158,8 @@ export function useStUsdsLaunch({
     steps,
     prepared: activeHook.prepared,
     isLoading: activeHook.isLoading,
-    error: activeHook.error ?? prepareError
+    error: activeHook.error ?? prepareError,
+    calls: activeHook.calls ?? [],
+    isBatch: !!activeHook.isBatch
   };
 }

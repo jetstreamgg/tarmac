@@ -13,7 +13,7 @@ import {
   useTokenBalance,
   type Token
 } from '@/hooks';
-import { formatDecimalPercentage, formatNumber, isL2ChainId } from '@/utils';
+import { formatDecimalPercentage, formatNumber, isL2ChainId, math } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { SavingsAmountSummary } from '../components/SavingsAmountSummary';
 import {
@@ -24,6 +24,7 @@ import {
   type OriginSymbol
 } from '../components/SavingsOriginSelect';
 import { useSavingsSupplyMinAmountOut } from './useSavingsSupplyMinAmountOut';
+import { useUsdcSupplyGate, type UsdcSupplyBlockedReason } from './useUsdcSupplyGate';
 import { type SavingsLaunchFlow, type UseSavingsLaunchParams } from './useSavingsLaunch';
 
 const NO_VALUE = '–';
@@ -75,12 +76,23 @@ export interface SavingsTransactionForm {
   insufficient: boolean;
   /** True when the amount/connection gate is satisfied; combine with the engine's `prepared` for the submit gate. */
   amountReady: boolean;
+  /**
+   * Set when a mainnet USDC supply can't route through the PSM right now (cased
+   * off / sell direction halted / nonzero fee). Blocks `amountReady`; the surface
+   * renders the reason under the amount field.
+   */
+  usdcBlockedReason?: UsdcSupplyBlockedReason;
 
   // Display
   /** USDS-denominated savings balance (position). */
   position: bigint;
   /** Canonical Sky Savings Rate APY, formatted (e.g. "6.50%"). */
   apyDisplay: string;
+  /**
+   * The same rate as a decimal fraction (0.065 = 6.5%), or undefined while it
+   * loads — the projection input behind the modals' "Est. earnings (1Y)".
+   */
+  rate?: number;
   /** Mainnet supply preview: sUSDS shares for the entered amount (when `enablePreview`). */
   previewShares?: bigint;
 
@@ -94,6 +106,8 @@ export interface SavingsTransactionForm {
   // Handlers
   onInput: (raw: string) => void;
   setMaxAmount: () => void;
+  /** Set the amount to a percentage of the available balance; 100 routes through Max (no-dust withdraw). */
+  setPercentAmount: (pct: number) => void;
   switchOrigin: (next: OriginSymbol) => void;
   /** Clear the amount + Max (keeps the selected token) — for a post-success reset. */
   clearAmount: () => void;
@@ -102,7 +116,7 @@ export interface SavingsTransactionForm {
 }
 
 // Parse the raw input to a bigint at the origin token's decimals (USDC is 6 on
-// L2); partial/invalid input → 0.
+// every chain); partial/invalid input → 0.
 function parseAmount(raw: string, decimals: number): bigint {
   if (!raw) return 0n;
   try {
@@ -123,8 +137,10 @@ function parseAmount(raw: string, decimals: number): bigint {
  * `useSavingsLaunch({ ...form.engineParams, ...surface content })`.
  *
  * Token choice (Figma `USDS ▾`):
- *  - mainnet supply   → USDS / DAI (DAI routes to upgrade-and-supply, calldata unchanged)
- *  - mainnet withdraw → USDS-only (static chip)
+ *  - mainnet supply   → USDS / DAI / USDC (DAI routes to upgrade-and-supply, USDC to
+ *    the PSM-wrapper swap-and-supply; both end on the same deposit)
+ *  - mainnet withdraw → USDS-only (static chip) — the PSM leg is supply-only, so a
+ *    USDC exit is a withdraw to USDS followed by a Convert
  *  - L2 supply        → USDS / USDC (USDC swaps through the PSM)
  *  - L2 withdraw      → USDS / USDC destination choice (sUSDS swaps out to the picked token)
  *
@@ -190,16 +206,31 @@ export function useSavingsTransactionForm({
   //    the L2 withdraw source balance + the max-withdraw floor (swapExactIn)
   //  - maxAmountInForWithdraw: the sUSDS-in ceiling to take exactly `amount` out
   //    (specific L2 withdraw, swapExactOut)
+  // Mainnet USDC supply swaps through the PSM wrapper before the deposit, so it
+  // inherits the wrapper's live / halted / fee switches. No-op for every other
+  // origin+network pair (the reads are disabled where the wrapper has no address).
+  const isMainnetUsdc = isSupply && !isL2 && originSymbol === 'USDC';
+  const usdcGate = useUsdcSupplyGate();
+  const usdcBlockedReason = isMainnetUsdc ? usdcGate.blockedReason : undefined;
+  // Hold the confirm until the PSM reads answer — a fee that hasn't loaded yet
+  // would otherwise let a swap go out that leaves the deposit short. `useSavingsLaunch`
+  // reads the same gate into the engine's `enabled`, so a blocked path can't execute
+  // even if a surface forgets this; what lives here is the *user-facing* half —
+  // the disabled confirm and the reason rendered under the amount field.
+  const usdcGateReady = !isMainnetUsdc || (usdcGate.ready && !usdcGate.blockedReason);
+
   const minAmountOut = useSavingsSupplyMinAmountOut({ amount, originToken });
   const convertedBalance = usePreviewSwapExactIn(susdsBalance?.value ?? 0n, TOKENS.susds, originToken);
   const { value: maxAmountInForWithdraw } = usePreviewSwapExactOut(amount, TOKENS.susds, originToken);
 
-  // Mainnet supply preview: origin (USDS/DAI, both wad) → sUSDS shares via the vault's
-  // ERC-4626 convertToShares. Read-only; the supply still routes through the engine.
-  // Gated off in the modal (no consumer there) and on L2 (its min-out row covers it).
+  // Mainnet supply preview: the USDS that reaches the vault → sUSDS shares via its
+  // ERC-4626 convertToShares. USDS/DAI are already wad; a USDC amount is the 6-dec
+  // input widened to the wad the PSM mints for it. Read-only; the supply still routes
+  // through the engine. Gated off on L2 (its min-out row covers it).
+  const supplyUsdsAmount = isMainnetUsdc ? math.convertUSDCtoWad(amount) : amount;
   const { data: previewSharesData } = useReadSavingsUsds({
     functionName: 'convertToShares',
-    args: [amount],
+    args: [supplyUsdsAmount],
     query: { enabled: enablePreview && isSupply && !isL2 && amount > 0n }
   });
   const previewShares = typeof previewSharesData === 'bigint' ? previewSharesData : undefined;
@@ -212,7 +243,7 @@ export function useSavingsTransactionForm({
   // A max withdraw bypasses the amount check — the redeem is driven by the flag, not
   // the displayed (rounded) value.
   const insufficient = isConnected && !max && amount > available;
-  const amountReady = isConnected && !(!max && (isZero || insufficient));
+  const amountReady = isConnected && usdcGateReady && !(!max && (isZero || insufficient));
 
   const engineParams: SavingsEngineParams = {
     flow,
@@ -233,12 +264,13 @@ export function useSavingsTransactionForm({
   // so the modal's `updateModalContent` sync stays bounded.
   const transactionScreenContent = useMemo(() => {
     const display = value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0';
+    // No USD sub-line: the DS hero comps (1310:130565 / 859:36161) draw the
+    // label + amount + badge only.
     return (
       <SavingsAmountSummary
         label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
         amount={display}
         symbol={originToken.symbol}
-        usd={value ? display : undefined}
         dataTestId="savings-confirm-summary"
       />
     );
@@ -253,9 +285,8 @@ export function useSavingsTransactionForm({
       : { loading: t`Withdrawing ${label}`, success: t`${label} withdrawn!`, error: t`Withdrawal failed` };
   }, [isSupply, value, originToken.symbol]);
 
-  const apyDisplay = overall?.skySavingsRatecRate
-    ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
-    : NO_VALUE;
+  const rate = overall?.skySavingsRatecRate ? parseFloat(overall.skySavingsRatecRate) : undefined;
+  const apyDisplay = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
 
   const onInput = useCallback((raw: string) => {
     // Typing overrides a previous Max selection.
@@ -268,6 +299,20 @@ export function useSavingsTransactionForm({
     setMax(!isSupply);
     setValue(formatUnits(available, originDecimals));
   }, [isSupply, available, originDecimals]);
+
+  // The 25/50/100% chips (Figma 859:36036). 100% is the old Max — same no-dust
+  // withdraw semantics; the partial presets are plain amounts.
+  const setPercentAmount = useCallback(
+    (pct: number) => {
+      if (pct >= 100) {
+        setMaxAmount();
+        return;
+      }
+      setMax(false);
+      setValue(formatUnits((available * BigInt(pct)) / 100n, originDecimals));
+    },
+    [setMaxAmount, available, originDecimals]
+  );
 
   // Switching the origin token resets the amount + Max (the previous amount was
   // denominated in the old token's balance/decimals).
@@ -303,14 +348,17 @@ export function useSavingsTransactionForm({
     isZero,
     insufficient,
     amountReady,
+    usdcBlockedReason,
     position,
     apyDisplay,
+    rate,
     previewShares,
     engineParams,
     transactionScreenContent,
     toast,
     onInput,
     setMaxAmount,
+    setPercentAmount,
     switchOrigin,
     clearAmount,
     resetToUsds

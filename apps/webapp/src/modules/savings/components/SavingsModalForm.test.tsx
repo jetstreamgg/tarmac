@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 i18n.load('en', {});
@@ -16,6 +16,10 @@ const h = vi.hoisted(() => ({
   convertedValue: 0n as bigint,
   maxAmountIn: 0n as bigint,
   minAmountOut: 0n as bigint,
+  // Mainnet USDC supply gate (PSM wrapper reads): open module by default.
+  psmLive: 1n as bigint | undefined,
+  psmTin: 0n as bigint | undefined,
+  psmHalted: 0n as bigint | undefined,
   prepared: true,
   execute: vi.fn(),
   update: vi.fn(),
@@ -52,6 +56,22 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    // The bundling badge asks whether the wallet can batch; these renders have no
+    // WagmiProvider, so answer "no" and the fee row stays a plain value.
+    useIsBatchSupported: () => ({
+      data: false,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
     // The savings position (drives the withdraw balance/Max).
     useSavingsData: () => ({
       data: { userSavingsBalance: 100n * 10n ** 18n, savingsRate: 65n * 10n ** 15n, savingsTvl: 0n },
@@ -68,7 +88,12 @@ vi.mock('@/hooks', async importOriginal => {
     useReadSavingsUsds: () => ({ data: undefined }),
     // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
     usePreviewSwapExactIn: () => ({ value: h.convertedValue }),
-    usePreviewSwapExactOut: () => ({ value: h.maxAmountIn })
+    usePreviewSwapExactOut: () => ({ value: h.maxAmountIn }),
+    // Mainnet USDC supply gate: the PSM wrapper's live / fee / halt switches.
+    // Default to an open module (live, zero fee, nothing halted).
+    useUsdsPsmWrapperLive: () => ({ data: h.psmLive }),
+    useUsdsPsmWrapperTin: () => ({ data: h.psmTin }),
+    useUsdsPsmWrapperHalted: () => ({ data: h.psmHalted })
   };
 });
 
@@ -97,13 +122,19 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
       steps: ['Supply'],
       prepared: h.prepared,
       isLoading: false,
-      error: null
+      error: null,
+      // Mirrors the real result shape; the form reads these for the fee row's
+      // bundling badge and the "Save X%" promo.
+      calls: [],
+      isBatch: false
     };
   }
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.update }),
+  // txStatus stays IDLE: these tests exercise the live entry pushes, which the
+  // shared hook freezes once a tx is in flight.
+  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
   // No entry slot in these standalone renders → the form renders its body inline.
   useEntrySlot: () => null
 }));
@@ -145,11 +176,14 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { SavingsModalForm } from './SavingsModalForm';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const renderForm = (flow: SavingsLaunchFlow) =>
   render(
     <I18nProvider i18n={i18n}>
-      <SavingsModalForm sessionId="s1" flow={flow} />
+      <TooltipProvider>
+        <SavingsModalForm sessionId="s1" flow={flow} />
+      </TooltipProvider>
     </I18nProvider>
   );
 
@@ -165,7 +199,7 @@ const lastToast = () => {
   return withToast.at(-1)?.[1].toast;
 };
 
-const FIGMA_ROWS = ['Savings rate', 'Supply', '1Y est. earnings', 'Network', 'Network fee'];
+const FIGMA_ROWS = ['Savings rate', 'Network', 'Supply', 'Est. earnings (1Y)', 'Network fee'];
 
 describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   beforeEach(() => {
@@ -174,6 +208,9 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     h.convertedValue = 0n;
     h.maxAmountIn = 0n;
     h.minAmountOut = 0n;
+    h.psmLive = 1n;
+    h.psmTin = 0n;
+    h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
     h.update.mockClear();
@@ -218,16 +255,95 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     expect(screen.queryByTestId('savings-modal-amount-error')).not.toBeNull();
   });
 
-  it('offers USDS and DAI origin options on mainnet supply', () => {
+  // The projection the "Est. earnings (1Y)" cell draws: the 100-USDS position at
+  // the mocked 3.75% rate, and what it becomes once an amount is entered.
+  it('projects 1Y earnings from the savings rate, before→after', () => {
+    renderForm('supply');
+    const cell = () => screen.getByTestId('savings-modal-row-Est. earnings (1Y)');
+    // 100 USDS × 3.75%
+    expect(cell().textContent).toContain('3.75');
+
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '100' } });
+    // 200 USDS × 3.75% — the delta's `after`.
+    expect(cell().textContent).toContain('7.5');
+  });
+
+  it('offers USDS, DAI and USDC origin options on mainnet supply', () => {
     renderForm('supply');
     expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();
     expect(screen.queryByTestId('origin-opt-DAI')).not.toBeNull();
+    expect(screen.queryByTestId('origin-opt-USDC')).not.toBeNull();
   });
 
   it('routes the supply to the DAI origin token (upgrade-and-supply) when DAI is selected', () => {
     renderForm('supply');
     fireEvent.click(screen.getByTestId('origin-opt-DAI'));
     expect(h.launchParams?.originToken?.symbol).toBe('DAI');
+  });
+
+  it('routes the supply to the USDC origin token (PSM swap-and-supply) at 6 decimals', () => {
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(h.launchParams?.originToken?.symbol).toBe('USDC');
+    // USDC is 6-dec everywhere — the engine must get 10e6, not 10e18.
+    expect(h.launchParams?.amount).toBe(10n * 10n ** 6n);
+  });
+
+  it('blocks a USDC supply (with a reason) when the PSM charges a fee', () => {
+    h.psmTin = 1n; // any nonzero tin leaves the deposit short
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).not.toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('blocks a USDC supply when the PSM sell direction is halted', () => {
+    h.psmHalted = 2n; // SELL_GEM_HALTED
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).not.toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('blocks a USDC supply when the PSM is cased off', () => {
+    h.psmLive = 0n;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).not.toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('holds the confirm while the PSM fee read is still in flight', () => {
+    h.psmTin = undefined;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    // Nothing is known to be wrong yet, so no error copy — but the confirm stays shut
+    // rather than letting a swap out against an unread fee.
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('states one reason for every way the USDC conversion can be unavailable', () => {
+    h.psmTin = 1n;
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.getByTestId('savings-modal-usdc-blocked').textContent).toBe(
+      'USDC conversion is unavailable right now. Supply USDS or DAI instead.'
+    );
+  });
+
+  it('leaves a USDS supply unaffected by the PSM switches', () => {
+    h.psmLive = 0n;
+    renderForm('supply');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(screen.queryByTestId('savings-modal-usdc-blocked')).toBeNull();
+    expect(lastDisabled()).toBe(false);
   });
 
   it('resets the amount when the origin token is switched', () => {
@@ -246,6 +362,9 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     h.convertedValue = 0n;
     h.maxAmountIn = 0n;
     h.minAmountOut = 0n;
+    h.psmLive = 1n;
+    h.psmTin = 0n;
+    h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
     h.update.mockClear();
@@ -277,6 +396,25 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
     expect(lastDisabled()).toBe(false);
     expect(screen.queryByTestId('savings-modal-amount-error')).toBeNull();
+  });
+
+  // The review grid is pushed to the modal, not rendered inline — assert the
+  // projection on the position the withdrawal leaves behind.
+  it('pushes the post-withdrawal 1Y projection into the review breakdown', () => {
+    renderForm('withdraw');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
+
+    const review = h.update.mock.calls.filter(([, patch]) => patch?.transactionContent).at(-1);
+    const { container } = render(
+      <I18nProvider i18n={i18n}>
+        <TooltipProvider>{review?.[1].transactionContent}</TooltipProvider>
+      </I18nProvider>
+    );
+    // Scoped to this render — the entry body still on screen carries the same test id.
+    // 50 USDS left at 3.75%.
+    expect(within(container).getByTestId('savings-modal-row-Est. earnings (1Y)').textContent).toContain(
+      '1.88'
+    );
   });
 
   it('disables the confirm and flags an error when the amount exceeds the position', () => {
@@ -315,6 +453,9 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     h.convertedValue = 200n * 10n ** 18n;
     h.maxAmountIn = 7n * 10n ** 18n; // sUSDS-in ceiling for a specific withdraw
     h.minAmountOut = 49n * 10n ** 17n; // 4.9 sUSDS slippage floor
+    h.psmLive = 1n;
+    h.psmTin = 0n;
+    h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
     h.update.mockClear();
