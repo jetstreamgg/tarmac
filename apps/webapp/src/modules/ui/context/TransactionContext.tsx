@@ -6,7 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
-import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
+import { useIsSafeWallet, useIsBatchSupported, BackToEditContext } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -106,6 +106,9 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
   const [externalLink, setExternalLink] = useState<string | undefined>();
   const [currentStep, setCurrentStep] = useState(0);
+  // Bumped when the user backs out of the wallet/status screen to the editable
+  // entry; the engine in backgroundContent drops its paused run on the bump.
+  const [backToEditEpoch, setBackToEditEpoch] = useState(0);
   // Config is state so updateModalContent re-renders the modal; ref mirrors it for callback reads.
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
@@ -262,6 +265,15 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     setExternalLink(undefined);
     setCurrentStep(0);
   }, []);
+
+  // Back from the wallet/status screen to the editable entry. Unlike a retry
+  // (which resumes), Back abandons the run: the epoch bump tells the engine
+  // hosted in backgroundContent to drop it, so the next confirm signs whatever
+  // the form then shows (see BackToEditContext).
+  const handleBackToEntry = useCallback(() => {
+    setBackToEditEpoch(e => e + 1);
+    resetTransactionProgress();
+  }, [resetTransactionProgress]);
 
   const handleClose = useCallback(() => {
     // Closing during INITIALIZED abandons an un-signed session: track the
@@ -565,9 +577,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             unmounting it on close emptied the modal's body a beat before the
             modal had finished animating away. */}
         {modalView?.config.backgroundContent && (
-          <div hidden key={`bg-${launchCount}`}>
-            {modalView.config.backgroundContent}
-          </div>
+          <BackToEditContext.Provider value={backToEditEpoch}>
+            <div hidden key={`bg-${launchCount}`}>
+              {modalView.config.backgroundContent}
+            </div>
+          </BackToEditContext.Provider>
         )}
         {/* Live state while the modal is up; the retained snapshot while it is
             animating away, which is the only time activeConfig is null here. */}
@@ -592,7 +606,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             onConfirm={modalView.config.onConfirm}
             onSecondaryConfirm={modalView.config.onSecondaryConfirm}
             onRetry={handleRetry}
-            onBack={resetTransactionProgress}
+            onBack={handleBackToEntry}
             txStatus={modalView.txStatus}
             externalLink={modalView.externalLink}
             confirmLabel={modalView.config.confirmLabel}

@@ -42,6 +42,19 @@ const connectOn = async (page: Page, path: string) => {
   await connectAndVerify(page, { batch: true });
 };
 
+/**
+ * The position card's leading number, or 0 while the account has no position
+ * and the page shows the supply CTA instead. Funded accounts already hold a
+ * position in some markets, so the canaries assert DELTAS, never absolutes.
+ */
+const positionAmount = async (page: Page, market: 'savings' | 'rewards') => {
+  const card = page.getByTestId(`${market}-position-card`);
+  await expect(card.or(page.getByTestId(`${market}-supply-cta`)).first()).toBeVisible({ timeout: 15_000 });
+  if (!(await card.isVisible())) return 0;
+  const cardText = await card.innerText();
+  return parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
+};
+
 /** Advances the three-screen modal: entry's Review, then the review's Confirm. */
 const reviewAndConfirm = async (page: Page) => {
   const review = page.getByRole('dialog').getByRole('button', { name: 'Review', exact: true });
@@ -86,16 +99,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     isolatedPage
   }) => {
     await connectOn(isolatedPage, '/earn/savings');
-
-    // Funded accounts hold sUSDS, so the position card starts non-zero; the
-    // final check asserts the DELTA, not an absolute position.
-    const positionAmount = async () => {
-      const card = isolatedPage.getByTestId('savings-position-card');
-      await expect(card).toBeVisible({ timeout: 15_000 });
-      const cardText = await card.innerText();
-      return parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
-    };
-    const positionBefore = await positionAmount();
+    const positionBefore = await positionAmount(isolatedPage, 'savings');
 
     await openSupplyModal(isolatedPage);
 
@@ -125,7 +129,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     await isolatedPage.getByRole('button', { name: 'Done' }).click();
 
     // The position grew by the NEW amount (5), not the rejected one (3)
-    expect((await positionAmount()) - positionBefore).toBeCloseTo(5, 0);
+    expect((await positionAmount(isolatedPage, 'savings')) - positionBefore).toBeCloseTo(5, 0);
   });
 });
 
@@ -160,6 +164,8 @@ test.describe('Sequential transactions — Rewards supply', () => {
     isolatedPage
   }) => {
     await connectOn(isolatedPage, `/earn/rewards/${SPK_REWARD_CONTRACT}`);
+    const positionBefore = await positionAmount(isolatedPage, 'rewards');
+
     await openSupplyModal(isolatedPage);
 
     // ── First attempt: approve succeeds, the supply tx is rejected ──
@@ -187,11 +193,7 @@ test.describe('Sequential transactions — Rewards supply', () => {
     });
     await isolatedPage.getByRole('button', { name: 'Done' }).click();
 
-    // The position reflects the NEW amount (7), not the rejected one (3)
-    const card = isolatedPage.getByTestId('rewards-position-card');
-    await expect(card).toBeVisible({ timeout: 15_000 });
-    const cardText = await card.innerText();
-    const amount = parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
-    expect(amount).toBeCloseTo(7, 0);
+    // The position grew by the NEW amount (7), not the rejected one (3)
+    expect((await positionAmount(isolatedPage, 'rewards')) - positionBefore).toBeCloseTo(7, 0);
   });
 });

@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Call } from 'viem';
+import type { ReactNode } from 'react';
 
 // Regression guard for "bug #1" — premature SUCCESS in the non-batch sequential
 // flow. An "approve then deposit" sequence must fire the shared onSuccess only
@@ -67,30 +68,55 @@ vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
 }));
 
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
+import { BackToEditContext } from '@/hooks/shared/backToEditContext';
 
-function makeCall(functionName: string): Call {
+function makeCall(functionName: string, args: unknown[] = []): Call {
   return {
     to: '0x0000000000000000000000000000000000000001',
     abi: [],
     functionName,
-    args: []
+    args
   } as unknown as Call;
 }
 const APPROVE = makeCall('approve');
 const SUPPLY = makeCall('supply');
 
-// Amount-carrying variant for the retry-contract tests: distinct args are what
-// separates an edited rebuild from an unchanged one.
-function makeAmountCall(functionName: string, amount: bigint): Call {
-  return {
-    to: '0x0000000000000000000000000000000000000001',
-    abi: [],
-    functionName,
-    args: [amount]
-  } as unknown as Call;
+// The modal's Back-to-entry signal (see BackToEditContext); tests bump it and
+// rerender to simulate the user leaving the wallet/status screen.
+let backToEditEpoch = 0;
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <BackToEditContext.Provider value={backToEditEpoch}>{children}</BackToEditContext.Provider>
+);
+
+/**
+ * Drives a freshly-rendered two-call hook to the APP-448 pause: execute()
+ * freezes the sequence, the approve mines, the wallet rejects the supply.
+ */
+function driveToStep2Rejection(
+  result: { current: ReturnType<typeof useSequentialTransactionFlow> },
+  rerender: () => void
+) {
+  act(() => result.current.execute());
+  act(() => {
+    wagmi.mutationHash = '0xapprove';
+    wagmi.onWriteSuccess?.('0xapprove');
+  });
+  rerender();
+  act(() => {
+    wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+  });
+  rerender();
+  expect(result.current.currentCallIndex).toBe(1);
+  act(() => {
+    wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+    wagmi.mutationHash = undefined;
+    wagmi.onWriteError?.(new Error('User rejected the request'));
+  });
+  rerender();
 }
 
 function resetWagmi() {
+  backToEditEpoch = 0;
   wagmi.onMutate = undefined;
   wagmi.onWriteSuccess = undefined;
   wagmi.onWriteError = undefined;
@@ -359,37 +385,20 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
   it('a retry after Back-and-edit executes the edited amount, not the frozen one (APP-448)', () => {
     const onSuccess = vi.fn();
     const onError = vi.fn();
-    let calls: Call[] = [makeAmountCall('approve', 3n), makeAmountCall('supply', 3n)];
+    let calls: Call[] = [makeCall('approve', [3n]), makeCall('supply', [3n])];
 
-    const { result, rerender } = renderHook(() =>
-      useSequentialTransactionFlow({ calls, onSuccess, onError })
+    const { result, rerender } = renderHook(
+      () => useSequentialTransactionFlow({ calls, onSuccess, onError }),
+      { wrapper }
     );
 
-    // Confirm freezes [approve(3), supply(3)]; the approve mines.
-    act(() => result.current.execute());
-    act(() => {
-      wagmi.mutationHash = '0xapprove';
-      wagmi.onWriteSuccess?.('0xapprove');
-    });
-    rerender();
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
-    });
-    rerender();
-    expect(result.current.currentCallIndex).toBe(1);
-
-    // The user rejects the supply in their wallet.
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
-      wagmi.mutationHash = undefined;
-      wagmi.onWriteError?.(new Error('User rejected the request'));
-    });
-    rerender();
+    driveToStep2Rejection(result, rerender);
     expect(onError).toHaveBeenCalledTimes(1);
 
     // Back → edit to 5. The allowance from the mined approve covers it, so the
     // engine rebuilds the live calls as just [supply(5)].
-    calls = [makeAmountCall('supply', 5n)];
+    backToEditEpoch += 1;
+    calls = [makeCall('supply', [5n])];
     rerender();
 
     // The frozen run must be dropped: the flow is back at the start, simulating
@@ -417,30 +426,17 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
 
   it('an edited amount above the allowance rebuilds the full approve+supply sequence', () => {
     const onSuccess = vi.fn();
-    let calls: Call[] = [makeAmountCall('approve', 3n), makeAmountCall('supply', 3n)];
+    let calls: Call[] = [makeCall('approve', [3n]), makeCall('supply', [3n])];
 
-    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onSuccess }));
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onSuccess }), {
+      wrapper
+    });
 
-    act(() => result.current.execute());
-    act(() => {
-      wagmi.mutationHash = '0xapprove';
-      wagmi.onWriteSuccess?.('0xapprove');
-    });
-    rerender();
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
-    });
-    rerender();
-
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
-      wagmi.mutationHash = undefined;
-      wagmi.onWriteError?.(new Error('User rejected the request'));
-    });
-    rerender();
+    driveToStep2Rejection(result, rerender);
 
     // Back → edit to 9, above the granted allowance: the engine rebuilds both calls.
-    calls = [makeAmountCall('approve', 9n), makeAmountCall('supply', 9n)];
+    backToEditEpoch += 1;
+    calls = [makeCall('approve', [9n]), makeCall('supply', [9n])];
     rerender();
 
     expect(result.current.currentCallIndex).toBe(0);
@@ -475,42 +471,47 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onSuccess).toHaveBeenCalledWith('0xsupply9');
   });
 
-  it('an unchanged rebuild of the full sequence keeps the resume (no approve re-dispatch)', () => {
-    let calls: Call[] = [makeAmountCall('approve', 3n), makeAmountCall('supply', 3n)];
+  it('a background rebuild WITHOUT Back keeps the resume (a refetching quote must not reset the run)', () => {
+    let calls: Call[] = [makeCall('approve', [3n]), makeCall('swap', [3n, 100n])];
 
-    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }));
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }), { wrapper });
 
-    act(() => result.current.execute());
-    act(() => {
-      wagmi.mutationHash = '0xapprove';
-      wagmi.onWriteSuccess?.('0xapprove');
-    });
-    rerender();
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
-    });
-    rerender();
+    driveToStep2Rejection(result, rerender);
 
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
-      wagmi.mutationHash = undefined;
-      wagmi.onWriteError?.(new Error('User rejected the request'));
-    });
-    rerender();
-
-    // The engine hasn't dropped the mined approve yet (allowance query still
-    // refetching) and rebuilds the SAME sequence as fresh objects. Deep-equal
-    // args mean nothing was edited: the paused run must survive, or a retry
-    // would start over and re-dispatch the approve.
-    calls = [makeAmountCall('approve', 3n), makeAmountCall('supply', 3n)];
+    // While the run sits paused, a quote refetch rebuilds the live calls with
+    // drifted args (new minOut). No Back was clicked, so the frozen run must
+    // survive: only the explicit Back signal means "the user edited".
+    calls = [makeCall('approve', [3n]), makeCall('swap', [3n, 98n])];
     rerender();
 
     expect(result.current.currentCallIndex).toBe(1);
 
-    // "Try again" resumes the frozen sequence at the supply.
+    // "Try again" resumes the frozen sequence at the swap, not the approve.
     act(() => result.current.execute());
     expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
-    expect(wagmi.simulationParams?.functionName).toBe('supply');
+    expect(wagmi.simulationParams?.functionName).toBe('swap');
+  });
+
+  it('Back without editing restarts the sequence from scratch', () => {
+    let calls: Call[] = [makeCall('approve', [3n]), makeCall('supply', [3n])];
+
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }), { wrapper });
+
+    driveToStep2Rejection(result, rerender);
+
+    // Back drops the run even though nothing changes: the engine still holds
+    // both calls (allowance query not caught up), so the next confirm re-runs
+    // the whole sequence — the accepted cost of the unconditional reset.
+    backToEditEpoch += 1;
+    calls = [makeCall('approve', [3n]), makeCall('supply', [3n])];
+    rerender();
+
+    expect(result.current.currentCallIndex).toBe(0);
+    expect(wagmi.simulationParams?.functionName).toBe('approve');
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+    expect(wagmi.simulationParams?.functionName).toBe('approve');
   });
 
   it('an error on the first (approve) receipt does not fire onSuccess', () => {
