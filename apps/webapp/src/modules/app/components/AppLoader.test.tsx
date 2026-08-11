@@ -298,6 +298,17 @@ describe('useAppLoader', () => {
     expect(screen.getByTestId('content').className).toBe('animate-app-loader-content-reveal');
   });
 
+  it('flags the document while covered, for surfaces mounted outside Layout', () => {
+    // The toast stack in App.tsx hides off this attribute (globals.css).
+    h.status = 'reconnecting';
+    render(<Harness />);
+    expect(document.documentElement.hasAttribute('data-app-loader-cover')).toBe(true);
+
+    act(() => h.completeCover?.());
+
+    expect(document.documentElement.hasAttribute('data-app-loader-cover')).toBe(false);
+  });
+
   it('the watchdog reveals a cover whose timeline never completes', () => {
     h.status = 'reconnecting';
     render(<Harness />);

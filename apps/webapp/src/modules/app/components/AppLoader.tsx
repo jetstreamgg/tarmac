@@ -163,6 +163,15 @@ export function useAppLoader(): {
     if (phase === 'cover') markPlayed();
   }, [phase]);
 
+  // Surfaces mounted outside Layout (the toast stack in App.tsx) can't wear
+  // the reveal classes; they hide themselves off this document flag instead
+  // (`.app-loader-cover-hidden` in globals.css).
+  useEffect(() => {
+    if (phase !== 'cover') return;
+    document.documentElement.setAttribute('data-app-loader-cover', '');
+    return () => document.documentElement.removeAttribute('data-app-loader-cover');
+  }, [phase]);
+
   // Consume the manual connect once terms are in, adjusted during render (not
   // in an effect) so the cover is up on the same frame. A cached decision
   // resolves the landing instantly instead; the navigation itself is a side

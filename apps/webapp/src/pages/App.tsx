@@ -62,8 +62,12 @@ const AppContent = () => {
 
                         The DismissableLayerBranch keeps toasts *clickable*
                         while a modal Radix surface (wallet drawer, any
-                        dialog) is open. */}
-                    <DismissableLayerBranch className="pointer-events-auto">
+                        dialog) is open.
+
+                        app-loader-cover-hidden: this tree mounts outside
+                        Layout, so it hides via the loader's document flag
+                        while the cover plays (globals.css). */}
+                    <DismissableLayerBranch className="app-loader-cover-hidden pointer-events-auto">
                       <Toaster className="!z-[60]" />
                       <ToastCloseAll />
                     </DismissableLayerBranch>

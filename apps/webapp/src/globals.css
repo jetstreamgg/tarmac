@@ -890,6 +890,15 @@
   background-position: center;
 }
 
+/* App loader cover (APP-419): surfaces that mount outside Layout (the toast
+   stack) can't wear the reveal classes, so they hide via this document flag
+   instead — useAppLoader sets it on <html> for exactly the cover phase.
+   visibility (not display) so toast layout/timers run on; anything still
+   within its lifetime pops back at reveal. */
+html[data-app-loader-cover] .app-loader-cover-hidden {
+  visibility: hidden;
+}
+
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
    selected-icon gradient fill doesn't map to utilities, so it stays here,
    keyed off the link's [aria-current].
