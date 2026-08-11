@@ -94,8 +94,9 @@ function demoMaturedExitResponse(body: PendleConvertRequest): PendleConvertRespo
                 priceImpactBreakDown: { internalPriceImpact: -0.00012, externalPriceImpact: -0.00008 },
                 fee: { usd: 2.47 }
               }
-            : {}),
-          effectiveApy: 0.048
+            : {})
+          // No effectiveApy: the real API omits it for matured exits, so the
+          // Effective APY row hides — matching genuine post-maturity behavior.
         }
       }
     ]
