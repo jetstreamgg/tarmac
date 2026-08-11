@@ -298,6 +298,43 @@ describe('useAppLoader', () => {
     expect(screen.getByTestId('content').className).toBe('animate-app-loader-content-reveal');
   });
 
+  it('the shell rewrites the settled decision on any route, without a connect', () => {
+    h.status = 'connected';
+    h.address = ADDRESS;
+    h.pathname = '/stake';
+    const { rerender } = render(<Harness />);
+    expect(readPortfolioDecision(ADDRESS)).toBeNull();
+
+    settleFundedWallet();
+    rerenderHarness(rerender);
+
+    expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'none', tab: 'supplied' });
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+  });
+
+  it('the shell writer skips settles that carry a source error', () => {
+    h.status = 'connected';
+    h.address = ADDRESS;
+    const { rerender } = render(<Harness />);
+
+    h.marketplace = { rows: [], isPositionsLoading: false, isPositionsError: true };
+    h.balances = { balances: [], isLoading: false, isError: false };
+    rerenderHarness(rerender);
+
+    expect(readPortfolioDecision(ADDRESS)).toBeNull();
+  });
+
+  it('the shell writer waits for the fetch cycle before writing', () => {
+    // Sources read settled on the very first render (the enable-flip frame):
+    // no loading was ever observed for this address, so an empty-wallet write
+    // here would cache a wallet whose queries have not even started.
+    h.status = 'connected';
+    h.address = ADDRESS;
+    settleEmptyWallet();
+    render(<Harness />);
+    expect(readPortfolioDecision(ADDRESS)).toBeNull();
+  });
+
   it('flags the document while covered, for surfaces mounted outside Layout', () => {
     // The toast stack in App.tsx hides off this attribute (globals.css).
     h.status = 'reconnecting';

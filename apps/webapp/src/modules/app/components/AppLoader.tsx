@@ -122,7 +122,7 @@ export function useAppLoader(): {
   released: boolean;
   endCover: () => void;
 } {
-  const { status } = useConnection();
+  const { status, address } = useConnection();
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const pathname = useRouterState({ select: s => s.location.pathname });
   const navigate = useNavigate();
@@ -150,6 +150,32 @@ export function useAppLoader(): {
   const { isLoading: geoLoading } = useGeoConfig();
   const decisionLoading = marketLoading || balancesLoading || geoLoading;
   const decisionError = marketError || balancesError;
+  const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
+  const idleUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
+
+  // The address whose fetch cycle has been observed loading. Guards the
+  // background writer below against the enable-flip frame: when a connect
+  // lands, the address is set one render before the address-keyed queries
+  // start fetching, so for that frame the sources read "settled" while
+  // actually holding nothing — a write there would cache an empty wallet.
+  const fetchSeenForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (address && decisionLoading) fetchSeenForRef.current = address;
+  }, [address, decisionLoading]);
+
+  // Background writer: these queries stay mounted on every route, so any
+  // clean settle — first load, a position-changing tx's refetch, a wiped
+  // cache — refreshes the connected address's decision and TTL no matter
+  // where the user is. Readers freeze at mount, so this never swaps a view;
+  // it only makes the next mount and the next `/` landing current.
+  useEffect(() => {
+    if (!address || decisionLoading || decisionError) return;
+    if (fetchSeenForRef.current !== address) return;
+    writePortfolioDecision(address, {
+      outcome: portfolioCallout(depositedUsd, idleUsd),
+      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
+    });
+  }, [address, decisionLoading, decisionError, depositedUsd, idleUsd]);
 
   useConnectionEffect({
     onConnect: data => {
@@ -232,8 +258,6 @@ export function useAppLoader(): {
     // error the cover just releases, unsorted and uncached; the next connect
     // gets a fresh try.
     if (!decisionError) {
-      const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
-      const idleUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
       const outcome = portfolioCallout(depositedUsd, idleUsd);
       writePortfolioDecision(sort.address, {
         outcome,
@@ -245,7 +269,7 @@ export function useAppLoader(): {
       }
     }
     setReleased(true);
-  }, [sort, holdElapsed, decisionLoading, decisionError, visibleRows, balances, released, navigate]);
+  }, [sort, holdElapsed, decisionLoading, decisionError, depositedUsd, idleUsd, released, navigate]);
 
   return { phase, coverMode, released, endCover };
 }
