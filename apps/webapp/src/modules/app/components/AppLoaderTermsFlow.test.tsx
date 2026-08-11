@@ -21,9 +21,10 @@ const ADDRESS = '0x00000000000000000000000000000000000000aa';
 const h = vi.hoisted(() => ({
   isConnected: false,
   address: undefined as string | undefined,
-  onConnect: undefined as (() => void) | undefined,
+  onConnectCallbacks: [] as ((data: { address: string; isReconnected: boolean }) => void)[],
   scrolledToEnd: false,
   disconnect: undefined as ReturnType<typeof vi.fn> | undefined,
+  navigate: undefined as ReturnType<typeof vi.fn> | undefined,
   signMutation: undefined as { onSuccess?: (data: string) => void } | undefined
 }));
 
@@ -36,8 +37,10 @@ vi.mock('wagmi', async importOriginal => ({
     chainId: 1,
     connector: { name: 'mock' }
   }),
-  useConnectionEffect: (config: { onConnect?: () => void }) => {
-    h.onConnect = config.onConnect;
+  useConnectionEffect: (config: {
+    onConnect?: (data: { address: string; isReconnected: boolean }) => void;
+  }) => {
+    if (config.onConnect) h.onConnectCallbacks.push(config.onConnect);
   },
   useSignMessage: (config: { mutation: { onSuccess?: (data: string) => void } }) => ({
     signMessage: () => {
@@ -46,6 +49,23 @@ vi.mock('wagmi', async importOriginal => ({
     }
   }),
   useDisconnect: () => ({ disconnect: h.disconnect! })
+}));
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => h.navigate!,
+  useRouterState: ({ select }: { select: (s: { location: { pathname: string } }) => string }) =>
+    select({ location: { pathname: '/portfolio' } })
+}));
+vi.mock('@/hooks', () => ({
+  useEarnMarketplace: () => ({ rows: [], isPositionsLoading: true })
+}));
+vi.mock('@/modules/portfolio/hooks/useStablecoinBalances', () => ({
+  useStablecoinBalances: () => ({ balances: [], isLoading: true })
+}));
+vi.mock('@/modules/portfolio/hooks/useGeoVisibleRows', () => ({
+  useGeoVisibleRows: (rows: unknown[]) => rows
+}));
+vi.mock('@/modules/geo-config', () => ({
+  useGeoConfig: () => ({ isModuleEnabled: () => true, isLoading: false })
 }));
 
 // The scroll-to-end gate is an IntersectionObserver in TermsDialog; drive it
@@ -84,11 +104,11 @@ i18n.load('en', {});
 i18n.activate('en');
 
 function LoaderProbe() {
-  const { phase, endCover } = useAppLoader();
+  const { phase, coverMode, released, endCover } = useAppLoader();
   return (
     <>
       <div data-testid="loader-phase" data-phase={phase} />
-      <AppLoaderOverlay phase={phase} onCoverEnd={endCover} />
+      <AppLoaderOverlay phase={phase} mode={coverMode} released={released} onCoverEnd={endCover} />
     </>
   );
 }
@@ -127,14 +147,15 @@ const connect = (rerender: (ui: React.ReactElement) => void) => {
   h.isConnected = true;
   h.address = ADDRESS;
   rerender(<Harness />);
-  act(() => h.onConnect?.());
+  act(() => h.onConnectCallbacks.forEach(cb => cb({ address: ADDRESS, isReconnected: false })));
 };
 
 beforeEach(() => {
   localStorage.clear();
   h.isConnected = false;
   h.address = undefined;
-  h.onConnect = undefined;
+  h.onConnectCallbacks = [];
+  h.navigate = vi.fn();
   h.scrolledToEnd = false;
   h.disconnect = vi.fn();
   // Must sit on sanitizeUrl's domain allowlist or the POST silently drops.

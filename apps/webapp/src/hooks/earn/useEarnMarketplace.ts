@@ -449,6 +449,16 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   return {
     rows,
     isLoading: rows.some(row => row.isLoading),
+    // Every source a row's `position` reads from — balances plus the prices
+    // that turn them into USD. Rate/TVL/chart sources (the slow external
+    // APIs) deliberately excluded.
+    isPositionsLoading:
+      pricesLoading ||
+      savingsBalancesLoading ||
+      rewardsBalancesLoading ||
+      vaultUserAssetsLoading ||
+      pendleUserAssetsLoading ||
+      stUsdsLoading,
     totalDepositedUsd: rows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0)
   };
 }

@@ -32,8 +32,9 @@ export function Layout({
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   // First-visit loader (APP-419): while it covers, the chrome and content
   // wear opacity-0 and the logomark overlay plays; on reveal they run their
-  // one-shot entrances. `off` leaves every className exactly as it was.
-  const { phase: loaderPhase, endCover } = useAppLoader();
+  // one-shot entrances. `off` leaves every className exactly as it was. On a
+  // manual first connect the cover also sorts the landing (APP-295).
+  const { phase: loaderPhase, coverMode, released, endCover } = useAppLoader();
 
   useWalletAnalytics();
 
@@ -123,7 +124,7 @@ export function Layout({
             <MobileNavbar />
           </div>
         </ErrorBoundary>
-        <AppLoaderOverlay phase={loaderPhase} onCoverEnd={endCover} />
+        <AppLoaderOverlay phase={loaderPhase} mode={coverMode} released={released} onCoverEnd={endCover} />
         <Banner />
         {showEnvInfo && (
           <div className="absolute bottom-0 left-2">

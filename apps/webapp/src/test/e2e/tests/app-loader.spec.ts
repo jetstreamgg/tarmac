@@ -16,10 +16,11 @@ import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAc
 const PLAYED_KEY = 'appLoader:v1:played';
 const DECISION_PREFIX = 'portfolioDecision:v1:';
 
+// Per-address entries only — the `$last` landing pointer is asserted apart.
 const readDecisions = (page: import('@playwright/test').Page) =>
   page.evaluate((prefix: string) => {
     return Object.keys(localStorage)
-      .filter(k => k.startsWith(prefix))
+      .filter(k => k.startsWith(prefix) && !k.endsWith('$last'))
       .map(k => JSON.parse(localStorage.getItem(k)!));
   }, DECISION_PREFIX);
 
@@ -34,6 +35,15 @@ const throwawayAddress = (): string =>
     .join('')}`;
 
 test.describe('app loader and portfolio decision cache', () => {
+  test('the root path lands on Earn for an unknown visitor', async ({ isolatedPage }) => {
+    // Fresh context, nothing cached: Earn is the default home (APP-295). The
+    // Portfolio branch (cached `$last` outcome `none`) can't be exercised
+    // here — the mock-wallet boot wipes localStorage before the redirect
+    // reads it — and is pinned in routes/destinations.test.ts instead.
+    await isolatedPage.goto('/');
+    await expect(isolatedPage).toHaveURL(/\/earn(\?|$)/);
+  });
+
   test('first connect plays the loader once and caches the settled decision', async ({ isolatedPage }) => {
     // Override the pool account injected by the fixture (page init scripts
     // run after the context's, so this write wins) with the empty wallet.
@@ -47,15 +57,17 @@ test.describe('app loader and portfolio decision cache', () => {
 
     // Terms are auto-accepted in every e2e environment (VITE_SKIP_AUTH_CHECK,
     // set in .env locally and in all the e2e workflows), so the modal never
-    // appears here and the cover starts the moment the wallet connects —
-    // catch it live (a ~1.6s window). The real terms-modal flow, and the
-    // loader waiting behind it, is pinned deterministically in
-    // AppLoaderTermsFlow.test.tsx at the component level.
+    // appears here and the held cover starts the moment the wallet connects —
+    // catch it live. The real terms-modal flow, and the loader waiting behind
+    // it, is pinned deterministically in AppLoaderTermsFlow.test.tsx.
     await isolatedPage.getByRole('button', { name: 'Connect Mock Wallet' }).first().click();
     await expect(isolatedPage.getByTestId('app-loader')).toBeVisible({ timeout: 5000 });
 
-    // The timeline hands off to the reveal and the overlay unmounts for good.
-    await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0, { timeout: 10_000 });
+    // The cover holds until the landing decision settles, then sorts: an
+    // empty wallet has no position, so /portfolio was the wrong home — the
+    // reveal lands on /earn (Routing & IA #3 / APP-295).
+    await expect(isolatedPage.getByTestId('app-loader')).toHaveCount(0, { timeout: 15_000 });
+    await expect(isolatedPage).toHaveURL(/\/earn(\?|$)/);
     await expect(isolatedPage.locator('.page-transition')).toHaveClass(/animate-app-loader-content-reveal/);
     await expect
       .poll(async () => isolatedPage.evaluate((key: string) => localStorage.getItem(key), PLAYED_KEY), {
@@ -63,13 +75,17 @@ test.describe('app loader and portfolio decision cache', () => {
       })
       .not.toBeNull();
 
-    // The queries settle and the outcome lands in the per-address cache. A
-    // fresh wallet is empty by construction, so the outcome is pinned: no
-    // position and nothing idle resolves to the simulate pitch + Idle tab.
+    // The sorted outcome is cached for the wallet — empty pins it to the
+    // simulate pitch + Idle tab — and mirrored to the `$last` pointer that
+    // the "/" redirect reads.
     await expect
       .poll(async () => readDecisions(isolatedPage), { timeout: 30_000 })
       .toMatchObject([{ outcome: 'simulate', tab: 'idle', updatedAt: expect.any(Number) }]);
-    await expect(isolatedPage.getByTestId('savings-tvl-callout')).toBeVisible();
+    await expect
+      .poll(async () =>
+        isolatedPage.evaluate(() => JSON.parse(localStorage.getItem('portfolioDecision:v1:$last') ?? 'null'))
+      )
+      .toMatchObject({ outcome: 'simulate' });
 
     // One-shot: with the page settled and the flag written, the loader never
     // comes back within this page load.
