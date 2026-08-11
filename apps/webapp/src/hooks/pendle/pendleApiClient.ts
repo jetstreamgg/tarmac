@@ -42,6 +42,17 @@ const DEMO_OUTPUT_RATES: Record<string, { num: bigint; den: bigint }> = {
   '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': { num: 1n, den: 10n ** 12n } // USDC
 };
 
+// Tokens the SY accepts directly; anything else (USDC) exits via SY→USDS then
+// an external aggregator hop, mirroring what the real matured exit would do.
+const DEMO_SY_ACCEPTED = new Set([
+  '0xdc035d45d973e3ec169d2276ddab16f1e407384f', // USDS
+  '0x6b175474e89094c44da98b954eedeac495271d0f', // DAI
+  '0xa3931d71877c0e7a3148cb7eb4463524fec27fbd' // sUSDS
+]);
+const DEMO_USDS = '0xdC035D45d973E3EC169d2276DDab16f1e407384F' as `0x${string}`;
+const DEMO_PENDLE_SWAP = '0xd4f480965d2347d421f1bec7f545682e5ec2151d' as `0x${string}`;
+const DEMO_KYBER_ROUTER = '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5' as `0x${string}`;
+
 function demoMaturedExitResponse(body: PendleConvertRequest): PendleConvertResponseRaw {
   const ptIn = body.inputs[0];
   const outToken = body.outputs[0];
@@ -49,12 +60,18 @@ function demoMaturedExitResponse(body: PendleConvertRequest): PendleConvertRespo
   const amountOut = (BigInt(ptIn.amount) * rate.num) / rate.den;
   const slippageBps = BigInt(Math.round(body.slippage * 10_000));
   const minOut = (amountOut * (10_000n - slippageBps)) / 10_000n;
+  const viaAggregator = !DEMO_SY_ACCEPTED.has(outToken.toLowerCase());
   const output = {
     tokenOut: outToken,
     minTokenOut: minOut.toString(),
-    tokenRedeemSy: outToken,
-    pendleSwap: DEMO_ZERO,
-    swapData: { swapType: '0', extRouter: DEMO_ZERO, extCalldata: '0x', needScale: false }
+    tokenRedeemSy: viaAggregator ? DEMO_USDS : outToken,
+    pendleSwap: viaAggregator ? DEMO_PENDLE_SWAP : DEMO_ZERO,
+    swapData: {
+      swapType: viaAggregator ? '1' : '0',
+      extRouter: viaAggregator ? DEMO_KYBER_ROUTER : DEMO_ZERO,
+      extCalldata: '0x',
+      needScale: false
+    }
   };
   return {
     action: 'exit-market',
@@ -69,7 +86,17 @@ function demoMaturedExitResponse(body: PendleConvertRequest): PendleConvertRespo
         },
         tx: { to: DEMO_MARKET, data: '0x', from: body.receiver },
         outputs: [{ token: outToken, amount: amountOut.toString() }],
-        data: { aggregatorType: 'pendle', priceImpact: 0, effectiveApy: 0.048 }
+        data: {
+          aggregatorType: viaAggregator ? 'KYBERSWAP' : 'pendle',
+          priceImpact: viaAggregator ? -0.0002 : 0,
+          ...(viaAggregator
+            ? {
+                priceImpactBreakDown: { internalPriceImpact: -0.00012, externalPriceImpact: -0.00008 },
+                fee: { usd: 2.47 }
+              }
+            : {}),
+          effectiveApy: 0.048
+        }
       }
     ]
   };

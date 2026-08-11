@@ -36,7 +36,16 @@ export const getTestTenderlyChains = () => {
       name: 'Tenderly Mainnet',
       nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
       rpcUrls: {
-        default: { http: [mainnetData.TENDERLY_RPC_URL || TENDERLY_RPC_URL] }
+        // DEMO BRANCH — DO NOT MERGE: the committed vnet fork is dead, which
+        // leaves balance reads (and their skeletons) hanging forever in the
+        // preview. Read against real mainnet via the proxy instead.
+        default: {
+          http: [
+            import.meta.env?.VITE_PROXY_ORIGIN
+              ? `${import.meta.env.VITE_PROXY_ORIGIN}/rpc/1`
+              : mainnetData.TENDERLY_RPC_URL || TENDERLY_RPC_URL
+          ]
+        }
       }
     }),
     defineChain({
