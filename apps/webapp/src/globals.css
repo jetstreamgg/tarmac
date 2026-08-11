@@ -392,7 +392,12 @@
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      /* `none`, not translateY(0): the class stays on for the rest of the page
+         load and `both` holds this frame's value, so a zero translate would
+         leave the content wrapper a permanent containing block for every
+         fixed/sticky descendant (full-screen takeovers would offset by the
+         header height). `none` interpolates as identity and holds clean. */
+      transform: none;
     }
   }
   @keyframes app-loader-chrome-reveal {

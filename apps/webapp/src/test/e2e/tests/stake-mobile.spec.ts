@@ -26,7 +26,10 @@ test.beforeEach(async ({ isolatedPage }) => {
       path: '/'
     }
   ]);
-  await isolatedPage.goto('/');
+  // Portfolio explicitly, not '/': the root forwards to /earn for unknown
+  // visitors (APP-295), where the mock-mode topbar (two extra mock connect
+  // buttons) overflows the 393px viewport and the tap can't land.
+  await isolatedPage.goto('/portfolio');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
 });
