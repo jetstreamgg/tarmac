@@ -17,7 +17,7 @@ const h = vi.hoisted(() => ({
     isPositionsLoading: true,
     isPositionsError: false
   },
-  balances: { balances: [] as { amountUsd: number }[], isLoading: true, isError: false },
+  balances: { balances: [] as { amountUsd: number }[], isLoading: true, isFetched: false, isError: false },
   geoLoading: false,
   // The mocked motion.div parks its onAnimationComplete here so tests can
   // finish the active timeline segment on demand.
@@ -97,7 +97,7 @@ const connectManually = (rerender: (ui: React.ReactElement) => void) => {
 
 const settleEmptyWallet = () => {
   h.marketplace = { rows: [], isPositionsLoading: false, isPositionsError: false };
-  h.balances = { balances: [], isLoading: false, isError: false };
+  h.balances = { balances: [], isLoading: false, isFetched: true, isError: false };
 };
 
 const settleFundedWallet = () => {
@@ -106,7 +106,7 @@ const settleFundedWallet = () => {
     isPositionsLoading: false,
     isPositionsError: false
   };
-  h.balances = { balances: [], isLoading: false, isError: false };
+  h.balances = { balances: [], isLoading: false, isFetched: true, isError: false };
 };
 
 beforeEach(() => {
@@ -119,7 +119,7 @@ beforeEach(() => {
   h.navigate = vi.fn();
   h.onConnectCallbacks = [];
   h.marketplace = { rows: [], isPositionsLoading: true, isPositionsError: false };
-  h.balances = { balances: [], isLoading: true, isError: false };
+  h.balances = { balances: [], isLoading: true, isFetched: false, isError: false };
   h.geoLoading = false;
   h.completeCover = undefined;
 });
@@ -318,7 +318,7 @@ describe('useAppLoader', () => {
     const { rerender } = render(<Harness />);
 
     h.marketplace = { rows: [], isPositionsLoading: false, isPositionsError: true };
-    h.balances = { balances: [], isLoading: false, isError: false };
+    h.balances = { balances: [], isLoading: false, isFetched: true, isError: false };
     rerenderHarness(rerender);
 
     expect(readPortfolioDecision(ADDRESS)).toBeNull();
@@ -326,13 +326,26 @@ describe('useAppLoader', () => {
 
   it('the shell writer waits for the fetch cycle before writing', () => {
     // Sources read settled on the very first render (the enable-flip frame):
-    // no loading was ever observed for this address, so an empty-wallet write
-    // here would cache a wallet whose queries have not even started.
+    // no loading was ever observed for this address and the balances query
+    // has never fetched under its key, so an empty-wallet write here would
+    // cache a wallet whose queries have not even started.
     h.status = 'connected';
     h.address = ADDRESS;
-    settleEmptyWallet();
+    h.marketplace = { rows: [], isPositionsLoading: false, isPositionsError: false };
+    h.balances = { balances: [], isLoading: false, isFetched: false, isError: false };
     render(<Harness />);
     expect(readPortfolioDecision(ADDRESS)).toBeNull();
+  });
+
+  it('the shell writer trusts a warm cache: a fetched query writes without a loading cycle', () => {
+    // An account switched back to inside gcTime resolves from cache without
+    // ever re-asserting isLoading — isFetched under the address's key is the
+    // evidence the settled rows are real data, so the write still lands.
+    h.status = 'connected';
+    h.address = ADDRESS;
+    settleFundedWallet();
+    render(<Harness />);
+    expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'none', tab: 'supplied' });
   });
 
   it('flags the document while covered, for surfaces mounted outside Layout', () => {
@@ -365,7 +378,7 @@ describe('useAppLoader', () => {
     expect(screen.getByTestId('app-loader')).toBeTruthy();
 
     h.marketplace = { rows: [], isPositionsLoading: false, isPositionsError: true };
-    h.balances = { balances: [], isLoading: false, isError: false };
+    h.balances = { balances: [], isLoading: false, isFetched: true, isError: false };
     act(() => vi.advanceTimersByTime(1200));
     rerenderHarness(rerender);
     act(() => h.completeCover?.());

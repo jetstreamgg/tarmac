@@ -13,6 +13,12 @@ export type UseStablecoinBalancesResult = {
   balances: StablecoinBalance[];
   isLoading: boolean;
   /**
+   * True once the balance query has fetched at least once under the current
+   * address's key — i.e. the rows are real data (possibly cache-warm), not
+   * the placeholder empty state of a query that hasn't started.
+   */
+  isFetched: boolean;
+  /**
    * True when the balance or price query errored. Errors settle as empty/zero
    * rows, indistinguishable from a wallet holding nothing — consumers that
    * persist or act on the settled totals must skip when this is set.
@@ -46,6 +52,7 @@ export function useStablecoinBalances(): UseStablecoinBalancesResult {
   const {
     data: rawBalances,
     isLoading: balancesLoading,
+    isFetched,
     error: balancesError
   } = useTokenBalances({ address, chainTokenMap });
 
@@ -65,6 +72,7 @@ export function useStablecoinBalances(): UseStablecoinBalancesResult {
   return {
     balances,
     isLoading: balancesLoading || pricesLoading,
+    isFetched,
     isError: !!balancesError || !!pricesError
   };
 }

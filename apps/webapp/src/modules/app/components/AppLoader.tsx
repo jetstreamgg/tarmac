@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useConnection, useConnectionEffect } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { motion, type Transition } from 'motion/react';
@@ -146,7 +146,12 @@ export function useAppLoader(): {
   // from external APIs that can outlive the hold cap.
   const { rows, isPositionsLoading: marketLoading, isPositionsError: marketError } = useEarnMarketplace();
   const visibleRows = useGeoVisibleRows(rows);
-  const { balances, isLoading: balancesLoading, isError: balancesError } = useStablecoinBalances();
+  const {
+    balances,
+    isLoading: balancesLoading,
+    isError: balancesError,
+    isFetched: balancesFetched
+  } = useStablecoinBalances();
   const { isLoading: geoLoading } = useGeoConfig();
   const decisionLoading = marketLoading || balancesLoading || geoLoading;
   const decisionError = marketError || balancesError;
@@ -163,19 +168,25 @@ export function useAppLoader(): {
     if (address && decisionLoading) fetchSeenForRef.current = address;
   }, [address, decisionLoading]);
 
-  // Background writer: these queries stay mounted on every route, so any
-  // clean settle — first load, a position-changing tx's refetch, a wiped
-  // cache — refreshes the connected address's decision and TTL no matter
-  // where the user is. Readers freeze at mount, so this never swaps a view;
-  // it only makes the next mount and the next `/` landing current.
+  // Background writer: these queries stay mounted on every route, so a settle
+  // that changes the totals — first load, a position-changing tx's refetch, a
+  // wiped cache — plus the first settle of every page load refreshes the
+  // connected address's decision no matter where the user is. Readers freeze
+  // at mount, so this never swaps a view; it only makes the next mount and
+  // the next `/` landing current. Armed by an observed loading cycle for this
+  // address, or by the balances query having fetched at least once under this
+  // address's key (`isFetched`) — an account switched back to inside gcTime
+  // resolves from warm cache without ever re-asserting isLoading, and its tx
+  // refetches must still land here. Both arms are false across the
+  // enable-flip frame, which is the case the guard exists for.
   useEffect(() => {
     if (!address || decisionLoading || decisionError) return;
-    if (fetchSeenForRef.current !== address) return;
+    if (fetchSeenForRef.current !== address && !balancesFetched) return;
     writePortfolioDecision(address, {
       outcome: portfolioCallout(depositedUsd, idleUsd),
       tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
     });
-  }, [address, decisionLoading, decisionError, depositedUsd, idleUsd]);
+  }, [address, decisionLoading, decisionError, balancesFetched, depositedUsd, idleUsd]);
 
   useConnectionEffect({
     onConnect: data => {
@@ -191,8 +202,11 @@ export function useAppLoader(): {
 
   // Surfaces mounted outside Layout (the toast stack in App.tsx) can't wear
   // the reveal classes; they hide themselves off this document flag instead
-  // (`.app-loader-cover-hidden` in globals.css).
-  useEffect(() => {
+  // (`.app-loader-cover-hidden` in globals.css). Layout effect, not passive:
+  // the reveal classes hide their surfaces on the cover's very first painted
+  // frame (render-computed), and the flag must land before that same paint or
+  // a toast flashes over the bare cover frame and blinks off.
+  useLayoutEffect(() => {
     if (phase !== 'cover') return;
     document.documentElement.setAttribute('data-app-loader-cover', '');
     return () => document.documentElement.removeAttribute('data-app-loader-cover');
