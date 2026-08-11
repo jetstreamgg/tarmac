@@ -21,6 +21,8 @@ export type PortfolioDecision = {
 };
 
 const KEY_PREFIX = 'portfolioDecision:v1:';
+// `$` can't appear in an address, so the pointer key never collides.
+const LAST_KEY = 'portfolioDecision:v1:$last';
 
 /**
  * A decision older than this is treated as absent: after weeks away the
@@ -55,18 +57,45 @@ export function readPortfolioDecision(address: string | undefined): PortfolioDec
   }
 }
 
-/** Records the freshly settled decision for `address` (stamps `updatedAt`). */
+/**
+ * Records the freshly settled decision for `address` (stamps `updatedAt`),
+ * and mirrors it under the `$last` pointer so the landing redirect can read
+ * "the outcome of whoever connected here last" synchronously, before wagmi
+ * has resolved an address.
+ */
 export function writePortfolioDecision(
   address: string,
   decision: Omit<PortfolioDecision, 'updatedAt'>
 ): void {
   try {
-    localStorage.setItem(
-      keyFor(address),
-      JSON.stringify({ outcome: decision.outcome, tab: decision.tab, updatedAt: Date.now() })
-    );
+    const record = { outcome: decision.outcome, tab: decision.tab, updatedAt: Date.now() };
+    localStorage.setItem(keyFor(address), JSON.stringify(record));
+    localStorage.setItem(LAST_KEY, JSON.stringify({ ...record, address: address.toLowerCase() }));
   } catch {
     // ignore storage write failures (private mode, quota)
+  }
+}
+
+/**
+ * The last decision written in this browser, whoever it belonged to — the
+ * landing redirect's signal. Same TTL and validation as the per-address read.
+ */
+export function readLastPortfolioDecision(): (PortfolioDecision & { address: string }) | null {
+  try {
+    const raw = localStorage.getItem(LAST_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const { outcome, tab, updatedAt, address } = parsed as Record<string, unknown>;
+    if (!isOutcome(outcome) || !isTab(tab) || typeof updatedAt !== 'number') return null;
+    if (typeof address !== 'string' || !address) return null;
+    if (Date.now() - updatedAt > PORTFOLIO_DECISION_TTL_MS) {
+      localStorage.removeItem(LAST_KEY);
+      return null;
+    }
+    return { outcome, tab, updatedAt, address };
+  } catch {
+    return null;
   }
 }
 

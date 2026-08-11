@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   PORTFOLIO_DECISION_TTL_MS,
   hasAnyPortfolioDecision,
+  readLastPortfolioDecision,
   readPortfolioDecision,
   writePortfolioDecision
 } from './portfolioDecisionCache';
@@ -85,6 +86,36 @@ describe('portfolioDecisionCache', () => {
     expect(hasAnyPortfolioDecision()).toBe(false);
     localStorage.setItem(rawKey(OTHER), JSON.stringify({ outcome: 'none', tab: 'supplied', updatedAt: 0 }));
     expect(hasAnyPortfolioDecision()).toBe(true);
+  });
+
+  it('mirrors every write to the $last pointer, keyed to its address', () => {
+    writePortfolioDecision(ADDRESS, { outcome: 'allocate', tab: 'idle' });
+    expect(readLastPortfolioDecision()).toMatchObject({
+      outcome: 'allocate',
+      tab: 'idle',
+      address: ADDRESS.toLowerCase()
+    });
+
+    // A later wallet takes the pointer over.
+    writePortfolioDecision(OTHER, { outcome: 'none', tab: 'supplied' });
+    expect(readLastPortfolioDecision()).toMatchObject({ outcome: 'none', address: OTHER });
+  });
+
+  it('expires and rejects the $last pointer like any entry', () => {
+    localStorage.setItem(
+      'portfolioDecision:v1:$last',
+      JSON.stringify({
+        outcome: 'none',
+        tab: 'supplied',
+        updatedAt: Date.now() - PORTFOLIO_DECISION_TTL_MS - 1000,
+        address: ADDRESS
+      })
+    );
+    expect(readLastPortfolioDecision()).toBeNull();
+    expect(localStorage.getItem('portfolioDecision:v1:$last')).toBeNull();
+
+    localStorage.setItem('portfolioDecision:v1:$last', 'not json');
+    expect(readLastPortfolioDecision()).toBeNull();
   });
 
   it('degrades to no-cache when storage is unusable (private mode)', () => {
