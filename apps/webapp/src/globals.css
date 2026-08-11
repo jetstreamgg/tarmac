@@ -893,10 +893,13 @@
 /* App loader cover (APP-419): surfaces that mount outside Layout (the toast
    stack) can't wear the reveal classes, so they hide via this document flag
    instead — useAppLoader sets it on <html> for exactly the cover phase.
-   visibility (not display) so toast layout/timers run on; anything still
-   within its lifetime pops back at reveal. */
+   opacity (not visibility/display) to match the reveal classes' own hiding:
+   layout and toast timers run on, and the subtree stays in the accessibility
+   tree, so aria-live announcements fire and keyboard focus survives the
+   cover; anything still within its lifetime pops back at reveal. */
 html[data-app-loader-cover] .app-loader-cover-hidden {
-  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the

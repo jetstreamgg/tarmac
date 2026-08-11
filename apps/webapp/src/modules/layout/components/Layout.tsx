@@ -130,8 +130,11 @@ export function Layout({
         <div className={appLoaderRevealClasses(loaderPhase, 'chrome')}>
           <Banner />
         </div>
+        {/* Joins the chrome reveal like the Banner above: without it the
+            commit SHA floats over the cover's bare-background frame on
+            dev/staging builds. */}
         {showEnvInfo && (
-          <div className="absolute bottom-0 left-2">
+          <div className={cn('absolute bottom-0 left-2', appLoaderRevealClasses(loaderPhase, 'chrome'))}>
             <Text className="text-text text-xs">{import.meta.env.VITE_CF_PAGES_COMMIT_SHA}</Text>
           </div>
         )}

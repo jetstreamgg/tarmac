@@ -24,6 +24,28 @@ interface NetworkToastProps {
   isAutoSwitch?: boolean;
 }
 
+/**
+ * The app-loader cover hides the toast stack off the `data-app-loader-cover`
+ * document flag (globals.css), and the connect-time auto-switch fires exactly
+ * when the held cover goes up — shown immediately, a toast could burn its
+ * whole 5–8s lifetime invisible and never be seen. Hold the show until the
+ * flag clears (the cover always ends: settle, hold cap, or watchdog).
+ */
+const showWhenUncovered = (show: () => void) => {
+  const root = document.documentElement;
+  if (!root.hasAttribute('data-app-loader-cover')) {
+    show();
+    return;
+  }
+  const observer = new MutationObserver(() => {
+    if (!root.hasAttribute('data-app-loader-cover')) {
+      observer.disconnect();
+      show();
+    }
+  });
+  observer.observe(root, { attributes: true, attributeFilter: ['data-app-loader-cover'] });
+};
+
 const getWidgetName = (intent: Intent): string => {
   switch (intent) {
     case Intent.TRADE_INTENT:
@@ -211,23 +233,25 @@ export function useEnhancedNetworkToast() {
       // Set new timeout with proper cleanup reference
       toastTimeoutRef.current = setTimeout(
         () => {
-          // Create a unique ID for this toast
-          const toastId = `network-toast-${Date.now()}`;
+          showWhenUncovered(() => {
+            // Create a unique ID for this toast
+            const toastId = `network-toast-${Date.now()}`;
 
-          toastWithClose(
-            <div>
-              <Text variant="medium">{title}</Text>
-              {createToastContent(toastId)}
-            </div>,
-            {
-              id: toastId,
-              duration: hasQuickSwitch || hasLongTitle ? 8000 : 5000, // Extended duration for multichain widgets or longer messages
-              classNames: {
-                toast: 'md:min-w-[400px]'
+            toastWithClose(
+              <div>
+                <Text variant="medium">{title}</Text>
+                {createToastContent(toastId)}
+              </div>,
+              {
+                id: toastId,
+                duration: hasQuickSwitch || hasLongTitle ? 8000 : 5000, // Extended duration for multichain widgets or longer messages
+                classNames: {
+                  toast: 'md:min-w-[400px]'
+                }
               }
-            }
-          );
-          // Clear the ref after the toast is shown
+            );
+          });
+          // Clear the ref after the toast is shown or handed to the observer
           toastTimeoutRef.current = null;
         },
         currentIntent === previousIntent ? 700 : 0

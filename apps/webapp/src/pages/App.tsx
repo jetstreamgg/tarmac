@@ -96,7 +96,11 @@ export const App = () => (
                     <AppContent />
                   </ConnectModalProvider>
                 </AnalyticsFlowProvider>
-                {POSTHOG_ENABLED && <CookieConsentBanner />}
+                {POSTHOG_ENABLED && (
+                  <div className="app-loader-cover-hidden">
+                    <CookieConsentBanner />
+                  </div>
+                )}
               </GeoConfigProvider>
             </PostHogProvider>
           </CookieConsentProvider>
