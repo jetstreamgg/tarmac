@@ -1,10 +1,29 @@
-import { useConnection, useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import {
+  deepEqual,
+  useConnection,
+  useSimulateContract,
+  useWaitForTransactionReceipt,
+  useWriteContract
+} from 'wagmi';
 import { isRevertedError, toError } from '../helpers';
 import { useContext, useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { SAFE_CONNECTOR_ID } from './constants';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { BackToEditContext } from './backToEditContext';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
+
+type SequentialCall = UseSequentialTransactionFlowParameters['calls'][number];
+
+// Same target and args — the abi is deliberately ignored, it only affects encoding.
+function sameCall(a: SequentialCall, b: SequentialCall): boolean {
+  return (
+    a.to === b.to && a.functionName === b.functionName && a.value === b.value && deepEqual(a.args, b.args)
+  );
+}
+
+function sameSequence(a: readonly SequentialCall[], b: readonly SequentialCall[]): boolean {
+  return a.length === b.length && a.every((call, i) => sameCall(call, b[i]));
+}
 
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
@@ -207,20 +226,29 @@ export function useSequentialTransactionFlow(
     // stale hash being replayed during multi-step execution
   }, [resetWrite]);
 
-  // Going Back to the editable entry drops the run unconditionally: the frozen
-  // snapshot may no longer match what the form shows (APP-448), and only this
-  // explicit signal separates a user edit from background args churn (a
-  // refetching quote must NOT reset a paused run — its retry resumes the frozen
-  // args). The trade-off: after an unchanged Back the sequence restarts from
-  // scratch, which can re-prompt for an already-mined approve until the
-  // engine's allowance query catches up.
+  // The modal bumps the epoch when the user backs out of the wallet/status
+  // screen to the editable entry (see BackToEditContext); execute() stamps the
+  // epoch it last dispatched under, so a mismatch means the user has gone Back
+  // since this run touched the wallet. Only then may the run be dropped, and
+  // only once the live calls actually diverge from the frozen snapshot
+  // (APP-448) — an unchanged reconfirm must RESUME mid-sequence, or a mined
+  // value-moving first call (PSM sellGem, upgrade) would be re-dispatched. The
+  // frozen tail also counts as unchanged: the engine drops a mined approve
+  // once its allowance lands. Without a Back, background args churn — a
+  // refetching quote — never resets; a plain retry resumes the frozen args. A
+  // run stranded mid-sequence by an on-chain revert (not executing, index > 0)
+  // has nothing to resume, so there Back always clears it.
   const backToEditEpoch = useContext(BackToEditContext);
-  const seenBackToEditEpoch = useRef(backToEditEpoch);
+  const runEpochRef = useRef(backToEditEpoch);
   useEffect(() => {
-    if (backToEditEpoch === seenBackToEditEpoch.current) return;
-    seenBackToEditEpoch.current = backToEditEpoch;
+    if (backToEditEpoch === runEpochRef.current) return;
+    if (!isExecuting && currentIndex === 0) return;
+    const frozen = transactionsRef.current;
+    if (isExecuting && (sameSequence(calls, frozen) || sameSequence(calls, frozen.slice(currentIndex)))) {
+      return;
+    }
     reset();
-  }, [backToEditEpoch, reset]);
+  }, [backToEditEpoch, isExecuting, calls, currentIndex, reset]);
 
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {
@@ -246,6 +274,9 @@ export function useSequentialTransactionFlow(
         transactionsRef.current = calls; // freeze args for the whole sequence
         totalCallsRef.current = calls.length; // and the count, for the completion check
       }
+      // Re-confirming consumes the Back signal: args churn after this dispatch
+      // is background noise again, not an edit (see the epoch effect above).
+      runEpochRef.current = backToEditEpoch;
       // This call is dispatched here, so claim its index before the auto-execute
       // effect can see it (a retry re-enters at a non-zero currentIndex).
       dispatchedIndexRef.current = currentIndex;
@@ -269,7 +300,8 @@ export function useSequentialTransactionFlow(
     simulationData,
     writeContract,
     isSimulationLoading,
-    simulationError
+    simulationError,
+    backToEditEpoch
   ]);
 
   return {

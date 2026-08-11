@@ -36,7 +36,9 @@ const wagmi = vi.hoisted(() => ({
   }
 }));
 
-vi.mock('wagmi', () => ({
+vi.mock('wagmi', async importOriginal => ({
+  // the hook's sequence comparison uses wagmi's real deepEqual
+  deepEqual: (await importOriginal<typeof import('wagmi')>()).deepEqual,
   useConnection: () => ({ connector: undefined }),
   useSimulateContract: (params: { functionName?: string; args?: unknown[] }) => {
     wagmi.simulationParams = params;
@@ -395,9 +397,14 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     driveToStep2Rejection(result, rerender);
     expect(onError).toHaveBeenCalledTimes(1);
 
-    // Back → edit to 5. The allowance from the mined approve covers it, so the
-    // engine rebuilds the live calls as just [supply(5)].
+    // Back: the epoch bumps while the form still shows the old amount, so the
+    // run is still resumable…
     backToEditEpoch += 1;
+    rerender();
+    expect(result.current.currentCallIndex).toBe(1);
+
+    // …then the edit lands on a later render. The allowance from the mined
+    // approve covers 5, so the engine rebuilds the live calls as [supply(5)].
     calls = [makeCall('supply', [5n])];
     rerender();
 
@@ -434,8 +441,10 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
 
     driveToStep2Rejection(result, rerender);
 
-    // Back → edit to 9, above the granted allowance: the engine rebuilds both calls.
+    // Back, then edit to 9 on a later render — above the granted allowance,
+    // so the engine rebuilds both calls.
     backToEditEpoch += 1;
+    rerender();
     calls = [makeCall('approve', [9n]), makeCall('supply', [9n])];
     rerender();
 
@@ -492,26 +501,31 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(wagmi.simulationParams?.functionName).toBe('swap');
   });
 
-  it('Back without editing restarts the sequence from scratch', () => {
-    let calls: Call[] = [makeCall('approve', [3n]), makeCall('supply', [3n])];
+  it('Back without editing keeps the resume — a mined value-moving first call must not re-run', () => {
+    // sellGem is unconditionally in the rebuilt calls (unlike an approve, the
+    // engine has no on-chain signal that it already ran), so dropping the run
+    // here would re-swap the user's funds on an innocent look-don't-touch Back.
+    let calls: Call[] = [makeCall('sellGem', [100n]), makeCall('supply', [100n])];
 
     const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }), { wrapper });
 
     driveToStep2Rejection(result, rerender);
 
-    // Back drops the run even though nothing changes: the engine still holds
-    // both calls (allowance query not caught up), so the next confirm re-runs
-    // the whole sequence — the accepted cost of the unconditional reset.
+    // Back to double-check; nothing edited.
     backToEditEpoch += 1;
-    calls = [makeCall('approve', [3n]), makeCall('supply', [3n])];
     rerender();
+    expect(result.current.currentCallIndex).toBe(1);
 
-    expect(result.current.currentCallIndex).toBe(0);
-    expect(wagmi.simulationParams?.functionName).toBe('approve');
-
+    // Reconfirm resumes at the supply, not the mined sellGem.
     act(() => result.current.execute());
     expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
-    expect(wagmi.simulationParams?.functionName).toBe('approve');
+    expect(wagmi.simulationParams?.functionName).toBe('supply');
+
+    // The reconfirm consumed the Back signal: args churn while the retry is in
+    // the wallet (a quote refetch) must not reset the in-flight run.
+    calls = [makeCall('sellGem', [100n]), makeCall('supply', [101n])];
+    rerender();
+    expect(result.current.currentCallIndex).toBe(1);
   });
 
   it('an error on the first (approve) receipt does not fire onSuccess', () => {
