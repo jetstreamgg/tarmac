@@ -73,26 +73,27 @@ describe('useAccruingValue', () => {
       vi.advanceTimersByTime(60_000);
     });
 
-    // A minute of 3.75% on 100,000 USDS.
+    // A minute of 3.75% on 100,000 USDS. The hook lands on digit turnovers, so
+    // the shown value trails the continuous projection by up to one tick (1e-4).
     const expected = 100_000 * Math.exp(Math.log1p(SSR_3_75) * 60);
-    expect(result.current.value).toBeCloseTo(expected, 6);
     expect(result.current.value).toBeGreaterThan(100_000);
+    expect(result.current.value).toBeLessThanOrEqual(expected);
+    expect(expected - result.current.value).toBeLessThan(2 * 10 ** -4);
   });
 
-  it('renders about once per target tick rather than on a fixed interval', () => {
-    let renders = 0;
-    renderHook(() => {
-      renders += 1;
-      return useAccruingValue({ amount: 100_000, ratePerSecond: SSR_3_75 });
-    });
-    const before = renders;
+  it('wakes about once per target tick rather than on a fixed interval', () => {
+    renderHook(() => useAccruingValue({ amount: 100_000, ratePerSecond: SSR_3_75 }));
 
+    // Count timer wake-ups, not renders: React batches every setState inside
+    // the single act() into one render, so render count can't see the cadence.
+    const spy = vi.spyOn(globalThis, 'setTimeout');
     act(() => {
       vi.advanceTimersByTime(10_000);
     });
 
     // 10s at ~0.86s per tick ≈ 12 wake-ups; anything near 60fps would be ~600.
-    const wakeUps = renders - before;
+    const wakeUps = spy.mock.calls.length;
+    spy.mockRestore();
     expect(wakeUps).toBeGreaterThan(5);
     expect(wakeUps).toBeLessThan(25);
   });
@@ -109,8 +110,9 @@ describe('useAccruingValue', () => {
     const projected = result.current.value;
     expect(projected).toBeGreaterThan(100_000);
 
-    // The chain reports the balance as of a block we've already projected past.
-    rerender({ amount: 100_000.0001 });
+    // The chain reports the balance as of a block we've already projected past —
+    // behind the display, but within the 10-tick (1e-3) drift tolerance.
+    rerender({ amount: projected - 0.0005 });
     expect(result.current.value).toBeGreaterThanOrEqual(projected);
   });
 
