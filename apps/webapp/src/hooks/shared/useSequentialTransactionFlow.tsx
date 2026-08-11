@@ -5,6 +5,35 @@ import { SAFE_CONNECTOR_ID } from './constants';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
 
+type SequentialCall = UseSequentialTransactionFlowParameters['calls'][number];
+
+function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((item, i) => sameValue(item, b[i]));
+  }
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    return (
+      aKeys.length === bKeys.length &&
+      aKeys.every(key => sameValue((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]))
+    );
+  }
+  return false;
+}
+
+// Same target and args — the abi is deliberately ignored, it only affects encoding.
+function sameCall(a: SequentialCall, b: SequentialCall): boolean {
+  return (
+    a.to === b.to && a.functionName === b.functionName && a.value === b.value && sameValue(a.args, b.args)
+  );
+}
+
+function sameSequence(a: readonly SequentialCall[], b: readonly SequentialCall[]): boolean {
+  return a.length === b.length && a.every((call, i) => sameCall(call, b[i]));
+}
+
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
 ): SequentialTransactionHook {
@@ -205,6 +234,26 @@ export function useSequentialTransactionFlow(
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution
   }, [resetWrite]);
+
+  // A wallet rejection pauses the run mid-sequence (isExecuting with a write
+  // error) and leaves the frozen snapshot authoritative, so a plain "Try again"
+  // resumes without re-running the mined approve. But if the caller rebuilds
+  // `calls` with DIFFERENT args in that paused state — the user went Back and
+  // edited the amount — resuming would sign the frozen args the form no longer
+  // shows (APP-448). Drop the run so the next confirm re-freezes from the live
+  // calls; the mined approve's allowance keeps a covered amount a single-call
+  // sequence, and a larger one naturally rebuilds with a fresh approve.
+  //
+  // Two live shapes still mean "nothing was edited" and must keep the resume:
+  // the frozen tail (the engine dropped the mined approve once its allowance
+  // landed) and the full frozen sequence (the engine hasn't caught up yet —
+  // resetting on that one would re-dispatch the approve).
+  useEffect(() => {
+    if (!isExecuting || !hasWriteError) return;
+    const frozen = transactionsRef.current;
+    if (sameSequence(calls, frozen) || sameSequence(calls, frozen.slice(currentIndex))) return;
+    reset();
+  }, [isExecuting, hasWriteError, calls, currentIndex, reset]);
 
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {

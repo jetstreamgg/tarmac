@@ -22,6 +22,8 @@ const wagmi = vi.hoisted(() => ({
   onWriteError: undefined as undefined | ((err: Error) => void),
   writeContract: vi.fn(),
   resetWrite: vi.fn(),
+  // the last params handed to useSimulateContract — the call the next confirm will sign
+  simulationParams: undefined as undefined | { functionName?: string; args?: unknown[] },
   // current write mutation hash (drives useWaitForTransactionReceipt)
   mutationHash: undefined as `0x${string}` | undefined,
   // current receipt state, keyed off the active hash by the test driver
@@ -35,7 +37,10 @@ const wagmi = vi.hoisted(() => ({
 
 vi.mock('wagmi', () => ({
   useConnection: () => ({ connector: undefined }),
-  useSimulateContract: () => ({ data: { request: { __mock: 'request' } }, isLoading: false, error: null }),
+  useSimulateContract: (params: { functionName?: string; args?: unknown[] }) => {
+    wagmi.simulationParams = params;
+    return { data: { request: { __mock: 'request' } }, isLoading: false, error: null };
+  },
   useWriteContract: (opts: {
     mutation: {
       onMutate?: () => void;
@@ -74,12 +79,24 @@ function makeCall(functionName: string): Call {
 const APPROVE = makeCall('approve');
 const SUPPLY = makeCall('supply');
 
+// Amount-carrying variant for the retry-contract tests: distinct args are what
+// separates an edited rebuild from an unchanged one.
+function makeAmountCall(functionName: string, amount: bigint): Call {
+  return {
+    to: '0x0000000000000000000000000000000000000001',
+    abi: [],
+    functionName,
+    args: [amount]
+  } as unknown as Call;
+}
+
 function resetWagmi() {
   wagmi.onMutate = undefined;
   wagmi.onWriteSuccess = undefined;
   wagmi.onWriteError = undefined;
   wagmi.writeContract = vi.fn();
   wagmi.resetWrite = vi.fn();
+  wagmi.simulationParams = undefined;
   wagmi.mutationHash = undefined;
   wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
 }
@@ -337,6 +354,163 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
 
     expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
     expect(result.current.currentCallIndex).toBe(0); // sequence completed and reset
+  });
+
+  it('a retry after Back-and-edit executes the edited amount, not the frozen one (APP-448)', () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    let calls: Call[] = [makeAmountCall('approve', 3n), makeAmountCall('supply', 3n)];
+
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls, onSuccess, onError })
+    );
+
+    // Confirm freezes [approve(3), supply(3)]; the approve mines.
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(result.current.currentCallIndex).toBe(1);
+
+    // The user rejects the supply in their wallet.
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = undefined;
+      wagmi.onWriteError?.(new Error('User rejected the request'));
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    // Back → edit to 5. The allowance from the mined approve covers it, so the
+    // engine rebuilds the live calls as just [supply(5)].
+    calls = [makeAmountCall('supply', 5n)];
+    rerender();
+
+    // The frozen run must be dropped: the flow is back at the start, simulating
+    // the EDITED call — which is what the next confirm hands to the wallet.
+    expect(result.current.currentCallIndex).toBe(0);
+    expect(wagmi.simulationParams?.functionName).toBe('supply');
+    expect(wagmi.simulationParams?.args).toEqual([5n]);
+
+    // Confirm signs it and the single-call sequence completes exactly once.
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+    act(() => {
+      wagmi.mutationHash = '0xsupply5';
+      wagmi.onWriteSuccess?.('0xsupply5');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith('0xsupply5');
+  });
+
+  it('an edited amount above the allowance rebuilds the full approve+supply sequence', () => {
+    const onSuccess = vi.fn();
+    let calls: Call[] = [makeAmountCall('approve', 3n), makeAmountCall('supply', 3n)];
+
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onSuccess }));
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = undefined;
+      wagmi.onWriteError?.(new Error('User rejected the request'));
+    });
+    rerender();
+
+    // Back → edit to 9, above the granted allowance: the engine rebuilds both calls.
+    calls = [makeAmountCall('approve', 9n), makeAmountCall('supply', 9n)];
+    rerender();
+
+    expect(result.current.currentCallIndex).toBe(0);
+    expect(wagmi.simulationParams?.functionName).toBe('approve');
+    expect(wagmi.simulationParams?.args).toEqual([9n]);
+
+    // Confirm runs the rebuilt two-step sequence to completion.
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove9';
+      wagmi.onWriteSuccess?.('0xapprove9');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(result.current.currentCallIndex).toBe(1);
+
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = '0xsupply9';
+      wagmi.onWriteSuccess?.('0xsupply9');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith('0xsupply9');
+  });
+
+  it('an unchanged rebuild of the full sequence keeps the resume (no approve re-dispatch)', () => {
+    let calls: Call[] = [makeAmountCall('approve', 3n), makeAmountCall('supply', 3n)];
+
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }));
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = undefined;
+      wagmi.onWriteError?.(new Error('User rejected the request'));
+    });
+    rerender();
+
+    // The engine hasn't dropped the mined approve yet (allowance query still
+    // refetching) and rebuilds the SAME sequence as fresh objects. Deep-equal
+    // args mean nothing was edited: the paused run must survive, or a retry
+    // would start over and re-dispatch the approve.
+    calls = [makeAmountCall('approve', 3n), makeAmountCall('supply', 3n)];
+    rerender();
+
+    expect(result.current.currentCallIndex).toBe(1);
+
+    // "Try again" resumes the frozen sequence at the supply.
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+    expect(wagmi.simulationParams?.functionName).toBe('supply');
   });
 
   it('an error on the first (approve) receipt does not fire onSuccess', () => {

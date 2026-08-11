@@ -68,12 +68,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     await isolatedPage.getByRole('button', { name: 'Done' }).click();
   });
 
-  // FIXME(stale-state): this canary currently catches what looks like a REAL V2
-  // regression — after a step-2 rejection and Back, the retry executed the OLD
-  // amount (rewards position landed at 3, not the re-entered 7). Needs a product
-  // fix in the entry-modal retry path (useSequentialTransactionFlow contract),
-  // not a spec fix. Re-enable once resolved.
-  test.fixme('Sequential stale-state regression: changed amount is used after step-2 rejection and Back', async ({
+  test('Sequential stale-state regression: changed amount is used after step-2 rejection and Back', async ({
     isolatedPage
   }) => {
     await connectOn(isolatedPage, '/earn/savings');
@@ -152,12 +147,7 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await isolatedPage.getByRole('button', { name: 'Done' }).click();
   });
 
-  // FIXME(stale-state): this canary currently catches what looks like a REAL V2
-  // regression — after a step-2 rejection and Back, the retry executed the OLD
-  // amount (rewards position landed at 3, not the re-entered 7). Needs a product
-  // fix in the entry-modal retry path (useSequentialTransactionFlow contract),
-  // not a spec fix. Re-enable once resolved.
-  test.fixme('Sequential stale-state regression: changed amount is used after step-2 rejection and Back', async ({
+  test('Sequential stale-state regression: changed amount is used after step-2 rejection and Back', async ({
     isolatedPage
   }) => {
     await connectOn(isolatedPage, `/earn/rewards/${SPK_REWARD_CONTRACT}`);
