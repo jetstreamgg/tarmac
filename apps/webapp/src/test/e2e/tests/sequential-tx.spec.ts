@@ -86,6 +86,17 @@ test.describe('Sequential transactions — Savings supply', () => {
     isolatedPage
   }) => {
     await connectOn(isolatedPage, '/earn/savings');
+
+    // Funded accounts hold sUSDS, so the position card starts non-zero; the
+    // final check asserts the DELTA, not an absolute position.
+    const positionAmount = async () => {
+      const card = isolatedPage.getByTestId('savings-position-card');
+      await expect(card).toBeVisible({ timeout: 15_000 });
+      const cardText = await card.innerText();
+      return parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
+    };
+    const positionBefore = await positionAmount();
+
     await openSupplyModal(isolatedPage);
 
     // ── First attempt: approve succeeds, the supply tx is rejected ──
@@ -113,12 +124,8 @@ test.describe('Sequential transactions — Savings supply', () => {
     });
     await isolatedPage.getByRole('button', { name: 'Done' }).click();
 
-    // The position reflects the NEW amount (5), not the rejected one (3)
-    const card = isolatedPage.getByTestId('savings-position-card');
-    await expect(card).toBeVisible({ timeout: 15_000 });
-    const cardText = await card.innerText();
-    const amount = parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
-    expect(amount).toBeCloseTo(5, 0);
+    // The position grew by the NEW amount (5), not the rejected one (3)
+    expect((await positionAmount()) - positionBefore).toBeCloseTo(5, 0);
   });
 });
 
