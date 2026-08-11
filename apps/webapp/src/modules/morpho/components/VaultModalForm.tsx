@@ -16,6 +16,7 @@ import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useNetworkFee } from '@/hooks';
+import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
 import { buildVaultEntryRows, buildVaultReviewRows } from './vaultModalRows';
@@ -81,6 +82,8 @@ export function VaultModalForm({
     insufficient,
     amountReady,
     position,
+    isLiquidityConstrained,
+    isLiquidityDataUnavailable,
     engineParams,
     toast,
     transactionScreenContent,
@@ -136,6 +139,45 @@ export function VaultModalForm({
   // Position after the action, clamped at zero for over-withdrawals (the
   // insufficient gate blocks submission anyway).
   const positionAfter = isSupply ? position + amount : position > amount ? position - amount : 0n;
+
+  // Liquidity copy is provider-specific: Spark/Tether vaults expose instant-withdrawal
+  // liquidity, not a Morpho market (same override the widget's SupplyWithdraw applies).
+  const liquidityTooltipOverride =
+    provider === 'sky'
+      ? { description: t`The amount of ${assetToken.symbol} currently available for instant withdrawal.` }
+      : undefined;
+
+  // With zero liquidity the notice alone carries the message — the inline error
+  // would repeat it word for word.
+  const zeroLiquidity = !isSupply && isLiquidityConstrained && available === 0n;
+
+  // Withdraw-only notice, one of three states; wording mirrors the widget's
+  // SupplyWithdraw. Error red only for the blocking state.
+  const liquidityNotice = !isSupply
+    ? zeroLiquidity
+      ? {
+          tone: 'text-error',
+          testId: 'vault-modal-liquidity-zero-notice',
+          text: <Trans>Withdrawals are temporarily unavailable due to liquidity constraints.</Trans>
+        }
+      : isLiquidityDataUnavailable
+        ? {
+            tone: 'text-text',
+            testId: 'vault-modal-liquidity-unknown-notice',
+            text: (
+              <Trans>
+                Liquidity data is temporarily unavailable. Withdrawals may be limited by available liquidity.
+              </Trans>
+            )
+          }
+        : isLiquidityConstrained
+          ? {
+              tone: 'text-text',
+              testId: 'vault-modal-liquidity-partial-notice',
+              text: <Trans>You cannot withdraw your full balance due to current liquidity limits.</Trans>
+            }
+          : undefined
+    : undefined;
 
   const rows = buildVaultEntryRows({
     rate,
@@ -209,34 +251,64 @@ export function VaultModalForm({
 
   const body = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid={`vault-modal-${flow}-form`}>
-      <ModalAmountField
-        label={<Trans>Amount</Trans>}
-        tokenSymbol={assetToken.symbol}
-        value={value}
-        onInput={onInput}
-        disabled={!isConnected}
-        balance={
-          <>
-            <Trans>Balance</Trans>: {isConnected ? formatAsset(available) : NO_VALUE}
-          </>
-        }
-        onPercent={setPercentAmount}
-        selector={
-          // Figma 859:38126 draws the DS dropdown pill, but a vault has exactly
-          // one underlying asset — the pill collapses to its static chip.
-          <TokenSelectorPill tokens={[assetToken]} selected={assetToken} testId="vault-modal-asset" />
-        }
-        error={
-          insufficient ? (
-            <Text className="text-error text-sm" data-testid="vault-modal-amount-error">
-              {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
+      <div className="flex flex-col gap-2">
+        <ModalAmountField
+          label={<Trans>Amount</Trans>}
+          tokenSymbol={assetToken.symbol}
+          value={value}
+          onInput={onInput}
+          disabled={!isConnected}
+          balance={
+            // "Available", not "Balance", when liquidity caps the figure below the position.
+            <>
+              {!isSupply && isLiquidityConstrained ? <Trans>Available</Trans> : <Trans>Balance</Trans>}:{' '}
+              {isConnected ? formatAsset(available) : NO_VALUE}
+            </>
+          }
+          onPercent={setPercentAmount}
+          selector={
+            // Figma 859:38126 draws the DS dropdown pill, but a vault has exactly
+            // one underlying asset — the pill collapses to its static chip.
+            <TokenSelectorPill tokens={[assetToken]} selected={assetToken} testId="vault-modal-asset" />
+          }
+          error={
+            insufficient && !zeroLiquidity ? (
+              <Text className="text-error text-sm" data-testid="vault-modal-amount-error">
+                {isSupply ? (
+                  <Trans>Insufficient balance</Trans>
+                ) : isLiquidityConstrained ? (
+                  // Full precision: a rounded-up cap would name a maximum that itself
+                  // fails the gate.
+                  <Trans>
+                    Insufficient liquidity. Maximum available is {formatUnits(available, decimals)}{' '}
+                    {assetToken.symbol}.
+                  </Trans>
+                ) : (
+                  <Trans>Amount exceeds your position</Trans>
+                )}
+              </Text>
+            ) : undefined
+          }
+          inputAriaLabel={isSupply ? t`Supply amount` : t`Withdraw amount`}
+          inputTestId="vault-modal-amount-input"
+          maxTestId="vault-modal-amount-max"
+        />
+        {liquidityNotice && (
+          <div
+            className={`ml-3 flex items-start ${liquidityNotice.tone}`}
+            data-testid={liquidityNotice.testId}
+          >
+            <PopoverRateInfo
+              type="morphoLiquidity"
+              tooltipOverride={liquidityTooltipOverride}
+              iconClassName={`mt-1 shrink-0 ${liquidityNotice.tone}`}
+            />
+            <Text variant="small" className="ml-2">
+              {liquidityNotice.text}
             </Text>
-          ) : undefined
-        }
-        inputAriaLabel={isSupply ? t`Supply amount` : t`Withdraw amount`}
-        inputTestId="vault-modal-amount-input"
-        maxTestId="vault-modal-amount-max"
-      />
+          </div>
+        )}
+      </div>
 
       <ModalSummaryGrid rows={toGridCells(rows, 'vault-modal-row', feeCell)} dividerClassName="h-8" />
 

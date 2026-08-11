@@ -233,3 +233,42 @@ describe('computeVaultLimits — Morpho (stubbed ERC-4626 limits)', () => {
     expect(redeemShares).toBe(0n);
   });
 });
+
+describe('computeVaultLimits — full-position withdrawability', () => {
+  const POSITION = 1_000n * 10n ** 18n;
+
+  it('flags the position fully withdrawable when liquidity covers it', () => {
+    const { isFullPositionWithdrawable, isLiquidityConstrained } = computeVaultLimits({
+      provider: 'morpho',
+      userAssets: POSITION,
+      userShares: POSITION,
+      availableLiquidity: POSITION
+    });
+
+    expect(isFullPositionWithdrawable).toBe(true);
+    expect(isLiquidityConstrained).toBe(false);
+  });
+
+  it('any shortfall is a constraint — the comparison is exact', () => {
+    const { isFullPositionWithdrawable, isLiquidityConstrained } = computeVaultLimits({
+      provider: 'morpho',
+      userAssets: POSITION,
+      userShares: POSITION,
+      availableLiquidity: POSITION - 1n
+    });
+
+    expect(isFullPositionWithdrawable).toBe(false);
+    expect(isLiquidityConstrained).toBe(true);
+  });
+
+  it('an unknown withdraw cap (liquidity read in flight) is never fully withdrawable', () => {
+    const { isFullPositionWithdrawable } = computeVaultLimits({
+      provider: 'morpho',
+      userAssets: POSITION,
+      userShares: POSITION,
+      liquidityKnown: false
+    });
+
+    expect(isFullPositionWithdrawable).toBe(false);
+  });
+});
