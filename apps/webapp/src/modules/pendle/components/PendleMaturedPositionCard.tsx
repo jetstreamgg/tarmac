@@ -31,7 +31,11 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
     day: 'numeric'
   });
 
-  const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
+  // DEMO BRANCH — DO NOT MERGE: the on-chain preview can't resolve for a
+  // not-actually-matured market, so bypass it (PT balance ≈ receive amount).
+  usePendleRedeemPreview(market, ptBalance);
+  const previewAmount: bigint | undefined = ptBalance;
+  const previewLoading = false;
   const { earnings, apy, currency } = usePendleMaturedPositionEarnings(market, ptBalance);
   const formattedReceive =
     previewAmount !== undefined

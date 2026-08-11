@@ -2,8 +2,10 @@ import { mainnet } from 'viem/chains';
 import { isTestnetId } from '@/utils';
 
 /** Whether a market has matured (expiry timestamp <= now). */
-export function isMarketMatured(expiry: number): boolean {
-  return Math.floor(Date.now() / 1000) >= expiry;
+export function isMarketMatured(_expiry: number): boolean {
+  // DEMO BRANCH — DO NOT MERGE: force every market matured so the dormant
+  // redeem flow is visible before the real Nov 2026 maturity.
+  return true;
 }
 
 /**

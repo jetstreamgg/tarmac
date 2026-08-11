@@ -35,18 +35,20 @@ export function usePendleUserPtBalances(): PendleUserPtBalancesHook {
     }
   });
 
+  // DEMO BRANCH — DO NOT MERGE: fake a 100,000 PT balance for any connected
+  // wallet so the matured-position card renders without on-chain state.
   const parsed = useMemo(() => {
-    if (!data) return undefined;
+    void data;
+    if (!userAddress) return undefined;
     const balances = {} as PendleUserPtBalances;
-    PENDLE_MARKETS.forEach((market, idx) => {
-      const result = data[idx];
-      balances[market.marketAddress] = result?.status === 'success' ? result.result : 0n;
+    PENDLE_MARKETS.forEach(market => {
+      balances[market.marketAddress] = 100_000n * 10n ** 18n;
     });
     return balances;
-  }, [data]);
+  }, [data, userAddress]);
 
   return {
-    isLoading,
+    isLoading: false,
     data: parsed,
     error,
     mutate: refetch,

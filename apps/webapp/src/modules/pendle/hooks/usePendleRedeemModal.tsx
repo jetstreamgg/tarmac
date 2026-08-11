@@ -108,6 +108,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     () => pendlePrepareErrorMessage(writeHook.error?.message),
     [writeHook.error]
   );
+  // DEMO BRANCH — DO NOT MERGE: the write hook can't prepare against a
+  // not-actually-matured market, so suppress its error in the modal.
+  const demoPrepareErrorMessage = undefined;
 
   const transactionContent = useMemo(
     () => (
@@ -120,7 +123,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
         quote={quote}
         isFetchingQuote={isFetchingQuote}
         slippage={slippage}
-        prepareErrorMessage={prepareErrorMessage}
+        prepareErrorMessage={demoPrepareErrorMessage}
       />
     ),
     [
@@ -228,7 +231,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   return {
     openRedeemModal,
     isRedeemable,
-    isPrepared: writeHook.prepared,
+    // DEMO BRANCH — DO NOT MERGE: report prepared so the card button enables.
+    isPrepared: true,
     ptBalance,
     error: writeHook.error
   };
