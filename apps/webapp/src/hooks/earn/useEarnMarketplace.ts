@@ -83,7 +83,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
     ? chainIdConstants.tenderly
     : chainIdConstants.mainnet;
 
-  const { data: pricesData, isLoading: pricesLoading } = usePrices();
+  const { data: pricesData, isLoading: pricesLoading, error: pricesError } = usePrices();
 
   // --- Savings (the one genuinely multichain product)
   const { data: overallSkyData, isLoading: overallLoading, error: overallError } = useOverallSkyData();
@@ -459,6 +459,13 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
       vaultUserAssetsLoading ||
       pendleUserAssetsLoading ||
       stUsdsLoading,
+    isPositionsError:
+      !!pricesError ||
+      !!savingsBalancesError ||
+      !!rewardsBalancesError ||
+      !!vaultUserAssetsError ||
+      !!pendleUserAssetsError ||
+      !!stUsdsError,
     totalDepositedUsd: rows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0)
   };
 }

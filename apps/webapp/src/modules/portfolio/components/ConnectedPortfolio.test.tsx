@@ -30,10 +30,11 @@ const h = vi.hoisted(() => {
   return {
     supplyRow,
     address: '0x00000000000000000000000000000000000000aa' as string,
-    marketplace: { rows: [] as ReturnType<typeof supplyRow>[], isLoading: true },
+    marketplace: { rows: [] as ReturnType<typeof supplyRow>[], isLoading: true, isPositionsError: false },
     balances: {
       balances: [] as { symbol: string; chainId: number; amount: number; amountUsd: number }[],
-      isLoading: true
+      isLoading: true,
+      isError: false
     },
     skyData: { data: undefined as Record<string, string> | undefined, isLoading: true },
     geo: { savingsEnabled: true, isLoading: false }
@@ -117,17 +118,22 @@ i18n.load('en', {});
 i18n.activate('en');
 
 const setLoading = () => {
-  h.marketplace = { rows: [], isLoading: true };
-  h.balances = { balances: [], isLoading: true };
+  h.marketplace = { rows: [], isLoading: true, isPositionsError: false };
+  h.balances = { balances: [], isLoading: true, isError: false };
   h.skyData = { data: undefined, isLoading: true };
   h.geo = { savingsEnabled: true, isLoading: false };
 };
 
 const setSettled = ({ depositedUsd, idleUsd }: { depositedUsd: number; idleUsd: number }) => {
-  h.marketplace = { rows: depositedUsd > 0 ? [h.supplyRow(depositedUsd)] : [], isLoading: false };
+  h.marketplace = {
+    rows: depositedUsd > 0 ? [h.supplyRow(depositedUsd)] : [],
+    isLoading: false,
+    isPositionsError: false
+  };
   h.balances = {
     balances: idleUsd > 0 ? [{ symbol: 'USDS', chainId: 1, amount: idleUsd, amountUsd: idleUsd }] : [],
-    isLoading: false
+    isLoading: false,
+    isError: false
   };
   h.skyData = { data: { skySavingsRatecRate: '0.045', skySavingsRateTvl: '2500000000' }, isLoading: false };
   h.geo = { savingsEnabled: true, isLoading: false };
@@ -163,6 +169,15 @@ describe('ConnectedPortfolio decision cache', () => {
     expect(screen.queryByTestId('savings-tvl-callout')).toBeNull();
     expect(screen.queryByTestId('portfolio-statistics')).toBeNull();
     expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ outcome: 'none', tab: 'supplied' });
+  });
+
+  it('never persists a decision computed from a failed source', () => {
+    // Errors settle as empty data — indistinguishable from an empty wallet,
+    // so writing it would freeze a wrong outcome for the whole TTL.
+    setSettled({ depositedUsd: 0, idleUsd: 0 });
+    h.marketplace = { rows: [], isLoading: false, isPositionsError: true };
+    renderPage();
+    expect(readPortfolioDecision(ADDRESS_A)).toBeNull();
   });
 
   it('renders a cached decision instantly, before anything loads', () => {
@@ -246,7 +261,7 @@ describe('ConnectedPortfolio decision cache', () => {
 
   it('does not write the cache until every source has settled', () => {
     setSettled({ depositedUsd: 5000, idleUsd: 0 });
-    h.balances = { balances: [], isLoading: true };
+    h.balances = { balances: [], isLoading: true, isError: false };
     renderPage();
     expect(readPortfolioDecision(ADDRESS_A)).toBeNull();
   });

@@ -12,8 +12,12 @@ const h = vi.hoisted(() => ({
   pathname: '/portfolio',
   navigate: undefined as ReturnType<typeof vi.fn> | undefined,
   onConnectCallbacks: [] as ((data: { address: string; isReconnected: boolean }) => void)[],
-  marketplace: { rows: [] as { position?: { totalUsd: number } }[], isPositionsLoading: true },
-  balances: { balances: [] as { amountUsd: number }[], isLoading: true },
+  marketplace: {
+    rows: [] as { position?: { totalUsd: number } }[],
+    isPositionsLoading: true,
+    isPositionsError: false
+  },
+  balances: { balances: [] as { amountUsd: number }[], isLoading: true, isError: false },
   geoLoading: false,
   // The mocked motion.div parks its onAnimationComplete here so tests can
   // finish the active timeline segment on demand.
@@ -92,13 +96,17 @@ const connectManually = (rerender: (ui: React.ReactElement) => void) => {
 };
 
 const settleEmptyWallet = () => {
-  h.marketplace = { rows: [], isPositionsLoading: false };
-  h.balances = { balances: [], isLoading: false };
+  h.marketplace = { rows: [], isPositionsLoading: false, isPositionsError: false };
+  h.balances = { balances: [], isLoading: false, isError: false };
 };
 
 const settleFundedWallet = () => {
-  h.marketplace = { rows: [{ position: { totalUsd: 5000 } }], isPositionsLoading: false };
-  h.balances = { balances: [], isLoading: false };
+  h.marketplace = {
+    rows: [{ position: { totalUsd: 5000 } }],
+    isPositionsLoading: false,
+    isPositionsError: false
+  };
+  h.balances = { balances: [], isLoading: false, isError: false };
 };
 
 beforeEach(() => {
@@ -110,8 +118,8 @@ beforeEach(() => {
   h.pathname = '/portfolio';
   h.navigate = vi.fn();
   h.onConnectCallbacks = [];
-  h.marketplace = { rows: [], isPositionsLoading: true };
-  h.balances = { balances: [], isLoading: true };
+  h.marketplace = { rows: [], isPositionsLoading: true, isPositionsError: false };
+  h.balances = { balances: [], isLoading: true, isError: false };
   h.geoLoading = false;
   h.completeCover = undefined;
 });
@@ -127,8 +135,8 @@ describe('useAppLoader', () => {
     h.status = 'reconnecting';
     render(<Harness />);
     expect(screen.getByTestId('app-loader')).toBeTruthy();
-    expect(screen.getByTestId('content').className).toBe('opacity-0');
-    expect(screen.getByTestId('chrome').className).toBe('opacity-0');
+    expect(screen.getByTestId('content').className).toBe('pointer-events-none opacity-0');
+    expect(screen.getByTestId('chrome').className).toBe('pointer-events-none opacity-0');
     expect(localStorage.getItem(APP_LOADER_PLAYED_KEY)).not.toBeNull();
   });
 
@@ -288,6 +296,35 @@ describe('useAppLoader', () => {
     expect(screen.queryByTestId('app-loader')).toBeNull();
     expect(h.navigate).not.toHaveBeenCalled();
     expect(screen.getByTestId('content').className).toBe('animate-app-loader-content-reveal');
+  });
+
+  it('the watchdog reveals a cover whose timeline never completes', () => {
+    h.status = 'reconnecting';
+    render(<Harness />);
+    expect(screen.getByTestId('app-loader')).toBeTruthy();
+
+    // onAnimationComplete never fires (crashed subtree, dropped animation,
+    // background tab): the watchdog forces the reveal.
+    act(() => vi.advanceTimersByTime(2500));
+
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+    expect(screen.getByTestId('content').className).toBe('animate-app-loader-content-reveal');
+  });
+
+  it('a failed source releases the cover without caching or sorting', () => {
+    const { rerender } = render(<Harness />);
+    connectManually(rerender);
+    expect(screen.getByTestId('app-loader')).toBeTruthy();
+
+    h.marketplace = { rows: [], isPositionsLoading: false, isPositionsError: true };
+    h.balances = { balances: [], isLoading: false, isError: false };
+    act(() => vi.advanceTimersByTime(1200));
+    rerenderHarness(rerender);
+    act(() => h.completeCover?.());
+
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+    expect(h.navigate).not.toHaveBeenCalled();
+    expect(readPortfolioDecision(ADDRESS)).toBeNull();
   });
 
   it('never plays under prefers-reduced-motion', () => {

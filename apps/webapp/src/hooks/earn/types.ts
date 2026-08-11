@@ -111,6 +111,13 @@ export type EarnMarketplaceResult = {
    * on the full flag.
    */
   isPositionsLoading: boolean;
+  /**
+   * True when any source feeding `row.position` has errored. A failed source
+   * settles as an empty position, indistinguishable from a genuinely empty
+   * wallet — consumers that persist or act on the settled totals must skip
+   * when this is set.
+   */
+  isPositionsError: boolean;
   /** Σ of every row's user position USD — the wallet's total deposited across all earn products. */
   totalDepositedUsd: number;
 };

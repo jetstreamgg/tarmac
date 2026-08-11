@@ -36,8 +36,8 @@ import { type PortfolioTab } from './PortfolioTabs';
  */
 export function ConnectedPortfolio() {
   const connectedChainId = useChainId();
-  const { rows, isLoading } = useEarnMarketplace();
-  const { balances, isLoading: balancesLoading } = useStablecoinBalances();
+  const { rows, isLoading, isPositionsError } = useEarnMarketplace();
+  const { balances, isLoading: balancesLoading, isError: balancesError } = useStablecoinBalances();
   // Geo-restricted positions are hidden from every Portfolio surface (APP-484),
   // so all totals/views build from the visible rows, and the savings promos
   // (callouts, idle-tab rate stats) drop when the savings module is restricted.
@@ -106,13 +106,15 @@ export function ConnectedPortfolio() {
   // Once every source settles, persist the computed decision for the next
   // mount — this is the only thing fresh data changes mid-view, so it also
   // refreshes an existing hint's outcome and TTL without touching the render.
+  // Never off failed data: an errored source settles as empty/zero totals,
+  // and caching that would freeze a wrong outcome for the TTL.
   useEffect(() => {
-    if (!address || calloutLoading) return;
+    if (!address || calloutLoading || isPositionsError || balancesError) return;
     writePortfolioDecision(address, {
       outcome: portfolioCallout(depositedUsd, idleTotalUsd),
       tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
     });
-  }, [address, calloutLoading, depositedUsd, idleTotalUsd]);
+  }, [address, calloutLoading, isPositionsError, balancesError, depositedUsd, idleTotalUsd]);
 
   const tab =
     userTab ??

@@ -12,6 +12,12 @@ export type UseStablecoinBalancesResult = {
   /** One row per stablecoin per chain it lives on, valued in USD. */
   balances: StablecoinBalance[];
   isLoading: boolean;
+  /**
+   * True when the balance or price query errored. Errors settle as empty/zero
+   * rows, indistinguishable from a wallet holding nothing — consumers that
+   * persist or act on the settled totals must skip when this is set.
+   */
+  isError: boolean;
 };
 
 /**
@@ -25,7 +31,7 @@ export function useStablecoinBalances(): UseStablecoinBalancesResult {
   const { address } = useConnection();
   const chainIds = getSupportedChainIds(connectedChainId);
 
-  const { data: pricesData, isLoading: pricesLoading } = usePrices();
+  const { data: pricesData, isLoading: pricesLoading, error: pricesError } = usePrices();
 
   // Only request a token on chains where it has an address.
   const chainTokenMap: Record<number, TokenItem[]> = {};
@@ -37,7 +43,11 @@ export function useStablecoinBalances(): UseStablecoinBalancesResult {
     if (tokens.length > 0) chainTokenMap[id] = tokens;
   }
 
-  const { data: rawBalances, isLoading: balancesLoading } = useTokenBalances({ address, chainTokenMap });
+  const {
+    data: rawBalances,
+    isLoading: balancesLoading,
+    error: balancesError
+  } = useTokenBalances({ address, chainTokenMap });
 
   const usdsPrice = pricesData?.USDS?.price;
   const priceFor = (symbol: string) => pricesData?.[symbol]?.price ?? usdsPrice;
@@ -54,6 +64,7 @@ export function useStablecoinBalances(): UseStablecoinBalancesResult {
 
   return {
     balances,
-    isLoading: balancesLoading || pricesLoading
+    isLoading: balancesLoading || pricesLoading,
+    isError: !!balancesError || !!pricesError
   };
 }

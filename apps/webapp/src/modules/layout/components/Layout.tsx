@@ -125,7 +125,11 @@ export function Layout({
           </div>
         </ErrorBoundary>
         <AppLoaderOverlay phase={loaderPhase} mode={coverMode} released={released} onCoverEnd={endCover} />
-        <Banner />
+        {/* The announcement banner joins the chrome reveal so it can't float
+            over the cover's bare-background frame. */}
+        <div className={appLoaderRevealClasses(loaderPhase, 'chrome')}>
+          <Banner />
+        </div>
         {showEnvInfo && (
           <div className="absolute bottom-0 left-2">
             <Text className="text-text text-xs">{import.meta.env.VITE_CF_PAGES_COMMIT_SHA}</Text>

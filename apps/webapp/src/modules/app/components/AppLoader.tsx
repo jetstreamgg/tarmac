@@ -48,6 +48,16 @@ const MIN_HOLD_MS = 1200;
 const HOLD_CAP_MS = 8000;
 
 /**
+ * Failsafe bound on the cover's exit animation: `onAnimationComplete` is the
+ * only organic way out of `cover`, and the overlay sits outside every
+ * ErrorBoundary. If motion never fires it — a crash in the subtree, a dropped
+ * animation, a background tab freezing the rAF-driven timeline — the reveal is
+ * forced after this long instead of leaving the app blank with no way out.
+ * Comfortably past the longest timeline it guards (the 1.6s entry one-shot).
+ */
+const COVER_WATCHDOG_MS = 2500;
+
+/**
  * - `off`    — never triggered this page load; the layout renders untouched.
  * - `cover`  — chrome + content hidden, the logomark timeline playing.
  * - `reveal` — overlay gone; chrome and content run their entrance and rest.
@@ -134,11 +144,12 @@ export function useAppLoader(): {
   // The gate is the positions-only flag: the landing decision reads nothing
   // but `row.position`, and the full `isLoading` waits on rate/chart history
   // from external APIs that can outlive the hold cap.
-  const { rows, isPositionsLoading: marketLoading } = useEarnMarketplace();
+  const { rows, isPositionsLoading: marketLoading, isPositionsError: marketError } = useEarnMarketplace();
   const visibleRows = useGeoVisibleRows(rows);
-  const { balances, isLoading: balancesLoading } = useStablecoinBalances();
+  const { balances, isLoading: balancesLoading, isError: balancesError } = useStablecoinBalances();
   const { isLoading: geoLoading } = useGeoConfig();
   const decisionLoading = marketLoading || balancesLoading || geoLoading;
+  const decisionError = marketError || balancesError;
 
   useConnectionEffect({
     onConnect: data => {
@@ -189,27 +200,43 @@ export function useAppLoader(): {
     };
   }, [phase, coverMode]);
 
+  const endCover = useCallback(() => setPhase(p => (p === 'cover' ? 'reveal' : p)), []);
+
+  // Watchdog on the exiting cover (timed plays from the start; held once
+  // `released` — until then the hold cap above is the bound): if the timeline
+  // never reports completion, force the reveal rather than stay blank.
+  useEffect(() => {
+    if (phase !== 'cover' || (coverMode === 'held' && !released)) return;
+    const watchdog = setTimeout(endCover, COVER_WATCHDOG_MS);
+    return () => clearTimeout(watchdog);
+  }, [phase, coverMode, released, endCover]);
+
   // Settle the sort: cache the outcome, land the user, release the cover.
   // Runs at most once (ref-guarded); if the cap released the cover first, the
   // outcome still gets cached but nobody is yanked post-reveal.
   useEffect(() => {
     if (!sort || sortDoneRef.current || !holdElapsed || decisionLoading) return;
     sortDoneRef.current = true;
-    const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
-    const idleUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
-    const outcome = portfolioCallout(depositedUsd, idleUsd);
-    writePortfolioDecision(sort.address, {
-      outcome,
-      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
-    });
-    if (sort.surface && !released) {
-      const target = landingFor(outcome);
-      if (target !== sort.surface) void navigate({ to: target, search: retainOnNavigate, replace: true });
+    // A failed source settles as empty data, indistinguishable from an empty
+    // wallet — caching that would freeze a wrong outcome for 30 days, and
+    // sorting on it could land a funded wallet on the simulate pitch. On
+    // error the cover just releases, unsorted and uncached; the next connect
+    // gets a fresh try.
+    if (!decisionError) {
+      const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
+      const idleUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
+      const outcome = portfolioCallout(depositedUsd, idleUsd);
+      writePortfolioDecision(sort.address, {
+        outcome,
+        tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
+      });
+      if (sort.surface && !released) {
+        const target = landingFor(outcome);
+        if (target !== sort.surface) void navigate({ to: target, search: retainOnNavigate, replace: true });
+      }
     }
     setReleased(true);
-  }, [sort, holdElapsed, decisionLoading, visibleRows, balances, released, navigate]);
-
-  const endCover = useCallback(() => setPhase(p => (p === 'cover' ? 'reveal' : p)), []);
+  }, [sort, holdElapsed, decisionLoading, decisionError, visibleRows, balances, released, navigate]);
 
   return { phase, coverMode, released, endCover };
 }
@@ -226,7 +253,11 @@ export function appLoaderRevealClasses(
   region: 'content' | 'chrome'
 ): string | undefined {
   if (phase === 'off') return undefined;
-  if (phase === 'cover') return 'opacity-0';
+  // Inert as well as invisible: opacity-0 alone keeps the hidden chrome and
+  // content clickable, and the overlay deliberately lets pointer events
+  // through (so a dialog opening during the cover — the terms modal mounts
+  // above Layout — stays usable).
+  if (phase === 'cover') return 'pointer-events-none opacity-0';
   return region === 'content' ? 'animate-app-loader-content-reveal' : 'animate-app-loader-chrome-reveal';
 }
 
@@ -279,7 +310,7 @@ export function AppLoaderOverlay({
   const timed = mode === 'timed';
   return (
     <div
-      className="fixed inset-0 z-100 flex items-center justify-center"
+      className="pointer-events-none fixed inset-0 z-100 flex items-center justify-center"
       data-testid="app-loader"
       aria-hidden
     >
