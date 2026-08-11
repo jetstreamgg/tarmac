@@ -527,7 +527,7 @@ export {
 export { contracts, l2Contracts } from './contracts';
 
 export { useTransactionFlow } from './shared/useTransactionFlow';
-export { BackToEditContext } from './shared/backToEditContext';
+export { RevalidateRunContext } from './shared/revalidateRunContext';
 export { getWriteContractCall } from './shared/getWriteContractCall';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
 export { useNetworkFee } from './shared/useNetworkFee';

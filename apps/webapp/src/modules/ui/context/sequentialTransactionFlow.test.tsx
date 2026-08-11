@@ -70,7 +70,7 @@ vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
 }));
 
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
-import { BackToEditContext } from '@/hooks/shared/backToEditContext';
+import { RevalidateRunContext } from '@/hooks/shared/revalidateRunContext';
 
 function makeCall(functionName: string, args: unknown[] = []): Call {
   return {
@@ -83,11 +83,12 @@ function makeCall(functionName: string, args: unknown[] = []): Call {
 const APPROVE = makeCall('approve');
 const SUPPLY = makeCall('supply');
 
-// The modal's Back-to-entry signal (see BackToEditContext); tests bump it and
-// rerender to simulate the user leaving the wallet/status screen.
-let backToEditEpoch = 0;
+// The modal's revalidation signal (see RevalidateRunContext); tests bump it and
+// rerender to simulate the user regaining the editable inputs — Back to the
+// entry screen, closing the modal over a page-hosted engine, or a relaunch.
+let runRevalidationEpoch = 0;
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <BackToEditContext.Provider value={backToEditEpoch}>{children}</BackToEditContext.Provider>
+  <RevalidateRunContext.Provider value={runRevalidationEpoch}>{children}</RevalidateRunContext.Provider>
 );
 
 /**
@@ -118,7 +119,7 @@ function driveToStep2Rejection(
 }
 
 function resetWagmi() {
-  backToEditEpoch = 0;
+  runRevalidationEpoch = 0;
   wagmi.onMutate = undefined;
   wagmi.onWriteSuccess = undefined;
   wagmi.onWriteError = undefined;
@@ -399,7 +400,7 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
 
     // Back: the epoch bumps while the form still shows the old amount, so the
     // run is still resumable…
-    backToEditEpoch += 1;
+    runRevalidationEpoch += 1;
     rerender();
     expect(result.current.currentCallIndex).toBe(1);
 
@@ -443,7 +444,7 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
 
     // Back, then edit to 9 on a later render — above the granted allowance,
     // so the engine rebuilds both calls.
-    backToEditEpoch += 1;
+    runRevalidationEpoch += 1;
     rerender();
     calls = [makeCall('approve', [9n]), makeCall('supply', [9n])];
     rerender();
@@ -512,7 +513,7 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     driveToStep2Rejection(result, rerender);
 
     // Back to double-check; nothing edited.
-    backToEditEpoch += 1;
+    runRevalidationEpoch += 1;
     rerender();
     expect(result.current.currentCallIndex).toBe(1);
 
@@ -526,6 +527,60 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     calls = [makeCall('sellGem', [100n]), makeCall('supply', [101n])];
     rerender();
     expect(result.current.currentCallIndex).toBe(1);
+  });
+
+  it('a revalidation bump clears a run stranded by an on-chain revert', () => {
+    const onError = vi.fn();
+    let calls: Call[] = [makeCall('approve', [3n]), makeCall('supply', [3n])];
+
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onError }), {
+      wrapper
+    });
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(result.current.currentCallIndex).toBe(1);
+
+    // The supply reaches the chain but its receipt fails: the run stops with
+    // currentIndex stranded mid-sequence and nothing left to resume.
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = {
+        isLoading: false,
+        isSuccess: false,
+        error: new Error('supply mining failed'),
+        failureReason: null
+      };
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(result.current.currentCallIndex).toBe(1);
+
+    // Close/Back + edit: the bump must clear the stranded index even though the
+    // run is no longer executing, or the rebuilt single call can never dispatch.
+    runRevalidationEpoch += 1;
+    calls = [makeCall('supply', [5n])];
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = undefined;
+    });
+    rerender();
+
+    expect(result.current.currentCallIndex).toBe(0);
+    expect(wagmi.simulationParams?.functionName).toBe('supply');
+    expect(wagmi.simulationParams?.args).toEqual([5n]);
   });
 
   it('an error on the first (approve) receipt does not fire onSuccess', () => {

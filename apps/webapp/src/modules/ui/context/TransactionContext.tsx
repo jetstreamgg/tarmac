@@ -6,7 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
-import { useIsSafeWallet, useIsBatchSupported, BackToEditContext } from '@/hooks';
+import { useIsSafeWallet, useIsBatchSupported, RevalidateRunContext } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -106,9 +106,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
   const [externalLink, setExternalLink] = useState<string | undefined>();
   const [currentStep, setCurrentStep] = useState(0);
-  // Bumped when the user backs out of the wallet/status screen to the editable
-  // entry; the engine in backgroundContent drops its paused run on the bump.
-  const [backToEditEpoch, setBackToEditEpoch] = useState(0);
+  // Bumped whenever the user regains an editable surface while a sequential
+  // run may linger — back to the entry screen, close, or a session-replacing
+  // launch. Engines re-check their frozen snapshot against the live calls on
+  // the bump and drop the run only if it diverged (see RevalidateRunContext).
+  const [runRevalidationEpoch, setRunRevalidationEpoch] = useState(0);
   // Config is state so updateModalContent re-renders the modal; ref mirrors it for callback reads.
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
@@ -213,6 +215,9 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
       sessionGenRef.current += 1;
       setSessionGen(sessionGenRef.current);
+      // A launch can replace a session without a close (e.g. over a minimized
+      // flow) — the replaced engine's paused/stranded run must re-validate.
+      setRunRevalidationEpoch(e => e + 1);
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveConfig(config);
@@ -267,11 +272,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Back from the wallet/status screen to the editable entry. Unlike a retry
-  // (which resumes), Back abandons the run: the epoch bump tells the engine
-  // hosted in backgroundContent to drop it, so the next confirm signs whatever
-  // the form then shows (see BackToEditContext).
+  // (which resumes), Back re-opens the inputs: the epoch bump makes engines
+  // re-validate a paused run against the live calls, so the next confirm signs
+  // whatever the form then shows (see RevalidateRunContext).
   const handleBackToEntry = useCallback(() => {
-    setBackToEditEpoch(e => e + 1);
+    setRunRevalidationEpoch(e => e + 1);
     resetTransactionProgress();
   }, [resetTransactionProgress]);
 
@@ -313,6 +318,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     // themselves as stale (see sessionGen above).
     sessionGenRef.current += 1;
     setSessionGen(sessionGenRef.current);
+    // Page-hosted engines (convert, pendle redeem, stake) survive a close with
+    // their paused run intact, and the user is back at the editable page form —
+    // make them re-validate, or a later confirm resumes the frozen args.
+    setRunRevalidationEpoch(e => e + 1);
     setOpen(false);
     setMinimized(false);
     setTxStatus(TxStatus.IDLE);
@@ -566,58 +575,61 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
         txStatus
       }}
     >
-      <EntrySlotContext.Provider value={entrySlotEl}>
-        {children}
-        {/* In-flight hook host: kept mounted (hidden) for the modal's whole lifetime,
-            OUTSIDE the Radix dialog, so minimizing (which unmounts the dialog body)
-            never tears down a running transaction. It portals its visible inputs into
-            the modal's entry slot when present. See `backgroundContent` in the contract. */}
-        {/* Held through the exit alongside the modal itself: this is where the
-            widget that portals its inputs into the modal's entry slot lives, so
-            unmounting it on close emptied the modal's body a beat before the
-            modal had finished animating away. */}
-        {modalView?.config.backgroundContent && (
-          <BackToEditContext.Provider value={backToEditEpoch}>
+      {/* App-wide on purpose: page-hosted engines (convert, pendle redeem, stake)
+          survive a modal close and must re-validate too. Safe for bystanders —
+          engines only drop a run whose live calls diverged from its snapshot. */}
+      <RevalidateRunContext.Provider value={runRevalidationEpoch}>
+        <EntrySlotContext.Provider value={entrySlotEl}>
+          {children}
+          {/* In-flight hook host: kept mounted (hidden) for the modal's whole lifetime,
+              OUTSIDE the Radix dialog, so minimizing (which unmounts the dialog body)
+              never tears down a running transaction. It portals its visible inputs into
+              the modal's entry slot when present. See `backgroundContent` in the contract. */}
+          {/* Held through the exit alongside the modal itself: this is where the
+              widget that portals its inputs into the modal's entry slot lives, so
+              unmounting it on close emptied the modal's body a beat before the
+              modal had finished animating away. */}
+          {modalView?.config.backgroundContent && (
             <div hidden key={`bg-${launchCount}`}>
               {modalView.config.backgroundContent}
             </div>
-          </BackToEditContext.Provider>
-        )}
-        {/* Live state while the modal is up; the retained snapshot while it is
+          )}
+          {/* Live state while the modal is up; the retained snapshot while it is
             animating away, which is the only time activeConfig is null here. */}
-        {modalView && (
-          <TransactionModal
-            key={launchCount}
-            // Already false by the time the snapshot is rendering — that is
-            // what tells Radix to play the exit rather than the enter.
-            open={open && !minimized && !!activeConfig}
-            registerEntrySlot={setEntrySlotEl}
-            onClose={handleClose}
-            onMinimize={minimize}
-            title={modalView.config.title}
-            transactionTitle={modalView.config.transactionTitle}
-            reviewTitle={modalView.config.reviewTitle}
-            subtitles={modalView.config.subtitles}
-            transactionContent={modalView.config.transactionContent}
-            transactionScreenContent={modalView.config.transactionScreenContent}
-            entry={modalView.config.entry}
-            rightHeaderComponent={modalView.config.rightHeaderComponent}
-            titleBadge={modalView.config.titleBadge}
-            onConfirm={modalView.config.onConfirm}
-            onSecondaryConfirm={modalView.config.onSecondaryConfirm}
-            onRetry={handleRetry}
-            onBack={handleBackToEntry}
-            txStatus={modalView.txStatus}
-            externalLink={modalView.externalLink}
-            confirmLabel={modalView.config.confirmLabel}
-            confirmDisabled={modalView.config.confirmDisabled}
-            successLabel={modalView.config.successLabel}
-            errorLabel={modalView.config.errorLabel}
-            steps={modalView.config.steps}
-            currentStep={modalView.currentStep}
-          />
-        )}
-      </EntrySlotContext.Provider>
+          {modalView && (
+            <TransactionModal
+              key={launchCount}
+              // Already false by the time the snapshot is rendering — that is
+              // what tells Radix to play the exit rather than the enter.
+              open={open && !minimized && !!activeConfig}
+              registerEntrySlot={setEntrySlotEl}
+              onClose={handleClose}
+              onMinimize={minimize}
+              title={modalView.config.title}
+              transactionTitle={modalView.config.transactionTitle}
+              reviewTitle={modalView.config.reviewTitle}
+              subtitles={modalView.config.subtitles}
+              transactionContent={modalView.config.transactionContent}
+              transactionScreenContent={modalView.config.transactionScreenContent}
+              entry={modalView.config.entry}
+              rightHeaderComponent={modalView.config.rightHeaderComponent}
+              titleBadge={modalView.config.titleBadge}
+              onConfirm={modalView.config.onConfirm}
+              onSecondaryConfirm={modalView.config.onSecondaryConfirm}
+              onRetry={handleRetry}
+              onBack={handleBackToEntry}
+              txStatus={modalView.txStatus}
+              externalLink={modalView.externalLink}
+              confirmLabel={modalView.config.confirmLabel}
+              confirmDisabled={modalView.config.confirmDisabled}
+              successLabel={modalView.config.successLabel}
+              errorLabel={modalView.config.errorLabel}
+              steps={modalView.config.steps}
+              currentStep={modalView.currentStep}
+            />
+          )}
+        </EntrySlotContext.Provider>
+      </RevalidateRunContext.Provider>
     </TransactionContext.Provider>
   );
 }
