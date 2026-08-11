@@ -140,11 +140,20 @@ describe('useAppLoader', () => {
     expect(screen.getByTestId('content').className).toBe('');
   });
 
-  it('stays off once it has ever played', () => {
+  it('the entry gate stays off once it has ever played in this browser', () => {
     h.status = 'reconnecting';
     localStorage.setItem(APP_LOADER_PLAYED_KEY, '123');
     render(<Harness />);
     expect(screen.queryByTestId('app-loader')).toBeNull();
+  });
+
+  it('a new address still gets the held cover in a browser that already played', () => {
+    // The played flag is per browser, but the fetch and sort are per wallet:
+    // an address with no cached decision is covered on its manual connect.
+    localStorage.setItem(APP_LOADER_PLAYED_KEY, '123');
+    const { rerender } = render(<Harness />);
+    connectManually(rerender);
+    expect(screen.getByTestId('app-loader')).toBeTruthy();
   });
 
   it('stays off for a plain disconnected visit', () => {

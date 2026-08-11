@@ -20,9 +20,11 @@ import { IllustrationSkyLogomark } from '@/modules/icons/IllustrationSkyLogomark
 /**
  * First-visit app loader (Figma "App Loader", 1875:6834): the Sky logomark
  * spins over the bare page background while the app's first data load runs,
- * then the chrome and page content fade in. A played flag plus the cached
- * portfolio decision keep it to a wallet's genuine first visit, never a
- * routine refresh (which paints instantly from the cache instead).
+ * then the chrome and page content fade in. The entry-gate play is once per
+ * browser (a persistent played flag — no address is known yet at that point);
+ * the manual-connect play is once per wallet: the address's cached decision
+ * gates it, so every new address gets covered while its own data fetches, and
+ * a routine reconnect paints instantly from the cache instead.
  *
  * On a manual first connect the cover doubles as the landing sorter (Routing
  * & IA #3 / APP-295): the portfolio queries run behind it, the settled
@@ -161,7 +163,10 @@ export function useAppLoader(): {
     if (hint) {
       const target = landingFor(hint.outcome);
       if (surface && target !== surface) setInstantTarget(target);
-    } else if (phase === 'off' && APP_LOADER_ENABLED && !hasPlayed() && !prefersReducedMotion()) {
+    } else if (phase === 'off' && APP_LOADER_ENABLED && !prefersReducedMotion()) {
+      // No cached decision for THIS address (first visit or expired TTL): the
+      // held cover plays regardless of the browser-wide played flag — the
+      // fetch and sort are per wallet, so the cover that masks them is too.
       setPhase('cover');
       setCoverMode('held');
       setSort({ address: pendingConnect, surface });
