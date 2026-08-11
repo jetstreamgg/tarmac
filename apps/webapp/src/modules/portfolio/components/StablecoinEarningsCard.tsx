@@ -171,12 +171,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
           label={<Trans>Avg. Rate</Trans>}
           value={<StatValue>{formatDecimalPercentage(displayAvgRate)}</StatValue>}
         />
-        {!activePosition && (
-          <Stat
-            label={<Trans>Active positions</Trans>}
-            value={<StatValue>{view.activePositions}</StatValue>}
-          />
-        )}
+        <Stat label={<Trans>Active positions</Trans>} value={<StatValue>{view.activePositions}</StatValue>} />
       </FooterStats>
     </>
   );
@@ -276,8 +271,6 @@ function IdleContent({
             value={<GainValue value={displayProjected} className={LABEL_4} />}
           />
         )}
-        {/* Always the total — unlike Supplied's "Active positions", this stat
-            stays fixed when focusing a single token. */}
         <Stat label={<Trans>Idle stablecoins</Trans>} value={<StatValue>{view.idleCount}</StatValue>} />
       </FooterStats>
     </>
