@@ -44,6 +44,12 @@ export function ConnectedPortfolio() {
   const visibleRows = useGeoVisibleRows(rows);
   const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
   const savingsAvailable = isGeoLoading || isModuleEnabled('savings');
+  // The optimistic default above is safe for the settle path (the callout is
+  // 'none' until every source lands) but not for the cached fast-path, which
+  // renders before the module config resolves: a user without the savings
+  // module would see the promo flash in and vanish once the config lands.
+  // Cached promos wait for the settled config instead.
+  const cachedPromoAvailable = !isGeoLoading && isModuleEnabled('savings');
   const { data: overallSkyData, isLoading: skyDataLoading } = useOverallSkyData();
   const { address } = useConnection();
   const chains = useChains();
@@ -192,10 +198,11 @@ export function ConnectedPortfolio() {
       {/* Banner and earnings card group: 56/48 below the header, and a tight
           16 between banner and card when a callout shows (1036:188968). */}
       <div className="mt-14 flex flex-col gap-4 md:mt-12">
-        {(optimisticSimulate || callout === 'simulate') && savingsAvailable && (
-          <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />
-        )}
-        {callout === 'allocate' && savingsAvailable && (
+        {(optimisticSimulate || callout === 'simulate') &&
+          (cachedDecision ? cachedPromoAvailable : savingsAvailable) && (
+            <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />
+          )}
+        {callout === 'allocate' && (cachedDecision ? cachedPromoAvailable : savingsAvailable) && (
           <AllocateStablecoinsBanner
             // A cached `allocate` renders before the figures land — chip the
             // projection rather than flashing a $0/year built from empty data.

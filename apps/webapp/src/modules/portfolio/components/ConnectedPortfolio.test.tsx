@@ -190,6 +190,23 @@ describe('ConnectedPortfolio decision cache', () => {
     expect(screen.getByTestId('portfolio-statistics')).toBeTruthy();
   });
 
+  it('a cached allocate waits for the module config before painting the banner', () => {
+    // The cached fast-path must not ride the optimistic default: a user
+    // without the savings module would see the promo flash until the config
+    // lands and pulls it.
+    writePortfolioDecision(ADDRESS_A, { outcome: 'allocate', tab: 'idle' });
+    h.geo = { savingsEnabled: true, isLoading: true };
+    renderPage();
+    expect(screen.queryByTestId('allocate-stablecoins-banner')).toBeNull();
+  });
+
+  it('a cached allocate never paints the banner when savings is unavailable', () => {
+    writePortfolioDecision(ADDRESS_A, { outcome: 'allocate', tab: 'idle' });
+    h.geo = { savingsEnabled: false, isLoading: false };
+    renderPage();
+    expect(screen.queryByTestId('allocate-stablecoins-banner')).toBeNull();
+  });
+
   it('never swaps the view mid-visit: settling data only rewrites the cache', () => {
     writePortfolioDecision(ADDRESS_A, { outcome: 'simulate', tab: 'idle' });
     const { rerender } = renderPage();
@@ -274,11 +291,14 @@ describe('ConnectedPortfolio decision cache', () => {
     expect(screen.getByTestId('earnings-card').getAttribute('data-tab')).toBe('supplied');
   });
 
-  it('keeps the cached callout while the geo config is still loading', () => {
+  it('holds a cached callout until the module config settles', () => {
+    // Formerly the cached callout painted through the config load on the
+    // optimistic default; that flashed the promo for users without the
+    // savings module, so cached promos now wait for the settled config.
     writePortfolioDecision(ADDRESS_A, { outcome: 'simulate', tab: 'idle' });
     h.geo = { savingsEnabled: true, isLoading: true };
     renderPage();
-    expect(screen.getByTestId('savings-tvl-callout')).toBeTruthy();
+    expect(screen.queryByTestId('savings-tvl-callout')).toBeNull();
   });
 
   it('chips the cached allocate banner while figures load, then fills it in', () => {
