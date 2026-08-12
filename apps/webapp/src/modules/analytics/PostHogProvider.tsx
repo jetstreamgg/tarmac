@@ -2,6 +2,7 @@ import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { type ReactNode } from 'react';
 import { getStoredConsent, saveConsent } from './consentStorage';
+import { applySuperProperties } from './superProperties';
 import { isValidUUID } from '@/lib/generateUUID';
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
@@ -107,7 +108,7 @@ function initializePostHogIfNeeded(forceAccepted = false) {
     bootstrap: bootstrapConfig,
 
     loaded: posthogClient => {
-      posthogClient.register({ app_name: 'app' });
+      applySuperProperties();
 
       if (hasAccepted) {
         posthogClient.opt_in_capturing();
@@ -137,7 +138,7 @@ export function applyPostHogConsent(enabled: boolean) {
     // The existing in-memory distinct_id carries over so the session continues seamlessly.
     posthog.set_config({ persistence: 'localStorage+cookie', person_profiles: 'always' });
     posthog.opt_in_capturing();
-    posthog.register({ app_name: 'app' });
+    applySuperProperties();
   } else {
     // Downgrade to memory-only anonymous tracking (same as pending state).
     // Initialize PostHog if it hasn't been yet (shouldn't happen, but just in case).
@@ -147,7 +148,8 @@ export function applyPostHogConsent(enabled: boolean) {
     // Switch to memory persistence — no cookies, localStorage, or sessionStorage.
     posthog.set_config({ persistence: 'memory', person_profiles: 'identified_only' });
     posthog.opt_in_capturing();
-    posthog.register({ app_name: 'app' });
+    // reset() also wiped the super properties — re-apply them.
+    applySuperProperties();
     // Clear bootstrap sessionStorage so rejected users aren't re-bootstrapped on refresh
     try {
       sessionStorage.removeItem(SESSION_STORAGE_PH_ID);
