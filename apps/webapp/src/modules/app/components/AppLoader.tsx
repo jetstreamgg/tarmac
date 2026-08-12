@@ -135,7 +135,10 @@ export function useAppLoader(): {
   const [pendingConnect, setPendingConnect] = useState<string | null>(null);
   const [sort, setSort] = useState<SortJob | null>(null);
   // A cached-decision connect resolves its landing instantly, no cover needed.
-  const [instantTarget, setInstantTarget] = useState<string | null>(null);
+  // Wrapped in an object: each connect must re-fire the navigation effect even
+  // when the target string repeats (disconnect → reconnect from the same
+  // surface), and a bare string would be identity-equal and never re-run it.
+  const [instantTarget, setInstantTarget] = useState<{ to: string } | null>(null);
   const sortDoneRef = useRef(false);
 
   // These queries are shared with the Portfolio/Earn pages (react-query
@@ -222,7 +225,7 @@ export function useAppLoader(): {
     const hint = readPortfolioDecision(pendingConnect);
     if (hint) {
       const target = landingFor(hint.outcome);
-      if (surface && target !== surface) setInstantTarget(target);
+      if (surface && target !== surface) setInstantTarget({ to: target });
     } else if (phase === 'off' && APP_LOADER_ENABLED && !prefersReducedMotion()) {
       // No cached decision for THIS address (first visit or expired TTL): the
       // held cover plays regardless of the browser-wide played flag — the
@@ -235,7 +238,7 @@ export function useAppLoader(): {
 
   useEffect(() => {
     if (!instantTarget) return;
-    void navigate({ to: instantTarget, search: retainOnNavigate, replace: true });
+    void navigate({ to: instantTarget.to, search: retainOnNavigate, replace: true });
   }, [instantTarget, navigate]);
 
   // The held cover's clock: minimum hold, then the safety cap.
@@ -270,8 +273,11 @@ export function useAppLoader(): {
     // wallet — caching that would freeze a wrong outcome for 30 days, and
     // sorting on it could land a funded wallet on the simulate pitch. On
     // error the cover just releases, unsorted and uncached; the next connect
-    // gets a fresh try.
-    if (!decisionError) {
+    // gets a fresh try. Same bail when the live address no longer matches the
+    // connect that armed this job (an account switch while the terms modal
+    // held it): every balance figure belongs to the new address, so writing
+    // it under sort.address would cache one wallet's totals for another.
+    if (!decisionError && address === sort.address) {
       const outcome = portfolioCallout(depositedUsd, idleUsd);
       writePortfolioDecision(sort.address, {
         outcome,
@@ -283,7 +289,7 @@ export function useAppLoader(): {
       }
     }
     setReleased(true);
-  }, [sort, holdElapsed, decisionLoading, decisionError, depositedUsd, idleUsd, released, navigate]);
+  }, [sort, holdElapsed, decisionLoading, decisionError, address, depositedUsd, idleUsd, released, navigate]);
 
   return { phase, coverMode, released, endCover };
 }

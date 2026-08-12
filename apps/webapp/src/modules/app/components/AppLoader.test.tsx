@@ -273,6 +273,43 @@ describe('useAppLoader', () => {
     expect(h.navigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/portfolio', replace: true }));
   });
 
+  it('the instant sort re-fires on a repeat connect to the same target', () => {
+    // Regression: the target was a bare string in state, so a reconnect that
+    // resolved to the same landing was identity-equal and never re-ran the
+    // navigation effect.
+    writePortfolioDecision(ADDRESS, { outcome: 'none', tab: 'supplied' });
+    h.pathname = '/earn';
+    const { rerender } = render(<Harness />);
+    connectManually(rerender);
+    expect(h.navigate).toHaveBeenCalledTimes(1);
+
+    // The user walks back to /earn, disconnects, reconnects the same wallet.
+    fireConnect(false);
+    rerenderHarness(rerender);
+    expect(h.navigate).toHaveBeenCalledTimes(2);
+    expect(h.navigate).toHaveBeenLastCalledWith(expect.objectContaining({ to: '/portfolio' }));
+  });
+
+  it('a settle whose live address changed since the connect neither writes nor sorts', () => {
+    // The account switched (e.g. in the wallet, behind the terms modal) after
+    // the connect armed the job: the live queries now hold the new address's
+    // totals, which must not be cached under the address that connected.
+    const { rerender } = render(<Harness />);
+    connectManually(rerender);
+    expect(screen.getByTestId('app-loader')).toBeTruthy();
+
+    h.address = '0x00000000000000000000000000000000000000bb';
+    settleFundedWallet();
+    act(() => vi.advanceTimersByTime(1200));
+    rerenderHarness(rerender);
+
+    expect(readPortfolioDecision(ADDRESS)).toBeNull();
+    expect(h.navigate).not.toHaveBeenCalled();
+    // The cover still releases rather than hanging until the cap.
+    act(() => h.completeCover?.());
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+  });
+
   it('a cached decision that matches the surface does nothing at all', () => {
     writePortfolioDecision(ADDRESS, { outcome: 'none', tab: 'supplied' });
     h.pathname = '/portfolio';

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useChains } from 'wagmi';
 import type { Chain } from 'viem';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
@@ -30,12 +30,18 @@ interface NetworkToastProps {
  * when the held cover goes up — shown immediately, a toast could burn its
  * whole 5–8s lifetime invisible and never be seen. Hold the show until the
  * flag clears (the cover always ends: settle, hold cap, or watchdog).
+ *
+ * Returns the observer while the show is pending (null when it ran
+ * immediately) so the caller can supersede or cancel it — the deferral must
+ * keep the hook's one-toast-at-a-time behavior: a second network change under
+ * the cover replaces the queued toast rather than stacking a stale
+ * "Switched to X" on top of it at reveal.
  */
-const showWhenUncovered = (show: () => void) => {
+const showWhenUncovered = (show: () => void): MutationObserver | null => {
   const root = document.documentElement;
   if (!root.hasAttribute('data-app-loader-cover')) {
     show();
-    return;
+    return null;
   }
   const observer = new MutationObserver(() => {
     if (!root.hasAttribute('data-app-loader-cover')) {
@@ -44,6 +50,7 @@ const showWhenUncovered = (show: () => void) => {
     }
   });
   observer.observe(root, { attributes: true, attributeFilter: ['data-app-loader-cover'] });
+  return observer;
 };
 
 const getWidgetName = (intent: Intent): string => {
@@ -170,6 +177,18 @@ export function useEnhancedNetworkToast() {
   const { handleSwitchChain } = useChainModalContext();
   const [, setSearchParams] = useAppSearchParams();
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The show currently parked behind the app-loader cover, if any.
+  const deferredShowRef = useRef<MutationObserver | null>(null);
+
+  // The observer targets the document element, so it outlives this component
+  // unless explicitly disconnected on unmount.
+  useEffect(
+    () => () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      deferredShowRef.current?.disconnect();
+    },
+    []
+  );
 
   const showNetworkToast = useCallback(
     ({ previousChain, currentChain, currentIntent, previousIntent, isAutoSwitch }: NetworkToastProps) => {
@@ -233,7 +252,11 @@ export function useEnhancedNetworkToast() {
       // Set new timeout with proper cleanup reference
       toastTimeoutRef.current = setTimeout(
         () => {
-          showWhenUncovered(() => {
+          // A newer change supersedes a show still parked behind the cover —
+          // its "Switched to X" is stale by definition.
+          deferredShowRef.current?.disconnect();
+          deferredShowRef.current = showWhenUncovered(() => {
+            deferredShowRef.current = null;
             // Create a unique ID for this toast
             const toastId = `network-toast-${Date.now()}`;
 
