@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useChains } from 'wagmi';
 import type { Chain } from 'viem';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
@@ -23,6 +23,35 @@ interface NetworkToastProps {
   previousIntent?: Intent;
   isAutoSwitch?: boolean;
 }
+
+/**
+ * The app-loader cover hides the toast stack off the `data-app-loader-cover`
+ * document flag (globals.css), and the connect-time auto-switch fires exactly
+ * when the held cover goes up — shown immediately, a toast could burn its
+ * whole 5–8s lifetime invisible and never be seen. Hold the show until the
+ * flag clears (the cover always ends: settle, hold cap, or watchdog).
+ *
+ * Returns the observer while the show is pending (null when it ran
+ * immediately) so the caller can supersede or cancel it — the deferral must
+ * keep the hook's one-toast-at-a-time behavior: a second network change under
+ * the cover replaces the queued toast rather than stacking a stale
+ * "Switched to X" on top of it at reveal.
+ */
+const showWhenUncovered = (show: () => void): MutationObserver | null => {
+  const root = document.documentElement;
+  if (!root.hasAttribute('data-app-loader-cover')) {
+    show();
+    return null;
+  }
+  const observer = new MutationObserver(() => {
+    if (!root.hasAttribute('data-app-loader-cover')) {
+      observer.disconnect();
+      show();
+    }
+  });
+  observer.observe(root, { attributes: true, attributeFilter: ['data-app-loader-cover'] });
+  return observer;
+};
 
 const getWidgetName = (intent: Intent): string => {
   switch (intent) {
@@ -148,6 +177,18 @@ export function useEnhancedNetworkToast() {
   const { handleSwitchChain } = useChainModalContext();
   const [, setSearchParams] = useAppSearchParams();
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The show currently parked behind the app-loader cover, if any.
+  const deferredShowRef = useRef<MutationObserver | null>(null);
+
+  // The observer targets the document element, so it outlives this component
+  // unless explicitly disconnected on unmount.
+  useEffect(
+    () => () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      deferredShowRef.current?.disconnect();
+    },
+    []
+  );
 
   const showNetworkToast = useCallback(
     ({ previousChain, currentChain, currentIntent, previousIntent, isAutoSwitch }: NetworkToastProps) => {
@@ -211,23 +252,29 @@ export function useEnhancedNetworkToast() {
       // Set new timeout with proper cleanup reference
       toastTimeoutRef.current = setTimeout(
         () => {
-          // Create a unique ID for this toast
-          const toastId = `network-toast-${Date.now()}`;
+          // A newer change supersedes a show still parked behind the cover —
+          // its "Switched to X" is stale by definition.
+          deferredShowRef.current?.disconnect();
+          deferredShowRef.current = showWhenUncovered(() => {
+            deferredShowRef.current = null;
+            // Create a unique ID for this toast
+            const toastId = `network-toast-${Date.now()}`;
 
-          toastWithClose(
-            <div>
-              <Text variant="medium">{title}</Text>
-              {createToastContent(toastId)}
-            </div>,
-            {
-              id: toastId,
-              duration: hasQuickSwitch || hasLongTitle ? 8000 : 5000, // Extended duration for multichain widgets or longer messages
-              classNames: {
-                toast: 'md:min-w-[400px]'
+            toastWithClose(
+              <div>
+                <Text variant="medium">{title}</Text>
+                {createToastContent(toastId)}
+              </div>,
+              {
+                id: toastId,
+                duration: hasQuickSwitch || hasLongTitle ? 8000 : 5000, // Extended duration for multichain widgets or longer messages
+                classNames: {
+                  toast: 'md:min-w-[400px]'
+                }
               }
-            }
-          );
-          // Clear the ref after the toast is shown
+            );
+          });
+          // Clear the ref after the toast is shown or handed to the observer
           toastTimeoutRef.current = null;
         },
         currentIntent === previousIntent ? 700 : 0

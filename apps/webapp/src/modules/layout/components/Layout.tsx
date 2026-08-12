@@ -13,7 +13,9 @@ import { Banner } from '@/components/extensible';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
 import { TopNav } from '@/modules/app/shell/TopNav';
 import { MobileNavbar } from '@/modules/app/shell/MobileNavbar';
+import { AppLoaderOverlay, appLoaderRevealClasses, useAppLoader } from '@/modules/app/components/AppLoader';
 import { AppLink } from '@/lib/navigation';
+import { cn } from '@/lib/cn';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { PageFooter } from './PageFooter';
 import { defaultConfig } from '../../config/default-config';
@@ -28,6 +30,11 @@ export function Layout({
   const { siteConfig } = useContext(ConfigContext);
   const { chain } = useConnection();
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
+  // First-visit loader (APP-419): while it covers, the chrome and content
+  // wear opacity-0 and the logomark overlay plays; on reveal they run their
+  // one-shot entrances. `off` leaves every className exactly as it was. On a
+  // manual first connect the cover also sorts the landing (APP-295).
+  const { phase: loaderPhase, coverMode, released, endCover } = useAppLoader();
 
   useWalletAnalytics();
 
@@ -50,7 +57,7 @@ export function Layout({
 
         <VStack className={shellSurfaceClasses()}>
           <ErrorBoundary>
-            <div className={shellHeaderClasses()}>
+            <div className={cn(shellHeaderClasses(), appLoaderRevealClasses(loaderPhase, 'chrome'))}>
               <div className={shellHeaderContentClasses()}>
                 {/* justify-self-start: in the desktop header grid the logo sits
                   in a 1fr flank; without it the anchor stretches across the
@@ -81,7 +88,12 @@ export function Layout({
             flex-1 so the column fills the surface and the footer's `mt-auto`
             has space to push against; the gap and centering are the ones this
             box inherited from the surface. */}
-          <div className="page-transition flex w-full flex-1 flex-col items-center gap-y-4">
+          <div
+            className={cn(
+              'page-transition flex w-full flex-1 flex-col items-center gap-y-4',
+              appLoaderRevealClasses(loaderPhase, 'content')
+            )}
+          >
             <ErrorBoundary>
               {isConnectedAndAcceptedTerms && !chain ? (
                 <UnsupportedNetworkPage>{children}</UnsupportedNetworkPage>
@@ -106,11 +118,23 @@ export function Layout({
         </VStack>
 
         <ErrorBoundary>
-          <MobileNavbar />
+          {/* Opacity-only wrapper: it never gets a transform, so it can't
+              become the containing block of the navbar's fixed pill. */}
+          <div className={appLoaderRevealClasses(loaderPhase, 'chrome')}>
+            <MobileNavbar />
+          </div>
         </ErrorBoundary>
-        <Banner />
+        <AppLoaderOverlay phase={loaderPhase} mode={coverMode} released={released} onCoverEnd={endCover} />
+        {/* The announcement banner joins the chrome reveal so it can't float
+            over the cover's bare-background frame. */}
+        <div className={appLoaderRevealClasses(loaderPhase, 'chrome')}>
+          <Banner />
+        </div>
+        {/* Joins the chrome reveal like the Banner above: without it the
+            commit SHA floats over the cover's bare-background frame on
+            dev/staging builds. */}
         {showEnvInfo && (
-          <div className="absolute bottom-0 left-2">
+          <div className={cn('absolute bottom-0 left-2', appLoaderRevealClasses(loaderPhase, 'chrome'))}>
             <Text className="text-text text-xs">{import.meta.env.VITE_CF_PAGES_COMMIT_SHA}</Text>
           </div>
         )}

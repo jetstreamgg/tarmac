@@ -142,14 +142,38 @@ describe('stake destination (F7 flip)', () => {
 });
 
 describe('root path', () => {
-  it('redirects "/" to the Portfolio destination', async () => {
+  // Routing & IA decision #3 (APP-295): Earn is the default home; Portfolio
+  // only for a browser whose last settled wallet had a significant position.
+  it('redirects "/" to Earn when nothing is known about the visitor', async () => {
+    localStorage.clear();
     const router = await routerAt('/');
-    expect(router.state.location.pathname).toBe(ROUTES.PORTFOLIO);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
   });
 
-  it('preserves global search params when redirecting "/" to Portfolio', async () => {
-    const router = await routerAt('/?network=base');
+  it('redirects "/" to Portfolio when the last settled wallet had a position', async () => {
+    localStorage.setItem(
+      'portfolioDecision:v1:$last',
+      JSON.stringify({ outcome: 'none', tab: 'supplied', updatedAt: Date.now(), address: '0xabc' })
+    );
+    const router = await routerAt('/');
     expect(router.state.location.pathname).toBe(ROUTES.PORTFOLIO);
+    localStorage.clear();
+  });
+
+  it('redirects "/" to Earn when the last settled wallet had nothing supplied', async () => {
+    localStorage.setItem(
+      'portfolioDecision:v1:$last',
+      JSON.stringify({ outcome: 'allocate', tab: 'idle', updatedAt: Date.now(), address: '0xabc' })
+    );
+    const router = await routerAt('/');
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+    localStorage.clear();
+  });
+
+  it('preserves global search params through the root redirect', async () => {
+    localStorage.clear();
+    const router = await routerAt('/?network=base');
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
     expect(router.state.location.search).toEqual({ network: 'base' });
   });
 });
