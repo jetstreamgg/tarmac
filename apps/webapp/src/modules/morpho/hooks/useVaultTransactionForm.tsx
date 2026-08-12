@@ -42,6 +42,10 @@ export interface VaultTransactionForm {
   amountReady: boolean;
   /** Supplied position in asset units (ERC-4626 `userAssets`) — feeds the entry deltas. */
   position: bigint;
+  /** Withdraw-relevant: vault liquidity currently caps the input below the position. */
+  isLiquidityConstrained: boolean;
+  /** Withdraw-relevant: the provider's liquidity source settled without a figure. */
+  isLiquidityDataUnavailable: boolean;
   engineParams: VaultEngineParams;
   toast: VaultToastTitles;
   transactionScreenContent: ReactNode;
@@ -98,7 +102,14 @@ export function useVaultTransactionForm({
     vaultAddress
   });
 
-  const { maxDepositInput, maxWithdrawInput, redeemShares } = computeVaultLimits({
+  const {
+    maxDepositInput,
+    maxWithdrawInput,
+    redeemShares,
+    isLiquidityConstrained,
+    isFullPositionWithdrawable,
+    isLiquidityDataUnavailable
+  } = computeVaultLimits({
     provider,
     assetBalance: walletBalance?.value,
     maxDeposit: vaultData?.maxDeposit,
@@ -110,7 +121,10 @@ export function useVaultTransactionForm({
     liquidityKnown: !isMarketDataLoading
   });
 
-  const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? 0n);
+  const position = vaultData?.userAssets ?? 0n;
+  // While the liquidity read is in flight the position backs the input (no
+  // "Balance: 0" flash); if liquidity settles lower the insufficient gate re-clamps.
+  const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? position);
   const isZero = amount === 0n;
   const insufficient = amount > available;
   const amountReady = isConnected && !isZero && !insufficient;
@@ -121,8 +135,10 @@ export function useVaultTransactionForm({
   };
   const setMaxAmount = () => {
     setValue(formatUnits(available, decimals));
-    // On withdraw, Max redeems the whole share balance; supply just fills the amount.
-    setMax(!isSupply);
+    // Max redeems the whole share balance (no dust) only when the full position
+    // is withdrawable; under a liquidity constraint the engine runs a plain
+    // withdraw of the cap instead — a redeem-all would revert (APP-488).
+    setMax(!isSupply && isFullPositionWithdrawable);
   };
   const setPercentAmount = (pct: number) => {
     if (pct >= 100) return setMaxAmount();
@@ -186,7 +202,9 @@ export function useVaultTransactionForm({
     isZero,
     insufficient,
     amountReady,
-    position: vaultData?.userAssets ?? 0n,
+    position,
+    isLiquidityConstrained,
+    isLiquidityDataUnavailable,
     engineParams,
     toast,
     transactionScreenContent,
