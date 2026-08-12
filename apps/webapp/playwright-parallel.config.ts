@@ -52,6 +52,7 @@ export default defineConfig({
         '**/stake-onchain.spec.ts',
         '**/unstake-repay.spec.ts',
         '**/capped-osm-unstake.spec.ts',
+        '**/app-loader.spec.ts',
         '**/landing.spec.ts',
         '**/network-switching.spec.ts',
         '**/mainnet-psm.spec.ts',

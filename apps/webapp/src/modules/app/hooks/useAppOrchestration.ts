@@ -5,7 +5,7 @@ import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/navi
 import { QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { getRouteChainAction } from '@/lib/widget-network-map';
-import { pathToIntent } from '@/lib/routes';
+import { pathToIntent, ROUTES } from '@/lib/routes';
 
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
 import { useAvailableTokenRewardContracts } from '@/hooks';
@@ -179,9 +179,12 @@ export function useAppOrchestration(): { intent: Intent } {
       return;
     }
 
-    // Module not available (or coming soon) on the target chain → Balances.
+    // Module not available (or coming soon) on the target chain → Portfolio,
+    // named explicitly: it is the one surface available on every network.
+    // "/" is no longer a synonym — it forwards to the visitor's home
+    // (Portfolio or Earn, APP-295), which is the wrong semantic here.
     if (action.kind === 'redirect-home') {
-      void navigate({ to: '/', search: keepSearch, replace: true });
+      void navigate({ to: ROUTES.PORTFOLIO, search: keepSearch, replace: true });
       return;
     }
 
