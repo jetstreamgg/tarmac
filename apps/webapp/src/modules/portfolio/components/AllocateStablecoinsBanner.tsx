@@ -1,4 +1,5 @@
 import { Trans } from '@lingui/react/macro';
+import { cn } from '@/lib/cn';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
@@ -14,11 +15,12 @@ export function AllocateStablecoinsBanner({
   savingsRate,
   onAllocate
 }: {
-  idleUsd: number;
+  /** undefined while the figures behind the projection load — chips the number. */
+  idleUsd: number | undefined;
   savingsRate: number;
   onAllocate: () => void;
 }) {
-  const yearly = projectAnnualEarnings(idleUsd, savingsRate);
+  const yearly = idleUsd === undefined ? undefined : projectAnnualEarnings(idleUsd, savingsRate);
 
   return (
     <PromoBanner
@@ -26,7 +28,15 @@ export function AllocateStablecoinsBanner({
       illustration={<img src="/illustrations/illustration-savings-1.png" alt="" className="size-full" />}
       heading={
         <div className="flex items-baseline gap-1">
-          <span className="font-circle text-fgPrimary text-[44px] leading-[48px] font-medium tracking-[-0.88px]">{`$${formatNumber(yearly)}`}</span>
+          {/* While loading the figure wears the same skeleton dress as the TVL
+              callout: transparent same-width stand-in over a pulsing pill. */}
+          <span
+            className={cn(
+              'font-circle text-fgPrimary text-[44px] leading-[48px] font-medium tracking-[-0.88px]',
+              yearly === undefined && 'bg-surface animate-pulse rounded text-transparent select-none'
+            )}
+            data-testid={yearly === undefined ? 'allocate-banner-skeleton' : undefined}
+          >{`$${formatNumber(yearly ?? 1000)}`}</span>
           <BannerAccent className="font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
             <Trans>/year</Trans>
           </BannerAccent>
