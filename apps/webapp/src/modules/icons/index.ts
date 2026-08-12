@@ -54,6 +54,7 @@ import { TrendingUp } from './TrendingUp';
 import { TrendingUpGradient } from './TrendingUpGradient';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
+import { IllustrationSkyLogomark } from './IllustrationSkyLogomark';
 
 export {
   ArrowDown,
@@ -111,5 +112,6 @@ export {
   TrendingUp,
   TrendingUpGradient,
   IllustrationStaked,
-  IllustrationStakingLogomark
+  IllustrationStakingLogomark,
+  IllustrationSkyLogomark
 };
