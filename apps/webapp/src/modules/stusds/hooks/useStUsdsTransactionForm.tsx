@@ -166,13 +166,20 @@ export function useStUsdsTransactionForm({
       (isSupply && moduleMaxSupplyAmount !== undefined && debouncedAmount > moduleMaxSupplyAmount));
 
   // Curve price-impact gate (≥2% requires the explicit "proceed anyway" check).
-  // The acknowledgement is keyed to the amount it was given for: if the derived
-  // max drifts under a checked box, the check lapses and confirm re-gates on
-  // the impact the user would actually take.
+  // The acknowledgement is keyed to the whole-percent impact the checkbox named
+  // ("exceeds N%"): it holds while the max drifts at stable impact (no re-check
+  // treadmill on the review screen), and lapses only when the current impact
+  // floors above the acknowledged N. Explicit user edits still clear it in the
+  // handlers below.
   const priceImpactBps = providerSelection.selectedQuote?.rateInfo.priceImpactBps;
-  const [impactAcceptedAmount, setImpactAcceptedAmount] = useState<bigint | null>(null);
-  const impactAccepted = impactAcceptedAmount !== null && impactAcceptedAmount === debouncedAmount;
-  const setImpactAccepted = (checked: boolean) => setImpactAcceptedAmount(checked ? debouncedAmount : null);
+  const impactPercentFloor = priceImpactBps !== undefined ? Math.floor(priceImpactBps / 100) : undefined;
+  const [impactAcceptedPercent, setImpactAcceptedPercent] = useState<number | null>(null);
+  const impactAccepted =
+    impactAcceptedPercent !== null &&
+    impactPercentFloor !== undefined &&
+    impactPercentFloor <= impactAcceptedPercent;
+  const setImpactAccepted = (checked: boolean) =>
+    setImpactAcceptedPercent(checked && impactPercentFloor !== undefined ? impactPercentFloor : null);
   const needsImpactAcknowledgement =
     isCurveSelected &&
     priceImpactBps !== undefined &&

@@ -204,10 +204,10 @@ describe('useStUsdsTransactionForm flag-driven max withdraw (APP-507)', () => {
     expect(result.current.amountReady).toBe(false);
   });
 
-  it('price-impact acknowledgement lapses when the acknowledged amount drifts', () => {
+  it('price-impact acknowledgement holds while the max drifts at stable (or better) impact', () => {
     setState({ curveMaxWithdraw: parseUnits('1005', 18), withdrawProvider: 'curve' });
     h.selectedProvider = 'curve';
-    h.selectionQuote = { rateInfo: { priceImpactBps: 250 }, outputAmount: 0n, inputAmount: 0n };
+    h.selectionQuote = { rateInfo: { priceImpactBps: 350 }, outputAmount: 0n, inputAmount: 0n };
     const { result, rerender } = renderForm();
 
     act(() => result.current.setMaxAmount());
@@ -215,9 +215,33 @@ describe('useStUsdsTransactionForm flag-driven max withdraw (APP-507)', () => {
     act(() => result.current.setImpactAccepted(true));
     expect(result.current.impactAccepted).toBe(true);
 
+    // Amount drift within the same impact floor — no re-check treadmill.
     setState({ curveMaxWithdraw: parseUnits('1010', 18), withdrawProvider: 'curve' });
+    h.selectionQuote = { rateInfo: { priceImpactBps: 390 }, outputAmount: 0n, inputAmount: 0n };
+    rerender();
+    expect(result.current.impactAccepted).toBe(true);
+
+    // Improving impact also holds — the user accepted worse.
+    h.selectionQuote = { rateInfo: { priceImpactBps: 250 }, outputAmount: 0n, inputAmount: 0n };
+    rerender();
+    expect(result.current.impactAccepted).toBe(true);
+  });
+
+  it('price-impact acknowledgement lapses when the impact floors above the acknowledged percent', () => {
+    setState({ curveMaxWithdraw: parseUnits('1005', 18), withdrawProvider: 'curve' });
+    h.selectedProvider = 'curve';
+    h.selectionQuote = { rateInfo: { priceImpactBps: 350 }, outputAmount: 0n, inputAmount: 0n };
+    const { result, rerender } = renderForm();
+
+    act(() => result.current.setMaxAmount());
+    act(() => result.current.setImpactAccepted(true));
+    expect(result.current.impactAccepted).toBe(true);
+
+    // 3.5% → 4.2%: the checkbox would now read "exceeds 4%" — re-gate.
+    h.selectionQuote = { rateInfo: { priceImpactBps: 420 }, outputAmount: 0n, inputAmount: 0n };
     rerender();
     expect(result.current.impactAccepted).toBe(false);
+    expect(result.current.needsImpactAcknowledgement).toBe(true);
   });
 
   it('supply Max fills the wallet balance once and never follows (max is withdraw-only)', () => {
