@@ -4,7 +4,7 @@ import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
-import { setVpnSuperProperties, UNKNOWN_VPN_PROPERTIES } from '@/modules/analytics/superProperties';
+import { setVpnSuperProperties } from '@/modules/analytics/superProperties';
 import { reportError } from '@/modules/sentry/reportError';
 import { checkTermsWithRetry } from '@/modules/ui/lib/checkTermsWithRetry';
 
@@ -171,23 +171,23 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const isAuthorized = isAllowed || skipAuthCheck;
   const isConnectedAndAcceptedTerms = isConnected && hasAcceptedTerms;
 
-  // Keep the VPN super properties (is_vpn, is_restricted_region, country_code) in
-  // sync with the latest check result so every PostHog event carries them. Unlike
-  // the fire-once tracking below, this re-runs on each 60s poll — VPN status can
-  // change mid-session. Skipped checks (private deployments, mock wallet) and
-  // errors leave all fields at 'unknown'.
+  // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
+  // PostHog event carries them. Unlike the fire-once tracking below, this re-runs
+  // whenever the periodic check produces a changed result — VPN status can change
+  // mid-session. Fresh data wins over a transient poll error (react-query keeps
+  // the last good result); 'unknown' is only registered when the check has failed
+  // without ever succeeding. Skipped checks (private deployments, mock wallet)
+  // register nothing.
   useEffect(() => {
     if (skipAuthCheck) return;
-    if (!vpnData && !vpnError) return;
-    setVpnSuperProperties(
-      vpnError
-        ? UNKNOWN_VPN_PROPERTIES
-        : {
-            is_vpn: vpnData?.isConnectedToVpn ?? 'unknown',
-            is_restricted_region: vpnData?.isRestrictedRegion ?? 'unknown',
-            country_code: vpnData?.countryCode ?? 'unknown'
-          }
-    );
+    if (vpnData) {
+      setVpnSuperProperties({
+        is_vpn: vpnData.isConnectedToVpn ?? 'unknown',
+        is_restricted_region: vpnData.isRestrictedRegion ?? 'unknown'
+      });
+    } else if (vpnError) {
+      setVpnSuperProperties({ is_vpn: 'unknown', is_restricted_region: 'unknown' });
+    }
   }, [skipAuthCheck, vpnData, vpnError]);
 
   useEffect(() => {

@@ -137,8 +137,10 @@ export function applyPostHogConsent(enabled: boolean) {
     // Upgrade from memory to persistent storage and opt in.
     // The existing in-memory distinct_id carries over so the session continues seamlessly.
     posthog.set_config({ persistence: 'localStorage+cookie', person_profiles: 'always' });
-    posthog.opt_in_capturing();
+    // Register before opt_in_capturing(): opting in captures a $opt_in event
+    // immediately, which must already carry the super properties.
     applySuperProperties();
+    posthog.opt_in_capturing();
   } else {
     // Downgrade to memory-only anonymous tracking (same as pending state).
     // Initialize PostHog if it hasn't been yet (shouldn't happen, but just in case).
@@ -147,9 +149,13 @@ export function applyPostHogConsent(enabled: boolean) {
     posthog.reset();
     // Switch to memory persistence — no cookies, localStorage, or sessionStorage.
     posthog.set_config({ persistence: 'memory', person_profiles: 'identified_only' });
-    posthog.opt_in_capturing();
-    // reset() also wiped the super properties — re-apply them.
+    // reset() wiped the super properties — re-apply them before opt_in_capturing()
+    // so its $opt_in event carries them. Keeping the VPN properties on the new
+    // anonymous identity is deliberate: they are IP-derived booleans of the same
+    // class as PostHog's always-on server-side GeoIP enrichment, and the events
+    // must remain a complete record of the VPN check result in all consent states.
     applySuperProperties();
+    posthog.opt_in_capturing();
     // Clear bootstrap sessionStorage so rejected users aren't re-bootstrapped on refresh
     try {
       sessionStorage.removeItem(SESSION_STORAGE_PH_ID);
