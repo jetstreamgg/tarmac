@@ -205,11 +205,18 @@ export function useStUsdsTransactionForm({
 
   // Max readiness needs a real max: zero (nothing to withdraw) or a still-loading
   // Curve max quote (whose transient fallback is the smaller native max) hold
-  // the confirm rather than gating on the derived number.
+  // the confirm rather than gating on the derived number. It also needs the
+  // debounce to have settled at least once (`debouncedAmount > 0n`): the amount
+  // surfaces (review grid, toasts) read the debounced value, which is still 0n
+  // right after Max is clicked on a fresh form. Unlike the typed path's
+  // `!debouncePending`, this doesn't re-gate on drift — a previous settled
+  // value keeps it armed.
   const amountReady =
     isConnected &&
     !blocked &&
-    (max ? available > 0n && !withdrawBalancesLoading : !isZero && !insufficient && !debouncePending);
+    (max
+      ? available > 0n && !withdrawBalancesLoading && debouncedAmount > 0n
+      : !isZero && !insufficient && !debouncePending);
 
   const rate = stUsdsData ? calculateApyFromStr(stUsdsData.moduleRate) / 100 : undefined;
 

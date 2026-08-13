@@ -181,6 +181,23 @@ describe('useStUsdsTransactionForm flag-driven max withdraw (APP-507)', () => {
     expect(result.current.amountReady).toBe(false);
   });
 
+  it('holds confirm after Max on a fresh form until the debounce settles off 0', () => {
+    // The amount surfaces (review grid, toasts) read the debounced value, which
+    // is still 0n right after Max is clicked on a fresh form — confirming in
+    // that window would submit a full redemption labeled "0.00 USDS".
+    const { result, rerender } = renderForm();
+
+    h.debounceLagged = 0n;
+    act(() => result.current.setMaxAmount());
+    expect(result.current.amount).toBe(0n);
+    expect(result.current.amountReady).toBe(false);
+
+    h.debounceLagged = undefined;
+    rerender();
+    expect(result.current.amount).toBe(NATIVE_MAX);
+    expect(result.current.amountReady).toBe(true);
+  });
+
   it('holds confirm while the Curve max quote is loading instead of trusting the native fallback', () => {
     setState({ withdrawProvider: 'curve', curveMaxWithdraw: undefined, withdrawBalancesLoading: true });
     const { result, rerender } = renderForm();
