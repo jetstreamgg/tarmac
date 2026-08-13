@@ -14,13 +14,18 @@ describe('createSanitizeUrlsBeforeSend', () => {
       event({ $current_url: 'https://app.sky.money/?name=John%20Doe&email=john@example.com&network=base' })
     );
     expect(result?.properties?.$current_url).toBe(
-      'https://app.sky.money/?name=redacted&email=redacted&network=base'
+      'https://app.sky.money/?name=redacted&email=redacted_email&network=base'
     );
   });
 
   it('masks unknown param values, keeping the key for traceability', () => {
     const result = sanitize(event({ $current_url: 'https://app.sky.money/?x=secret&flow=deposit' }));
     expect(result?.properties?.$current_url).toBe('https://app.sky.money/?x=redacted&flow=deposit');
+  });
+
+  it('marks email-shaped values of unknown params as redacted_email', () => {
+    const result = sanitize(event({ $current_url: 'https://app.sky.money/?ref=john.doe@gmail.com' }));
+    expect(result?.properties?.$current_url).toBe('https://app.sky.money/?ref=redacted_email');
   });
 
   it('keeps campaign and click-ID params by default', () => {
@@ -30,13 +35,17 @@ describe('createSanitizeUrlsBeforeSend', () => {
 
   it('masks allowlisted params whose value looks like an email', () => {
     const result = sanitize(event({ $current_url: 'https://app.sky.money/?network=a@b.com&flow=deposit' }));
-    expect(result?.properties?.$current_url).toBe('https://app.sky.money/?network=redacted&flow=deposit');
+    expect(result?.properties?.$current_url).toBe(
+      'https://app.sky.money/?network=redacted_email&flow=deposit'
+    );
   });
 
   it('masks name/email even when explicitly allowlisted', () => {
     const withMistake = createSanitizeUrlsBeforeSend({ allowedParams: ['name', 'email'] });
     const result = withMistake(event({ $current_url: 'https://x.com/?name=a&email=b@c.io&utm_source=x' }));
-    expect(result?.properties?.$current_url).toBe('https://x.com/?name=redacted&email=redacted&utm_source=x');
+    expect(result?.properties?.$current_url).toBe(
+      'https://x.com/?name=redacted&email=redacted_email&utm_source=x'
+    );
   });
 
   it('supports allowed prefixes', () => {
@@ -58,8 +67,8 @@ describe('createSanitizeUrlsBeforeSend', () => {
       })
     );
     const setOnce = result?.properties?.$set_once as Record<string, unknown>;
-    expect(setOnce?.$initial_current_url).toBe('https://app.sky.money/?email=redacted&network=base');
-    expect(setOnce?.$initial_referrer).toBe('https://google.com/search?q=redacted');
+    expect(setOnce?.$initial_current_url).toBe('https://app.sky.money/?email=redacted_email&network=base');
+    expect(setOnce?.$initial_referrer).toBe('https://google.com/search?q=redacted_email');
   });
 
   it('sanitizes URLs inside arrays (autocapture elements)', () => {
@@ -67,7 +76,7 @@ describe('createSanitizeUrlsBeforeSend', () => {
       event({ $elements: [{ attr__href: 'https://app.sky.money/?email=a@b.com&flow=x' }] })
     );
     const elements = result?.properties?.$elements as Array<Record<string, unknown>>;
-    expect(elements[0].attr__href).toBe('https://app.sky.money/?email=redacted&flow=x');
+    expect(elements[0].attr__href).toBe('https://app.sky.money/?email=redacted_email&flow=x');
   });
 
   it('leaves non-URL strings and URLs without query untouched', () => {

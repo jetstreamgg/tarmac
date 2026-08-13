@@ -48,8 +48,10 @@ const DENYLISTED_PARAMS = ['name', 'email'];
 // Param values matching an email shape are masked even under an allowlisted key.
 const EMAIL_PATTERN = /[^\s@&?=/]+@[^\s@&?=/]+\.[A-Za-z]{2,}/;
 
-// Masked params keep their key so unknown senders remain traceable.
+// Masked params keep their key so unknown senders remain traceable; email-shaped
+// values get a distinct marker so we know why they were masked.
 const REDACTED_VALUE = 'redacted';
+const REDACTED_EMAIL_VALUE = 'redacted_email';
 
 const MAX_DEPTH = 6;
 
@@ -82,7 +84,8 @@ export function sanitizeUrlString(value: string, allowed: Set<string>, prefixes:
     const disallowedKey =
       DENYLISTED_PARAMS.includes(k) || (!allowed.has(k) && !prefixes.some(p => k.startsWith(p)));
     // Keys always survive (masked) so we can trace who sends unknown params.
-    kept.append(key, disallowedKey || EMAIL_PATTERN.test(val) ? REDACTED_VALUE : val);
+    if (EMAIL_PATTERN.test(val)) kept.append(key, REDACTED_EMAIL_VALUE);
+    else kept.append(key, disallowedKey ? REDACTED_VALUE : val);
   }
   url.search = kept.toString();
   return url.href;
