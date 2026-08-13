@@ -1,14 +1,7 @@
 import { useCallback } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useChains, useConnection } from 'wagmi';
-import {
-  AppEvents,
-  safeCapture,
-  getViewport,
-  type SelectionMethod,
-  type TxStatus,
-  type ErrorContext
-} from '../constants';
+import { AppEvents, safeCapture, getViewport, type SelectionMethod, type TxStatus } from '../constants';
 import { useAnalyticsFlow } from '../context/AnalyticsFlowContext';
 
 export function useAppAnalytics() {
@@ -62,14 +55,16 @@ export function useAppAnalytics() {
         widget_name: widgetName,
         chain_id: chainId,
         chain_name: getChainName(chainId),
+        wallet_address: address,
         viewport: getViewport(),
         flow_id: getFlowId(),
+        timestamp: new Date().toISOString(),
         ...(action && { action }),
         ...(flow && { flow }),
         ...data
       });
     },
-    [posthog, getChainName, getFlowId]
+    [posthog, address, getChainName, getFlowId]
   );
 
   const trackTransactionCompleted = useCallback(
@@ -78,7 +73,6 @@ export function useAppAnalytics() {
       chainId,
       txStatus,
       txHash,
-      errorContext,
       action,
       flow,
       data
@@ -87,7 +81,6 @@ export function useAppAnalytics() {
       chainId: number;
       txStatus: TxStatus;
       txHash?: string;
-      errorContext?: ErrorContext;
       action?: string;
       flow?: string;
       data?: Record<string, unknown>;
@@ -99,12 +92,12 @@ export function useAppAnalytics() {
         tx_status: txStatus,
         wallet_address: address,
         ...(txHash && { tx_hash: txHash }),
-        ...(errorContext && { error_context: errorContext }),
         ...(action && { action }),
         ...(flow && { flow }),
         ...data,
         viewport: getViewport(),
-        flow_id: getFlowId()
+        flow_id: getFlowId(),
+        timestamp: new Date().toISOString()
       });
     },
     [posthog, address, getChainName, getFlowId]
@@ -119,7 +112,8 @@ export function useAppAnalytics() {
         flow,
         wallet_address: address,
         viewport: getViewport(),
-        flow_id: getFlowId()
+        flow_id: getFlowId(),
+        timestamp: new Date().toISOString()
       });
     },
     [posthog, address, getChainName, getFlowId]
@@ -129,20 +123,22 @@ export function useAppAnalytics() {
     ({ walletName }: { walletName: string }) => {
       safeCapture(posthog, AppEvents.WALLET_CONNECTED, {
         wallet_name: walletName,
-        viewport: getViewport()
+        viewport: getViewport(),
+        flow_id: getFlowId()
       });
     },
-    [posthog]
+    [posthog, getFlowId]
   );
 
   const trackWalletDisconnected = useCallback(
     ({ walletName }: { walletName: string }) => {
       safeCapture(posthog, AppEvents.WALLET_DISCONNECTED, {
         wallet_name: walletName,
-        viewport: getViewport()
+        viewport: getViewport(),
+        flow_id: getFlowId()
       });
     },
-    [posthog]
+    [posthog, getFlowId]
   );
 
   return {

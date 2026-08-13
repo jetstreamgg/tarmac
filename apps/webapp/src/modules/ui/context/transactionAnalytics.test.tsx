@@ -1,0 +1,202 @@
+import { StrictMode, useEffect, useRef, type ReactNode } from 'react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { i18n } from '@lingui/core';
+import { I18nProvider } from '@lingui/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { TransactionConfig, TransactionContextValue, TxCallbacks } from './transactionContract';
+
+// Render the real TransactionProvider + TransactionModal: stub only its chain,
+// wallet, batch, analytics, and error-reporting reads (mirrors transactionAbandon.test).
+vi.mock('wagmi', async io => ({
+  ...(await io<typeof import('wagmi')>()),
+  useChainId: () => 1,
+  useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
+}));
+vi.mock('@/hooks', async io => ({
+  ...(await io<typeof import('@/hooks')>()),
+  useIsSafeWallet: () => false,
+  useIsBatchSupported: () => ({ data: false })
+}));
+vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));
+vi.mock('@/modules/sentry/reportError', () => ({ reportError: vi.fn() }));
+
+// Shared call-order log: analytics, flow rotation, and consumer callbacks push here.
+const callOrder = vi.hoisted(() => [] as string[]);
+const analytics = vi.hoisted(() => ({
+  trackWidgetReviewViewed: vi.fn(),
+  trackTransactionStarted: vi.fn(),
+  trackTransactionCompleted: vi.fn()
+}));
+const startNewFlowMock = vi.hoisted(() => vi.fn());
+vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
+  useAppAnalytics: () => analytics
+}));
+vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
+  useAnalyticsFlow: () => ({ startNewFlow: startNewFlowMock })
+}));
+
+const toastMock = vi.hoisted(() => ({ dismiss: vi.fn() }));
+vi.mock('@/components/ui/use-toast', () => ({
+  toast: toastMock,
+  toastWithClose: vi.fn()
+}));
+
+// Render motion elements synchronously so AnimatePresence transitions are deterministic.
+vi.mock('motion/react', async io => {
+  const actual = await io<typeof import('motion/react')>();
+  const React = await import('react');
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'transition', 'variants', 'layout']);
+  const strip = (props: Record<string, unknown>) =>
+    Object.fromEntries(Object.entries(props).filter(([key]) => !MOTION_PROPS.has(key)));
+  const tag =
+    (element: string) =>
+    ({ children, ...rest }: { children?: ReactNode } & Record<string, unknown>) =>
+      React.createElement(element, strip(rest), children);
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: { children: ReactNode }) => children,
+    motion: new Proxy({}, { get: (_t, element) => tag(element as string) })
+  };
+});
+
+import { TransactionProvider, useTransaction } from './TransactionContext';
+
+i18n.load('en', {});
+i18n.activate('en');
+
+function Harness({
+  config,
+  onReady
+}: {
+  config: TransactionConfig;
+  onReady: (ctx: TransactionContextValue) => void;
+}) {
+  const ctx = useTransaction();
+  const started = useRef(false);
+  useEffect(() => {
+    onReady(ctx);
+  });
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    ctx.launch(config);
+  }, [ctx, config]);
+  return null;
+}
+
+// Mounts the provider, opens the modal, and clicks confirm.
+function renderFlow(config: TransactionConfig): TransactionContextValue {
+  let ctx!: TransactionContextValue;
+  render(
+    <StrictMode>
+      <I18nProvider i18n={i18n}>
+        <TransactionProvider>
+          <Harness config={config} onReady={c => (ctx = c)} />
+        </TransactionProvider>
+      </I18nProvider>
+    </StrictMode>
+  );
+  fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+  return ctx;
+}
+
+const cbOf = (ctx: TransactionContextValue): TxCallbacks => ctx.txCallbacks;
+
+const baseConfig = (overrides: Partial<TransactionConfig> = {}): TransactionConfig => ({
+  title: 'Supply USDS',
+  steps: ['Supply'],
+  analytics: { widgetName: 'savings', flow: 'supply', action: 'supply', data: { module: 'savings' } },
+  onConfirm: () => {},
+  ...overrides
+});
+
+// EIP-1193 user rejection, nested the way viem wraps it
+const userRejectionError = () =>
+  Object.assign(new Error('Transaction failed'), {
+    cause: { code: 4001, message: 'User rejected the request. Details: 0xdeadbeef calldata' }
+  });
+
+const lastCompletedArgs = () =>
+  analytics.trackTransactionCompleted.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+
+describe('TransactionContext analytics (modal path)', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+    callOrder.length = 0;
+  });
+
+  it('records a wallet rejection as cancelled with bounded classification (D1), never the raw message', () => {
+    const ctx = renderFlow(baseConfig());
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate());
+    act(() => cb.onError(userRejectionError()));
+
+    const args = lastCompletedArgs();
+    expect(args).toMatchObject({
+      widgetName: 'savings',
+      txStatus: 'cancelled',
+      data: expect.objectContaining({
+        module: 'savings',
+        error_kind: 'user_rejected',
+        is_user_rejection: true
+      })
+    });
+    expect(JSON.stringify(args)).not.toContain('0xdeadbeef');
+  });
+
+  it('records an on-chain revert as error with classification props and no error_context (G2)', () => {
+    const ctx = renderFlow(baseConfig());
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xhash'));
+    act(() =>
+      cb.onError(
+        Object.assign(new Error('execution reverted: secret calldata 0xbeef'), {
+          name: 'ContractFunctionExecutionError'
+        }),
+        '0xhash'
+      )
+    );
+
+    const args = lastCompletedArgs();
+    expect(args).toMatchObject({
+      txStatus: 'error',
+      txHash: '0xhash',
+      data: expect.objectContaining({ error_kind: 'reverted', is_user_rejection: false })
+    });
+    expect(args).not.toHaveProperty('errorContext');
+    expect(JSON.stringify(args)).not.toContain('secret calldata');
+  });
+
+  it('rotates the flow AFTER the consumer onSuccess, so its follow-up joins this flow', () => {
+    const onSuccess = vi.fn(() => callOrder.push('consumer_onSuccess'));
+    startNewFlowMock.mockImplementation(() => callOrder.push('startNewFlow'));
+    analytics.trackTransactionCompleted.mockImplementation(() => callOrder.push('track_completed'));
+
+    const ctx = renderFlow(baseConfig({ onSuccess }));
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xhash'));
+    act(() => cb.onSuccess('0xhash'));
+
+    expect(callOrder).toEqual(['track_completed', 'consumer_onSuccess', 'startNewFlow']);
+  });
+
+  it('rotates the flow AFTER the consumer onError as well', () => {
+    const onError = vi.fn(() => callOrder.push('consumer_onError'));
+    startNewFlowMock.mockImplementation(() => callOrder.push('startNewFlow'));
+    analytics.trackTransactionCompleted.mockImplementation(() => callOrder.push('track_completed'));
+
+    const ctx = renderFlow(baseConfig({ onError }));
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xhash'));
+    act(() => cb.onError(new Error('boom'), '0xhash'));
+
+    expect(callOrder).toEqual(['track_completed', 'consumer_onError', 'startNewFlow']);
+  });
+});

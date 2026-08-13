@@ -12,6 +12,7 @@ import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
+import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type {
   TransactionConfig,
@@ -265,9 +266,11 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
   const handleClose = useCallback(() => {
     // Closing during INITIALIZED abandons an un-signed session: track the
-    // cancellation and warn about the wallet prompt we can't dismiss.
+    // cancellation and warn about the wallet prompt we can't dismiss. Read the
+    // status from the ref — a click queued in the same tick as the transition
+    // would otherwise see the closure's stale state and skip the event.
     const analytics = configRef.current?.analytics;
-    if (txStatus === TxStatus.INITIALIZED) {
+    if (txStatusRef.current === TxStatus.INITIALIZED) {
       if (analytics) {
         trackTransactionCompleted({
           widgetName: analytics.widgetName,
@@ -310,7 +313,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [txStatus, chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
+  }, [chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
 
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
   // has nothing left to animate.
@@ -461,10 +464,13 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             flow: analytics.flow,
             data: analytics.data
           });
-          startNewFlow();
         }
 
         configRef.current?.onSuccess?.();
+        // Rotate AFTER the consumer callback so anything it emits joins this flow
+        if (analytics) {
+          startNewFlow();
+        }
       },
       [
         sessionGen,
@@ -488,20 +494,21 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           txHashRef.current = hash;
         }
 
-        // Track transaction completed (error)
+        // Track transaction completed (error). Bounded classification props only —
+        // never the raw message, which can embed addresses and calldata. A wallet
+        // rejection is the user backing out, not a failure (APP-444 D1).
         const analytics = configRef.current?.analytics;
         if (analytics) {
+          const classification = classifyTransactionError(error, !!hash);
           trackTransactionCompleted({
             widgetName: analytics.widgetName,
             chainId,
-            txStatus: 'error',
+            txStatus: classification.is_user_rejection ? 'cancelled' : 'error',
             txHash: hash,
-            errorContext: error.message,
             action: analytics.action,
             flow: analytics.flow,
-            data: analytics.data
+            data: { ...analytics.data, ...classification }
           });
-          startNewFlow();
         }
 
         const normalizedError = toError(error);
@@ -523,6 +530,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
         }
 
         configRef.current?.onError?.();
+        // Rotate AFTER the consumer callback so anything it emits joins this flow
+        if (analytics) {
+          startNewFlow();
+        }
       },
       [
         sessionGen,

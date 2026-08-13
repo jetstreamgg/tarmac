@@ -18,7 +18,6 @@ export const AppEvents = {
 
 export type SelectionMethod = 'header_nav' | 'mobile_drawer' | 'deeplink' | 'card';
 export type TxStatus = 'success' | 'error' | 'cancelled';
-export type ErrorContext = string;
 export type VpnCheckResult = 'allowed' | 'vpn_blocked' | 'region_blocked' | 'error' | 'unknown';
 export type BlockReason =
   'vpn_detected' | 'restricted_region' | 'address_restricted' | 'network_error' | 'auth_error' | 'unknown';
@@ -64,27 +63,17 @@ export function reportAnalyticsError(context: string, error: unknown): void {
   });
 }
 
-// ── Withdrawal Flows ────────────────────────────────────────────────────────
-// Flows where the user is removing funds — input_amount should be negative.
+// ── Amounts ──────────────────────────────────────────────────────────────────
 
-const WITHDRAWAL_FLOWS: Record<string, Set<string>> = {
-  savings: new Set(['withdraw']),
-  rewards: new Set(['withdraw']),
-  stusds: new Set(['withdraw'])
-};
-
-// Stake uses tab params instead of flow to determine direction
-const WITHDRAWAL_TABS = new Set(['free']);
-
-export function isWithdrawalFlow(
-  widget: string | null,
-  expertModule: string | null,
-  flow: string | null,
-  stakeTab: string | null
-): boolean {
-  if (!widget) return false;
-  const flowWidget = widget === 'expert' ? expertModule : widget;
-  if (flow && flowWidget && WITHDRAWAL_FLOWS[flowWidget]?.has(flow)) return true;
-  if (widget === 'stake' && stakeTab && WITHDRAWAL_TABS.has(stakeTab)) return true;
-  return false;
+/**
+ * Sign convention for the `amount` property on tx events: flows that remove
+ * funds (withdraw, revert) report negative amounts, everything else positive.
+ * Flows that self-sign inside their data blob (stake, pendle redeem) bypass this.
+ */
+export function signedAmount(
+  amount: number | null | undefined,
+  flow: string | null | undefined
+): number | undefined {
+  if (amount == null) return undefined;
+  return flow === 'withdraw' || flow === 'revert' ? -Math.abs(amount) : Math.abs(amount);
 }

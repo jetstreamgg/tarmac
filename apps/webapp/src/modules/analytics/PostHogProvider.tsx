@@ -2,6 +2,7 @@ import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { type ReactNode } from 'react';
 import { getStoredConsent, saveConsent } from './consentStorage';
+import { stampDestination } from './lib/destination';
 import { isValidUUID } from '@/lib/generateUUID';
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
@@ -105,6 +106,9 @@ function initializePostHogIfNeeded(forceAccepted = false) {
 
     // Bootstrap with marketing site identity for cross-domain attribution
     bootstrap: bootstrapConfig,
+
+    // Capture-time enrichment; array form so later hooks (URL sanitizer) compose.
+    before_send: [stampDestination],
 
     loaded: posthogClient => {
       posthogClient.register({ app_name: 'app' });
