@@ -55,8 +55,10 @@ export function StablecoinEarningsCard({
   suppliedLoading: boolean;
   idleView: IdleView;
   idleLoading: boolean;
-  /** Current Sky Savings Rate as a decimal fraction (0.0375 = 3.75%). */
-  savingsRate: number;
+  /** Current Sky Savings Rate as a decimal fraction (0.0375 = 3.75%), or
+   * undefined when Savings is geo-restricted — the Idle footer then drops the
+   * rate and projection stats instead of pitching a blocked product. */
+  savingsRate?: number;
   tab: PortfolioTab;
   onTabChange: (tab: PortfolioTab) => void;
 }) {
@@ -169,12 +171,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
           label={<Trans>Avg. Rate</Trans>}
           value={<StatValue>{formatDecimalPercentage(displayAvgRate)}</StatValue>}
         />
-        {!activePosition && (
-          <Stat
-            label={<Trans>Active positions</Trans>}
-            value={<StatValue>{view.activePositions}</StatValue>}
-          />
-        )}
+        <Stat label={<Trans>Active positions</Trans>} value={<StatValue>{view.activePositions}</StatValue>} />
       </FooterStats>
     </>
   );
@@ -186,7 +183,7 @@ function IdleContent({
   isLoading
 }: {
   view: IdleView;
-  savingsRate: number;
+  savingsRate?: number;
   isLoading: boolean;
 }) {
   // Hovering a token focuses the card on it (mirrors the Supplied tab).
@@ -198,7 +195,8 @@ function IdleContent({
   const activeToken = activeId ? view.tokens.find(t => t.symbol === activeId) : undefined;
   const activeSymbol = activeToken?.symbol ?? null;
   const displayTotal = activeToken ? activeToken.amountUsd : view.walletBalance;
-  const displayProjected = projectAnnualEarnings(displayTotal, savingsRate);
+  const displayProjected =
+    savingsRate !== undefined ? projectAnnualEarnings(displayTotal, savingsRate) : undefined;
 
   const segments: DonutSegment[] = view.tokens.map(t => ({
     id: t.symbol,
@@ -261,16 +259,18 @@ function IdleContent({
       <Divider />
 
       <FooterStats>
-        <Stat
-          label={<Trans>Sky Savings Rate</Trans>}
-          value={<StatValue>{formatDecimalPercentage(savingsRate)}</StatValue>}
-        />
-        <Stat
-          label={<Trans>1Y projected earnings</Trans>}
-          value={<GainValue value={displayProjected} className={LABEL_4} />}
-        />
-        {/* Always the total — unlike Supplied's "Active positions", this stat
-            stays fixed when focusing a single token. */}
+        {savingsRate !== undefined && (
+          <Stat
+            label={<Trans>Sky Savings Rate</Trans>}
+            value={<StatValue>{formatDecimalPercentage(savingsRate)}</StatValue>}
+          />
+        )}
+        {displayProjected !== undefined && (
+          <Stat
+            label={<Trans>1Y projected earnings</Trans>}
+            value={<GainValue value={displayProjected} className={LABEL_4} />}
+          />
+        )}
         <Stat label={<Trans>Idle stablecoins</Trans>} value={<StatValue>{view.idleCount}</StatValue>} />
       </FooterStats>
     </>

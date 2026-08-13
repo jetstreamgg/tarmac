@@ -35,10 +35,14 @@ const mockRouter = {
   }
 };
 
+// Mutable so tests can put the query in its loading state; the factory only
+// closes over it, reading happens at render time.
+const queryState = { isLoading: false };
+
 vi.mock('@tanstack/react-query', () => ({
   useQuery: () => ({
-    data: mockConfig,
-    isLoading: false,
+    data: queryState.isLoading ? undefined : mockConfig,
+    isLoading: queryState.isLoading,
     error: null
   })
 }));
@@ -69,6 +73,22 @@ describe('GeoConfigProvider', () => {
   beforeEach(() => {
     mockRouter.history.location.search = '';
     routerListeners.clear();
+    queryState.isLoading = false;
+  });
+
+  it('answers every module as disabled while the config loads (fail closed)', () => {
+    queryState.isLoading = true;
+    render(
+      <GeoConfigProvider>
+        <GeoConfigProbe />
+      </GeoConfigProvider>
+    );
+
+    // Action gates (e.g. the Portfolio supply resolver) rely on this default:
+    // no module may read as enabled before the region is known.
+    expect(screen.getByTestId('savings').textContent).toBe('false');
+    expect(screen.getByTestId('restricted').textContent).toBe('true');
+    expect(screen.getByTestId('verified').textContent).toBe('false');
   });
 
   it('recomputes geo overrides when the router search changes', () => {

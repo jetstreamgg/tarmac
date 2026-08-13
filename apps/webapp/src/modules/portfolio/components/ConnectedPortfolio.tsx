@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useChainId, useChains, useConnection, useEnsName } from 'wagmi';
+import { useGeoConfig } from '@/modules/geo-config';
 import { useNavigate } from '@tanstack/react-router';
 import { mainnet } from 'viem/chains';
 import { Trans } from '@lingui/react/macro';
@@ -8,6 +9,7 @@ import { formatAddress, getChainIcon } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
+import { readPortfolioDecision, writePortfolioDecision } from '@/lib/portfolioDecisionCache';
 import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
 import { PageHeading } from '@/components/ui/page-header';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
@@ -15,6 +17,7 @@ import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
 import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
+import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
@@ -33,9 +36,21 @@ import { type PortfolioTab } from './PortfolioTabs';
  */
 export function ConnectedPortfolio() {
   const connectedChainId = useChainId();
-  const { rows, isLoading, totalDepositedUsd } = useEarnMarketplace();
-  const { balances, isLoading: balancesLoading } = useStablecoinBalances();
-  const { data: overallSkyData } = useOverallSkyData();
+  const { rows, isLoading, isPositionsError } = useEarnMarketplace();
+  const { balances, isLoading: balancesLoading, isError: balancesError } = useStablecoinBalances();
+  // Geo-restricted positions are hidden from every Portfolio surface (APP-484),
+  // so all totals/views build from the visible rows, and the savings promos
+  // (callouts, idle-tab rate stats) drop when the savings module is restricted.
+  const visibleRows = useGeoVisibleRows(rows);
+  const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
+  const savingsAvailable = isGeoLoading || isModuleEnabled('savings');
+  // The optimistic default above is safe for the settle path (the callout is
+  // 'none' until every source lands) but not for the cached fast-path, which
+  // renders before the module config resolves: a user without the savings
+  // module would see the promo flash in and vanish once the config lands.
+  // Cached promos wait for the settled config instead.
+  const cachedPromoAvailable = !isGeoLoading && isModuleEnabled('savings');
+  const { data: overallSkyData, isLoading: skyDataLoading } = useOverallSkyData();
   const { address } = useConnection();
   const chains = useChains();
   const navigate = useNavigate();
@@ -44,28 +59,73 @@ export function ConnectedPortfolio() {
   // 'all' or a chain id (as string, the FilterSelect value type).
   const [selectedNetwork, setSelectedNetwork] = useState('all');
   // Supplied/Idle is shared across sections (earnings card + positions carousel).
-  // Until the user picks a tab, it follows a data-derived default: Idle once it's
-  // settled that there's no significant earn position. A manual choice then wins.
+  // Until the user picks a tab, it follows the cached decision when there is
+  // one, else a data-derived default: Idle once it's settled that there's no
+  // significant earn position. A manual choice then wins.
   const [userTab, setUserTab] = useState<PortfolioTab | null>(null);
+  // The last settled decision for this address (APP-419), frozen at mount: it
+  // renders on first paint and never swaps mid-view — fresh data only rewrites
+  // the cache below, so a changed outcome applies on the next mount instead.
+  // PortfolioPage keys this component by address, so one mount is one account.
+  const [cachedDecision] = useState(() => readPortfolioDecision(address));
 
   const network = selectedNetwork === 'all' ? 'all' : Number(selectedNetwork);
-  const suppliedView = buildSuppliedView(rows, network);
+  const suppliedView = buildSuppliedView(visibleRows, network);
   const idleView = buildIdleView(balances, network);
   // Best supply rate + venue count per token, for the idle table's rate badge.
-  const idleSupplyInfo = buildIdleSupplyInfo(rows);
+  const idleSupplyInfo = buildIdleSupplyInfo(visibleRows);
 
   // Sky Savings Rate as a decimal fraction (drives the Idle footer + projection).
   const savingsRate = overallSkyData?.skySavingsRatecRate
     ? parseFloat(overallSkyData.skySavingsRatecRate)
     : 0;
-  const savingsTvlUsd = overallSkyData?.skySavingsRateTvl ? parseFloat(overallSkyData.skySavingsRateTvl) : 0;
+  // undefined while the query is in flight — the callout chips the figure.
+  const savingsTvlUsd = skyDataLoading
+    ? undefined
+    : overallSkyData?.skySavingsRateTvl
+      ? parseFloat(overallSkyData.skySavingsRateTvl)
+      : 0;
 
   // Onboarding callout gates on family-wide totals (ignores the network filter),
-  // and only after both data sources settle so it never flashes the wrong state.
+  // and only after all three data sources settle so it never flashes the wrong
+  // state — geo included, since visibleRows can shrink when the config lands.
+  // Visible totals only: a hidden restricted position mustn't suppress the
+  // callout or claim the Supplied tab for a portfolio that renders as empty.
+  //
+  // A returning address renders its cached decision instead of waiting. First
+  // visit (no cache, or expired) keeps the optimistic fallback: the simulate
+  // callout stands in while loading — its copy and button are static, only the
+  // TVL figure is data (chipped until it lands) — so the card doesn't pop in
+  // and shove the earnings card down. That pins the `simulate` outcome
+  // exactly; `allocate` (taller banner) and `none` (slot collapses) still
+  // shift — the winner can't be known while loading.
+  const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
-  const callout = isLoading || balancesLoading ? 'none' : portfolioCallout(totalDepositedUsd, idleTotalUsd);
+  const calloutLoading = isLoading || balancesLoading || isGeoLoading;
+  const callout = cachedDecision
+    ? cachedDecision.outcome
+    : calloutLoading
+      ? 'none'
+      : portfolioCallout(depositedUsd, idleTotalUsd);
+  const optimisticSimulate = !cachedDecision && calloutLoading;
 
-  const tab = userTab ?? (!isLoading && totalDepositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
+  // Once every source settles, persist the computed decision for the next
+  // mount — this is the only thing fresh data changes mid-view, so it also
+  // refreshes an existing hint's outcome and TTL without touching the render.
+  // Never off failed data: an errored source settles as empty/zero totals,
+  // and caching that would freeze a wrong outcome for the TTL.
+  useEffect(() => {
+    if (!address || calloutLoading || isPositionsError || balancesError) return;
+    writePortfolioDecision(address, {
+      outcome: portfolioCallout(depositedUsd, idleTotalUsd),
+      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
+    });
+  }, [address, calloutLoading, isPositionsError, balancesError, depositedUsd, idleTotalUsd]);
+
+  const tab =
+    userTab ??
+    cachedDecision?.tab ??
+    (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
 
   const goToSavings = () => void navigate({ to: ROUTES.EARN_SAVINGS, search: retainOnNavigate });
 
@@ -138,10 +198,15 @@ export function ConnectedPortfolio() {
       {/* Banner and earnings card group: 56/48 below the header, and a tight
           16 between banner and card when a callout shows (1036:188968). */}
       <div className="mt-14 flex flex-col gap-4 md:mt-12">
-        {callout === 'simulate' && <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />}
-        {callout === 'allocate' && (
+        {(optimisticSimulate || callout === 'simulate') &&
+          (cachedDecision ? cachedPromoAvailable : savingsAvailable) && (
+            <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />
+          )}
+        {callout === 'allocate' && (cachedDecision ? cachedPromoAvailable : savingsAvailable) && (
           <AllocateStablecoinsBanner
-            idleUsd={idleTotalUsd}
+            // A cached `allocate` renders before the figures land — chip the
+            // projection rather than flashing a $0/year built from empty data.
+            idleUsd={balancesLoading || skyDataLoading ? undefined : idleTotalUsd}
             savingsRate={savingsRate}
             onAllocate={goToSavings}
           />
@@ -152,7 +217,7 @@ export function ConnectedPortfolio() {
           suppliedLoading={isLoading}
           idleView={idleView}
           idleLoading={balancesLoading}
-          savingsRate={savingsRate}
+          savingsRate={savingsAvailable ? savingsRate : undefined}
           tab={tab}
           onTabChange={setUserTab}
         />
