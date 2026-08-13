@@ -133,7 +133,7 @@ export const PopoverRateInfo = ({
           <Close className="text-text h-5 w-5 cursor-pointer" />
         </PopoverClose>
         <div
-          className="mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] scrollbar-thin overflow-y-auto"
+          className="mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] overflow-y-auto"
           // The `onWheel` and `onTouchMove` stopPropagation handlers allow to scroll through the popover
           // content when rendered on top of another focus capturing elements, like modals.
           onWheel={e => {

@@ -22,16 +22,10 @@ export function WalletDrawerTabs() {
           <Trans>Activity</Trans>
         </TabsTrigger>
       </TabsList>
-      <TabsContent
-        value={WalletDrawerTab.ASSETS}
-        className="scrollbar-thin-always min-h-0 flex-1 overflow-auto"
-      >
+      <TabsContent value={WalletDrawerTab.ASSETS} className="min-h-0 flex-1 overflow-auto">
         <WalletDrawerAssets />
       </TabsContent>
-      <TabsContent
-        value={WalletDrawerTab.ACTIVITY}
-        className="scrollbar-thin-always min-h-0 flex-1 overflow-auto px-2 md:px-4"
-      >
+      <TabsContent value={WalletDrawerTab.ACTIVITY} className="min-h-0 flex-1 overflow-auto px-2 md:px-4">
         <BalancesHistory showAllNetworks={true} className="mt-0" useInfiniteScroll={true} />
       </TabsContent>
     </Tabs>

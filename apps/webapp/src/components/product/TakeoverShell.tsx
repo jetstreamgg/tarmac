@@ -169,7 +169,7 @@ export function TakeoverShell({
       {/* 610px column, 12px between cards, 64px of air under the header
           (1036:209509). The footer is the column's last row rather than a
           sticky bar — the comps scroll it with the content. */}
-      <div className="scrollbar-hidden md:scrollbar-thin-always flex-1 overflow-y-auto px-3 md:px-4">
+      <div className="flex-1 overflow-y-auto px-3 md:px-4">
         <motion.div
           className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16"
           initial={{ y: 40 }}
