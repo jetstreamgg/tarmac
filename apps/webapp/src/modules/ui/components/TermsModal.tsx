@@ -4,17 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { TermsMarkdownRenderer } from '@/modules/ui/components/markdown/TermsMarkdownRenderer';
-import { useSignMessage, useConnection, useDisconnect } from 'wagmi';
+import { useDisconnect } from 'wagmi';
 import { useConnectedContext } from '../context/ConnectedContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckedState } from '@radix-ui/react-checkbox';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { sanitizeUrl } from '@/lib/utils';
 import { DialogTitle } from '@/components/ui/dialog';
 import { TermsDialog } from './TermsDialog';
 import { getTermsContent } from './terms-loader';
-import { reportError } from '@/modules/sentry/reportError';
-import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
 export function TermsModal() {
   const { closeModal, isModalOpen, openModal } = useTermsModal();
@@ -23,100 +20,32 @@ export function TermsModal() {
     termsCheckError,
     retryTermsCheck,
     isConnectedAndAcceptedTerms,
-    setHasAcceptedTerms
+    latestTermsVersion,
+    acceptTerms
   } = useConnectedContext();
   const [isChecked, setIsChecked] = useState(false);
-  const [signStatus, setSignStatus] = useState<'idle' | 'loading' | 'signing' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'error'>('idle');
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
-  const { address, chainId, connector } = useConnection();
   const { disconnect } = useDisconnect();
   const [termsMarkdown] = useState<string>(getTermsContent());
 
-  const onSuccess = async (signature: string) => {
-    const payload = {
-      address,
-      signedMessage: import.meta.env.VITE_TERMS_MESSAGE_TO_SIGN,
-      signature,
-      chainId
-    };
-
-    try {
-      const response = await fetch(sanitizeUrl(`${import.meta.env.VITE_TERMS_ENDPOINT}/add`) || '', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        setHasAcceptedTerms(true);
-        closeModal();
-      } else {
-        // A 403 body names which gate refused — location/network vs address screening —
-        // and both are fixed server strings. Other statuses can echo the address back,
-        // so their bodies stay out of Sentry.
-        const deniedReason =
-          response.status === 403 ? await response.text().catch(() => '<unreadable>') : undefined;
-
-        reportError(new Error(`Failed to send signature: ${response.status}`), {
-          module: 'auth',
-          flow: 'terms-signature',
-          action: 'submit',
-          type: 'http_error',
-          statusCode: response.status,
-          extra: { deniedReason, chainId, connector: connector?.name }
-        });
-        setSignStatus('error');
-        // TODO show error message to user
-      }
-    } catch (error) {
-      reportError(error, {
-        module: 'auth',
-        flow: 'terms-signature',
-        action: 'submit',
-        type: 'request_error',
-        extra: { chainId, connector: connector?.name }
-      });
-      setSignStatus('error');
-      // TODO show error message to user
-    }
-  };
-
-  const { signMessage } = useSignMessage({
-    mutation: {
-      onSuccess: data => onSuccess(data),
-      onError: error => {
-        if (isUserRejectedRequestError(error)) {
-          setSignStatus('idle');
-          return;
-        }
-
-        setSignStatus('error');
-        reportError(error, {
-          module: 'auth',
-          flow: 'terms-signature',
-          action: 'sign',
-          type: 'wallet_signature_error',
-          extra: { chainId, connector: connector?.name }
-        });
-      }
-    }
-  });
-
-  const handleAgreeAndSign = () => {
-    setSignStatus('signing');
-    if (import.meta.env.VITE_USE_MOCK_WALLET === 'true') {
-      setHasAcceptedTerms(true);
+  // Phase A is checkbox-only (APP-424). The wallet signature that used to fire
+  // here is what blocked hardware-wallet and multisig users from browsing at
+  // all; it moves to the per-transaction step for US/VPN users (C6).
+  const handleAgree = async () => {
+    setSubmitStatus('submitting');
+    const accepted = await acceptTerms();
+    if (accepted) {
+      setSubmitStatus('idle');
       closeModal();
     } else {
-      signMessage({ message: import.meta.env.VITE_TERMS_MESSAGE_TO_SIGN });
+      setSubmitStatus('error');
     }
   };
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setSignStatus('idle');
+      setSubmitStatus('idle');
       setIsChecked(false);
       setHasScrolledToEnd(false);
       // Dismissing the modal without accepting must disconnect the wallet, otherwise wagmi stays
@@ -136,20 +65,16 @@ export function TermsModal() {
 
   const handleCheckboxChange = (checkedState: CheckedState) => {
     setIsChecked(checkedState === true);
-    if (checkedState === true) {
-      setSignStatus('signing');
-      signMessage({ message: import.meta.env.VITE_TERMS_MESSAGE_TO_SIGN });
-    }
   };
 
   const termsContent = <TermsMarkdownRenderer markdown={termsMarkdown} />;
 
   // Compute button text based on state
   const getButtonText = () => {
-    if (signStatus === 'signing') return 'Signing...';
+    if (submitStatus === 'submitting') return 'Submitting...';
     if (!hasScrolledToEnd) return 'Scroll down ↓';
     if (!isChecked) return 'Check to continue';
-    return 'Agree and Sign';
+    return 'Agree and continue';
   };
 
   const checkboxContent = (scrolledToEnd: boolean) => {
@@ -174,12 +99,11 @@ export function TermsModal() {
     );
   };
 
-  const errorContent = signStatus === 'error' && (
+  const errorContent = submitStatus === 'error' && (
     <Text className="text-error mb-4 text-center text-sm leading-none md:leading-tight">
       <Trans>
-        An error occurred while submitting your signature. Please ensure your wallet is connected to either
-        Ethereum mainnet, Base, Arbitrum, Optimism or Unichain and try again. If the issue persists, reach out
-        for assistance in the official{' '}
+        An error occurred while recording your acceptance. Please check your connection and try again. If the
+        issue persists, reach out for assistance in the official{' '}
         <ExternalLink
           className="text-textEmphasis hover:underline"
           href="https://discord.gg/skyecosystem"
@@ -232,11 +156,12 @@ export function TermsModal() {
       isOpen={isModalOpen}
       onOpenChange={handleOpenChange}
       title={<Trans>Legal Terms</Trans>}
+      termsVersion={latestTermsVersion}
       content={termsContent}
       additionalContent={checkboxContent}
       customError={errorContent}
-      isLoading={signStatus === 'signing'}
-      onAccept={handleAgreeAndSign}
+      isLoading={submitStatus === 'submitting'}
+      onAccept={handleAgree}
       onDecline={handleReject}
       acceptButtonText={getButtonText()}
       declineButtonText="Reject"
@@ -244,7 +169,7 @@ export function TermsModal() {
       showScrollInstruction={false}
       hideScrollTracking={false}
       triggerButton={triggerButton}
-      showLoadingState={isCheckingTerms || signStatus === 'loading' || termsCheckError}
+      showLoadingState={isCheckingTerms || termsCheckError}
       loadingContent={termsCheckError ? termsCheckErrorContent : undefined}
     />
   );
