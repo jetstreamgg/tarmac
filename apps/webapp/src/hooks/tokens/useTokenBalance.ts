@@ -70,6 +70,8 @@ type UseTokenBalancesReturnType = {
   data?: TokenBalanceRequiredSymbol[];
   refetch: () => void;
   isLoading: boolean;
+  /** True once the query has fetched at least once under the current key. */
+  isFetched: boolean;
   error: GetBalanceErrorType | ReadContractsErrorType | null;
 };
 
@@ -254,7 +256,7 @@ export function useTokenBalances({
   // Convert legacy params to chainTokenMap format
   const tokenMap = chainTokenMap ?? (tokens && chainId ? { [chainId]: tokens } : {});
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isFetched, error, refetch } = useQuery({
     queryKey: ['token-balances', address, tokenMap],
     queryFn: () => fetchTokenBalances({ config, address: address!, tokenMap }),
     enabled: enabled && !!address && Object.keys(tokenMap).length > 0
@@ -263,6 +265,7 @@ export function useTokenBalances({
   return {
     data,
     isLoading,
+    isFetched,
     error: error as GetBalanceErrorType | ReadContractsErrorType | null,
     refetch
   };

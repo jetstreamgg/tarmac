@@ -8,6 +8,10 @@ import {
   isMarketMatured
 } from '@/hooks';
 import { isMainnetId, isTestnetId } from '@/utils';
+// Straight from the leaf modules, not the barrel: that re-exports the provider,
+// which pulls the router into anything importing this hook.
+import { geoModuleForIntent } from '@/modules/geo-config/moduleForIntent';
+import { useGeoConfig } from '@/modules/geo-config/hooks/useGeoConfig';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useSavingsModal } from '@/modules/savings/hooks/useSavingsModal';
 import { useStUsdsModal } from '@/modules/stusds/hooks/useStUsdsModal';
@@ -43,7 +47,9 @@ function supplyChainFor(
 /**
  * Resolves a supplied position to its in-place "Supply" handler — the modal a
  * product opens without leaving the Portfolio page — or `undefined` when the
- * product has none (the caller then navigates to its product page).
+ * product has none, or when its module is geo-restricted (the caller then
+ * navigates to its product page; for a restricted module the route guard
+ * enforces the restriction there — an in-place modal would bypass it, APP-484).
  *
  * Product families are wired once here, so the position card stays declarative:
  * integrating a new in-place supply is a single case in this resolver, never a
@@ -59,6 +65,7 @@ function supplyChainFor(
 export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (() => void) | undefined {
   const connectedChainId = useChainId();
   const chains = useChains();
+  const { isModuleEnabled } = useGeoConfig();
   const { switchChainAsync } = useSwitchChain();
   const { setIsAutoSwitching, setAutoSwitchIntent } = useNetworkSwitch();
   const { openSupply: openSavingsSupply } = useSavingsModal();
@@ -73,6 +80,12 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
 
   return useCallback(
     (position: SuppliedPosition) => {
+      const geoModuleId = geoModuleForIntent(position.intent);
+      // While the geo config loads, isModuleEnabled answers false for every
+      // module — deliberately fail-closed here (the fallback just navigates),
+      // unlike the display hooks, which fail open to avoid blanking the page.
+      if (geoModuleId && !isModuleEnabled(geoModuleId)) return undefined;
+
       const requiredChainId = supplyChainFor(position, connectedChainId, chains);
       const onConnectedChain = requiredChainId === connectedChainId;
 
@@ -161,6 +174,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
     [
       connectedChainId,
       chains,
+      isModuleEnabled,
       switchChainAsync,
       setIsAutoSwitching,
       setAutoSwitchIntent,
