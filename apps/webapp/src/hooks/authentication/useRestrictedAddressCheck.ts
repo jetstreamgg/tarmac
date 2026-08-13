@@ -34,12 +34,16 @@ export const useRestrictedAddressCheck = ({
   address,
   authUrl,
   enabled,
+  staleTime = 60000, // a verdict stays fresh for 60 seconds, so tab focus doesn't refetch on every switch
+  refetchInterval = 60000, // re-check every 60 seconds, matching useVpnCheck, so an error state can recover
   ...options
 }: Props): { data: AuthResponse | undefined; error: Error | undefined; isLoading: boolean } => {
   const { data, error, isLoading } = useQuery({
     queryKey: ['auth', address],
     enabled: !!address && enabled,
     queryFn: () => checkAddress(address, authUrl),
+    staleTime,
+    refetchInterval,
     ...options
   });
 

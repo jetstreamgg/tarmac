@@ -154,16 +154,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       !vpnData?.isConnectedToVpn &&
       !vpnData?.isRestrictedRegion &&
       (!enabled || (enabled && authData?.addressAllowed)) &&
-      !authError &&
+      // Fail closed only when there is no verdict at all. A failed background
+      // refetch keeps the cached data and sets `error`, so gating on `authError`
+      // alone would discard an approval we already hold.
+      !(authError && !authData) &&
       !vpnError,
-    [
-      vpnData?.isConnectedToVpn,
-      vpnData?.isRestrictedRegion,
-      enabled,
-      authData?.addressAllowed,
-      authError,
-      vpnError
-    ]
+    [vpnData?.isConnectedToVpn, vpnData?.isRestrictedRegion, enabled, authData, authError, vpnError]
   );
 
   const isAuthorized = isAllowed || skipAuthCheck;
