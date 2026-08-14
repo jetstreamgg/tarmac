@@ -2,8 +2,11 @@ import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { type ReactNode } from 'react';
 import { getStoredConsent, saveConsent } from './consentStorage';
+import { createSanitizeUrlsBeforeSend } from './urlSanitizer';
 import { applySuperProperties } from './superProperties';
 import { isValidUUID } from '@/lib/generateUUID';
+import { QueryParams } from '@/lib/constants';
+import { GEO_OVERRIDE_PARAMS } from '@/modules/geo-config/applyGeoOverrides';
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
 const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST;
@@ -28,6 +31,13 @@ let hasInitializedPostHog = false;
 
 const SESSION_STORAGE_PH_ID = '__ph_bootstrap_id';
 const SESSION_STORAGE_PH_SESSION = '__ph_bootstrap_session';
+
+// APP-504: params allowed to survive in URLs captured on events (campaign params
+// are baked into the sanitizer). QueryParams is the single source of truth — a
+// new app param added there is automatically allowed.
+const sanitizeUrlsBeforeSend = createSanitizeUrlsBeforeSend({
+  allowedParams: [...Object.values(QueryParams), ...GEO_OVERRIDE_PARAMS, '__ph_id', '__ph_session_id']
+});
 
 /**
  * Read bootstrap identity from URL params (first load) or sessionStorage (refresh).
@@ -101,6 +111,7 @@ function initializePostHogIfNeeded(forceAccepted = false) {
     disable_web_experiments: true,
     respect_dnt: true,
     ip: false,
+    before_send: sanitizeUrlsBeforeSend,
     property_denylist: ['$ip'],
     cross_subdomain_cookie: true,
 
