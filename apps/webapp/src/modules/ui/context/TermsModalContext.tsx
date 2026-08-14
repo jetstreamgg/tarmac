@@ -25,7 +25,11 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
   // gets the blocked screen and never sees the terms modal.
   useEffect(() => {
     if (!isConnected) {
+      // Also drop any open state: a modal latched open during a connection
+      // must not greet the next one (found in APP-497 QA — a blocked wallet's
+      // disconnect surfaced the terms modal it was never supposed to see).
       setHasAutoOpened(false);
+      setIsModalOpen(false);
       return;
     }
     if (!hasAutoOpened && isAuthorized && !isConnectedAndAcceptedTerms && !termsCheckError) {

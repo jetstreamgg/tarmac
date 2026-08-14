@@ -228,6 +228,21 @@ describe('loader/terms flow (real modal)', () => {
     expect(phase()).toBe('off');
   });
 
+  // Found in APP-497 browser QA: a modal state latched open during a
+  // connection (e.g. behind the blocked-wallet screen) must not survive the
+  // disconnect and greet whatever connects next.
+  it('disconnecting clears any open terms modal', () => {
+    const { rerender } = render(<Harness />);
+    connect(rerender);
+    expect(screen.getByTestId('end-of-terms')).toBeTruthy();
+
+    h.isConnected = false;
+    h.address = undefined;
+    rerender(<Harness />);
+
+    expect(screen.queryByTestId('end-of-terms')).toBeNull();
+  });
+
   it('rejecting the terms disconnects and never shows the loader', () => {
     const { rerender } = render(<Harness />);
     connect(rerender);

@@ -97,7 +97,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [termsCheck, setTermsCheck] = useState<TermsCheckData | undefined>(undefined);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
-  const [enabled, setEnabled] = useState(false);
+  // Derived, not state: an effect-synced copy lags `address` by a render, and
+  // in that render a fresh connection reads as authorized before screening has
+  // even started — long enough for the terms modal to latch open (APP-497 QA).
+  const enabled = !!address;
 
   const skipAuthCheck =
     (!IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true') || isPrivateDeployment();
@@ -142,10 +145,6 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
     }
   }, [authError]);
-
-  useEffect(() => {
-    setEnabled(!!address);
-  }, [address]);
 
   // Guard against stale responses when the address changes mid-flight
   const activeAddressRef = useRef<string | null>(null);
