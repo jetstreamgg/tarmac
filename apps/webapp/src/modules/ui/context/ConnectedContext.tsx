@@ -210,7 +210,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [recordLocalAcceptance]);
 
   const acceptTerms = useCallback(async (): Promise<boolean> => {
-    if (!address) return false;
+    // Without an address, or before the check has reported a version, there is
+    // no key for the local flag — so the gate could never open, and posting
+    // anyway would leave an acceptance event that nothing can ever satisfy.
+    // Refuse before writing. The modal holds its loading state until the check
+    // resolves, so this is a guard rather than a path users take.
+    if (!address || !termsCheck?.latestVersion) return false;
 
     // The mock wallet can't produce a real acceptance record, and local dev
     // points at the shared staging endpoint — so bypass the write, as the old
@@ -239,7 +244,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // hole this gate exists to close.
     setTermsCheck(prev => (prev ? { ...prev, accepted: true } : prev));
     return reportUnlessRecorded();
-  }, [address, chainId, connector?.name, reportUnlessRecorded]);
+  }, [address, chainId, connector?.name, reportUnlessRecorded, termsCheck?.latestVersion]);
 
   const isAllowed = useMemo(
     () =>

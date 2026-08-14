@@ -232,6 +232,21 @@ describe('ConnectedContext — the terms AND gate', () => {
       expect(localStorage.getItem(termsAcceptanceKey(ADDRESS_A, VERSION))).toBe('true');
     });
 
+    // Nothing is posted before the check reports a version: that row could
+    // never be satisfied by any browser, since there would be no key to write
+    // the local flag under.
+    it('posts nothing before the version is known', async () => {
+      mocks.checkTermsWithRetry.mockResolvedValue({ status: 'error', lastError: new Error('down') });
+
+      renderProvider();
+      await waitFor(() => expect(mocks.checkTermsWithRetry).toHaveBeenCalled());
+
+      fireEvent.click(screen.getByTestId('accept'));
+
+      await waitFor(() => expect(accepted()).toBe('false'));
+      expect(mocks.addTermsAcceptance).not.toHaveBeenCalled();
+    });
+
     // The ordering this feature turns on: a local flag written before a failed
     // DB write would leave the user browsing with no record anywhere.
     it('writes no local flag when the DB write fails', async () => {
