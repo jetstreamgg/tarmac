@@ -19,9 +19,12 @@ export const AppEvents = {
 export type SelectionMethod = 'header_nav' | 'mobile_drawer' | 'deeplink' | 'card';
 export type TxStatus = 'success' | 'error' | 'cancelled';
 export type ErrorContext = string;
-export type VpnCheckResult = 'allowed' | 'vpn_blocked' | 'region_blocked' | 'error' | 'unknown';
+// A VPN stopped being a block outcome in APP-497 ('vpn_blocked'/'vpn_detected'
+// retired): VPN users transact behind the per-transaction signature instead,
+// and the `is_vpn` property on the events carries the fact.
+export type VpnCheckResult = 'allowed' | 'region_blocked' | 'error' | 'unknown';
 export type BlockReason =
-  'vpn_detected' | 'restricted_region' | 'address_restricted' | 'network_error' | 'auth_error' | 'unknown';
+  'restricted_region' | 'address_restricted' | 'network_error' | 'auth_error' | 'unknown';
 export type Viewport = 'mobile' | 'tablet' | 'desktop';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

@@ -20,6 +20,7 @@ const ADDRESS = '0x00000000000000000000000000000000000000aa';
 
 const h = vi.hoisted(() => ({
   isConnected: false,
+  isAuthorized: true,
   address: undefined as string | undefined,
   onConnectCallbacks: [] as ((data: { address: string; isReconnected: boolean }) => void)[],
   scrolledToEnd: false,
@@ -124,11 +125,12 @@ function Harness() {
       isCheckingTerms: false,
       termsCheckError: false,
       retryTermsCheck: () => {},
-      isAuthorized: true,
+      isAuthorized: h.isAuthorized,
       authData: { authIsLoading: false },
       vpnData: { vpnIsLoading: false }
     }),
-    [hasAcceptedTerms]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- h.isAuthorized is test-harness state read at render time
+    [hasAcceptedTerms, h.isAuthorized]
   );
   return (
     <I18nProvider i18n={i18n}>
@@ -154,6 +156,7 @@ const connect = (rerender: (ui: React.ReactElement) => void) => {
 beforeEach(() => {
   localStorage.clear();
   h.isConnected = false;
+  h.isAuthorized = true;
   h.address = undefined;
   h.onConnectCallbacks = [];
   h.navigate = vi.fn();
@@ -205,6 +208,24 @@ describe('loader/terms flow (real modal)', () => {
     // Acceptance is what releases the loader: the cover is up only now.
     expect(phase()).toBe('cover');
     expect(screen.getByTestId('app-loader')).toBeTruthy();
+  });
+
+  // The APP-497 ordering: address screening sits between wallet selection and
+  // the T&C gate. While `isAuthorized` is false (screening pending, or the
+  // wallet is blocked), the terms modal must not open — the blocked/loading UI
+  // owns the screen. It opens only once screening resolves in favor.
+  it('holds the terms modal until screening authorizes the wallet', () => {
+    h.isAuthorized = false;
+    const { rerender } = render(<Harness />);
+
+    connect(rerender);
+    expect(screen.queryByTestId('end-of-terms')).toBeNull();
+
+    h.isAuthorized = true;
+    rerender(<Harness />);
+
+    expect(screen.getByTestId('end-of-terms')).toBeTruthy();
+    expect(phase()).toBe('off');
   });
 
   it('rejecting the terms disconnects and never shows the loader', () => {

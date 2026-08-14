@@ -74,6 +74,7 @@ const testConnectedContextValue = {
   isCheckingTerms: false,
   termsCheckError: false,
   retryTermsCheck: () => {},
+  retryAccessChecks: () => {},
   hasAcceptedTerms: true,
   hasSignedCurrentTerms: true,
   acceptTerms: async () => true,
