@@ -191,8 +191,11 @@ export function useAppOrchestration(): { intent: Intent } {
     }
 
     // Reward detail routes must point at a reward contract available on the
-    // target chain.
+    // target chain. The intent check pins the branch to rewards routes: the
+    // matched $rewardContract param lags the location by a render, and acting
+    // on the stale param mid-transition re-navigates forever (redirect loop).
     if (
+      intent === Intent.REWARDS_INTENT &&
       rewardContract !== undefined &&
       !rewardContracts?.some(c => c.contractAddress?.toLowerCase() === rewardContract.toLowerCase())
     ) {
