@@ -22,6 +22,8 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useUpgradeDeepLink } from '@/modules/upgrade/hooks/useUpgradeDeepLink';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import type { AutoSwitchTrigger } from '@/modules/analytics/constants';
 
 /**
  * App-level orchestration that must run once for every module route: route
@@ -52,13 +54,29 @@ export function useAppOrchestration(): { intent: Intent } {
   const chains = useChains();
 
   const { connector } = useConnection();
+  const { trackNetworkAutoSwitched } = useAppAnalytics();
+
+  // Attribution hand-off between the route guard (which writes the network
+  // param) and the param-driven switch effect below that acts on it (D-2).
+  const autoSwitchTriggerRef = useRef<AutoSwitchTrigger | null>(null);
+
   useConnectionEffect({
     // Once the user connects their wallet, check if the network param is set and switch chains if necessary
-    onConnect() {
+    onConnect(data) {
       const parsedChainId = chains.find(
         chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network || '')
       )?.id;
       if (parsedChainId) {
+        if (parsedChainId !== chainId) {
+          // Fires on silent auto-reconnects too — is_reconnect keeps those
+          // distinguishable from a fresh connect's prompt (APP-444 D-2).
+          trackNetworkAutoSwitched({
+            trigger: 'connect',
+            fromChainId: chainId,
+            toChainId: parsedChainId,
+            isReconnect: data.isReconnected
+          });
+        }
         switchChain({ chainId: parsedChainId });
       }
     }
@@ -169,6 +187,7 @@ export function useAppOrchestration(): { intent: Intent } {
       if (targetChainId !== undefined && targetChainId !== chainId) {
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
+        autoSwitchTriggerRef.current = 'route_guard';
       }
       setSearchParams(
         params => {
@@ -231,6 +250,11 @@ export function useAppOrchestration(): { intent: Intent } {
         chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network)
       )?.id;
       if (parsedChainId && parsedChainId !== chainId) {
+        // Read-and-clear: 'route_guard' when the mainnet-only guard wrote the
+        // param this effect is reacting to, else a deep link / stale URL.
+        const trigger = autoSwitchTriggerRef.current ?? 'url_param';
+        autoSwitchTriggerRef.current = null;
+        trackNetworkAutoSwitched({ trigger, fromChainId: chainId, toChainId: parsedChainId });
         switchChain({ chainId: parsedChainId });
       }
     }

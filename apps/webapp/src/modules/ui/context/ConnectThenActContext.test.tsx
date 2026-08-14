@@ -1,5 +1,10 @@
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('posthog-js/react', async () => {
+  const posthog = (await import('posthog-js')).default;
+  return { usePostHog: () => posthog };
+});
 
 const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 
@@ -13,7 +18,10 @@ vi.mock('wagmi', async importOriginal => {
       address: h.connected ? TEST_ADDRESS : undefined,
       isConnected: h.connected,
       isConnecting: h.connecting
-    })
+    }),
+    // The providers' analytics hooks read the chain list; the real hook needs
+    // a WagmiProvider this harness doesn't mount.
+    useChains: () => [{ id: 1, name: 'Ethereum' }]
   };
 });
 
@@ -38,18 +46,31 @@ vi.mock('../components/ConnectModal', () => ({
   )
 }));
 
+import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
+import type { ConnectReason } from '@/modules/analytics/constants';
+import { capturedEventsNamed, clearCapturedEvents, lastCapturedEvent } from '@/test/analyticsCapture';
 import { ConnectModalProvider } from './ConnectModalContext';
 import { ConnectThenActProvider, useConnectThenAct, CONTINUATION_DELAY_MS } from './ConnectThenActContext';
 
-function Probe({ action, label = 'cta' }: { action: () => void; label?: string }) {
-  const run = useConnectThenAct(action);
+function Probe({
+  action,
+  label = 'cta',
+  reason
+}: {
+  action: () => void;
+  label?: string;
+  reason?: ConnectReason;
+}) {
+  const run = useConnectThenAct(action, reason);
   return <button data-testid={label} onClick={run} />;
 }
 
 const wrap = (ui: React.ReactNode) => (
-  <ConnectModalProvider>
-    <ConnectThenActProvider>{ui}</ConnectThenActProvider>
-  </ConnectModalProvider>
+  <AnalyticsFlowProvider>
+    <ConnectModalProvider>
+      <ConnectThenActProvider>{ui}</ConnectThenActProvider>
+    </ConnectModalProvider>
+  </AnalyticsFlowProvider>
 );
 
 describe('useConnectThenAct', () => {
@@ -178,5 +199,74 @@ describe('useConnectThenAct', () => {
 
     expect(supplyA).not.toHaveBeenCalled();
     expect(supplyB).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('gated-action analytics (APP-444 C4/C5)', () => {
+  beforeEach(() => clearCapturedEvents());
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    h.connected = true;
+    h.acceptedTerms = true;
+    h.connecting = false;
+  });
+
+  it('names the gated reason on the connect-modal-opened event', () => {
+    h.connected = false;
+    h.acceptedTerms = false;
+    render(wrap(<Probe action={vi.fn()} reason="savings_supply" />));
+
+    fireEvent.click(screen.getByTestId('cta'));
+
+    expect(lastCapturedEvent('app_connect_modal_opened')?.properties).toMatchObject({
+      connect_reason: 'savings_supply'
+    });
+  });
+
+  it('resolves completed with the reason once the resumed action runs', () => {
+    vi.useFakeTimers();
+    h.connected = false;
+    h.acceptedTerms = false;
+    const action = vi.fn();
+    const view = render(wrap(<Probe action={action} reason="convert" />));
+
+    fireEvent.click(screen.getByTestId('cta'));
+    expect(capturedEventsNamed('app_gated_action_resolved')).toHaveLength(0);
+
+    h.connected = true;
+    h.acceptedTerms = true;
+    view.rerender(wrap(<Probe action={action} reason="convert" />));
+    act(() => vi.advanceTimersByTime(CONTINUATION_DELAY_MS));
+
+    expect(action).toHaveBeenCalledTimes(1);
+    const resolved = lastCapturedEvent('app_gated_action_resolved');
+    expect(resolved?.properties).toMatchObject({ outcome: 'completed', connect_reason: 'convert' });
+    expect(resolved?.properties.flow_id).toBeTruthy();
+  });
+
+  it('resolves abandoned exactly once when the modal is dismissed without connecting', () => {
+    vi.useFakeTimers();
+    h.connected = false;
+    h.acceptedTerms = false;
+    const action = vi.fn();
+    const view = render(wrap(<Probe action={action} reason="stake_open" />));
+
+    fireEvent.click(screen.getByTestId('cta'));
+    fireEvent.click(screen.getByTestId('connect-modal-dismiss'));
+
+    expect(lastCapturedEvent('app_gated_action_resolved')?.properties).toMatchObject({
+      outcome: 'abandoned',
+      connect_reason: 'stake_open'
+    });
+
+    // The consumed intent must not resolve again on later state churn.
+    h.connected = true;
+    h.acceptedTerms = true;
+    view.rerender(wrap(<Probe action={action} reason="stake_open" />));
+    act(() => vi.advanceTimersByTime(CONTINUATION_DELAY_MS * 2));
+    expect(capturedEventsNamed('app_gated_action_resolved')).toHaveLength(1);
+    expect(action).not.toHaveBeenCalled();
   });
 });

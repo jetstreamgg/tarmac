@@ -74,7 +74,7 @@ export function VaultSupplyCard({
 
   // The CTA stays enabled while disconnected: clicking routes through the
   // connect flow and continues into the supply modal once connected.
-  const onSupplyOrConnect = useConnectThenAct(onSupply);
+  const onSupplyOrConnect = useConnectThenAct(onSupply, 'vault_supply');
 
   const rate = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
   const idleBalance =

@@ -1,6 +1,7 @@
 import { renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
+import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { usePortfolioSupplyActions } from './usePortfolioSupplyActions';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
@@ -22,8 +23,14 @@ const h = vi.hoisted(() => ({
   setAutoSwitchIntent: vi.fn()
 }));
 
+vi.mock('posthog-js/react', async () => {
+  const posthog = (await import('posthog-js')).default;
+  return { usePostHog: () => posthog };
+});
+
 vi.mock('wagmi', () => ({
   useChainId: () => h.chainId,
+  useConnection: () => ({ address: undefined }),
   useChains: () => h.chains,
   useSwitchChain: () => ({ switchChainAsync: h.switchChainAsync })
 }));
@@ -141,7 +148,7 @@ describe('usePortfolioSupplyActions', () => {
   afterEach(() => cleanup());
 
   it('resolves a savings position on the connected chain to an opener that launches the supply modal', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(position('savings'));
 
     expect(handler).toBeTypeOf('function');
@@ -150,7 +157,7 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('switches to the position chain first, then opens, for a savings position off the connected chain', async () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
 
     // Card scoped to Base while the wallet sits on mainnet: supply belongs to
     // the position's chain, so the handler moves the wallet there first.
@@ -168,7 +175,7 @@ describe('usePortfolioSupplyActions', () => {
 
   it('prefers the connected chain for a position spanning several chains (no switch)', () => {
     h.chainId = 8453;
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     result.current(position('savings', { chainIds: [1, 8453] }))!();
 
     expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
@@ -178,7 +185,7 @@ describe('usePortfolioSupplyActions', () => {
   it('targets the config Tenderly fork, never real Ethereum, when the build carries one (dev/staging)', async () => {
     h.chainId = 8453; // wallet on Base
     h.chains = [{ id: 1 }, { id: 314310 }, { id: 8453 }]; // dev config: Ethereum + fork + L2s
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
 
     // Position read from real mainnet, but the auto-switch must land on the
     // fork — landing a dev wallet on Ethereum means real fees.
@@ -190,7 +197,7 @@ describe('usePortfolioSupplyActions', () => {
 
   it('prefers the mainnet-family chain when a multi-chain position excludes the connected chain', async () => {
     h.chainId = 10; // wallet on Optimism; position spans Base + mainnet
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     await result.current(position('savings', { chainIds: [8453, 1] }))!();
 
     expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 1 });
@@ -198,7 +205,7 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('resolves a Morpho vault position to an opener that launches the vault modal with its config', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(
       position('vault', { id: 'vault-morpho-0xabc', address: '0xABC', rate: 0.0445 })
     );
@@ -215,7 +222,7 @@ describe('usePortfolioSupplyActions', () => {
 
   it('resolves a Morpho vault from its own chain while the wallet is on an L2, switching first', async () => {
     h.chainId = 8453; // wallet on Base; the vault lives on mainnet
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(
       position('vault', { id: 'vault-morpho-0xabc', address: '0xABC', rate: 0.0445 })
     );
@@ -233,12 +240,12 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('returns undefined for a Spark (non-Morpho) vault position (no in-place modal)', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     expect(result.current(position('vault', { id: 'vault-sky-0xdef' }))).toBeUndefined();
   });
 
   it('resolves a rewards position to an opener that launches the rewards modal with its config', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(
       position('rewards', { id: 'rewards-spk', address: '0xFA12', rate: 0.045 })
     );
@@ -256,7 +263,7 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('omits the rewards-in token for a points farm (Chronicle) and titles it by its registry name', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(
       position('rewards', { id: 'rewards-cle', address: '0xC1E0', rate: undefined })
     );
@@ -274,7 +281,7 @@ describe('usePortfolioSupplyActions', () => {
 
   it('resolves a rewards position from its own chain registry while the wallet is on an L2', async () => {
     h.chainId = 8453; // wallet on Base; the farm lives on mainnet
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(
       position('rewards', { id: 'rewards-spk', address: '0xFA12', rate: 0.045 })
     );
@@ -294,7 +301,7 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('returns undefined for a rewards position with no known contract (caller navigates)', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
 
     expect(result.current(position('rewards', { id: 'rewards-spk', address: '0xBEEF' }))).toBeUndefined();
     expect(result.current(position('rewards', { id: 'rewards-spk' }))).toBeUndefined();
@@ -302,7 +309,7 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('resolves a stUSDS position on the connected chain to an opener that launches the stUSDS modal', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(position('stusds'));
 
     expect(handler).toBeTypeOf('function');
@@ -312,7 +319,7 @@ describe('usePortfolioSupplyActions', () => {
 
   it('switches to mainnet first, then opens, for a stUSDS position while the wallet is on an L2', async () => {
     h.chainId = 8453; // wallet on Base; stUSDS position lives on mainnet
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(position('stusds'));
 
     expect(handler).toBeTypeOf('function');
@@ -324,7 +331,7 @@ describe('usePortfolioSupplyActions', () => {
 
   it('records the causing module for the network toast before switching', async () => {
     h.chainId = 8453;
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }));
 
     await handler!();
@@ -342,7 +349,7 @@ describe('usePortfolioSupplyActions', () => {
   it('opens nothing and clears the auto flags when the wallet declines the switch', async () => {
     h.chainId = 8453;
     h.switchChainAsync.mockRejectedValue(new Error('user rejected'));
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }));
 
     await handler!();
@@ -353,7 +360,7 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('engages no switch machinery when the position is on the connected chain', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     result.current(position('savings'))!();
 
     expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
@@ -363,7 +370,7 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('resolves a fixed (Pendle) position to an opener that launches the supply modal with its market', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }));
 
     expect(handler).toBeTypeOf('function');
@@ -373,7 +380,7 @@ describe('usePortfolioSupplyActions', () => {
 
   it('switches to mainnet first, then opens the market modal, for a fixed position while on an L2', async () => {
     h.chainId = 8453; // wallet on Base; the PT position lives on mainnet
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }));
 
     expect(handler).toBeTypeOf('function');
@@ -388,20 +395,20 @@ describe('usePortfolioSupplyActions', () => {
 
   it('returns undefined for a matured fixed market (redemption lives on the overview)', () => {
     h.pendleMarket.expiry = 1; // long past
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     expect(result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }))).toBeUndefined();
     expect(h.openPendleSupply).not.toHaveBeenCalled();
   });
 
   it('returns undefined for a fixed position whose address is not in the market registry', () => {
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     expect(result.current(position('fixed', { id: 'fixed-0x404', address: '0x404' }))).toBeUndefined();
     expect(h.openPendleSupply).not.toHaveBeenCalled();
   });
 
   it('returns undefined for a savings position when the savings module is geo-restricted (caller navigates to the guarded route)', () => {
     h.geoDisabledModules.add('savings');
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
 
     expect(result.current(position('savings'))).toBeUndefined();
     expect(h.openSavingsSupply).not.toHaveBeenCalled();
@@ -416,7 +423,7 @@ describe('usePortfolioSupplyActions', () => {
       ['fixed', 'fixed', { id: 'fixed-0x9c5', address: '0x9C5' }]
     ] as const;
 
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     for (const [kind, moduleId, over] of families) {
       expect(result.current(position(kind, over))).toBeTypeOf('function');
       h.geoDisabledModules.add(moduleId);
@@ -426,7 +433,7 @@ describe('usePortfolioSupplyActions', () => {
 
   it('leaves other modules resolvable while one is geo-restricted', () => {
     h.geoDisabledModules.add('savings');
-    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
 
     result.current(position('stusds'))!();
     expect(h.openStUsdsSupply).toHaveBeenCalledTimes(1);

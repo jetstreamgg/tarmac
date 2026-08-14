@@ -12,7 +12,21 @@ export const AppEvents = {
   VPN_BLOCKED_PAGE_VIEW: 'app_vpn_blocked_page_view',
   WALLET_CONNECTED: 'app_wallet_connected',
   WALLET_DISCONNECTED: 'app_wallet_disconnected',
-  ROUTE_REDIRECTED: 'app_route_redirected'
+  ROUTE_REDIRECTED: 'app_route_redirected',
+  CONNECT_MODAL_OPENED: 'app_connect_modal_opened',
+  WALLET_CONNECT_ATTEMPTED: 'app_wallet_connect_attempted',
+  WALLET_CONNECT_REJECTED: 'app_wallet_connect_rejected',
+  GATED_ACTION_RESOLVED: 'app_gated_action_resolved',
+  NETWORK_SWITCH_REQUESTED: 'app_network_switch_requested',
+  NETWORK_SWITCH_COMPLETED: 'app_network_switch_completed',
+  NETWORK_AUTO_SWITCHED: 'app_network_auto_switched',
+  UNSUPPORTED_NETWORK_SHOWN: 'app_unsupported_network_shown',
+  ERROR_BOUNDARY_TRIGGERED: 'app_error_boundary_triggered',
+  ROUTE_ERROR_VIEWED: 'app_route_error_viewed',
+  NOT_FOUND_VIEWED: 'app_not_found_viewed',
+  CONVERT_BLOCKED: 'app_convert_blocked',
+  PROMO_IMPRESSION: 'app_promo_impression',
+  PROMO_CLICKED: 'app_promo_clicked'
 } as const;
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -31,6 +45,24 @@ export type VpnCheckResult = 'allowed' | 'vpn_blocked' | 'region_blocked' | 'err
 export type BlockReason =
   'vpn_detected' | 'restricted_region' | 'address_restricted' | 'network_error' | 'auth_error' | 'unknown';
 export type Viewport = 'mobile' | 'tablet' | 'desktop';
+export type DisconnectSource = 'wallet_drawer' | 'terms_declined' | 'terms_dismissed' | 'external';
+/** Why the connect modal opened: the generic button, or the gated action that needed a wallet. */
+export type ConnectReason =
+  | 'connect_button'
+  | 'upgrade_modal'
+  | 'stake_open'
+  | 'savings_supply'
+  | 'vault_supply'
+  | 'stusds_supply'
+  | 'pendle_supply'
+  | 'convert';
+export type ConnectMethod = 'connect' | 'switch';
+export type GatedActionOutcome = 'completed' | 'abandoned';
+export type NetworkSwitchSource =
+  'chain_modal' | 'network_toast' | 'unsupported_network_page' | 'portfolio_supply';
+export type NetworkSwitchStatus = 'success' | 'rejected' | 'error';
+export type AutoSwitchTrigger = 'connect' | 'url_param' | 'route_guard';
+export type PromoId = 'allocate_stablecoins' | 'savings_tvl_simulate' | 'connect_wallet_card';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -195,7 +195,7 @@ export function UpgradeModalForm({
     execute,
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
-    confirmAction: isConnected ? undefined : openConnectModal,
+    confirmAction: isConnected ? undefined : () => openConnectModal('upgrade_modal'),
     steps,
     transactionScreenContent,
     toast,

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnalyticsFlowProvider } from '../context/AnalyticsFlowContext';
 import { useWalletAnalytics } from './useWalletAnalytics';
 import { capturedEventsNamed, clearCapturedEvents, lastCapturedEvent } from '@/test/analyticsCapture';
+import { setDisconnectSource } from '../lib/disconnectSource';
 
 vi.mock('posthog-js/react', async () => {
   const posthog = (await import('posthog-js')).default;
@@ -61,5 +62,28 @@ describe('useWalletAnalytics', () => {
     expect(lastCapturedEvent('app_wallet_disconnected')?.properties).toMatchObject({
       wallet_name: 'unknown'
     });
+  });
+
+  it('carries the disconnect source claimed by the initiating surface', () => {
+    renderWalletAnalytics();
+    connect(false);
+    setDisconnectSource('terms_declined');
+    act(() => wagmiHarness.onDisconnect?.());
+    expect(lastCapturedEvent('app_wallet_disconnected')?.properties).toMatchObject({
+      disconnect_source: 'terms_declined'
+    });
+  });
+
+  it('reads unclaimed disconnects as external, and clears a consumed claim', () => {
+    renderWalletAnalytics();
+    connect(false);
+    setDisconnectSource('wallet_drawer');
+    act(() => wagmiHarness.onDisconnect?.());
+    // Second disconnect with no new claim: the drawer claim must not linger.
+    connect(false);
+    act(() => wagmiHarness.onDisconnect?.());
+    const events = capturedEventsNamed('app_wallet_disconnected');
+    expect(events.at(-2)?.properties.disconnect_source).toBe('wallet_drawer');
+    expect(events.at(-1)?.properties.disconnect_source).toBe('external');
   });
 });

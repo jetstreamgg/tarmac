@@ -5,10 +5,15 @@ import { Heading, Text } from './Typography';
 import { Button } from '@/components/ui/button';
 import { NoResults } from '@/widgets';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
+import { trackNotFoundViewed } from '@/modules/analytics/lib/trackAmbientSurfaces';
 
 export function NotFound() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: s => s.location.pathname });
+
+  useEffect(() => {
+    trackNotFoundViewed({ path: pathname });
+  }, [pathname]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {

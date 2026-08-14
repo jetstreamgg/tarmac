@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useConnectionEffect } from 'wagmi';
 import { useAppAnalytics } from './useAppAnalytics';
+import { consumeDisconnectSource } from '../lib/disconnectSource';
 
 /**
  * Fires `app_wallet_connected` and `app_wallet_disconnected` on real connection
@@ -24,7 +25,10 @@ export function useWalletAnalytics() {
       }
     },
     onDisconnect: () => {
-      trackWalletDisconnected({ walletName: lastWalletRef.current });
+      trackWalletDisconnected({
+        walletName: lastWalletRef.current,
+        disconnectSource: consumeDisconnectSource()
+      });
     }
   });
 }
