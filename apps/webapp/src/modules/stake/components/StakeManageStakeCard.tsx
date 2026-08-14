@@ -32,9 +32,11 @@ export function StakeManageStakeCard({
   stakedAmount,
   stakedAmountLoading,
   rewardsRate,
+  rateLoading,
   estCurrentSky,
   estNextSky,
   minStakeToBorrow,
+  minStakeToBorrowLoading,
   error
 }: {
   mode: StakeCardMode;
@@ -49,11 +51,15 @@ export function StakeManageStakeCard({
   /** The vault read backing `stakedAmount` is in flight — hold the withdraw base behind a skeleton (APP-491). */
   stakedAmountLoading?: boolean;
   rewardsRate: number | null;
+  /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton (APP-491). */
+  rateLoading?: boolean;
   /** Current est. annual rewards (staked × rate), in SKY. */
   estCurrentSky: bigint | null;
   /** Simulated est. annual rewards once an amount is staged; null = no delta. */
   estNextSky: bigint | null;
   minStakeToBorrow: bigint | undefined;
+  /** The simulation backing `minStakeToBorrow` is in flight. */
+  minStakeToBorrowLoading?: boolean;
   error?: string;
 }) {
   const isStake = mode === 'stake';
@@ -149,6 +155,8 @@ export function StakeManageStakeCard({
                   {formatBigInt(minStakeToBorrow)}
                   {skyIcon}
                 </>
+              ) : minStakeToBorrowLoading ? (
+                <Skeleton className="h-4 w-14" />
               ) : (
                 NO_VALUE
               )
@@ -158,12 +166,26 @@ export function StakeManageStakeCard({
           <StakeManageStatDivider />
           <StakeManageStatCell
             label={<Trans>SKY Rewards rate</Trans>}
-            current={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : NO_VALUE}
+            current={
+              rewardsRate !== null ? (
+                formatDecimalPercentage(rewardsRate)
+              ) : rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
           />
           <StakeManageStatDivider />
           <StakeManageStatCell
             label={<Trans>Est. annual rewards</Trans>}
-            current={formatSky(estCurrentSky)}
+            current={
+              estCurrentSky === null && (rateLoading || stakedAmountLoading) ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                formatSky(estCurrentSky)
+              )
+            }
             next={
               estNextSky !== null && amount > 0n && estNextSky !== estCurrentSky
                 ? formatSky(estNextSky)

@@ -35,6 +35,8 @@ export interface StakePositionDetail {
   voteDelegate: `0x${string}` | undefined;
   /** Live staking-reward rate of the urn's farm, as a decimal (0.0569 = 5.69%). */
   rewardsRate: number | null;
+  /** The farm-rate read is in flight — rate/est-rewards cells hold a skeleton (APP-491). */
+  rateLoading: boolean;
   /** skyLocked × rate, in SKY (18 dec) — F4's 1e9-scaled math (M22). */
   estAnnualRewardsSky: bigint | null;
   claimableUsd: number;
@@ -72,7 +74,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     rewardContract && rewardContract !== ZERO_ADDRESS ? rewardContract : undefined
   );
 
-  const { data: rewardsChartInfo } = useMultipleRewardsChartInfo({
+  const { data: rewardsChartInfo, isLoading: rateLoading } = useMultipleRewardsChartInfo({
     rewardContractAddresses: rewardContract && rewardContract !== ZERO_ADDRESS ? [rewardContract] : []
   });
   const highestRateData = useHighestRateFromChartData(rewardsChartInfo ?? []);
@@ -133,6 +135,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     rewardSymbol: rewardContractTokens?.rewardsToken?.symbol,
     voteDelegate,
     rewardsRate,
+    rateLoading,
     estAnnualRewardsSky,
     claimableUsd,
     claimableSymbols,

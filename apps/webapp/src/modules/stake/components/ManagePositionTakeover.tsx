@@ -94,7 +94,7 @@ export function ManagePositionTakeover({
   const liveUsdsToWipe = state.borrowEnabled && state.borrowMode === 'repay' ? state.usdsAmount : 0n;
   const liveCollateralAmount = existingCollateral + liveSkyToLock - liveSkyToFree;
   const liveDebtValue = existingDebt + liveUsdsToBorrow - liveUsdsToWipe;
-  const { data: simulatedVault } = useSimulatedVault(
+  const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
     liveCollateralAmount > 0n ? liveCollateralAmount : 0n,
     liveDebtValue > 0n ? liveDebtValue : 0n,
     existingDebt,
@@ -118,14 +118,14 @@ export function ManagePositionTakeover({
     existingDebt,
     ilkName
   );
-  const { data: collateralData } = useCollateralData(ilkName);
+  const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
 
   const { data: skyBalance, isLoading: skyBalanceLoading } = useTokenBalance({
     address,
     token: TOKENS.sky.address[chainId as keyof typeof TOKENS.sky.address],
     chainId
   });
-  const { data: usdsBalance } = useTokenBalance({
+  const { data: usdsBalance, isLoading: usdsBalanceLoading } = useTokenBalance({
     address,
     token: TOKENS.usds.address[chainId as keyof typeof TOKENS.usds.address],
     chainId
@@ -155,7 +155,10 @@ export function ManagePositionTakeover({
       ? skyBalance !== undefined && state.skyAmount > skyBalance.value && state.skyAmount !== 0n
         ? t`Insufficient funds`
         : undefined
-      : state.skyAmount > existingCollateral && state.skyAmount !== 0n
+      : // Only validate against a RESOLVED collateral read — while the vault is
+        // in flight `existingCollateral` is a premature 0n and any entered
+        // amount would flash a false error (APP-491).
+        existingVault !== undefined && state.skyAmount > existingCollateral && state.skyAmount !== 0n
         ? t`Insufficient funds`
         : // The capped-OSM state implies max liquidation risk (the F8 proximity
           // short-circuit reports 100 whenever liquidation price ≥ delayed
@@ -247,7 +250,9 @@ export function ManagePositionTakeover({
   const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
   const hasChange =
     skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll || delegateChanged;
-  const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid;
+  // Every staged change is relative to the existing position, so nothing may
+  // confirm against an unresolved vault read (APP-491).
+  const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid && !detail.vaultLoading;
 
   const close = useCallback(() => {
     onClose();
@@ -468,9 +473,11 @@ export function ManagePositionTakeover({
         stakedAmount={existingCollateral}
         stakedAmountLoading={detail.vaultLoading}
         rewardsRate={detail.rewardsRate}
+        rateLoading={detail.rateLoading}
         estCurrentSky={detail.estAnnualRewardsSky}
         estNextSky={estNextSky}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
+        minStakeToBorrowLoading={liveSimLoading}
         error={stakeError}
       />
 
@@ -484,11 +491,15 @@ export function ManagePositionTakeover({
           dispatch({ type: 'setUsdsAmount', amount, wipeAll: stagedWipeAll })
         }
         existingVault={existingVault}
+        positionLoading={detail.vaultLoading}
         simulatedVault={simulatedVault}
+        simulationLoading={liveSimLoading}
         vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
+        collateralLoading={collateralLoading}
         maxBorrowable={availableBorrowBalance}
         maxRepayable={maxRepayable}
+        usdsBalanceLoading={usdsBalanceLoading}
         wipeAll={state.wipeAll}
         minCollateralNotMet={minCollateralNotMet}
         minCollateralForDust={simulatedVault?.minCollateralForDust}
