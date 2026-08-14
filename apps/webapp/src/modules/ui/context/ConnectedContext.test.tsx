@@ -248,6 +248,47 @@ describe('ConnectedContext — the terms AND gate', () => {
     });
   });
 
+  /**
+   * Safari with "Block all cookies", locked-down enterprise profiles and some
+   * webviews throw on every localStorage access. Before the session fallback
+   * these users were locked out entirely: `/add` wrote its row, the flag write
+   * failed silently, the gate stayed shut, and the modal reopened — appending
+   * another acceptance event on every retry, with nothing in Sentry.
+   */
+  describe('when localStorage is blocked', () => {
+    beforeEach(() => {
+      const blocked = () => {
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      };
+      vi.stubGlobal('localStorage', {
+        getItem: blocked,
+        setItem: blocked,
+        removeItem: blocked,
+        key: blocked,
+        get length(): number {
+          return blocked();
+        }
+      });
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('opens the gate after accepting, rather than looping', async () => {
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+      expect(accepted()).toBe('false');
+
+      fireEvent.click(screen.getByTestId('accept'));
+
+      await waitFor(() => expect(accepted()).toBe('true'));
+      // One acceptance, not one per retry.
+      expect(mocks.addTermsAcceptance).toHaveBeenCalledTimes(1);
+      expect(mocks.reportError).not.toHaveBeenCalled();
+    });
+  });
+
   describe('bypasses', () => {
     it('skipAuthCheck opens both halves without a check', async () => {
       vi.stubEnv('VITE_SKIP_AUTH_CHECK', 'true');

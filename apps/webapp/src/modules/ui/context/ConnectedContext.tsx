@@ -190,6 +190,25 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // instead; C7 aligns the bypasses with the two-phase model.
   const hasSignedCurrentTerms = skipAuthCheck || !!termsCheck?.signedForCurrentVersion;
 
+  /**
+   * Writes the local flag and reports if it could not be written. Returning
+   * true regardless is what would strand a user: the DB row exists, the AND
+   * gate's local half does not, so the modal reopens and every retry appends
+   * another acceptance event. Surfacing false keeps the modal open with its
+   * error instead of looping silently.
+   */
+  const reportUnlessRecorded = useCallback(() => {
+    if (recordLocalAcceptance()) return true;
+
+    reportError(new Error('Terms accepted but the local flag could not be recorded'), {
+      module: 'auth',
+      flow: 'terms-acceptance',
+      action: 'submit',
+      type: 'terms_local_flag_error'
+    });
+    return false;
+  }, [recordLocalAcceptance]);
+
   const acceptTerms = useCallback(async (): Promise<boolean> => {
     if (!address) return false;
 
@@ -197,9 +216,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // points at the shared staging endpoint — so bypass the write, as the old
     // signature path did.
     if (import.meta.env.VITE_USE_MOCK_WALLET === 'true') {
-      recordLocalAcceptance();
       setTermsCheck(prev => (prev ? { ...prev, accepted: true } : prev));
-      return true;
+      return reportUnlessRecorded();
     }
 
     const result = await addTermsAcceptance(address);
@@ -219,10 +237,9 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Order matters: the local flag goes on only after the DB write succeeded.
     // The reverse leaves a user browsing with no record anywhere — the exact
     // hole this gate exists to close.
-    recordLocalAcceptance();
     setTermsCheck(prev => (prev ? { ...prev, accepted: true } : prev));
-    return true;
-  }, [address, chainId, connector?.name, recordLocalAcceptance]);
+    return reportUnlessRecorded();
+  }, [address, chainId, connector?.name, reportUnlessRecorded]);
 
   const isAllowed = useMemo(
     () =>

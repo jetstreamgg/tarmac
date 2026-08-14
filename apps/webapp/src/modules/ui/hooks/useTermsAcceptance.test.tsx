@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTermsAcceptance } from './useTermsAcceptance';
 import { termsAcceptanceKey } from '@/modules/ui/lib/termsAcceptanceStorage';
 
@@ -119,5 +119,74 @@ describe('useTermsAcceptance', () => {
     const { result } = renderHook(() => useTermsAcceptance({ address: undefined, version: VERSION }));
 
     expect(result.current.hasLocalAcceptance).toBe(false);
+  });
+
+  /**
+   * Safari with "Block all cookies", locked-down enterprise profiles and some
+   * webviews throw on every localStorage access. Without a session fallback
+   * these users can never satisfy the gate's local half: the DB row is
+   * written, the flag is not, and the modal reopens forever.
+   */
+  describe('when localStorage is blocked', () => {
+    const blocked = () => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    };
+
+    beforeEach(() => {
+      vi.stubGlobal('localStorage', {
+        getItem: blocked,
+        setItem: blocked,
+        removeItem: blocked,
+        key: blocked,
+        get length(): number {
+          return blocked();
+        }
+      });
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('still records and reads back an acceptance', () => {
+      const { result } = renderHook(() => useTermsAcceptance({ address: ADDRESS_A, version: VERSION }));
+      expect(result.current.hasLocalAcceptance).toBe(false);
+
+      act(() => {
+        expect(result.current.recordLocalAcceptance()).toBe(true);
+      });
+
+      expect(result.current.hasLocalAcceptance).toBe(true);
+    });
+
+    it('still re-prompts a second address', () => {
+      const { result, rerender } = renderHook(
+        ({ address }) => useTermsAcceptance({ address, version: VERSION }),
+        { initialProps: { address: ADDRESS_A } }
+      );
+      act(() => {
+        result.current.recordLocalAcceptance();
+      });
+      expect(result.current.hasLocalAcceptance).toBe(true);
+
+      rerender({ address: ADDRESS_B });
+
+      expect(result.current.hasLocalAcceptance).toBe(false);
+    });
+
+    it('still re-prompts after a version bump', () => {
+      const { result, rerender } = renderHook(
+        ({ version }) => useTermsAcceptance({ address: ADDRESS_A, version }),
+        { initialProps: { version: VERSION } }
+      );
+      act(() => {
+        result.current.recordLocalAcceptance();
+      });
+      expect(result.current.hasLocalAcceptance).toBe(true);
+
+      rerender({ version: '2026-06-01' });
+
+      expect(result.current.hasLocalAcceptance).toBe(false);
+    });
   });
 });

@@ -25,25 +25,58 @@ const keyPrefixForAddress = (address: string) => `${STORAGE_PREFIX}:${address.to
 export const termsAcceptanceKey = (address: string, version: string) =>
   `${keyPrefixForAddress(address)}${version}`;
 
+/**
+ * Mirrors the flags for this page's lifetime, under the same keys.
+ *
+ * Some browsers throw on *any* `localStorage` access — Safari with "Block all
+ * cookies", locked-down enterprise profiles, some webviews. Without this copy
+ * the gate's local half could never materialise for them: acceptance would
+ * write its DB row, the flag write would fail silently, the gate would stay
+ * shut, and the modal would reopen forever while every attempt appended
+ * another `terms_acceptance_events` row.
+ *
+ * Because the keys are identical the gate's semantics are unchanged — an
+ * address switch or a version bump still re-prompts, and the AND with the DB
+ * half is untouched. This copy does not survive a reload, so these users
+ * re-accept on their next page load: the same fail-closed direction the design
+ * already takes for a second device or cleared site data.
+ */
+const sessionFlags = new Set<string>();
+
 export function hasLocalTermsAcceptance(address: string, version: string): boolean {
+  const key = termsAcceptanceKey(address, version);
+
   try {
-    return localStorage.getItem(termsAcceptanceKey(address, version)) === 'true';
+    return localStorage.getItem(key) === 'true';
   } catch {
-    // Storage unavailable (private mode). No flag means the modal is shown
-    // again, which is the fail-closed direction.
-    return false;
+    // Storage blocked, so the session copy is the only record there is. Note
+    // this is reached on a *throw*, not on a miss: when storage works and
+    // simply has no flag, the answer is genuinely no. That keeps the session
+    // copy from outvoting a user who cleared their site data mid-session.
+    return sessionFlags.has(key);
   }
 }
 
 export function recordLocalTermsAcceptance(address: string, version: string): void {
+  const key = termsAcceptanceKey(address, version);
+  const prefix = keyPrefixForAddress(address);
+
+  // A version bump strands this address's previous flag, so drop it rather
+  // than leaving one dead key behind per bump. Both copies are pruned the same
+  // way, so neither can answer for a version the other has forgotten.
+  for (const stale of sessionFlags) {
+    if (stale.startsWith(prefix)) sessionFlags.delete(stale);
+  }
+
   try {
-    // A version bump strands this address's previous flag, so drop it rather
-    // than leaving one dead key behind per bump.
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(keyPrefixForAddress(address))) localStorage.removeItem(key);
+    for (const stored of Object.keys(localStorage)) {
+      if (stored.startsWith(prefix)) localStorage.removeItem(stored);
     }
-    localStorage.setItem(termsAcceptanceKey(address, version), 'true');
+    localStorage.setItem(key, 'true');
   } catch {
-    // ignore storage write failures (private mode, quota)
+    // Storage blocked, private mode or quota: hold the flag in memory for this
+    // page's lifetime so the gate can open at all. Written only on failure, so
+    // a browser with working storage keeps exactly one source of truth.
+    sessionFlags.add(key);
   }
 }
