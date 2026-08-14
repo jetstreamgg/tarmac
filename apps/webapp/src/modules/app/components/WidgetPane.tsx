@@ -188,7 +188,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(<RewardsWidgetPane {...sharedProps} />),
       false,
       undefined,
-      'Use USDS to access Sky Token Rewards',
+      'Use USDS to access Sky Ecosystem Rewards',
       rewardSubItems
     ],
     [

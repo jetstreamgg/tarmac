@@ -17,11 +17,11 @@ vi.mock('@/hooks', async importOriginal => {
       return [
         {
           contractAddress: '0x123',
-          name: 'Sky Token Rewards',
+          name: 'Sky Ecosystem Rewards',
           supplyToken: TOKENS.usds,
           rewardToken: TOKENS.sky,
           chainId: TENDERLY_CHAIN_ID,
-          description: 'Sky Token Rewards',
+          description: 'Sky Ecosystem Rewards',
           externalLink: 'https://subdao.network',
           logo: 'https://via.placeholder.com/400x400/04d19a/ffffff?text=Subdao'
         }
@@ -123,7 +123,7 @@ describe('Rewards widget tests', () => {
   it('loads data when wrapped in wagmi config', async () => {
     renderWithWagmiWrapper(<RewardsWidget />);
 
-    const item = await screen.findByText('Sky Token Rewards');
+    const item = await screen.findByText('Sky Ecosystem Rewards');
 
     expect(item).toBeTruthy();
   });
