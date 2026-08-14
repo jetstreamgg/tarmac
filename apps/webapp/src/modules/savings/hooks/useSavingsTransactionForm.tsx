@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   getTokenDecimals,
@@ -14,6 +14,7 @@ import {
   type Token
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isL2ChainId, math } from '@/utils';
+import { parseAmountInput } from '@/lib/amountInput';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { SavingsAmountSummary } from '../components/SavingsAmountSummary';
 import {
@@ -115,17 +116,6 @@ export interface SavingsTransactionForm {
   resetToUsds: () => void;
 }
 
-// Parse the raw input to a bigint at the origin token's decimals (USDC is 6 on
-// every chain); partial/invalid input → 0.
-function parseAmount(raw: string, decimals: number): bigint {
-  if (!raw) return 0n;
-  try {
-    return parseUnits(raw, decimals);
-  } catch {
-    return 0n;
-  }
-}
-
 /**
  * The shared supply/withdraw form model for Sky Savings — the single source of
  * truth behind both savings supply surfaces: the inline no-position card
@@ -185,7 +175,7 @@ export function useSavingsTransactionForm({
   const originOptions: OriginSymbol[] = showOriginSelect ? origins : ['USDS'];
   const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
-  const amount = parseAmount(value, originDecimals);
+  const amount = parseAmountInput(value, originDecimals);
 
   const { data: walletBalance } = useTokenBalance({
     address,
@@ -291,7 +281,7 @@ export function useSavingsTransactionForm({
   const onInput = useCallback((raw: string) => {
     // Typing overrides a previous Max selection.
     setMax(false);
-    setValue(raw.replace(/[^0-9.]/g, ''));
+    setValue(raw);
   }, []);
 
   const setMaxAmount = useCallback(() => {

@@ -217,6 +217,7 @@ export function RewardsModalForm({
         label={<Trans>Amount</Trans>}
         tokenSymbol={supplyToken.symbol}
         value={value}
+        decimals={decimals}
         onInput={onInput}
         disabled={!isConnected}
         balance={
