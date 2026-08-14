@@ -31,6 +31,7 @@ import { formatCirculation, formatCirculationCoarse, protocolStartYear } from '.
 import { useEarnTableState } from '../hooks/useEarnTableState';
 import { EarnFeaturedCards } from './EarnFeaturedCards';
 import { ProtocolLineageBadge } from './ProtocolLineageBadge';
+import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 
 const NO_VALUE = '–';
 
@@ -228,6 +229,7 @@ export function EarnPage() {
   const handleRowSelect = (id: string) => {
     const row = rows.find(r => r.id === id);
     if (!row) return;
+    setPendingNavIntent('card', row.detailPath);
     void navigate({ to: row.detailPath as '/', search: retainOnNavigate });
   };
 

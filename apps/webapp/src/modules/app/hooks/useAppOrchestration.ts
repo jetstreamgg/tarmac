@@ -21,6 +21,7 @@ import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useUpgradeDeepLink } from '@/modules/upgrade/hooks/useUpgradeDeepLink';
+import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 
 /**
  * App-level orchestration that must run once for every module route: route
@@ -184,6 +185,7 @@ export function useAppOrchestration(): { intent: Intent } {
     // "/" is no longer a synonym — it forwards to the visitor's home
     // (Portfolio or Earn, APP-295), which is the wrong semantic here.
     if (action.kind === 'redirect-home') {
+      trackRouteRedirected({ fromPath: pathname, toPath: ROUTES.PORTFOLIO, reason: 'module_unavailable' });
       void navigate({ to: ROUTES.PORTFOLIO, search: keepSearch, replace: true });
       return;
     }
@@ -194,6 +196,7 @@ export function useAppOrchestration(): { intent: Intent } {
       rewardContract !== undefined &&
       !rewardContracts?.some(c => c.contractAddress?.toLowerCase() === rewardContract.toLowerCase())
     ) {
+      trackRouteRedirected({ fromPath: pathname, toPath: '/earn/rewards', reason: 'unknown_reward' });
       void navigate({ to: '/earn/rewards', search: keepSearch, replace: true });
     }
   }, [intent, rewardContract, newChainId, rewardContracts, navigate]);

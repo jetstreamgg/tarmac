@@ -1,19 +1,23 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { Layout } from './Layout';
 import { Heading, Text } from './Typography';
 import { Button } from '@/components/ui/button';
 import { NoResults } from '@/widgets';
+import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 
 export function NotFound() {
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: s => s.location.pathname });
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
+      // The auto-redirect otherwise hides 404s as home traffic (APP-444 A7).
+      trackRouteRedirected({ fromPath: pathname, toPath: '/', reason: 'not_found' });
       navigate({ to: '/' });
     }, 5000);
     return () => window.clearTimeout(timeoutId);
-  }, [navigate]);
+  }, [navigate, pathname]);
 
   return (
     <Layout>

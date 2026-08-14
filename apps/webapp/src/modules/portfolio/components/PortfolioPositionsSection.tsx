@@ -20,6 +20,7 @@ import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
 import { PositionCard } from './PositionCard';
 import { IdleStablecoinsTable } from './IdleStablecoinsTable';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
+import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 
 // Each card spans a fraction of the row so 1 (mobile) → 3 (desktop) show at once.
 // The comp (1030:58713) sets cards 8px apart, not the carousel's default 16.
@@ -56,8 +57,10 @@ export function PortfolioPositionsSection({
   // switching the wallet to the position's chain first when needed; products
   // without one — and all Manage buttons — route to the product page.
   const resolveSupplyAction = usePortfolioSupplyActions();
-  const goToProduct = (detailPath: string) =>
+  const goToProduct = (detailPath: string) => {
+    setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
+  };
   // Deep-link to the Earn list pre-filtered by the chosen stablecoin (keeps the
   // active network), consumed by EarnPage's ?token= handler.
   const goToEarnForToken = (symbol: string) =>

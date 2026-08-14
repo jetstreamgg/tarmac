@@ -15,27 +15,30 @@ export function useAppAnalytics() {
     [chains]
   );
 
-  const trackWidgetSelected = ({
-    widgetName,
-    previousWidget,
-    selectionMethod,
-    chainId
-  }: {
-    widgetName: string;
-    previousWidget: string;
-    selectionMethod: SelectionMethod;
-    chainId: number;
-  }) => {
-    safeCapture(posthog, AppEvents.WIDGET_SELECTED, {
-      widget_name: widgetName,
-      previous_widget: previousWidget,
-      selection_method: selectionMethod,
-      chain_id: chainId,
-      chain_name: getChainName(chainId),
-      viewport: getViewport(),
-      flow_id: getFlowId()
-    });
-  };
+  const trackWidgetSelected = useCallback(
+    ({
+      widgetName,
+      previousWidget,
+      selectionMethod,
+      chainId
+    }: {
+      widgetName: string;
+      previousWidget: string;
+      selectionMethod: SelectionMethod;
+      chainId: number;
+    }) => {
+      safeCapture(posthog, AppEvents.WIDGET_SELECTED, {
+        widget_name: widgetName,
+        previous_widget: previousWidget,
+        selection_method: selectionMethod,
+        chain_id: chainId,
+        chain_name: getChainName(chainId),
+        viewport: getViewport(),
+        flow_id: getFlowId()
+      });
+    },
+    [posthog, getChainName, getFlowId]
+  );
 
   const trackTransactionStarted = useCallback(
     ({

@@ -11,12 +11,21 @@ export const AppEvents = {
   VPN_CHECK_COMPLETED: 'app_vpn_check_completed',
   VPN_BLOCKED_PAGE_VIEW: 'app_vpn_blocked_page_view',
   WALLET_CONNECTED: 'app_wallet_connected',
-  WALLET_DISCONNECTED: 'app_wallet_disconnected'
+  WALLET_DISCONNECTED: 'app_wallet_disconnected',
+  ROUTE_REDIRECTED: 'app_route_redirected'
 } as const;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type SelectionMethod = 'header_nav' | 'mobile_drawer' | 'deeplink' | 'card';
+// 'link' = fallback for pathname-changing pushes no click handler claimed (in-page links, buttons).
+export type SelectionMethod = 'header_nav' | 'mobile_drawer' | 'deeplink' | 'card' | 'link';
+export type RedirectReason =
+  | 'module_unavailable'
+  | 'unknown_reward'
+  | 'unknown_vault'
+  | 'unknown_market'
+  | 'market_matured'
+  | 'not_found';
 export type TxStatus = 'success' | 'error' | 'cancelled';
 export type VpnCheckResult = 'allowed' | 'vpn_blocked' | 'region_blocked' | 'error' | 'unknown';
 export type BlockReason =

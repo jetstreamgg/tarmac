@@ -4,7 +4,8 @@ import type {
   TxStatus,
   Viewport,
   VpnCheckResult,
-  BlockReason
+  BlockReason,
+  RedirectReason
 } from './constants';
 import type { WidgetErrorKind } from './lib/classifyTransactionError';
 import type { Destination } from './lib/destination';
@@ -85,6 +86,15 @@ export interface VpnBlockedPageViewProps {
   viewport: Viewport;
 }
 
+/** No flow_id: redirects are ambient navigation, not part of a funnel. */
+export interface RouteRedirectedProps {
+  from_path: string;
+  to_path: string;
+  reason: RedirectReason;
+  viewport: Viewport;
+  destination?: Destination;
+}
+
 export type AppEventContract = {
   app_widget_selected: WidgetSelectedProps;
   app_widget_flow_started: TransactionStartedProps;
@@ -94,6 +104,7 @@ export type AppEventContract = {
   app_vpn_blocked_page_view: VpnBlockedPageViewProps;
   app_wallet_connected: WalletEventProps;
   app_wallet_disconnected: WalletEventProps;
+  app_route_redirected: RouteRedirectedProps;
 };
 
 export type AppEventName = (typeof AppEvents)[keyof typeof AppEvents];
