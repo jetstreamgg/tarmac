@@ -167,28 +167,46 @@ export function StUsdsModalForm({
     : amountDisplay;
   const earningsAfterDisplay = projectEarnings(positionAfter);
   const isCurveRoute = providerSelection.selectedProvider === StUsdsProviderType.CURVE;
+  const impactPercent = priceImpactBps !== undefined ? Math.floor(priceImpactBps / 100) : 0;
+  // A checked acknowledgement lapses if the impact floors above the accepted
+  // percent while the user sits on review (the checkbox lives on the entry
+  // screen) — this line explains the disabled confirm in place.
+  const impactLapsed = needsImpactAcknowledgement && !impactAccepted;
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`stusds-modal-${flow}-review`}>
         {transactionScreenContent}
-        <ModalSummaryGrid
-          rows={toGridCells(
-            buildStUsdsReviewRows(flow, {
-              amount: amountDisplay,
-              receive: receiveDisplay,
-              estEarnings: earningsAfterDisplay,
-              rate: rateDisplay,
-              route: isCurveRoute ? t`Curve` : t`Native`,
-              routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
-              withdrawal: i18n._(withdrawalWording('stusds', flow)),
-              network: networkName,
-              networkFee: networkFee?.formatted ?? NO_VALUE
-            }),
-            'stusds-modal-row',
-            feeCell
+        <div className="flex flex-col gap-4">
+          <ModalSummaryGrid
+            rows={toGridCells(
+              buildStUsdsReviewRows(flow, {
+                amount: amountDisplay,
+                receive: receiveDisplay,
+                estEarnings: earningsAfterDisplay,
+                rate: rateDisplay,
+                route: isCurveRoute ? t`Curve` : t`Native`,
+                routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
+                withdrawal: i18n._(withdrawalWording('stusds', flow)),
+                network: networkName,
+                networkFee: networkFee?.formatted ?? NO_VALUE
+              }),
+              'stusds-modal-row',
+              feeCell
+            )}
+            dividerClassName="h-6"
+          />
+          {impactLapsed && (
+            <Text
+              className="text-fgSecondary text-xs leading-[18px]"
+              data-testid="stusds-modal-review-impact-lapsed"
+            >
+              <Trans>
+                The price impact has risen and now exceeds {impactPercent}%. Go back to accept the new price
+                impact before confirming.
+              </Trans>
+            </Text>
           )}
-          dividerClassName="h-6"
-        />
+        </div>
       </div>
     ),
     [
@@ -201,7 +219,9 @@ export function StUsdsModalForm({
       isCurveRoute,
       networkName,
       feeCell,
-      networkFee
+      networkFee,
+      impactLapsed,
+      impactPercent
     ]
   );
 
@@ -241,7 +261,6 @@ export function StUsdsModalForm({
 
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);
 
-  const impactPercent = priceImpactBps !== undefined ? Math.floor(priceImpactBps / 100) : 0;
   const impactColor =
     priceImpactBps !== undefined && priceImpactBps > PRICE_IMPACT_HIGH_THRESHOLD_BPS
       ? 'text-error'
