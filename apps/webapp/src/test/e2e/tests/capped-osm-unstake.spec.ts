@@ -47,9 +47,10 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     await isolatedPage.getByTestId('widget-button').first().click();
 
     // Select rewards
-    // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-    // await isolatedPage.getByTestId('stake-reward-card').first().click();
-    // await isolatedPage.getByTestId('widget-button').first().click();
+    await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+    await isolatedPage.getByTestId('stake-reward-card').first().click();
+    await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+    await isolatedPage.getByTestId('widget-button').first().click();
 
     // Confirm position
     await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible();
