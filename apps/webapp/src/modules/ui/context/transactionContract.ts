@@ -42,6 +42,13 @@ export type TransactionEntry = {
   /** Disables the entry's confirm button (e.g. amount is zero / over balance). */
   confirmDisabled?: boolean;
   /**
+   * User-readable engine/prepare failure rendered above the entry's confirm
+   * button (e.g. a failed withdraw simulation). Explanatory only — pair it with
+   * `confirmDisabled` to actually block the confirm. Push `undefined` to clear
+   * it when the engine recovers.
+   */
+  errorMessage?: string;
+  /**
    * Label for an optional second CTA drawn beside the primary one (Figma
    * 1036:214001: the stake claim entry pairs a secondary "Claim" with the
    * primary "Claim & Restake SKY"). Only honoured on entry-only flows — a
@@ -140,6 +147,12 @@ export type TransactionConfig = {
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
+  /**
+   * User-readable engine/prepare failure rendered above the review screen's
+   * confirm button (the entry screen reads `entry.errorMessage` instead — the
+   * same dual sourcing as `confirmDisabled`).
+   */
+  errorMessage?: string;
   successLabel?: string;
   errorLabel?: string;
   onSuccess?: () => void;
@@ -172,6 +185,7 @@ export type LiveModalUpdate = Partial<
     | 'transactionScreenContent'
     | 'rightHeaderComponent'
     | 'confirmDisabled'
+    | 'errorMessage'
     | 'onConfirm'
     | 'onSecondaryConfirm'
     | 'onRetry'

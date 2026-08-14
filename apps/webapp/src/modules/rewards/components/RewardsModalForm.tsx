@@ -15,6 +15,7 @@ import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { useRewardsLaunch, type RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
 import { useRewardsTransactionForm, type RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
 import {
@@ -91,8 +92,9 @@ export function RewardsModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, calls, isBatch } = useRewardsLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useRewardsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
@@ -205,6 +207,7 @@ export function RewardsModalForm({
     sessionId,
     execute,
     confirmDisabled: disabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,

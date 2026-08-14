@@ -55,7 +55,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
-import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { formatPriceImpact } from '../utils/priceImpact';
 import { buildPendleEntryRows, buildPendleReviewRows } from './pendleModalRows';
 
@@ -167,7 +167,11 @@ export function PendleModalForm({
     return needsAllowance ? [{ label: t`Approve`, tokenSymbol: inputSymbol }, convertStep] : [convertStep];
   }, [isSupply, needsAllowance, inputSymbol]);
 
-  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
+  const {
+    data: quote,
+    isLoading: isFetchingQuote,
+    error: quoteError
+  } = useQuotePendleConvert({
     side,
     marketAddress: market.marketAddress,
     inputToken: isSupply ? selectedAddress : market.ptToken,
@@ -296,10 +300,27 @@ export function PendleModalForm({
     }
   });
 
-  const prepareErrorMessage = useMemo(
-    () => pendlePrepareErrorMessage(writeHook.error?.message),
-    [writeHook.error]
+  // Quote failures win over write-layer prepare failures — an outage or
+  // no-route means there's nothing to prepare — but only once no usable quote
+  // remains: a failed background poll while the previous quote is still within
+  // TTL must not paint an outage banner over an enabled Confirm. The buy/sell
+  // slippage control lives on the review screen (no header gear), hence the
+  // location-specific hint.
+  const quoteErrorMessage = useMemo(
+    () => (quote ? undefined : pendleQuoteErrorMessage(quoteError?.message)),
+    [quote, quoteError]
   );
+  const prepareErrorMessage = useMemo(
+    () =>
+      !writeHook.prepared
+        ? pendlePrepareErrorMessage(
+            writeHook.error?.message,
+            t`Current market price exceeds your slippage tolerance. Adjust slippage on the review screen, or wait for the quote to refresh.`
+          )
+        : undefined,
+    [writeHook.prepared, writeHook.error]
+  );
+  const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
@@ -498,6 +519,7 @@ export function PendleModalForm({
     sessionId,
     execute: writeHook.execute,
     confirmDisabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps
@@ -542,12 +564,6 @@ export function PendleModalForm({
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
 
       {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
-
-      {prepareErrorMessage && amountReady && (
-        <Text className="text-error text-sm" data-testid="pendle-modal-error">
-          {prepareErrorMessage}
-        </Text>
-      )}
     </div>
   );
 

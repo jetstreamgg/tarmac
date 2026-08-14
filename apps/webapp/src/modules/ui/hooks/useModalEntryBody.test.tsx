@@ -20,12 +20,14 @@ function Host({
   steps,
   transactionContent,
   confirmLabel,
-  confirmAction
+  confirmAction,
+  errorMessage
 }: {
   steps?: TransactionStep[];
   transactionContent?: ReactNode;
   confirmLabel?: string;
   confirmAction?: () => void;
+  errorMessage?: string;
 }) {
   const renderInSlot = useModalEntryBody({
     sessionId: 's1',
@@ -33,6 +35,7 @@ function Host({
     confirmDisabled: false,
     confirmLabel,
     confirmAction,
+    errorMessage,
     steps,
     transactionContent
   });
@@ -118,5 +121,35 @@ describe('useModalEntryBody — entry CTA overrides', () => {
     expect('confirmAction' in entry).toBe(true);
     expect(entry.confirmAction).toBeUndefined();
     expect(entry.confirmLabel).toBe('Continue');
+  });
+});
+
+describe('useModalEntryBody — engine error slot', () => {
+  beforeEach(() => {
+    h.txStatus = TxStatus.IDLE;
+    h.updateModalContent.mockClear();
+  });
+
+  it('pushes errorMessage into both the entry patch (entry screen) and the top level (review stage)', () => {
+    render(<Host errorMessage="Prepare failed" />);
+    expect(h.updateModalContent).toHaveBeenCalledWith(
+      's1',
+      expect.objectContaining({
+        errorMessage: 'Prepare failed',
+        entry: expect.objectContaining({ errorMessage: 'Prepare failed' })
+      })
+    );
+  });
+
+  it('always pushes errorMessage so a recovered engine reliably clears a stale message', () => {
+    const view = render(<Host errorMessage="Prepare failed" />);
+    h.updateModalContent.mockClear();
+
+    view.rerender(<Host />);
+    const patch = h.updateModalContent.mock.calls[0][1];
+    expect('errorMessage' in patch).toBe(true);
+    expect(patch.errorMessage).toBeUndefined();
+    expect('errorMessage' in patch.entry).toBe(true);
+    expect(patch.entry.errorMessage).toBeUndefined();
   });
 });
