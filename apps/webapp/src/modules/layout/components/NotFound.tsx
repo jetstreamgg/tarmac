@@ -1,5 +1,5 @@
 import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Layout } from './Layout';
 import { Heading, Text } from './Typography';
 import { Button } from '@/components/ui/button';
@@ -10,19 +10,23 @@ import { trackNotFoundViewed } from '@/modules/analytics/lib/trackAmbientSurface
 export function NotFound() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: s => s.location.pathname });
+  // The router updates pathname while this component is still mounted during the
+  // redirect, so reading it live re-fired both events with paths that were never
+  // 404s. Latch the path that actually missed.
+  const notFoundPath = useRef(pathname);
 
   useEffect(() => {
-    trackNotFoundViewed({ path: pathname });
-  }, [pathname]);
+    trackNotFoundViewed({ path: notFoundPath.current });
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       // The auto-redirect otherwise hides 404s as home traffic (APP-444 A7).
-      trackRouteRedirected({ fromPath: pathname, toPath: '/', reason: 'not_found' });
+      trackRouteRedirected({ fromPath: notFoundPath.current, toPath: '/', reason: 'not_found' });
       navigate({ to: '/' });
     }, 5000);
     return () => window.clearTimeout(timeoutId);
-  }, [navigate, pathname]);
+  }, [navigate]);
 
   return (
     <Layout>

@@ -255,11 +255,13 @@ export function PendleModalForm({
     slippage,
     enabled: amountReady && !!quote,
     shouldUseBatch,
-    onMutate: () => {
-      txCallbacks.onMutate();
+    // This modal self-reports (it registers no `analytics` block with the
+    // transaction context), so the approve leg is discriminated here.
+    onMutate: variables => {
+      txCallbacks.onMutate(variables);
       fireAnalytics({
         event: WidgetAnalyticsEventType.TRANSACTION_STARTED,
-        action: mainAction,
+        action: variables?.functionName === 'approve' ? 'approve' : mainAction,
         flow: mainAction,
         amount: formattedAmount,
         data: buildData()
