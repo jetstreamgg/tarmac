@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits, parseUnits } from 'viem';
@@ -132,8 +133,12 @@ export function PendleModalForm({
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
   const available = isSupply ? (walletBalance?.value ?? 0n) : ptBalance;
 
-  const insufficient = amount > available;
-  const amountReady = isConnected && amount > 0n && !insufficient;
+  // Never validate against an unresolved balance: while the read is in flight
+  // `available` would be a premature 0n and any entered amount would flash a
+  // false "Insufficient funds" (APP-491).
+  const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
+  const insufficient = balanceKnown && amount > available;
+  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient;
 
   const { slippage, setSlippage, defaultSlippage } = usePendleSlippage(
     isSupply ? PendleFlow.BUY : PendleFlow.WITHDRAW
@@ -303,7 +308,11 @@ export function PendleModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls: writeHook.calls ?? [],
     chainId,
     shouldUseBatch: !!writeHook.isBatch,
@@ -317,12 +326,14 @@ export function PendleModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -515,7 +526,7 @@ export function PendleModalForm({
         disabled={!isConnected}
         balance={
           <>
-            <Trans>Balance</Trans>: {isConnected ? balanceDisplay : NO_VALUE}
+            <Trans>Balance</Trans>: {isConnected && balanceKnown ? balanceDisplay : NO_VALUE}
           </>
         }
         onPercent={setPercentAmount}
@@ -540,6 +551,17 @@ export function PendleModalForm({
       />
 
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
+
+      {/* The retired widget's "Fetching quote from Pendle" line: while the quote is in
+          flight the grid holds its pre-quote values, so say why (APP-491). */}
+      {isFetchingQuote && (
+        <div className="flex items-center gap-2" data-testid="pendle-modal-quote-fetching">
+          <LoaderCircle className="text-fgSecondary h-4 w-4 animate-spin" />
+          <Text variant="small" className="text-fgSecondary">
+            <Trans>Fetching quote from Pendle</Trans>
+          </Text>
+        </div>
+      )}
 
       {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 

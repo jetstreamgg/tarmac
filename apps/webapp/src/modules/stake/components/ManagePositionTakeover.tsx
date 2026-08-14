@@ -20,6 +20,7 @@ import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
@@ -366,7 +367,11 @@ export function ManagePositionTakeover({
             </span>
             <span className="text-text font-circle flex items-center gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
               <TokenIcon token={{ symbol: 'SKY' }} width={40} className="h-10 w-10" showChainIcon={false} />
-              {formatBigInt(existingCollateral)}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-[35px] w-24" />
+              ) : (
+                formatBigInt(existingCollateral)
+              )}
             </span>
           </div>
           <span className="bg-borderPrimary h-12 w-px shrink-0 self-center" aria-hidden />
@@ -376,7 +381,7 @@ export function ManagePositionTakeover({
             </span>
             <span className="text-text font-circle flex items-center gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
               <TokenIcon token={{ symbol: 'USDS' }} width={40} className="h-10 w-10" showChainIcon={false} />
-              {formatBigInt(existingDebt)}
+              {detail.vaultLoading ? <Skeleton className="h-[35px] w-24" /> : formatBigInt(existingDebt)}
             </span>
           </div>
         </div>
@@ -386,7 +391,11 @@ export function ManagePositionTakeover({
               <Trans>Rewards earned</Trans>
             </span>
             <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
-              {`+${formatUsd(detail.rewardsEarnedUsd)}`}
+              {detail.rewardsEarnedLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                `+${formatUsd(detail.rewardsEarnedUsd)}`
+              )}
               {detail.rewardSymbol && (
                 <TokenIcon
                   token={{ symbol: detail.rewardSymbol }}
@@ -403,7 +412,9 @@ export function ManagePositionTakeover({
               <Trans>Liquidation risk</Trans>
             </span>
             <span className="text-text font-circle flex h-4 items-center text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingDebt > 0n && existingVault?.riskLevel ? (
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingDebt > 0n && existingVault?.riskLevel ? (
                 <RiskBadge riskLevel={existingVault.riskLevel} />
               ) : (
                 NO_VALUE
@@ -416,9 +427,13 @@ export function ManagePositionTakeover({
               <Trans>Liquidation price</Trans>
             </span>
             <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingDebt > 0n && existingVault?.liquidationPrice !== undefined
-                ? `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-                : NO_VALUE}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingDebt > 0n && existingVault?.liquidationPrice !== undefined ? (
+                `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+              ) : (
+                NO_VALUE
+              )}
             </span>
           </div>
           <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
@@ -428,9 +443,13 @@ export function ManagePositionTakeover({
               <Info className="h-3 w-3" aria-hidden />
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingVault?.delayedPrice !== undefined
-                ? `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-                : NO_VALUE}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingVault?.delayedPrice !== undefined ? (
+                `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+              ) : (
+                NO_VALUE
+              )}
               <UpdatedHourlyBadge />
             </span>
           </div>
@@ -447,6 +466,7 @@ export function ManagePositionTakeover({
         walletBalance={skyBalance?.value}
         walletBalanceLoading={skyBalanceLoading}
         stakedAmount={existingCollateral}
+        stakedAmountLoading={detail.vaultLoading}
         rewardsRate={detail.rewardsRate}
         estCurrentSky={detail.estAnnualRewardsSky}
         estNextSky={estNextSky}

@@ -30,6 +30,12 @@ export type UpgradeModalRowInput = {
   network: string;
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
   networkFee: string;
+  /**
+   * The MKR→SKY fee read is still unresolved — the Penalty and You'll receive
+   * cells (both derive from it) render skeletons instead of the premature
+   * "0.00%" / gross figures (APP-491).
+   */
+  feeLoading?: boolean;
 };
 
 /**
@@ -48,10 +54,25 @@ export function buildUpgradeModalRows(input: UpgradeModalRowInput): ModalGridCel
         right: input.targetRate,
         rightToken: input.targetToken
       },
-      { kind: 'single', label: "You'll receive", value: input.receiveAmount, token: input.targetToken }
+      {
+        kind: 'single',
+        label: "You'll receive",
+        value: input.receiveAmount,
+        token: input.targetToken,
+        loading: input.feeLoading
+      }
     ],
     input.penalty !== undefined
-      ? [{ kind: 'single', label: 'Penalty', value: input.penalty, labelAction: input.penaltyInfo }, network]
+      ? [
+          {
+            kind: 'single',
+            label: 'Penalty',
+            value: input.penalty,
+            labelAction: input.penaltyInfo,
+            loading: input.feeLoading
+          },
+          network
+        ]
       : [network],
     [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];

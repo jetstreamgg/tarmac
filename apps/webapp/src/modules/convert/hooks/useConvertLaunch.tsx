@@ -95,7 +95,11 @@ export function useConvertLaunch({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls: conversion.calls,
     chainId,
     shouldUseBatch: conversion.isBatch,
@@ -132,7 +136,7 @@ export function useConvertLaunch({
         targetDecimals={targetDecimals}
         networkName={networkName}
         networkFee={networkFee?.formatted ?? NO_VALUE}
-        feeCell={{ fee: networkFee, state: bundleState }}
+        feeCell={{ fee: networkFee, state: bundleState, loading: networkFeeLoading }}
         promo={
           bundleState.promoVisible ? <BundleSavingsPromo saving={networkFee!.batchSaving!} /> : undefined
         }
@@ -148,12 +152,15 @@ export function useConvertLaunch({
       networkName,
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       // Every field the fee row reads, listed one by one: the memoised element is what
       // `updateModalContent` pushes, so anything missing here is a value the open modal
       // can never pick up — `NetworkFeeValue` can't re-render itself out of a stale
       // `state` prop. (The objects themselves are new identities each render; depending
       // on them would defeat the memo and re-open the update loop this guards against.)
+      bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible,
       conversion.calls.length

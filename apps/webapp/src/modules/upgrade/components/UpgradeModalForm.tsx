@@ -82,11 +82,15 @@ export function UpgradeModalForm({
   });
 
   const { data: mkrSkyFee } = useMkrSkyFee();
+  // Unresolved fee = unknown economics: the penalty and receive cells hold a
+  // skeleton and the confirm waits, so the modal never quotes the gross
+  // (pre-penalty) figures and snaps down when the read lands (APP-491).
+  const feeUnknown = isMkr && mkrSkyFee === undefined;
   const fee = isMkr ? (mkrSkyFee ?? 0n) : 0n;
   const receiveAmount = math.calculateConversion({ symbol: token }, debouncedAmount, fee);
 
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
-  const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending;
+  const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
   const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
@@ -95,7 +99,11 @@ export function UpgradeModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: isBatch,
@@ -109,12 +117,14 @@ export function UpgradeModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -190,7 +200,8 @@ export function UpgradeModalForm({
     // 12px info glyph after the label (Figma 1343:79562).
     penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} height={12} /> : undefined,
     network: networkName,
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE,
+    feeLoading: feeUnknown
   });
 
   const body = (

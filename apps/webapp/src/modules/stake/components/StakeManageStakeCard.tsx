@@ -30,6 +30,7 @@ export function StakeManageStakeCard({
   walletBalance,
   walletBalanceLoading,
   stakedAmount,
+  stakedAmountLoading,
   rewardsRate,
   estCurrentSky,
   estNextSky,
@@ -45,6 +46,8 @@ export function StakeManageStakeCard({
   walletBalance: bigint | undefined;
   walletBalanceLoading: boolean;
   stakedAmount: bigint | undefined;
+  /** The vault read backing `stakedAmount` is in flight — hold the withdraw base behind a skeleton (APP-491). */
+  stakedAmountLoading?: boolean;
   rewardsRate: number | null;
   /** Current est. annual rewards (staked × rate), in SKY. */
   estCurrentSky: bigint | null;
@@ -55,6 +58,7 @@ export function StakeManageStakeCard({
 }) {
   const isStake = mode === 'stake';
   const base = (isStake ? walletBalance : stakedAmount) ?? 0n;
+  const baseLoading = isStake ? walletBalanceLoading : !!stakedAmountLoading;
 
   const sliderPercent = base > 0n ? Math.min(100, Number((amount * 100n) / base)) : 0;
   const onSliderChange = (percent: number) => {
@@ -107,7 +111,7 @@ export function StakeManageStakeCard({
                   alike — a bare trailing space would double up with the gap
                   when the skeleton renders. */}
               <span>{isStake ? t`Balance:` : t`Staked:`}</span>
-              {isStake && walletBalanceLoading ? <Skeleton className="h-4 w-24" /> : formatBigInt(base)}
+              {baseLoading ? <Skeleton className="h-4 w-24" /> : formatBigInt(base)}
             </span>
           }
         />

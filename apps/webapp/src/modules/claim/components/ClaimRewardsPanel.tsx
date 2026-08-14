@@ -101,7 +101,11 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: !!flow.isBatch
@@ -160,7 +164,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
       ]
     ],
     'claim-modal-row',
-    { fee: networkFee, state: bundleState }
+    { fee: networkFee, state: bundleState, loading: networkFeeLoading }
   );
 
   const body = (
