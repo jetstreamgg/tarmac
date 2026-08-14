@@ -42,7 +42,7 @@ Rates are updated using data from a third-party provider (i.e., [BlockAnalitica]
       question: 'How do I change my Staking Reward selection?',
       answer: `Go to the Stake & Borrow widget in the Sky.money app There, you will see your Staking position(s) and your reward choice for each position.
 
-If you currently receive USDS as your reward, you will see a message informing you that USDS rewards have been disabled and SKY has been added as a Staking Reward option. If you do not currently receive USDS as a reward, you will not see this message.
+If you currently receive SPK as your reward, you will see a message informing you that SPK rewards have been disabled as a Staking Reward option. If you do not currently receive SPK as a reward, you will not see this message.
 
 To change your reward selection quickly, bypassing the borrow and delegate steps, click on the drop-down beside your reward ticker symbol to see the current option(s). After making your selection, the app will fast-forward you to the last step of managing your Staking position, where you can confirm the change to activate your updated reward choice.
 
@@ -51,14 +51,13 @@ If you would rather manage your position(s) in the typical way, you would go to 
     },
     {
       question:
-        'Now that USDS is disabled as a Staking Reward option, do I have to change my reward selection?',
+        'Now that SPK is disabled as a Staking Reward option, do I have to change my reward selection?',
       answer:
-        'No. However, you are encouraged to claim your existing rewards and select a new reward in order to take advantage of all Sky Ecosystem has to offer. Choosing a new reward type ensures that your staking position continues to accrue rewards. Since the USDS reward parameter is set to zero, you will not receive additional USDS rewards.',
+        'No. However, you are encouraged to claim your existing rewards and select a new reward in order to take advantage of all Sky Ecosystem has to offer. Choosing a new reward type ensures that your staking position continues to accrue rewards. Since the SPK reward parameter is set to zero, you will not receive additional SPK rewards.',
       index: 6
     },
     {
-      question:
-        'Now that USDS is disabled as a Staking Reward option, do I have to unstake before changing my Staking Reward selection?',
+      question: 'Do I have to unstake before changing my Staking Reward selection?',
       answer: 'No. You can change your Staking Reward selection without unstaking your SKY.',
       index: 7
     },
@@ -68,8 +67,8 @@ If you would rather manage your position(s) in the typical way, you would go to 
       index: 8
     },
     {
-      question: 'Is there a deadline for claiming my USDS Staking Rewards?',
-      answer: `No. While USDS rewards are disabled as a Staking Reward option, and the USDS rate set to zero, the pool of USDS will remain forever so that you can claim your rewards anytime.
+      question: 'Is there a deadline for claiming my SPK Staking Rewards?',
+      answer: `No. While SPK rewards are disabled as a Staking Reward option, and the SPK rate set to zero, the pool of SPK will remain forever so that you can claim your rewards anytime.
 
 When you stake SKY governance tokens to the Staking Engine, you can:
 
