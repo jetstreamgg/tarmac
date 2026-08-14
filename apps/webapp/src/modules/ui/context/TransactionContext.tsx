@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { TxStatus, InProgress, Cancel } from '@/widgets';
-import { toError } from '@/hooks';
+import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
@@ -418,33 +418,36 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   // and drops itself when the generation has moved on — the caller is an
   // engine from a session that was closed or abandoned.
   const txCallbacks: TxCallbacks = {
-    onMutate: useCallback(() => {
-      if (sessionGen !== sessionGenRef.current) return;
-      // Latch the write to this session; the settle callbacks check it. Fires
-      // synchronously from the user's confirm, so it can trust its closure.
-      writeGenRef.current = sessionGenRef.current;
-      writeHashRef.current = undefined;
-      // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
-      if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
-        setCurrentStep(s => s + 1);
-      }
-      setTxStatus(TxStatus.INITIALIZED);
-      txStatusRef.current = TxStatus.INITIALIZED;
-      setExternalLink(undefined);
-      txHashRef.current = undefined;
+    onMutate: useCallback(
+      (variables?: TxMutateVariables) => {
+        if (sessionGen !== sessionGenRef.current) return;
+        // Latch the write to this session; the settle callbacks check it. Fires
+        // synchronously from the user's confirm, so it can trust its closure.
+        writeGenRef.current = sessionGenRef.current;
+        writeHashRef.current = undefined;
+        // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
+        if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
+          setCurrentStep(s => s + 1);
+        }
+        setTxStatus(TxStatus.INITIALIZED);
+        txStatusRef.current = TxStatus.INITIALIZED;
+        setExternalLink(undefined);
+        txHashRef.current = undefined;
 
-      // Track transaction started
-      const analytics = configRef.current?.analytics;
-      if (analytics) {
-        trackTransactionStarted({
-          widgetName: analytics.widgetName,
-          chainId,
-          action: analytics.action,
-          flow: analytics.flow,
-          data: analytics.data
-        });
-      }
-    }, [sessionGen, chainId, trackTransactionStarted]),
+        // Track transaction started; approve legs report action 'approve' (dev parity)
+        const analytics = configRef.current?.analytics;
+        if (analytics) {
+          trackTransactionStarted({
+            widgetName: analytics.widgetName,
+            chainId,
+            action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
+            flow: analytics.flow,
+            data: analytics.data
+          });
+        }
+      },
+      [sessionGen, chainId, trackTransactionStarted]
+    ),
 
     onStart: useCallback(
       (hash?: string) => {

@@ -296,4 +296,27 @@ describe('TransactionContext review_viewed timing', () => {
     fireEvent.click(screen.getByRole('button', { name: /claim/i }));
     expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
   });
+
+  it('discriminates the approve leg: a sequential approve mutate reports action approve, the main leg the module action', () => {
+    const ctx = renderFlow(baseConfig());
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate({ functionName: 'approve' }));
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate({ functionName: 'deposit' }));
+
+    const actions = analytics.trackTransactionStarted.mock.calls.map(([args]) => args.action);
+    expect(actions).toEqual(['approve', 'supply']);
+  });
+
+  it('keeps the module action when no leg variables arrive (batch sendCalls, manual pendle calls)', () => {
+    const ctx = renderFlow(baseConfig());
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate());
+
+    expect(analytics.trackTransactionStarted).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'supply' })
+    );
+  });
 });
