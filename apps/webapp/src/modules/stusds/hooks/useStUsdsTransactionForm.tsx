@@ -102,34 +102,15 @@ export function useStUsdsTransactionForm({
   // balance (no dust) and the Curve quote runs in max mode.
   const [max, setMax] = useState(false);
 
-  const amount = parseAmount(value);
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
-
   const { data: stUsdsData } = useStUsdsData();
   const { data: capacityData } = useStUsdsCapacityData();
-
-  const providerSelection = useStUsdsProviderSelection({
-    amount: debouncedAmount,
-    referenceAmount: REFERENCE_AMOUNT,
-    direction: isSupply ? StUsdsDirection.SUPPLY : StUsdsDirection.WITHDRAW,
-    userStUsdsBalance: stUsdsData?.userStUsdsBalance,
-    isMax: max
-  });
-  const isCurveSelected = providerSelection.selectedProvider === StUsdsProviderType.CURVE;
 
   const {
     effectiveBalance: withdrawBalanceLimit,
     curveMaxWithdraw,
-    selectedProvider: withdrawSelectedProvider
+    selectedProvider: withdrawSelectedProvider,
+    isLoading: withdrawBalancesLoading
   } = useStUsdsWithdrawBalances();
-
-  // If Curve can absorb the supply there's no protocol limit on the input;
-  // otherwise the native module capacity caps it (widget behavior).
-  const isCurveAvailableForSupply = providerSelection.curveProvider?.state?.canDeposit ?? false;
-  const moduleMaxSupplyAmount = isCurveAvailableForSupply
-    ? undefined
-    : (providerSelection.nativeProvider?.state?.maxDeposit ?? capacityData?.remainingCapacityBuffered ?? 0n);
 
   // Native max withdraw is buffered against liquidity drift; the Curve max is
   // the pool quote for the full share balance.
@@ -140,8 +121,39 @@ export function useStUsdsTransactionForm({
       : nativeMaxWithdraw;
 
   const available = isSupply ? (stUsdsData?.userUsdsBalance ?? 0n) : maxWithdrawAmount;
+
+  // Withdraw Max is flag-driven (savings-form pattern): the engine redeems the
+  // whole share balance / swaps the live quote, never the typed number, so the
+  // displayed amount derives from the live max instead of a click-time
+  // snapshot — the Curve quotes behind `available` refetch every 15s, and a
+  // pure derivation keeps tracking them with no state rewrite to freeze,
+  // invalidate, or misfire (the retired widget resynced with an effect).
+  const displayValue = max && !isSupply ? formatUnits(available, DECIMALS) : value;
+  const amount = parseAmount(displayValue);
+  const debouncedAmount = useDebounce(amount);
+  const debouncePending = debouncedAmount !== amount;
+
+  const providerSelection = useStUsdsProviderSelection({
+    amount: debouncedAmount,
+    referenceAmount: REFERENCE_AMOUNT,
+    direction: isSupply ? StUsdsDirection.SUPPLY : StUsdsDirection.WITHDRAW,
+    userStUsdsBalance: stUsdsData?.userStUsdsBalance,
+    isMax: max
+  });
+  const isCurveSelected = providerSelection.selectedProvider === StUsdsProviderType.CURVE;
+
+  // If Curve can absorb the supply there's no protocol limit on the input;
+  // otherwise the native module capacity caps it (widget behavior).
+  const isCurveAvailableForSupply = providerSelection.curveProvider?.state?.canDeposit ?? false;
+  const moduleMaxSupplyAmount = isCurveAvailableForSupply
+    ? undefined
+    : (providerSelection.nativeProvider?.state?.maxDeposit ?? capacityData?.remainingCapacityBuffered ?? 0n);
+
   const isZero = amount === 0n;
+  // A max withdraw bypasses the amount checks: the derived display can drift or
+  // lag the debounce, but the flag — not the number — drives the redemption.
   const insufficient =
+    !max &&
     amount > 0n &&
     (isSupply ? amount > available : amount > available || amount > (withdrawBalanceLimit ?? available));
 
@@ -154,8 +166,20 @@ export function useStUsdsTransactionForm({
       (isSupply && moduleMaxSupplyAmount !== undefined && debouncedAmount > moduleMaxSupplyAmount));
 
   // Curve price-impact gate (≥2% requires the explicit "proceed anyway" check).
+  // The acknowledgement is keyed to the whole-percent impact the checkbox named
+  // ("exceeds N%"): it holds while the max drifts at stable impact (no re-check
+  // treadmill on the review screen), and lapses only when the current impact
+  // floors above the acknowledged N. Explicit user edits still clear it in the
+  // handlers below.
   const priceImpactBps = providerSelection.selectedQuote?.rateInfo.priceImpactBps;
-  const [impactAccepted, setImpactAccepted] = useState(false);
+  const impactPercentFloor = priceImpactBps !== undefined ? Math.floor(priceImpactBps / 100) : undefined;
+  const [impactAcceptedPercent, setImpactAcceptedPercent] = useState<number | null>(null);
+  const impactAccepted =
+    impactAcceptedPercent !== null &&
+    impactPercentFloor !== undefined &&
+    impactPercentFloor <= impactAcceptedPercent;
+  const setImpactAccepted = (checked: boolean) =>
+    setImpactAcceptedPercent(checked && impactPercentFloor !== undefined ? impactPercentFloor : null);
   const needsImpactAcknowledgement =
     isCurveSelected &&
     priceImpactBps !== undefined &&
@@ -179,7 +203,20 @@ export function useStUsdsTransactionForm({
     }
   };
 
-  const amountReady = isConnected && !isZero && !insufficient && !blocked && !debouncePending;
+  // Max readiness needs a real max: zero (nothing to withdraw) or a still-loading
+  // Curve max quote (whose transient fallback is the smaller native max) hold
+  // the confirm rather than gating on the derived number. It also needs the
+  // debounce to have settled at least once (`debouncedAmount > 0n`): the amount
+  // surfaces (review grid, toasts) read the debounced value, which is still 0n
+  // right after Max is clicked on a fresh form. Unlike the typed path's
+  // `!debouncePending`, this doesn't re-gate on drift — a previous settled
+  // value keeps it armed.
+  const amountReady =
+    isConnected &&
+    !blocked &&
+    (max
+      ? available > 0n && !withdrawBalancesLoading && debouncedAmount > 0n
+      : !isZero && !insufficient && !debouncePending);
 
   const rate = stUsdsData ? calculateApyFromStr(stUsdsData.moduleRate) / 100 : undefined;
 
@@ -251,7 +288,7 @@ export function useStUsdsTransactionForm({
     isConnected,
     isSupply,
     decimals: DECIMALS,
-    value,
+    value: displayValue,
     amount: debouncedAmount,
     available,
     isZero,

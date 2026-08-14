@@ -479,6 +479,39 @@
     @apply bg-background text-foreground antialiased;
   }
 
+  /*
+   * Every scrollbar in the app, in one place. `scrollbar-width` and
+   * `scrollbar-color` are INHERITED properties, so this single declaration
+   * reaches every scroll container in the tree — modals, token lists,
+   * tooltips, drawer tabs, the Morpho tables — with no per-container utility
+   * class. It replaces the old scrollbar-thin / scrollbar-thin-always
+   * utilities, which had to be hand-applied at ~20 call sites.
+   *
+   * Deliberately NOT `::-webkit-scrollbar`: declaring that pseudo-element
+   * forces a classic space-taking bar even where the platform would draw an
+   * overlay one, and Chrome ignores it outright once scrollbar-width or
+   * scrollbar-color is set on the same element. The standard properties also
+   * reach Firefox, which has never supported the pseudo family.
+   *
+   * The track is transparent so the bar reads as a thumb floating on the
+   * surface rather than sitting in a groove. There is no way to keep the UA's
+   * default thumb while clearing the track — `scrollbar-color` takes `auto`
+   * or BOTH colors, never one of each — so the thumb is an explicit token.
+   * borderTertiary is theme-aware (lilac 30% dark, periwinkle 75% light),
+   * which is what keeps it visible in light mode; the old utilities hardcoded
+   * --transparent-white-15 and went invisible on light surfaces.
+   *
+   * `:root *` and not `*`: html must NOT match, so the page scrollbar keeps
+   * the UA's own width and colors. Body does match, but that is harmless —
+   * the viewport bar reads its styling from the root element, not from body
+   * (measured: body on `thin` still yields a 15px gutter; `thin` on the root
+   * yields 11px).
+   */
+  :root * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-borderTertiary) transparent;
+  }
+
   /* Each face declares its real weight. Without the descriptor every face
      defaults to 400, so the browser has a single candidate per family and
      resolves every requested weight to it — font-medium et al. render
@@ -512,6 +545,23 @@
   }
 
   :root {
+    /* Tells the UA which set of built-in widgets to draw: scrollbars, form
+       controls, and the document canvas. Without it every browser assumes
+       `light` and paints a light-grey scrollbar track down the side of the dark
+       app. Declared on the root because the *viewport* scrollbar takes its
+       scheme from the root element specifically, and keyed on the same
+       data-theme attribute as the palette so the two can never drift — the
+       pre-paint script in index.html sets that attribute before first paint,
+       so the correct scheme is in place by the time anything renders.
+
+       This does NOT change whether a scrollbar reserves layout space; that
+       stays an OS/browser decision. It only recolors the bar we already get —
+       which is the whole styling the viewport scrollbar gets, since the
+       `:root *` rule below deliberately does not match html. Verified: the
+       viewport bar takes its width from the root, not from body, so body
+       inheriting `thin` does not narrow it (15px vs 11px measured). */
+    color-scheme: dark;
+
     --brand-dark-purple: 26 24 85;
     --brand-middle-purple: 42 25 125;
     --brand-purple: 67 49 233;
@@ -645,6 +695,9 @@
    * dark's lilac (#bcb6ef) to light's periwinkle (#9ca0e5).
    */
   :root[data-theme='light'] {
+    /* Counterpart to the `color-scheme: dark` default above. */
+    color-scheme: light;
+
     /* body base — colors/bg/bg-primary #ecf0ff, colors/fg/fg-primary #2f2d40 */
     --background: 227 100% 96%;
     --foreground: 246 17% 21%;
@@ -783,45 +836,6 @@
 @utility container {
   margin-inline: auto;
   padding-inline: 2rem;
-}
-
-@utility scrollbar-hidden {
-  /* Hide scrollbar for Chrome, Safari, and Opera */
-  &::-webkit-scrollbar {
-    width: 0;
-  }
-}
-
-@utility scrollbar-thin {
-  &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  scrollbar-gutter: stable;
-
-  &:hover::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-15);
-    border: solid 3px transparent;
-    border-radius: 5px;
-  }
-}
-
-@utility scrollbar-thin-always {
-  &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  scrollbar-gutter: stable;
-
-  &::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-15);
-    border: solid 3px transparent;
-    border-radius: 5px;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-20);
-  }
 }
 
 @utility chevron-down {

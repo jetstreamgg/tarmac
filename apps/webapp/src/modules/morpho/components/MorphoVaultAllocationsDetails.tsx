@@ -82,7 +82,7 @@ function NormalizedVaultAllocations({
 
   if (isLoading) {
     return (
-      <Table wrapperClassName="overflow-x-auto scrollbar-thin-always">
+      <Table wrapperClassName="overflow-x-auto">
         <TableHeader>
           <TableRow>
             <TableHead>
@@ -119,7 +119,7 @@ function NormalizedVaultAllocations({
   }
 
   return (
-    <Table wrapperClassName="overflow-x-auto scrollbar-thin-always">
+    <Table wrapperClassName="overflow-x-auto">
       <TableHeader>
         <TableRow>
           <TableHead>
@@ -166,7 +166,7 @@ function NormalizedVaultAllocations({
 }
 
 // M5 note: this table deliberately keeps horizontal scroll on phones (the
-// scrollbar-thin-always wrapper is the visible affordance) instead of a card
+// scrollbar itself is the visible affordance) instead of a card
 // collapse — it's a dense analytical grid with section-header rows and no
 // mobile comp. Revisit if design ships one (flagged on APP-371).
 export function MorphoVaultAllocationsDetails({
@@ -190,7 +190,7 @@ export function MorphoVaultAllocationsDetails({
 
   if (isLoading) {
     return (
-      <Table wrapperClassName="overflow-x-auto scrollbar-thin-always">
+      <Table wrapperClassName="overflow-x-auto">
         <TableHeader>
           <TableRow>
             <TableHead>
@@ -283,7 +283,7 @@ export function MorphoVaultAllocationsDetails({
   }
 
   return (
-    <Table wrapperClassName="overflow-x-auto scrollbar-thin-always">
+    <Table wrapperClassName="overflow-x-auto">
       {/* Table Header */}
       <TableHeader>
         <TableRow>
