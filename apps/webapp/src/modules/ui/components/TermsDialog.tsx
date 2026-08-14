@@ -84,7 +84,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
         </Text>
       )}
 
-      <Card className="scrollbar-thin-always bg-termsCard mx-auto max-h-[256px] w-full overflow-y-auto p-3 sm:max-h-[432px] sm:p-4">
+      <Card className="bg-termsCard mx-auto max-h-[256px] w-full overflow-y-auto p-3 sm:max-h-[432px] sm:p-4">
         {content}
         <div ref={endOfTermsRef} data-testid="end-of-terms" />
       </Card>

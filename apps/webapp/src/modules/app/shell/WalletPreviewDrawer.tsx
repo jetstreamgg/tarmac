@@ -79,9 +79,10 @@ export function WalletPreviewDrawer({
             onSwitchAccountClick={onSwitchAccountClick}
             onDisconnect={onDisconnect}
           />
-          {/* pr compensates the 10px scrollbar gutter reserved inside the tab
-              panels; pl-3 + the panels' px-2 lands the comp's 20px inset. */}
-          <div className="flex min-h-0 flex-1 flex-col pt-6 pr-0.5 pb-3 pl-3">
+          {/* pr matches pl now that the panels no longer reserve a 10px
+              scrollbar gutter; each side + the panels' px-2 lands the comp's
+              20px inset, and the thin bar draws inside that padding. */}
+          <div className="flex min-h-0 flex-1 flex-col pt-6 pr-3 pb-3 pl-3">
             <WalletDrawerTabs />
           </div>
         </SheetContent>
@@ -118,9 +119,9 @@ export function WalletPreviewDrawer({
             onSwitchAccountClick={onSwitchAccountClick}
             onDisconnect={onDisconnect}
           />
-          {/* pr compensates the 10px scrollbar gutter reserved inside the tab
-              panels so left/right content insets stay visually equal. */}
-          <div className="bg-containerDark flex min-h-0 flex-1 flex-col pt-7 pr-0.5 pb-3 pl-3">
+          {/* pr matches pl now that the panels no longer reserve a 10px
+              scrollbar gutter, keeping left/right content insets equal. */}
+          <div className="bg-containerDark flex min-h-0 flex-1 flex-col pt-7 pr-3 pb-3 pl-3">
             <WalletDrawerTabs />
           </div>
         </div>
