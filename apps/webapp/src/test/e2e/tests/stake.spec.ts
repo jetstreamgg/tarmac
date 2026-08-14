@@ -11,9 +11,7 @@ test.beforeEach(async ({ isolatedPage }) => {
   await isolatedPage.getByRole('tab', { name: 'Stake & Borrow' }).click();
 });
 
-test('Rewards step auto-skipped when only one reward available (SPK/USDS deprecated)', async ({
-  isolatedPage
-}) => {
+test('Rewards step shown with USDS and SKY options (SPK deprecated)', async ({ isolatedPage }) => {
   // Fill stake input to enable proceeding (no delegation checkbox checked)
   await isolatedPage.getByTestId('supply-first-input-lse').fill('1000000');
 
@@ -25,18 +23,28 @@ test('Rewards step auto-skipped when only one reward available (SPK/USDS depreca
   await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled({ timeout: 10000 });
   await isolatedPage.getByTestId('widget-button').first().click();
 
-  // Since SPK and USDS are deprecated, only SKY remains as a reward option.
-  // With only one option, the rewards step should be AUTO-SKIPPED entirely.
-  // We should go directly to the position summary (since delegation is also unchecked).
+  // With USDS re-enabled, two reward options remain (USDS and SKY),
+  // so the rewards step must be shown instead of auto-skipped.
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible({ timeout: 10000 });
+  await expect(isolatedPage.getByTestId('stake-reward-card')).toHaveCount(2);
+  // Note: every card's TVL row contains "SKY", so match the reward symbol text exactly
+  const usdsRewardCard = isolatedPage
+    .getByTestId('stake-reward-card')
+    .filter({ has: isolatedPage.getByText('USDS', { exact: true }) });
+  const skyRewardCard = isolatedPage
+    .getByTestId('stake-reward-card')
+    .filter({ has: isolatedPage.getByText('SKY', { exact: true }) });
+  await expect(usdsRewardCard).toBeVisible();
+  await expect(skyRewardCard).toBeVisible();
+
+  // Select the USDS reward and proceed
+  await usdsRewardCard.click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
+
+  // Delegation is unchecked, so we land on the position summary
   await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible({ timeout: 10000 });
-
-  // Verify we did NOT see the reward selection screen
-  await expect(isolatedPage.getByText('Choose your reward token')).not.toBeVisible();
-
-  // Verify the position summary shows SKY as the staking reward (auto-selected)
   await expect(isolatedPage.getByTestId('position-summary-card').getByText('Staking reward')).toBeVisible();
-
-  console.log('Rewards step was auto-skipped - only SKY reward available after deprecating SPK/USDS');
 });
 
 test('Lock SKY, select rewards, select delegate, and open position', async ({ isolatedPage }) => {
@@ -66,10 +74,10 @@ test('Lock SKY, select rewards, select delegate, and open position', async ({ is
   await isolatedPage.getByTestId('widget-button').first().click();
 
   // select rewards
-  // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-  // await isolatedPage.getByTestId('stake-reward-card').first().click();
-  // await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-  // await isolatedPage.getByTestId('widget-button').first().click();
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+  await isolatedPage.getByTestId('stake-reward-card').first().click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
 
   // select delegate
   await expect(isolatedPage.getByText('Choose your delegate')).toBeVisible();
@@ -265,10 +273,10 @@ test('Checkbox unchecked - Delegate screen should not appear', async ({ isolated
   await isolatedPage.getByTestId('widget-button').first().click();
 
   // select rewards
-  // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-  // await isolatedPage.getByTestId('stake-reward-card').first().click();
-  // await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-  // await isolatedPage.getByTestId('widget-button').first().click();
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+  await isolatedPage.getByTestId('stake-reward-card').first().click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
 
   // verify delegate screen is skipped and we go directly to position summary
   await expect(isolatedPage.getByText('Choose your delegate')).not.toBeVisible();
@@ -309,10 +317,10 @@ test('Checkbox toggled off after delegate selection - Delegate should be cleared
   await isolatedPage.getByTestId('widget-button').first().click();
 
   // select rewards
-  // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-  // await isolatedPage.getByTestId('stake-reward-card').first().click();
-  // await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-  // await isolatedPage.getByTestId('widget-button').first().click();
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+  await isolatedPage.getByTestId('stake-reward-card').first().click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
 
   // select a delegate
   await expect(isolatedPage.getByText('Choose your delegate')).toBeVisible();
@@ -396,10 +404,10 @@ test('Slider interaction - Move slider and verify borrow amount changes', async 
   await isolatedPage.getByTestId('widget-button').first().click();
 
   // Must select rewards
-  // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-  // await isolatedPage.getByTestId('stake-reward-card').first().click();
-  // await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-  // await isolatedPage.getByTestId('widget-button').first().click();
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+  await isolatedPage.getByTestId('stake-reward-card').first().click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
 
   // No delegate selection -- checkbox wasn't enabled
 
@@ -473,10 +481,10 @@ test('Slider respects risk floor in borrow mode', async ({ isolatedPage }) => {
   await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled({ timeout: 10000 });
   await isolatedPage.getByTestId('widget-button').first().click();
 
-  // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-  // await isolatedPage.getByTestId('stake-reward-card').first().click();
-  // await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-  // await isolatedPage.getByTestId('widget-button').first().click();
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+  await isolatedPage.getByTestId('stake-reward-card').first().click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
 
   await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible();
   await performAction(isolatedPage, 'Open a position', { review: false });
@@ -530,10 +538,10 @@ test('Two-way sync - Input field updates slider position', async ({ isolatedPage
   await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled({ timeout: 10000 });
   await isolatedPage.getByTestId('widget-button').first().click();
 
-  // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-  // await isolatedPage.getByTestId('stake-reward-card').first().click();
-  // await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-  // await isolatedPage.getByTestId('widget-button').first().click();
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+  await isolatedPage.getByTestId('stake-reward-card').first().click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
 
   await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible();
   await performAction(isolatedPage, 'Open a position', { review: false });
@@ -592,10 +600,10 @@ test('Slider movement updates all position overview parameters', async ({ isolat
   await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled({ timeout: 10000 });
   await isolatedPage.getByTestId('widget-button').first().click();
 
-  // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-  // await isolatedPage.getByTestId('stake-reward-card').first().click();
-  // await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-  // await isolatedPage.getByTestId('widget-button').first().click();
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+  await isolatedPage.getByTestId('stake-reward-card').first().click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
 
   await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible();
   await performAction(isolatedPage, 'Open a position', { review: false });
@@ -671,10 +679,10 @@ test('Debt ceiling cap indicator prevents over-borrowing', async ({ isolatedPage
   await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled({ timeout: 10000 });
   await isolatedPage.getByTestId('widget-button').first().click();
 
-  // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-  // await isolatedPage.getByTestId('stake-reward-card').first().click();
-  // await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-  // await isolatedPage.getByTestId('widget-button').first().click();
+  await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+  await isolatedPage.getByTestId('stake-reward-card').first().click();
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
+  await isolatedPage.getByTestId('widget-button').first().click();
 
   await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible();
   await performAction(isolatedPage, 'Open a position', { review: false });
