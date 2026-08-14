@@ -249,6 +249,7 @@ describe('usePortfolioSupplyActions', () => {
       contractAddress: '0xFA12',
       supplyToken: { symbol: 'USDS' },
       displayName: 'SPK Rewards',
+      productName: 'With: USDS Get: SPK',
       rewardTokenSymbol: 'SPK',
       rate: 0.045
     });
@@ -265,6 +266,7 @@ describe('usePortfolioSupplyActions', () => {
       contractAddress: '0xC1E0',
       supplyToken: { symbol: 'USDS' },
       displayName: 'Chronicle Points',
+      productName: 'Chronicle Points',
       rewardTokenSymbol: undefined,
       rate: undefined
     });
@@ -285,6 +287,7 @@ describe('usePortfolioSupplyActions', () => {
       contractAddress: '0xFA12',
       supplyToken: { symbol: 'USDS' },
       displayName: 'SPK Rewards',
+      productName: 'With: USDS Get: SPK',
       rewardTokenSymbol: 'SPK',
       rate: 0.045
     });

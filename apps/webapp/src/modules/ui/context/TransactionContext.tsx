@@ -223,8 +223,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       setLaunchCount(c => c + 1);
       setOpen(true);
 
-      // Track review viewed
-      if (config.analytics) {
+      // Review-first flows open on the review screen, so launch IS the review
+      // view. Entry-first flows open on the editable entry — their review event
+      // (if the flow has a review stage at all) fires at the entry→review
+      // transition instead (onReviewStage below), and entry-only flows (claims,
+      // upgrade) emit none, matching the legacy widgets.
+      if (config.analytics && !config.entry) {
         trackWidgetReviewViewed({
           widgetName: config.analytics.widgetName,
           chainId,
@@ -234,6 +238,20 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     },
     [chainId, trackWidgetReviewViewed, trackTransactionCompleted, startNewFlow]
   );
+
+  // Entry→review transition of a three-screen flow. Read off the config ref:
+  // the editable body live-merges its analytics while the user edits, so the
+  // ref holds the blob matching what the review is about to show.
+  const handleReviewStage = useCallback(() => {
+    const analytics = configRef.current?.analytics;
+    if (analytics) {
+      trackWidgetReviewViewed({
+        widgetName: analytics.widgetName,
+        chainId,
+        flow: analytics.flow
+      });
+    }
+  }, [chainId, trackWidgetReviewViewed]);
 
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
     (sessionId, partial) => {
@@ -602,6 +620,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             titleBadge={modalView.config.titleBadge}
             onConfirm={modalView.config.onConfirm}
             onSecondaryConfirm={modalView.config.onSecondaryConfirm}
+            onReviewStage={handleReviewStage}
             onRetry={handleRetry}
             onBack={resetTransactionProgress}
             txStatus={modalView.txStatus}

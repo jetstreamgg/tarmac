@@ -18,6 +18,9 @@ import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
+import { setUpgradeModalOpen } from '@/modules/analytics/lib/destination';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
 import { buildUpgradeModalRows } from './upgradeModalRows';
 
@@ -51,7 +54,6 @@ const formatAmount = (amount: bigint) =>
  * The MKR→SKY figures come from the immutable 1:24,000 contract rate net of
  * the governance fee (`useMkrSkyFee`) — the engine's calldata takes the raw
  * amount, so the preview math (`math.calculateConversion`) is display-only.
- * Analytics-free by design, following the stUSDS-modal precedent.
  */
 export function UpgradeModalForm({
   sessionId,
@@ -132,6 +134,14 @@ export function UpgradeModalForm({
     if (txStatus === TxStatus.SUCCESS) refetchBalance();
   }, [txStatus, refetchBalance]);
 
+  // Upgrade is the one URL-less surface: while this body is mounted (the
+  // modal's whole lifetime, minimize included) the destination stamp reads
+  // 'upgrade' (APP-444 D2/B6). Module-level flag — before_send runs outside React.
+  useEffect(() => {
+    setUpgradeModalOpen(true);
+    return () => setUpgradeModalOpen(false);
+  }, []);
+
   const amountLabel = `${formatAmount(debouncedAmount)} ${token}`;
 
   // Memoized on their data so the useModalEntryBody sync effect has stable
@@ -159,6 +169,27 @@ export function UpgradeModalForm({
     [token, target, debouncedAmount, receiveAmount]
   );
 
+  // Legacy UpgradeWidget payload shape (APP-444 B6): widget_name 'convert', the
+  // redesign modal only upgrades (no revert direction), so the amount is always
+  // positive.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'convert',
+      flow: 'upgrade',
+      action: 'upgrade',
+      data: {
+        module: 'upgrade',
+        assetAddress: sourceToken.address[chainId],
+        assetSymbol: token,
+        targetSymbol: target,
+        targetAddress: (target === 'USDS' ? TOKENS.usds : TOKENS.sky).address[chainId],
+        isBatchTx: isBatch,
+        amount: signedAmount(parseFloat(formatUnits(debouncedAmount, DECIMALS)), 'upgrade')
+      }
+    }),
+    [sourceToken, chainId, token, target, isBatch, debouncedAmount]
+  );
+
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
@@ -167,7 +198,8 @@ export function UpgradeModalForm({
     confirmAction: isConnected ? undefined : openConnectModal,
     steps,
     transactionScreenContent,
-    toast
+    toast,
+    analytics
   });
 
   const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';

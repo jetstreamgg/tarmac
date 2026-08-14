@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import type { Call } from 'viem';
+import { formatUnits, type Call } from 'viem';
 import { useMerklRewards, getWriteContractCall, type MerklTokenReward } from '@/hooks';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '@/hooks/generated';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -51,6 +51,8 @@ function toClaimableReward(reward: MerklTokenReward): ClaimableReward {
       />
     ),
     formattedAmount: reward.formattedTotalAmount,
+    amount: parseFloat(formatUnits(reward.totalAmount, reward.tokenDecimals)),
+    tokenAddress: reward.tokenAddress,
     amountUsd: reward.totalAmountUsd,
     chainId: reward.distributionChainId
   };

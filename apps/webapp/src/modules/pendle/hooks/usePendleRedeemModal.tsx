@@ -154,7 +154,18 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const executeRef = useRef<() => void>(() => undefined);
   executeRef.current = () => writeHook.execute();
 
-  const openRedeemModal = useCallback(() => {
+  // `amount` = USD value of the redeemed output leg (the non-PT side), so
+  // sUSDS/PT redeems don't mis-sum the inflow/outflow tiles. amountFrom /
+  // amountTo in `data` keep the raw token counts. useAppAnalytics has no
+  // sign-flip helper, so emit the withdrawal sign explicitly — dashboard
+  // tiles filtering `properties.amount < 0` pick up redeem as a withdrawal
+  // alongside SELL. Omit `amount` when no price is available rather than
+  // emit a wrong-unit number. (pendleNonPtLeg/valueUsd are total — they never
+  // throw — and the eventual capture is guarded by safeCapture, matching the
+  // amount-math-unguarded / capture-guarded pattern in the other widgets.)
+  // Memoized so the launch seeds it AND the live-update effect below keeps it
+  // fresh — the output token stays changeable after launch (APP-444 B14).
+  const analytics = useMemo(() => {
     const toDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
     const data = pendleAnalyticsData({
       market,
@@ -169,15 +180,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       quote,
       isBatchTx: true
     });
-    // `amount` = USD value of the redeemed output leg (the non-PT side), so
-    // sUSDS/PT redeems don't mis-sum the inflow/outflow tiles. amountFrom /
-    // amountTo in `data` keep the raw token counts. useAppAnalytics has no
-    // sign-flip helper, so emit the withdrawal sign explicitly — dashboard
-    // tiles filtering `properties.amount < 0` pick up redeem as a withdrawal
-    // alongside SELL. Omit `amount` when no price is available rather than
-    // emit a wrong-unit number. (pendleNonPtLeg/valueUsd are total — they never
-    // throw — and the eventual capture is guarded by safeCapture, matching the
-    // amount-math-unguarded / capture-guarded pattern in the other widgets.)
     const leg = pendleNonPtLeg('redeem', {
       originSymbol: ptToken.symbol,
       targetSymbol: selectedOutputToken.symbol,
@@ -187,6 +189,18 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       toDecimals
     });
     const usd = valueUsd(leg.symbol, leg.amount);
+    return {
+      widgetName: 'fixed',
+      flow: 'redeem',
+      action: 'redeem',
+      data: {
+        ...data,
+        ...(usd !== undefined ? { amount: -Math.abs(usd) } : {})
+      }
+    };
+  }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
+
+  const openRedeemModal = useCallback(() => {
     launch({
       title: t`Redeem PT-${market.underlyingSymbol}`,
       transactionContent,
@@ -195,35 +209,22 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       confirmDisabled,
       onConfirm: () => executeRef.current(),
       sessionId,
-      analytics: {
-        widgetName: 'fixed',
-        flow: 'redeem',
-        action: 'redeem',
-        data: {
-          ...data,
-          ...(usd !== undefined ? { amount: -Math.abs(usd) } : {})
-        }
-      }
+      analytics
     });
-  }, [
-    launch,
-    market,
-    ptToken,
-    ptBalance,
-    selectedOutputToken,
-    quote,
-    slippage,
-    valueUsd,
-    transactionContent,
-    rightHeaderComponent,
-    confirmDisabled,
-    sessionId
-  ]);
+  }, [launch, market, transactionContent, rightHeaderComponent, confirmDisabled, sessionId, analytics]);
 
   useEffect(() => {
     if (!isModalOpen) return;
-    updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled });
-  }, [isModalOpen, sessionId, updateModalContent, transactionContent, rightHeaderComponent, confirmDisabled]);
+    updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled, analytics });
+  }, [
+    isModalOpen,
+    sessionId,
+    updateModalContent,
+    transactionContent,
+    rightHeaderComponent,
+    confirmDisabled,
+    analytics
+  ]);
 
   return {
     openRedeemModal,

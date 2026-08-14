@@ -18,7 +18,6 @@ const BASE = 8453;
 const h = vi.hoisted(() => ({
   capturedCalls: [] as RawCall[],
   mockExecute: vi.fn(),
-  launchMock: vi.fn(),
   allowance: 0n as bigint | undefined
 }));
 
@@ -122,7 +121,7 @@ vi.mock('@/hooks/savings/useSavingsAllowance', () => ({
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
-    launch: h.launchMock,
+    launch: () => undefined,
     updateModalContent: () => undefined,
     isModalOpen: false,
     txCallbacks: {
@@ -259,7 +258,6 @@ describe('useSavingsLaunch — L2 PSM withdraw calldata parity (max → swapExac
   beforeEach(() => {
     h.capturedCalls = [];
     h.mockExecute.mockClear();
-    h.launchMock.mockClear();
     h.allowance = 0n;
   });
   afterEach(() => cleanup());
@@ -314,7 +312,6 @@ describe('useSavingsLaunch — L2 PSM withdraw calldata parity (specific → swa
   beforeEach(() => {
     h.capturedCalls = [];
     h.mockExecute.mockClear();
-    h.launchMock.mockClear();
     h.allowance = 0n;
   });
   afterEach(() => cleanup());
@@ -395,34 +392,13 @@ describe('useSavingsLaunch — L2 withdraw landmine #1: approve/allowance deriva
   });
 });
 
-describe('useSavingsLaunch — L2 withdraw launch() config', () => {
+describe('useSavingsLaunch — L2 withdraw routing + steps', () => {
   beforeEach(() => {
     h.capturedCalls = [];
     h.mockExecute.mockClear();
-    h.launchMock.mockClear();
     h.allowance = 0n;
   });
   afterEach(() => cleanup());
-
-  it('opens the modal with savings withdraw analytics (widgetName/flow/action)', () => {
-    const { result } = renderHook(() =>
-      useSavingsLaunch({
-        flow: 'withdraw',
-        originToken: TOKENS.usds,
-        amount: AMOUNT_OUT,
-        max: false,
-        referralCode: REF,
-        maxAmountInForWithdraw: MAX_AMOUNT_IN
-      })
-    );
-    act(() => result.current.launch());
-
-    expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.analytics.widgetName).toBe('savings');
-    expect(config.analytics.flow).toBe('withdraw');
-    expect(config.analytics.action).toBe('withdraw');
-  });
 
   it('routes onConfirm to the routed PSM withdraw engine (specific → swapExactOut engine)', () => {
     const { result } = renderHook(() =>
@@ -435,10 +411,7 @@ describe('useSavingsLaunch — L2 withdraw launch() config', () => {
         maxAmountInForWithdraw: MAX_AMOUNT_IN
       })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    config.onConfirm();
+    act(() => result.current.execute());
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
@@ -454,10 +427,8 @@ describe('useSavingsLaunch — L2 withdraw launch() config', () => {
         maxAmountInForWithdraw: MAX_AMOUNT_IN
       })
     );
-    act(() => a.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toHaveLength(2);
+    expect(a.result.current.steps).toHaveLength(2);
     a.unmount();
-    h.launchMock.mockClear();
 
     h.allowance = HAS_ALLOWANCE;
     const b = renderHook(() =>
@@ -470,8 +441,7 @@ describe('useSavingsLaunch — L2 withdraw launch() config', () => {
         maxAmountInForWithdraw: MAX_AMOUNT_IN
       })
     );
-    act(() => b.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toHaveLength(1);
+    expect(b.result.current.steps).toHaveLength(1);
     b.unmount();
   });
 });

@@ -200,3 +200,100 @@ describe('TransactionContext analytics (modal path)', () => {
     expect(callOrder).toEqual(['track_completed', 'consumer_onError', 'startNewFlow']);
   });
 });
+
+describe('TransactionContext review_viewed timing', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // Review-first flows (no entry) open on the review screen: launch IS the view.
+  it('emits review_viewed at launch for a review-first config', () => {
+    renderFlow(baseConfig());
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledTimes(1);
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledWith({
+      widgetName: 'savings',
+      chainId: 1,
+      flow: 'supply'
+    });
+  });
+
+  it('does NOT emit review_viewed at launch for an entry-first config', () => {
+    let ctx!: TransactionContextValue;
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness
+              config={baseConfig({
+                sessionId: 's1',
+                entry: { confirmLabel: 'Review', confirmDisabled: false },
+                transactionContent: <span>review body</span>
+              })}
+              onReady={c => (ctx = c)}
+            />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    void ctx;
+    expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
+  });
+
+  it('emits review_viewed at the entry→review transition, reading the live-merged analytics', () => {
+    let ctx!: TransactionContextValue;
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness
+              config={baseConfig({
+                sessionId: 's1',
+                entry: { confirmLabel: 'Review', confirmDisabled: false },
+                transactionContent: <span>review body</span>
+              })}
+              onReady={c => (ctx = c)}
+            />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+
+    // The editable body live-merges an updated blob before the user advances.
+    act(() =>
+      ctx.updateModalContent('s1', {
+        analytics: { widgetName: 'savings', flow: 'withdraw', action: 'withdraw', data: { amount: -5 } }
+      })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
+
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledTimes(1);
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledWith({
+      widgetName: 'savings',
+      chainId: 1,
+      flow: 'withdraw'
+    });
+  });
+
+  it('emits no review_viewed at all for an entry-only flow (claims parity: no review screen exists)', () => {
+    let ctx!: TransactionContextValue;
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness
+              config={baseConfig({
+                sessionId: 's1',
+                entry: { confirmLabel: 'Claim', confirmDisabled: false }
+                // no transactionContent → no review stage
+              })}
+              onReady={c => (ctx = c)}
+            />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    void ctx;
+    fireEvent.click(screen.getByRole('button', { name: /claim/i }));
+    expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
+  });
+});

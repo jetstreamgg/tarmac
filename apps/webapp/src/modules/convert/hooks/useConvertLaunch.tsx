@@ -219,6 +219,7 @@ export function useConvertLaunch({
           module: 'convert',
           originToken: originSymbol,
           targetToken: targetSymbol,
+          isBatchTx: conversion.isBatch,
           amount: Number(formatUnits(amount, originDecimals))
         }
       }
@@ -236,7 +237,8 @@ export function useConvertLaunch({
     direction,
     originSymbol,
     amount,
-    originDecimals
+    originDecimals,
+    conversion.isBatch
   ]);
 
   // Keep the open modal's gating + preview live while it still sits on the

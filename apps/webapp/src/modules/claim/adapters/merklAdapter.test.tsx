@@ -64,6 +64,8 @@ const asMerklSelection = (rewards: Reward[]): ClaimableReward[] =>
     tokenSymbol: r.tokenSymbol,
     icon: null,
     formattedAmount: r.formattedTotalAmount,
+    amount: 0,
+    tokenAddress: r.tokenAddress as `0x${string}`,
     amountUsd: r.totalAmountUsd,
     chainId: r.distributionChainId
   }));

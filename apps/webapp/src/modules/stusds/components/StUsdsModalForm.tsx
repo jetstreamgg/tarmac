@@ -4,7 +4,7 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { StUsdsProviderType, TOKENS } from '@/hooks';
+import { StUsdsProviderType, TOKENS, stUsdsAddress } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
@@ -18,6 +18,8 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
 import { useStUsdsLaunch, type StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
 import { useStUsdsTransactionForm, type StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 import { stUsdsPrepareErrorMessage } from '../lib/prepareErrorMessage';
@@ -203,6 +205,26 @@ export function StUsdsModalForm({
     ]
   );
 
+  // Legacy StUSDSWidget payload shape (APP-444 B5): widget_name 'expert',
+  // assetSymbol hardcoded USDS (both directions move USDS), no assetAddress.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'expert',
+      flow,
+      action: flow,
+      data: {
+        module: 'expert',
+        product: 'stUSDS',
+        productAddress: stUsdsAddress[chainId as keyof typeof stUsdsAddress],
+        assetSymbol: 'USDS',
+        isBatchTx: isBatch,
+        provider: isCurveRoute ? 'curve' : 'native',
+        amount: signedAmount(parseFloat(formatUnits(amount, DECIMALS)), flow)
+      }
+    }),
+    [flow, chainId, isBatch, isCurveRoute, amount]
+  );
+
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / review breakdown / step labels /
   // wallet summary / toast titles in sync, and the entry-slot portal.
@@ -213,7 +235,8 @@ export function StUsdsModalForm({
     transactionContent,
     transactionScreenContent,
     steps,
-    toast
+    toast,
+    analytics
   });
 
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);

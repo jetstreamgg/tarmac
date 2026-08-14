@@ -128,6 +128,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
                 contractAddress: contract.contractAddress as `0x${string}`,
                 supplyToken: contract.supplyToken,
                 displayName: rewardContractDisplayName(contract),
+                productName: contract.name,
                 rewardTokenSymbol:
                   contract.rewardToken.symbol === TOKENS.cle.symbol ? undefined : contract.rewardToken.symbol,
                 rate: position.rate
