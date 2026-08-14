@@ -78,7 +78,7 @@ export function StakeTakeoverBorrowCard({
   minCollateralForDust: bigint | undefined;
   skyToLock: bigint;
   simulatedVault: Vault | undefined;
-  /** The simulation is in flight — its dust/max/risk figures hold skeletons (APP-491). */
+  /** The simulation is in flight — its dust/max/risk figures hold skeletons. */
   simulationLoading?: boolean;
   vaultNoBorrow: Vault | undefined;
   collateralData: CollateralRiskParameters | undefined;
@@ -99,8 +99,8 @@ export function StakeTakeoverBorrowCard({
   const inputDisabled = minCollateralNotMet || debtCeilingReached;
   const hasAmount = usdsToBorrow > 0n;
   const riskLevel = hasAmount ? simulatedVault?.riskLevel : undefined;
-  // `maxBorrowable` composes over `?? 0n` fallbacks, so it must skeleton while
-  // either input read is unresolved rather than quote a premature 0 (APP-491).
+  // `maxBorrowable` composes over `?? 0n` fallbacks, so it skeletons while
+  // either input read is unresolved.
   const maxLoading = collateralLoading || simulationLoading;
 
   const onPercentClick = (percent: number) => {

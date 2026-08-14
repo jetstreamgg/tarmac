@@ -133,9 +133,7 @@ export function PendleModalForm({
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
   const available = isSupply ? (walletBalance?.value ?? 0n) : ptBalance;
 
-  // Never validate against an unresolved balance: while the read is in flight
-  // `available` would be a premature 0n and any entered amount would flash a
-  // false "Insufficient funds" (APP-491).
+  // Never validate against the unresolved balance's 0n fallback.
   const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
   const insufficient = balanceKnown && amount > available;
   const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient;
@@ -552,8 +550,7 @@ export function PendleModalForm({
 
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
 
-      {/* The retired widget's "Fetching quote from Pendle" line: while the quote is in
-          flight the grid holds its pre-quote values, so say why (APP-491). */}
+      {/* The grid holds its pre-quote values while re-quoting. */}
       {isFetchingQuote && (
         <div className="flex items-center gap-2" data-testid="pendle-modal-quote-fetching">
           <LoaderCircle className="text-fgSecondary h-4 w-4 animate-spin" />

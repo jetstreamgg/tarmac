@@ -30,11 +30,7 @@ export type UpgradeModalRowInput = {
   network: string;
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
   networkFee: string;
-  /**
-   * The MKR→SKY fee read is still unresolved — the Penalty and You'll receive
-   * cells (both derive from it) render skeletons instead of the premature
-   * "0.00%" / gross figures (APP-491).
-   */
+  /** The MKR→SKY fee read is unresolved — the Penalty and You'll receive cells render skeletons. */
   feeLoading?: boolean;
 };
 

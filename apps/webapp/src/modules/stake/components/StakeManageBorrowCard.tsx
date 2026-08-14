@@ -109,7 +109,7 @@ export function StakeManageBorrowCard({
   amount: bigint;
   onAmountChange: (amount: bigint, wipeAll?: boolean) => void;
   existingVault: Vault | undefined;
-  /** The vault read backing `existingVault` is in flight — its cells hold skeletons (APP-491). */
+  /** The vault read backing `existingVault` is in flight — its cells hold skeletons. */
   positionLoading?: boolean;
   simulatedVault: Vault | undefined;
   /** The live simulation is in flight — its dust/max figures hold skeletons. */
@@ -156,8 +156,8 @@ export function StakeManageBorrowCard({
   // repay's max is wallet- and dust-aware, and borrow has no slider — and thus
   // no max label — until the position carries debt.
   const maxHint = isRepay ? maxRepayable : minCollateralNotMet ? undefined : maxBorrowable;
-  // The hint composes over `?? 0n` fallbacks, so it must skeleton while any of
-  // its inputs is unresolved rather than quote a premature 0 (APP-491).
+  // The hint composes over `?? 0n` fallbacks, so it skeletons while any input
+  // read is unresolved.
   const maxHintLoading = isRepay
     ? positionLoading || usdsBalanceLoading
     : positionLoading || collateralLoading || simulationLoading;

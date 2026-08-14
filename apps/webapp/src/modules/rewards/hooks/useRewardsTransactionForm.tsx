@@ -29,7 +29,7 @@ export interface RewardsTransactionForm {
   amount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / staked balance (withdraw). */
   available: bigint;
-  /** The `available` read has resolved — display/validation must wait on it (APP-491). */
+  /** The `available` read has resolved — display and validation wait on it. */
   availableKnown: boolean;
   /** Current staked position in the farm (both flows) — feeds the Supply delta cells. */
   position: bigint;
@@ -84,9 +84,7 @@ export function useRewardsTransactionForm({
 
   const position = suppliedBalance ?? 0n;
   const available = isSupply ? (walletBalance?.value ?? 0n) : position;
-  // Never validate against an unresolved balance: while the read is in flight
-  // `available` would be a premature 0n and any entered amount would flash a
-  // false insufficient-funds error (APP-491).
+  // Never validate against the unresolved balance's 0n fallback.
   const availableKnown = isSupply ? walletBalance !== undefined : suppliedBalance !== undefined;
   const positionKnown = suppliedBalance !== undefined;
   const isZero = amount === 0n;

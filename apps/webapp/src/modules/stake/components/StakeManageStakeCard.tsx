@@ -48,10 +48,10 @@ export function StakeManageStakeCard({
   walletBalance: bigint | undefined;
   walletBalanceLoading: boolean;
   stakedAmount: bigint | undefined;
-  /** The vault read backing `stakedAmount` is in flight — hold the withdraw base behind a skeleton (APP-491). */
+  /** The vault read backing `stakedAmount` is in flight — the withdraw base holds a skeleton. */
   stakedAmountLoading?: boolean;
   rewardsRate: number | null;
-  /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton (APP-491). */
+  /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton. */
   rateLoading?: boolean;
   /** Current est. annual rewards (staked × rate), in SKY. */
   estCurrentSky: bigint | null;

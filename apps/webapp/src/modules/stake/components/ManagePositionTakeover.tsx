@@ -155,9 +155,7 @@ export function ManagePositionTakeover({
       ? skyBalance !== undefined && state.skyAmount > skyBalance.value && state.skyAmount !== 0n
         ? t`Insufficient funds`
         : undefined
-      : // Only validate against a RESOLVED collateral read — while the vault is
-        // in flight `existingCollateral` is a premature 0n and any entered
-        // amount would flash a false error (APP-491).
+      : // Never validate against the unresolved vault read's 0n fallback.
         existingVault !== undefined && state.skyAmount > existingCollateral && state.skyAmount !== 0n
         ? t`Insufficient funds`
         : // The capped-OSM state implies max liquidation risk (the F8 proximity
@@ -251,7 +249,7 @@ export function ManagePositionTakeover({
   const hasChange =
     skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll || delegateChanged;
   // Every staged change is relative to the existing position, so nothing may
-  // confirm against an unresolved vault read (APP-491).
+  // confirm against an unresolved vault read.
   const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid && !detail.vaultLoading;
 
   const close = useCallback(() => {

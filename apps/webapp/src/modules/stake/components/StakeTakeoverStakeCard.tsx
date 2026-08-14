@@ -51,7 +51,7 @@ export function StakeTakeoverStakeCard({
   balanceLoading?: boolean;
   /** Formatted percentage (e.g. "1.50%") or null while loading/unavailable. */
   rewardsRate: string | null;
-  /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton (APP-491). */
+  /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton. */
   rateLoading?: boolean;
   /** In reward-token units; null renders the design's "–" empty marker. */
   estAnnualRewards: bigint | null;

@@ -13,7 +13,7 @@ export type BundleFeeState = {
   ready: boolean;
   /** The estimate is in, or has failed — either way it will not change shape again. */
   settled: boolean;
-  /** The estimate failed with no figure to show — the row says so instead of a dash (APP-491). */
+  /** The estimate failed with no figure to show. */
   failed: boolean;
   canBundle: boolean;
   promoVisible: boolean;
@@ -95,9 +95,7 @@ export function NetworkFeeValue({
 }) {
   const [batchEnabled] = useBatchToggle();
 
-  // Loading, failed and not-applicable each read differently (APP-491): skeleton
-  // while the estimate is in flight, "Unavailable" when it failed with nothing
-  // held to show, the dash only when there is nothing to estimate.
+  // The dash is reserved for "nothing to estimate".
   const value = state.failed ? (
     <span data-testid="network-fee-failed">
       <Trans>Unavailable</Trans>

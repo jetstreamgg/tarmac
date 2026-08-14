@@ -54,10 +54,7 @@ export type ModalGridCellHints = {
   action?: React.ReactNode;
   /** Interactive element after the label (the upgrade Penalty info popover). */
   labelAction?: React.ReactNode;
-  /**
-   * The value's underlying read hasn't resolved — draw the skeleton instead of
-   * the value, so an in-flight read never renders as data (APP-491).
-   */
+  /** Draw the skeleton in place of the value while its underlying read is unresolved. */
   loading?: boolean;
 };
 

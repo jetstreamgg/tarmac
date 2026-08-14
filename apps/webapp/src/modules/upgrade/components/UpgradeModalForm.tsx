@@ -82,9 +82,8 @@ export function UpgradeModalForm({
   });
 
   const { data: mkrSkyFee } = useMkrSkyFee();
-  // Unresolved fee = unknown economics: the penalty and receive cells hold a
-  // skeleton and the confirm waits, so the modal never quotes the gross
-  // (pre-penalty) figures and snaps down when the read lands (APP-491).
+  // Unknown fee = unknown economics: the penalty/receive cells and the confirm
+  // both wait on it.
   const feeUnknown = isMkr && mkrSkyFee === undefined;
   const fee = isMkr ? (mkrSkyFee ?? 0n) : 0n;
   const receiveAmount = math.calculateConversion({ symbol: token }, debouncedAmount, fee);
