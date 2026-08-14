@@ -60,21 +60,21 @@ export function getRewardsSupplyReviewSubtitle({
   needsAllowance: boolean;
 }): MessageDescriptor {
   if (!needsAllowance) {
-    return msg`You will supply your ${symbol} to the Sky Token Rewards module.`;
+    return msg`You will supply your ${symbol} to the Sky Ecosystem Rewards module.`;
   }
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access your ${symbol} and supply it to the Sky Token Rewards module in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the Sky Ecosystem Rewards module in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access your ${symbol} and supply it to the Sky Token Rewards module in multiple transactions.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the Sky Ecosystem Rewards module in multiple transactions.`;
     default:
       return msg``;
   }
 }
 
 export function getRewardsWithdrawReviewSubtitle({ symbol }: { symbol: string }): MessageDescriptor {
-  return msg`You will withdraw your ${symbol} from the Sky Token Rewards module.`;
+  return msg`You will withdraw your ${symbol} from the Sky Ecosystem Rewards module.`;
 }
 
 export function rewardsSupplyLoadingButtonText({
@@ -113,14 +113,14 @@ export function rewardsSupplySubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access your ${symbol} and supply it to the Sky Token Rewards module.`
+        ? msg`Please allow this app to access your ${symbol} and supply it to the Sky Ecosystem Rewards module.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance
         ? msg`Your token approval and supply are being processed on the blockchain. Please wait.`
         : msg`Your transfer is being processed on the blockchain. Please wait.`;
     case TxStatus.SUCCESS:
-      return msg`You’ve added ${symbol} to the Sky Token Rewards module.`;
+      return msg`You’ve added ${symbol} to the Sky Ecosystem Rewards module.`;
     case TxStatus.ERROR:
       return msg`An error occurred during the supply flow.`;
     default:
@@ -186,12 +186,12 @@ export function rewardsActionDescription({
   switch (flow) {
     case RewardsFlow.SUPPLY:
       if (txStatus === TxStatus.SUCCESS && action === RewardsAction.SUPPLY) {
-        return msg`${needsAllowance ? 'Approved and supplied' : 'Supplied'} ${selectedRewardContract.supplyToken.symbol} to Sky Token Rewards module`;
+        return msg`${needsAllowance ? 'Approved and supplied' : 'Supplied'} ${selectedRewardContract.supplyToken.symbol} to Sky Ecosystem Rewards module`;
       } else {
-        return msg`${needsAllowance ? 'Approving and supplying' : 'Supplying'} ${selectedRewardContract.supplyToken.symbol} to Sky Token Rewards module`;
+        return msg`${needsAllowance ? 'Approving and supplying' : 'Supplying'} ${selectedRewardContract.supplyToken.symbol} to Sky Ecosystem Rewards module`;
       }
     case RewardsFlow.WITHDRAW:
-      return msg`Withdrawing ${selectedRewardContract.supplyToken.symbol} from Sky Token Rewards module`;
+      return msg`Withdrawing ${selectedRewardContract.supplyToken.symbol} from Sky Ecosystem Rewards module`;
     default:
       return msg``;
   }

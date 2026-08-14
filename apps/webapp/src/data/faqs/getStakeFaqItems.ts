@@ -124,9 +124,9 @@ A borrow position is subject to liquidation risk if at any time the value of the
       index: 15
     },
     {
-      question: "What's the difference between Sky Token Rewards and Staking Rewards?",
+      question: "What's the difference between Sky Ecosystem Rewards and Staking Rewards?",
       answer:
-        'Sky Token Rewards are what you can access when you supply USDS stablecoins to the Sky Token Rewards module of the Sky Protocol. Staking Rewards are what you can access when you stake SKY to the Staking Engine of the Sky Protocol.',
+        'Sky Ecosystem Rewards are what you can access when you supply USDS stablecoins to the Sky Ecosystem Rewards module of the Sky Protocol. Staking Rewards are what you can access when you stake SKY to the Staking Engine of the Sky Protocol.',
       index: 16
     },
     {

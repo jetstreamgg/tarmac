@@ -84,7 +84,9 @@ test('Details pane shows correct history data and layout subsections', async ({ 
   ).toBeEnabled();
   await expect(isolatedPage.getByTestId('supply-input-rewards-balance')).toHaveText('No wallet connected');
   await expect(
-    isolatedPage.getByTestId('connect-wallet-card').getByRole('heading', { name: 'About Sky Token Rewards' })
+    isolatedPage
+      .getByTestId('connect-wallet-card')
+      .getByRole('heading', { name: 'About Sky Ecosystem Rewards' })
   ).toBeVisible();
   await expect(isolatedPage.getByTestId('connect-wallet-card-button')).toBeEnabled();
 
@@ -99,7 +101,9 @@ test('Details pane shows correct history data and layout subsections', async ({ 
     isolatedPage.getByTestId('widget-container').getByRole('button', { name: 'Connect Wallet' })
   ).not.toBeVisible();
   await expect(
-    isolatedPage.getByTestId('connect-wallet-card').getByRole('heading', { name: 'About Sky Token Rewards' })
+    isolatedPage
+      .getByTestId('connect-wallet-card')
+      .getByRole('heading', { name: 'About Sky Ecosystem Rewards' })
   ).not.toBeVisible();
   await expect(
     isolatedPage.getByRole('cell', { name: 'Please connect your wallet to view your history' })

@@ -73,7 +73,7 @@ Your use of MetaMask or any other third-party digital wallet software may be sub
     question: 'What is USDS?',
     answer: `USDS is a stablecoin of the decentralized Sky Protocol and the upgrade of DAI. It is backed by a surplus of collateral and soft-pegged to the value of the U.S. dollar, meaning it is designed to maintain a value equal to or close to a dollar. USDS powers the open Sky Ecosystem.
 
-USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. For example, you can use USDS to participate in the [Sky Savings Rate](#tooltip-sky-savings-rate) to accumulate additional USDS, and to access Sky Token Rewards via the Sky.money web app.
+USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. For example, you can use USDS to participate in the [Sky Savings Rate](#tooltip-sky-savings-rate) to accumulate additional USDS, and to access Sky Ecosystem Rewards via the Sky.money web app.
 
 The Sky Protocol is governed by a community of broad and diversified individuals and entities from around the world, who hold Sky governance tokens and support Sky Ecosystem by participating in a system of decentralized onchain voting.
 
@@ -89,7 +89,7 @@ USDS is also currently available on networks other than Ethereum Mainnet, includ
   {
     question: 'How can I use USDS?',
     answer:
-      'USDS is freely transferable and is used across onchain markets and supported applications. It can also be supplied into the Sky Savings Rate module to accumulate additional USDS, and to the Sky Token Rewards module to receive rewards determined by protocol mechanisms and governance. Using USDS in these ways supports a broader ecosystem strategy focused on scaling USDS usage through deep liquidity and expanded sources of protocol revenue that support these modules.',
+      'USDS is freely transferable and is used across onchain markets and supported applications. It can also be supplied into the Sky Savings Rate module to accumulate additional USDS, and to the Sky Ecosystem Rewards module to receive rewards determined by protocol mechanisms and governance. Using USDS in these ways supports a broader ecosystem strategy focused on scaling USDS usage through deep liquidity and expanded sources of protocol revenue that support these modules.',
     index: 7
   },
   {
@@ -102,7 +102,7 @@ You can access SKY in several ways, depending on your location or other criteria
 
 • By directly trading USDC, USDT, ETH and USDS for it via the Sky.money web app.
 
-• By supplying USDS to the Sky Token Rewards module of the Sky Protocol and selecting SKY as a reward.
+• By supplying USDS to the Sky Ecosystem Rewards module of the Sky Protocol and selecting SKY as a reward.
 
 • On cryptocurrency exchanges that support the SKY token.
 
