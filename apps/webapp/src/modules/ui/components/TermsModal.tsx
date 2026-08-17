@@ -16,16 +16,16 @@ import { CheckedState } from '@radix-ui/react-checkbox';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Close } from '@/modules/icons';
 import { LoadingSpinner } from './LoadingSpinner';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
 
-const TERMS_OF_USE_URL = 'https://docs.sky.money/legal/skybase-international/terms-of-use';
-const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal/skybase-international/privacy-policy';
 const USER_RISK_DOCS_URL = 'https://docs.sky.money/user-risks';
 
 // Inline prose link — links must be visibly distinguished from body text
 // (APP-500 AC), and fg-brand is the comp's link color (Figma 1868:80725).
 // ExternalLink's inline-flex wrapper breaks mid-sentence wrapping, so this is
-// a plain anchor.
-const TermsLink = ({ href, children }: { href: string; children: ReactNode }) => (
+// a plain anchor. Also used by the transaction signature step's helper copy
+// (APP-501), which carries the same two links.
+export const TermsLink = ({ href, children }: { href: string; children: ReactNode }) => (
   <a href={href} target="_blank" rel="noopener noreferrer" className="text-fgBrand hover:underline">
     {children}
   </a>

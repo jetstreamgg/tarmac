@@ -239,7 +239,12 @@ export type {
 } from './pendle/pendle';
 
 // Authentication
-export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
+export {
+  useRestrictedAddressCheck,
+  addressScreeningQueryKey,
+  fetchAddressScreening,
+  type AddressScreeningResult
+} from './authentication/useRestrictedAddressCheck';
 export { useVpnCheck } from './authentication/useVpnCheck';
 
 // Tokens

@@ -1,11 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
-import { useConnection } from 'wagmi';
+import { useConnection, useSignMessage } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
-import { IS_PRODUCTION_ENV } from '@/lib/constants';
-import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
+import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { reportError } from '@/modules/sentry/reportError';
 import { addTermsAcceptance } from '@/modules/ui/lib/addTermsAcceptance';
+import { signTermsAcceptance } from '@/modules/ui/lib/signTermsAcceptance';
 import { checkTermsWithRetry, type TermsCheckData } from '@/modules/ui/lib/checkTermsWithRetry';
 import { useTermsAcceptance } from '@/modules/ui/hooks/useTermsAcceptance';
 
@@ -67,6 +67,14 @@ interface ConnectedContextType {
    * the user re-prompted rather than browsing unrecorded.
    */
   acceptTerms: () => Promise<boolean>;
+  /**
+   * Phase B (APP-501): prompts the wallet to sign `termsMessageToSign`, posts
+   * the signature to `/terms-acceptance/sign`, and — only once the worker
+   * recorded it — flips `hasSignedCurrentTerms`. Resolves false on a wallet
+   * rejection or a failed POST; the caller (the pre-transaction gate) renders
+   * the failed signature step and retries by calling again.
+   */
+  signTerms: () => Promise<boolean>;
   authData: {
     addressAllowed?: boolean;
     authIsLoading: boolean;
@@ -93,6 +101,7 @@ export const ConnectedContext = createContext<ConnectedContextType>({
   hasAcceptedTerms: false,
   hasSignedCurrentTerms: false,
   acceptTerms: async () => false,
+  signTerms: async () => false,
   authData: {
     authIsLoading: false
   },
@@ -103,6 +112,7 @@ export const ConnectedContext = createContext<ConnectedContextType>({
 
 export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, address, chainId, connector } = useConnection();
+  const { signMessageAsync } = useSignMessage();
   const [termsCheck, setTermsCheck] = useState<TermsCheckData | undefined>(undefined);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
@@ -112,10 +122,9 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // even started — long enough for the terms modal to latch open (APP-497 QA).
   const enabled = !!address;
 
-  const skipAuthCheck =
-    (!IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true') || isPrivateDeployment();
+  const skipAuthCheck = shouldSkipAuthChecks();
 
-  const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.sky.money';
+  const authUrl = getAuthUrl();
   const {
     data: authData,
     isLoading: authIsLoading,
@@ -301,6 +310,57 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return reportUnlessRecorded();
   }, [address, chainId, connector?.name, reportUnlessRecorded, termsCheck?.latestVersion]);
 
+  const termsMessageToSign = termsCheck?.messageToSign;
+
+  const signTerms = useCallback(async (): Promise<boolean> => {
+    // No message means nothing verifiable can be signed: the worker holds the
+    // only copy of the text (APP-508), so without `messageToSign` from /check
+    // there is no string whose signature it would accept. Refuse rather than
+    // sign a guess.
+    if (!address || !chainId || !termsMessageToSign) return false;
+
+    let signature: string;
+    try {
+      signature = await signMessageAsync({ message: termsMessageToSign });
+    } catch {
+      // Wallet rejection (or a wallet that can't sign): a user action to
+      // retry, not an error to report.
+      return false;
+    }
+
+    // Mirror acceptTerms: the mock wallet's signature can't verify against
+    // the worker, and local dev points at the shared staging endpoint — so
+    // skip the POST and flip the flag locally.
+    if (import.meta.env.VITE_USE_MOCK_WALLET === 'true') {
+      setTermsCheck(prev => (prev ? { ...prev, signedForCurrentVersion: true } : prev));
+      return true;
+    }
+
+    const result = await signTermsAcceptance(address, chainId, signature);
+
+    // Discard the continuation if the address changed (or disconnected) while
+    // the POST was in flight — the signature belongs to the previous address,
+    // and flipping the new one's flag would skip its own signature step.
+    if (activeAddressRef.current !== address) return false;
+
+    if (!result.ok) {
+      reportError(result.lastError ?? new Error('Terms signature submission failed'), {
+        module: 'auth',
+        flow: 'terms-signature',
+        action: 'submit',
+        type: 'terms_signature_error',
+        statusCode: result.status,
+        extra: { chainId, connector: connector?.name }
+      });
+      return false;
+    }
+
+    // 201 recorded it; 200 means the worker already had one for this address
+    // and version — an idempotent no-op, equally a success.
+    setTermsCheck(prev => (prev ? { ...prev, signedForCurrentVersion: true } : prev));
+    return true;
+  }, [address, chainId, connector?.name, signMessageAsync, termsMessageToSign]);
+
   // A VPN is deliberately absent here (APP-497): VPN users browse and transact
   // normally, and the safeguard is the per-transaction terms signature (C6),
   // not a wall. Genuinely restricted jurisdictions still block.
@@ -370,8 +430,9 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         hasAcceptedTerms,
         hasSignedCurrentTerms,
         latestTermsVersion: termsCheck?.latestVersion,
-        termsMessageToSign: termsCheck?.messageToSign,
+        termsMessageToSign,
         acceptTerms,
+        signTerms,
         authData: {
           addressAllowed: authData?.addressAllowed,
           authIsLoading,

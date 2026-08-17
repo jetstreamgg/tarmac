@@ -1,11 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { ReadHookParams } from '../hooks';
 
-type AuthResponse = {
+export type AddressScreeningResult = {
   addressAllowed: boolean;
 };
 
-const checkAddress = async (address?: string, authUrl?: string): Promise<AuthResponse> => {
+/**
+ * One cache entry per address, shared between the connect-time hook below and
+ * the pre-transaction gate (APP-501), so both read and write the same verdict:
+ * a risky result found at Confirm flips the app-level blocked dialog through
+ * this key, and a fresh connect-time verdict spares Confirm a refetch.
+ */
+export const addressScreeningQueryKey = (address?: string) => ['auth', address];
+
+export const fetchAddressScreening = async (
+  address?: string,
+  authUrl?: string
+): Promise<AddressScreeningResult> => {
   if (!authUrl) {
     throw new Error('Missing auth URL');
   }
@@ -24,7 +35,7 @@ const checkAddress = async (address?: string, authUrl?: string): Promise<AuthRes
   return { addressAllowed };
 };
 
-type Props = ReadHookParams<AuthResponse> & {
+type Props = ReadHookParams<AddressScreeningResult> & {
   address?: string;
   authUrl: string;
   enabled: boolean;
@@ -38,15 +49,15 @@ export const useRestrictedAddressCheck = ({
   refetchInterval = 60000, // re-check every 60 seconds, matching useVpnCheck, so an error state can recover
   ...options
 }: Props): {
-  data: AuthResponse | undefined;
+  data: AddressScreeningResult | undefined;
   error: Error | undefined;
   isLoading: boolean;
   refetch: () => void;
 } => {
   const { data, error, isLoading, refetch } = useQuery({
-    queryKey: ['auth', address],
+    queryKey: addressScreeningQueryKey(address),
     enabled: !!address && enabled,
-    queryFn: () => checkAddress(address, authUrl),
+    queryFn: () => fetchAddressScreening(address, authUrl),
     staleTime,
     refetchInterval,
     ...options
