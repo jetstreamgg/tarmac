@@ -189,4 +189,89 @@ describe('useTermsAcceptance', () => {
       expect(result.current.hasLocalAcceptance).toBe(false);
     });
   });
+
+  /**
+   * Reads can work while writes throw — quota exceeded, or classic Safari
+   * private mode. Before the read-back check this was a silent accept-loop:
+   * the DB row was written and recordLocalAcceptance returned true, but the
+   * flag never became readable, so the gate stayed shut and the modal
+   * reopened on every reconnect — appending another acceptance event per
+   * retry, with nothing in Sentry (APP-497 review).
+   *
+   * Fresh addresses per test: the module-level session copy survives between
+   * tests in this file, so reusing an address would make assertions vacuous.
+   */
+  describe('when localStorage reads work but writes fail', () => {
+    const ADDRESS_C = '0x00000000000000000000000000000000000000cc';
+    const ADDRESS_D = '0x00000000000000000000000000000000000000dd';
+    let store: Record<string, string>;
+
+    const stubStorage = (setItem: (k: string, v: string) => void) => {
+      vi.stubGlobal('localStorage', {
+        getItem: (k: string) => store[k] ?? null,
+        setItem,
+        removeItem: (k: string) => {
+          delete store[k];
+        },
+        key: (i: number) => Object.keys(store)[i] ?? null,
+        get length(): number {
+          return Object.keys(store).length;
+        }
+      });
+    };
+
+    beforeEach(() => {
+      store = {};
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('records into the session copy when the write throws, and reads it back', () => {
+      stubStorage(() => {
+        throw new DOMException('QuotaExceededError', 'QuotaExceededError');
+      });
+
+      const { result } = renderHook(() => useTermsAcceptance({ address: ADDRESS_C, version: VERSION }));
+      expect(result.current.hasLocalAcceptance).toBe(false);
+
+      act(() => {
+        expect(result.current.recordLocalAcceptance()).toBe(true);
+      });
+
+      expect(result.current.hasLocalAcceptance).toBe(true);
+    });
+
+    it('still re-prompts a second address after a session-copy acceptance', () => {
+      stubStorage(() => {
+        throw new DOMException('QuotaExceededError', 'QuotaExceededError');
+      });
+
+      const { result, rerender } = renderHook(
+        ({ address }) => useTermsAcceptance({ address, version: VERSION }),
+        { initialProps: { address: ADDRESS_C } }
+      );
+      act(() => {
+        result.current.recordLocalAcceptance();
+      });
+      expect(result.current.hasLocalAcceptance).toBe(true);
+
+      rerender({ address: ADDRESS_B });
+
+      expect(result.current.hasLocalAcceptance).toBe(false);
+    });
+
+    it('falls back to the session copy when a write silently does not stick', () => {
+      stubStorage(() => {});
+
+      const { result } = renderHook(() => useTermsAcceptance({ address: ADDRESS_D, version: VERSION }));
+
+      act(() => {
+        expect(result.current.recordLocalAcceptance()).toBe(true);
+      });
+
+      expect(result.current.hasLocalAcceptance).toBe(true);
+    });
+  });
 });

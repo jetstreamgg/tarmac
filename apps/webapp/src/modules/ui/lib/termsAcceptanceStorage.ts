@@ -47,12 +47,16 @@ export function hasLocalTermsAcceptance(address: string, version: string): boole
   const key = termsAcceptanceKey(address, version);
 
   try {
-    return localStorage.getItem(key) === 'true';
+    if (localStorage.getItem(key) === 'true') return true;
+    // A miss is not proof there was no acceptance this session: reads can
+    // work while writes throw (quota exceeded, classic Safari private mode),
+    // and then the session copy holds the only record. It still cannot
+    // outvote a user who cleared their site data mid-session — only keys
+    // whose persistent write FAILED ever enter the session copy, and a
+    // cleared flag was by definition written successfully.
+    return sessionFlags.has(key);
   } catch {
-    // Storage blocked, so the session copy is the only record there is. Note
-    // this is reached on a *throw*, not on a miss: when storage works and
-    // simply has no flag, the answer is genuinely no. That keeps the session
-    // copy from outvoting a user who cleared their site data mid-session.
+    // Storage blocked outright: the session copy is the only record there is.
     return sessionFlags.has(key);
   }
 }
@@ -73,10 +77,15 @@ export function recordLocalTermsAcceptance(address: string, version: string): vo
       if (stored.startsWith(prefix)) localStorage.removeItem(stored);
     }
     localStorage.setItem(key, 'true');
+    // Trust the read-back, not the write: a flag that cannot be read back
+    // never opens the gate, which is the silent accept-loop this fallback
+    // exists to prevent — the modal reopens on every reconnect and each retry
+    // appends another acceptance event, with nothing in Sentry.
+    if (localStorage.getItem(key) !== 'true') sessionFlags.add(key);
   } catch {
-    // Storage blocked, private mode or quota: hold the flag in memory for this
-    // page's lifetime so the gate can open at all. Written only on failure, so
-    // a browser with working storage keeps exactly one source of truth.
+    // Storage blocked (private mode) or full (quota): hold the flag in memory
+    // for this page's lifetime so the gate can open at all. Written only on
+    // failure, so a browser with working storage keeps one source of truth.
     sessionFlags.add(key);
   }
 }

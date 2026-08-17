@@ -9,7 +9,7 @@ export const connectMockWalletAndAcceptTerms = async (page: Page, { batch }: { b
   try {
     await page.getByTestId('end-of-terms').scrollIntoViewIfNeeded({ timeout: 2000 });
     await page.getByRole('checkbox').click();
-    await page.getByRole('button', { name: 'Agree and Sign' }).click();
+    await page.getByRole('button', { name: 'Agree and continue' }).click();
     await page.waitForTimeout(5000);
   } catch (error) {
     console.error('Error accepting terms: ', error);
