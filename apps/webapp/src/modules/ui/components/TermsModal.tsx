@@ -17,8 +17,8 @@ import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Close } from '@/modules/icons';
 import { LoadingSpinner } from './LoadingSpinner';
 
-const TERMS_OF_USE_URL = 'https://docs.sky.money/legal-terms';
-const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal-terms#privacy-policy';
+const TERMS_OF_USE_URL = 'https://docs.sky.money/legal/skybase-international/terms-of-use';
+const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal/skybase-international/privacy-policy';
 const USER_RISK_DOCS_URL = 'https://docs.sky.money/user-risks';
 
 // Inline prose link — links must be visibly distinguished from body text
