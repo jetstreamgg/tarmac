@@ -38,7 +38,7 @@ export const useSpkStakingRewardsToast = (isAuthorized: boolean) => {
             </Text>
             <VStack className="mt-4 gap-4">
               <Text variant="medium">
-                SPK rewards have been disabled as a Staking Reward option and the SPK rate set to zero via a{' '}
+                SPK Staking Rewards have ended via a{' '}
                 <ExternalLink
                   showIcon={false}
                   href={GOVERNANCE_PROPOSAL_URL}

@@ -13,7 +13,7 @@ import { RewardsModule, Savings } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { PopoverRateInfo as PopoverInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
 import { isL2ChainId } from '@/utils';
-import { isDeprecatedRewardContract } from '@/hooks';
+import { isDeprecatedRewardContract, usdsSpkRewardAddress } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { useGeoConfig } from '@/modules/geo-config/hooks/useGeoConfig';
 
@@ -115,8 +115,12 @@ export const useNotification = () => {
 
     setTimeout(() => {
       if (isRewardsModule) {
-        // Don't show toast for deprecated reward contracts
-        if (isDeprecatedRewardContract(rewardContract?.contractAddress || '', chainId)) {
+        // Don't show toast for deprecated reward contracts or the SPK farm
+        const spkFarmAddress = usdsSpkRewardAddress[chainId as keyof typeof usdsSpkRewardAddress];
+        if (
+          isDeprecatedRewardContract(rewardContract?.contractAddress || '', chainId) ||
+          rewardContract?.contractAddress?.toLowerCase() === spkFarmAddress?.toLowerCase()
+        ) {
           return;
         }
 

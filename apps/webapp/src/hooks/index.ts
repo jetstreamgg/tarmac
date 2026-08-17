@@ -463,6 +463,7 @@ export {
   mcdPotAddress,
   usdsSkyRewardAddress,
   usdsSkyRewardAbi,
+  usdsSpkRewardAddress,
   mcdDaiAddress,
   skyAddress,
   wethAddress,
