@@ -7,7 +7,6 @@ import {
   TOKENS,
   useRewardContractTokens,
   useStakeRewardContracts,
-  lsSkyUsdsRewardAddress,
   lsSkySpkRewardAddress
 } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@/utils';
@@ -68,9 +67,6 @@ export function PositionDetail({
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
 
   const chainId = useChainId();
-  const isUsdsReward =
-    selectedRewardContract?.toLowerCase() ===
-    lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress]?.toLowerCase();
   const isSpkReward =
     selectedRewardContract?.toLowerCase() ===
     lsSkySpkRewardAddress[chainId as keyof typeof lsSkySpkRewardAddress]?.toLowerCase();
@@ -178,14 +174,13 @@ export function PositionDetail({
           </VStack>
         </VStack>
       </HStack>
-      {(isUsdsReward || isSpkReward) && (
+      {isSpkReward && (
         <HStack gap={2} className="items-center">
           <YellowWarning boxSize={16} viewBox="0 0 16 16" className="mt-1 shrink-0 self-start" />
           <Text className="text-textSecondary text-sm">
-            Please <span className="font-bold text-white">choose another reward.</span>{' '}
-            {isUsdsReward
-              ? 'The USDS rewards are disabled as a Staking Reward option, and the USDS rate set to zero. The pool of USDS will remain forever so that you can claim your rewards anytime.'
-              : 'The SPK rewards are disabled as a Staking Reward option, and the SPK rate set to zero. The pool of SPK will remain forever so that you can claim your rewards anytime.'}
+            Please <span className="font-bold text-white">choose another reward.</span> The SPK rewards are
+            disabled as a Staking Reward option, and the SPK rate set to zero. The pool of SPK will remain
+            forever so that you can claim your rewards anytime.
           </Text>
         </HStack>
       )}

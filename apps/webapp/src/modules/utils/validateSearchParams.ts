@@ -326,8 +326,8 @@ export const validateSearchParams = (
 
     // validate input amount
     if (key === QueryParams.InputAmount) {
-      // check if input amount is not a valid number or is negative
-      if (isNaN(Number(value)) || Number(value) <= 0) {
+      // only plain decimal strings: Number() also admits hex/exponential notation, which parseUnits rejects
+      if (!/^(\d+(\.\d*)?|\.\d+)$/.test(value) || Number(value) <= 0) {
         searchParams.delete(key);
       }
     }

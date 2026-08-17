@@ -41,7 +41,7 @@ Market participants trade crypto for a variety of reasons. For example, users ma
 
 Depending on your location and other criteria, you can use the Sky.money web app to trade:
 
-• USDC, USDT, ETH and SKY for USDS, and vice versa. Once you have USDS, you can use it to access Sky Token Rewards and the [Sky Savings Rate](#tooltip-sky-savings-rate).
+• USDC, USDT, ETH and SKY for USDS, and vice versa. Once you have USDS, you can use it to access Sky Ecosystem Rewards and the [Sky Savings Rate](#tooltip-sky-savings-rate).
 • USDC, USDT, ETH and USDS for SKY, and vice versa. Once you have SKY, you can use it to access the Staking Engine. The Staking Engine enables you to access Staking Rewards and create one or more positions, including positions that enable you to generate and [borrow](#tooltip-borrow) USDS against your supplied SKY and to delegate the voting power the SKY token provides.`,
     index: 1
   },
@@ -53,9 +53,9 @@ Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more infor
     index: 2
   },
   {
-    question: 'What are Sky Token Rewards?',
+    question: 'What are Sky Ecosystem Rewards?',
     answer:
-      'When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS tokens, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.',
+      'When you supply USDS to the Sky Ecosystem Rewards module of the Sky Protocol, you receive Sky Ecosystem Rewards over time. The USDS tokens, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.',
     index: 3
   },
   {

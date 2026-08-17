@@ -1,6 +1,6 @@
 # Rewards Widget
 
-The **Rewards Widget** is a React component that allows users to participate in Sky Token Rewards, providing an interface to supply tokens, earn rewards, and manage their supplied positions.
+The **Rewards Widget** is a React component that allows users to participate in Sky Ecosystem Rewards, providing an interface to supply tokens, earn rewards, and manage their supplied positions.
 
 ## Installation
 
