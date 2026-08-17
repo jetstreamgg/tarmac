@@ -445,7 +445,7 @@ const RewardsWidgetWrapped = ({
         widgetState.action === RewardsAction.OVERVIEW ? (
           <CardAnimationWrapper key="widget-title">
             <Heading variant="x-large">
-              <Trans>Sky Token Rewards</Trans>
+              <Trans>Sky Ecosystem Rewards</Trans>
             </Heading>
           </CardAnimationWrapper>
         ) : (
@@ -454,7 +454,7 @@ const RewardsWidgetWrapped = ({
               <HStack className="space-x-2">
                 <ArrowLeft className="self-center" />
                 <Heading tag="h3" variant="small" className="text-textSecondary">
-                  View all Sky Token Rewards
+                  View all Sky Ecosystem Rewards
                 </Heading>
               </HStack>
             </Button>
@@ -464,7 +464,7 @@ const RewardsWidgetWrapped = ({
       subHeader={
         widgetState.action === RewardsAction.OVERVIEW ? (
           <Text className="text-textSecondary" variant="small">
-            <Trans>Use USDS to access Sky Token Rewards</Trans>
+            <Trans>Use USDS to access Sky Ecosystem Rewards</Trans>
           </Text>
         ) : undefined
       }

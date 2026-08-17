@@ -22,7 +22,7 @@ export function RewardsOverview() {
 
   return (
     <DetailSectionWrapper>
-      <DetailSection title={t`Sky Token Rewards overview`}>
+      <DetailSection title={t`Sky Ecosystem Rewards overview`}>
         <DetailSectionRow>
           <RewardsOverviewInfo />
         </DetailSectionRow>
@@ -36,7 +36,7 @@ export function RewardsOverview() {
             </DetailSectionRow>
           </DetailSection>
         )}
-      <DetailSection title={t`Sky Token Rewards activity`}>
+      <DetailSection title={t`Sky Ecosystem Rewards activity`}>
         <DetailSectionRow>
           <RewardsOverviewCharts rewardContracts={allRewardContracts} />
         </DetailSectionRow>

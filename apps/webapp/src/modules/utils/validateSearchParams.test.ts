@@ -177,3 +177,18 @@ describe('validateSearchParams geo overrides (non-production)', () => {
     expect(params.has('geo_module_savings')).toBe(false);
   });
 });
+
+describe('validateSearchParams input_amount', () => {
+  it.each(['100', '0.5', '.5', '5.'])('keeps plain decimal amount %s', value => {
+    const params = validateParams(`input_amount=${value}`);
+    expect(params.get('input_amount')).toBe(value);
+  });
+
+  it.each(['0x10', '1e999', 'Infinity', ' 16 ', '1,5', '0', '-1', 'abc'])(
+    'strips non-decimal or non-positive amount %s',
+    value => {
+      const params = validateParams(`input_amount=${encodeURIComponent(value)}`);
+      expect(params.has('input_amount')).toBe(false);
+    }
+  );
+});

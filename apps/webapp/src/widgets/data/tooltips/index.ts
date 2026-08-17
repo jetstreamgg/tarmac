@@ -328,7 +328,7 @@ Bundled transaction: Active`
     id: 'rewards-rate',
     title: 'Rewards Rate',
     tooltip:
-      "The Sky Token Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors: the issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance; the market price of the token rewarded; and the user's proportional supply within the total pool of assets linked to the Sky Token Rewards module. Sky.money does not control the issuance, determination, or distribution of these rewards. The STR rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results."
+      "The Sky Ecosystem Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors: the issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance; the market price of the token rewarded; and the user's proportional supply within the total pool of assets linked to the Sky Ecosystem Rewards module. Sky.money does not control the issuance, determination, or distribution of these rewards. The Sky Ecosystem Rewards rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results."
   }
 ];
 
