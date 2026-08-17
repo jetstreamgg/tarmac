@@ -46,8 +46,7 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
                 >
                   governance proposal
                 </ExternalLink>
-                . You can withdraw your USDS and claim earned SKY anytime. Other USDS reward options and USDS
-                Staking Rewards are not affected.
+                . You can withdraw your USDS and claim earned SKY anytime.
               </Text>
               <Button
                 className="place-self-start"
