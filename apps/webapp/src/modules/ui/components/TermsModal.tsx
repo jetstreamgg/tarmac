@@ -111,6 +111,7 @@ export function TermsModal() {
   } = useConnectedContext();
   const [isChecked, setIsChecked] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'error'>('idle');
+  const isSubmitting = submitStatus === 'submitting';
   const { disconnect } = useDisconnect();
 
   // Phase A is checkbox-only (APP-424). The wallet signature that used to fire
@@ -129,6 +130,9 @@ export function TermsModal() {
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
+      // No exits while the acceptance POST is in flight: the record would land
+      // server-side for a wallet the dismissal just disconnected.
+      if (isSubmitting) return;
       setSubmitStatus('idle');
       setIsChecked(false);
       // Dismissing the modal without accepting must disconnect the wallet, otherwise wagmi stays
@@ -141,6 +145,10 @@ export function TermsModal() {
   };
 
   const handleReject = () => {
+    // closeModal() flips the controlled prop, so onOpenChange (and its reset)
+    // never fires for this path — a stale error banner would otherwise greet
+    // the next auto-open, since the component stays mounted across reconnects.
+    setSubmitStatus('idle');
     setIsChecked(false);
     disconnect();
     closeModal();
@@ -254,6 +262,7 @@ export function TermsModal() {
           size="iconM"
           aria-label={t`Close`}
           onClick={() => handleOpenChange(false)}
+          disabled={isSubmitting}
           data-testid="terms-modal-close"
         >
           <Close className="size-4" />
@@ -288,7 +297,12 @@ export function TermsModal() {
       </div>
 
       <div className="flex items-center gap-2">
-        <Checkbox id="termsCheckbox" checked={isChecked} onCheckedChange={handleCheckboxChange} />
+        <Checkbox
+          id="termsCheckbox"
+          checked={isChecked}
+          onCheckedChange={handleCheckboxChange}
+          disabled={isSubmitting}
+        />
         <label htmlFor="termsCheckbox" className="text-fgPrimary text-sm leading-5.5">
           <Trans>
             By ticking this box and selecting Agree and continue, I accept the sky.money{' '}
@@ -311,7 +325,7 @@ export function TermsModal() {
         >
           <Trans>Agree and continue</Trans>
         </Button>
-        <Button variant="link" size="l" className="w-full" onClick={handleReject}>
+        <Button variant="link" size="l" className="w-full" onClick={handleReject} disabled={isSubmitting}>
           <Trans>Cancel</Trans>
         </Button>
       </div>

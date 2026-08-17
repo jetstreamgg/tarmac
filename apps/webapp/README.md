@@ -57,8 +57,6 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_TERMS_ENDPOINT`: URL endpoint for submitting and checking terms acceptance
 - `VITE_TERMS_LINK`: Array containing links to terms of use
 - `VITE_FOOTER_LINKS`: Array containing footer links with their URLs and names
-- `VITE_TERMS_CHECKBOX_TEXT`: The text displayed next to the checkbox in the terms acceptance modal
-- `VITE_TERMS_MARKDOWN_FILE`: (Optional) Name of a custom terms markdown file in the `/src/content/` directory (e.g., `/src/content/custom-terms.md`). If not specified, uses the default `terms.md` file. This allows external teams to provide their own terms file that will be bundled into the application
 
 #### Feature flags
 
