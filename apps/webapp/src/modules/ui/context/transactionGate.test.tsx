@@ -102,7 +102,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     // No flush between the click and this assertion: the engine contract
     // requires the write to start synchronously from the user's confirm.
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(gate).toHaveBeenCalledWith({ trigger: 'confirm' });
+    expect(gate).toHaveBeenCalledWith(expect.objectContaining({ trigger: 'confirm' }));
   });
 
   it('an async allow defers onConfirm to the verdict, then runs it', async () => {
@@ -162,10 +162,85 @@ describe('TransactionProvider pre-transaction gate', () => {
     act(() => cb.onError(new Error('rejected in wallet')));
 
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
-    expect(gate).toHaveBeenLastCalledWith({ trigger: 'retry' });
+    expect(gate).toHaveBeenLastCalledWith(expect.objectContaining({ trigger: 'retry' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     // Denied: still on the failure screen, retry still available.
     expect(screen.getByRole('button', { name: /retry/i })).not.toBeNull();
+  });
+
+  it('a second gated call while a verdict is pending is ignored (in-flight latch)', async () => {
+    const onConfirm = vi.fn();
+    const gate = vi.fn(async () => ({ allow: true }));
+    renderWithGate(gate, { title: 'Supply', onConfirm });
+
+    const confirm = screen.getByRole('button', { name: /confirm/i });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+
+    expect(gate).toHaveBeenCalledTimes(1);
+    await flush();
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('the gate can mount a prelude signature step and drive the status around it', async () => {
+    const onConfirm = vi.fn();
+    let resolveSigned!: (ok: boolean) => void;
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setPreludeSteps([
+        { label: 'Terms signature', kind: 'signature', description: 'Sign in your wallet' }
+      ]);
+      controls.setGateStatus('initialized');
+      return new Promise(resolve => {
+        resolveSigned = (ok: boolean) => {
+          if (!ok) controls.setGateStatus('error');
+          resolve({ allow: ok });
+        };
+      });
+    };
+    const cb = renderWithGate(gate, { title: 'Supply', onConfirm, steps: ['Supply USDS'] });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    // The prelude renders ahead of the config's own step, active, with its copy.
+    expect(screen.getByText('Terms signature')).not.toBeNull();
+    expect(screen.getByText('Sign in your wallet')).not.toBeNull();
+    expect(screen.getByText('Supply USDS')).not.toBeNull();
+
+    act(() => resolveSigned(true));
+    await flush();
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+
+    // The engine's first onMutate advances currentStep past the signature step
+    // (the INITIALIZED-advancement rule) — no bespoke machinery.
+    act(() => cb.onMutate());
+    expect(screen.getByText('Terms signature')).not.toBeNull();
+  });
+
+  it('a denied signature renders the failed step with inline retry, and retry re-runs the gate', async () => {
+    const onConfirm = vi.fn();
+    const gate = vi.fn(({ controls }: { controls: Parameters<PreTransactionGate>[0]['controls'] }) => {
+      controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' as const }]);
+      controls.setGateStatus('initialized');
+      return Promise.resolve({ allow: false }).then(v => {
+        controls.setGateStatus('error');
+        return v;
+      });
+    });
+    renderWithGate(gate as unknown as PreTransactionGate, {
+      title: 'Supply',
+      onConfirm,
+      steps: ['Supply USDS']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await flush();
+    expect(onConfirm).not.toHaveBeenCalled();
+    // The signature step failed in place: retitled row + inline retry.
+    expect(screen.getByText('Terms signature failed')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+    await flush();
+    expect(gate).toHaveBeenCalledTimes(2);
+    expect(gate).toHaveBeenLastCalledWith(expect.objectContaining({ trigger: 'retry' }));
   });
 
   it("the entry's secondary CTA is gated with its own trigger", () => {
@@ -180,7 +255,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: /claim only/i }));
-    expect(gate).toHaveBeenCalledWith({ trigger: 'secondaryConfirm' });
+    expect(gate).toHaveBeenCalledWith(expect.objectContaining({ trigger: 'secondaryConfirm' }));
     expect(onSecondaryConfirm).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
   });

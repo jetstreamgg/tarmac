@@ -19,7 +19,13 @@ import type {
   TxCallbacks,
   TransactionContextValue
 } from './transactionContract';
-import { allowAllGate, type GateTrigger, type PreTransactionGate } from './preTransactionGate';
+import {
+  allowAllGate,
+  type GateControls,
+  type GateTrigger,
+  type PreTransactionGate
+} from './preTransactionGate';
+import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
@@ -75,6 +81,8 @@ type TransactionModalView = {
   txStatus: TxStatus;
   externalLink: string | undefined;
   currentStep: number;
+  /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
+  preludeSteps: TransactionStep[] | null;
 };
 
 /**
@@ -116,6 +124,12 @@ export function TransactionProvider({
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
   const [externalLink, setExternalLink] = useState<string | undefined>();
   const [currentStep, setCurrentStep] = useState(0);
+  // Off-chain prelude steps the gate mounted for this session (the terms
+  // signature step, APP-501). State for rendering, ref for synchronous reads
+  // in the close snapshot. Reset on every launch and close — a prelude belongs
+  // to the session (and the attempt) that inserted it.
+  const [preludeSteps, setPreludeSteps] = useState<TransactionStep[] | null>(null);
+  const preludeStepsRef = useRef<TransactionStep[] | null>(null);
   // Config is state so updateModalContent re-renders the modal; ref mirrors it for callback reads.
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
@@ -166,6 +180,13 @@ export function TransactionProvider({
   const writeHashRef = useRef<string | undefined>(undefined);
   // Mirrors txStatus for reads inside callbacks (avoids setState-inside-updater impurity).
   const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
+  // In-flight gate latch: the generation whose verdict is currently pending,
+  // null when idle. While set (for the live session), further gated calls are
+  // ignored — nothing else stops a second click from starting a parallel gate
+  // run, and two allows would mean two onConfirms. Practically shadowed by the
+  // Confirm button unmounting on the first click, but this is legal gating, so
+  // the invariant doesn't ride on the UI.
+  const gateInFlightRef = useRef<number | null>(null);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
   const txHashRef = useRef<string | undefined>(undefined);
 
@@ -228,6 +249,9 @@ export function TransactionProvider({
       setExternalLink(undefined);
       txHashRef.current = undefined;
       setCurrentStep(0);
+      preludeStepsRef.current = null;
+      setPreludeSteps(null);
+      gateInFlightRef.current = null;
       setMinimized(false);
       setLaunchCount(c => c + 1);
       setOpen(true);
@@ -300,7 +324,8 @@ export function TransactionProvider({
         config: configRef.current,
         txStatus: txStatusRef.current,
         externalLink,
-        currentStep
+        currentStep,
+        preludeSteps: preludeStepsRef.current
       });
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
       exitTimerRef.current = setTimeout(() => setExitingView(null), MODAL_EXIT_MS);
@@ -317,10 +342,19 @@ export function TransactionProvider({
     txStatusRef.current = TxStatus.IDLE;
     setExternalLink(undefined);
     setCurrentStep(0);
+    preludeStepsRef.current = null;
+    setPreludeSteps(null);
+    gateInFlightRef.current = null;
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
   }, [txStatus, chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
+
+  // The gate calls these from user events, so the ref is always current by then.
+  const handleCloseRef = useRef(handleClose);
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  });
 
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
   // has nothing left to animate.
@@ -380,23 +414,50 @@ export function TransactionProvider({
   // fire into a torn-down or newer session. Note minimize does NOT advance the
   // generation, so a verdict resolving while minimized still applies — the
   // session is alive, just hidden. A rejected verdict counts as a denial.
+  // The surface an async gate drives while it holds the floor (APP-501): the
+  // signature prelude step, the modal's status, and — when the gate replaces
+  // the modal with its own surface — teardown. One stable object; the members
+  // delegate to stable setters or read through refs.
+  const gateControls = useRef<GateControls>({
+    setGateStatus: status => {
+      const mapped =
+        status === 'initialized' ? TxStatus.INITIALIZED : status === 'error' ? TxStatus.ERROR : TxStatus.IDLE;
+      setTxStatus(mapped);
+      txStatusRef.current = mapped;
+    },
+    setPreludeSteps: steps => {
+      preludeStepsRef.current = steps;
+      setPreludeSteps(steps);
+    },
+    closeModal: () => handleCloseRef.current()
+  }).current;
+
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
-      const verdict = gate({ trigger });
+      // A verdict already pending for this session holds the floor — see gateInFlightRef.
+      if (gateInFlightRef.current === sessionGenRef.current) return;
+      const verdict = gate({ trigger, controls: gateControls });
       if (verdict instanceof Promise) {
         const gen = sessionGenRef.current;
-        verdict.then(
-          v => {
-            if (gen !== sessionGenRef.current) return;
-            if (v.allow) action();
-          },
-          () => {}
-        );
+        gateInFlightRef.current = gen;
+        verdict
+          .then(
+            v => {
+              if (gen !== sessionGenRef.current) return;
+              if (v.allow) action();
+            },
+            () => {}
+          )
+          .finally(() => {
+            // Only release a latch we still own: launch/close reset it, and a
+            // NEW session may have latched its own verdict by now.
+            if (gateInFlightRef.current === gen) gateInFlightRef.current = null;
+          });
         return;
       }
       if (verdict.allow) action();
     },
-    [gate]
+    [gate, gateControls]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's
@@ -596,8 +657,18 @@ export function TransactionProvider({
   };
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, externalLink, currentStep }
+    ? { config: activeConfig, txStatus, externalLink, currentStep, preludeSteps }
     : exitingView;
+
+  // The gate's prelude steps render ahead of the flow's own list. Composed at
+  // render (not written into the config) so a retry that no longer needs the
+  // prelude — the signature landed on a previous attempt — restarts with the
+  // config's steps alone and step 0 meaning the first real step again.
+  const modalSteps = modalView
+    ? modalView.preludeSteps
+      ? [...modalView.preludeSteps, ...(modalView.config.steps ?? [])]
+      : modalView.config.steps
+    : undefined;
 
   return (
     <TransactionContext.Provider
@@ -659,7 +730,7 @@ export function TransactionProvider({
             confirmDisabled={modalView.config.confirmDisabled}
             successLabel={modalView.config.successLabel}
             errorLabel={modalView.config.errorLabel}
-            steps={modalView.config.steps}
+            steps={modalSteps}
             currentStep={modalView.currentStep}
           />
         )}

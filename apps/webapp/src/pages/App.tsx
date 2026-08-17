@@ -16,6 +16,7 @@ import { TermsModalProvider } from '@/modules/ui/context/TermsModalContext';
 import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersContext';
 import { ChainModalProvider } from '@/modules/ui/context/ChainModalContext';
 import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
+import { useTermsSignatureGate } from '@/modules/ui/hooks/useTermsSignatureGate';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider } from '@/modules/ui/context/ConnectThenActContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
@@ -43,6 +44,19 @@ const useTestnetConfig =
 // Use mock config for tests, testnet config for development, mainnet for production
 const config = useMock ? mockWagmiConfig : useTestnetConfig ? wagmiConfigDev : wagmiConfigMainnet;
 
+// TransactionProvider with the real pre-transaction gate (APP-501) mounted:
+// screening + the conditional terms signature run on every Confirm. Its own
+// dialog (the screening-unavailable state) rides alongside the children.
+const GatedTransactionProvider = ({ children }: { children: React.ReactNode }) => {
+  const { gate, screeningDialog } = useTermsSignatureGate();
+  return (
+    <TransactionProvider gate={gate}>
+      {children}
+      {screeningDialog}
+    </TransactionProvider>
+  );
+};
+
 const AppContent = () => {
   return (
     <ConnectedProvider>
@@ -52,7 +66,7 @@ const AppContent = () => {
             <TooltipProvider delayDuration={300}>
               <ChainModalProvider>
                 <NetworkSwitchProvider>
-                  <TransactionProvider>
+                  <GatedTransactionProvider>
                     {/* Toast tier above the dialog tier (z-50): network/tx
                         toasts must stay readable over a modal's blurred
                         overlay (e.g. the auto-switch toast fires as a supply
@@ -72,7 +86,7 @@ const AppContent = () => {
                       <ToastCloseAll />
                     </DismissableLayerBranch>
                     <RouterProvider router={router} />
-                  </TransactionProvider>
+                  </GatedTransactionProvider>
                 </NetworkSwitchProvider>
               </ChainModalProvider>
             </TooltipProvider>

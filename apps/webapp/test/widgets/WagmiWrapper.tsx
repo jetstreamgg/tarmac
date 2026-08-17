@@ -79,6 +79,7 @@ const testConnectedContextValue = {
   hasAcceptedTerms: true,
   hasSignedCurrentTerms: true,
   acceptTerms: async () => true,
+  signTerms: async () => true,
   authData: { authIsLoading: false },
   vpnData: { vpnIsLoading: false }
 };

@@ -1,0 +1,251 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useConnection } from 'wagmi';
+import { TriangleAlert } from 'lucide-react';
+import { t } from '@lingui/core/macro';
+import { Trans } from '@lingui/react/macro';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Text } from '@/modules/layout/components/Typography';
+import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
+import { addressScreeningQueryKey, fetchAddressScreening, type AddressScreeningResult } from '@/hooks';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { TermsLink } from '@/modules/ui/components/TermsModal';
+import type { GateControls, PreTransactionGate } from '@/modules/ui/context/preTransactionGate';
+import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+
+/**
+ * How old a screening verdict may be and still clear a transaction without a
+ * re-check (APP-501; the edge caches 12h, so this is the tighter bound). In
+ * practice the connect-time hook re-polls every 60s while the tab is focused,
+ * so the async re-screen only runs when that polling has been failing or
+ * paused for four hours straight.
+ */
+const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
+
+/** Built per call: lingui's `t` must run after locale activation, not at module load. */
+const termsSignatureStep = (): TransactionStep => ({
+  label: t`Terms of Use and Privacy Policy confirmation signature`,
+  kind: 'signature',
+  description: (
+    <Trans>
+      Review the <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
+      <TermsLink href={PRIVACY_POLICY_URL}>Privacy Policy</TermsLink>, then sign the confirmation in your
+      wallet. The signature is free and doesn&apos;t submit a transaction.
+    </Trans>
+  )
+});
+
+/**
+ * The real pre-transaction gate (APP-501), filling the APP-496 plumbing. On
+ * every Confirm (and retry, and secondary CTA), in order:
+ *
+ *  1. Address screening — the same query the connect-time check uses, so the
+ *     two share one cached verdict per address. Fresh-and-allowed passes
+ *     synchronously (preserving the same-tick onConfirm contract); risky
+ *     closes the transaction modal and denies, and the app-level blocked
+ *     dialog takes over through the shared query cache. A failed re-check
+ *     fails closed: the transaction never starts.
+ *  2. Location — only US and VPN users owe the per-transaction signature.
+ *     Unknown (the /ip/status check unresolved or failed) counts as US/VPN:
+ *     requiring a signature we may not have owed beats skipping one we did.
+ *  3. Signature — skipped when the DB already holds one for the current terms
+ *     version (`hasSignedCurrentTerms`; a version bump re-arms this by
+ *     construction). Otherwise the off-chain signature step is mounted ahead
+ *     of the flow's own steps and the wallet prompted; only a recorded
+ *     signature (or the worker's already-signed no-op) lets the transaction
+ *     proceed.
+ *
+ * A future $250k+ transaction check (board note, TBD) slots into step 1 — it
+ * would need the transaction's USD value threaded into the gate context.
+ */
+export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDialog: ReactNode } {
+  const queryClient = useQueryClient();
+  const { address } = useConnection();
+  const {
+    hasSignedCurrentTerms,
+    termsMessageToSign,
+    signTerms,
+    retryTermsCheck,
+    retryAccessChecks,
+    isUsUser,
+    vpnData
+  } = useConnectedContext();
+
+  // Shown when a re-screen failed while a stale cached verdict exists: in that
+  // one shape ConnectedContext keeps trusting its cached data (deliberately —
+  // a failed background refetch shouldn't lock the app), so no app-level
+  // dialog appears and the denial needs its own surface. With no cached
+  // verdict at all, the same failure flips the app-level screening-unavailable
+  // state through the shared query, and this stays closed.
+  const [screeningUnavailableOpen, setScreeningUnavailableOpen] = useState(false);
+
+  // The gate closure is stable (runGated and the modal callbacks hang off its
+  // identity); it reads the render-fresh values through this ref.
+  const live = useRef({
+    queryClient: undefined as unknown as QueryClient,
+    address: undefined as string | undefined,
+    hasSignedCurrentTerms: false,
+    termsMessageToSign: undefined as string | undefined,
+    signTerms: async () => false as boolean,
+    retryTermsCheck: () => {},
+    isUsUser: undefined as boolean | undefined,
+    isConnectedToVpn: undefined as boolean | undefined
+  });
+  // Synced every render; the gate only runs from user events, which always
+  // land after effects.
+  useEffect(() => {
+    live.current = {
+      queryClient,
+      address,
+      hasSignedCurrentTerms,
+      termsMessageToSign,
+      signTerms,
+      retryTermsCheck,
+      isUsUser,
+      isConnectedToVpn: vpnData.isConnectedToVpn
+    };
+  });
+
+  const gate = useMemo<PreTransactionGate>(() => {
+    // Steps 2–3, after screening cleared. Synchronous when no signature is
+    // owed; `wentAsync` tells us to hand the status back to IDLE first so the
+    // engine's onMutate doesn't read the pending INITIALIZED as "a prelude
+    // step to advance past".
+    const proceedPastScreening = (
+      controls: GateControls,
+      wentAsync: boolean
+    ): { allow: boolean } | Promise<{ allow: boolean }> => {
+      const s = live.current;
+      const clearedOfSignature = s.isUsUser === false && s.isConnectedToVpn === false;
+      if (clearedOfSignature || s.hasSignedCurrentTerms) {
+        // Also clears a prelude left from an earlier attempt (the signature
+        // landed, the transaction then failed): the retry restarts with the
+        // flow's own steps and step 0 meaning the first real step again.
+        controls.setPreludeSteps(null);
+        if (wentAsync) controls.setGateStatus('idle');
+        return { allow: true };
+      }
+
+      return (async () => {
+        controls.setPreludeSteps([termsSignatureStep()]);
+        controls.setGateStatus('initialized');
+        if (!s.termsMessageToSign) {
+          // The /check response didn't carry the text (or never landed), so
+          // nothing verifiable can be signed. Fail the step — and kick the
+          // terms check so a retry has a fresh chance at the message.
+          s.retryTermsCheck();
+          controls.setGateStatus('error');
+          return { allow: false };
+        }
+        const signed = await s.signTerms();
+        if (!signed) {
+          controls.setGateStatus('error');
+          return { allow: false };
+        }
+        // Leave INITIALIZED standing: the first onMutate advances currentStep
+        // past the signature step (the existing INITIALIZED-advancement rule).
+        return { allow: true };
+      })();
+    };
+
+    return ({ controls }) => {
+      if (shouldSkipAuthChecks()) return { allow: true };
+      const s = live.current;
+      // No connected address: nothing to screen and nothing to sign for. The
+      // config's confirm path can't start a write without a wallet anyway.
+      if (!s.address) return { allow: true };
+
+      const cached = s.queryClient.getQueryState<AddressScreeningResult>(addressScreeningQueryKey(s.address));
+      const hasFreshVerdict =
+        cached?.data !== undefined && Date.now() - cached.dataUpdatedAt < SCREENING_MAX_AGE_MS;
+
+      if (hasFreshVerdict) {
+        if (!cached!.data!.addressAllowed) {
+          // Risky: the transaction must not start, and the app-level blocked
+          // dialog (reading this same query through ConnectedContext) is the
+          // surface that replaces the modal.
+          controls.closeModal();
+          return { allow: false };
+        }
+        return proceedPastScreening(controls, false);
+      }
+
+      const gatedAddress = s.address;
+      const hadStaleVerdict = cached?.data !== undefined;
+      return (async () => {
+        // The modal is already on its transaction screen; don't leave it on IDLE.
+        controls.setGateStatus('initialized');
+        let screening: AddressScreeningResult;
+        try {
+          screening = await s.queryClient.fetchQuery({
+            queryKey: addressScreeningQueryKey(gatedAddress),
+            queryFn: () => fetchAddressScreening(gatedAddress, getAuthUrl()),
+            staleTime: SCREENING_MAX_AGE_MS,
+            retry: 1
+          });
+        } catch {
+          // Fail closed — screening being down never falls through to the
+          // transaction (APP-501 AC).
+          controls.closeModal();
+          if (hadStaleVerdict) setScreeningUnavailableOpen(true);
+          return { allow: false };
+        }
+        if (!screening.addressAllowed) {
+          controls.closeModal();
+          return { allow: false };
+        }
+        return proceedPastScreening(controls, true);
+      })();
+    };
+  }, []);
+
+  const handleCheckAgain = useCallback(() => {
+    setScreeningUnavailableOpen(false);
+    retryAccessChecks();
+  }, [retryAccessChecks]);
+
+  // Styled on the APP-497 blocked/unavailable states (UnauthorizedPage) —
+  // Bartek's real designs for these don't exist yet either.
+  const screeningDialog = screeningUnavailableOpen ? (
+    <Dialog open onOpenChange={open => !open && setScreeningUnavailableOpen(false)}>
+      <DialogContent
+        aria-describedby={undefined}
+        className="bg-containerDark w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <TriangleAlert className="text-error size-5 shrink-0" />
+            <DialogTitle asChild>
+              <Text className="text-text font-circle text-xl">
+                <Trans>Unable to verify this wallet</Trans>
+              </Text>
+            </DialogTitle>
+          </div>
+          <Text className="font-graphik text-textSecondary text-sm">
+            <Trans>
+              We couldn&apos;t run the checks required before a transaction can start, so it wasn&apos;t
+              submitted. This is usually temporary — please try again in a few minutes.
+            </Trans>
+          </Text>
+        </div>
+        <div className="flex w-full gap-4">
+          <Button
+            variant="secondary"
+            size="l"
+            className="flex-1"
+            onClick={() => setScreeningUnavailableOpen(false)}
+          >
+            <Trans>Close</Trans>
+          </Button>
+          <Button variant="primary" size="l" className="flex-1" onClick={handleCheckAgain}>
+            <Trans>Check again</Trans>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  ) : null;
+
+  return { gate, screeningDialog };
+}
