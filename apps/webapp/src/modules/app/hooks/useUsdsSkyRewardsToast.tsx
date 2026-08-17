@@ -46,7 +46,7 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
                 >
                   governance proposal
                 </ExternalLink>
-                . You can withdraw your USDS and claim earned SKY anytime.
+                . Please withdraw your USDS and claim your earned SKY.
               </Text>
               <Button
                 className="place-self-start"
