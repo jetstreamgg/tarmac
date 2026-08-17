@@ -9,19 +9,19 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RateBadge } from '@/components/ui/RateBadge';
-import { useGeoConfig } from '@/modules/geo-config';
 import { useWalletDrawerAssets, type WalletDrawerAsset } from './useWalletDrawerAssets';
 
 /**
  * The drawer's Assets tab: a row per drawer token (zero balances included)
  * with the best earn rate as a badge and a hover-revealed "Start earning" CTA
- * that deep-links into the Earn list (or Stake for SKY). Region-restricted
- * visitors get plain balances — no rates, no CTAs.
+ * that deep-links into the Earn list (or Stake for SKY). Rates and CTAs are
+ * built from the venues available in the user's region (the same geo-filtered
+ * rows as the portfolio idle table); a token the region leaves nowhere to
+ * earn gets a plain balance row.
  */
 export function WalletDrawerAssets() {
   const navigate = useNavigate();
   const { assets, isLoading } = useWalletDrawerAssets();
-  const { isRegionRestricted } = useGeoConfig();
 
   // Deep-link to the Earn list pre-filtered by the chosen token (keeps the
   // active network); the anchor lands it past the hero, at the opportunities
@@ -51,26 +51,13 @@ export function WalletDrawerAssets() {
   return (
     <div className="flex flex-col" data-testid="wallet-drawer-assets">
       {assets.map(asset => (
-        <AssetRow
-          key={asset.symbol}
-          asset={asset}
-          showEarnActions={!isRegionRestricted}
-          onStartEarning={() => onStartEarning(asset.symbol)}
-        />
+        <AssetRow key={asset.symbol} asset={asset} onStartEarning={() => onStartEarning(asset.symbol)} />
       ))}
     </div>
   );
 }
 
-function AssetRow({
-  asset,
-  showEarnActions,
-  onStartEarning
-}: {
-  asset: WalletDrawerAsset;
-  showEarnActions: boolean;
-  onStartEarning: () => void;
-}) {
+function AssetRow({ asset, onStartEarning }: { asset: WalletDrawerAsset; onStartEarning: () => void }) {
   return (
     <div
       className="group focus-within:bg-glassSurface hover:bg-glassSurface rounded-2xl px-2 py-3 transition-colors md:p-4"
@@ -89,7 +76,7 @@ function AssetRow({
               >
                 {asset.symbol}
               </Text>
-              {showEarnActions && asset.bestRate !== undefined && asset.bestRate > 0 && (
+              {asset.bestRate !== undefined && asset.bestRate > 0 && (
                 <RateBadge>
                   {asset.multipleVenues ? (
                     <Trans>up to {formatDecimalPercentage(asset.bestRate)}</Trans>
@@ -124,7 +111,7 @@ function AssetRow({
           </Text>
         </div>
       </div>
-      {showEarnActions && (
+      {asset.canEarn && (
         <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-200 group-focus-within:grid-rows-[1fr] group-focus-within:opacity-100 group-hover:grid-rows-[1fr] group-hover:opacity-100">
           <div className="overflow-hidden">
             <Button
