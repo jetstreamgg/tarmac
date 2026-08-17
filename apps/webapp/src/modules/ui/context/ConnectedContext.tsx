@@ -343,9 +343,13 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // Mirror acceptTerms: the mock wallet's signature can't verify against
     // the worker, and local dev points at the shared staging endpoint — so
-    // skip the POST and flip the flag locally. The address guard still
-    // applies: a switch while the prompt was up must not stamp the flag onto
-    // the new address's check.
+    // skip the POST and flip the flag locally. Deliberately AFTER the
+    // signMessage attempt (APP-502): the mock connector delegates
+    // personal_sign to the RPC, so tests stub it at that boundary and both
+    // the prompt path and the rejection path stay exercisable — a pre-sign
+    // skip would make this whole step a silent no-op under the mock wallet.
+    // The address guard still applies: a switch while the prompt was up must
+    // not stamp the flag onto the new address's check.
     if (import.meta.env.VITE_USE_MOCK_WALLET === 'true') {
       if (activeAddressRef.current !== address) return false;
       setTermsCheck(prev => (prev ? { ...prev, signedForCurrentVersion: true } : prev));

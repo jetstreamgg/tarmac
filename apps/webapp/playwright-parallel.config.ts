@@ -61,6 +61,7 @@ export default defineConfig({
         '**/optimism-psm.spec.ts',
         '**/unichain-psm.spec.ts',
         '**/mainnet-savings.spec.ts',
+        '**/terms-signature-gate.spec.ts',
         '**/base-savings.spec.ts',
         '**/arbitrum-savings.spec.ts',
         '**/optimism-savings.spec.ts',

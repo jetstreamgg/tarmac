@@ -3,6 +3,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { checkTermsWithRetry } from './checkTermsWithRetry';
 import { addTermsAcceptance } from './addTermsAcceptance';
+import { signTermsAcceptance } from './signTermsAcceptance';
 
 /**
  * Drives the real client code against a locally-running api-worker and a local
@@ -17,6 +18,13 @@ import { addTermsAcceptance } from './addTermsAcceptance';
  *      ENVIRONMENT="development", SUPABASE_URL/KEY at the local stack:
  *        pnpm exec wrangler dev --port 8787 --local
  *   3. TERMS_INTEGRATION=1 pnpm exec vitest run src/modules/ui/lib/termsAcceptance.integration.test.ts
+ *
+ * Where it should run (APP-502's call): not per-PR — CI cannot host the
+ * worker + Supabase pair, and faking either would defeat the point of the
+ * suite. Run it manually at the C8 integration-merge QA gate and on any
+ * api-workers change to the terms routes; wiring it as a workflow_dispatch
+ * job in api-workers (which owns both dependencies) is the sensible
+ * automation if one is wanted later.
  */
 
 const ENABLED = process.env.TERMS_INTEGRATION === '1';
@@ -154,6 +162,19 @@ describe.runIf(ENABLED)('terms acceptance against a local worker', () => {
 
       expect(response.status).toBeGreaterThanOrEqual(400);
       expect(signatureRows(account.address)).toBe(0);
+    });
+
+    // The same shapes through the client C6 actually ships: both the 201 and
+    // the idempotent 200 must come back as plain success.
+    it('signTermsAcceptance treats the record and the already-signed repeat as success', async () => {
+      const account = newWallet();
+      const checked = await checkTermsWithRetry(account.address);
+      if (checked.status !== 'ok' || !checked.messageToSign) throw new Error('no message served');
+      const signature = await account.signMessage({ message: checked.messageToSign });
+
+      expect(await signTermsAcceptance(account.address, 1, signature)).toEqual({ ok: true });
+      expect(await signTermsAcceptance(account.address, 1, signature)).toEqual({ ok: true });
+      expect(signatureRows(account.address)).toBe(1);
     });
 
     it('is an idempotent no-op when the version is already signed', async () => {

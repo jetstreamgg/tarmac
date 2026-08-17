@@ -76,8 +76,14 @@ export const test = playwrightTest.extend<TestFixtures>({
     // Set up RPC call mocking (from base fixtures)
     await page.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
 
-    // Set up VPN check mocking (from base fixtures)
+    // Set up VPN check mocking (from base fixtures). The app asks
+    // `${VITE_AUTH_URL}/ip/status` — the vpnapi.io pattern predates that and
+    // never matches, kept only for older branches. In the default e2e build
+    // (VITE_SKIP_AUTH_CHECK=true) neither fires; specs that force the checks
+    // back on (terms-signature-gate.spec.ts) register their own /ip/status
+    // route, which takes precedence over this one.
     await page.route('https://vpnapi.io/**', mockVpnCheck);
+    await page.route('**/ip/status*', mockVpnCheck);
 
     // Serve an unrestricted geo config; the staging endpoint is unreachable
     // from the test browser and the fetch fallback disables several modules.
