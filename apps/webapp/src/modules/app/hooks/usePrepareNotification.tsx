@@ -39,7 +39,7 @@ export const usePrepareNotification = () => {
   });
   const rawRewardsRate = rewardChartData?.[0]?.rate;
   const rewardsRate =
-    rawRewardsRate != null && !isNaN(parseFloat(rawRewardsRate))
+    rawRewardsRate != null && parseFloat(rawRewardsRate) > 0
       ? formatDecimalPercentage(parseFloat(rawRewardsRate))
       : undefined;
 
