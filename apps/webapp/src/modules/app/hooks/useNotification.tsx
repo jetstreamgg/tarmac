@@ -29,7 +29,7 @@ const generateToastContent = ({
   rateType
 }: {
   description: string;
-  descriptionSub: string;
+  descriptionSub?: string;
   buttonTxt: string;
   descriptionVariant?: TextProps['variant'];
   descriptionSubVariant?: TextProps['variant'];
@@ -43,12 +43,14 @@ const generateToastContent = ({
       <Text variant={descriptionVariant} className={descriptionClassName}>
         {description}
       </Text>
-      <HStack>
-        <Text variant={descriptionSubVariant} className={descriptionSubClassName}>
-          {descriptionSub}
-        </Text>
-        {!!rateType && <PopoverInfo type={rateType} popoverClassName="z-[42]" />}
-      </HStack>
+      {!!descriptionSub && (
+        <HStack>
+          <Text variant={descriptionSubVariant} className={descriptionSubClassName}>
+            {descriptionSub}
+          </Text>
+          {!!rateType && <PopoverInfo type={rateType} popoverClassName="z-[42]" />}
+        </HStack>
+      )}
     </VStack>
     <Button className="place-self-end" variant="pill" size="xs" onClick={onClick}>
       {buttonTxt}
@@ -128,7 +130,7 @@ export const useNotification = () => {
               </Text>
               {generateToastContent({
                 description: `${rewardContract?.name ?? 'Reward'} Reward Rate`,
-                descriptionSub: rate || '',
+                descriptionSub: rate,
                 buttonTxt,
                 rateType: 'str',
                 onClick: () => {
@@ -153,7 +155,7 @@ export const useNotification = () => {
               <Text variant="medium">{t`Looks like you need USDS`}</Text>
               {generateToastContent({
                 description: 'Sky Savings Rate',
-                descriptionSub: savingsRate || '',
+                descriptionSub: savingsRate || undefined,
                 buttonTxt,
                 rateType: 'ssr',
                 onClick: () => {
@@ -242,9 +244,7 @@ export const useNotification = () => {
                     <Text variant="medium">{t`Get rewards with USDS`}</Text>
                   </HStack>
                   {generateToastContent({
-                    description: t`With: USDS Get: SKY`,
-                    descriptionSub: rate ? t`Rate: ${rate}` : '',
-                    rateType: rate ? 'str' : undefined,
+                    description: t`Supply USDS to earn Sky Ecosystem Rewards`,
                     buttonTxt: t`Go to Rewards`,
                     onClick: () => {
                       navigate();
