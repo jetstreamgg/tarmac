@@ -38,7 +38,7 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
             </Text>
             <VStack className="mt-4 gap-4">
               <Text variant="medium">
-                The With: USDS Get: SKY reward has ended via a{' '}
+                This reward has ended via a{' '}
                 <ExternalLink
                   showIcon={false}
                   href={GOVERNANCE_PROPOSAL_URL}
