@@ -1,11 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TermsModal } from './TermsModal';
-
-i18n.load('en', {});
-i18n.activate('en');
 
 // Mutable state + spies shared between the mocks and the assertions.
 const mocks = vi.hoisted(() => ({
@@ -46,53 +43,17 @@ vi.mock('../context/ConnectedContext', () => ({
   })
 }));
 
-vi.mock('./terms-loader', () => ({
-  getTermsContent: () => '# Terms'
-}));
+i18n.load('en', {});
+i18n.activate('en');
 
-// Stub the dialog so we can drive its callbacks directly. This isolates TermsModal's
-// handlers (the unit under test) from Radix Dialog internals and intersection
-// observers. The loading branch keeps a real Radix root: the content it renders
-// (error/denied screens) uses DialogTitle, which throws outside a Dialog.
-vi.mock('./TermsDialog', async () => {
-  const { Dialog } = await import('@/components/ui/dialog');
-  return {
-    TermsDialog: ({
-      isOpen,
-      onOpenChange,
-      onAccept,
-      onDecline,
-      showLoadingState,
-      loadingContent
-    }: {
-      isOpen: boolean;
-      onOpenChange: (open: boolean) => void;
-      onAccept: () => void;
-      onDecline: () => void;
-      showLoadingState?: boolean;
-      loadingContent?: React.ReactNode;
-    }) =>
-      isOpen ? (
-        showLoadingState ? (
-          <Dialog open>
-            <div data-testid="loading-state">{loadingContent}</div>
-          </Dialog>
-        ) : (
-          <div>
-            <button data-testid="dismiss" onClick={() => onOpenChange(false)}>
-              dismiss
-            </button>
-            <button data-testid="accept" onClick={onAccept}>
-              accept
-            </button>
-            <button data-testid="decline" onClick={onDecline}>
-              decline
-            </button>
-          </div>
-        )
-      ) : null
-  };
-});
+const renderModal = () =>
+  render(
+    <I18nProvider i18n={i18n}>
+      <TermsModal />
+    </I18nProvider>
+  );
+
+const agreeButton = () => screen.getByRole('button', { name: 'Agree and continue' }) as HTMLButtonElement;
 
 describe('TermsModal', () => {
   beforeEach(() => {
@@ -108,14 +69,10 @@ describe('TermsModal', () => {
   // not interactive terms whose accept is guaranteed to fail (APP-497 review).
   it('shows the access-restricted dead end instead of the terms when the check was denied', () => {
     mocks.connected.termsCheckDenied = true;
-    render(
-      <I18nProvider i18n={i18n}>
-        <TermsModal />
-      </I18nProvider>
-    );
+    renderModal();
 
     expect(screen.getByText('Access restricted')).toBeTruthy();
-    expect(screen.queryByTestId('accept')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Agree and continue' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect Wallet' }));
     expect(mocks.disconnect).toHaveBeenCalledTimes(1);
@@ -123,9 +80,9 @@ describe('TermsModal', () => {
   });
 
   it('disconnects the wallet when the modal is dismissed without accepting terms', () => {
-    render(<TermsModal />);
+    renderModal();
 
-    fireEvent.click(screen.getByTestId('dismiss'));
+    fireEvent.click(screen.getByTestId('terms-modal-close'));
 
     expect(mocks.disconnect).toHaveBeenCalledTimes(1);
     expect(mocks.closeModal).toHaveBeenCalledTimes(1);
@@ -133,49 +90,64 @@ describe('TermsModal', () => {
 
   it('does not disconnect when the modal closes after terms have been accepted', () => {
     mocks.connected.isConnectedAndAcceptedTerms = true;
-    render(<TermsModal />);
+    renderModal();
 
-    fireEvent.click(screen.getByTestId('dismiss'));
+    fireEvent.click(screen.getByTestId('terms-modal-close'));
 
     expect(mocks.disconnect).not.toHaveBeenCalled();
     expect(mocks.closeModal).toHaveBeenCalledTimes(1);
   });
 
-  it('does not disconnect when the user accepts (accept path bypasses onOpenChange)', () => {
-    render(<TermsModal />);
+  it('disconnects when the user explicitly cancels', () => {
+    renderModal();
 
-    fireEvent.click(screen.getByTestId('accept'));
-
-    expect(mocks.disconnect).not.toHaveBeenCalled();
-  });
-
-  it('disconnects when the user explicitly rejects', () => {
-    render(<TermsModal />);
-
-    fireEvent.click(screen.getByTestId('decline'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(mocks.disconnect).toHaveBeenCalledTimes(1);
     expect(mocks.closeModal).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps "Agree and continue" disabled until the box is ticked', () => {
+    renderModal();
+
+    expect(agreeButton().disabled).toBe(true);
+
+    fireEvent.click(screen.getByRole('checkbox'));
+
+    expect(agreeButton().disabled).toBe(false);
+  });
+
   // Phase A is checkbox-only: accepting records the acceptance and never asks
   // the wallet to sign, which is what unblocks hardware wallets and multisigs.
-  it('records the acceptance and closes on accept', async () => {
-    render(<TermsModal />);
+  it('records the acceptance via acceptTerms and closes on accept', async () => {
+    renderModal();
 
-    fireEvent.click(screen.getByTestId('accept'));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(agreeButton());
 
     await waitFor(() => expect(mocks.closeModal).toHaveBeenCalledTimes(1));
     expect(mocks.acceptTerms).toHaveBeenCalledTimes(1);
+    expect(mocks.disconnect).not.toHaveBeenCalled();
   });
 
   it('keeps the modal open when the acceptance could not be recorded', async () => {
     mocks.acceptTerms.mockResolvedValue(false);
-    render(<TermsModal />);
+    renderModal();
 
-    fireEvent.click(screen.getByTestId('accept'));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(agreeButton());
 
     await waitFor(() => expect(mocks.acceptTerms).toHaveBeenCalledTimes(1));
     expect(mocks.closeModal).not.toHaveBeenCalled();
+  });
+
+  // The terms carry an effective date and no version label (APP-513): the
+  // footer must render the date and nothing in the modal may say "version"
+  // outside the fixed acceptance-record sentence.
+  it('renders the effective date in the footer with no version label', () => {
+    renderModal();
+
+    expect(screen.getByText(/Terms of Use effective 2026-01-15/)).toBeTruthy();
+    expect(screen.queryByText(/version 2026-01-15/i)).toBeNull();
   });
 });
