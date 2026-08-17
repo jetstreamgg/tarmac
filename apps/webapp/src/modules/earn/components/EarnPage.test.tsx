@@ -179,8 +179,12 @@ describe('EarnPage clear-filters control', () => {
 
 describe('EarnPage deep-link anchor scroll', () => {
   const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
+  const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-  beforeEach(() => scrollSpy.mockClear());
+  beforeEach(() => {
+    scrollSpy.mockClear();
+    scrollToSpy.mockClear();
+  });
 
   it('lands on the opportunities heading when the deep link carries the anchor', async () => {
     renderPage(`/earn?token=usdc#${EARN_OPPORTUNITIES_HASH}`);
@@ -210,6 +214,10 @@ describe('EarnPage deep-link anchor scroll', () => {
     await vi.waitFor(() => expect(clearButton()).toBeNull());
     expect(router.state.location.hash).toBe('');
     expect(scrollSpy).toHaveBeenCalledTimes(arrivalScrolls);
+    // The filter write passes resetScroll: false, so the router's usual
+    // scroll-to-top on the replace never runs — the viewport stays at the
+    // table.
+    expect(scrollToSpy).not.toHaveBeenCalled();
   });
 
   it('scrolls again when a new deep link pushes onto an already-open /earn', async () => {
