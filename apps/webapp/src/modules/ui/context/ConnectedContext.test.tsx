@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { termsAcceptanceKey } from '@/modules/ui/lib/termsAcceptanceStorage';
 
@@ -30,8 +30,7 @@ const mocks = vi.hoisted(() => ({
   },
   vpnCheck: {
     data: { isConnectedToVpn: false, isRestrictedRegion: false, countryCode: 'US' } as
-      | { isConnectedToVpn: boolean; isRestrictedRegion: boolean; countryCode: string }
-      | undefined,
+      { isConnectedToVpn: boolean; isRestrictedRegion: boolean; countryCode: string } | undefined,
     isLoading: false,
     error: undefined as Error | undefined
   },
@@ -90,6 +89,7 @@ function Consumer() {
     isUsUser,
     latestTermsVersion,
     termsMessageToSign,
+    termsCheckDenied,
     acceptTerms,
     retryAccessChecks
   } = useConnectedContext();
@@ -103,6 +103,7 @@ function Consumer() {
       <span data-testid="is-us">{String(isUsUser)}</span>
       <span data-testid="version">{latestTermsVersion ?? 'none'}</span>
       <span data-testid="message">{termsMessageToSign ?? 'none'}</span>
+      <span data-testid="denied">{String(termsCheckDenied)}</span>
       <button data-testid="accept" onClick={() => void acceptTerms()}>
         accept
       </button>
@@ -526,9 +527,67 @@ describe('ConnectedContext — the terms AND gate', () => {
 
       renderProvider();
 
-      await waitFor(() => expect(mocks.checkTermsWithRetry).toHaveBeenCalled());
+      // The denial gets its own state (APP-497 review): the worker refused an
+      // address the client-side screening let through, and without the flag
+      // the modal would render interactive terms whose accept can never
+      // succeed — a "check your connection" loop with no way out.
+      await waitFor(() => expect(screen.getByTestId('denied').textContent).toBe('true'));
       expect(accepted()).toBe('false');
       expect(mocks.reportError).not.toHaveBeenCalled();
+    });
+
+    // The acceptance POST has the same stale-continuation hazard the check
+    // guards against: without the address guard, a POST that lands after an
+    // account switch stamps `accepted` onto the NEW address's check and
+    // writes the OLD address's local flag via the stale closure.
+    it('discards an acceptance that lands after an address switch', async () => {
+      let resolveAdd: (value: { ok: boolean }) => void = () => {};
+      mocks.addTermsAcceptance.mockReturnValue(new Promise(resolve => (resolveAdd = resolve)));
+
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      fireEvent.click(screen.getByTestId('accept'));
+
+      mocks.address = ADDRESS_B;
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      resolveAdd({ ok: true });
+      // Let the stale continuation run to completion before asserting that it
+      // changed nothing.
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(accepted()).toBe('false');
+      expect(localStorage.getItem(termsAcceptanceKey(ADDRESS_A, VERSION))).toBeNull();
+      expect(localStorage.getItem(termsAcceptanceKey(ADDRESS_B, VERSION))).toBeNull();
+    });
+
+    it('discards an acceptance that lands after a disconnect', async () => {
+      let resolveAdd: (value: { ok: boolean }) => void = () => {};
+      mocks.addTermsAcceptance.mockReturnValue(new Promise(resolve => (resolveAdd = resolve)));
+
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      fireEvent.click(screen.getByTestId('accept'));
+
+      mocks.address = undefined;
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+
+      resolveAdd({ ok: true });
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(accepted()).toBe('false');
+      expect(localStorage.getItem(termsAcceptanceKey(ADDRESS_A, VERSION))).toBeNull();
     });
   });
 });

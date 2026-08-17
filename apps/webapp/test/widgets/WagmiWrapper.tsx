@@ -73,6 +73,7 @@ const testConnectedContextValue = {
   isAuthorized: true,
   isCheckingTerms: false,
   termsCheckError: false,
+  termsCheckDenied: false,
   retryTermsCheck: () => {},
   retryAccessChecks: () => {},
   hasAcceptedTerms: true,

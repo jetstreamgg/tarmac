@@ -33,6 +33,14 @@ interface ConnectedContextType {
   retryAccessChecks: () => void;
   isCheckingTerms: boolean;
   termsCheckError: boolean;
+  /**
+   * The worker answered `/check` with a 403: its own gate (screening or
+   * region) refused this address even though the client-side checks let it
+   * through — the two are independent data sources and can disagree. Renders
+   * a dead-end state instead of an interactive modal whose accept is
+   * guaranteed to fail on the missing-version guard.
+   */
+  termsCheckDenied: boolean;
   retryTermsCheck: () => void;
   /**
    * The localStorage flag AND the DB's `accepted` — either half missing
@@ -80,6 +88,7 @@ export const ConnectedContext = createContext<ConnectedContextType>({
   retryAccessChecks: () => {},
   isCheckingTerms: false,
   termsCheckError: false,
+  termsCheckDenied: false,
   retryTermsCheck: () => {},
   hasAcceptedTerms: false,
   hasSignedCurrentTerms: false,
@@ -97,6 +106,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [termsCheck, setTermsCheck] = useState<TermsCheckData | undefined>(undefined);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
+  const [termsCheckDenied, setTermsCheckDenied] = useState(false);
   // Derived, not state: an effect-synced copy lags `address` by a render, and
   // in that render a fresh connection reads as authorized before screening has
   // even started — long enough for the terms modal to latch open (APP-497 QA).
@@ -154,6 +164,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     activeAddressRef.current = addr;
     setIsCheckingTerms(true);
     setTermsCheckError(false);
+    setTermsCheckDenied(false);
 
     const result = await checkTermsWithRetry(addr);
 
@@ -172,9 +183,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setTermsCheck(undefined);
       setTermsCheckError(true);
     } else if (result.status === 'access-denied') {
-      // 403 is an intentional access denial (VPN/region or sanctioned address).
-      // The VPN/address hooks handle the blocked UI — just hold no terms state.
+      // 403 is an intentional refusal by the worker's own gate. Screening runs
+      // before this check ever fires (APP-497), so reaching here means the
+      // worker disagreed with the client-side verdict — the modal must show a
+      // dead end rather than terms whose accept can never succeed.
       setTermsCheck(undefined);
+      setTermsCheckDenied(true);
     } else {
       setTermsCheck(result);
     }
@@ -187,10 +201,14 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [isConnected, address, checkTermsAcceptance]);
 
   // The address changing (including to undefined on disconnect) invalidates
-  // any terms verdict already held — it belongs to the previous address.
+  // any terms verdict already held — it belongs to the previous address. The
+  // ref moves with it so a continuation still in flight for the previous
+  // address (a check, or an acceptance POST) can tell it has been overtaken.
   useEffect(() => {
+    activeAddressRef.current = address ?? null;
     setTermsCheck(undefined);
     setTermsCheckError(false);
+    setTermsCheckDenied(false);
   }, [address]);
 
   // The flow puts address screening between wallet selection and the T&C gate
@@ -257,6 +275,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     const result = await addTermsAcceptance(address);
+
+    // Discard the continuation if the address changed (or disconnected) while
+    // the POST was in flight: stamping `accepted` onto the new address's check
+    // — or writing the old address's local flag via this closure — would open
+    // the gate for an owner this browser never showed the terms to.
+    if (activeAddressRef.current !== address) return false;
 
     if (!result.ok) {
       reportError(result.lastError ?? new Error('Terms acceptance failed'), {
@@ -341,6 +365,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         retryAccessChecks,
         isCheckingTerms,
         termsCheckError,
+        termsCheckDenied,
         retryTermsCheck,
         hasAcceptedTerms,
         hasSignedCurrentTerms,
