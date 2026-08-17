@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { QueryParams } from '@/lib/constants';
-import { ROUTES } from '@/lib/routes';
+import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
 import { formatDecimalPercentage, formatNumber, formatUsd } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
@@ -24,15 +24,16 @@ export function WalletDrawerAssets() {
   const { isRegionRestricted } = useGeoConfig();
 
   // Deep-link to the Earn list pre-filtered by the chosen token (keeps the
-  // active network), consumed by EarnPage's ?token= handler. SKY earns
-  // through staking, so it routes to Stake instead.
+  // active network); the anchor lands it past the hero, at the opportunities
+  // table (APP-487). SKY earns through staking, so it routes to Stake instead.
   const onStartEarning = (symbol: string) => {
     if (symbol === 'SKY') {
       void navigate({ to: ROUTES.STAKE, search: retainOnNavigate });
     } else {
       void navigate({
         to: ROUTES.EARN,
-        search: prev => ({ ...retainOnNavigate(prev), [QueryParams.Token]: symbol })
+        search: prev => ({ ...retainOnNavigate(prev), [QueryParams.Token]: symbol }),
+        hash: EARN_OPPORTUNITIES_HASH
       });
     }
   };

@@ -87,6 +87,11 @@ export const createAppRouter = (history?: RouterHistory, queryClient: QueryClien
         // read as a fresh push.
         if (isHistoryTraversal(toLocation.state.__TSR_key)) return false;
         if (!fromLocation || !pathChanged) return false;
+        // Hash navigations (the Earn deep links' #earn-opportunities anchor)
+        // arrive scrolled to their target, breaking the same at-the-top
+        // assumption that excludes traversals above — so they swap instantly
+        // too.
+        if (toLocation.hash) return false;
         // Runs synchronously immediately before startViewTransition, which is
         // the only moment the pre-navigation scroll position is still readable.
         // The page's outgoing snapshot is the whole tall element, so the CSS
