@@ -34,11 +34,11 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
         toastId => (
           <div>
             <Text variant="medium" className="text-selectActive">
-              USDS-SKY Rewards Update
+              The With: USDS Get: SKY reward has ended
             </Text>
             <VStack className="mt-4 gap-4">
               <Text variant="medium">
-                SKY Rewards have been disabled via a{' '}
+                The With: USDS Get: SKY reward has ended via a{' '}
                 <ExternalLink
                   showIcon={false}
                   href={GOVERNANCE_PROPOSAL_URL}
@@ -46,7 +46,8 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
                 >
                   governance proposal
                 </ExternalLink>
-                . Please withdraw your USDS and consider other reward options.
+                . You can withdraw your USDS and claim earned SKY anytime. Other USDS reward options and USDS
+                Staking Rewards are not affected.
               </Text>
               <Button
                 className="place-self-start"

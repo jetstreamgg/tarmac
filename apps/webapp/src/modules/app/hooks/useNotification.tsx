@@ -242,9 +242,8 @@ export const useNotification = () => {
                     <Text variant="medium">{t`Get rewards with USDS`}</Text>
                   </HStack>
                   {generateToastContent({
-                    description: t`With: USDS Get: SKY`,
-                    descriptionSub: rate ? t`Rate: ${rate}` : '',
-                    rateType: rate ? 'str' : undefined,
+                    description: t`Supply USDS to earn Sky Ecosystem Rewards`,
+                    descriptionSub: '',
                     buttonTxt: t`Go to Rewards`,
                     onClick: () => {
                       navigate();

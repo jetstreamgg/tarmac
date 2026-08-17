@@ -4,7 +4,7 @@ import { LinkedAction, useUserSuggestedActions } from '@/modules/ui/hooks/useUse
 import { Intent } from '@/lib/enums';
 import { useRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useCallback, useMemo } from 'react';
-import { useAvailableTokenRewardContracts } from '@/hooks';
+import { useAvailableTokenRewardContracts, useRewardsChartInfo } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { formatDecimalPercentage, isL2ChainId } from '@/utils';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -32,7 +32,16 @@ export const usePrepareNotification = () => {
 
   const { data: skyData } = useOverallSkyData();
   const savingsRate = skyData && formatDecimalPercentage(parseFloat(skyData?.skySavingsRatecRate || '0'));
-  const rewardsRate = skyData && formatDecimalPercentage(parseFloat(skyData?.usdsSkyCRate || '0'));
+
+  const { data: rewardChartData } = useRewardsChartInfo({
+    rewardContractAddress: rewardContract?.contractAddress || '',
+    limit: 1
+  });
+  const rawRewardsRate = rewardChartData?.[0]?.rate;
+  const rewardsRate =
+    rawRewardsRate != null && !isNaN(parseFloat(rawRewardsRate))
+      ? formatDecimalPercentage(parseFloat(rawRewardsRate))
+      : undefined;
 
   const action = useMemo(() => {
     if (!isSavingsModule && !isRewardsModule) return;
