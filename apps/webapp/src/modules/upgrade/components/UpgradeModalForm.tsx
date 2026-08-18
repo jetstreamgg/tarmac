@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
@@ -129,18 +129,20 @@ export function UpgradeModalForm({
 
   // The wallet balance is chain state the engine's success doesn't refetch —
   // sync it so the entry screen shows the post-upgrade balance if revisited.
-  const { txStatus } = useTransaction();
+  const { txStatus, isModalOpen, isMinimized } = useTransaction();
   useEffect(() => {
     if (txStatus === TxStatus.SUCCESS) refetchBalance();
   }, [txStatus, refetchBalance]);
 
-  // Upgrade is the one URL-less surface: while this body is mounted (the
-  // modal's whole lifetime, minimize included) the destination stamp reads
-  // 'upgrade' (APP-444 D2/B6). Module-level flag — before_send runs outside React.
+  // Upgrade is the one URL-less surface: while its modal is visibly open the
+  // destination stamp reads 'upgrade' (APP-444 D2/B6). Gated on visibility, not
+  // mount — this body stays mounted (hidden) through minimize, and while
+  // minimized events belong to the section the user is actually browsing.
+  const modalVisible = isModalOpen && !isMinimized;
   useEffect(() => {
-    setUpgradeModalOpen(true);
+    setUpgradeModalOpen(modalVisible);
     return () => setUpgradeModalOpen(false);
-  }, []);
+  }, [modalVisible]);
 
   const amountLabel = `${formatAmount(debouncedAmount)} ${token}`;
 
@@ -190,12 +192,15 @@ export function UpgradeModalForm({
     [sourceToken, chainId, token, target, isBatch, debouncedAmount]
   );
 
+  // Stable identity — an inline arrow here re-triggers useModalEntryBody's sync effect every render.
+  const connectAction = useCallback(() => openConnectModal('upgrade_modal'), [openConnectModal]);
+
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
-    confirmAction: isConnected ? undefined : () => openConnectModal('upgrade_modal'),
+    confirmAction: isConnected ? undefined : connectAction,
     steps,
     transactionScreenContent,
     toast,

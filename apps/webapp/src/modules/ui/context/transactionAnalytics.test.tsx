@@ -28,11 +28,12 @@ const analytics = vi.hoisted(() => ({
   trackTransactionCompleted: vi.fn()
 }));
 const startNewFlowMock = vi.hoisted(() => vi.fn());
+const getFlowIdMock = vi.hoisted(() => vi.fn(() => 'flow-live'));
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => analytics
 }));
 vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
-  useAnalyticsFlow: () => ({ startNewFlow: startNewFlowMock })
+  useAnalyticsFlow: () => ({ startNewFlow: startNewFlowMock, getFlowId: getFlowIdMock })
 }));
 
 const toastMock = vi.hoisted(() => ({ dismiss: vi.fn() }));
@@ -201,6 +202,67 @@ describe('TransactionContext analytics (modal path)', () => {
   });
 });
 
+describe('TransactionContext flow_id latching', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+    getFlowIdMock.mockReturnValue('flow-live');
+  });
+
+  it('keeps started/completed on the flow latched at launch even if navigation rotates the live id mid-transaction', () => {
+    getFlowIdMock.mockReturnValue('flow-A');
+    const ctx = renderFlow(baseConfig());
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate({ functionName: 'deposit' }));
+    // User minimizes and navigates while the tx mines: the subscriber rotates the live flow.
+    getFlowIdMock.mockReturnValue('flow-B');
+    act(() => cb.onStart('0xhash'));
+    act(() => cb.onSuccess('0xhash'));
+
+    expect(analytics.trackTransactionStarted).toHaveBeenCalledWith(
+      expect.objectContaining({ flowId: 'flow-A' })
+    );
+    expect(analytics.trackTransactionCompleted).toHaveBeenCalledWith(
+      expect.objectContaining({ txStatus: 'success', flowId: 'flow-A' })
+    );
+  });
+
+  it('stamps review_viewed with the same latched flow id', () => {
+    getFlowIdMock.mockReturnValue('flow-A');
+    renderFlow(baseConfig());
+
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledWith(
+      expect.objectContaining({ flowId: 'flow-A' })
+    );
+  });
+
+  it('re-latches per launch: a second transaction carries the rotated flow id', () => {
+    getFlowIdMock.mockReturnValue('flow-A');
+    // Live holder: launch() advances sessionGen, so the callbacks must be re-read.
+    const holder: { ctx?: TransactionContextValue } = {};
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness config={baseConfig()} onReady={c => (holder.ctx = c)} />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => holder.ctx!.txCallbacks.onMutate({ functionName: 'deposit' }));
+    act(() => holder.ctx!.txCallbacks.onSuccess('0xhash'));
+
+    getFlowIdMock.mockReturnValue('flow-C');
+    act(() => holder.ctx!.launch(baseConfig()));
+    act(() => holder.ctx!.txCallbacks.onMutate({ functionName: 'deposit' }));
+
+    expect(analytics.trackTransactionStarted).toHaveBeenLastCalledWith(
+      expect.objectContaining({ flowId: 'flow-C' })
+    );
+  });
+});
+
 describe('TransactionContext review_viewed timing', () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -213,7 +275,8 @@ describe('TransactionContext review_viewed timing', () => {
     expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledWith({
       widgetName: 'savings',
       chainId: 1,
-      flow: 'supply'
+      flow: 'supply',
+      flowId: 'flow-live'
     });
   });
 
@@ -270,7 +333,8 @@ describe('TransactionContext review_viewed timing', () => {
     expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledWith({
       widgetName: 'savings',
       chainId: 1,
-      flow: 'withdraw'
+      flow: 'withdraw',
+      flowId: 'flow-live'
     });
   });
 

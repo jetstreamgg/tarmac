@@ -11,7 +11,9 @@ const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 const h = vi.hoisted(() => ({
   execute: vi.fn(),
   update: vi.fn(),
-  isBatch: false
+  isBatch: false,
+  isModalOpen: true,
+  isMinimized: false
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -56,7 +58,12 @@ vi.mock('../hooks/useUpgradeLaunch', async importOriginal => {
 });
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
+  useTransaction: () => ({
+    updateModalContent: h.update,
+    txStatus: 'idle',
+    isModalOpen: h.isModalOpen,
+    isMinimized: h.isMinimized
+  }),
   useEntrySlot: () => null
 }));
 
@@ -72,14 +79,15 @@ import { TOKENS } from '@/hooks';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { UpgradeSourceToken } from '@/hooks';
 
-const renderForm = (initialToken?: UpgradeSourceToken) =>
-  render(
-    <I18nProvider i18n={i18n}>
-      <TooltipProvider>
-        <UpgradeModalForm sessionId="s1" initialToken={initialToken} />
-      </TooltipProvider>
-    </I18nProvider>
-  );
+const formTree = (initialToken?: UpgradeSourceToken) => (
+  <I18nProvider i18n={i18n}>
+    <TooltipProvider>
+      <UpgradeModalForm sessionId="s1" initialToken={initialToken} />
+    </TooltipProvider>
+  </I18nProvider>
+);
+
+const renderForm = (initialToken?: UpgradeSourceToken) => render(formTree(initialToken));
 
 // The last analytics blob live-merged to the modal (what the provider will emit from).
 const lastAnalytics = () => {
@@ -92,6 +100,8 @@ describe('UpgradeModalForm — analytics parity blob (APP-444 B6)', () => {
     h.isBatch = false;
     h.execute.mockClear();
     h.update.mockClear();
+    h.isModalOpen = true;
+    h.isMinimized = false;
   });
   afterEach(() => cleanup());
 
@@ -127,12 +137,24 @@ describe('UpgradeModalForm — analytics parity blob (APP-444 B6)', () => {
     });
   });
 
-  it('stamps destination upgrade for the body lifetime (D2: URL-less surface override)', () => {
+  it('stamps destination upgrade only while the modal is visible (D2: URL-less surface override)', () => {
     const probe = () =>
       stampDestination({ event: 'x', properties: {} } as unknown as Parameters<typeof stampDestination>[0])
         ?.properties?.destination;
     const view = renderForm('DAI');
     expect(probe()).toBe('upgrade');
+    // Minimized: this body stays mounted (hidden host) but the stamp must yield.
+    h.isMinimized = true;
+    view.rerender(formTree('DAI'));
+    expect(probe()).not.toBe('upgrade');
+    // Restored: the override comes back.
+    h.isMinimized = false;
+    view.rerender(formTree('DAI'));
+    expect(probe()).toBe('upgrade');
+    // Settled-while-minimized end state: host still mounted, modal closed.
+    h.isModalOpen = false;
+    view.rerender(formTree('DAI'));
+    expect(probe()).not.toBe('upgrade');
     view.unmount();
     expect(probe()).not.toBe('upgrade');
   });

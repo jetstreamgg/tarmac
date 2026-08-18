@@ -59,13 +59,15 @@ export function useAppAnalytics() {
       chainId,
       action,
       flow,
-      data
+      data,
+      flowId
     }: {
       widgetName: string;
       chainId: number;
       action?: string;
       flow?: string;
       data?: Record<string, unknown>;
+      flowId?: string;
     }) => {
       safeCapture(posthog, AppEvents.TRANSACTION_STARTED, {
         widget_name: widgetName,
@@ -73,7 +75,7 @@ export function useAppAnalytics() {
         chain_name: getChainName(chainId),
         wallet_address: address,
         viewport: getViewport(),
-        flow_id: getFlowId(),
+        flow_id: flowId ?? getFlowId(),
         timestamp: new Date().toISOString(),
         ...(action && { action }),
         ...(flow && { flow }),
@@ -91,7 +93,8 @@ export function useAppAnalytics() {
       txHash,
       action,
       flow,
-      data
+      data,
+      flowId
     }: {
       widgetName: string;
       chainId: number;
@@ -100,6 +103,7 @@ export function useAppAnalytics() {
       action?: string;
       flow?: string;
       data?: Record<string, unknown>;
+      flowId?: string;
     }) => {
       safeCapture(posthog, AppEvents.TRANSACTION_COMPLETED, {
         widget_name: widgetName,
@@ -112,7 +116,7 @@ export function useAppAnalytics() {
         ...(flow && { flow }),
         ...data,
         viewport: getViewport(),
-        flow_id: getFlowId(),
+        flow_id: flowId ?? getFlowId(),
         timestamp: new Date().toISOString()
       });
     },
@@ -120,7 +124,17 @@ export function useAppAnalytics() {
   );
 
   const trackWidgetReviewViewed = useCallback(
-    ({ widgetName, chainId, flow }: { widgetName: string; chainId: number; flow: string }) => {
+    ({
+      widgetName,
+      chainId,
+      flow,
+      flowId
+    }: {
+      widgetName: string;
+      chainId: number;
+      flow: string;
+      flowId?: string;
+    }) => {
       safeCapture(posthog, AppEvents.WIDGET_REVIEW_VIEWED, {
         widget_name: widgetName,
         chain_id: chainId,
@@ -128,7 +142,7 @@ export function useAppAnalytics() {
         flow,
         wallet_address: address,
         viewport: getViewport(),
-        flow_id: getFlowId(),
+        flow_id: flowId ?? getFlowId(),
         timestamp: new Date().toISOString()
       });
     },

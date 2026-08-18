@@ -159,12 +159,15 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
   const txHashRef = useRef<string | undefined>(undefined);
+  // flow_id latched at launch so this session's review/started/completed events
+  // stay joined even if navigation rotates the live flow id mid-transaction.
+  const flowIdRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
   const { address } = useConnection();
   const isSafeWallet = useIsSafeWallet();
   const { trackWidgetReviewViewed, trackTransactionStarted, trackTransactionCompleted } = useAppAnalytics();
-  const { startNewFlow } = useAnalyticsFlow();
+  const { startNewFlow, getFlowId } = useAnalyticsFlow();
 
   const launch = useCallback(
     (config: TransactionConfig) => {
@@ -202,7 +205,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             txStatus: 'cancelled',
             action: abandoned.action,
             flow: abandoned.flow,
-            data: abandoned.data
+            data: abandoned.data,
+            flowId: flowIdRef.current
           });
           startNewFlow();
         }
@@ -211,6 +215,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
       sessionGenRef.current += 1;
       setSessionGen(sessionGenRef.current);
+      // Latch this session's flow id (after any abandon rotation above).
+      flowIdRef.current = getFlowId();
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveConfig(config);
@@ -232,11 +238,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
         trackWidgetReviewViewed({
           widgetName: config.analytics.widgetName,
           chainId,
-          flow: config.analytics.flow
+          flow: config.analytics.flow,
+          flowId: flowIdRef.current
         });
       }
     },
-    [chainId, trackWidgetReviewViewed, trackTransactionCompleted, startNewFlow]
+    [chainId, trackWidgetReviewViewed, trackTransactionCompleted, startNewFlow, getFlowId]
   );
 
   // Entry→review transition of a three-screen flow. Read off the config ref:
@@ -248,7 +255,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       trackWidgetReviewViewed({
         widgetName: analytics.widgetName,
         chainId,
-        flow: analytics.flow
+        flow: analytics.flow,
+        flowId: flowIdRef.current
       });
     }
   }, [chainId, trackWidgetReviewViewed]);
@@ -296,7 +304,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           txStatus: 'cancelled',
           action: analytics.action,
           flow: analytics.flow,
-          data: analytics.data
+          data: analytics.data,
+          flowId: flowIdRef.current
         });
         startNewFlow();
       }
@@ -442,7 +451,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             chainId,
             action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
             flow: analytics.flow,
-            data: analytics.data
+            data: analytics.data,
+            flowId: flowIdRef.current
           });
         }
       },
@@ -483,7 +493,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             txHash: hash,
             action: analytics.action,
             flow: analytics.flow,
-            data: analytics.data
+            data: analytics.data,
+            flowId: flowIdRef.current
           });
         }
 
@@ -528,7 +539,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             txHash: hash,
             action: analytics.action,
             flow: analytics.flow,
-            data: { ...analytics.data, ...classification }
+            data: { ...analytics.data, ...classification },
+            flowId: flowIdRef.current
           });
         }
 
