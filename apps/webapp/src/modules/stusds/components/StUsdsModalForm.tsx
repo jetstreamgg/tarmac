@@ -67,6 +67,7 @@ export function StUsdsModalForm({
   const {
     isConnected,
     isSupply,
+    decimals,
     value,
     amount,
     available,
@@ -261,6 +262,7 @@ export function StUsdsModalForm({
         label={<Trans>Amount</Trans>}
         tokenSymbol="USDS"
         value={value}
+        decimals={decimals}
         onInput={onInput}
         disabled={!isConnected}
         balance={

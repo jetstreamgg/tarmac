@@ -13,6 +13,7 @@ import {
   type StUsdsProviderSelectionResult
 } from '@/hooks';
 import { calculateApyFromStr, formatNumber } from '@/utils';
+import { parseAmountInput } from '@/lib/amountInput';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { MAX_PRICE_IMPACT_BPS_WITHOUT_WARNING } from '../lib/providerNotice';
 import { StUsdsAmountSummary } from '../components/StUsdsAmountSummary';
@@ -30,14 +31,6 @@ const DECIMALS = 18;
 // Reference amount for rate comparison when the input is empty — pre-selects
 // the provider before user input to prevent UI flicker (widget behavior).
 const REFERENCE_AMOUNT = parseUnits('1', DECIMALS);
-
-const parseAmount = (value: string): bigint => {
-  try {
-    return value ? parseUnits(value, DECIMALS) : 0n;
-  } catch {
-    return 0n;
-  }
-};
 
 export interface StUsdsTransactionForm {
   isConnected: boolean;
@@ -129,7 +122,7 @@ export function useStUsdsTransactionForm({
   // pure derivation keeps tracking them with no state rewrite to freeze,
   // invalidate, or misfire (the retired widget resynced with an effect).
   const displayValue = max && !isSupply ? formatUnits(available, DECIMALS) : value;
-  const amount = parseAmount(displayValue);
+  const amount = parseAmountInput(displayValue, DECIMALS);
   const debouncedAmount = useDebounce(amount);
   const debouncePending = debouncedAmount !== amount;
 
