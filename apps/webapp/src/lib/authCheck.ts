@@ -1,19 +1,6 @@
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 
-declare global {
-  interface Window {
-    /**
-     * E2E seam (APP-502): the e2e server is built with
-     * VITE_SKIP_AUTH_CHECK=true (one server for the whole suite), so a spec
-     * exercising the compliance surface re-enables the checks per-page via an
-     * init script instead of a rebuild. Cancels only the env-var skip, never
-     * the private-deployment one, and is inert in production builds.
-     */
-    __FORCE_AUTH_CHECKS__?: boolean;
-  }
-}
-
 /**
  * The dev/e2e bypass for the whole compliance surface: connect-time screening,
  * the browse-gate terms check, and the pre-transaction gate (screening + the

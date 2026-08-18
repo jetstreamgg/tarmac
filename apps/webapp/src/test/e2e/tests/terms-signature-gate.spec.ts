@@ -23,7 +23,7 @@ import {
   mockTermsCheck
 } from '../mock-terms-gate';
 
-const SIGNATURE_STEP_LABEL = 'Terms of Use and Privacy Policy confirmation signature';
+const SIGNATURE_STEP_LABEL = 'Sign Terms of Use & Privacy Policy';
 
 const setupCompliancePage = async (
   page: Page,
