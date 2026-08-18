@@ -42,6 +42,12 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+// useIsSafeWallet reads react-query; no QueryClient here, so stub it (EOA default).
+vi.mock('@/hooks', async io => ({
+  ...(await io<typeof import('@/hooks')>()),
+  useIsSafeWallet: () => false
+}));
+
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     setIsAutoSwitching: h.setIsAutoSwitching,
