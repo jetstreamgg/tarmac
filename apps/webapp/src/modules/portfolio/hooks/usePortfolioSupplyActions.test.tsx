@@ -18,6 +18,7 @@ const h = vi.hoisted(() => ({
   chains: [{ id: 1 }, { id: 8453 }, { id: 10 }] as { id: number }[],
   // Geo modules disabled for the region; empty = unrestricted (the default).
   geoDisabledModules: new Set<string>(),
+  isSafeWallet: false,
   switchChainAsync: vi.fn(),
   setIsAutoSwitching: vi.fn(),
   setAutoSwitchIntent: vi.fn()
@@ -48,6 +49,7 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
 
 vi.mock('@/hooks', () => ({
   TOKENS: { cle: { symbol: 'CLE' } },
+  useIsSafeWallet: () => h.isSafeWallet,
   VAULTS: [
     {
       provider: 'morpho',
@@ -143,6 +145,7 @@ describe('usePortfolioSupplyActions', () => {
     h.chainId = 1;
     h.chains = [{ id: 1 }, { id: 8453 }, { id: 10 }];
     h.geoDisabledModules.clear();
+    h.isSafeWallet = false;
     h.pendleMarket.expiry = 4102444800;
   });
   afterEach(() => cleanup());
@@ -344,6 +347,29 @@ describe('usePortfolioSupplyActions', () => {
     expect(h.setAutoSwitchIntent.mock.invocationCallOrder[0]).toBeLessThan(
       h.switchChainAsync.mock.invocationCallOrder[0]
     );
+  });
+
+  it('returns undefined for a cross-chain position when the wallet is a Safe (caller navigates)', () => {
+    // A Safe can't switch networks from the dapp: resolving to the switching
+    // handler would leave a button that silently no-ops forever (APP-486).
+    h.chainId = 8453;
+    h.isSafeWallet = true;
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
+
+    expect(result.current(position('savings', { chainIds: [1] }))).toBeUndefined();
+    expect(h.switchChainAsync).not.toHaveBeenCalled();
+    expect(h.openSavingsSupply).not.toHaveBeenCalled();
+  });
+
+  it('still resolves an in-place opener for a Safe when the position is on the connected chain', () => {
+    h.isSafeWallet = true;
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
+    const handler = result.current(position('savings'));
+
+    expect(handler).toBeTypeOf('function');
+    handler!();
+    expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
+    expect(h.switchChainAsync).not.toHaveBeenCalled();
   });
 
   it('opens nothing and clears the auto flags when the wallet declines the switch', async () => {
