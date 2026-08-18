@@ -239,6 +239,10 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
     launchedRef.current = true;
     launch({
       title: t`Claim rewards`,
+      // UNKNOWN until the urn claimables resolve (the panel pushes the real
+      // sum) — treated as above-threshold, so the enhanced check runs rather
+      // than being skipped (APP-517).
+      usdValue: undefined,
       // Figma 1036:214007 titles the wallet screen "Confirm claim".
       transactionTitle: t`Confirm claim`,
       subtitles: {

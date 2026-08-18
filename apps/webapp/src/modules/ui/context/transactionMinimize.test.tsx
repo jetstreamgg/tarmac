@@ -65,7 +65,12 @@ import type { TransactionConfig } from './transactionContract';
 i18n.load('en', {});
 i18n.activate('en');
 
-const REVIEW_CONFIG: TransactionConfig = { title: 'Supply', steps: ['Supply'], onConfirm: () => {} };
+const REVIEW_CONFIG: TransactionConfig = {
+  title: 'Supply',
+  usdValue: 0,
+  steps: ['Supply'],
+  onConfirm: () => {}
+};
 
 // Records mount/unmount — stands in for an `entry` body's in-flight engine hook,
 // whose receipt-watcher must survive a minimize (unmounting it strands the tx).
@@ -223,6 +228,7 @@ describe('TransactionModal minimize', () => {
     // lifetime — the mechanism every editable flow relies on.
     const ctx = renderFlow({
       title: 'Supply',
+      usdValue: 0,
       steps: ['Supply'],
       entry: { content: <div>inputs</div>, confirmDisabled: false },
       backgroundContent: <ProbeBody />,
@@ -275,7 +281,7 @@ describe('TransactionModal minimize', () => {
     act(() => cb.onSuccess('0xhash')); // completed while minimized — session lingers
 
     // Reopen via a fresh launch (e.g. clicking the page's Supply button again).
-    act(() => ctx.launch({ title: 'Supply', steps: ['Supply'], onConfirm: () => undefined }));
+    act(() => ctx.launch({ title: 'Supply', usdValue: 0, steps: ['Supply'], onConfirm: () => undefined }));
 
     // The modal is back on its first screen (Confirm), not the stale completed screen.
     expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeNull();
@@ -287,6 +293,7 @@ describe('TransactionModal minimize', () => {
     probe.unmounts = 0;
     const config: TransactionConfig = {
       title: 'Supply',
+      usdValue: 0,
       steps: ['Supply'],
       entry: { confirmDisabled: false },
       backgroundContent: <ProbeBody />,
@@ -310,6 +317,7 @@ describe('TransactionModal minimize', () => {
     probe.unmounts = 0;
     const config: TransactionConfig = {
       title: 'Supply',
+      usdValue: 0,
       steps: ['Supply'],
       entry: { confirmDisabled: false },
       backgroundContent: <ProbeBody />,
@@ -338,6 +346,7 @@ describe('TransactionModal minimize', () => {
     portalProbe.unmounts = 0;
     const ctx = renderFlow({
       title: 'Supply',
+      usdValue: 0,
       steps: ['Supply'],
       entry: { confirmDisabled: false },
       backgroundContent: <PortalingHost />,
@@ -361,6 +370,7 @@ describe('TransactionModal minimize', () => {
     const sessionId = 'withdraw-session';
     const ctx = renderFlow({
       title: 'Withdraw',
+      usdValue: 0,
       steps: ['Withdraw'],
       sessionId,
       entry: { confirmDisabled: false },
@@ -386,6 +396,7 @@ describe('TransactionModal minimize', () => {
   it('portals backgroundContent inputs into the dialog entry slot', () => {
     renderFlow({
       title: 'Supply',
+      usdValue: 0,
       steps: ['Supply'],
       entry: { confirmDisabled: false },
       backgroundContent: <SlotProbe />,
@@ -400,6 +411,7 @@ describe('TransactionModal minimize', () => {
 
   const TOAST_CONFIG: TransactionConfig = {
     title: 'Supply',
+    usdValue: 0,
     steps: ['Supply'],
     subtitles: { success: 'Supplied!', error: 'Supply failed' },
     // Amount-aware title (what the savings host pushes) takes precedence over subtitles.

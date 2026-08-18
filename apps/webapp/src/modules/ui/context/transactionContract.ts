@@ -167,8 +167,13 @@ export type TransactionConfig = {
    * amounts land. `undefined` means UNKNOWN and is treated as
    * above-threshold — the enhanced check is required — so a flow that cannot
    * value its amount fails safe rather than open.
+   *
+   * DELIBERATELY REQUIRED (not `usdValue?:`): this is legal-compliance
+   * gating, so a new launch site must state its valuation — or explicitly
+   * declare it unknown — at compile time. Passing `undefined` is always
+   * safe (it forces the enhanced check); omitting the field is a type error.
    */
-  usdValue?: number;
+  usdValue: number | undefined;
   /** Identity used to gate updateModalContent calls to the active session. */
   sessionId?: string;
 };

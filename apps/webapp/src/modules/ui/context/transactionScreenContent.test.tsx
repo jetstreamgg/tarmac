@@ -80,6 +80,7 @@ const clickConfirm = () => fireEvent.click(screen.getByRole('button', { name: /^
 
 const reviewConfig = (): TransactionConfig => ({
   title: 'Review supply',
+  usdValue: 0,
   transactionTitle: 'Confirm in the wallet',
   steps: ['Approve USDS', 'Supply USDS'],
   transactionContent: <div data-testid="review-breakdown">breakdown rows</div>,
