@@ -272,6 +272,7 @@ export function SavingsModalForm({
         label={<Trans>Amount</Trans>}
         tokenSymbol={originSymbol}
         value={value}
+        decimals={originDecimals}
         onInput={onInput}
         disabled={!isConnected}
         balance={

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -55,6 +55,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { parseAmountInput } from '@/lib/amountInput';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { formatPriceImpact } from '../utils/priceImpact';
 import { buildPendleEntryRows, buildPendleReviewRows } from './pendleModalRows';
@@ -63,16 +64,6 @@ export type PendleModalFlow = 'supply' | 'withdraw';
 
 const NO_VALUE = '–';
 const SECONDS_PER_DAY = 86_400;
-
-/** Parse a human amount into wei; malformed input normalizes to 0n. */
-function parseAmount(value: string, decimals: number): bigint {
-  if (!value) return 0n;
-  try {
-    return parseUnits(value, decimals);
-  } catch {
-    return 0n;
-  }
-}
 
 /**
  * Editable body for the Pendle "Supply to / Withdraw from {market}" modals
@@ -121,7 +112,7 @@ export function PendleModalForm({
   const inputSymbol = isSupply ? selectedToken.symbol : ptToken.symbol;
 
   const [value, setValue] = useState('');
-  const amount = parseAmount(value, inputDecimals);
+  const amount = parseAmountInput(value, inputDecimals);
 
   const { data: walletBalance, refetch: refetchWalletBalance } = useTokenBalance({
     address,
@@ -513,6 +504,7 @@ export function PendleModalForm({
         label={<Trans>Amount</Trans>}
         tokenSymbol={inputSymbol}
         value={value}
+        decimals={inputDecimals}
         onInput={setValue}
         disabled={!isConnected}
         balance={

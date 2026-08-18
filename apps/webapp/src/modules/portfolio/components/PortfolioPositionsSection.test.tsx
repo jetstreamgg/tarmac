@@ -42,11 +42,13 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-// useIsSafeWallet reads react-query; no QueryClient here, so stub it (EOA default).
-vi.mock('@/hooks', async io => ({
-  ...(await io<typeof import('@/hooks')>()),
-  useIsSafeWallet: () => false
-}));
+// The supply resolver asks whether the connected wallet is a Safe; answering
+// as a plain EOA needs no wagmi provider and keeps the routing on the paths
+// these specs pin.
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return { ...actual, useIsSafeWallet: () => false };
+});
 
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({

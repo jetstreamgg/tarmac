@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { QueryParams } from '@/lib/constants';
-import { ROUTES } from '@/lib/routes';
+import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
 import {
   Carousel,
@@ -61,12 +61,14 @@ export function PortfolioPositionsSection({
     setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
   };
-  // Deep-link to the Earn list pre-filtered by the chosen stablecoin (keeps the
-  // active network), consumed by EarnPage's ?token= handler.
+  // Deep-link to the Earn list pre-filtered by the chosen stablecoin (keeps
+  // the active network); the anchor lands it past the hero, at the
+  // opportunities table (APP-487).
   const goToEarnForToken = (symbol: string) =>
     void navigate({
       to: ROUTES.EARN,
-      search: prev => ({ ...retainOnNavigate(prev), [QueryParams.Token]: symbol })
+      search: prev => ({ ...retainOnNavigate(prev), [QueryParams.Token]: symbol }),
+      hash: EARN_OPPORTUNITIES_HASH
     });
 
   if (tab === 'idle') {
