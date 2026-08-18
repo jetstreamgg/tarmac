@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useChains } from 'wagmi';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho, Pendle } from '@/widgets';
 import { useEarnMarketplace, EarnProductKind, useUsdsDaiData, type EarnProductRow } from '@/hooks';
@@ -8,6 +8,8 @@ import { getChainIcon } from '@/utils';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { retainOnNavigate } from '@/lib/navigation';
+import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -108,6 +110,18 @@ export function EarnPage() {
   const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
   const chains = useChains();
   const navigate = useNavigate();
+  const hash = useRouterState({ select: state => state.location.hash });
+
+  // On a cold load of a deep-link URL the router's hash scrolling runs before
+  // this lazy route chunk has rendered its target, so the anchor is missed —
+  // catch up on mount. In-app arrivals are already scrolled by the router
+  // (scrollY > 0), and back/forward restores land where the user left; the
+  // guard leaves both alone.
+  useEffect(() => {
+    if (hash !== EARN_OPPORTUNITIES_HASH) return;
+    if (window.scrollY > 0) return;
+    document.getElementById(EARN_OPPORTUNITIES_HASH)?.scrollIntoView();
+  }, [hash]);
 
   // Geo split (1036:201400, APP-432 item 8): products whose owning module is
   // restricted in this region drop out of Earn Opportunities and reappear,
@@ -285,7 +299,10 @@ export function EarnPage() {
       {/* Restricted products are never featured: their Earn CTA would land on a
           route that redirects straight back to /portfolio. */}
       <EarnFeaturedCards rows={availableRows} onSelect={handleRowSelect} />
-      <h2 className={SECTION_HEADING}>
+      {/* Target of the ?token= deep links' #earn-opportunities anchor
+          (APP-487); scroll-mt clears the sticky frosted header when the hash
+          scroll lands the heading at the top of the viewport. */}
+      <h2 id={EARN_OPPORTUNITIES_HASH} className={cn(SECTION_HEADING, 'scroll-mt-24')}>
         <Trans>Earn Opportunities</Trans>
       </h2>
       <EarnTableFilters

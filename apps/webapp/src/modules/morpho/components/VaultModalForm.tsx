@@ -259,6 +259,7 @@ export function VaultModalForm({
           label={<Trans>Amount</Trans>}
           tokenSymbol={assetToken.symbol}
           value={value}
+          decimals={decimals}
           onInput={onInput}
           disabled={!isConnected}
           balance={

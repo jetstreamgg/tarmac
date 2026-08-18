@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -19,6 +19,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
+import { parseAmountInput } from '@/lib/amountInput';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
 import { buildUpgradeModalRows } from './upgradeModalRows';
 
@@ -27,14 +28,6 @@ const UPGRADE_SOURCE_TOKENS = [TOKENS.dai, TOKENS.mkr];
 
 // DAI, MKR, USDS and SKY are all 18-decimal on mainnet.
 const DECIMALS = 18;
-
-const parseAmount = (value: string): bigint => {
-  try {
-    return value ? parseUnits(value, DECIMALS) : 0n;
-  } catch {
-    return 0n;
-  }
-};
 
 // The comps pin two decimals on every amount — balance line, grid values and
 // the confirm-screen hero alike ("7,500.00" / "9,000.00", Figma 1310:130760).
@@ -68,7 +61,7 @@ export function UpgradeModalForm({
   const [token, setToken] = useState<UpgradeSourceToken>(initialToken);
   const [value, setValue] = useState('');
 
-  const amount = parseAmount(value);
+  const amount = parseAmountInput(value, DECIMALS);
   const debouncedAmount = useDebounce(amount);
   const debouncePending = debouncedAmount !== amount;
 
@@ -202,6 +195,7 @@ export function UpgradeModalForm({
         label={<Trans>Amount</Trans>}
         tokenSymbol={token}
         value={value}
+        decimals={DECIMALS}
         onInput={setValue}
         disabled={!isConnected}
         balance={
