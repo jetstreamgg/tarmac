@@ -30,13 +30,15 @@ const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 
 /** Built per call: lingui's `t` must run after locale activation, not at module load. */
 const termsSignatureStep = (): TransactionStep => ({
-  label: t`Terms of Use and Privacy Policy confirmation signature`,
+  // Label and description per the realigned comp (Figma 1868:80823,
+  // 18 Aug 2026) — it supersedes the ticket's briefing text.
+  label: t`Sign Terms of Use & Privacy Policy`,
   kind: 'signature',
   description: (
     <Trans>
-      Review the <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
-      <TermsLink href={PRIVACY_POLICY_URL}>Privacy Policy</TermsLink>, then sign the confirmation in your
-      wallet. The signature is free and doesn&apos;t submit a transaction.
+      Please review and accept the <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
+      <TermsLink href={PRIVACY_POLICY_URL}>Privacy Policy</TermsLink> to proceed. We are verifying your
+      connection to ensure compliance, including checks for VPN use or location within the US.
     </Trans>
   )
 });
