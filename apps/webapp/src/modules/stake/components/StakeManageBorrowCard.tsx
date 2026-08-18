@@ -235,7 +235,9 @@ export function StakeManageBorrowCard({
                   </>
                 )}
               </span>
-              {maxHintLoading ? (
+              {/* One pending marker per line: while the Borrowed value is itself a
+                  skeleton, a second pill for the max hint reads as a glitch. */}
+              {maxHintLoading && !positionLoading ? (
                 <>
                   {' '}
                   <Skeleton
