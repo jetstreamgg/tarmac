@@ -223,8 +223,12 @@ export function useConvertLaunch({
         action: 'convert',
         data: {
           module: 'convert',
+          // Legacy props kept verbatim: prod volume insights filter convert_module + direction.
+          convert_module: 'psm',
+          direction,
           originToken: originSymbol,
           targetToken: targetSymbol,
+          isBatchTx: conversion.isBatch,
           amount: Number(formatUnits(amount, originDecimals))
         }
       }
@@ -243,7 +247,8 @@ export function useConvertLaunch({
     direction,
     originSymbol,
     amount,
-    originDecimals
+    originDecimals,
+    conversion.isBatch
   ]);
 
   // Keep the open modal's gating + preview live while it still sits on the

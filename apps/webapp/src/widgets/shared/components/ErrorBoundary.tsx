@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react';
 import React from 'react';
 import { Error } from './Error';
+import { trackErrorBoundaryTriggered } from '@/modules/analytics/lib/trackAmbientSurfaces';
 
 export class ErrorBoundary extends React.Component<{
   componentName?: string;
@@ -27,6 +28,8 @@ export class ErrorBoundary extends React.Component<{
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Sentry has the stack; PostHog needs the session impact (APP-444 H).
+    trackErrorBoundaryTriggered({ boundaryName: this.componentName });
     Sentry.captureException(error, {
       tags: {
         boundary: this.componentName,

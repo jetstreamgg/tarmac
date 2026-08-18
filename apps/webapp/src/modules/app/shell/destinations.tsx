@@ -9,6 +9,7 @@ import { intentToPath, ROUTES, RoutePath } from '@/lib/routes';
 import { AppRoutePath, retainOnNavigate, useRouteIntent } from '@/lib/navigation';
 import { getNetworkOverrideForIntent } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 
 /**
  * The 4-destination IA shared by the desktop TopNav and the mobile Navbar
@@ -76,9 +77,10 @@ export function useActiveDestinationPath(): RoutePath | null {
 /**
  * Link plumbing shared by both navs: the search updater that carries the
  * network override in the href, and the click handler that flags the
- * auto-switch feedback.
+ * auto-switch feedback and records the nav-analytics intent. Each nav passes
+ * its own selection_method ('header_nav' desktop, 'mobile_drawer' bottom bar).
  */
-export function useDestinationLinkProps() {
+export function useDestinationLinkProps(selectionMethod: 'header_nav' | 'mobile_drawer') {
   const chainId = useChainId();
   const chains = useChains();
   const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
@@ -96,9 +98,9 @@ export function useDestinationLinkProps() {
   );
 
   // Modified clicks open a new tab; this tab doesn't navigate, so skip the
-  // switching feedback. No analytics here: nav events are pending sign-off (B1 ships none).
+  // switching feedback and the nav intent.
   const handleNavClick = useCallback(
-    (targetIntent: Intent) => (event: MouseEvent) => {
+    (targetIntent: Intent, targetPath: RoutePath) => (event: MouseEvent) => {
       if (
         event.defaultPrevented ||
         event.button !== 0 ||
@@ -109,12 +111,13 @@ export function useDestinationLinkProps() {
       ) {
         return;
       }
+      setPendingNavIntent(selectionMethod, targetPath);
       if (getNetworkOverrideForIntent(targetIntent, chainId, chains)) {
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
       }
     },
-    [chainId, chains, setIsSwitchingNetwork, setIsAutoSwitching]
+    [chainId, chains, setIsSwitchingNetwork, setIsAutoSwitching, selectionMethod]
   );
 
   return { searchForIntent, handleNavClick };

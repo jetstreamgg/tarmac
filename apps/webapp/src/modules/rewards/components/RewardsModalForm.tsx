@@ -16,6 +16,8 @@ import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
 import { useRewardsLaunch, type RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
 import { useRewardsTransactionForm, type RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
 import {
@@ -53,6 +55,7 @@ export function RewardsModalForm({
   contractAddress,
   supplyToken,
   displayName,
+  productName,
   rewardTokenSymbol,
   rate,
   preset
@@ -63,6 +66,8 @@ export function RewardsModalForm({
   supplyToken: Token;
   /** Product title shown in the review "Product" cell (e.g. "SPK Rewards"). */
   displayName: string;
+  /** Registry `contract.name`, reported as the analytics `product` (legacy parity). */
+  productName: string;
   /** Reward-token symbol for the "Rewards in" cell; omit for point farms. */
   rewardTokenSymbol?: string;
   /** Reward rate as a decimal fraction (e.g. 0.045) for the Rate + projected-earnings cells. */
@@ -200,6 +205,25 @@ export function RewardsModalForm({
     i18n
   ]);
 
+  // Legacy RewardsWidget payload shape (APP-444 B3): withdraw amounts negative.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'rewards',
+      flow,
+      action: flow,
+      data: {
+        module: 'rewards',
+        product: productName,
+        productAddress: contractAddress,
+        assetAddress: supplyToken.address[chainId],
+        assetSymbol: supplyToken.symbol,
+        isBatchTx: isBatch,
+        amount: signedAmount(parseFloat(formatUnits(amount, decimals)), flow)
+      }
+    }),
+    [flow, productName, contractAddress, supplyToken, chainId, isBatch, amount, decimals]
+  );
+
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / review breakdown / step labels /
   // wallet summary / toast titles in sync, and the entry-slot portal.
@@ -211,7 +235,8 @@ export function RewardsModalForm({
     transactionContent,
     transactionScreenContent,
     steps,
-    toast
+    toast,
+    analytics
   });
 
   const body = (

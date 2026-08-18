@@ -2,6 +2,7 @@ import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { type ReactNode } from 'react';
 import { getStoredConsent, saveConsent } from './consentStorage';
+import { stampDestination } from './lib/destination';
 import { createSanitizeUrlsBeforeSend } from './urlSanitizer';
 import { applySuperProperties } from './superProperties';
 import { isValidUUID } from '@/lib/generateUUID';
@@ -111,12 +112,14 @@ function initializePostHogIfNeeded(forceAccepted = false) {
     disable_web_experiments: true,
     respect_dnt: true,
     ip: false,
-    before_send: sanitizeUrlsBeforeSend,
     property_denylist: ['$ip'],
     cross_subdomain_cookie: true,
 
     // Bootstrap with marketing site identity for cross-domain attribution
     bootstrap: bootstrapConfig,
+
+    // Capture-time hooks: sanitize URLs first (APP-504), then stamp destination.
+    before_send: [sanitizeUrlsBeforeSend, stampDestination],
 
     loaded: posthogClient => {
       applySuperProperties();

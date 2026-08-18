@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
+import { trackPromoImpression, trackPromoClicked } from '@/modules/analytics/lib/trackAmbientSurfaces';
 
 /**
  * Top-of-page nudge shown when the user holds idle stablecoins but has no
@@ -21,6 +23,12 @@ export function AllocateStablecoinsBanner({
   onAllocate: () => void;
 }) {
   const yearly = idleUsd === undefined ? undefined : projectAnnualEarnings(idleUsd, savingsRate);
+
+  // Impression = denominator for the CTA's click-through; the banner's 3-way
+  // render condition is unreconstructable from clicks alone (APP-444 F).
+  useEffect(() => {
+    trackPromoImpression({ promoId: 'allocate_stablecoins' });
+  }, []);
 
   return (
     <PromoBanner
@@ -51,7 +59,15 @@ export function AllocateStablecoinsBanner({
         </p>
       }
       action={
-        <Button variant="primary" size="xl" className="shrink-0" onClick={onAllocate}>
+        <Button
+          variant="primary"
+          size="xl"
+          className="shrink-0"
+          onClick={() => {
+            trackPromoClicked({ promoId: 'allocate_stablecoins' });
+            onAllocate();
+          }}
+        >
           <Trans>Allocate your stablecoins</Trans>
         </Button>
       }

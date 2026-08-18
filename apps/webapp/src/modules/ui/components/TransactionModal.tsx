@@ -83,6 +83,8 @@ export type TransactionModalProps = {
   onConfirm: () => void;
   /** Fires for the entry's optional secondary CTA (see `TransactionEntry.secondaryConfirmLabel`). */
   onSecondaryConfirm?: () => void;
+  /** Fires when a three-screen flow's entry advances to its review stage. */
+  onReviewStage?: () => void;
   onRetry?: () => void;
   onBack?: () => void;
   txStatus: TxStatus;
@@ -134,6 +136,7 @@ export function TransactionModal({
   titleBadge,
   onConfirm,
   onSecondaryConfirm,
+  onReviewStage,
   onRetry,
   onBack,
   txStatus,
@@ -223,6 +226,7 @@ export function TransactionModal({
     // nothing fires on-chain until the review's confirm.
     if (isEntry && hasReviewStage) {
       setStep('review');
+      onReviewStage?.();
       return;
     }
     if (reviewRef.current) {
@@ -230,7 +234,7 @@ export function TransactionModal({
     }
     setStep('transaction');
     onConfirm();
-  }, [isEntry, hasReviewStage, onConfirm, entryConfirmAction]);
+  }, [isEntry, hasReviewStage, onConfirm, entryConfirmAction, onReviewStage]);
 
   // The entry's secondary CTA (entry-only flows — see the contract): same
   // advance to the wallet screen, firing the secondary action's handler.

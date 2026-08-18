@@ -53,6 +53,7 @@ const skySelection = (addresses: string[]): ClaimableReward[] =>
     tokenSymbol: 'SKY',
     icon: null,
     formattedAmount: '',
+    amount: 0,
     amountUsd: 0,
     chainId: 1
   }));
@@ -142,6 +143,7 @@ describe('skyRewardsAdapter', () => {
           tokenSymbol: 'MORPHO',
           icon: null,
           formattedAmount: '1',
+          amount: 1,
           amountUsd: 1,
           chainId: 1
         }
