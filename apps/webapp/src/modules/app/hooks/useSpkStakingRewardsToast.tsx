@@ -38,7 +38,7 @@ export const useSpkStakingRewardsToast = (isAuthorized: boolean) => {
             </Text>
             <VStack className="mt-4 gap-4">
               <Text variant="medium">
-                SPK reward emissions have been reduced via the latest{' '}
+                SPK Staking Rewards have ended via a{' '}
                 <ExternalLink
                   showIcon={false}
                   href={GOVERNANCE_PROPOSAL_URL}
@@ -46,7 +46,7 @@ export const useSpkStakingRewardsToast = (isAuthorized: boolean) => {
                 >
                   governance proposal
                 </ExternalLink>
-                . Consider switching to SKY rewards for your staking positions.
+                . Consider switching to SKY or USDS rewards for your staking positions.
               </Text>
               <Button
                 className="place-self-start"
