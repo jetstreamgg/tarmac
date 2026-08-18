@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LoaderCircle } from 'lucide-react';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
@@ -541,16 +540,6 @@ export function PendleModalForm({
       />
 
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
-
-      {/* The grid holds its pre-quote values while re-quoting. */}
-      {isFetchingQuote && (
-        <div className="flex items-center gap-2" data-testid="pendle-modal-quote-fetching">
-          <LoaderCircle className="text-fgSecondary h-4 w-4 animate-spin" />
-          <Text variant="small" className="text-fgSecondary">
-            <Trans>Fetching quote from Pendle</Trans>
-          </Text>
-        </div>
-      )}
 
       {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
