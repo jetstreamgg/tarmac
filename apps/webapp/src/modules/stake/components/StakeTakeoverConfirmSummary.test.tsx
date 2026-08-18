@@ -21,11 +21,11 @@ const renderSummary = (props: Partial<React.ComponentProps<typeof StakeTakeoverC
 describe('StakeTakeoverConfirmSummary', () => {
   afterEach(cleanup);
 
-  it('names the automatically selected reward token when provided', () => {
+  it('names the selected reward token when provided', () => {
     renderSummary({ rewardSymbol: 'SKY' });
 
     const row = screen.getByTestId('stake-takeover-confirm-reward');
-    expect(row.textContent).toContain('Reward (selected automatically)');
+    expect(row.textContent).toContain('Reward');
     expect(row.textContent).toContain('SKY');
   });
 

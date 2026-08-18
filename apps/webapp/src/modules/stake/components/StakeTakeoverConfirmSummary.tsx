@@ -23,9 +23,8 @@ function AmountBlock({ label, amount, symbol }: { label: React.ReactNode; amount
 /**
  * Confirm-modal review body (hi-fi 486:33412): stake / borrow amount heroes
  * with token chips. The step list, batch toggle, and wallet states are all
- * rendered by the shared TransactionModal. The reward row surfaces the farm
- * the flow selects on the user's behalf (there is no picker yet — AUD-19);
- * it renders only when the caller can name the reward token.
+ * rendered by the shared TransactionModal. The reward row echoes the picker
+ * card's selection; it renders only when the caller can name the reward token.
  */
 export function StakeTakeoverConfirmSummary({
   skyToLock,
@@ -45,7 +44,7 @@ export function StakeTakeoverConfirmSummary({
       {rewardSymbol && (
         <div data-testid="stake-takeover-confirm-reward" className="flex items-center justify-between gap-4">
           <span className="text-fgSecondary text-sm">
-            <Trans>Reward (selected automatically)</Trans>
+            <Trans>Reward</Trans>
           </span>
           <span className="bg-surfaceAlt text-text font-circle flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
             <TokenIcon
