@@ -217,6 +217,9 @@ export function useConvertLaunch({
         action: 'convert',
         data: {
           module: 'convert',
+          // Legacy props kept verbatim: prod volume insights filter convert_module + direction.
+          convert_module: 'psm',
+          direction,
           originToken: originSymbol,
           targetToken: targetSymbol,
           isBatchTx: conversion.isBatch,
