@@ -15,12 +15,10 @@ test.describe('accept terms', () => {
     await mockTermsCheck(isolatedPage);
     await isolatedPage.goto('/');
 
-    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-
-    // The accept really happened — a silent skip inside the helper would leave
-    // the modal up (or the wallet disconnected) and fail here.
-    await expect(isolatedPage.getByTestId('terms-modal')).toHaveCount(0);
-    await expect(isolatedPage.getByTestId('wallet-chip')).toContainText(/0x/);
+    // expectTerms makes the modal's appearance an assertion (the seam really
+    // landed), and the helper itself pins the completion: modal closed with
+    // the wallet still connected.
+    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true, expectTerms: true });
   });
 });
 

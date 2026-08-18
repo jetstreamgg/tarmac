@@ -2,9 +2,9 @@
 // conditional signature step, driven end-to-end on the /earn/savings supply
 // modal. The e2e build skips the compliance surface (VITE_SKIP_AUTH_CHECK), so
 // each test re-enables it per-page and mocks the surface's three endpoints —
-// see mock-terms-gate.ts. These are also the only specs in which the terms
-// modal actually opens, so the Phase A accept path of
-// connectMockWalletAndAcceptTerms gets exercised here too.
+// see mock-terms-gate.ts. Connecting passes `expectTerms: true`: the terms
+// modal appearing is the positive proof the forced checks are really running,
+// so the "no added step" cases can't pass vacuously against a dead seam.
 //
 // Not covered here, deliberately: the POST /sign contract (the mock wallet
 // skips the POST; unit-covered in signTermsAcceptance.test.ts), the risky and
@@ -14,7 +14,7 @@
 // and the version-bump re-trigger (unit-covered).
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
-import { connectAndVerify } from '../utils/connectAndVerify';
+import { openSavingsSupplyConfirm } from '../utils/openSavingsSupplyConfirm';
 import {
   forceAuthChecks,
   mockAddressScreening,
@@ -35,48 +35,32 @@ const setupCompliancePage = async (
   await mockTermsCheck(page, { signed });
 };
 
-/** Connects (accepting the terms modal on the way) and lands on an enabled Confirm. */
-const openSavingsSupplyConfirm = async (page: Page) => {
-  await page.goto('/earn/savings');
-  await connectAndVerify(page, { batch: true });
-  await page
-    .getByTestId('savings-position-supply')
-    .or(page.getByTestId('savings-supply-cta'))
-    .first()
-    .click();
-  await expect(page.getByText('Supply to Sky Savings')).toBeVisible();
-  await page.getByTestId('savings-modal-amount-input').fill('2');
-  await page.getByText('Review').first().click();
-  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
-  await expect(confirm).toBeEnabled({ timeout: 60_000 });
-  return confirm;
-};
-
 test('US user without a signature gets the signature step, then the transaction runs', async ({
   isolatedPage
 }) => {
   await setupCompliancePage(isolatedPage, { countryCode: 'US', signed: false });
   await mockPersonalSign(isolatedPage);
 
-  const confirm = await openSavingsSupplyConfirm(isolatedPage);
+  const confirm = await openSavingsSupplyConfirm(isolatedPage, { connect: { expectTerms: true } });
   await confirm.click();
 
   // The prelude step mounts ahead of the flow's own steps and is the current
-  // step while the wallet signs.
-  await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL).first()).toBeVisible();
+  // step while the wallet signs. Exact match: the failed retitle ("… failed")
+  // must not satisfy this.
+  await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true }).first()).toBeVisible();
 
   await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
     timeout: 60_000
   });
   // The completed signature row survives into the success view.
-  await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL).first()).toBeVisible();
+  await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true }).first()).toBeVisible();
 });
 
 test('Rejecting the signature fails the step in place and retry recovers', async ({ isolatedPage }) => {
   await setupCompliancePage(isolatedPage, { countryCode: 'US', signed: false });
   const signControl = await mockPersonalSign(isolatedPage, { reject: true });
 
-  const confirm = await openSavingsSupplyConfirm(isolatedPage);
+  const confirm = await openSavingsSupplyConfirm(isolatedPage, { connect: { expectTerms: true } });
   await confirm.click();
 
   // The C5 inline failure rendering: the step retitles, carries the
@@ -94,26 +78,29 @@ test('Rejecting the signature fails the step in place and retry recovers', async
   });
 });
 
-test('US user already signed for the current version sees no added step', async ({ isolatedPage }) => {
-  await setupCompliancePage(isolatedPage, { countryCode: 'US', signed: true });
+// The two no-step verdicts share one body: an already-recorded signature and a
+// non-US non-VPN origin both mean the transaction runs untouched. The
+// assertion waits for settlement first — checking for the step's absence at
+// click-time would pass before the gate had rendered anything at all.
+for (const { title, setup } of [
+  {
+    title: 'US user already signed for the current version sees no added step',
+    setup: { countryCode: 'US', signed: true }
+  },
+  {
+    title: 'Non-US non-VPN user without a signature sees no added step',
+    setup: { countryCode: 'XX', signed: false }
+  }
+]) {
+  test(title, async ({ isolatedPage }) => {
+    await setupCompliancePage(isolatedPage, setup);
 
-  const confirm = await openSavingsSupplyConfirm(isolatedPage);
-  await confirm.click();
+    const confirm = await openSavingsSupplyConfirm(isolatedPage, { connect: { expectTerms: true } });
+    await confirm.click();
 
-  await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
-    timeout: 60_000
+    await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+      timeout: 60_000
+    });
+    await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true })).toHaveCount(0);
   });
-  await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL)).toHaveCount(0);
-});
-
-test('Non-US non-VPN user without a signature sees no added step', async ({ isolatedPage }) => {
-  await setupCompliancePage(isolatedPage, { countryCode: 'XX', signed: false });
-
-  const confirm = await openSavingsSupplyConfirm(isolatedPage);
-  await confirm.click();
-
-  await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
-    timeout: 60_000
-  });
-  await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL)).toHaveCount(0);
-});
+}

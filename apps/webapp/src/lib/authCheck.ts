@@ -1,6 +1,19 @@
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 
+declare global {
+  interface Window {
+    /**
+     * E2E seam (APP-502): the e2e server is built with
+     * VITE_SKIP_AUTH_CHECK=true (one server for the whole suite), so a spec
+     * exercising the compliance surface re-enables the checks per-page via an
+     * init script instead of a rebuild. Cancels only the env-var skip, never
+     * the private-deployment one, and is inert in production builds.
+     */
+    __FORCE_AUTH_CHECKS__?: boolean;
+  }
+}
+
 /**
  * The dev/e2e bypass for the whole compliance surface: connect-time screening,
  * the browse-gate terms check, and the pre-transaction gate (screening + the
@@ -9,19 +22,12 @@ import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
  * Confirm that demands a signature its mocks can't produce.
  */
 export const shouldSkipAuthChecks = (): boolean => {
-  // E2E seam: the e2e server is built with VITE_SKIP_AUTH_CHECK=true (one
-  // server for the whole suite), so a spec exercising the compliance surface
-  // re-enables the checks per-page via an init script instead of a rebuild.
-  // Cancels only the env-var skip, never the private-deployment one, and is
-  // dead code in production builds.
-  const forced =
-    !IS_PRODUCTION_ENV &&
-    typeof window !== 'undefined' &&
-    (window as Window & { __FORCE_AUTH_CHECKS__?: boolean }).__FORCE_AUTH_CHECKS__ === true;
-  return (
-    (!forced && !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true') ||
-    isPrivateDeployment()
-  );
+  if (isPrivateDeployment()) return true;
+  // Production kill-switch: past this line nothing can alter the verdict —
+  // neither the env flag nor the e2e seam exists in a production build.
+  if (IS_PRODUCTION_ENV) return false;
+  if (typeof window !== 'undefined' && window.__FORCE_AUTH_CHECKS__ === true) return false;
+  return import.meta.env.VITE_SKIP_AUTH_CHECK === 'true';
 };
 
 /** The compliance API origin (`/ip/status`, `/address/status`). */
