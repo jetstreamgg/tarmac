@@ -100,6 +100,8 @@ export function useEarnTableState(validOptions: EarnFilterOptionValues) {
 
   // `replace` keeps filter fiddling out of the history stack: back still leaves
   // /earn in one press, while the /earn entry itself carries the latest filters.
+  // `resetScroll: false` keeps the viewport at the filter bar the user is
+  // interacting with, instead of the router's default jump back to the top.
   const setFilterParams = useCallback(
     (update: Partial<Record<UrlFilterKey, string>>) => {
       setSearchParams(
@@ -112,7 +114,7 @@ export function useEarnTableState(validOptions: EarnFilterOptionValues) {
           }
           return next;
         },
-        { replace: true }
+        { replace: true, resetScroll: false }
       );
     },
     [setSearchParams]

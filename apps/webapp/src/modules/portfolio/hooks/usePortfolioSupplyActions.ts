@@ -4,6 +4,7 @@ import {
   TOKENS,
   VAULTS,
   useAvailableTokenRewardContractsForChains,
+  useIsSafeWallet,
   getPendleMarketByAddress,
   isMarketMatured
 } from '@/hooks';
@@ -60,13 +61,18 @@ function supplyChainFor(
  * handler: it switches the wallet to the position's chain first (announced by
  * the shell's network toast via the auto-switch flags), then opens the modal.
  * A rejected or failed switch opens nothing — the user stays on Portfolio and
- * the button remains clickable.
+ * the button remains clickable. Safe wallets are the exception: they can never
+ * switch from the dapp, so a cross-chain position resolves to `undefined` and
+ * the caller navigates to the product page instead, where the scoped
+ * ChainModal explains that network switching is managed by the Safe app
+ * (APP-486).
  */
 export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (() => void) | undefined {
   const connectedChainId = useChainId();
   const chains = useChains();
   const { isModuleEnabled } = useGeoConfig();
   const { switchChainAsync } = useSwitchChain();
+  const isSafeWallet = useIsSafeWallet();
   const { setIsAutoSwitching, setAutoSwitchIntent } = useNetworkSwitch();
   const { openSupply: openSavingsSupply } = useSavingsModal();
   const { openSupply: openStUsdsSupply } = useStUsdsModal();
@@ -154,6 +160,10 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       if (!open) return undefined;
       if (onConnectedChain) return open;
 
+      // A Safe can't switch networks from the dapp, so the auto-switch below
+      // would fail on every click — a permanently dead button (APP-486).
+      if (isSafeWallet) return undefined;
+
       // Wrong chain: move the wallet to the position's chain first. The auto
       // flags make the shell toast explain the change with the owning module's
       // copy instead of the generic "network changed" line.
@@ -176,6 +186,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       chains,
       isModuleEnabled,
       switchChainAsync,
+      isSafeWallet,
       setIsAutoSwitching,
       setAutoSwitchIntent,
       openSavingsSupply,

@@ -3,7 +3,11 @@ import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
-import { formatAmountForInput, parseAmountText, sanitizeAmountText } from '../lib/amountInput';
+import { parseAmountInput, sanitizeAmountInput } from '@/lib/amountInput';
+import { formatAmountForInput } from '../lib/amountInput';
+
+// SKY and USDS are 18-decimal on every deployment the stake module runs on.
+const DECIMALS = 18;
 
 const PERCENT_CHIPS = [25, 50, 100] as const;
 // Borrow caps the top chip at 75% (APP-426): staging the exact max puts the
@@ -49,12 +53,12 @@ export function StakeTakeoverAmountField({
   // Controlled from outside: when the prop no longer matches the typed text
   // (chip click, slider drag, toggle reset), re-derive the text from the amount.
   const displayText =
-    parseAmountText(text) === amount ? text : formatAmountForInput(amount, maxDisplayDecimals);
+    parseAmountInput(text, DECIMALS) === amount ? text : formatAmountForInput(amount, maxDisplayDecimals);
 
   const onChange = (raw: string) => {
-    const sanitized = sanitizeAmountText(raw);
+    const sanitized = sanitizeAmountInput(raw, DECIMALS);
     setText(sanitized);
-    onAmountChange(parseAmountText(sanitized));
+    onAmountChange(parseAmountInput(sanitized, DECIMALS));
   };
 
   return (

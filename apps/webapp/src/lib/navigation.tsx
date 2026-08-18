@@ -129,7 +129,11 @@ const splitHref = (href: string) => {
 
 export type SetSearchParams = (
   init: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams),
-  opts?: { replace?: boolean }
+  opts?: {
+    replace?: boolean;
+    /** Pass false to keep the scroll position instead of the router's reset to top. */
+    resetScroll?: boolean;
+  }
 ) => void;
 
 /**
@@ -170,7 +174,8 @@ export function useAppSearchParams(): [URLSearchParams, SetSearchParams] {
         // search string, matching react-router's setSearchParams semantics.
         to: router.state.location.pathname as '/',
         search,
-        replace: opts?.replace
+        replace: opts?.replace,
+        resetScroll: opts?.resetScroll
       });
     },
     [router]
