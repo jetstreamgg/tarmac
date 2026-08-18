@@ -18,7 +18,11 @@ import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
-import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import {
+  ProductDetailTemplate,
+  ProductDetailRow,
+  DetailValue
+} from '@/components/product/ProductDetailTemplate';
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
 import { SavingsTransactionsTable } from './SavingsTransactionsTable';
@@ -55,23 +59,46 @@ export function SavingsProductDetail() {
   const isMobile = bpi < BP.md;
   const showTxFilter = hasPosition || isMobile;
 
-  const { data: overall } = useOverallSkyData();
+  const { data: overall, isLoading: overallLoading } = useOverallSkyData();
   // "6M Rate" = trailing 6-month average APY. 🔶 confirm semantics with design
   // (trailing average vs forward estimate vs rate-as-of-6-months-ago).
-  const { data: rateHistoric } = useSkySavingsRateHistoricData({ daysAgo: 180 });
+  const { data: rateHistoric, isLoading: rateHistoricLoading } = useSkySavingsRateHistoricData({
+    daysAgo: 180
+  });
 
-  const currentRate = overall?.skySavingsRatecRate
-    ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
-    : NO_VALUE;
+  const currentRate = (
+    <DetailValue
+      loading={overallLoading}
+      value={
+        overall?.skySavingsRatecRate
+          ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
+          : undefined
+      }
+    />
+  );
   const sixMonthRate = useMemo(() => {
-    if (!rateHistoric || rateHistoric.length === 0) return NO_VALUE;
-    const avg = rateHistoric.reduce((sum, d) => sum + parseFloat(d.rate), 0) / rateHistoric.length;
-    return formatDecimalPercentage(avg);
-  }, [rateHistoric]);
-  const tvl = overall?.skySavingsRateTvl
-    ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl))}`
-    : NO_VALUE;
-  const users = overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers) : NO_VALUE;
+    const avg =
+      rateHistoric && rateHistoric.length > 0
+        ? formatDecimalPercentage(
+            rateHistoric.reduce((sum, d) => sum + parseFloat(d.rate), 0) / rateHistoric.length
+          )
+        : undefined;
+    return <DetailValue loading={rateHistoricLoading} value={avg} />;
+  }, [rateHistoric, rateHistoricLoading]);
+  const tvl = (
+    <DetailValue
+      loading={overallLoading}
+      value={
+        overall?.skySavingsRateTvl ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl))}` : undefined
+      }
+    />
+  );
+  const users = (
+    <DetailValue
+      loading={overallLoading}
+      value={overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers) : undefined}
+    />
+  );
 
   // About copy comes from the shared savings banner (id 'susds'), parsed for its
   // inline tooltip link — the same source AboutSUsds and other surfaces use.

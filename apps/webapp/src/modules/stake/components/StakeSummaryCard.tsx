@@ -141,7 +141,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   });
   // A failed claimables read is "unknown", not $0.00 — dash both reward stats.
   const claimableUnavailable = Boolean(claimableError && !toClaim);
-  const { data: prices } = usePrices();
+  const { data: prices, isLoading: pricesLoading } = usePrices();
   const priceOf = useCallback((symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'), [prices]);
   const claimableUsd = (toClaim ?? []).reduce(
     (total, reward) => total + Number(formatUnits(reward.claimBalance, 18)) * priceOf(reward.rewardSymbol),
@@ -217,14 +217,14 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
           <ProductStatPair grow>
             <SummaryStat
               label={<Trans>Claimable rewards</Trans>}
-              isLoading={claimableLoading}
+              isLoading={claimableLoading || pricesLoading}
               icon={rewardIcons}
             >
               {claimableUnavailable ? NO_VALUE : formatUsd(claimableUsd)}
             </SummaryStat>
             <SummaryStat
               label={<Trans>Total rewards earned</Trans>}
-              isLoading={claimableLoading || historyLoading}
+              isLoading={claimableLoading || historyLoading || pricesLoading}
               icon={rewardIcons}
             >
               {claimableUnavailable ? NO_VALUE : formatUsd(rewardsEarnedUsd)}
@@ -233,6 +233,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
           <ProductStatPair grow>
             <SummaryStat
               label={<Trans>Total borrowed</Trans>}
+              isLoading={positions === undefined && liveTotalDebt === undefined}
               icon={
                 <TokenIcon
                   token={{ symbol: 'USDS' }}

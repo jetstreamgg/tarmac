@@ -71,6 +71,7 @@ export function StUsdsModalForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     blocked,
@@ -274,7 +275,7 @@ export function StUsdsModalForm({
         balance={
           <>
             {isSupply ? <Trans>Balance</Trans> : <Trans>Withdrawable</Trans>}:{' '}
-            {isConnected ? formatUsds(available) : NO_VALUE}
+            {isConnected && availableKnown ? formatUsds(available) : NO_VALUE}
           </>
         }
         onPercent={setPercentAmount}

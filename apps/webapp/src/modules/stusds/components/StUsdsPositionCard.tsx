@@ -7,6 +7,7 @@ import { useStUsdsData } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   NO_VALUE,
   ProductActions,
@@ -139,6 +140,12 @@ export function StUsdsPositionCard() {
   }, [mutateStUsds]);
 
   const { openSupply, openWithdraw } = useStUsdsModal({ onSuccess: refresh });
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position.
+  if (isConnected && stUsdsData === undefined) {
+    return <PositionCardSkeleton testId="stusds-position-card-skeleton" />;
+  }
 
   if (suppliedUsds === 0n) {
     return <StUsdsSupplyCard rate={rate} onSupply={() => openSupply()} />;

@@ -12,7 +12,9 @@ import {
 } from '@/hooks';
 import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   ProductActions,
   ProductPositionCard,
@@ -51,7 +53,10 @@ export function VaultPositionCard({
   const { isConnected } = useConnection();
   const decimals = getTokenDecimals(assetToken, chainId);
 
-  const { data: marketData } = useVaultMarketData({ provider: 'morpho', vaultAddress });
+  const { data: marketData, isLoading: rateLoading } = useVaultMarketData({
+    provider: 'morpho',
+    vaultAddress
+  });
   const netRate = marketData?.rate?.netRate;
 
   const { data: vaultData, mutate: mutateVault } = useErc4626VaultData({ vaultAddress });
@@ -78,6 +83,12 @@ export function VaultPositionCard({
 
   // Per-vault inputs for the supply/withdraw modal (passed at open time).
   const modalArgs = { vaultAddress, assetToken, vaultName, netRate };
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position.
+  if (isConnected && vaultData === undefined) {
+    return <PositionCardSkeleton testId="vault-position-card-skeleton" />;
+  }
 
   const userAssets = vaultData?.userAssets ?? 0n;
   const hasPosition = userAssets > 0n;
@@ -132,9 +143,17 @@ export function VaultPositionCard({
               {formatNumber(positionValue, { maxDecimals: 2 })}
             </ProductStat>
             <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
-              <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
-              {formatNumber(projectedEarnings, { maxDecimals: 2 })}
-              {assetIcon}
+              {netRate === undefined && rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : netRate === undefined ? (
+                NO_VALUE
+              ) : (
+                <>
+                  <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+                  {formatNumber(projectedEarnings, { maxDecimals: 2 })}
+                  {assetIcon}
+                </>
+              )}
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>

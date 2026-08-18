@@ -77,6 +77,7 @@ export function SavingsModalForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,
@@ -264,7 +265,7 @@ export function SavingsModalForm({
         balance={
           <>
             <Trans>Balance</Trans>:{' '}
-            {isConnected
+            {isConnected && availableKnown
               ? formatNumber(parseFloat(formatUnits(available, originDecimals)), { maxDecimals: 2 })
               : NO_VALUE}
           </>

@@ -31,7 +31,8 @@ export function SavingsTvlCallout({
 }: {
   /** undefined while the TVL is still loading — renders the number as a chip. */
   tvlUsd: number | undefined;
-  savingsRate: number;
+  /** undefined while the rate query loads — holds the simulate CTA. */
+  savingsRate: number | undefined;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -65,11 +66,17 @@ export function SavingsTvlCallout({
         </Text>
       </div>
 
-      <Button variant="primary" size="l" className="shrink-0" onClick={() => setOpen(true)}>
+      <Button
+        variant="primary"
+        size="l"
+        className="shrink-0"
+        disabled={savingsRate === undefined}
+        onClick={() => setOpen(true)}
+      >
         <Trans>Simulate earnings</Trans>
       </Button>
 
-      <SimulateEarningsModal open={open} onOpenChange={setOpen} savingsRate={savingsRate} />
+      <SimulateEarningsModal open={open} onOpenChange={setOpen} savingsRate={savingsRate ?? 0} />
     </Card>
   );
 }

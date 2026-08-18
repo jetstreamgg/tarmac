@@ -30,6 +30,8 @@ export interface VaultTransactionForm {
   amount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / max withdraw (withdraw). */
   available: bigint;
+  /** The `available` read has resolved — display and validation wait on it. */
+  availableKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
   amountReady: boolean;
@@ -118,9 +120,11 @@ export function useVaultTransactionForm({
   // While the liquidity read is in flight the position backs the input (no
   // "Balance: 0" flash); if liquidity settles lower the insufficient gate re-clamps.
   const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? position);
+  // Never validate against the unresolved balance/position read's 0n fallback.
+  const availableKnown = isSupply ? walletBalance !== undefined : vaultData !== undefined;
   const isZero = amount === 0n;
-  const insufficient = amount > available;
-  const amountReady = isConnected && amount > 0n && !insufficient;
+  const insufficient = availableKnown && amount > available;
+  const amountReady = isConnected && amount > 0n && availableKnown && !insufficient;
 
   const onInput = (next: string) => {
     setMax(false);
@@ -192,6 +196,7 @@ export function useVaultTransactionForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,

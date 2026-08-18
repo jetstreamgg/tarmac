@@ -78,6 +78,7 @@ export function VaultModalForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,
@@ -269,7 +270,7 @@ export function VaultModalForm({
             // "Available", not "Balance", when liquidity caps the figure below the position.
             <>
               {!isSupply && isLiquidityConstrained ? <Trans>Available</Trans> : <Trans>Balance</Trans>}:{' '}
-              {isConnected ? formatAsset(available) : NO_VALUE}
+              {isConnected && availableKnown ? formatAsset(available) : NO_VALUE}
             </>
           }
           onPercent={setPercentAmount}

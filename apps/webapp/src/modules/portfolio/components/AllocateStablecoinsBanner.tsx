@@ -17,10 +17,14 @@ export function AllocateStablecoinsBanner({
 }: {
   /** undefined while the figures behind the projection load — chips the number. */
   idleUsd: number | undefined;
-  savingsRate: number;
+  /** undefined while the rate query loads — chips the rate in the subtitle. */
+  savingsRate: number | undefined;
   onAllocate: () => void;
 }) {
-  const yearly = idleUsd === undefined ? undefined : projectAnnualEarnings(idleUsd, savingsRate);
+  const yearly =
+    idleUsd === undefined || savingsRate === undefined
+      ? undefined
+      : projectAnnualEarnings(idleUsd, savingsRate);
 
   return (
     <PromoBanner
@@ -46,7 +50,15 @@ export function AllocateStablecoinsBanner({
         <p className="text-fgSecondary max-w-[248px] text-xs leading-[18px]">
           <Trans>
             That&apos;s what your idle stablecoins can earn at today&apos;s{' '}
-            <span className="text-fgPrimary">{formatDecimalPercentage(savingsRate)} Sky Savings Rate</span>.
+            <span
+              className={cn(
+                'text-fgPrimary',
+                savingsRate === undefined && 'bg-surface animate-pulse rounded text-transparent select-none'
+              )}
+            >
+              {formatDecimalPercentage(savingsRate ?? 0.045)} Sky Savings Rate
+            </span>
+            .
           </Trans>
         </p>
       }

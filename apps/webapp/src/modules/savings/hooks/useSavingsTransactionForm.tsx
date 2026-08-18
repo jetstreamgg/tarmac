@@ -73,6 +73,8 @@ export interface SavingsTransactionForm {
   max: boolean;
   /** Source balance for the active flow (wallet for supply; position / converted sUSDS for withdraw). */
   available: bigint;
+  /** The `available` read has resolved — display and validation wait on it. */
+  availableKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
   /** True when the amount/connection gate is satisfied; combine with the engine's `prepared` for the submit gate. */
@@ -229,11 +231,17 @@ export function useSavingsTransactionForm({
   // position (mainnet: the USDS savings balance; L2: sUSDS converted to the
   // destination token).
   const available = isSupply ? (walletBalance?.value ?? 0n) : isL2 ? convertedBalance.value : position;
+  // Never validate against the unresolved balance's 0n fallback.
+  const availableKnown = isSupply
+    ? walletBalance !== undefined
+    : isL2
+      ? susdsBalance !== undefined
+      : savingsData?.userSavingsBalance !== undefined;
   const isZero = amount === 0n;
   // A max withdraw bypasses the amount check — the redeem is driven by the flag, not
   // the displayed (rounded) value.
-  const insufficient = isConnected && !max && amount > available;
-  const amountReady = isConnected && usdcGateReady && !(!max && (isZero || insufficient));
+  const insufficient = isConnected && !max && availableKnown && amount > available;
+  const amountReady = isConnected && usdcGateReady && availableKnown && !(!max && (isZero || insufficient));
 
   const engineParams: SavingsEngineParams = {
     flow,
@@ -335,6 +343,7 @@ export function useSavingsTransactionForm({
     amount,
     max,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,
