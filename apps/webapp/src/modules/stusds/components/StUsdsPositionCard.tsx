@@ -35,7 +35,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
 
   // The CTA stays enabled while disconnected: clicking routes through the
   // connect flow and continues into the supply modal once connected.
-  const onSupplyOrConnect = useConnectThenAct(onSupply);
+  const onSupplyOrConnect = useConnectThenAct(onSupply, 'stusds_supply');
 
   const rateLabel = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
   const idleBalance =

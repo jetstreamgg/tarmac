@@ -15,7 +15,7 @@ export function useCustomConnectModal() {
     openModal();
   }, [retryTermsCheck, openModal]);
 
-  const action = useMemo(() => {
+  const action = useMemo<() => void>(() => {
     if (termsCheckError) {
       // Fallback: the error modal should auto-open, but if it's dismissed this ensures
       // the connect button still retries rather than opening the wallet picker.
@@ -23,7 +23,9 @@ export function useCustomConnectModal() {
     } else if (!isConnectedAndAcceptedTerms) {
       return openModal;
     } else {
-      return openConnectModal;
+      // Wrapped: callers use this as an onClick handler, and openConnectModal's
+      // optional arg is the analytics connect_reason, not an event.
+      return () => openConnectModal();
     }
   }, [
     isConnectedAndAcceptedTerms,

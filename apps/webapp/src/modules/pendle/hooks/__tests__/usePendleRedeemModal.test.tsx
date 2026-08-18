@@ -44,6 +44,9 @@ const QUOTE: PendleConvertQuote = {
 
 const hoisted = vi.hoisted(() => ({
   launchMock: vi.fn(),
+  updateMock: vi.fn(),
+  isModalOpen: false,
+  txStatus: 'idle',
   matured: true,
   // Swappable execute fn so tests can prove the latest one fires through onConfirm.
   currentExecute: (() => undefined) as () => void,
@@ -110,15 +113,15 @@ vi.mock('@/widgets', async importOriginal => {
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: hoisted.launchMock,
-    updateModalContent: () => undefined,
-    isModalOpen: false,
+    updateModalContent: hoisted.updateMock,
+    isModalOpen: hoisted.isModalOpen,
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
       onSuccess: () => undefined,
       onError: () => undefined
     },
-    txStatus: 'idle'
+    txStatus: hoisted.txStatus
   })
 }));
 
@@ -162,12 +165,35 @@ const TestConsumer = ({ openOnMount = true }: { openOnMount?: boolean }) => {
 describe('usePendleRedeemModal analytics', () => {
   beforeEach(() => {
     hoisted.launchMock.mockClear();
+    hoisted.updateMock.mockClear();
+    hoisted.isModalOpen = false;
+    hoisted.txStatus = 'idle';
     hoisted.matured = true;
     hoisted.valueUsd = (_symbol: string, amount: number) => amount;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('freezes the live analytics push once the flow leaves IDLE', () => {
+    hoisted.isModalOpen = true;
+    const view = renderComponent(<TestConsumer openOnMount={false} />);
+    const idlePushes = hoisted.updateMock.mock.calls.length;
+    expect(idlePushes).toBeGreaterThan(0);
+
+    // Quote repolls mid-flight (valueUsd recompute) while the tx is loading:
+    // the blob the signed tx started with must not be rewritten.
+    hoisted.txStatus = 'loading';
+    hoisted.valueUsd = (_symbol: string, amount: number) => amount * 2;
+    view.rerender(<TestConsumer openOnMount={false} />);
+    expect(hoisted.updateMock.mock.calls.length).toBe(idlePushes);
+
+    // Back to IDLE (reset/retry): pushes resume.
+    hoisted.txStatus = 'idle';
+    view.rerender(<TestConsumer openOnMount={false} />);
+    expect(hoisted.updateMock.mock.calls.length).toBeGreaterThan(idlePushes);
+    view.unmount();
   });
 
   it('preserves widgetName=fixed, flow=redeem, action=redeem on launch()', () => {

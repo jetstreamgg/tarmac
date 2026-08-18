@@ -20,7 +20,6 @@ const h = vi.hoisted(() => ({
   capturedWrite: null as WriteParams | null,
   mockWithdrawExecute: vi.fn(),
   mockSupplyExecute: vi.fn(),
-  launchMock: vi.fn(),
   // Resolved by the engine for a `max` withdraw (maxWithdraw(owner)).
   maxWithdraw: undefined as bigint | undefined
 }));
@@ -140,7 +139,7 @@ vi.mock('@/hooks/savings/useReadSavingsUsds', async importOriginal => {
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
-    launch: h.launchMock,
+    launch: () => undefined,
     updateModalContent: () => undefined,
     isModalOpen: false,
     txCallbacks: {
@@ -216,7 +215,6 @@ describe('useSavingsLaunch — mainnet USDS withdraw calldata parity', () => {
     h.capturedWrite = null;
     h.mockWithdrawExecute.mockClear();
     h.mockSupplyExecute.mockClear();
-    h.launchMock.mockClear();
     h.maxWithdraw = undefined;
   });
   afterEach(() => cleanup());
@@ -250,46 +248,22 @@ describe('useSavingsLaunch — mainnet USDS withdraw calldata parity', () => {
   });
 });
 
-describe('useSavingsLaunch — withdraw launch() config', () => {
+describe('useSavingsLaunch — withdraw routing + steps', () => {
   beforeEach(() => {
     h.capturedWrite = null;
     h.mockWithdrawExecute.mockClear();
     h.mockSupplyExecute.mockClear();
-    h.launchMock.mockClear();
     h.maxWithdraw = undefined;
   });
   afterEach(() => cleanup());
-
-  it('opens the modal with savings withdraw analytics (widgetName/flow/action)', () => {
-    const { result } = renderHook(() =>
-      useSavingsLaunch({ flow: 'withdraw', originToken: TOKENS.usds, amount: AMOUNT })
-    );
-    act(() => result.current.launch());
-
-    expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.analytics.widgetName).toBe('savings');
-    expect(config.analytics.flow).toBe('withdraw');
-    expect(config.analytics.action).toBe('withdraw');
-    expect(config.title).toBe('Withdraw from Sky Savings');
-    expect(config.transactionTitle).toBe('Confirm in the wallet');
-    // Read-only review screen confirms with "Confirm" (Figma); the editable entry
-    // screen keeps the action verb ("Withdraw") via its own entry config.
-    expect(config.confirmLabel).toBe('Confirm');
-    // Amount-aware title for the minimized toast (parity with the editable path).
-    expect(config.toast.success).toBe('5 USDS withdrawn!');
-  });
 
   it('routes onConfirm to the withdraw engine execute (not the supply engine), single step', () => {
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'withdraw', originToken: TOKENS.usds, amount: AMOUNT })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
     // Withdraw needs no approval — exactly one step.
-    expect(config.steps).toHaveLength(1);
-    config.onConfirm();
+    expect(result.current.steps).toHaveLength(1);
+    act(() => result.current.execute());
     expect(h.mockWithdrawExecute).toHaveBeenCalledTimes(1);
     expect(h.mockSupplyExecute).not.toHaveBeenCalled();
   });

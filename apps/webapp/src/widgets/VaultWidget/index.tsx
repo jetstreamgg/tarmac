@@ -379,7 +379,8 @@ const VaultWidgetWrapped = ({
         amount: Number(formatUnits(debouncedAmount, assetDecimals)),
         assetSymbol: assetToken.symbol,
         data: {
-          module: 'morpho',
+          // Must match the module the tx legs report (useVaultTransactionCallbacks).
+          module: provider,
           product: vaultName,
           productAddress: vaultAddress,
           assetAddress,

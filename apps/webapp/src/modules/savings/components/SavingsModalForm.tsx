@@ -11,6 +11,8 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
 import { useNetworkFee } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
@@ -240,6 +242,23 @@ export function SavingsModalForm({
     i18n
   ]);
 
+  // Legacy SavingsWidget payload shape (APP-444 B1/B2): withdraw amounts negative.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'savings',
+      flow,
+      action: flow,
+      data: {
+        module: 'savings',
+        assetAddress: engineParams.originToken.address[chainId],
+        assetSymbol: originSymbol,
+        isBatchTx: isBatch,
+        amount: signedAmount(parseFloat(formatUnits(amount, originDecimals)), flow)
+      }
+    }),
+    [flow, engineParams.originToken, chainId, originSymbol, isBatch, amount, originDecimals]
+  );
+
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / review breakdown / step labels /
   // wallet summary / toast titles in sync, and the entry-slot portal.
@@ -250,7 +269,8 @@ export function SavingsModalForm({
     transactionContent,
     transactionScreenContent,
     steps,
-    toast
+    toast,
+    analytics
   });
 
   const body = (

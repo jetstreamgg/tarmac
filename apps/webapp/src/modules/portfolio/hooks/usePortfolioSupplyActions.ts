@@ -21,6 +21,8 @@ import { useRewardsModal } from '@/modules/rewards/hooks/useRewardsModal';
 import { usePendleModal } from '@/modules/pendle/hooks/usePendleModal';
 import { rewardContractDisplayName } from '@/modules/rewards/helpers/rewardContractDisplayName';
 import { isMorphoVault } from '@/components/product/productVisuals';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
 /**
@@ -74,6 +76,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
   const { switchChainAsync } = useSwitchChain();
   const isSafeWallet = useIsSafeWallet();
   const { setIsAutoSwitching, setAutoSwitchIntent } = useNetworkSwitch();
+  const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
   const { openSupply: openSavingsSupply } = useSavingsModal();
   const { openSupply: openStUsdsSupply } = useStUsdsModal();
   const { openSupply: openVaultSupply } = useVaultModal();
@@ -134,6 +137,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
                 contractAddress: contract.contractAddress as `0x${string}`,
                 supplyToken: contract.supplyToken,
                 displayName: rewardContractDisplayName(contract),
+                productName: contract.name,
                 rewardTokenSymbol:
                   contract.rewardToken.symbol === TOKENS.cle.symbol ? undefined : contract.rewardToken.symbol,
                 rate: position.rate
@@ -170,14 +174,32 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       return async () => {
         setAutoSwitchIntent(position.intent);
         setIsAutoSwitching(true);
+        trackNetworkSwitchRequested({
+          source: 'portfolio_supply',
+          fromChainId: connectedChainId,
+          toChainId: requiredChainId
+        });
         try {
           await switchChainAsync({ chainId: requiredChainId });
-        } catch {
+        } catch (error) {
           // Rejected or failed — open nothing; the click stays retryable.
+          // Recorded: this silent dead-end was invisible (APP-444 D-2).
+          trackNetworkSwitchCompleted({
+            source: 'portfolio_supply',
+            fromChainId: connectedChainId,
+            toChainId: requiredChainId,
+            status: isUserRejectedRequestError(error) ? 'rejected' : 'error'
+          });
           setIsAutoSwitching(false);
           setAutoSwitchIntent(null);
           return;
         }
+        trackNetworkSwitchCompleted({
+          source: 'portfolio_supply',
+          fromChainId: connectedChainId,
+          toChainId: requiredChainId,
+          status: 'success'
+        });
         open();
       };
     },
@@ -194,7 +216,9 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       openRewardsSupply,
       rewardContractsFor,
       openStUsdsSupply,
-      openPendleSupply
+      openPendleSupply,
+      trackNetworkSwitchRequested,
+      trackNetworkSwitchCompleted
     ]
   );
 }

@@ -1,5 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
+import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { render, screen, within, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
@@ -25,11 +26,17 @@ vi.mock('@tanstack/react-router', () => ({ useNavigate: () => h.navigate }));
 // The resolver reads the connected chain to place in-place supply and switches
 // when the position lives elsewhere; keep real wagmi exports, override only
 // the chain and switch hooks.
+vi.mock('posthog-js/react', async () => {
+  const posthog = (await import('posthog-js')).default;
+  return { usePostHog: () => posthog };
+});
+
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
     useChainId: () => h.chainId,
+    useConnection: () => ({ address: undefined }),
     useChains: () => [{ id: 1 }, { id: 8453 }],
     useSwitchChain: () => ({ switchChainAsync: h.switchChainAsync })
   };
@@ -126,15 +133,17 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
 function renderSection(positions: SuppliedPosition[]) {
   return render(
     <I18nProvider i18n={i18n}>
-      <PortfolioPositionsSection
-        suppliedView={view(positions)}
-        suppliedLoading={false}
-        idleView={{ tokens: [] } as unknown as IdleView}
-        idleSupplyInfo={new Map()}
-        idleLoading={false}
-        tab="supplied"
-        onTabChange={() => undefined}
-      />
+      <AnalyticsFlowProvider>
+        <PortfolioPositionsSection
+          suppliedView={view(positions)}
+          suppliedLoading={false}
+          idleView={{ tokens: [] } as unknown as IdleView}
+          idleSupplyInfo={new Map()}
+          idleLoading={false}
+          tab="supplied"
+          onTabChange={() => undefined}
+        />
+      </AnalyticsFlowProvider>
     </I18nProvider>
   );
 }

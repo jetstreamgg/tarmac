@@ -108,6 +108,7 @@ function useStakeClaimable(scope: ClaimScope): ClaimableResult {
           minDecimals: 2,
           maxDecimals: 2
         }),
+        amount: parseFloat(formatUnits(claimBalance, REWARD_DECIMALS)),
         amountUsd,
         chainId
       };

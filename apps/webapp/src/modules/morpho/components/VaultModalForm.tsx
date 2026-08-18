@@ -15,6 +15,8 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
 import { useNetworkFee } from '@/hooks';
 import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
@@ -243,6 +245,27 @@ export function VaultModalForm({
     ]
   );
 
+  // Legacy VaultWidget payload shape (APP-444 B7): withdraw amounts negative.
+  // `module` follows the provider — 'morpho' for every legacy vault (parity),
+  // 'sky' for the redesign-only Sky provider vaults.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'vaults',
+      flow,
+      action: flow,
+      data: {
+        module: provider,
+        product: vaultName,
+        productAddress: vaultAddress,
+        assetAddress: assetToken.address[chainId],
+        assetSymbol: assetToken.symbol,
+        isBatchTx: isBatch,
+        amount: signedAmount(parseFloat(formatUnits(amount, decimals)), flow)
+      }
+    }),
+    [flow, provider, vaultName, vaultAddress, assetToken, chainId, isBatch, amount, decimals]
+  );
+
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / review breakdown / step labels /
   // wallet summary / toast titles in sync, and the entry-slot portal.
@@ -253,7 +276,8 @@ export function VaultModalForm({
     transactionContent,
     transactionScreenContent,
     steps,
-    toast
+    toast,
+    analytics
   });
 
   const body = (

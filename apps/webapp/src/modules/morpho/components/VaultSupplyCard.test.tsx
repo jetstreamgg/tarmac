@@ -11,10 +11,16 @@ const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 
 const h = vi.hoisted(() => ({ chainId: 1, connected: true }));
 
+vi.mock('posthog-js/react', async () => {
+  const posthog = (await import('posthog-js')).default;
+  return { usePostHog: () => posthog };
+});
+
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
+    useChains: () => [{ id: 1, name: 'Ethereum' }],
     useChainId: () => h.chainId,
     useConnection: () => ({ address: TEST_ADDRESS, isConnected: h.connected, isConnecting: false })
   };
@@ -43,6 +49,7 @@ vi.mock('@/modules/ui/components/ConnectModal', () => ({
   ConnectModal: () => <div data-testid="connect-modal-stub" />
 }));
 
+import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider, CONTINUATION_DELAY_MS } from '@/modules/ui/context/ConnectThenActContext';
 import { VaultSupplyCard } from './VaultSupplyCard';
@@ -51,17 +58,19 @@ const usdt = { symbol: 'USDT', name: 'Tether USD', address: { 1: '0x0' } } as un
 
 const wrap = (onSupply: () => void) => (
   <I18nProvider i18n={i18n}>
-    <ConnectModalProvider>
-      <ConnectThenActProvider>
-        <VaultSupplyCard
-          assetToken={usdt}
-          vaultName="USDT Savings"
-          provider="morpho"
-          netRate={0.0276}
-          onSupply={onSupply}
-        />
-      </ConnectThenActProvider>
-    </ConnectModalProvider>
+    <AnalyticsFlowProvider>
+      <ConnectModalProvider>
+        <ConnectThenActProvider>
+          <VaultSupplyCard
+            assetToken={usdt}
+            vaultName="USDT Savings"
+            provider="morpho"
+            netRate={0.0276}
+            onSupply={onSupply}
+          />
+        </ConnectThenActProvider>
+      </ConnectModalProvider>
+    </AnalyticsFlowProvider>
   </I18nProvider>
 );
 

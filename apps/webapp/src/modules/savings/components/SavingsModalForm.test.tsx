@@ -117,7 +117,6 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
   }) => {
     h.launchParams = params;
     return {
-      launch: vi.fn(),
       execute: h.execute,
       steps: ['Supply'],
       prepared: h.prepared,
@@ -175,6 +174,7 @@ vi.mock('./SavingsOriginSelect', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { SavingsModalForm } from './SavingsModalForm';
+import { TOKENS } from '@/hooks';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -518,5 +518,64 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
     expect(h.launchParams?.max).toBe(false);
     expect(h.launchParams?.maxAmountInForWithdraw).toBe(h.maxAmountIn);
+  });
+});
+
+// The last analytics blob live-merged to the modal (what the provider will emit from).
+const lastAnalytics = () => {
+  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
+  return withAnalytics.at(-1)?.[1].analytics;
+};
+
+describe('SavingsModalForm — analytics parity blob (APP-444 B1/B2)', () => {
+  beforeEach(() => {
+    h.chainId = 1;
+    h.walletBalance = 100n * 10n ** 18n;
+    h.convertedValue = 0n;
+    h.maxAmountIn = 0n;
+    h.minAmountOut = 0n;
+    h.psmLive = 1n;
+    h.psmTin = 0n;
+    h.psmHalted = 0n;
+    h.prepared = true;
+    h.execute.mockClear();
+    h.update.mockClear();
+  });
+  afterEach(() => cleanup());
+
+  it('pushes the legacy SavingsWidget supply blob: module/assetAddress/assetSymbol/isBatchTx + positive amount', () => {
+    renderForm('supply');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(lastAnalytics()).toEqual({
+      widgetName: 'savings',
+      flow: 'supply',
+      action: 'supply',
+      data: {
+        module: 'savings',
+        assetAddress: TOKENS.usds.address[1],
+        assetSymbol: 'USDS',
+        isBatchTx: false,
+        amount: 10
+      }
+    });
+  });
+
+  it('signs the withdraw amount negative (pipeline sign rule)', () => {
+    renderForm('withdraw');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '5' } });
+    const analytics = lastAnalytics();
+    expect(analytics.flow).toBe('withdraw');
+    expect(analytics.action).toBe('withdraw');
+    expect(analytics.data.amount).toBe(-5);
+  });
+
+  it('tracks the USDC origin: 6-dec amount reported in token units with the USDC address', () => {
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    const analytics = lastAnalytics();
+    expect(analytics.data.assetAddress).toBe(TOKENS.usdc.address[1]);
+    expect(analytics.data.assetSymbol).toBe('USDC');
+    expect(analytics.data.amount).toBe(10);
   });
 });

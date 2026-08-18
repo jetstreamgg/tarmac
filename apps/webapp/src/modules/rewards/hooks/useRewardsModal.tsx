@@ -11,6 +11,8 @@ export type RewardsModalArgs = {
   supplyToken: Token;
   /** Display title shown in modal titles + the review "Product" row (e.g. "SPK Rewards"). */
   displayName: string;
+  /** Registry `contract.name`, reported as the analytics `product` (legacy parity). */
+  productName: string;
   /** Reward-token symbol for the "Rewards in" row; omit for point farms (CLE). */
   rewardTokenSymbol?: string;
   /** Reward rate (decimal fraction) for the modal's Rate + 1Y projected-earnings rows. */
@@ -30,8 +32,8 @@ type UseRewardsModalOptions = {
  *
  * Like vaults, reward farms are many, so the per-contract inputs are passed to
  * `openSupply`/`openWithdraw` at call time (not hook time) — the same launcher
- * can open the modal for any farm. Analytics-free by design, matching
- * `useSavingsModal`/`useVaultModal` (attribution is a separate slice).
+ * can open the modal for any farm. Analytics live-merge from the form body
+ * (`useModalEntryBody`), not from this launch config.
  */
 export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
   const { launch } = useTransaction();
@@ -64,6 +66,7 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
             contractAddress={args.contractAddress}
             supplyToken={args.supplyToken}
             displayName={args.displayName}
+            productName={args.productName}
             rewardTokenSymbol={args.rewardTokenSymbol}
             rate={args.rate}
             preset={preset}
@@ -97,6 +100,7 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
             contractAddress={args.contractAddress}
             supplyToken={args.supplyToken}
             displayName={args.displayName}
+            productName={args.productName}
             rewardTokenSymbol={args.rewardTokenSymbol}
             rate={args.rate}
             preset={preset}
