@@ -21,6 +21,18 @@ export const ROUTES = {
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];
 
 /**
+ * Anchor id of the Earn Opportunities heading. Deep links that pre-select the
+ * stablecoin filter (portfolio's idle Supply button, the wallet drawer's asset
+ * rows) navigate to `/earn?token=<SYMBOL>#earn-opportunities` so the router's
+ * built-in hash scrolling lands them past the hero and featured tiles, at the
+ * filtered table (APP-487). Pushes and replaces scroll to the anchor;
+ * back/forward restores the saved position instead; and the filter bar's own
+ * search replaces drop the hash, so filter edits after arrival never
+ * re-scroll.
+ */
+export const EARN_OPPORTUNITIES_HASH = 'earn-opportunities';
+
+/**
  * The four top-level destinations in nav order (plan §4.2). `DESTINATIONS`
  * (modules/app/shell/destinations.tsx) renders them in exactly this order and a
  * test holds the two together; the order lives here because the router needs it

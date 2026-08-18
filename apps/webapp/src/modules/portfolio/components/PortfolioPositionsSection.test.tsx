@@ -35,6 +35,14 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+// The supply resolver asks whether the connected wallet is a Safe; answering
+// as a plain EOA needs no wagmi provider and keeps the routing on the paths
+// these specs pin.
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return { ...actual, useIsSafeWallet: () => false };
+});
+
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     setIsAutoSwitching: h.setIsAutoSwitching,
