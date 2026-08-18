@@ -25,6 +25,10 @@ export type ClaimableReward = {
   /** Pre-rendered token icon (each source resolves its own). */
   icon: ReactNode;
   formattedAmount: string;
+  /** Claimable amount in token units, derived from the raw balance (analytics `claimedRewards`). */
+  amount: number;
+  /** Reward token address (analytics `claimedRewards`); the stake engine reward has none resolved. */
+  tokenAddress?: `0x${string}`;
   amountUsd: number;
   /** Chain the claim executes on — all three engines are mainnet today. */
   chainId: number;

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { TxStatus } from '@/widgets';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
-import type { TransactionConfig } from '@/modules/ui/context/transactionContract';
+import type { TransactionAnalytics, TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 
 /**
@@ -34,6 +34,15 @@ type ModalEntryBodyLive = {
   steps?: TransactionStep[];
   /** Per-state minimized-toast titles. */
   toast?: TransactionConfig['toast'];
+  /**
+   * Analytics attribution for the lifecycle events the provider emits. Pass a
+   * MEMOIZED object (the sync effect below depends on its identity). The last
+   * IDLE push is what the confirm-click's `onMutate` reads, so it always
+   * reflects the amount/token that produced the calldata. Two-CTA flows whose
+   * `action` depends on which button was clicked push at confirm instead
+   * (the stake-claim pattern) — don't pass this from those.
+   */
+  analytics?: TransactionAnalytics;
 };
 
 type UseModalEntryBodyParams = ModalEntryBodyLive & {
@@ -67,7 +76,8 @@ export function useModalEntryBody({
   transactionContent,
   transactionScreenContent,
   steps,
-  toast
+  toast,
+  analytics
 }: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
   const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
@@ -107,7 +117,8 @@ export function useModalEntryBody({
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
-      ...(toast !== undefined ? { toast } : {})
+      ...(toast !== undefined ? { toast } : {}),
+      ...(analytics !== undefined ? { analytics } : {})
     });
   }, [
     sessionId,
@@ -119,6 +130,7 @@ export function useModalEntryBody({
     transactionScreenContent,
     steps,
     toast,
+    analytics,
     onConfirm,
     updateModalContent
   ]);

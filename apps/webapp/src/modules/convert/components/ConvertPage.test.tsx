@@ -36,6 +36,22 @@ const h = vi.hoisted(() => ({
   }
 }));
 
+vi.mock('posthog-js/react', async () => {
+  const posthog = (await import('posthog-js')).default;
+  return { usePostHog: () => posthog };
+});
+
+// ConvertPage now reads the chain and emits app_convert_blocked (APP-444 H).
+vi.mock('wagmi', async importOriginal => {
+  const actual = await importOriginal<typeof import('wagmi')>();
+  return {
+    ...actual,
+    useChainId: () => 1,
+    useConnection: () => ({ address: undefined }),
+    useChains: () => [{ id: 1, name: 'Ethereum' }]
+  };
+});
+
 vi.mock('../hooks/useConvertForm', () => ({
   useConvertForm: () => h.form
 }));
@@ -57,11 +73,14 @@ vi.mock('./ConvertCard', () => ({
 }));
 
 import { ConvertPage } from './ConvertPage';
+import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 
 const renderPage = () =>
   render(
     <I18nProvider i18n={i18n}>
-      <ConvertPage />
+      <AnalyticsFlowProvider>
+        <ConvertPage />
+      </AnalyticsFlowProvider>
     </I18nProvider>
   );
 

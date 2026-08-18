@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Intent } from '@/lib/enums';
 import { IntentMapping } from '@/lib/constants';
+import { WIDGET_NAME_BY_INTENT } from '@/modules/analytics/contract';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 
@@ -25,7 +26,8 @@ export function useDeeplinkAnalytics(effectiveIntent: Intent, chainId: number) {
       lastDeeplinkTracked = effectiveIntent;
       startNewFlow();
       trackWidgetSelected({
-        widgetName: IntentMapping[effectiveIntent] || effectiveIntent,
+        widgetName:
+          WIDGET_NAME_BY_INTENT[effectiveIntent] ?? IntentMapping[effectiveIntent] ?? effectiveIntent,
         previousWidget: IntentMapping[Intent.BALANCES_INTENT],
         selectionMethod: 'deeplink',
         chainId

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import type { TxStatus } from '@/widgets';
+import type { TxMutateVariables } from '@/hooks';
 
 /**
  * The frozen transaction-orchestration contract: a flow calls `launch(config)`,
@@ -191,7 +192,8 @@ export type LiveModalUpdate = Partial<
  * the EIP-5792 rule above).
  */
 export type TxCallbacks = {
-  onMutate: () => void;
+  /** `variables.functionName` (sequential legs only) discriminates approve legs in analytics. */
+  onMutate: (variables?: TxMutateVariables) => void;
   onStart: (hash?: string) => void;
   onSuccess: (hash?: string) => void;
   onError: (error: Error, hash?: string) => void;

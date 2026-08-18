@@ -77,7 +77,9 @@ export function VaultPositionCard({
   const { openClaim } = useClaimRewardsModal({ onSuccess: refresh });
 
   // Per-vault inputs for the supply/withdraw modal (passed at open time).
-  const modalArgs = { vaultAddress, assetToken, vaultName, netRate };
+  // `provider` drives the analytics module name — omitting it silently fell back
+  // to the form's 'morpho' default and mislabelled the Sky-provider vaults.
+  const modalArgs = { vaultAddress, assetToken, vaultName, netRate, provider };
 
   const userAssets = vaultData?.userAssets ?? 0n;
   const hasPosition = userAssets > 0n;

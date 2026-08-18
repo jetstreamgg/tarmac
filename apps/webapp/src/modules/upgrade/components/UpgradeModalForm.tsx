@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
@@ -18,6 +18,9 @@ import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
+import { setUpgradeModalOpen } from '@/modules/analytics/lib/destination';
 import { parseAmountInput } from '@/lib/amountInput';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
 import { buildUpgradeModalRows } from './upgradeModalRows';
@@ -44,7 +47,6 @@ const formatAmount = (amount: bigint) =>
  * The MKR→SKY figures come from the immutable 1:24,000 contract rate net of
  * the governance fee (`useMkrSkyFee`) — the engine's calldata takes the raw
  * amount, so the preview math (`math.calculateConversion`) is display-only.
- * Analytics-free by design, following the stUSDS-modal precedent.
  */
 export function UpgradeModalForm({
   sessionId,
@@ -120,10 +122,20 @@ export function UpgradeModalForm({
 
   // The wallet balance is chain state the engine's success doesn't refetch —
   // sync it so the entry screen shows the post-upgrade balance if revisited.
-  const { txStatus } = useTransaction();
+  const { txStatus, isModalOpen, isMinimized } = useTransaction();
   useEffect(() => {
     if (txStatus === TxStatus.SUCCESS) refetchBalance();
   }, [txStatus, refetchBalance]);
+
+  // Upgrade is the one URL-less surface: while its modal is visibly open the
+  // destination stamp reads 'upgrade' (APP-444 D2/B6). Gated on visibility, not
+  // mount — this body stays mounted (hidden) through minimize, and while
+  // minimized events belong to the section the user is actually browsing.
+  const modalVisible = isModalOpen && !isMinimized;
+  useEffect(() => {
+    setUpgradeModalOpen(modalVisible);
+    return () => setUpgradeModalOpen(false);
+  }, [modalVisible]);
 
   const amountLabel = `${formatAmount(debouncedAmount)} ${token}`;
 
@@ -152,15 +164,40 @@ export function UpgradeModalForm({
     [token, target, debouncedAmount, receiveAmount]
   );
 
+  // Legacy UpgradeWidget payload shape (APP-444 B6): widget_name 'convert', the
+  // redesign modal only upgrades (no revert direction), so the amount is always
+  // positive.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'convert',
+      flow: 'upgrade',
+      action: 'upgrade',
+      data: {
+        module: 'upgrade',
+        assetAddress: sourceToken.address[chainId],
+        assetSymbol: token,
+        targetSymbol: target,
+        targetAddress: (target === 'USDS' ? TOKENS.usds : TOKENS.sky).address[chainId],
+        isBatchTx: isBatch,
+        amount: signedAmount(parseFloat(formatUnits(debouncedAmount, DECIMALS)), 'upgrade')
+      }
+    }),
+    [sourceToken, chainId, token, target, isBatch, debouncedAmount]
+  );
+
+  // Stable identity — an inline arrow here re-triggers useModalEntryBody's sync effect every render.
+  const connectAction = useCallback(() => openConnectModal('upgrade_modal'), [openConnectModal]);
+
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
-    confirmAction: isConnected ? undefined : openConnectModal,
+    confirmAction: isConnected ? undefined : connectAction,
     steps,
     transactionScreenContent,
-    toast
+    toast,
+    analytics
   });
 
   const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';

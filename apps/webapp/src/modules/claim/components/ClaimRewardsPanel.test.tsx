@@ -15,6 +15,7 @@ const h = vi.hoisted(() => ({
   flowPrepared: true,
   entry: undefined as { confirmDisabled: boolean } | undefined,
   screenContents: [] as unknown[],
+  analytics: undefined as unknown,
   restakeSeen: false
 }));
 
@@ -79,6 +80,15 @@ vi.mock('@/hooks', async importOriginal => {
       h.flowCalls = params.calls;
       return { execute: vi.fn(), prepared: h.flowPrepared };
     },
+    // Controlled registry so the reward-contract attribution blob is deterministic.
+    useAvailableTokenRewardContracts: () => [
+      {
+        name: 'With: USDS Get: SKY',
+        contractAddress: '0xb',
+        supplyToken: { symbol: 'USDS', address: { 1: '0xusds' } },
+        rewardToken: { symbol: 'SKY', address: { 1: '0xsky' } }
+      }
+    ],
     // No WagmiProvider in these renders → the fee row stays a plain value.
     useIsBatchSupported: () => ({
       data: false,
@@ -97,9 +107,14 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 }));
 
 vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
-  useModalEntryBody: (params: { confirmDisabled: boolean; transactionScreenContent?: unknown }) => {
+  useModalEntryBody: (params: {
+    confirmDisabled: boolean;
+    transactionScreenContent?: unknown;
+    analytics?: unknown;
+  }) => {
     h.entry = { confirmDisabled: params.confirmDisabled };
     h.screenContents.push(params.transactionScreenContent);
+    h.analytics = params.analytics;
     return (body: unknown) => body;
   }
 }));
@@ -117,6 +132,8 @@ const reward = (source: ClaimSource, id: string, symbol: string, amountUsd = 10)
   tokenSymbol: symbol,
   icon: null,
   formattedAmount: '10.00',
+  amount: 10,
+  tokenAddress: `0x${symbol.toLowerCase()}` as `0x${string}`,
   amountUsd,
   chainId: 1
 });
@@ -139,6 +156,7 @@ describe('ClaimRewardsPanel', () => {
     h.flowPrepared = true;
     h.entry = undefined;
     h.screenContents = [];
+    h.analytics = undefined;
     h.restakeSeen = false;
   });
   afterEach(() => cleanup());
@@ -256,5 +274,79 @@ describe('ClaimRewardsPanel', () => {
     const contents = h.screenContents.filter(content => content !== undefined);
     expect(contents.length).toBeGreaterThanOrEqual(2);
     expect(contents[contents.length - 1]).toBe(contents[0]);
+  });
+});
+
+describe('ClaimRewardsPanel — analytics attribution by scope (APP-444 B4/B8)', () => {
+  beforeEach(() => {
+    h.merkl = [];
+    h.sky = [];
+    h.stake = [];
+    h.flowCalls = [];
+    h.flowPrepared = true;
+    h.entry = undefined;
+    h.screenContents = [];
+    h.analytics = undefined;
+    h.restakeSeen = false;
+  });
+  afterEach(() => cleanup());
+
+  it('reports a reward-contract claim under the legacy rewards widget with the contract blob', () => {
+    h.sky = [reward('sky-rewards', '0xb', 'SKY')];
+    renderPanel({ kind: 'reward-contract', address: '0xb' });
+
+    expect(h.analytics).toEqual({
+      widgetName: 'rewards',
+      flow: 'claim',
+      action: 'claim',
+      data: {
+        module: 'rewards',
+        product: 'With: USDS Get: SKY',
+        productAddress: '0xb',
+        assetAddress: '0xusds',
+        assetSymbol: 'USDS',
+        isBatchTx: false,
+        claimedRewards: [{ tokenSymbol: 'SKY', amount: 10, tokenAddress: '0xsky' }]
+      }
+    });
+  });
+
+  it('reports the ecosystem Claim all as claim_all with the slim rewards blob', () => {
+    h.sky = [reward('sky-rewards', '0xb', 'SKY'), reward('sky-rewards', '0xd', 'SPK')];
+    renderPanel({ kind: 'sky-rewards' });
+
+    expect(h.analytics).toEqual({
+      widgetName: 'rewards',
+      flow: 'claim',
+      action: 'claim_all',
+      data: {
+        module: 'rewards',
+        claimedRewards: [
+          { tokenSymbol: 'SKY', amount: 10, tokenAddress: '0xsky' },
+          { tokenSymbol: 'SPK', amount: 10, tokenAddress: '0xspk' }
+        ]
+      }
+    });
+  });
+
+  it('reports the Merkl scopes under the vaults widget (module morpho)', () => {
+    h.merkl = [reward('merkl', '0xa', 'MORPHO')];
+    renderPanel({ kind: 'vault', vaultAddress: '0xvault' });
+
+    expect(h.analytics).toEqual({
+      widgetName: 'vaults',
+      flow: 'claim',
+      action: 'claim',
+      data: {
+        module: 'morpho',
+        claimedRewards: [{ tokenSymbol: 'MORPHO', amount: 10, tokenAddress: '0xmorpho' }]
+      }
+    });
+  });
+
+  it('pushes no analytics for the stake scope — StakeClaimModal owns that attribution', () => {
+    h.stake = [reward('stake', '0:0xc', 'SKY')];
+    renderPanel({ kind: 'stake', index: 0n });
+    expect(h.analytics).toBeUndefined();
   });
 });

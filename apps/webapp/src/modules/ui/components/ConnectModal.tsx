@@ -20,6 +20,7 @@ import { WalletIcon } from './WalletIcon';
 import { WALLET_ICONS } from '@/lib/constants';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 
 interface ConnectModalProps {
   open: boolean;
@@ -80,14 +81,22 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   const connections = useConnections();
 
   const isSafeWallet = useIsSafeWallet();
+  const { trackWalletConnectAttempted, trackWalletConnectRejected } = useAppAnalytics();
 
   const connect = useConnect({
     mutation: {
       onSuccess: () => {
         onOpenChange(false);
       },
-      onError: error => {
-        if (isUserRejectedRequestError(error)) return;
+      onError: (error, variables) => {
+        if (isUserRejectedRequestError(error)) {
+          // Otherwise swallowed silently — the funnel needs the drop-off (APP-444 C3).
+          trackWalletConnectRejected({
+            connectorName: (variables.connector as Connector)?.name ?? 'unknown',
+            method: 'connect'
+          });
+          return;
+        }
 
         reportError(error, {
           module: 'auth',
@@ -103,8 +112,14 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
       onSuccess: () => {
         onOpenChange(false);
       },
-      onError: error => {
-        if (isUserRejectedRequestError(error)) return;
+      onError: (error, variables) => {
+        if (isUserRejectedRequestError(error)) {
+          trackWalletConnectRejected({
+            connectorName: (variables.connector as Connector)?.name ?? 'unknown',
+            method: 'switch'
+          });
+          return;
+        }
 
         reportError(error, {
           module: 'auth',
@@ -230,11 +245,17 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
               : undefined
         }
         active={isConnecting}
-        onClick={() =>
-          isConnectorConnected
-            ? switchConnection.switchConnection({ connector })
-            : connect.connect({ connector })
-        }
+        onClick={() => {
+          trackWalletConnectAttempted({
+            connectorName: connector.name,
+            method: isConnectorConnected ? 'switch' : 'connect'
+          });
+          if (isConnectorConnected) {
+            switchConnection.switchConnection({ connector });
+          } else {
+            connect.connect({ connector });
+          }
+        }}
         disabled={!isReady || connect.isPending || switchConnection.isPending || isCurrentConnectedConnector}
       />
     );
