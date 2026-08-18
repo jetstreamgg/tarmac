@@ -19,6 +19,8 @@ describe('initStakeManageFlowState', () => {
       borrowMode: 'borrow',
       usdsAmount: 0n,
       wipeAll: false,
+      rewardEnabled: false,
+      selectedRewardContract: undefined,
       delegateEnabled: false,
       selectedDelegate: undefined
     });
@@ -33,6 +35,7 @@ describe('initStakeManageFlowState', () => {
       borrowEnabled: true,
       borrowMode: 'repay'
     });
+    expect(initStakeManageFlowState({ rewardCard: true })).toMatchObject({ rewardEnabled: true });
     expect(initStakeManageFlowState({ delegateCard: true })).toMatchObject({ delegateEnabled: true });
   });
 });
@@ -82,6 +85,24 @@ describe('stakeManageFlowReducer', () => {
 
     const typed = stakeManageFlowReducer(staged, { type: 'setUsdsAmount', amount: 50n });
     expect(typed.wipeAll).toBe(false);
+  });
+
+  it('reward selection is plain-set (no deselect) and cleared by the toggle', () => {
+    const REWARD = '0x5555555555555555555555555555555555555555' as const;
+    const on = stakeManageFlowReducer(base, { type: 'setRewardEnabled', enabled: true });
+    const selected = stakeManageFlowReducer(on, { type: 'selectRewardContract', rewardContract: REWARD });
+    expect(selected.selectedRewardContract).toBe(REWARD);
+
+    // Re-clicking keeps the selection — a position always has a farm, so
+    // "unstage" is re-picking the current one, not deselecting.
+    const reclicked = stakeManageFlowReducer(selected, {
+      type: 'selectRewardContract',
+      rewardContract: REWARD
+    });
+    expect(reclicked.selectedRewardContract).toBe(REWARD);
+
+    const off = stakeManageFlowReducer(selected, { type: 'setRewardEnabled', enabled: false });
+    expect(off.selectedRewardContract).toBeUndefined();
   });
 
   it('delegate selection is click-again-to-deselect and cleared by the toggle', () => {

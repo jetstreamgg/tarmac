@@ -179,14 +179,21 @@ describe('PositionDetailsModal', () => {
     expect(onAction).toHaveBeenLastCalledWith('stake');
   });
 
-  it('keeps the undesigned flows disabled (M4: flagged, not improvised)', () => {
+  it('routes the change-reward row to the sheet (APP-516)', () => {
     const { onAction } = renderModal();
 
-    for (const testid of ['stake-manage-menu-change-reward', 'stake-manage-menu-close-position']) {
-      const row = screen.getByTestId(testid) as HTMLButtonElement;
-      expect(row.disabled).toBe(true);
-      fireEvent.click(row);
-    }
+    const row = screen.getByTestId('stake-manage-menu-change-reward') as HTMLButtonElement;
+    expect(row.disabled).toBe(false);
+    fireEvent.click(row);
+    expect(onAction).toHaveBeenLastCalledWith('reward');
+  });
+
+  it('keeps the undesigned close-position flow disabled (M4: flagged, not improvised)', () => {
+    const { onAction } = renderModal();
+
+    const row = screen.getByTestId('stake-manage-menu-close-position') as HTMLButtonElement;
+    expect(row.disabled).toBe(true);
+    fireEvent.click(row);
     expect(onAction).not.toHaveBeenCalled();
   });
 

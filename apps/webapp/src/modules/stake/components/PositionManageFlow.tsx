@@ -21,6 +21,8 @@ export function manageActionInit(action: StakeManageAction): StakeManageFlowInit
       return { borrowCard: 'borrow' };
     case 'repay':
       return { borrowCard: 'repay' };
+    case 'reward':
+      return { rewardCard: true };
     case 'delegate':
       return { delegateCard: true };
   }

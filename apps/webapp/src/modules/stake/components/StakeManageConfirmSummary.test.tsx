@@ -58,4 +58,20 @@ describe('StakeManageConfirmSummary', () => {
     expect(screen.getByTestId('stake-manage-summary-stake')).toBeTruthy();
     expect(screen.queryByTestId('stake-manage-summary-delegate')).toBeNull();
   });
+
+  it('renders the reward From → To block for a staged reward change (APP-516)', () => {
+    renderSummary({ rewardFrom: 'SKY', rewardTo: 'USDS' });
+
+    const block = screen.getByTestId('stake-manage-summary-reward');
+    expect(block.textContent).toContain('From');
+    expect(block.textContent).toContain('SKY');
+    expect(block.textContent).toContain('To');
+    expect(block.textContent).toContain('USDS');
+  });
+
+  it('omits the reward block when no change is staged', () => {
+    renderSummary({ skyToLock: 100n * WAD, rewardFrom: 'SKY' });
+
+    expect(screen.queryByTestId('stake-manage-summary-reward')).toBeNull();
+  });
 });

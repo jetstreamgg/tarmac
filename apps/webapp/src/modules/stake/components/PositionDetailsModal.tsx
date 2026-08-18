@@ -36,7 +36,7 @@ const CLAIM_DUST_WAD = 10n ** 16n;
 const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
 /** The manage actions F5 implements — rows/CTAs route these to the sheet. */
-export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'delegate';
+export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'reward' | 'delegate';
 
 // F4 risk pill palette (StakeTakeoverBorrowCard parity).
 const RISK_PILL_COLOR: Record<RiskLevel, string> = {
@@ -123,8 +123,8 @@ function MenuRow({
 // The contextual menu rows, shared verbatim between the desktop right panel
 // and the mobile manage sheet. Composition follows the debt state; an emptied
 // urn reorders to the frame layouts (C16) with mostly-disabled rows. The
-// undesigned `Change reward` / `Close position` flows render disabled —
-// flagged on APP-312, not improvised.
+// undesigned `Close position` flow renders disabled — flagged on APP-312, not
+// improvised.
 function ManageMenuRows({
   loading,
   isInactive,
@@ -176,8 +176,9 @@ function ManageMenuRows({
             chip={claimChip}
           />
         )}
-        {/* Change reward stays an undesigned stub even though the UX frame
-            draws it enabled (B-Q1/M4, flagged — C16). */}
+        {/* An inactive urn stakes nothing, so switching its farm is a no-op —
+            the reopen takeover's picker (APP-516) is where its next farm gets
+            chosen; the row stays disabled here. */}
         <MenuRow
           {...rowProps}
           icon={<Coins className="h-4 w-4" />}
@@ -275,12 +276,11 @@ function ManageMenuRows({
         onClick={() => onAction('withdraw')}
         dataTestId={`stake-manage-menu-withdraw${idSuffix}`}
       />
-      {/* Undesigned flows (B-Q1) — disabled, flagged on APP-312 (M4). */}
       <MenuRow
         {...rowProps}
         icon={<Coins className="h-4 w-4" />}
         label={<Trans>Change reward</Trans>}
-        disabled
+        onClick={() => onAction('reward')}
         dataTestId={`stake-manage-menu-change-reward${idSuffix}`}
       />
       <MenuRow

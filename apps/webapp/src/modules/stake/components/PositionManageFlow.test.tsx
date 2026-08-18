@@ -77,6 +77,7 @@ describe('manageActionInit', () => {
     expect(manageActionInit('withdraw')).toEqual({ stakeCard: 'withdraw' });
     expect(manageActionInit('borrow')).toEqual({ borrowCard: 'borrow' });
     expect(manageActionInit('repay')).toEqual({ borrowCard: 'repay' });
+    expect(manageActionInit('reward')).toEqual({ rewardCard: true });
     expect(manageActionInit('delegate')).toEqual({ delegateCard: true });
   });
 });

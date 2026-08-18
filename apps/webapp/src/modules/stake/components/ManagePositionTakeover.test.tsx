@@ -124,7 +124,18 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => undefined,
       dataSources: []
-    })
+    }),
+    useStakeRewardContracts: () => ({
+      data: [
+        { contractAddress: actual.lsSkySpkRewardAddress[1] },
+        { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
+        { contractAddress: actual.lsSkySkyRewardAddress[1] }
+      ],
+      isLoading: false,
+      error: null,
+      mutate: () => undefined
+    }),
+    useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null })
   };
 });
 
@@ -189,6 +200,7 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks';
 import { ManagePositionTakeover } from './ManagePositionTakeover';
 
 const renderSheet = (init: StakeManageFlowInit = {}) => {
@@ -229,14 +241,16 @@ describe('ManagePositionTakeover', () => {
     document.documentElement.style.overflow = '';
   });
 
-  it('renders summary strip + three cards, all off by default, Confirm disabled', () => {
+  it('renders summary strip + four cards, all off by default, Confirm disabled', () => {
     renderSheet();
 
     expect(screen.getByTestId('stake-manage-position-summary')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-stake-card')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-borrow-card')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-reward-card')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-delegate-card')).toBeTruthy();
     expect(screen.queryByTestId('stake-manage-stake-amount')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
@@ -469,6 +483,46 @@ describe('ManagePositionTakeover', () => {
     // Click-again-to-deselect on the pre-selected row → staged selection gone,
     // effective delegate back to current → no change staged.
     expect(h.launchParams?.selectedDelegate).toBe(CURRENT_DELEGATE);
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('reward: picking a different farm stages the change and enables Confirm (APP-516)', () => {
+    renderSheet({ rewardCard: true });
+    expect(confirmButton().disabled).toBe(true);
+
+    // SPK is deprecated and not the urn's farm → hidden; the current SKY farm
+    // renders pre-selected.
+    expect(screen.queryByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`)).toBeNull();
+    expect(
+      screen
+        .getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`)
+        .getAttribute('aria-pressed')
+    ).toBe('true');
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkyUsdsRewardAddress[1]);
+    expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('reward: re-selecting the current farm stages no change', () => {
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`));
+    // Back on the urn's own farm → effective reward is the current one → no
+    // change staged.
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('reward: toggling the card off clears a staged change', () => {
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    expect(confirmButton().disabled).toBe(false);
+
+    fireEvent.click(screen.getByTestId('stake-manage-reward-card-toggle'));
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
     expect(confirmButton().disabled).toBe(true);
   });
 
