@@ -16,7 +16,8 @@ import {
   pendleNonPtLeg,
   usePendleSlippage,
   usePendleTokens,
-  usePendleUsdValue
+  usePendleUsdValue,
+  TxStatus
 } from '@/widgets';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -36,7 +37,7 @@ type Options = {
  * USDS, or USDC.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options = {}) {
-  const { launch, updateModalContent, isModalOpen, txCallbacks } = useTransaction();
+  const { launch, updateModalContent, isModalOpen, txCallbacks, txStatus } = useTransaction();
   // Per-instance id so the provider can ignore live updates from sibling cards.
   const sessionId = useId();
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
@@ -241,9 +242,16 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
 
   useEffect(() => {
     if (!isModalOpen) return;
+    // Frozen once the tx leaves IDLE (the useModalEntryBody rule): the quote
+    // keeps refetching regardless of txStatus, and pushing a drifted quote
+    // would rewrite the executed amounts on the wallet/failure screens — and
+    // a drifted `usdValue` could downgrade the screening tier a retry is
+    // gated on (APP-517). Pushes resume when a failure returns to IDLE.
+    if (txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled, usdValue });
   }, [
     isModalOpen,
+    txStatus,
     sessionId,
     updateModalContent,
     transactionContent,
