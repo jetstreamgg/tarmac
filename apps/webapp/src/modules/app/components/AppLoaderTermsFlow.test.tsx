@@ -234,11 +234,12 @@ describe('loader/terms flow (real modal)', () => {
     expect(screen.queryByTestId('terms-modal')).toBeNull();
   });
 
-  it('cancelling the terms disconnects and never shows the loader', () => {
+  it('dismissing the terms disconnects and never shows the loader', () => {
     const { rerender } = render(<Harness />);
     connect(rerender);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    // The realigned comp (1868:80727) dropped Cancel — the X is the only exit.
+    fireEvent.click(screen.getByTestId('terms-modal-close'));
 
     expect(h.disconnect).toHaveBeenCalled();
     expect(screen.queryByTestId('terms-modal')).toBeNull();
