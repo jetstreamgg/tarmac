@@ -215,6 +215,157 @@ describe('TransactionProvider pre-transaction gate', () => {
     expect(screen.getByText('Terms signature')).not.toBeNull();
   });
 
+  it('a lone signature prelude renders the step list even when the flow has no steps of its own', async () => {
+    // The claim panel launches without a steps array — the prelude row is
+    // where the signature's copy, links, and inline retry live, so it must
+    // render regardless of the composed list length.
+    const onConfirm = vi.fn();
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setPreludeSteps([
+        { label: 'Terms signature', kind: 'signature', description: 'Sign in your wallet' }
+      ]);
+      controls.setGateStatus('initialized');
+      return Promise.resolve({ allow: false }).then(v => {
+        controls.setGateStatus('error');
+        return v;
+      });
+    };
+    renderWithGate(gate, { title: 'Claim', onConfirm });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    expect(screen.getByText('Terms signature')).not.toBeNull();
+    expect(screen.getByText('Sign in your wallet')).not.toBeNull();
+
+    await flush();
+    // Inline failure applies to the lone prelude step too.
+    expect(screen.getByText('Terms signature failed')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /try again/i })).not.toBeNull();
+  });
+
+  it('gate copy overrides the status message and subtitle while set', async () => {
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
+      controls.setGateStatus('initialized', {
+        message: 'Sign the confirmation in your wallet.',
+        subtitle: 'Signature needed to continue.'
+      });
+      return new Promise(() => {});
+    };
+    renderWithGate(gate, {
+      title: 'Supply',
+      onConfirm: vi.fn(),
+      subtitles: { pending: 'Supplying your tokens...' },
+      steps: ['Supply USDS']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+
+    expect(screen.getByText('Sign the confirmation in your wallet.')).not.toBeNull();
+    expect(screen.getByText('Signature needed to continue.')).not.toBeNull();
+    // The flow's own pending copy stays hidden while the gate copy is set.
+    expect(screen.queryByText('Supplying your tokens...')).toBeNull();
+    expect(screen.queryByText('Confirm this transaction in your wallet.')).toBeNull();
+  });
+
+  it("the engine's first onMutate clears the gate copy — the flow's narration takes over", async () => {
+    let resolveSigned!: () => void;
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
+      controls.setGateStatus('initialized', {
+        message: 'Sign the confirmation in your wallet.',
+        subtitle: 'Signature needed to continue.'
+      });
+      return new Promise(resolve => (resolveSigned = () => resolve({ allow: true })));
+    };
+    const cb = renderWithGate(gate, {
+      title: 'Supply',
+      onConfirm: vi.fn(),
+      subtitles: { pending: 'Supplying your tokens...' },
+      steps: ['Supply USDS']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    expect(screen.getByText('Signature needed to continue.')).not.toBeNull();
+
+    act(() => resolveSigned());
+    await flush();
+    act(() => cb.onMutate());
+
+    expect(screen.queryByText('Signature needed to continue.')).toBeNull();
+    expect(screen.queryByText('Sign the confirmation in your wallet.')).toBeNull();
+    expect(screen.getByText('Supplying your tokens...')).not.toBeNull();
+  });
+
+  it('controls from a closed session are dead: no ghost prelude or status in the next session', async () => {
+    // A US-user run awaiting its signature is closed mid-prompt, then a new
+    // flow launches. The old continuation keeps its controls — every call
+    // must no-op, and isStale must report it, or the new session inherits a
+    // ghost signature step / error status / abandoned-prompt toast.
+    const onConfirm = vi.fn();
+    let staleControls!: Parameters<PreTransactionGate>[0]['controls'];
+    let firstCall = true;
+    const gate: PreTransactionGate = ({ controls }) => {
+      if (firstCall) {
+        firstCall = false;
+        staleControls = controls;
+        controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
+        controls.setGateStatus('initialized');
+        return new Promise(() => {}); // the wallet prompt never answered
+      }
+      return { allow: true };
+    };
+
+    function RelaunchHarness() {
+      const { launch } = useTransaction();
+      return (
+        <>
+          <button data-testid="launch-a" onClick={() => launch({ title: 'Flow A', onConfirm })}>
+            a
+          </button>
+          <button
+            data-testid="launch-b"
+            onClick={() => launch({ title: 'Flow B', onConfirm, steps: ['Supply USDS'] })}
+          >
+            b
+          </button>
+        </>
+      );
+    }
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider gate={gate}>
+            <RelaunchHarness />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+
+    fireEvent.click(screen.getByTestId('launch-a'));
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    expect(screen.getByText('Terms signature')).not.toBeNull();
+    expect(staleControls.isStale()).toBe(false);
+
+    fireEvent.click(screen.getByTestId('transaction-modal-close'));
+    expect(staleControls.isStale()).toBe(true);
+
+    fireEvent.click(screen.getByTestId('launch-b'));
+    // The old continuation fires its controls after the relaunch — all dead.
+    act(() => {
+      staleControls.setPreludeSteps([{ label: 'Ghost signature', kind: 'signature' }]);
+      staleControls.setGateStatus('error', { subtitle: 'ghost copy' });
+    });
+
+    // Confirm flow B onto its transaction screen — the surface where a ghost
+    // prelude, error status, or copy override would actually render.
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await flush();
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Ghost signature')).toBeNull();
+    expect(screen.queryByText('ghost copy')).toBeNull();
+    expect(screen.queryByText(/failed/i)).toBeNull();
+  });
+
   it('a denied signature renders the failed step with inline retry, and retry re-runs the gate', async () => {
     const onConfirm = vi.fn();
     const gate = vi.fn(({ controls }: { controls: Parameters<PreTransactionGate>[0]['controls'] }) => {

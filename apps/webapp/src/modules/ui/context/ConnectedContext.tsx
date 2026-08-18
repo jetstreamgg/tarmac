@@ -4,6 +4,8 @@ import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { reportError } from '@/modules/sentry/reportError';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { toError } from '@/hooks';
 import { addTermsAcceptance } from '@/modules/ui/lib/addTermsAcceptance';
 import { signTermsAcceptance } from '@/modules/ui/lib/signTermsAcceptance';
 import { checkTermsWithRetry, type TermsCheckData } from '@/modules/ui/lib/checkTermsWithRetry';
@@ -322,16 +324,30 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     let signature: string;
     try {
       signature = await signMessageAsync({ message: termsMessageToSign });
-    } catch {
-      // Wallet rejection (or a wallet that can't sign): a user action to
-      // retry, not an error to report.
+    } catch (error) {
+      // A rejection is a user action to retry, not an error. Anything else —
+      // a wallet that can't sign, a connector fault — is worth telemetry:
+      // for the affected user every transaction is now blocked.
+      const normalized = toError(error);
+      if (!isUserRejectedRequestError(normalized)) {
+        reportError(normalized, {
+          module: 'auth',
+          flow: 'terms-signature',
+          action: 'sign',
+          type: 'terms_signature_error',
+          extra: { chainId, connector: connector?.name }
+        });
+      }
       return false;
     }
 
     // Mirror acceptTerms: the mock wallet's signature can't verify against
     // the worker, and local dev points at the shared staging endpoint — so
-    // skip the POST and flip the flag locally.
+    // skip the POST and flip the flag locally. The address guard still
+    // applies: a switch while the prompt was up must not stamp the flag onto
+    // the new address's check.
     if (import.meta.env.VITE_USE_MOCK_WALLET === 'true') {
+      if (activeAddressRef.current !== address) return false;
       setTermsCheck(prev => (prev ? { ...prev, signedForCurrentVersion: true } : prev));
       return true;
     }
@@ -415,42 +431,71 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, [skipAuthCheck, vpnIsLoading, vpnData, vpnError, isAllowed, trackVpnCheckCompleted]);
 
-  return (
-    <ConnectedContext.Provider
-      value={{
-        isConnectedAndAcceptedTerms,
-        isAuthorized,
-        accessBlockReason,
-        isUsUser,
-        retryAccessChecks,
-        isCheckingTerms,
-        termsCheckError,
-        termsCheckDenied,
-        retryTermsCheck,
-        hasAcceptedTerms,
-        hasSignedCurrentTerms,
-        latestTermsVersion: termsCheck?.latestVersion,
-        termsMessageToSign,
-        acceptTerms,
-        signTerms,
-        authData: {
-          addressAllowed: authData?.addressAllowed,
-          authIsLoading,
-          address,
-          authError
-        },
-        vpnData: {
-          isConnectedToVpn: vpnData?.isConnectedToVpn,
-          isRestrictedRegion: vpnData?.isRestrictedRegion,
-          vpnIsLoading,
-          vpnError,
-          countryCode: vpnData?.countryCode ?? null
-        }
-      }}
-    >
-      {children}
-    </ConnectedContext.Provider>
+  // Memoized: several always-mounted providers (the transaction gate among
+  // them) consume this context, and its inputs — auth polling, terms checks —
+  // change often. Without the memo every poll tick hands a fresh object to
+  // every consumer.
+  const latestTermsVersion = termsCheck?.latestVersion;
+  const contextValue = useMemo<ConnectedContextType>(
+    () => ({
+      isConnectedAndAcceptedTerms,
+      isAuthorized,
+      accessBlockReason,
+      isUsUser,
+      retryAccessChecks,
+      isCheckingTerms,
+      termsCheckError,
+      termsCheckDenied,
+      retryTermsCheck,
+      hasAcceptedTerms,
+      hasSignedCurrentTerms,
+      latestTermsVersion,
+      termsMessageToSign,
+      acceptTerms,
+      signTerms,
+      authData: {
+        addressAllowed: authData?.addressAllowed,
+        authIsLoading,
+        address,
+        authError
+      },
+      vpnData: {
+        isConnectedToVpn: vpnData?.isConnectedToVpn,
+        isRestrictedRegion: vpnData?.isRestrictedRegion,
+        vpnIsLoading,
+        vpnError,
+        countryCode: vpnData?.countryCode ?? null
+      }
+    }),
+    [
+      isConnectedAndAcceptedTerms,
+      isAuthorized,
+      accessBlockReason,
+      isUsUser,
+      retryAccessChecks,
+      isCheckingTerms,
+      termsCheckError,
+      termsCheckDenied,
+      retryTermsCheck,
+      hasAcceptedTerms,
+      hasSignedCurrentTerms,
+      latestTermsVersion,
+      termsMessageToSign,
+      acceptTerms,
+      signTerms,
+      authData?.addressAllowed,
+      authIsLoading,
+      address,
+      authError,
+      vpnData?.isConnectedToVpn,
+      vpnData?.isRestrictedRegion,
+      vpnIsLoading,
+      vpnError,
+      vpnData?.countryCode
+    ]
   );
+
+  return <ConnectedContext.Provider value={contextValue}>{children}</ConnectedContext.Provider>;
 };
 
 export const useConnectedContext = () => useContext(ConnectedContext);

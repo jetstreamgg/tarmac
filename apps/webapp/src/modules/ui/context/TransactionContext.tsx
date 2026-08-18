@@ -1,4 +1,13 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  ReactNode
+} from 'react';
 import { TxStatus, InProgress, Cancel } from '@/widgets';
 import { toError } from '@/hooks';
 import { getTransactionLink } from '@/utils';
@@ -22,6 +31,7 @@ import type {
 import {
   allowAllGate,
   type GateControls,
+  type GateStatusCopy,
   type GateTrigger,
   type PreTransactionGate
 } from './preTransactionGate';
@@ -83,6 +93,8 @@ type TransactionModalView = {
   currentStep: number;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
+  /** Gate-owned status copy override active when the session ended (APP-501). */
+  gateCopy: GateStatusCopy | null;
 };
 
 /**
@@ -130,6 +142,11 @@ export function TransactionProvider({
   // to the session (and the attempt) that inserted it.
   const [preludeSteps, setPreludeSteps] = useState<TransactionStep[] | null>(null);
   const preludeStepsRef = useRef<TransactionStep[] | null>(null);
+  // Gate-owned status copy (see GateStatusCopy): replaces the flow's status
+  // message/subtitle while a gate status is driving the modal. Replaced on
+  // every setGateStatus call, cleared on launch/close.
+  const [gateCopy, setGateCopy] = useState<GateStatusCopy | null>(null);
+  const gateCopyRef = useRef<GateStatusCopy | null>(null);
   // Config is state so updateModalContent re-renders the modal; ref mirrors it for callback reads.
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
@@ -251,6 +268,8 @@ export function TransactionProvider({
       setCurrentStep(0);
       preludeStepsRef.current = null;
       setPreludeSteps(null);
+      gateCopyRef.current = null;
+      setGateCopy(null);
       gateInFlightRef.current = null;
       setMinimized(false);
       setLaunchCount(c => c + 1);
@@ -301,7 +320,11 @@ export function TransactionProvider({
     // Closing during INITIALIZED abandons an un-signed session: track the
     // cancellation and warn about the wallet prompt we can't dismiss.
     const analytics = configRef.current?.analytics;
-    if (txStatus === TxStatus.INITIALIZED) {
+    // Read the ref, not the render's closure: the gate hands the status back
+    // to IDLE synchronously right before a deny-and-close, and that must be
+    // visible here — otherwise a screening denial fires the abandoned-prompt
+    // toast for a wallet request that never existed.
+    if (txStatusRef.current === TxStatus.INITIALIZED) {
       if (analytics) {
         trackTransactionCompleted({
           widgetName: analytics.widgetName,
@@ -325,7 +348,8 @@ export function TransactionProvider({
         txStatus: txStatusRef.current,
         externalLink,
         currentStep,
-        preludeSteps: preludeStepsRef.current
+        preludeSteps: preludeStepsRef.current,
+        gateCopy: gateCopyRef.current
       });
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
       exitTimerRef.current = setTimeout(() => setExitingView(null), MODAL_EXIT_MS);
@@ -344,11 +368,13 @@ export function TransactionProvider({
     setCurrentStep(0);
     preludeStepsRef.current = null;
     setPreludeSteps(null);
+    gateCopyRef.current = null;
+    setGateCopy(null);
     gateInFlightRef.current = null;
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [txStatus, chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
+  }, [chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -415,30 +441,52 @@ export function TransactionProvider({
   // generation, so a verdict resolving while minimized still applies — the
   // session is alive, just hidden. A rejected verdict counts as a denial.
   // The surface an async gate drives while it holds the floor (APP-501): the
-  // signature prelude step, the modal's status, and — when the gate replaces
-  // the modal with its own surface — teardown. One stable object; the members
-  // delegate to stable setters or read through refs.
-  const gateControls = useRef<GateControls>({
-    setGateStatus: status => {
-      const mapped =
-        status === 'initialized' ? TxStatus.INITIALIZED : status === 'error' ? TxStatus.ERROR : TxStatus.IDLE;
-      setTxStatus(mapped);
-      txStatusRef.current = mapped;
-    },
-    setPreludeSteps: steps => {
-      preludeStepsRef.current = steps;
-      setPreludeSteps(steps);
-    },
-    closeModal: () => handleCloseRef.current()
-  }).current;
+  // signature prelude step, the modal's status (+ optional copy override),
+  // and — when the gate replaces the modal with its own surface — teardown.
+  // Built PER GATE CALL, bound to that click's session generation: once the
+  // session closes or is replaced, every control is a no-op, so a stale
+  // continuation (a wallet prompt answered after close, a re-screen resolving
+  // late) cannot flip the new session's status, mount a ghost prelude, or
+  // leave txStatusRef=INITIALIZED on a closed provider (which would fire the
+  // abandoned-request toast on the next launch). `isStale` lets the gate also
+  // stop early — before prompting the wallet, the one side effect no-op
+  // controls can't absorb.
+  const makeGateControls = useCallback((gen: number): GateControls => {
+    const live = () => gen === sessionGenRef.current;
+    return {
+      setGateStatus: (status, copy) => {
+        if (!live()) return;
+        const mapped =
+          status === 'initialized'
+            ? TxStatus.INITIALIZED
+            : status === 'error'
+              ? TxStatus.ERROR
+              : TxStatus.IDLE;
+        setTxStatus(mapped);
+        txStatusRef.current = mapped;
+        gateCopyRef.current = copy ?? null;
+        setGateCopy(copy ?? null);
+      },
+      setPreludeSteps: steps => {
+        if (!live()) return;
+        preludeStepsRef.current = steps;
+        setPreludeSteps(steps);
+      },
+      closeModal: () => {
+        if (!live()) return;
+        handleCloseRef.current();
+      },
+      isStale: () => !live()
+    };
+  }, []);
 
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
       if (gateInFlightRef.current === sessionGenRef.current) return;
-      const verdict = gate({ trigger, controls: gateControls });
+      const gen = sessionGenRef.current;
+      const verdict = gate({ trigger, controls: makeGateControls(gen) });
       if (verdict instanceof Promise) {
-        const gen = sessionGenRef.current;
         gateInFlightRef.current = gen;
         verdict
           .then(
@@ -457,7 +505,7 @@ export function TransactionProvider({
       }
       if (verdict.allow) action();
     },
-    [gate, gateControls]
+    [gate, makeGateControls]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's
@@ -515,149 +563,159 @@ export function TransactionProvider({
   // Each callback closes over the `sessionGen` of the render that created it
   // and drops itself when the generation has moved on — the caller is an
   // engine from a session that was closed or abandoned.
-  const txCallbacks: TxCallbacks = {
-    onMutate: useCallback(() => {
-      if (sessionGen !== sessionGenRef.current) return;
-      // Latch the write to this session; the settle callbacks check it. Fires
-      // synchronously from the user's confirm, so it can trust its closure.
-      writeGenRef.current = sessionGenRef.current;
-      writeHashRef.current = undefined;
-      // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
-      if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
-        setCurrentStep(s => s + 1);
-      }
-      setTxStatus(TxStatus.INITIALIZED);
-      txStatusRef.current = TxStatus.INITIALIZED;
-      setExternalLink(undefined);
-      txHashRef.current = undefined;
+  const onMutate = useCallback(() => {
+    if (sessionGen !== sessionGenRef.current) return;
+    // Latch the write to this session; the settle callbacks check it. Fires
+    // synchronously from the user's confirm, so it can trust its closure.
+    writeGenRef.current = sessionGenRef.current;
+    writeHashRef.current = undefined;
+    // The engine taking over ends the gate's turn at the copy: from here the
+    // flow's own status narration applies (otherwise "sign in your wallet"
+    // would hang over the whole transaction).
+    gateCopyRef.current = null;
+    setGateCopy(null);
+    // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
+    if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
+      setCurrentStep(s => s + 1);
+    }
+    setTxStatus(TxStatus.INITIALIZED);
+    txStatusRef.current = TxStatus.INITIALIZED;
+    setExternalLink(undefined);
+    txHashRef.current = undefined;
 
-      // Track transaction started
+    // Track transaction started
+    const analytics = configRef.current?.analytics;
+    if (analytics) {
+      trackTransactionStarted({
+        widgetName: analytics.widgetName,
+        chainId,
+        action: analytics.action,
+        flow: analytics.flow,
+        data: analytics.data
+      });
+    }
+  }, [sessionGen, chainId, trackTransactionStarted]);
+
+  const onStart = useCallback(
+    (hash?: string) => {
+      if (isStaleWrite(sessionGen)) return;
+      writeHashRef.current = hash;
+      setTxStatus(TxStatus.LOADING);
+      txStatusRef.current = TxStatus.LOADING;
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+        txHashRef.current = hash;
+      }
+    },
+    [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
+  );
+
+  const onSuccess = useCallback(
+    (hash?: string) => {
+      if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
+      setTxStatus(TxStatus.SUCCESS);
+      txStatusRef.current = TxStatus.SUCCESS;
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+        txHashRef.current = hash;
+      }
+
+      // Track transaction completed (success)
       const analytics = configRef.current?.analytics;
       if (analytics) {
-        trackTransactionStarted({
+        trackTransactionCompleted({
           widgetName: analytics.widgetName,
           chainId,
+          txStatus: 'success',
+          txHash: hash,
           action: analytics.action,
           flow: analytics.flow,
           data: analytics.data
         });
+        startNewFlow();
       }
-    }, [sessionGen, chainId, trackTransactionStarted]),
 
-    onStart: useCallback(
-      (hash?: string) => {
-        if (isStaleWrite(sessionGen)) return;
-        writeHashRef.current = hash;
-        setTxStatus(TxStatus.LOADING);
-        txStatusRef.current = TxStatus.LOADING;
-        if (hash) {
-          setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-          txHashRef.current = hash;
-        }
-      },
-      [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
-    ),
+      configRef.current?.onSuccess?.();
+    },
+    [
+      sessionGen,
+      chainId,
+      address,
+      isSafeWallet,
+      trackTransactionCompleted,
+      startNewFlow,
+      isStaleWrite,
+      isForeignHash
+    ]
+  );
 
-    onSuccess: useCallback(
-      (hash?: string) => {
-        if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
-        setTxStatus(TxStatus.SUCCESS);
-        txStatusRef.current = TxStatus.SUCCESS;
-        if (hash) {
-          setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-          txHashRef.current = hash;
-        }
+  const onError = useCallback(
+    (error: Error, hash?: string) => {
+      if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
+      setTxStatus(TxStatus.ERROR);
+      txStatusRef.current = TxStatus.ERROR;
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+        txHashRef.current = hash;
+      }
 
-        // Track transaction completed (success)
-        const analytics = configRef.current?.analytics;
-        if (analytics) {
-          trackTransactionCompleted({
-            widgetName: analytics.widgetName,
+      // Track transaction completed (error)
+      const analytics = configRef.current?.analytics;
+      if (analytics) {
+        trackTransactionCompleted({
+          widgetName: analytics.widgetName,
+          chainId,
+          txStatus: 'error',
+          txHash: hash,
+          errorContext: error.message,
+          action: analytics.action,
+          flow: analytics.flow,
+          data: analytics.data
+        });
+        startNewFlow();
+      }
+
+      const normalizedError = toError(error);
+
+      if (shouldCaptureTransactionError(normalizedError)) {
+        reportError(normalizedError, {
+          module: 'transactions',
+          flow: analytics?.flow ?? 'unknown',
+          action: analytics?.action ?? 'unknown',
+          type: 'transaction_error',
+          extra: {
             chainId,
-            txStatus: 'success',
             txHash: hash,
-            action: analytics.action,
-            flow: analytics.flow,
-            data: analytics.data
-          });
-          startNewFlow();
-        }
+            isSafeWallet,
+            widget: analytics?.widgetName ?? 'unknown',
+            analyticsData: analytics?.data ?? null
+          }
+        });
+      }
 
-        configRef.current?.onSuccess?.();
-      },
-      [
-        sessionGen,
-        chainId,
-        address,
-        isSafeWallet,
-        trackTransactionCompleted,
-        startNewFlow,
-        isStaleWrite,
-        isForeignHash
-      ]
-    ),
+      configRef.current?.onError?.();
+    },
+    [
+      sessionGen,
+      chainId,
+      address,
+      isSafeWallet,
+      trackTransactionCompleted,
+      startNewFlow,
+      isStaleWrite,
+      isForeignHash
+    ]
+  );
 
-    onError: useCallback(
-      (error: Error, hash?: string) => {
-        if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
-        setTxStatus(TxStatus.ERROR);
-        txStatusRef.current = TxStatus.ERROR;
-        if (hash) {
-          setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-          txHashRef.current = hash;
-        }
-
-        // Track transaction completed (error)
-        const analytics = configRef.current?.analytics;
-        if (analytics) {
-          trackTransactionCompleted({
-            widgetName: analytics.widgetName,
-            chainId,
-            txStatus: 'error',
-            txHash: hash,
-            errorContext: error.message,
-            action: analytics.action,
-            flow: analytics.flow,
-            data: analytics.data
-          });
-          startNewFlow();
-        }
-
-        const normalizedError = toError(error);
-
-        if (shouldCaptureTransactionError(normalizedError)) {
-          reportError(normalizedError, {
-            module: 'transactions',
-            flow: analytics?.flow ?? 'unknown',
-            action: analytics?.action ?? 'unknown',
-            type: 'transaction_error',
-            extra: {
-              chainId,
-              txHash: hash,
-              isSafeWallet,
-              widget: analytics?.widgetName ?? 'unknown',
-              analyticsData: analytics?.data ?? null
-            }
-          });
-        }
-
-        configRef.current?.onError?.();
-      },
-      [
-        sessionGen,
-        chainId,
-        address,
-        isSafeWallet,
-        trackTransactionCompleted,
-        startNewFlow,
-        isStaleWrite,
-        isForeignHash
-      ]
-    )
-  };
+  // Stable while its members are (LOW-churn): the provider value below is
+  // memoized, and an unmemoized wrapper object here would defeat it.
+  const txCallbacks: TxCallbacks = useMemo(
+    () => ({ onMutate, onStart, onSuccess, onError }),
+    [onMutate, onStart, onSuccess, onError]
+  );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, externalLink, currentStep, preludeSteps }
+    ? { config: activeConfig, txStatus, externalLink, currentStep, preludeSteps, gateCopy }
     : exitingView;
 
   // The gate's prelude steps render ahead of the flow's own list. Composed at
@@ -670,19 +728,25 @@ export function TransactionProvider({
       : modalView.config.steps
     : undefined;
 
+  // Memoized: TransactionProvider is composed under ConnectedProvider (the
+  // gate reads terms/auth state), so without this every terms or auth state
+  // change would hand a fresh context value to every useTransaction consumer.
+  const contextValue = useMemo<TransactionContextValue>(
+    () => ({
+      launch,
+      updateModalContent,
+      isModalOpen: open,
+      minimize,
+      restore,
+      isMinimized: minimized,
+      txCallbacks,
+      txStatus
+    }),
+    [launch, updateModalContent, open, minimize, restore, minimized, txCallbacks, txStatus]
+  );
+
   return (
-    <TransactionContext.Provider
-      value={{
-        launch,
-        updateModalContent,
-        isModalOpen: open,
-        minimize,
-        restore,
-        isMinimized: minimized,
-        txCallbacks,
-        txStatus
-      }}
-    >
+    <TransactionContext.Provider value={contextValue}>
       <EntrySlotContext.Provider value={entrySlotEl}>
         {children}
         {/* In-flight hook host: kept mounted (hidden) for the modal's whole lifetime,
@@ -732,6 +796,7 @@ export function TransactionProvider({
             errorLabel={modalView.config.errorLabel}
             steps={modalSteps}
             currentStep={modalView.currentStep}
+            gateCopy={modalView.gateCopy}
           />
         )}
       </EntrySlotContext.Provider>

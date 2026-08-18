@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 
 /**
@@ -27,10 +28,28 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
 export type GateTrigger = 'confirm' | 'secondaryConfirm' | 'retry';
 
 /**
- * The provider surface an async gate drives while it holds the floor. All
- * three are bound to the live session: after a close or relaunch they act on
- * the new session's state, which is why a gate must never keep using them
- * after its verdict resolved (the generation guard drops the verdict anyway).
+ * Gate-owned copy shown in place of the flow's own while a gate status is
+ * driving the modal — the flow's copy narrates on-chain writes ("Confirm this
+ * transaction in your wallet", the flow's error sentence), which is wrong
+ * while the gate is only screening an address or awaiting an off-chain
+ * signature. Replaced on every `setGateStatus` call (omitting it restores the
+ * flow's copy) and cleared on launch/close.
+ */
+export type GateStatusCopy = {
+  /** Replaces the status row's message (e.g. "Confirm this transaction in your wallet."). */
+  message?: ReactNode;
+  /** Replaces the status-keyed subtitle under the modal title. */
+  subtitle?: string;
+};
+
+/**
+ * The provider surface an async gate drives while it holds the floor. Each
+ * call to the gate receives controls bound to the session generation of that
+ * click: after a close or relaunch every control becomes a no-op, so a stale
+ * continuation (a wallet prompt answered after the modal closed, a re-screen
+ * resolving late) cannot touch the new session by construction. `isStale`
+ * lets the gate also stop early — most importantly before prompting the
+ * wallet at all.
  */
 export type GateControls = {
   /**
@@ -41,8 +60,9 @@ export type GateControls = {
    * status itself. That last one matters: the engine's `onMutate` advances
    * `currentStep` when it fires at INITIALIZED — correct exactly when a
    * prelude step was inserted and now needs stepping past, wrong otherwise.
+   * The optional copy replaces the flow's status copy while set.
    */
-  setGateStatus: (status: 'initialized' | 'error' | 'idle') => void;
+  setGateStatus: (status: 'initialized' | 'error' | 'idle', copy?: GateStatusCopy) => void;
   /**
    * Mounts off-chain prelude steps ahead of the config's own step list (or
    * clears them with null). Cleared automatically on launch and close.
@@ -50,6 +70,13 @@ export type GateControls = {
   setPreludeSteps: (steps: TransactionStep[] | null) => void;
   /** Tears the transaction modal down — the gate is replacing it with its own surface. */
   closeModal: () => void;
+  /**
+   * True once the session this gate run belongs to has closed or been
+   * replaced. Check it after every await — and always before starting a
+   * wallet interaction, which is the one side effect the no-op controls
+   * cannot absorb.
+   */
+  isStale: () => boolean;
 };
 
 export type GateVerdict = {

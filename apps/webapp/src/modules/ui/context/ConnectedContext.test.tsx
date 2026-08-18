@@ -57,7 +57,8 @@ vi.mock('wagmi', async importOriginal => {
 
 vi.mock('@/hooks', () => ({
   useRestrictedAddressCheck: () => ({ ...mocks.authCheck, refetch: mocks.refetchAddressCheck }),
-  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck })
+  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck }),
+  toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error)))
 }));
 
 vi.mock('@/lib/isPrivateDeployment', () => ({
@@ -619,7 +620,7 @@ describe('ConnectedContext — the terms AND gate', () => {
       expect(mocks.signTermsAcceptance).toHaveBeenCalledWith(ADDRESS_A, 1, '0xsignature');
     });
 
-    it('a wallet rejection resolves false without posting', async () => {
+    it('a wallet rejection resolves false without posting — and without telemetry', async () => {
       mocks.signMessageAsync.mockRejectedValue(new Error('User rejected the request'));
       renderProvider();
       await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
@@ -628,6 +629,43 @@ describe('ConnectedContext — the terms AND gate', () => {
       await act(() => new Promise(resolve => setTimeout(resolve, 0)));
 
       expect(mocks.signTermsAcceptance).not.toHaveBeenCalled();
+      expect(signed()).toBe('false');
+      expect(mocks.reportError).not.toHaveBeenCalled();
+    });
+
+    it('a non-rejection wallet failure resolves false AND reports — the user is blocked from transacting', async () => {
+      mocks.signMessageAsync.mockRejectedValue(new Error('Method eth_sign is not supported'));
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+
+      fireEvent.click(screen.getByTestId('sign'));
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(mocks.signTermsAcceptance).not.toHaveBeenCalled();
+      expect(signed()).toBe('false');
+      expect(mocks.reportError).toHaveBeenCalledTimes(1);
+    });
+
+    it('under the mock wallet: an address switch mid-sign is discarded like the real path', async () => {
+      vi.stubEnv('VITE_USE_MOCK_WALLET', 'true');
+      let resolveSign: (value: string) => void = () => {};
+      mocks.signMessageAsync.mockReturnValue(new Promise(resolve => (resolveSign = resolve)));
+
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+
+      fireEvent.click(screen.getByTestId('sign'));
+
+      mocks.address = ADDRESS_B;
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+
+      resolveSign('0xsignature');
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
       expect(signed()).toBe('false');
     });
 
