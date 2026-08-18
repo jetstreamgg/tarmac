@@ -34,6 +34,15 @@ type ModalEntryBodyLive = {
   steps?: TransactionStep[];
   /** Per-state minimized-toast titles. */
   toast?: TransactionConfig['toast'];
+  /**
+   * Live USD notional of the transaction, for the enhanced-screening
+   * threshold (APP-517; see `TransactionConfig.usdValue`). A body that can
+   * value its amount must pass it EVERY render — an entry in the params list
+   * is always pushed (`undefined` meaning "unknown" is a real value there,
+   * treated as above-threshold); omit the param entirely only when the
+   * launch-time value is already final.
+   */
+  usdValue?: number;
 };
 
 type UseModalEntryBodyParams = ModalEntryBodyLive & {
@@ -58,17 +67,23 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
  * Returns `renderInSlot(body)`: portals `body` into the dialog's entry slot when one
  * is mounted, else renders it inline in the hidden background host.
  */
-export function useModalEntryBody({
-  sessionId,
-  execute,
-  confirmDisabled,
-  confirmLabel,
-  confirmAction,
-  transactionContent,
-  transactionScreenContent,
-  steps,
-  toast
-}: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
+export function useModalEntryBody(params: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
+  const {
+    sessionId,
+    execute,
+    confirmDisabled,
+    confirmLabel,
+    confirmAction,
+    transactionContent,
+    transactionScreenContent,
+    steps,
+    toast,
+    usdValue
+  } = params;
+  // `usdValue: undefined` means "unknown" and must reach the config (it flips
+  // the enhanced-screening path on), so presence is keyed on the param being
+  // listed — not on its value.
+  const hasUsdValue = 'usdValue' in params;
   const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
 
@@ -107,7 +122,8 @@ export function useModalEntryBody({
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
-      ...(toast !== undefined ? { toast } : {})
+      ...(toast !== undefined ? { toast } : {}),
+      ...(hasUsdValue ? { usdValue } : {})
     });
   }, [
     sessionId,
@@ -119,6 +135,8 @@ export function useModalEntryBody({
     transactionScreenContent,
     steps,
     toast,
+    hasUsdValue,
+    usdValue,
     onConfirm,
     updateModalContent
   ]);

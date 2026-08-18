@@ -8,11 +8,16 @@ import type { GateControls } from '@/modules/ui/context/preTransactionGate';
 
 const ADDRESS = '0x1234567890123456789012345678901234567890';
 const FOUR_HOURS = 4 * 60 * 60 * 1000;
+// Below the $250k enhanced-screening threshold — the standard C6 path.
+const SUB_THRESHOLD = 100;
+// At/above the threshold — the enhanced tier (APP-517).
+const OVER_THRESHOLD = 250_000;
 
 const mocks = vi.hoisted(() => ({
   shouldSkipAuthChecks: vi.fn(() => false),
   wagmiAddress: '0x1234567890123456789012345678901234567890' as string | undefined,
   fetchAddressScreening: vi.fn(),
+  fetchEnhancedAddressScreening: vi.fn(),
   signTerms: vi.fn(async () => true),
   retryTermsCheck: vi.fn(),
   retryAccessChecks: vi.fn(),
@@ -31,7 +36,8 @@ vi.mock('@/lib/authCheck', () => ({
 
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
-  fetchAddressScreening: mocks.fetchAddressScreening
+  fetchAddressScreening: mocks.fetchAddressScreening,
+  fetchEnhancedAddressScreening: mocks.fetchEnhancedAddressScreening
 }));
 
 vi.mock('wagmi', async io => ({
@@ -49,7 +55,7 @@ vi.mock('@/modules/ui/context/ConnectedContext', () => ({
   })
 }));
 
-import { addressScreeningQueryKey } from '@/hooks';
+import { addressScreeningQueryKey, enhancedAddressScreeningQueryKey } from '@/hooks';
 import { useTermsSignatureGate } from './useTermsSignatureGate';
 
 i18n.load('en', {});
@@ -79,6 +85,15 @@ const seedScreening = (addressAllowed: boolean, ageMs = 0) => {
   );
 };
 
+/** Seeds the ENHANCED screening cache (its own key — never the standard one's). */
+const seedEnhancedScreening = (addressAllowed: boolean, ageMs = 0) => {
+  queryClient.setQueryData(
+    enhancedAddressScreeningQueryKey(ADDRESS),
+    { addressAllowed },
+    { updatedAt: Date.now() - ageMs }
+  );
+};
+
 const renderGate = () => renderHook(() => useTermsSignatureGate(), { wrapper }).result.current;
 
 describe('useTermsSignatureGate', () => {
@@ -99,7 +114,7 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    const verdict = gate({ trigger: 'confirm', controls });
+    const verdict = gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls });
 
     expect(verdict).toEqual({ allow: true });
     expect(controls.setGateStatus).not.toHaveBeenCalled();
@@ -114,7 +129,7 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    const verdict = gate({ trigger: 'confirm', controls });
+    const verdict = gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls });
 
     expect(verdict).toEqual({ allow: true });
     // The prelude is cleared, never set — and no status was driven.
@@ -131,7 +146,7 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    expect(gate({ trigger: 'confirm', controls })).toEqual({ allow: true });
+    expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).toEqual({ allow: true });
     expect(mocks.signTerms).not.toHaveBeenCalled();
   });
 
@@ -142,7 +157,7 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    const verdict = gate({ trigger: 'confirm', controls });
+    const verdict = gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls });
     expect(verdict).toBeInstanceOf(Promise);
     expect(controls.setPreludeSteps).toHaveBeenCalledWith([expect.objectContaining({ kind: 'signature' })]);
     const statuses = () => controls.setGateStatus.mock.calls.map(([status]) => status);
@@ -161,7 +176,9 @@ describe('useTermsSignatureGate', () => {
     mocks.connected.vpnData.isConnectedToVpn = true;
     const { gate } = renderGate();
 
-    await expect(gate({ trigger: 'confirm', controls: makeControls() })).resolves.toEqual({
+    await expect(
+      gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls: makeControls() })
+    ).resolves.toEqual({
       allow: true
     });
     expect(mocks.signTerms).toHaveBeenCalled();
@@ -172,7 +189,9 @@ describe('useTermsSignatureGate', () => {
     // isUsUser and isConnectedToVpn both undefined (check unresolved).
     const { gate } = renderGate();
 
-    await expect(gate({ trigger: 'confirm', controls: makeControls() })).resolves.toEqual({
+    await expect(
+      gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls: makeControls() })
+    ).resolves.toEqual({
       allow: true
     });
     expect(mocks.signTerms).toHaveBeenCalled();
@@ -186,7 +205,9 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
+    await expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+      allow: false
+    });
     expect(controls.setGateStatus.mock.calls.at(-1)?.[0]).toBe('error');
   });
 
@@ -198,7 +219,9 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
+    await expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+      allow: false
+    });
     expect(mocks.signTerms).not.toHaveBeenCalled();
     expect(mocks.retryTermsCheck).toHaveBeenCalledTimes(1);
     expect(controls.setGateStatus.mock.calls.at(-1)?.[0]).toBe('error');
@@ -209,7 +232,7 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    expect(gate({ trigger: 'confirm', controls })).toEqual({ allow: false });
+    expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).toEqual({ allow: false });
     expect(controls.closeModal).toHaveBeenCalledTimes(1);
     expect(mocks.signTerms).not.toHaveBeenCalled();
   });
@@ -222,7 +245,7 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    const verdict = gate({ trigger: 'confirm', controls });
+    const verdict = gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls });
     expect(verdict).toBeInstanceOf(Promise);
     expect(controls.setGateStatus.mock.calls[0][0]).toBe('initialized');
 
@@ -239,7 +262,9 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
+    await expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+      allow: false
+    });
     expect(controls.closeModal).toHaveBeenCalledTimes(1);
   });
 
@@ -249,7 +274,9 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
+    await expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+      allow: false
+    });
     expect(controls.closeModal).toHaveBeenCalledTimes(1);
     expect(mocks.signTerms).not.toHaveBeenCalled();
   });
@@ -268,7 +295,7 @@ describe('useTermsSignatureGate', () => {
     const controls = makeControls();
 
     await act(async () => {
-      await expect(gateRef.gate({ trigger: 'confirm', controls })).resolves.toEqual({
+      await expect(gateRef.gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
         allow: false
       });
     });
@@ -292,7 +319,7 @@ describe('useTermsSignatureGate', () => {
     const { rerender } = render(<Host />, { wrapper });
 
     await act(async () => {
-      await gateRef.gate({ trigger: 'confirm', controls: makeControls() });
+      await gateRef.gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls: makeControls() });
     });
     expect(screen.getByText(/unable to verify this wallet/i)).not.toBeNull();
 
@@ -317,7 +344,9 @@ describe('useTermsSignatureGate', () => {
     const { rerender } = render(<Host />, { wrapper });
     const controls = makeControls();
 
-    const verdict = gateRef.gate({ trigger: 'confirm', controls }) as Promise<{ allow: boolean }>;
+    const verdict = gateRef.gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls }) as Promise<{
+      allow: boolean;
+    }>;
     // Wallet switches while the fetch is in flight.
     mocks.wagmiAddress = '0x0987654321098765432109876543210987654321';
     rerender(<Host />);
@@ -336,7 +365,9 @@ describe('useTermsSignatureGate', () => {
     // The session ends (close/relaunch) before the signature phase starts.
     controls.isStale.mockReturnValue(true);
 
-    await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
+    await expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+      allow: false
+    });
     expect(mocks.signTerms).not.toHaveBeenCalled();
   });
 
@@ -346,7 +377,9 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
+    await expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+      allow: false
+    });
 
     // setGateStatus('idle') must land before closeModal, so handleClose reads
     // IDLE instead of the pending INITIALIZED.
@@ -366,10 +399,129 @@ describe('useTermsSignatureGate', () => {
     const { gate } = renderGate();
     const controls = makeControls();
 
-    await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
+    await expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+      allow: false
+    });
 
     const copyOf = (status: string) => controls.setGateStatus.mock.calls.find(([s]) => s === status)?.[1];
     expect(copyOf('initialized')).toBeDefined(); // screening copy on the re-screen
     expect(copyOf('error')?.subtitle).toBeTruthy(); // gate-owned failure subtitle
+  });
+
+  describe('enhanced screening tier ($250k+, APP-517)', () => {
+    beforeEach(() => {
+      // Neither location check owes a signature — isolates the screening tier.
+      mocks.connected.isUsUser = false;
+      mocks.connected.vpnData.isConnectedToVpn = false;
+    });
+
+    it('a fresh enhanced verdict allows synchronously without any fetch', () => {
+      seedEnhancedScreening(true);
+      const { gate } = renderGate();
+      const controls = makeControls();
+
+      expect(gate({ trigger: 'confirm', usdValue: OVER_THRESHOLD, controls })).toEqual({ allow: true });
+      expect(mocks.fetchAddressScreening).not.toHaveBeenCalled();
+      expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+    });
+
+    it('a fresh STANDARD verdict never satisfies the enhanced path — the enhanced endpoint is fetched', async () => {
+      seedScreening(true);
+      mocks.fetchEnhancedAddressScreening.mockResolvedValueOnce({ addressAllowed: true });
+      const { gate } = renderGate();
+      const controls = makeControls();
+
+      await expect(gate({ trigger: 'confirm', usdValue: OVER_THRESHOLD, controls })).resolves.toEqual({
+        allow: true
+      });
+      expect(mocks.fetchEnhancedAddressScreening).toHaveBeenCalledTimes(1);
+      expect(mocks.fetchAddressScreening).not.toHaveBeenCalled();
+    });
+
+    it('a fresh ENHANCED verdict never satisfies the standard path — sub-threshold still re-screens', async () => {
+      seedEnhancedScreening(true);
+      mocks.fetchAddressScreening.mockResolvedValueOnce({ addressAllowed: true });
+      const { gate } = renderGate();
+      const controls = makeControls();
+
+      await expect(gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+        allow: true
+      });
+      expect(mocks.fetchAddressScreening).toHaveBeenCalledTimes(1);
+      expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+    });
+
+    it('an UNKNOWN usdValue takes the enhanced tier (fail-safe)', async () => {
+      mocks.fetchEnhancedAddressScreening.mockResolvedValueOnce({ addressAllowed: true });
+      const { gate } = renderGate();
+      const controls = makeControls();
+
+      await expect(gate({ trigger: 'confirm', usdValue: undefined, controls })).resolves.toEqual({
+        allow: true
+      });
+      expect(mocks.fetchEnhancedAddressScreening).toHaveBeenCalledTimes(1);
+      expect(mocks.fetchAddressScreening).not.toHaveBeenCalled();
+    });
+
+    it('a risky enhanced verdict denies IN the modal (error status + copy), never closing it', () => {
+      seedEnhancedScreening(false);
+      const { gate } = renderGate();
+      const controls = makeControls();
+
+      expect(gate({ trigger: 'confirm', usdValue: OVER_THRESHOLD, controls })).toEqual({ allow: false });
+      expect(controls.closeModal).not.toHaveBeenCalled();
+      const lastStatus = controls.setGateStatus.mock.calls.at(-1);
+      expect(lastStatus?.[0]).toBe('error');
+      expect(lastStatus?.[1]?.subtitle).toBeTruthy();
+      expect(mocks.signTerms).not.toHaveBeenCalled();
+    });
+
+    it('a risky enhanced re-screen (no cache) denies in the modal the same way', async () => {
+      mocks.fetchEnhancedAddressScreening.mockResolvedValueOnce({ addressAllowed: false });
+      const { gate } = renderGate();
+      const controls = makeControls();
+
+      await expect(gate({ trigger: 'confirm', usdValue: OVER_THRESHOLD, controls })).resolves.toEqual({
+        allow: false
+      });
+      expect(controls.closeModal).not.toHaveBeenCalled();
+      expect(controls.setGateStatus.mock.calls.at(-1)?.[0]).toBe('error');
+    });
+
+    it('an unavailable enhanced check fails closed, in the modal — no app-level dialog', async () => {
+      mocks.fetchEnhancedAddressScreening.mockRejectedValue(new Error('enhanced screening down'));
+
+      let gateRef!: ReturnType<typeof useTermsSignatureGate>;
+      const Host = () => {
+        gateRef = useTermsSignatureGate();
+        return <>{gateRef.screeningDialog}</>;
+      };
+      render(<Host />, { wrapper });
+      const controls = makeControls();
+
+      await act(async () => {
+        await expect(
+          gateRef.gate({ trigger: 'confirm', usdValue: OVER_THRESHOLD, controls })
+        ).resolves.toEqual({ allow: false });
+      });
+
+      expect(controls.closeModal).not.toHaveBeenCalled();
+      expect(controls.setGateStatus.mock.calls.at(-1)?.[0]).toBe('error');
+      // The standard path's screening-unavailable dialog stays down.
+      expect(screen.queryByText(/unable to verify this wallet/i)).toBeNull();
+      expect(mocks.signTerms).not.toHaveBeenCalled();
+    });
+
+    it('an allowed enhanced verdict still owes the signature step for US users', async () => {
+      seedEnhancedScreening(true);
+      mocks.connected.isUsUser = true;
+      const { gate } = renderGate();
+      const controls = makeControls();
+
+      await expect(gate({ trigger: 'confirm', usdValue: OVER_THRESHOLD, controls })).resolves.toEqual({
+        allow: true
+      });
+      expect(mocks.signTerms).toHaveBeenCalledTimes(1);
+    });
   });
 });

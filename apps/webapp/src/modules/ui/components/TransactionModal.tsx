@@ -20,9 +20,10 @@ import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TriangleAlert } from 'lucide-react';
 import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
-import type { GateStatusCopy } from '@/modules/ui/context/preTransactionGate';
+import type { GateStatusCopy, TransactionPreflight } from '@/modules/ui/context/preTransactionGate';
 import { cn } from '@/lib/cn';
 
 // The step-list shape lives with its derivation; re-exported so the contract and
@@ -102,6 +103,13 @@ export type TransactionModalProps = {
    * terms signature.
    */
   gateCopy?: GateStatusCopy | null;
+  /**
+   * Enhanced-screening preflight for $250k+ transactions (APP-517). While not
+   * 'clear', the CTAs that would FIRE the transaction are held (pending →
+   * loading, blocked → disabled with the message rendered above them); CTAs
+   * that only advance screens (a three-screen entry's Review) stay live.
+   */
+  preflight?: TransactionPreflight;
 };
 
 const statusIcons: Partial<Record<TxStatus, ReactNode>> = {
@@ -146,7 +154,8 @@ export function TransactionModal({
   errorLabel,
   steps,
   currentStep = 0,
-  gateCopy
+  gateCopy,
+  preflight
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
   // read-only review. Initialised per mount (the provider remounts the modal on
@@ -192,6 +201,16 @@ export function TransactionModal({
   // live by the in-modal body); the review screen uses the top-level config.
   const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
   const firstScreenConfirmDisabled = isEntry ? entry?.confirmDisabled : confirmDisabled;
+  // Which first-screen primary CTA actually FIRES the transaction: the review
+  // confirm, or an entry-only flow's confirm. A three-screen entry's confirm
+  // only advances to the review (and a `confirmAction` override runs in
+  // place), so neither is held by the preflight — the review's confirm is.
+  const primaryConfirmFiresTx = isReview || (isEntry && !entry?.confirmAction && !hasReviewStage);
+  // Enhanced-screening hold (APP-517): blocked disables the firing CTAs (the
+  // message renders above them); pending renders them in the DS loading state
+  // unless something else already disables them.
+  const preflightBlocked = preflight?.kind === 'blocked';
+  const preflightPending = preflight?.kind === 'pending';
   // The wallet/status screen shows a compact summary when supplied; otherwise it
   // falls back to the review body (review path only), so consumers that pass only
   // `transactionContent` keep their previous transaction-screen content.
@@ -480,6 +499,14 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
+                {/* Enhanced-screening failure (APP-517): rendered above the CTAs,
+                    which stay visible but disabled — the transaction is blocked. */}
+                {preflight?.kind === 'blocked' && (
+                  <div className="flex items-start gap-2" data-testid="transaction-preflight-blocked">
+                    <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
+                    <Text className="text-error text-sm">{preflight.message}</Text>
+                  </div>
+                )}
                 {hasSecondaryConfirm ? (
                   // Comp 1036:214001: two flex-1 CTAs with a 20px gutter.
                   <div className="flex w-full gap-5">
@@ -488,7 +515,8 @@ export function TransactionModal({
                       size="xl"
                       className="flex-1"
                       onClick={handleSecondaryConfirm}
-                      disabled={entry?.secondaryConfirmDisabled}
+                      disabled={entry?.secondaryConfirmDisabled || preflightBlocked}
+                      loading={!entry?.secondaryConfirmDisabled && preflightPending}
                     >
                       {entry?.secondaryConfirmLabel}
                     </Button>
@@ -497,7 +525,8 @@ export function TransactionModal({
                       size="xl"
                       className="flex-1"
                       onClick={handleConfirm}
-                      disabled={firstScreenConfirmDisabled}
+                      disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
+                      loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
                     >
                       {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
                     </Button>
@@ -508,7 +537,8 @@ export function TransactionModal({
                     size="xl"
                     className="w-full"
                     onClick={handleConfirm}
-                    disabled={firstScreenConfirmDisabled}
+                    disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
+                    loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
                   >
                     {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
                   </Button>

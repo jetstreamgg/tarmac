@@ -9,6 +9,7 @@ import {
   useRewardContractTokens,
   useStakeSkyAllowance,
   useStakeUsdsAllowance,
+  useSkyPrice,
   useStakeUrnSelectedRewardContract,
   useStakeUrnSelectedVoteDelegate,
   ZERO_ADDRESS
@@ -115,6 +116,7 @@ export function useStakeManageLaunch({
   onSuccess
 }: UseStakeManageLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
+  const { priceString: skyPriceString } = useSkyPrice();
   const { address } = useConnection();
 
   // The gating baselines (M12): reward passes through unchanged; the delegate
@@ -242,7 +244,30 @@ export function useStakeManageLaunch({
       ...(borrowAmount != null && { borrowAmount, borrowAction })
     };
 
+    // USD notional for the enhanced-screening threshold (APP-517): the moved
+    // SKY leg at spot plus the moved USDS leg at $1, magnitudes regardless of
+    // direction. A non-zero SKY leg with no price available stays
+    // `undefined` — unknown, treated as above-threshold. A delegate-only
+    // change moves nothing and values at $0.
+    const skyLegFloat = hasLock
+      ? Number(formatUnits(skyToLock, 18))
+      : hasFree
+        ? Number(formatUnits(skyToFree, 18))
+        : 0;
+    const usdsLegFloat = hasBorrow
+      ? Number(formatUnits(usdsToBorrow, 18))
+      : hasWipe
+        ? Number(formatUnits(usdsToWipe, 18))
+        : 0;
+    const usdValue =
+      skyLegFloat === 0
+        ? usdsLegFloat
+        : skyPriceString
+          ? skyLegFloat * parseFloat(skyPriceString) + usdsLegFloat
+          : undefined;
+
     launchModal({
+      usdValue,
       // Confirm-modal titles by staged action set (M7, UX 1104:*).
       title: isDelegateOnly ? t`Confirm delegate change` : isBorrowOnly ? t`Confirm borrow` : t`Confirm`,
       transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, StakeFlow.MANAGE)),
@@ -297,6 +322,7 @@ export function useStakeManageLaunch({
     urnSelectedRewardContract,
     selectedRewardSymbol,
     shouldUseBatch,
+    skyPriceString,
     transactionContent,
     steps,
     onSuccess

@@ -213,7 +213,10 @@ export function StUsdsModalForm({
     transactionContent,
     transactionScreenContent,
     steps,
-    toast
+    toast,
+    // Amounts are USDS-denominated in both flows ($1-pegged) — enhanced
+    // screening, APP-517.
+    usdValue: parseFloat(formatUnits(amount, DECIMALS))
   });
 
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);

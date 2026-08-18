@@ -9,7 +9,14 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Text } from '@/modules/layout/components/Typography';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
-import { addressScreeningQueryKey, fetchAddressScreening, type AddressScreeningResult } from '@/hooks';
+import {
+  addressScreeningQueryKey,
+  fetchAddressScreening,
+  enhancedAddressScreeningQueryKey,
+  fetchEnhancedAddressScreening,
+  requiresEnhancedScreening,
+  type AddressScreeningResult
+} from '@/hooks';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { TermsLink } from '@/modules/ui/components/TermsModal';
 import type {
@@ -26,7 +33,7 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
  * so the async re-screen only runs when that polling has been failing or
  * paused for four hours straight.
  */
-const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
+export const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 
 /** Built per call: lingui's `t` must run after locale activation, not at module load. */
 const termsSignatureStep = (): TransactionStep => ({
@@ -63,8 +70,13 @@ const termsSignatureStep = (): TransactionStep => ({
  *     signature (or the worker's already-signed no-op) lets the transaction
  *     proceed.
  *
- * A future $250k+ transaction check (board note, TBD) slots into step 1 — it
- * would need the transaction's USD value threaded into the gate context.
+ * Step 1 is tiered by the transaction's USD value (APP-517): at/above the
+ * enhanced-screening threshold — or when the value is unknown — the address
+ * is screened via the enhanced endpoint (stricter provider settings, its own
+ * cache key) instead of the standard one, and a denial renders in the modal
+ * rather than closing into the app-level blocked dialog. The modal-side
+ * preflight (`useEnhancedScreeningPreflight`) warms the same query, so this
+ * usually passes synchronously.
  */
 export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDialog: ReactNode } {
   const queryClient = useQueryClient();
@@ -125,6 +137,28 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
     const screeningCopy = (): GateStatusCopy => ({
       message: <Trans>Verifying your wallet address…</Trans>,
       subtitle: t`Running a quick check before your transaction starts.`
+    });
+    // Enhanced-screening denials render IN the modal (error status + copy)
+    // rather than closing into an app-level surface: no app-level dialog reads
+    // the enhanced verdict — a wallet blocked for high-value transactions can
+    // still browse and transact below the threshold (APP-517).
+    const enhancedBlockedCopy = (): GateStatusCopy => ({
+      message: (
+        <Trans>
+          This wallet didn&apos;t pass the additional verification required for transactions of this size, so
+          the transaction can&apos;t be completed.
+        </Trans>
+      ),
+      subtitle: t`The transaction was not started.`
+    });
+    const enhancedUnavailableCopy = (): GateStatusCopy => ({
+      message: (
+        <Trans>
+          We couldn&apos;t run the additional verification required for transactions of this size, so it
+          can&apos;t be submitted right now. This is usually temporary — please try again in a few minutes.
+        </Trans>
+      ),
+      subtitle: t`The transaction was not started.`
     });
     const signaturePendingCopy = (): GateStatusCopy => ({
       message: <Trans>Review and sign the Terms of Use confirmation in your wallet.</Trans>,
@@ -202,19 +236,36 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
       })();
     };
 
-    return ({ controls }) => {
+    return ({ controls, usdValue }) => {
       if (shouldSkipAuthChecks()) return { allow: true };
       const s = live.current;
       // No connected address: nothing to screen and nothing to sign for. The
       // config's confirm path can't start a write without a wallet anyway.
       if (!s.address) return { allow: true };
 
-      const cached = s.queryClient.getQueryState<AddressScreeningResult>(addressScreeningQueryKey(s.address));
+      // Screening tier (APP-517): at/above the USD threshold — or when the
+      // value is unknown — the enhanced endpoint replaces the standard one.
+      // Separate query key by construction, so a standard "clean" verdict can
+      // never satisfy the enhanced path (nor the reverse). Below the
+      // threshold this whole path is byte-identical to the C6 behavior.
+      const enhanced = requiresEnhancedScreening(usdValue);
+      const screeningKey = enhanced
+        ? enhancedAddressScreeningQueryKey(s.address)
+        : addressScreeningQueryKey(s.address);
+
+      const cached = s.queryClient.getQueryState<AddressScreeningResult>(screeningKey);
       const hasFreshVerdict =
         cached?.data !== undefined && Date.now() - cached.dataUpdatedAt < SCREENING_MAX_AGE_MS;
 
       if (hasFreshVerdict) {
         if (!cached!.data!.addressAllowed) {
+          if (enhanced) {
+            // Status is IDLE on this sync path; drive it straight to the
+            // in-modal error (see enhancedBlockedCopy). The preflight reading
+            // the same cache keeps the first-screen CTAs disabled on Back.
+            controls.setGateStatus('error', enhancedBlockedCopy());
+            return { allow: false };
+          }
           // Risky: the transaction must not start, and the app-level blocked
           // dialog (reading this same query through ConnectedContext) is the
           // surface that replaces the modal. Status is still IDLE on this
@@ -234,8 +285,9 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
         let screening: AddressScreeningResult;
         try {
           screening = await s.queryClient.fetchQuery({
-            queryKey: addressScreeningQueryKey(gatedAddress),
-            queryFn: () => fetchAddressScreening(gatedAddress, getAuthUrl()),
+            queryKey: screeningKey,
+            queryFn: () =>
+              (enhanced ? fetchEnhancedAddressScreening : fetchAddressScreening)(gatedAddress, getAuthUrl()),
             staleTime: SCREENING_MAX_AGE_MS,
             retry: 1
           });
@@ -243,6 +295,10 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
           // Fail closed — screening being down never falls through to the
           // transaction (APP-501 AC). No dialog if the session already ended.
           if (controls.isStale()) return { allow: false };
+          if (enhanced) {
+            controls.setGateStatus('error', enhancedUnavailableCopy());
+            return { allow: false };
+          }
           if (hadStaleVerdict && live.current.address === gatedAddress) {
             setScreeningUnavailableFor(gatedAddress);
           }
@@ -254,6 +310,10 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
           return { allow: false };
         }
         if (!screening.addressAllowed) {
+          if (enhanced) {
+            controls.setGateStatus('error', enhancedBlockedCopy());
+            return { allow: false };
+          }
           return denyAndClose(controls);
         }
         return proceedPastScreening(controls, true, gatedAddress);

@@ -30,9 +30,11 @@ import type {
 } from './transactionContract';
 import {
   allowAllGate,
+  allowAllPreflight,
   type GateControls,
   type GateStatusCopy,
   type GateTrigger,
+  type PreflightHook,
   type PreTransactionGate
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
@@ -109,10 +111,15 @@ export function TransactionProvider({
   // The pre-transaction gate (see ./preTransactionGate). Injectable so tests
   // can exercise the deny/async paths; the app mounts the allow-all stub until
   // the signature verdict lands (APP-501).
-  gate = allowAllGate
+  gate = allowAllGate,
+  // The enhanced-screening preflight (APP-517), a HOOK called unconditionally
+  // every render — its identity must be stable for the life of the provider
+  // (the app passes a module-level hook; tests pass stable fakes).
+  usePreflight = allowAllPreflight
 }: {
   children: ReactNode;
   gate?: PreTransactionGate;
+  usePreflight?: PreflightHook;
 }) {
   // Warm the EIP-5792 capability probe from the provider, which is mounted for the whole
   // session, so it runs on connect rather than the first time a flow needs the answer.
@@ -210,6 +217,18 @@ export function TransactionProvider({
   const chainId = useChainId();
   const { address } = useConnection();
   const isSafeWallet = useIsSafeWallet();
+
+  // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
+  // the live USD value crosses the threshold, so the verdict is usually in by
+  // the time the user reaches the screen whose Confirm fires the transaction.
+  // The modal renders its blocked message above the CTAs and gates the
+  // transaction-firing buttons on it; the gate enforces the same verdict at
+  // Confirm through the shared query cache. `active` stays true while
+  // minimized — the session is alive, just hidden.
+  const preflight = usePreflight({
+    usdValue: activeConfig?.usdValue,
+    active: open && !!activeConfig
+  });
   const { trackWidgetReviewViewed, trackTransactionStarted, trackTransactionCompleted } = useAppAnalytics();
   const { startNewFlow } = useAnalyticsFlow();
 
@@ -485,7 +504,13 @@ export function TransactionProvider({
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
       if (gateInFlightRef.current === sessionGenRef.current) return;
       const gen = sessionGenRef.current;
-      const verdict = gate({ trigger, controls: makeGateControls(gen) });
+      const verdict = gate({
+        trigger,
+        // Read at fire time (like the config callbacks): editable flows keep
+        // this live via updateModalContent until the engine starts.
+        usdValue: configRef.current?.usdValue,
+        controls: makeGateControls(gen)
+      });
       if (verdict instanceof Promise) {
         gateInFlightRef.current = gen;
         verdict
@@ -797,6 +822,7 @@ export function TransactionProvider({
             steps={modalSteps}
             currentStep={modalView.currentStep}
             gateCopy={modalView.gateCopy}
+            preflight={preflight}
           />
         )}
       </EntrySlotContext.Provider>

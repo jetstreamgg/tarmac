@@ -86,8 +86,44 @@ export type GateVerdict = {
 
 export type PreTransactionGate = (context: {
   trigger: GateTrigger;
+  /**
+   * The transaction's estimated USD notional, read from the active config at
+   * fire time (APP-517). Decides the screening tier: at or above the
+   * enhanced-screening threshold — and when UNKNOWN (`undefined`) — the gate
+   * screens via the enhanced endpoint instead of the standard one.
+   */
+  usdValue: number | undefined;
   controls: GateControls;
 }) => GateVerdict | Promise<GateVerdict>;
 
 /** Pass-through gate: every transaction allowed, synchronously. Tests and Storybook-style mounts. */
 export const allowAllGate: PreTransactionGate = () => ({ allow: true });
+
+/**
+ * The modal-side half of the enhanced-screening surface (APP-517): a hook the
+ * provider calls every render with the active session's live USD value. At or
+ * above the threshold it warms the enhanced verdict so the gate can pass
+ * synchronously at Confirm, and its result drives the first-screen CTAs — a
+ * transaction cannot be fired while the check is pending, failed, or risky.
+ * The message renders inside the modal, above the CTA.
+ *
+ * Injectable (like `gate`) so the provider stays policy-free and tests can
+ * exercise each state; the app mounts `useEnhancedScreeningPreflight`.
+ */
+export type TransactionPreflight =
+  /** No check owed (below threshold / no session / checks skipped), or it passed. */
+  | { kind: 'clear' }
+  /** The check is required and its verdict is still in flight. */
+  | { kind: 'pending' }
+  /** The check failed (risky, or unavailable — fail closed). The message is shown above the CTA. */
+  | { kind: 'blocked'; message: ReactNode };
+
+export type PreflightHook = (context: {
+  /** Live USD value of the active config (see `TransactionConfig.usdValue`); undefined = unknown. */
+  usdValue: number | undefined;
+  /** True while a transaction session is active (modal open or minimized). */
+  active: boolean;
+}) => TransactionPreflight;
+
+/** Pass-through preflight: never gates. Tests and Storybook-style mounts. */
+export const allowAllPreflight: PreflightHook = () => ({ kind: 'clear' });

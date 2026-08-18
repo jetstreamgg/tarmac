@@ -362,6 +362,9 @@ export function useSavingsLaunch({
 
     if (isSupply) {
       launchModal({
+        // $1-pegged origin; the amount is fixed at launch (enhanced
+        // screening, APP-517).
+        usdValue: parseFloat(formatUnits(amount, originDecimals)),
         title: t`Review supply`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
@@ -392,6 +395,9 @@ export function useSavingsLaunch({
       // withdraw swaps sUSDS → token through the PSM (approve elided when the
       // sUSDS → psm3L2 allowance already covers it). `steps` is the hoisted memo.
       launchModal({
+        // $1-pegged origin; the amount is fixed at launch (enhanced
+        // screening, APP-517).
+        usdValue: parseFloat(formatUnits(amount, originDecimals)),
         title: t`Withdraw from Sky Savings`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {

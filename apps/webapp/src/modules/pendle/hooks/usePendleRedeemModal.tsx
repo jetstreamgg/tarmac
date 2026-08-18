@@ -154,6 +154,23 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const executeRef = useRef<() => void>(() => undefined);
   executeRef.current = () => writeHook.execute();
 
+  // USD notional for the enhanced-screening threshold (APP-517): the valued
+  // output leg, live across output-token/quote changes (pushed by the effect
+  // below). A non-empty redeem whose leg can't be valued yet (quote or price
+  // missing) is `undefined` — unknown, treated as above-threshold.
+  const usdValue = useMemo(() => {
+    const leg = pendleNonPtLeg('redeem', {
+      originSymbol: ptToken.symbol,
+      targetSymbol: selectedOutputToken.symbol,
+      amountInBigint: ptBalance,
+      amountOutBigint: quote?.amountOut ?? 0n,
+      fromDecimals: market.underlyingDecimals,
+      toDecimals: getTokenDecimals(selectedOutputToken, mainnet.id)
+    });
+    if (leg.amount === 0) return ptBalance > 0n ? undefined : 0;
+    return valueUsd(leg.symbol, leg.amount);
+  }, [ptToken, selectedOutputToken, ptBalance, quote, market, valueUsd]);
+
   const openRedeemModal = useCallback(() => {
     const toDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
     const data = pendleAnalyticsData({
@@ -188,6 +205,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     });
     const usd = valueUsd(leg.symbol, leg.amount);
     launch({
+      usdValue,
       title: t`Redeem PT-${market.underlyingSymbol}`,
       transactionContent,
       rightHeaderComponent,
@@ -214,6 +232,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     quote,
     slippage,
     valueUsd,
+    usdValue,
     transactionContent,
     rightHeaderComponent,
     confirmDisabled,
@@ -222,8 +241,16 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
 
   useEffect(() => {
     if (!isModalOpen) return;
-    updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled });
-  }, [isModalOpen, sessionId, updateModalContent, transactionContent, rightHeaderComponent, confirmDisabled]);
+    updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled, usdValue });
+  }, [
+    isModalOpen,
+    sessionId,
+    updateModalContent,
+    transactionContent,
+    rightHeaderComponent,
+    confirmDisabled,
+    usdValue
+  ]);
 
   return {
     openRedeemModal,

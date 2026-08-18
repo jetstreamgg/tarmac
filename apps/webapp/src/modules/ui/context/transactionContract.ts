@@ -158,6 +158,17 @@ export type TransactionConfig = {
   steps?: TransactionStep[];
   /** Analytics metadata for tracking transaction lifecycle events. */
   analytics?: TransactionAnalytics;
+  /**
+   * Estimated USD notional of the transaction (APP-517): what the compliance
+   * surface compares against the enhanced-screening threshold. Editable flows
+   * launch with `0` (nothing entered yet) and keep it live via
+   * `updateModalContent` as the amount changes; flows whose amounts resolve
+   * asynchronously (the claim panels) launch with `undefined` until the
+   * amounts land. `undefined` means UNKNOWN and is treated as
+   * above-threshold — the enhanced check is required — so a flow that cannot
+   * value its amount fails safe rather than open.
+   */
+  usdValue?: number;
   /** Identity used to gate updateModalContent calls to the active session. */
   sessionId?: string;
 };
@@ -185,6 +196,7 @@ export type LiveModalUpdate = Partial<
     | 'steps'
     | 'toast'
     | 'analytics'
+    | 'usdValue'
   >
 > & {
   /** Partial entry merged into the existing entry — `content` is preserved if omitted. */

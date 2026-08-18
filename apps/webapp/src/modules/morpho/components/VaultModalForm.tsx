@@ -246,7 +246,11 @@ export function VaultModalForm({
     transactionContent,
     transactionScreenContent,
     steps,
-    toast
+    toast,
+    // Every current vault asset is a $1-pegged stablecoin (USDC/USDS/USDT),
+    // so the entered amount doubles as the USD notional (enhanced screening,
+    // APP-517).
+    usdValue: parseFloat(formatUnits(amount, decimals))
   });
 
   const body = (
