@@ -102,7 +102,47 @@ describe('TransactionProvider enhanced-screening preflight', () => {
     renderWithPreflight({ title: 'Supply', usdValue: 300_000, onConfirm: vi.fn() });
 
     const last = preflightContexts.at(-1);
-    expect(last).toEqual({ usdValue: 300_000, active: true });
+    expect(last).toEqual({ usdValue: 300_000, active: true, actionable: true });
+  });
+
+  it("a disabled flow is not actionable — the hook never arms while the user can't proceed", () => {
+    renderWithPreflight({
+      title: 'Supply',
+      usdValue: 300_000,
+      confirmDisabled: true,
+      onConfirm: vi.fn()
+    });
+
+    expect(preflightContexts.at(-1)).toEqual({ usdValue: 300_000, active: true, actionable: false });
+  });
+
+  it("an entry flow's own confirm gating drives actionability", () => {
+    renderWithPreflight({
+      title: 'Claim rewards',
+      usdValue: undefined,
+      entry: { content: <div>claim body</div>, confirmLabel: 'Claim', confirmDisabled: true },
+      onConfirm: vi.fn()
+    });
+
+    expect(preflightContexts.at(-1)).toEqual({ usdValue: undefined, active: true, actionable: false });
+  });
+
+  it('an enabled secondary CTA keeps a two-action entry actionable', () => {
+    renderWithPreflight({
+      title: 'Claim rewards',
+      usdValue: 300_000,
+      entry: {
+        content: <div>claim body</div>,
+        confirmLabel: 'Claim & Restake',
+        confirmDisabled: true,
+        secondaryConfirmLabel: 'Claim',
+        secondaryConfirmDisabled: false
+      },
+      onConfirm: vi.fn(),
+      onSecondaryConfirm: vi.fn()
+    });
+
+    expect(preflightContexts.at(-1)).toEqual({ usdValue: 300_000, active: true, actionable: true });
   });
 
   it('clear: the review confirm fires normally and no message is shown', () => {

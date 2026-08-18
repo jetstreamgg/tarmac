@@ -16,11 +16,13 @@ const PENDING: TransactionPreflight = { kind: 'pending' };
 /**
  * The modal-side enhanced-screening check for $250k+ transactions (APP-517).
  * Watches the active session's live USD value; once it crosses the threshold
- * (or is unknown), fetches the enhanced verdict for the connected address —
- * so by the time the user reaches the screen whose Confirm fires the
- * transaction, the verdict is usually already in. The result gates the
- * modal's transaction-firing CTAs and, on a failure, supplies the message
- * rendered above them.
+ * (or is unknown) WHILE the flow is actionable — its own confirm gating
+ * (balance, quote, resolved claim set) would let the user proceed — it
+ * fetches the enhanced verdict for the connected address, so by the time the
+ * user reaches the screen whose Confirm fires the transaction, the verdict
+ * is usually already in. A user merely playing with the amount input never
+ * triggers a call. The result gates the modal's transaction-firing CTAs and,
+ * on a failure, supplies the message rendered above them.
  *
  * Shares its query (key + staleness) with the gate's enforcement path in
  * `useTermsSignatureGate`, so a verdict warmed here lets the gate pass
@@ -33,9 +35,10 @@ const PENDING: TransactionPreflight = { kind: 'pending' };
  * 60s interval (matching the connect-time screening cadence) so a transient
  * outage recovers without the user having to relaunch the flow.
  */
-export const useEnhancedScreeningPreflight: PreflightHook = ({ usdValue, active }) => {
+export const useEnhancedScreeningPreflight: PreflightHook = ({ usdValue, active, actionable }) => {
   const { address } = useConnection();
-  const required = active && !shouldSkipAuthChecks() && !!address && requiresEnhancedScreening(usdValue);
+  const required =
+    active && actionable && !shouldSkipAuthChecks() && !!address && requiresEnhancedScreening(usdValue);
 
   const { data, isError } = useQuery({
     queryKey: enhancedAddressScreeningQueryKey(address),

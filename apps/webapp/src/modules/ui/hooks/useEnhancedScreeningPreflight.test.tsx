@@ -42,10 +42,10 @@ const wrapper = ({ children }: { children: ReactNode }) => (
   </I18nProvider>
 );
 
-const renderPreflight = (usdValue: number | undefined, active = true) =>
-  renderHook(({ v, a }) => useEnhancedScreeningPreflight({ usdValue: v, active: a }), {
+const renderPreflight = (usdValue: number | undefined, active = true, actionable = true) =>
+  renderHook(({ v, a, act }) => useEnhancedScreeningPreflight({ usdValue: v, active: a, actionable: act }), {
     wrapper,
-    initialProps: { v: usdValue, a: active }
+    initialProps: { v: usdValue, a: active, act: actionable }
   });
 
 describe('useEnhancedScreeningPreflight', () => {
@@ -68,6 +68,23 @@ describe('useEnhancedScreeningPreflight', () => {
     const { result } = renderPreflight(1_000_000, false);
     expect(result.current).toEqual({ kind: 'clear' });
     expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+  });
+
+  it('not actionable (over balance / quote pending): no call even at whale size', () => {
+    const { result } = renderPreflight(1_000_000, true, false);
+    expect(result.current).toEqual({ kind: 'clear' });
+    expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+  });
+
+  it('becoming actionable arms the check; the verdict then gates as usual', async () => {
+    mocks.fetchEnhancedAddressScreening.mockResolvedValueOnce({ addressAllowed: false });
+    const { result, rerender } = renderPreflight(400_000, true, false);
+    expect(result.current).toEqual({ kind: 'clear' });
+    expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+
+    rerender({ v: 400_000, a: true, act: true });
+    await waitFor(() => expect(result.current.kind).toBe('blocked'));
+    expect(mocks.fetchEnhancedAddressScreening).toHaveBeenCalledTimes(1);
   });
 
   it('the dev/e2e bypass clears everything', () => {
@@ -122,12 +139,12 @@ describe('useEnhancedScreeningPreflight', () => {
     const { result, rerender } = renderPreflight(100);
     expect(result.current).toEqual({ kind: 'clear' });
 
-    rerender({ v: 400_000, a: true });
+    rerender({ v: 400_000, a: true, act: true });
     await waitFor(() => expect(result.current.kind).toBe('blocked'));
 
     // Dropping back below the threshold releases the hold — the smaller
     // transaction never owed this check.
-    rerender({ v: 100, a: true });
+    rerender({ v: 100, a: true, act: true });
     expect(result.current).toEqual({ kind: 'clear' });
   });
 });

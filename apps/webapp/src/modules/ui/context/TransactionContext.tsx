@@ -219,15 +219,29 @@ export function TransactionProvider({
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
-  // the live USD value crosses the threshold, so the verdict is usually in by
-  // the time the user reaches the screen whose Confirm fires the transaction.
-  // The modal renders its blocked message above the CTAs and gates the
-  // transaction-firing buttons on it; the gate enforces the same verdict at
-  // Confirm through the shared query cache. `active` stays true while
-  // minimized — the session is alive, just hidden.
+  // the live USD value crosses the threshold WHILE the flow's own gating
+  // would let the user proceed, so the verdict is usually in by the time
+  // they reach the screen whose Confirm fires the transaction — but a user
+  // merely playing with the input (over balance, quote pending, claim set
+  // unresolved) never triggers a call. The modal renders the blocked message
+  // above the CTAs and gates the transaction-firing buttons on the result;
+  // the gate enforces the same verdict at Confirm through the shared query
+  // cache. `active` stays true while minimized — the session is alive, just
+  // hidden.
+  //
+  // `actionable` reads the flow's OWN confirm gating from the live config —
+  // never the preflight's hold (that lives in the modal's props, not the
+  // config), so there is no feedback loop. An entry flow may expose a second
+  // CTA; either being enabled means the user can proceed.
+  const preflightEntry = activeConfig?.entry;
+  const actionable = preflightEntry
+    ? !preflightEntry.confirmDisabled ||
+      (!!activeConfig?.onSecondaryConfirm && !preflightEntry.secondaryConfirmDisabled)
+    : !activeConfig?.confirmDisabled;
   const preflight = usePreflight({
     usdValue: activeConfig?.usdValue,
-    active: open && !!activeConfig
+    active: open && !!activeConfig,
+    actionable
   });
   const { trackWidgetReviewViewed, trackTransactionStarted, trackTransactionCompleted } = useAppAnalytics();
   const { startNewFlow } = useAnalyticsFlow();

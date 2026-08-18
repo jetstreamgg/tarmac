@@ -123,6 +123,14 @@ export type PreflightHook = (context: {
   usdValue: number | undefined;
   /** True while a transaction session is active (modal open or minimized). */
   active: boolean;
+  /**
+   * True while the flow's OWN gating would let the user proceed (amount
+   * within balance, quote ready, claim set resolved — whatever the flow
+   * encodes in its confirm-disabled state). While false the user cannot
+   * reach a transaction anyway, so no check is owed: a user playing with
+   * the amount input beyond their balance never triggers a screening call.
+   */
+  actionable: boolean;
 }) => TransactionPreflight;
 
 /** Pass-through preflight: never gates. Tests and Storybook-style mounts. */
