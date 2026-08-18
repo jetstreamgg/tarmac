@@ -45,10 +45,15 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
   }, [isConnectedAndAcceptedTerms]);
 
   useEffect(() => {
-    if (termsCheckError) {
+    // Guarded on the connection: the error flag can land on a disconnected app
+    // when the failing /check resolves in the gap between wagmi's disconnect
+    // and the address effect that would have discarded it (the ref moves in a
+    // passive effect, after paint) — and an unguarded open here would strand
+    // the modal over a disconnected page.
+    if (termsCheckError && isConnected) {
       setIsModalOpen(true);
     }
-  }, [termsCheckError]);
+  }, [termsCheckError, isConnected]);
 
   const openModal = () => {
     if (!isConnectedAndAcceptedTerms && openConnectModal) {
