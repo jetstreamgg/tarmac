@@ -31,18 +31,18 @@ const TermsLink = ({ href, children }: { href: string; children: ReactNode }) =>
   </a>
 );
 
-// The key-points block (copy: FigJam board fsckqhSPJs669Qpwm1W7wt node
-// 27:1614 — the board wins over the comp's draft copy; layout: Figma
-// 1868:80725). Built per render so the Trans macros re-evaluate on locale
-// switches.
+// The key-points block (copy AND layout: Figma 1868:80727/1868:80765 — the
+// comps were realigned 18 Aug 2026 and now supersede the FigJam board text
+// C4 first shipped). The bracketed [LINK] placeholders in the comp resolve to
+// the existing docs URLs. Built per render so the Trans macros re-evaluate on
+// locale switches.
 const getKeyPoints = (): { title: ReactNode; body: ReactNode }[] => [
   {
     title: <Trans>Your assets stay with you</Trans>,
     body: (
       <Trans>
-        We do not take custody of your assets. You transact directly with the protocol through your own
-        wallet. Skybase International is not a broker, exchange, adviser, or fiduciary, and owes you no
-        fiduciary duties.
+        We never take custody or control of your assets. You transact directly with the protocol through your
+        own wallet. Skybase International is not a broker, exchange, adviser, or fiduciary.
       </Trans>
     )
   },
@@ -50,9 +50,9 @@ const getKeyPoints = (): { title: ReactNode; body: ReactNode }[] => [
     title: <Trans>Eligibility</Trans>,
     body: (
       <Trans>
-        By ticking the box below you confirm that you are not located in a restricted jurisdiction, are not
-        subject to sanctions (OFAC, EU, UK or UN lists), and are not acting on behalf of anyone who is.
-        Certain features are unavailable in certain jurisdictions, as set out in the Terms.
+        By continuing, you confirm that you are not located in a restricted jurisdiction, are not subject to
+        sanctions (OFAC, EU, UK or UN lists), and are not acting on behalf of anyone who is. Certain features
+        are unavailable in certain jurisdictions.
       </Trans>
     )
   },
@@ -61,7 +61,7 @@ const getKeyPoints = (): { title: ReactNode; body: ReactNode }[] => [
     body: (
       <Trans>
         The Terms include an arbitration agreement and a waiver of class actions and jury trials (Terms,
-        Section 5).
+        Section 5)
       </Trans>
     )
   },
@@ -69,9 +69,9 @@ const getKeyPoints = (): { title: ReactNode; body: ReactNode }[] => [
     title: <Trans>Risk</Trans>,
     body: (
       <Trans>
-        Interacting with blockchain protocols can result in the loss of your assets. Rates shown are neither
-        set nor guaranteed by Skybase International, and may change. Further risks are set out in the Terms
-        (Section 3) and in the <TermsLink href={USER_RISK_DOCS_URL}>User Risk Documentation</TermsLink>.
+        Interacting with blockchain protocols can result in the loss of your assets. Rates shown are variable,
+        set by Sky governance, and not guaranteed by Skybase International. See the{' '}
+        <TermsLink href={USER_RISK_DOCS_URL}>User Risk Documentation</TermsLink>.
       </Trans>
     )
   },
@@ -80,7 +80,7 @@ const getKeyPoints = (): { title: ReactNode; body: ReactNode }[] => [
     body: (
       <Trans>
         The Interface is provided &ldquo;as is&rdquo;; Skybase International&apos;s liability is limited as
-        set out in the Terms (Section 3).
+        set out in the Terms (Section 3)
       </Trans>
     )
   },
@@ -88,10 +88,8 @@ const getKeyPoints = (): { title: ReactNode; body: ReactNode }[] => [
     title: <Trans>Third-party integrations</Trans>,
     body: (
       <Trans>
-        Some features (including Vaults and fixed-rate products) access third-party protocols such as Morpho
-        and Pendle. Skybase International is not the issuer of, and does not assess or endorse, any
-        third-party asset or protocol. Your use of those features is also subject to the applicable
-        third-party terms and disclaimers referenced in the{' '}
+        Some features (including Vaults) access third-party protocols such as Morpho and Pendle; your use of
+        those features is also subject to the applicable third-party terms and disclaimers referenced in the{' '}
         <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink>.
       </Trans>
     )
@@ -237,24 +235,37 @@ export function TermsModal() {
     </div>
   );
 
+  // The effective-date sentence rides the header subtitle (comp 2009:54582).
+  // The terms carry a date and no version number (Kacper with Ann Sofie,
+  // 13 Aug 2026 — APP-513): the comp's "Version 1.0" is placeholder text, and
+  // `terms_version.latest_version` holds the date.
+  const readTheFullTerms = (
+    <Trans>
+      Please read the full <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
+      <TermsLink href={PRIVACY_POLICY_URL}>Privacy Policy</TermsLink> before continuing.
+    </Trans>
+  );
+
   const acceptanceContent = (
     <>
-      {/* Header — Figma 1868:80729: Label 3 title + Body 7 positioning line,
-          DS icon-button close. The comp's back arrow is omitted: this is the
-          flow's first screen (TransactionModal draws the same call), and both
-          exits — Cancel and dismiss — disconnect (APP-270). */}
-      <div className="flex items-start justify-between gap-4">
+      {/* Header — Figma 1868:80729 (realigned comps 1868:80727/80765): Label 3
+          title + Body 7 effective-date line with the document links, DS
+          secondary icon-button close. The comp's back arrow is omitted (user
+          decision, 18 Aug 2026): this is the flow's first screen, and the only
+          dismissal is the X, which disconnects (APP-270). */}
+      <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1.5">
           <ResponsiveModalTitle className="text-fgPrimary font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
-            <Trans>Terms of Use</Trans>
+            <Trans>Terms & Privacy</Trans>
           </ResponsiveModalTitle>
-          <Text tag="p" className="text-fgSecondary text-[11px] leading-4">
-            <Trans>
-              Sky.money is a non-custodial web interface operated by Skybase International. It provides access
-              to the Sky Protocol: open-source smart contracts governed by decentralized Sky governance.
-              Skybase International does not hold your assets or execute transactions on your behalf, and does
-              not set the Sky Savings Rate.
-            </Trans>
+          <Text tag="p" className="text-fgSecondary max-w-[368px] text-[11px] leading-4">
+            {latestTermsVersion ? (
+              <>
+                <Trans>Terms of Use effective {latestTermsVersion}.</Trans> {readTheFullTerms}
+              </>
+            ) : (
+              readTheFullTerms
+            )}
           </Text>
         </div>
         <Button
@@ -269,15 +280,12 @@ export function TermsModal() {
         </Button>
       </div>
 
-      {/* Key points — scrollable card (Figma 1868:80736). The scroll-to-end
-          gate is gone with the embedded document: the full terms are a
-          link-out, so only the checkbox gates the button. */}
+      {/* Key points — label + scrollable card (comp 2009:54572/54592). The
+          scroll-to-end gate is gone with the embedded document: the full terms
+          are a link-out, so only the checkbox gates the button. */}
       <div className="flex min-h-0 flex-col gap-3">
         <Text tag="p" className="text-fgSecondary text-xs leading-[18px]">
-          <Trans>
-            Key points. Please read the full <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
-            <TermsLink href={PRIVACY_POLICY_URL}>Privacy Policy</TermsLink> before continuing:
-          </Trans>
+          <Trans>Key points</Trans>
         </Text>
         <ul className="bg-bgSecondary divide-glassBorder max-h-[40dvh] divide-y overflow-y-auto rounded-3xl px-5 sm:max-h-[417px]">
           {getKeyPoints().map((point, i) => (
@@ -305,42 +313,28 @@ export function TermsModal() {
         />
         <label htmlFor="termsCheckbox" className="text-fgPrimary text-sm leading-5.5">
           <Trans>
-            By ticking this box and selecting Agree and continue, I accept the sky.money{' '}
-            <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
-            <TermsLink href={PRIVACY_POLICY_URL}>Privacy Policy</TermsLink>.
+            I have read and agree to the sky.money <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink>{' '}
+            and <TermsLink href={PRIVACY_POLICY_URL}>Privacy Policy</TermsLink>.
           </Trans>
         </label>
       </div>
 
       {submitErrorContent}
 
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="primary"
-          size="xl"
-          className="w-full"
-          disabled={!isChecked}
-          loading={submitStatus === 'submitting'}
-          onClick={handleAgree}
-        >
-          <Trans>Agree and continue</Trans>
-        </Button>
-        <Button variant="link" size="l" className="w-full" onClick={handleReject} disabled={isSubmitting}>
-          <Trans>Cancel</Trans>
-        </Button>
-      </div>
-
-      {/* The value is the terms' effective date — the terms carry a date and
-          no version number (Kacper with Ann Sofie, 13 Aug 2026 — APP-513),
-          and `terms_version.latest_version` holds that date. */}
-      {latestTermsVersion && (
-        <Text tag="p" className="text-fgTertiary text-center text-[11px] leading-4">
-          <Trans>
-            Terms of Use effective {latestTermsVersion}. A record of your acceptance, including the version
-            accepted, is retained.
-          </Trans>
-        </Text>
-      )}
+      {/* Single full-width CTA (comp 1868:80762/80800) — Cancel and the
+          retention footer were dropped with the comp realignment (user
+          decisions, 18 Aug 2026; the retention sentence is flagged for legal
+          on the PR). */}
+      <Button
+        variant="primary"
+        size="xl"
+        className="w-full"
+        disabled={!isChecked}
+        loading={submitStatus === 'submitting'}
+        onClick={handleAgree}
+      >
+        <Trans>Agree and continue</Trans>
+      </Button>
     </>
   );
 

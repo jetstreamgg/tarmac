@@ -98,13 +98,13 @@ describe('TermsModal', () => {
     expect(mocks.closeModal).toHaveBeenCalledTimes(1);
   });
 
-  it('disconnects when the user explicitly cancels', () => {
+  // The realigned comp (1868:80727) has no Cancel: the X is the only explicit
+  // exit, and it disconnects — covered by the dismissal test above.
+  it('renders a single CTA with no Cancel button', () => {
     renderModal();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-
-    expect(mocks.disconnect).toHaveBeenCalledTimes(1);
-    expect(mocks.closeModal).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    expect(agreeButton()).toBeTruthy();
   });
 
   it('keeps "Agree and continue" disabled until the box is ticked', () => {
@@ -143,24 +143,22 @@ describe('TermsModal', () => {
 
   // While the acceptance POST is in flight there must be no exit: a dismissal
   // would disconnect the wallet while the record still lands server-side.
-  it('locks Cancel, close and the checkbox while the acceptance is submitting', () => {
+  it('locks the close button and the checkbox while the acceptance is submitting', () => {
     mocks.acceptTerms.mockReturnValue(new Promise(() => {}));
     renderModal();
 
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(agreeButton());
 
-    expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('terms-modal-close') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('checkbox') as HTMLButtonElement).disabled).toBe(true);
     expect(mocks.disconnect).not.toHaveBeenCalled();
     expect(mocks.closeModal).not.toHaveBeenCalled();
   });
 
-  // closeModal() is a controlled-prop flip, so onOpenChange's reset never runs
-  // on the Cancel path — without its own reset a failed accept's error banner
-  // would survive into the next auto-open (the component stays mounted).
-  it('clears the error state when the user cancels after a failed acceptance', async () => {
+  // The component stays mounted across reconnects, so a failed accept's error
+  // banner must not survive a dismissal into the next auto-open.
+  it('clears the error state when the modal is dismissed after a failed acceptance', async () => {
     mocks.acceptTerms.mockResolvedValue(false);
     renderModal();
 
@@ -168,15 +166,15 @@ describe('TermsModal', () => {
     fireEvent.click(agreeButton());
     await waitFor(() => expect(screen.getByText(/An error occurred/)).toBeTruthy());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByTestId('terms-modal-close'));
 
     expect(screen.queryByText(/An error occurred/)).toBeNull();
   });
 
   // The terms carry an effective date and no version label (APP-513): the
-  // footer must render the date and nothing in the modal may say "version"
-  // outside the fixed acceptance-record sentence.
-  it('renders the effective date in the footer with no version label', () => {
+  // header subtitle must render the date and nothing in the modal may say
+  // "version" — the comp's "Version 1.0" is placeholder text.
+  it('renders the effective date in the header with no version label', () => {
     renderModal();
 
     expect(screen.getByText(/Terms of Use effective 2026-01-15/)).toBeTruthy();
