@@ -15,6 +15,7 @@ import type {
   AutoSwitchTrigger,
   PromoId
 } from './constants';
+import { Intent } from '@/lib/enums';
 import type { PsmConversionDisabledReason } from '@/modules/convert/hooks/usePsmConversion.helpers';
 import type { WidgetErrorKind } from './lib/classifyTransactionError';
 import type { Destination } from './lib/destination';
@@ -30,6 +31,21 @@ import type { Destination } from './lib/destination';
 
 /** The closed set of widget_name values PostHog insights filter on. */
 export type WidgetName = 'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed';
+
+/**
+ * Intent → widget_name for route-derived emitters, compiler-enforced against
+ * the closed set so UI/routing renames (IntentMapping) can't mutate the
+ * analytics vocabulary. Containers (BALANCES) and route aliases are absent.
+ */
+export const WIDGET_NAME_BY_INTENT: Partial<Record<Intent, WidgetName>> = {
+  [Intent.SAVINGS_INTENT]: 'savings',
+  [Intent.REWARDS_INTENT]: 'rewards',
+  [Intent.STAKE_INTENT]: 'stake',
+  [Intent.EXPERT_INTENT]: 'expert',
+  [Intent.VAULTS_INTENT]: 'vaults',
+  [Intent.CONVERT_INTENT]: 'convert',
+  [Intent.FIXED_INTENT]: 'fixed'
+};
 
 interface CommonEventProps {
   viewport: Viewport;

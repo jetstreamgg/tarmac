@@ -16,7 +16,8 @@ import {
   pendleNonPtLeg,
   usePendleSlippage,
   usePendleTokens,
-  usePendleUsdValue
+  usePendleUsdValue,
+  TxStatus
 } from '@/widgets';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -36,7 +37,7 @@ type Options = {
  * USDS, or USDC.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options = {}) {
-  const { launch, updateModalContent, isModalOpen, txCallbacks } = useTransaction();
+  const { launch, updateModalContent, isModalOpen, txStatus, txCallbacks } = useTransaction();
   // Per-instance id so the provider can ignore live updates from sibling cards.
   const sessionId = useId();
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
@@ -215,10 +216,13 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   }, [launch, market, transactionContent, rightHeaderComponent, confirmDisabled, sessionId, analytics]);
 
   useEffect(() => {
-    if (!isModalOpen) return;
+    // Freeze once the flow leaves IDLE (same as useModalEntryBody): the quote
+    // repolls mid-flight and must not rewrite the blob the signed tx started with.
+    if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled, analytics });
   }, [
     isModalOpen,
+    txStatus,
     sessionId,
     updateModalContent,
     transactionContent,

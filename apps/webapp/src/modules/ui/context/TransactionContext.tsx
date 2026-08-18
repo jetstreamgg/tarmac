@@ -239,6 +239,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           widgetName: config.analytics.widgetName,
           chainId,
           flow: config.analytics.flow,
+          action: config.analytics.action,
+          data: config.analytics.data,
           flowId: flowIdRef.current
         });
       }
@@ -256,6 +258,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
         widgetName: analytics.widgetName,
         chainId,
         flow: analytics.flow,
+        action: analytics.action,
+        data: analytics.data,
         flowId: flowIdRef.current
       });
     }

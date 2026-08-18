@@ -128,11 +128,15 @@ export function useAppAnalytics() {
       widgetName,
       chainId,
       flow,
+      action,
+      data,
       flowId
     }: {
       widgetName: string;
       chainId: number;
       flow: string;
+      action?: string;
+      data?: Record<string, unknown>;
       flowId?: string;
     }) => {
       safeCapture(posthog, AppEvents.WIDGET_REVIEW_VIEWED, {
@@ -143,7 +147,9 @@ export function useAppAnalytics() {
         wallet_address: address,
         viewport: getViewport(),
         flow_id: flowId ?? getFlowId(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ...(action && { action }),
+        ...data
       });
     },
     [posthog, address, getChainName, getFlowId]

@@ -27,7 +27,9 @@ describe('pathnameToWidgetName', () => {
     expect(pathnameToWidgetName('/earn/rewards/0x123')).toBe('rewards');
     expect(pathnameToWidgetName('/earn/vaults/morpho/0xabc')).toBe('vaults');
     expect(pathnameToWidgetName('/earn/fixed/some-market')).toBe('fixed');
-    expect(pathnameToWidgetName('/earn/stusds')).toBe('stusds');
+    // 'expert' (not the 'stusds' route name): tx events report widget_name 'expert',
+    // and the selection→transaction funnel joins on it.
+    expect(pathnameToWidgetName('/earn/stusds')).toBe('expert');
     expect(pathnameToWidgetName('/stake')).toBe('stake');
     expect(pathnameToWidgetName('/convert')).toBe('convert');
   });

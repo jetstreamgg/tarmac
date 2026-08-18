@@ -276,6 +276,8 @@ describe('TransactionContext review_viewed timing', () => {
       widgetName: 'savings',
       chainId: 1,
       flow: 'supply',
+      action: 'supply',
+      data: { module: 'savings' },
       flowId: 'flow-live'
     });
   });
@@ -334,6 +336,8 @@ describe('TransactionContext review_viewed timing', () => {
       widgetName: 'savings',
       chainId: 1,
       flow: 'withdraw',
+      action: 'withdraw',
+      data: { amount: -5 },
       flowId: 'flow-live'
     });
   });

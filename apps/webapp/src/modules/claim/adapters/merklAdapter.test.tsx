@@ -93,6 +93,14 @@ describe('merklAdapter', () => {
       });
     });
 
+    it('derives amount from the net claimable, not the gross cumulative total', () => {
+      // 100 earned lifetime, 60 already claimed → analytics amount must be 40.
+      h.rewards = [reward({ totalAmount: 100n * 10n ** 18n, claimed: 60n * 10n ** 18n })];
+      const { result } = renderHook(() => merklAdapter.useClaimable({ kind: 'all' }));
+
+      expect(result.current.rewards[0].amount).toBe(40);
+    });
+
     it('filters to tokens sourced from the scoped vault for scope=vault', () => {
       h.rewards = [
         reward({

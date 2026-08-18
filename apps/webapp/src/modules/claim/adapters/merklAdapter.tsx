@@ -51,7 +51,8 @@ function toClaimableReward(reward: MerklTokenReward): ClaimableReward {
       />
     ),
     formattedAmount: reward.formattedTotalAmount,
-    amount: parseFloat(formatUnits(reward.totalAmount, reward.tokenDecimals)),
+    // Net claimable, matching the display fields — totalAmount is gross lifetime.
+    amount: parseFloat(formatUnits(reward.totalAmount - reward.claimed, reward.tokenDecimals)),
     tokenAddress: reward.tokenAddress,
     amountUsd: reward.totalAmountUsd,
     chainId: reward.distributionChainId

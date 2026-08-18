@@ -1,6 +1,5 @@
-import { Intent } from '@/lib/enums';
-import { IntentMapping } from '@/lib/constants';
 import { pathToIntent, isEarnMarketplacePath } from '@/lib/routes';
+import { WIDGET_NAME_BY_INTENT } from '../contract';
 import type { SelectionMethod } from '../constants';
 import { consumePendingNavIntent } from './navigationIntent';
 
@@ -17,15 +16,14 @@ import { consumePendingNavIntent } from './navigationIntent';
 /** widget_name for a product pathname, null for containers/off-map routes. */
 export function pathnameToWidgetName(pathname: string): string | null {
   const intent = pathToIntent(pathname);
-  if (!intent || intent === Intent.BALANCES_INTENT) return null;
-  return IntentMapping[intent];
+  return intent ? (WIDGET_NAME_BY_INTENT[intent] ?? null) : null;
 }
 
 /** previous_widget vocabulary: products, 'earn_marketplace', else 'balances'. */
 export function pathnameToPreviousWidget(pathname: string): string {
   if (isEarnMarketplacePath(pathname)) return 'earn_marketplace';
   const intent = pathToIntent(pathname);
-  return intent ? IntentMapping[intent] : IntentMapping[Intent.BALANCES_INTENT];
+  return (intent && WIDGET_NAME_BY_INTENT[intent]) || 'balances';
 }
 
 export type NavigationSubscriberDeps = {
