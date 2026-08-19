@@ -41,12 +41,14 @@ export function AllocateStablecoinsBanner({
       heading={
         <div className="flex items-baseline gap-1">
           {/* While loading the figure wears the same skeleton dress as the TVL
-              callout: transparent same-width stand-in over a pulsing pill. */}
+              callout: transparent same-width stand-in over a pulsing pill —
+              aria-hidden, so the fabricated figure never reaches a screen reader. */}
           <span
             className={cn(
               'font-circle text-fgPrimary text-[44px] leading-[48px] font-medium tracking-[-0.88px]',
               yearly === undefined && 'bg-surface animate-pulse rounded text-transparent select-none'
             )}
+            aria-hidden={yearly === undefined || undefined}
             data-testid={yearly === undefined ? 'allocate-banner-skeleton' : undefined}
           >{`$${formatNumber(yearly ?? 1000)}`}</span>
           <BannerAccent className="font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
@@ -63,6 +65,8 @@ export function AllocateStablecoinsBanner({
                 'text-fgPrimary',
                 savingsRate === undefined && 'bg-surface animate-pulse rounded text-transparent select-none'
               )}
+              aria-hidden={savingsRate === undefined || undefined}
+              data-testid={savingsRate === undefined ? 'allocate-banner-rate-skeleton' : undefined}
             >
               {formatDecimalPercentage(savingsRate ?? 0.045)} Sky Savings Rate
             </span>
