@@ -30,10 +30,16 @@ const h = vi.hoisted(() => ({
 const openSupply = vi.fn();
 const openWithdraw = vi.fn();
 
+vi.mock('posthog-js/react', async () => {
+  const posthog = (await import('posthog-js')).default;
+  return { usePostHog: () => posthog };
+});
+
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
+    useChains: () => [{ id: 1, name: 'Ethereum' }],
     useChainId: () => 1,
     useConnection: () => ({
       address: h.connected ? '0x000000000000000000000000000000000000beef' : undefined,
@@ -82,17 +88,20 @@ vi.mock('@/modules/ui/components/ConnectModal', () => ({
   ConnectModal: () => <div data-testid="connect-modal-stub" />
 }));
 
+import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider, CONTINUATION_DELAY_MS } from '@/modules/ui/context/ConnectThenActContext';
 import { PendlePositionCard } from '../PendlePositionCard';
 
 const wrap = () => (
   <I18nProvider i18n={i18n}>
-    <ConnectModalProvider>
-      <ConnectThenActProvider>
-        <PendlePositionCard market={MARKET} />
-      </ConnectThenActProvider>
-    </ConnectModalProvider>
+    <AnalyticsFlowProvider>
+      <ConnectModalProvider>
+        <ConnectThenActProvider>
+          <PendlePositionCard market={MARKET} />
+        </ConnectThenActProvider>
+      </ConnectModalProvider>
+    </AnalyticsFlowProvider>
   </I18nProvider>
 );
 

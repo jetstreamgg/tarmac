@@ -33,8 +33,15 @@ export type WriteHook = {
   isBatch?: boolean;
 };
 
+/**
+ * Variables wagmi hands to the write mutation's onMutate. Sequential legs carry
+ * the functionName being signed (used to discriminate approve legs in analytics);
+ * batched sendCalls carry none.
+ */
+export type TxMutateVariables = { functionName?: string };
+
 export type WriteHookParams = {
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string) => void;
   onError?: (error: Error, hash: string) => void;
@@ -58,7 +65,7 @@ export type UseWriteContractFlowParameters<
 > = UseSimulateContractParameters<abi, functionName, args, config, chainId> & {
   enabled: boolean;
   gcTime?: number;
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string) => void;
   onError?: (error: Error, hash: string) => void;
@@ -81,7 +88,7 @@ export type BatchWriteHook = {
 };
 
 export type BatchWriteHookParams = {
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
@@ -96,7 +103,7 @@ export type UseSendBatchTransactionFlowParameters<
   chainId extends config['chains'][number]['id'] = config['chains'][number]['id']
 > = SendCallsParameters<config, chainId, calls> & {
   enabled?: boolean;
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
@@ -125,7 +132,7 @@ export type UseTransactionFlowParameters = {
   calls: Call[];
   shouldUseBatch?: boolean;
   enabled?: boolean;
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
@@ -136,7 +143,7 @@ export type UseTransactionFlowParameters = {
 export type UseSequentialTransactionFlowParameters = {
   calls: Call[];
   enabled?: boolean;
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string) => void;
   onError?: (error: Error, hash: string) => void;

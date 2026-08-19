@@ -13,6 +13,7 @@ import {
 import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { WalletPreviewDrawer } from './WalletPreviewDrawer';
+import type { WalletDrawerAsset } from './useWalletDrawerAssets';
 
 const ADDRESS = '0x1234567890abcdef1234567890abcdef12345678';
 
@@ -34,7 +35,8 @@ const mocks = vi.hoisted(() => ({
         amount: 1000,
         amountUsd: 1000,
         bestRate: 0.0475,
-        multipleVenues: true
+        multipleVenues: true,
+        canEarn: true
       },
       {
         symbol: 'USDC',
@@ -42,7 +44,8 @@ const mocks = vi.hoisted(() => ({
         amount: 1000,
         amountUsd: 1000,
         bestRate: 0.0525,
-        multipleVenues: true
+        multipleVenues: true,
+        canEarn: true
       },
       {
         symbol: 'USDT',
@@ -50,10 +53,19 @@ const mocks = vi.hoisted(() => ({
         amount: 0,
         amountUsd: 0,
         bestRate: 0.0425,
-        multipleVenues: false
+        multipleVenues: false,
+        canEarn: true
       },
-      { symbol: 'SKY', name: 'Sky Token', amount: 0, amountUsd: 0, bestRate: 0.107, multipleVenues: false }
-    ],
+      {
+        symbol: 'SKY',
+        name: 'Sky Token',
+        amount: 0,
+        amountUsd: 0,
+        bestRate: 0.107,
+        multipleVenues: false,
+        canEarn: true
+      }
+    ] as WalletDrawerAsset[],
     totalUsd: 2000,
     isLoading: false
   },
@@ -246,15 +258,25 @@ describe('WalletPreviewDrawer', () => {
     expect(drawer.querySelector('[data-testid="wallet-drawer-assets"]')).toBeTruthy();
   });
 
-  it('hides rate badges and earn CTAs when the region is restricted', async () => {
-    mocks.isRegionRestricted = true;
-    renderDrawer();
-    const drawer = await openDrawer();
+  it('renders a plain balance row for a token the region leaves nowhere to earn', async () => {
+    // The hook reports per-asset availability from geo-filtered venues; a
+    // token with none loses its rate and CTA while its siblings keep theirs.
+    const usds: WalletDrawerAsset = mocks.walletAssets.assets[0];
+    usds.bestRate = undefined;
+    usds.canEarn = false;
+    try {
+      renderDrawer();
+      const drawer = await openDrawer();
 
-    const usdsRow = drawer.querySelector('[data-testid="wallet-drawer-asset-usds"]');
-    expect(usdsRow).toBeTruthy();
-    expect(usdsRow?.textContent).not.toContain('up to 4.75%');
-    expect(drawer.querySelector('[data-testid="wallet-drawer-earn-usds"]')).toBeNull();
+      const usdsRow = drawer.querySelector('[data-testid="wallet-drawer-asset-usds"]');
+      expect(usdsRow).toBeTruthy();
+      expect(usdsRow?.textContent).not.toContain('up to 4.75%');
+      expect(drawer.querySelector('[data-testid="wallet-drawer-earn-usds"]')).toBeNull();
+      expect(drawer.querySelector('[data-testid="wallet-drawer-earn-usdc"]')).toBeTruthy();
+    } finally {
+      usds.bestRate = 0.0475;
+      usds.canEarn = true;
+    }
   });
 
   it('deep-links to Earn filtered by token from the Start earning CTA', async () => {

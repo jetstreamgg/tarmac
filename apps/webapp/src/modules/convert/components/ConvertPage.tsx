@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Button } from '@/components/ui/button';
@@ -5,6 +7,7 @@ import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
 import { IllustrationStaked, IllustrationStakingLogomark } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useConvertForm } from '../hooks/useConvertForm';
 import { useConvertLaunch } from '../hooks/useConvertLaunch';
 import type { PsmConversionDisabledReason } from '../hooks/usePsmConversion.helpers';
@@ -47,7 +50,19 @@ export function ConvertPage() {
       form.reset();
     }
   });
-  const launchOrConnect = useConnectThenAct(launch);
+  const launchOrConnect = useConnectThenAct(launch, 'convert');
+  const chainId = useChainId();
+  const { trackConvertBlocked } = useAppAnalytics();
+
+  // A PSM halt otherwise reads as organic drop-off (APP-444 H). Once per
+  // distinct reason per mount — amount_too_small would fire per keystroke.
+  const reportedReasons = useRef(new Set<string>());
+  useEffect(() => {
+    const reason = conversion.disabledReason;
+    if (!reason || reportedReasons.current.has(reason)) return;
+    reportedReasons.current.add(reason);
+    trackConvertBlocked({ reason, chainId });
+  }, [conversion.disabledReason, chainId, trackConvertBlocked]);
 
   const disabledReasonText = getDisabledReasonText(conversion.disabledReason, conversion.targetToken?.symbol);
   const reviewDisabled =

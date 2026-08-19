@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { formatNumber } from '@/utils';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { SimulateEarningsModal } from './SimulateEarningsModal';
+import { trackPromoImpression, trackPromoClicked } from '@/modules/analytics/lib/trackAmbientSurfaces';
 
 /**
  * The headline TVL figure, or an invisible same-width stand-in while it loads
@@ -34,6 +35,10 @@ export function SavingsTvlCallout({
   savingsRate: number;
 }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    trackPromoImpression({ promoId: 'savings_tvl_simulate' });
+  }, []);
 
   return (
     <Card
@@ -65,7 +70,15 @@ export function SavingsTvlCallout({
         </Text>
       </div>
 
-      <Button variant="primary" size="l" className="shrink-0" onClick={() => setOpen(true)}>
+      <Button
+        variant="primary"
+        size="l"
+        className="shrink-0"
+        onClick={() => {
+          trackPromoClicked({ promoId: 'savings_tvl_simulate' });
+          setOpen(true);
+        }}
+      >
         <Trans>Simulate earnings</Trans>
       </Button>
 

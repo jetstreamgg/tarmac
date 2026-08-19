@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMemoryHistory,
@@ -11,6 +11,7 @@ import {
   RouterProvider
 } from '@tanstack/react-router';
 import { Intent } from '@/lib/enums';
+import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
 import type { EarnProductRow } from '@/hooks';
 
 // Rows are injected; every product family's own data hook is out of scope here.
@@ -89,6 +90,9 @@ function renderPage(initialPath = '/earn') {
   const router = createRouter({
     routeTree: rootRoute.addChildren([earnRoute]),
     history: createMemoryHistory({ initialEntries: [initialPath] }),
+    // The app router's setting; the deep-link specs below exercise its hash
+    // scrolling against the heading's anchor.
+    scrollRestoration: true,
     parseSearch: searchStr => Object.fromEntries(new URLSearchParams(searchStr)),
     stringifySearch: search => {
       const params = new URLSearchParams();
@@ -170,5 +174,64 @@ describe('EarnPage clear-filters control', () => {
     await vi.waitFor(() => expect(clearButton()).toBeNull());
     expect(router.state.location.searchStr).toBe('');
     expect(JSON.parse(localStorage.getItem('earnOpportunitiesFilters') as string)).toEqual({ risk: [] });
+  });
+});
+
+describe('EarnPage deep-link anchor scroll', () => {
+  const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
+  const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+  beforeEach(() => {
+    scrollSpy.mockClear();
+    scrollToSpy.mockClear();
+  });
+
+  it('lands on the opportunities heading when the deep link carries the anchor', async () => {
+    renderPage(`/earn?token=usdc#${EARN_OPPORTUNITIES_HASH}`);
+    await screen.findByTestId('earn-opportunities');
+    await vi.waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+    // Every scroll (the router's hash handling and the cold-load catch-up
+    // both fire here — the mock never moves scrollY) targets the heading.
+    for (const target of scrollSpy.mock.contexts) {
+      expect((target as HTMLElement).id).toBe(EARN_OPPORTUNITIES_HASH);
+    }
+  });
+
+  it('leaves a ?token= visit without the anchor at the top (back links, redirects)', async () => {
+    renderPage('/earn?token=usdc');
+    await screen.findByTestId('earn-opportunities');
+    expect(scrollSpy).not.toHaveBeenCalled();
+  });
+
+  it('drops the anchor with the first filter edit, so clearing does not re-scroll', async () => {
+    const router = renderPage(`/earn?token=usdc#${EARN_OPPORTUNITIES_HASH}`);
+    await screen.findByTestId('earn-opportunities');
+    await vi.waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+    const arrivalScrolls = scrollSpy.mock.calls.length;
+
+    fireEvent.click(clearButton() as HTMLElement);
+
+    await vi.waitFor(() => expect(clearButton()).toBeNull());
+    expect(router.state.location.hash).toBe('');
+    expect(scrollSpy).toHaveBeenCalledTimes(arrivalScrolls);
+    // The filter write passes resetScroll: false, so the router's usual
+    // scroll-to-top on the replace never runs — the viewport stays at the
+    // table.
+    expect(scrollToSpy).not.toHaveBeenCalled();
+  });
+
+  it('scrolls again when a new deep link pushes onto an already-open /earn', async () => {
+    const router = renderPage(`/earn?token=usdc#${EARN_OPPORTUNITIES_HASH}`);
+    await screen.findByTestId('earn-opportunities');
+    await vi.waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+    const arrivalScrolls = scrollSpy.mock.calls.length;
+
+    // The wallet drawer while already on /earn: a push, unlike the filter
+    // bar's in-place replaces.
+    await act(() =>
+      router.navigate({ to: '/earn', search: { token: 'USDS' }, hash: EARN_OPPORTUNITIES_HASH })
+    );
+
+    await vi.waitFor(() => expect(scrollSpy.mock.calls.length).toBeGreaterThan(arrivalScrolls));
   });
 });

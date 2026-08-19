@@ -94,7 +94,7 @@ export function StakeEngineCard() {
       { replace: true }
     );
   }, [setSearchParams]);
-  const onOpenPosition = useConnectThenAct(openPosition);
+  const onOpenPosition = useConnectThenAct(openPosition, 'stake_open');
 
   // Rewards rate — same data source the legacy StakingRewardRateCard uses.
   const { data: rewardContracts, isLoading: contractsLoading } = useStakeRewardContracts();

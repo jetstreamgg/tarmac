@@ -12,6 +12,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heading } from '@/modules/layout/components/Typography';
 import { EarnMarketplaceCard } from './EarnMarketplaceCard';
+import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 
 // Each card spans a fraction of the row so 1 (mobile) → 3 (desktop) show at once.
 const ITEM_BASIS = 'basis-full sm:basis-1/2 desktop:basis-1/3';
@@ -26,8 +27,10 @@ const INLINE_ARROW = 'static left-auto right-auto top-auto translate-y-0';
  */
 export function EarnMarketplaceSection({ rows, isLoading }: { rows: EarnProductRow[]; isLoading: boolean }) {
   const navigate = useNavigate();
-  const goToProduct = (detailPath: string) =>
+  const goToProduct = (detailPath: string) => {
+    setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
+  };
 
   if (isLoading && rows.length === 0) {
     return (
