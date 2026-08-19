@@ -28,6 +28,8 @@ const h = vi.hoisted(() => ({
   existingDebt: 0n,
   dust: 0n,
   voteDelegate: undefined as `0x${string}` | undefined,
+  // The urn's current farm (defaults to the mainnet SKY farm in beforeEach).
+  rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc' as `0x${string}`,
   // Simulation knobs.
   simLiqPrice: 432n * 10n ** 14n,
   simDelayedPrice: 608n * 10n ** 14n,
@@ -157,7 +159,7 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
       },
       vaultLoading: false,
       hasDebt: h.existingDebt > 0n,
-      rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
+      rewardContract: h.rewardContract,
       rewardSymbol: 'SKY',
       voteDelegate: h.voteDelegate,
       rewardsRate: 0.015,
@@ -230,6 +232,7 @@ describe('ManagePositionTakeover', () => {
     h.existingDebt = 30_000n * WAD;
     h.dust = 30_000n * WAD;
     h.voteDelegate = CURRENT_DELEGATE;
+    h.rewardContract = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
     h.simLiqPrice = 432n * 10n ** 14n;
     h.simDelayedPrice = 608n * 10n ** 14n;
     h.simProximity = 36;
@@ -513,6 +516,31 @@ describe('ManagePositionTakeover', () => {
     // change staged.
     expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
     expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('reward: auto-opens the card when the current farm is deprecated', () => {
+    h.rewardContract = lsSkySpkRewardAddress[1];
+    renderSheet();
+
+    // No rewardCard init — the deprecated-farm nudge opened it on its own,
+    // with the current SPK farm pre-selected, chipped, and warned about.
+    const spkRow = screen.getByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`);
+    expect(spkRow.getAttribute('aria-pressed')).toBe('true');
+    expect(spkRow.textContent).toContain('Deprecated');
+    expect(screen.getByTestId('stake-manage-reward-deprecated-warning')).toBeTruthy();
+  });
+
+  it('reward: the auto-open does not re-force the card after the user closes it', () => {
+    h.rewardContract = lsSkySpkRewardAddress[1];
+    renderSheet();
+
+    fireEvent.click(screen.getByTestId('stake-manage-reward-card-toggle'));
+    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
+  });
+
+  it('reward: no auto-open for a live farm', () => {
+    renderSheet();
+    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
   });
 
   it('reward: toggling the card off clears a staged change', () => {
