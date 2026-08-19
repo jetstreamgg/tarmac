@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
-import { format } from 'date-fns';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
@@ -17,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Pendle } from '@/widgets';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   NO_VALUE,
   ProductActions,
@@ -31,6 +31,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -55,7 +56,7 @@ function PendleSupplyCard({
 
   // The CTA stays enabled while disconnected: clicking routes through the
   // connect flow and continues into the supply modal once connected.
-  const onSupplyOrConnect = useConnectThenAct(onSupply);
+  const onSupplyOrConnect = useConnectThenAct(onSupply, 'pendle_supply');
 
   // Pendle markets are mainnet-only; balances follow the fork in dev mode.
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
@@ -175,13 +176,19 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
     0,
     Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
   );
-  const claimDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const claimDateLabel = formatMaturity(expirySec);
 
   const refresh = useCallback(() => {
     mutateBalances();
   }, [mutateBalances]);
 
   const { openSupply, openWithdraw } = usePendleModal({ onSuccess: refresh });
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position.
+  if (isConnected && ptBalances === undefined) {
+    return <PositionCardSkeleton testId="pendle-position-card-skeleton" />;
+  }
 
   if (ptBalance === 0n) {
     return (

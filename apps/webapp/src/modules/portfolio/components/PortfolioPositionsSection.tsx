@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { QueryParams } from '@/lib/constants';
-import { ROUTES } from '@/lib/routes';
+import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
 import {
   Carousel,
@@ -15,11 +15,14 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SuppliedEmpty } from '@/modules/icons';
 import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
+import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { PendleMaturedPositionCard } from '@/modules/pendle/components/PendleMaturedPositionCard';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
 import { PositionCard } from './PositionCard';
 import { IdleStablecoinsTable } from './IdleStablecoinsTable';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
+import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 
 // Each card spans a fraction of the row so 1 (mobile) → 3 (desktop) show at once.
 // The comp (1030:58713) sets cards 8px apart, not the carousel's default 16.
@@ -56,14 +59,19 @@ export function PortfolioPositionsSection({
   // switching the wallet to the position's chain first when needed; products
   // without one — and all Manage buttons — route to the product page.
   const resolveSupplyAction = usePortfolioSupplyActions();
-  const goToProduct = (detailPath: string) =>
+  const { maturedPositions } = usePendleMaturedPositions();
+  const goToProduct = (detailPath: string) => {
+    setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
-  // Deep-link to the Earn list pre-filtered by the chosen stablecoin (keeps the
-  // active network), consumed by EarnPage's ?token= handler.
+  };
+  // Deep-link to the Earn list pre-filtered by the chosen stablecoin (keeps
+  // the active network); the anchor lands it past the hero, at the
+  // opportunities table (APP-487).
   const goToEarnForToken = (symbol: string) =>
     void navigate({
       to: ROUTES.EARN,
-      search: prev => ({ ...retainOnNavigate(prev), [QueryParams.Token]: symbol })
+      search: prev => ({ ...retainOnNavigate(prev), [QueryParams.Token]: symbol }),
+      hash: EARN_OPPORTUNITIES_HASH
     });
 
   if (tab === 'idle') {
@@ -87,7 +95,7 @@ export function PortfolioPositionsSection({
     );
   }
 
-  if (suppliedView.positions.length === 0) {
+  if (suppliedView.positions.length === 0 && maturedPositions.length === 0) {
     return (
       <section data-testid="portfolio-positions">
         <PortfolioTabs tab={tab} onTabChange={onTabChange} />
@@ -117,6 +125,15 @@ export function PortfolioPositionsSection({
           </div>
         </div>
         <CarouselContent className="-ml-2">
+          {/* Matured PT leads the row (Figma 2306:72334): it needs action (Claim)
+              while the live positions merely accrue. The marketplace filters
+              matured markets out of suppliedView, so these cards are their only
+              surface (G6). */}
+          {maturedPositions.map(({ market, ptBalance }) => (
+            <CarouselItem key={market.marketAddress} className={ITEM_BASIS}>
+              <PendleMaturedPositionCard market={market} ptBalance={ptBalance} />
+            </CarouselItem>
+          ))}
           {suppliedView.positions.map(position => (
             <CarouselItem key={position.id} className={ITEM_BASIS}>
               <PositionCard

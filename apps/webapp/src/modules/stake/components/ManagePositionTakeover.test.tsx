@@ -26,6 +26,8 @@ const h = vi.hoisted(() => ({
   usdsBalance: 0n,
   existingCollateral: 0n,
   existingDebt: 0n,
+  // When true, the position-detail mock reports an in-flight vault read.
+  vaultLoading: false,
   dust: 0n,
   voteDelegate: undefined as `0x${string}` | undefined,
   // Simulation knobs.
@@ -33,7 +35,11 @@ const h = vi.hoisted(() => ({
   simDelayedPrice: 608n * 10n ** 14n,
   simProximity: 36,
   minCollateralForDust: 0n,
-  debtCeiling: 0n
+  debtCeiling: 0n,
+  simulationError: null as Error | null,
+  // Launch-engine knobs (see the useStakeManageLaunch mock below).
+  launchError: null as Error | null,
+  launchLoading: false
 }));
 
 let mockSearchParams = new URLSearchParams();
@@ -111,7 +117,7 @@ vi.mock('@/hooks', async importOriginal => {
         delayedPrice: h.simDelayedPrice
       },
       isLoading: false,
-      error: null,
+      error: h.simulationError,
       mutate: () => undefined,
       dataSources: []
     }),
@@ -134,17 +140,19 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
   return {
     useStakePositionDetail: () => ({
       urnAddress: URN_ADDRESS,
-      vault: {
-        collateralType: 'LSEV2-SKY-A',
-        collateralAmount: h.existingCollateral,
-        debtValue: h.existingDebt,
-        dust: h.dust,
-        riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
-        liquidationProximityPercentage: h.existingDebt > 0n ? 30 : 0,
-        liquidationPrice: h.simLiqPrice,
-        delayedPrice: h.simDelayedPrice
-      },
-      vaultLoading: false,
+      vault: h.vaultLoading
+        ? undefined
+        : {
+            collateralType: 'LSEV2-SKY-A',
+            collateralAmount: h.existingCollateral,
+            debtValue: h.existingDebt,
+            dust: h.dust,
+            riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
+            liquidationProximityPercentage: h.existingDebt > 0n ? 30 : 0,
+            liquidationPrice: h.simLiqPrice,
+            delayedPrice: h.simDelayedPrice
+          },
+      vaultLoading: h.vaultLoading,
       hasDebt: h.existingDebt > 0n,
       rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
       rewardSymbol: 'SKY',
@@ -179,8 +187,8 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
         urnSelectedVoteDelegate: h.voteDelegate,
         shouldUseBatch: false,
         prepared: h.prepared,
-        isLoading: false,
-        error: null
+        isLoading: h.launchLoading,
+        error: h.launchError
       };
     }
   };
@@ -216,6 +224,7 @@ describe('ManagePositionTakeover', () => {
     h.usdsBalance = 100_000n * WAD;
     h.existingCollateral = 3_000_000n * WAD;
     h.existingDebt = 30_000n * WAD;
+    h.vaultLoading = false;
     h.dust = 30_000n * WAD;
     h.voteDelegate = CURRENT_DELEGATE;
     h.simLiqPrice = 432n * 10n ** 14n;
@@ -223,6 +232,9 @@ describe('ManagePositionTakeover', () => {
     h.simProximity = 36;
     h.minCollateralForDust = 1_440_000n * WAD;
     h.debtCeiling = parseUnits('1000000000', 18);
+    h.simulationError = null;
+    h.launchError = null;
+    h.launchLoading = false;
   });
   afterEach(() => {
     cleanup();
@@ -287,6 +299,18 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '4000000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toBe('Insufficient funds');
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('holds the withdraw insufficient check until the vault read resolves (APP-491)', () => {
+    h.vaultLoading = true;
+    renderSheet({ stakeCard: 'withdraw' });
+
+    // While the collateral read is in flight the staked amount is a premature
+    // 0n — any typed amount would flash a false error. No error, but Confirm
+    // stays gated until the read lands.
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '4000000' } });
+    expect(screen.queryByTestId('stake-manage-stake-amount-error')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
@@ -486,5 +510,62 @@ describe('ManagePositionTakeover', () => {
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
     fireEvent.click(confirmButton());
     expect(h.launchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows generic copy for a simulation failure at wipe = 0 — never the raw mislabeled string', () => {
+    // A vat/spot read failure surfaces as new Error('Insufficient collateral')
+    // (useSimulatedVault folds read errors into that string). With nothing
+    // staged to repay, that copy would be a lie next to an empty field.
+    h.simulationError = new Error('Insufficient collateral');
+    renderSheet({ borrowCard: 'repay' });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Unable to simulate the transaction. Please try again.'
+    );
+  });
+
+  it('shows generic copy for a simulation failure at borrow = 0', () => {
+    h.simulationError = new Error('Insufficient collateral');
+    renderSheet({ borrowCard: 'borrow' });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Unable to simulate the transaction. Please try again.'
+    );
+  });
+
+  it('keeps the simulation message verbatim once an amount is staged', () => {
+    h.simulationError = new Error('Insufficient collateral');
+    renderSheet({ borrowCard: 'borrow' });
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Insufficient collateral'
+    );
+  });
+
+  it('suppresses a stale engine error while the engine is re-simulating (no prepare-failure flash)', () => {
+    // After a failed tx the wagmi write/mining error persists in the
+    // page-mounted engine. Editing an amount dips `prepared` false while the
+    // new simulation is in flight — the stale error must not flash as a
+    // prepare failure in that window.
+    h.prepared = false;
+    h.launchError = new Error('execution reverted');
+    h.launchLoading = true;
+    renderSheet({ stakeCard: 'stake' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+
+    expect(screen.queryByTestId('stake-manage-error')).toBeNull();
+  });
+
+  it('surfaces the engine error once the simulation settles unprepared', () => {
+    h.prepared = false;
+    h.launchError = new Error('execution reverted');
+    h.launchLoading = false;
+    renderSheet({ stakeCard: 'stake' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+
+    expect(screen.getByTestId('stake-manage-error').textContent).toBe(
+      'Something went wrong preparing the transaction. Please try again.'
+    );
   });
 });

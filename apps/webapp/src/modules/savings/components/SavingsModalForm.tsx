@@ -11,6 +11,9 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
 import { useNetworkFee } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
@@ -77,6 +80,7 @@ export function SavingsModalForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,
@@ -93,12 +97,17 @@ export function SavingsModalForm({
     switchOrigin
   } = form;
 
-  const { execute, steps, prepared, calls, isBatch } = useSavingsLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useSavingsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: isBatch,
@@ -112,12 +121,14 @@ export function SavingsModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -233,6 +244,23 @@ export function SavingsModalForm({
     i18n
   ]);
 
+  // Legacy SavingsWidget payload shape (APP-444 B1/B2): withdraw amounts negative.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'savings',
+      flow,
+      action: flow,
+      data: {
+        module: 'savings',
+        assetAddress: engineParams.originToken.address[chainId],
+        assetSymbol: originSymbol,
+        isBatchTx: isBatch,
+        amount: signedAmount(parseFloat(formatUnits(amount, originDecimals)), flow)
+      }
+    }),
+    [flow, engineParams.originToken, chainId, originSymbol, isBatch, amount, originDecimals]
+  );
+
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / review breakdown / step labels /
   // wallet summary / toast titles in sync, and the entry-slot portal.
@@ -240,10 +268,12 @@ export function SavingsModalForm({
     sessionId,
     execute,
     confirmDisabled: disabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,
-    toast
+    toast,
+    analytics
   });
 
   const body = (
@@ -252,12 +282,13 @@ export function SavingsModalForm({
         label={<Trans>Amount</Trans>}
         tokenSymbol={originSymbol}
         value={value}
+        decimals={originDecimals}
         onInput={onInput}
         disabled={!isConnected}
         balance={
           <>
             <Trans>Balance</Trans>:{' '}
-            {isConnected
+            {isConnected && availableKnown
               ? formatNumber(parseFloat(formatUnits(available, originDecimals)), { maxDecimals: 2 })
               : NO_VALUE}
           </>

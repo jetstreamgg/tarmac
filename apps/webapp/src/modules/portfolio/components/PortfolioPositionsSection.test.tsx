@@ -1,5 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
+import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { render, screen, within, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
@@ -22,17 +23,37 @@ const h = vi.hoisted(() => ({
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => h.navigate }));
 
+// Matured PT cards pull the redeem preview/modal stack — out of scope here
+// (covered by usePendleMaturedPositions.test / PendleRedeem.test).
+vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
+  usePendleMaturedPositions: () => ({ maturedPositions: [], onPendleChain: true })
+}));
+
 // The resolver reads the connected chain to place in-place supply and switches
 // when the position lives elsewhere; keep real wagmi exports, override only
 // the chain and switch hooks.
+vi.mock('posthog-js/react', async () => {
+  const posthog = (await import('posthog-js')).default;
+  return { usePostHog: () => posthog };
+});
+
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
     useChainId: () => h.chainId,
+    useConnection: () => ({ address: undefined }),
     useChains: () => [{ id: 1 }, { id: 8453 }],
     useSwitchChain: () => ({ switchChainAsync: h.switchChainAsync })
   };
+});
+
+// The supply resolver asks whether the connected wallet is a Safe; answering
+// as a plain EOA needs no wagmi provider and keeps the routing on the paths
+// these specs pin.
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return { ...actual, useIsSafeWallet: () => false };
 });
 
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
@@ -87,6 +108,7 @@ const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   intent: over.kind === 'savings' ? Intent.SAVINGS_INTENT : Intent.VAULTS_INTENT,
   amountUsd: 100,
   rate: 0.05,
+  rateLoading: false,
   color: '#000',
   hoverColor: '#000',
   share: 0.5,
@@ -108,6 +130,7 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
   totalSupplied: 200,
   projected1Y: 0,
   avgRate: 0,
+  ratesLoading: false,
   activePositions: positions.length,
   suppliedTokens: [],
   networksWithPositions: [1]
@@ -116,15 +139,17 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
 function renderSection(positions: SuppliedPosition[]) {
   return render(
     <I18nProvider i18n={i18n}>
-      <PortfolioPositionsSection
-        suppliedView={view(positions)}
-        suppliedLoading={false}
-        idleView={{ tokens: [] } as unknown as IdleView}
-        idleSupplyInfo={new Map()}
-        idleLoading={false}
-        tab="supplied"
-        onTabChange={() => undefined}
-      />
+      <AnalyticsFlowProvider>
+        <PortfolioPositionsSection
+          suppliedView={view(positions)}
+          suppliedLoading={false}
+          idleView={{ tokens: [] } as unknown as IdleView}
+          idleSupplyInfo={new Map()}
+          idleLoading={false}
+          tab="supplied"
+          onTabChange={() => undefined}
+        />
+      </AnalyticsFlowProvider>
     </I18nProvider>
   );
 }

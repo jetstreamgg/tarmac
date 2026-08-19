@@ -18,7 +18,7 @@ function useSkyRewardsClaimable(scope: ClaimScope): ClaimableResult {
   const chainId = useChainId();
   const { address } = useConnection();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
-  const { data: prices } = usePrices();
+  const { data: prices, isLoading: pricesLoading } = usePrices();
 
   // Curve-style StakingRewards contracts only live in the source-wide and
   // per-contract scopes; a Merkl, Morpho-vault or staking-urn scope never
@@ -62,13 +62,17 @@ function useSkyRewardsClaimable(scope: ClaimScope): ClaimableResult {
           <TokenIcon token={{ symbol: rewardSymbol }} width={32} showChainIcon={false} className="h-8 w-8" />
         ),
         formattedAmount: formatBigInt(claimBalance, { unit: decimals, maxDecimals: 2 }),
+        amount: parseFloat(formatUnits(claimBalance, decimals)),
+        tokenAddress: rewardToken?.address?.[chainId],
         amountUsd,
         chainId
       };
     });
 
-    return { rewards, isLoading, refresh: mutate };
-  }, [relevant, data, scope, rewardContracts, prices, chainId, isLoading, mutate]);
+    // Prices count as loading: a claim valued at $0.00 off the missing feed
+    // reads as worthless, not pending.
+    return { rewards, isLoading: isLoading || pricesLoading, refresh: mutate };
+  }, [relevant, data, scope, rewardContracts, prices, chainId, isLoading, pricesLoading, mutate]);
 }
 
 function useSkyRewardsClaimCalls(selected: ClaimableReward[]): ClaimCallsResult {

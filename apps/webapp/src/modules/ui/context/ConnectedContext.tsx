@@ -1,9 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
-import { useChainId, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
+import { setVpnSuperProperties } from '@/modules/analytics/superProperties';
 import { reportError } from '@/modules/sentry/reportError';
 import { checkTermsWithRetry } from '@/modules/ui/lib/checkTermsWithRetry';
 
@@ -46,7 +47,6 @@ export const ConnectedContext = createContext<ConnectedContextType>({
 
 export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, address } = useConnection();
-  const chainId = useChainId();
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
@@ -60,7 +60,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     data: authData,
     isLoading: authIsLoading,
     error: authError
-  } = useRestrictedAddressCheck({ address, authUrl, enabled, chainId });
+  } = useRestrictedAddressCheck({ address, authUrl, enabled });
 
   const {
     data: vpnData,
@@ -155,20 +155,35 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       !vpnData?.isConnectedToVpn &&
       !vpnData?.isRestrictedRegion &&
       (!enabled || (enabled && authData?.addressAllowed)) &&
-      !authError &&
+      // Fail closed only when there is no verdict at all. A failed background
+      // refetch keeps the cached data and sets `error`, so gating on `authError`
+      // alone would discard an approval we already hold.
+      !(authError && !authData) &&
       !vpnError,
-    [
-      vpnData?.isConnectedToVpn,
-      vpnData?.isRestrictedRegion,
-      enabled,
-      authData?.addressAllowed,
-      authError,
-      vpnError
-    ]
+    [vpnData?.isConnectedToVpn, vpnData?.isRestrictedRegion, enabled, authData, authError, vpnError]
   );
 
   const isAuthorized = isAllowed || skipAuthCheck;
   const isConnectedAndAcceptedTerms = isConnected && hasAcceptedTerms;
+
+  // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
+  // PostHog event carries them. Unlike the fire-once tracking below, this re-runs
+  // whenever the periodic check produces a changed result — VPN status can change
+  // mid-session. Fresh data wins over a transient poll error (react-query keeps
+  // the last good result); 'unknown' is only registered when the check has failed
+  // without ever succeeding. Skipped checks (private deployments, mock wallet)
+  // register nothing.
+  useEffect(() => {
+    if (skipAuthCheck) return;
+    if (vpnData) {
+      setVpnSuperProperties({
+        is_vpn: vpnData.isConnectedToVpn ?? 'unknown',
+        is_restricted_region: vpnData.isRestrictedRegion ?? 'unknown'
+      });
+    } else if (vpnError) {
+      setVpnSuperProperties({ is_vpn: 'unknown', is_restricted_region: 'unknown' });
+    }
+  }, [skipAuthCheck, vpnData, vpnError]);
 
   useEffect(() => {
     if (skipAuthCheck || vpnIsLoading || vpnTrackedRef.current) return;

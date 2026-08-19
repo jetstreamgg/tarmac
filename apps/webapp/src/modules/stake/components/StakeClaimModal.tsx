@@ -94,7 +94,11 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
   });
 
   // Read-only: the cell shows a dash until this resolves, and neither CTA waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: isBatch
@@ -172,7 +176,7 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
       ]
     ],
     'stake-claim-row',
-    { fee: networkFee, state: bundleState }
+    { fee: networkFee, state: bundleState, loading: networkFeeLoading }
   );
 
   const body = (

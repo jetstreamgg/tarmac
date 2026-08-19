@@ -29,7 +29,11 @@ const h = vi.hoisted(() => ({
   // Simulation knobs (see the useSimulatedVault mock below).
   minCollateralForDust: 0n,
   dust: 0n,
-  debtCeilingHeadroom: 0n
+  debtCeilingHeadroom: 0n,
+  simulationError: null as Error | null,
+  // Launch-engine knobs (see the useStakeLaunch/useStakeManageLaunch mocks).
+  launchError: null as Error | null,
+  launchLoading: false
 }));
 
 const URN_ADDRESS = '0x8888888888888888888888888888888888888888' as const;
@@ -105,7 +109,7 @@ vi.mock('@/hooks', async importOriginal => {
         delayedPrice: 608n * 10n ** 14n
       },
       isLoading: false,
-      error: null,
+      error: h.simulationError,
       mutate: () => undefined,
       dataSources: []
     }),
@@ -162,8 +166,8 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
         urnSelectedVoteDelegate: h.urnDelegate,
         shouldUseBatch: false,
         prepared: h.prepared,
-        isLoading: false,
-        error: null
+        isLoading: h.launchLoading,
+        error: h.launchError
       };
     }
   };
@@ -183,8 +187,8 @@ vi.mock('../hooks/useStakeLaunch', async importOriginal => {
         needsSkyAllowance: false,
         shouldUseBatch: false,
         prepared: h.prepared,
-        isLoading: false,
-        error: null
+        isLoading: h.launchLoading,
+        error: h.launchError
       };
     }
   };
@@ -222,6 +226,9 @@ describe('OpenPositionTakeover', () => {
     h.minCollateralForDust = 0n;
     h.dust = 30n * WAD;
     h.debtCeilingHeadroom = parseUnits('1000000000', 18);
+    h.simulationError = null;
+    h.launchError = null;
+    h.launchLoading = false;
   });
   afterEach(() => {
     cleanup();
@@ -491,6 +498,9 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     h.minCollateralForDust = 0n;
     h.dust = 30n * WAD;
     h.debtCeilingHeadroom = parseUnits('1000000000', 18);
+    h.simulationError = null;
+    h.launchError = null;
+    h.launchLoading = false;
   });
   afterEach(() => {
     cleanup();
@@ -566,5 +576,85 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     typeStakeAmount('100');
     expect(h.manageLaunchParams?.enabled).toBe(false);
     expect(h.launchParams?.enabled).toBe(true);
+  });
+});
+
+describe('OpenPositionTakeover — simulation and engine errors (APP-490)', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams('flow=open');
+    setSearchParamsMock.mockClear();
+    h.launchSpy.mockClear();
+    h.launchParams = undefined;
+    h.manageLaunchSpy.mockClear();
+    h.manageLaunchParams = undefined;
+    h.urnDelegate = undefined;
+    h.urnRewardContract = undefined;
+    h.prepared = true;
+    h.balance = 1000n * WAD;
+    h.debounceLag = false;
+    h.minCollateralForDust = 0n;
+    h.dust = 30n * WAD;
+    h.debtCeilingHeadroom = parseUnits('1000000000', 18);
+    h.simulationError = null;
+    h.launchError = null;
+    h.launchLoading = false;
+  });
+  afterEach(() => {
+    cleanup();
+    document.documentElement.style.overflow = '';
+  });
+
+  it('shows generic copy for a simulation failure at borrow = 0 — never "Insufficient collateral"', () => {
+    // A vat/spot read failure surfaces as new Error('Insufficient collateral')
+    // (useSimulatedVault folds read errors into that string). With nothing
+    // staged to borrow, that copy would be a lie next to an empty field.
+    h.simulationError = new Error('Insufficient collateral');
+    renderTakeover();
+    typeStakeAmount('100');
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    expect(screen.getByTestId('stake-takeover-borrow-amount-error').textContent).toBe(
+      'Unable to simulate the transaction. Please try again.'
+    );
+    // The simulation failure still blocks Confirm.
+    expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('keeps the simulation message verbatim once an amount is staged', () => {
+    h.simulationError = new Error('Insufficient collateral');
+    renderTakeover();
+    typeStakeAmount('100');
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    fireEvent.change(screen.getByTestId('stake-takeover-borrow-amount'), { target: { value: '50' } });
+
+    expect(screen.getByTestId('stake-takeover-borrow-amount-error').textContent).toBe(
+      'Insufficient collateral'
+    );
+  });
+
+  it('suppresses a stale engine error while the engine is re-simulating (no prepare-failure flash)', () => {
+    // After a failed tx the wagmi write/mining error persists in the
+    // page-mounted engine. Editing an amount dips `prepared` false while the
+    // new simulation is in flight — the stale error must not flash as a
+    // prepare failure in that window.
+    h.prepared = false;
+    h.launchError = new Error('execution reverted');
+    h.launchLoading = true;
+    renderTakeover();
+    typeStakeAmount('100');
+
+    expect(screen.queryByTestId('stake-takeover-error')).toBeNull();
+  });
+
+  it('surfaces the engine error once the simulation settles unprepared', () => {
+    h.prepared = false;
+    h.launchError = new Error('execution reverted');
+    h.launchLoading = false;
+    renderTakeover();
+    typeStakeAmount('100');
+
+    expect(screen.getByTestId('stake-takeover-error').textContent).toBe(
+      'Something went wrong preparing the transaction. Please try again.'
+    );
   });
 });

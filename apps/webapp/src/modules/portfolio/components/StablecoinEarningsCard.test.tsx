@@ -45,6 +45,7 @@ const SUPPLIED: SuppliedView = {
       intent: 'SAVINGS_INTENT' as SuppliedView['positions'][number]['intent'],
       amountUsd: 1000,
       rate: 0.0375,
+      rateLoading: false,
       color: '#7C5BF5',
       hoverColor: '#7C5BF5',
       share: 1,
@@ -55,6 +56,7 @@ const SUPPLIED: SuppliedView = {
   totalSupplied: 1000,
   projected1Y: 37.5,
   avgRate: 0.0375,
+  ratesLoading: false,
   activePositions: 1,
   suppliedTokens: ['sUSDS'],
   networksWithPositions: [1]

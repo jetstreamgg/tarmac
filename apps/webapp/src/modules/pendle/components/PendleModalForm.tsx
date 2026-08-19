@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
-import { formatUnits, parseUnits } from 'viem';
-import { format } from 'date-fns';
+import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -22,11 +21,12 @@ import {
   type Token
 } from '@/hooks';
 import {
+  getTooltipById,
   PENDLE_HISTORY_REFRESH_MS,
   PendleFlow,
   pendleAnalyticsData,
   pendleNonPtLeg,
-  usePendleSlippage,
+  PopoverInfo,
   usePendleTokens,
   usePendleUsdValue,
   type PendleAnalyticsSide
@@ -39,11 +39,8 @@ import {
   isTestnetId
 } from '@/utils';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
-import { SlippageMenu } from '@/components/ui/SlippageMenu';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
@@ -53,43 +50,45 @@ import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { usePendleSlippageCell } from '../hooks/usePendleSlippageCell';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
-import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { parseAmountInput } from '@/lib/amountInput';
+import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { formatPriceImpact } from '../utils/priceImpact';
-import { buildPendleEntryRows, buildPendleReviewRows } from './pendleModalRows';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
+import {
+  buildPendleReviewRows,
+  buildPendleSupplyEntryRows,
+  buildPendleWithdrawEntryRows
+} from './pendleModalRows';
 
 export type PendleModalFlow = 'supply' | 'withdraw';
 
 const NO_VALUE = '–';
 const SECONDS_PER_DAY = 86_400;
 
-/** Parse a human amount into wei; malformed input normalizes to 0n. */
-function parseAmount(value: string, decimals: number): bigint {
-  if (!value) return 0n;
-  try {
-    return parseUnits(value, decimals);
-  } catch {
-    return 0n;
-  }
-}
-
 /**
- * Editable body for the Pendle "Supply to / Withdraw from {market}" modals
- * (Figma 859:41118 / 859:41473 entries, 859:41264 / 859:41679 reviews),
- * mounted as the shared modal's background content — the Pendle analogue of
- * VaultModalForm. One body, two flows: supply (buy PT with a chosen input
- * token) and withdraw (sell PT into a chosen output token). Quote + calldata
- * run through the untouched engine (`useQuotePendleConvert` /
- * `useBatchPendleConvert` → `buildVerifiedArgs`); this is presentation + the
- * legacy analytics event set, fired here with live amounts for exact parity
- * with the retired PendleWidget orchestration.
+ * Editable body for the Pendle "Supply to {market}" / "Early withdrawal"
+ * modals (Figma 2193:73513 / 2193:73598 entries, 2193:73734 / 2193:73807
+ * reviews), mounted as the shared modal's background content — the Pendle
+ * analogue of VaultModalForm. One body, two flows: supply (buy PT with a
+ * chosen input token) and withdraw (sell PT into a chosen output token; the
+ * output choice lives in the grid's Withdrawal-token cell, the amount field's
+ * pill is the fixed PT input). Quote + calldata run through the untouched
+ * engine (`useQuotePendleConvert` / `useBatchPendleConvert` →
+ * `buildVerifiedArgs`); this is presentation + the legacy analytics event set,
+ * fired here with live amounts for exact parity with the retired PendleWidget
+ * orchestration.
  *
- * Position economics for the grid derive from the PT-at-maturity model:
- * "You'll claim" is the PT balance (1 PT redeems 1 underlying at expiry),
- * "Supply" is its present value at the market's implied rate, and earnings are
- * the difference — a self-consistent triple that needs no cost-basis history
- * (none exists for active positions; see PendlePositionCard).
+ * Grid economics are per-order, from the PT-at-maturity model (1 PT redeems 1
+ * underlying — 1 USDS on pegged markets — at expiry): the supply grids pin
+ * this order's maturity claim (the quoted PT out) and its earnings over cost;
+ * the withdraw grids state the early sell's forfeit directly ("Lost on early
+ * withdrawal" = maturity value − receive now). Cross-token legs are compared
+ * through the shared USD source (usePendleUsdValue) so sUSDS/USDC in- or
+ * outputs don't mis-subtract.
  */
 export function PendleModalForm({
   sessionId,
@@ -121,7 +120,7 @@ export function PendleModalForm({
   const inputSymbol = isSupply ? selectedToken.symbol : ptToken.symbol;
 
   const [value, setValue] = useState('');
-  const amount = parseAmount(value, inputDecimals);
+  const amount = parseAmountInput(value, inputDecimals);
 
   const { data: walletBalance, refetch: refetchWalletBalance } = useTokenBalance({
     address,
@@ -132,10 +131,12 @@ export function PendleModalForm({
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
   const available = isSupply ? (walletBalance?.value ?? 0n) : ptBalance;
 
-  const insufficient = amount > available;
-  const amountReady = isConnected && amount > 0n && !insufficient;
+  // Never validate against the unresolved balance's 0n fallback.
+  const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
+  const insufficient = balanceKnown && amount > available;
+  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient;
 
-  const { slippage, setSlippage, defaultSlippage } = usePendleSlippage(
+  const { slippage, slippageDisplay, slippageMode, slippageAction } = usePendleSlippageCell(
     isSupply ? PendleFlow.BUY : PendleFlow.WITHDRAW
   );
   const valueUsd = usePendleUsdValue();
@@ -167,7 +168,11 @@ export function PendleModalForm({
     return needsAllowance ? [{ label: t`Approve`, tokenSymbol: inputSymbol }, convertStep] : [convertStep];
   }, [isSupply, needsAllowance, inputSymbol]);
 
-  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
+  const {
+    data: quote,
+    isLoading: isFetchingQuote,
+    error: quoteError
+  } = useQuotePendleConvert({
     side,
     marketAddress: market.marketAddress,
     inputToken: isSupply ? selectedAddress : market.ptToken,
@@ -255,11 +260,13 @@ export function PendleModalForm({
     slippage,
     enabled: amountReady && !!quote,
     shouldUseBatch,
-    onMutate: () => {
-      txCallbacks.onMutate();
+    // This modal self-reports (it registers no `analytics` block with the
+    // transaction context), so the approve leg is discriminated here.
+    onMutate: variables => {
+      txCallbacks.onMutate(variables);
       fireAnalytics({
         event: WidgetAnalyticsEventType.TRANSACTION_STARTED,
-        action: mainAction,
+        action: variables?.functionName === 'approve' ? 'approve' : mainAction,
         flow: mainAction,
         amount: formattedAmount,
         data: buildData()
@@ -296,41 +303,38 @@ export function PendleModalForm({
     }
   });
 
-  const prepareErrorMessage = useMemo(
-    () => pendlePrepareErrorMessage(writeHook.error?.message),
-    [writeHook.error]
+  // Quote failures win over write-layer prepare failures — an outage or
+  // no-route means there's nothing to prepare — but only once no usable quote
+  // remains: a failed background poll while the previous quote is still within
+  // TTL must not paint an outage banner over an enabled Confirm. The buy/sell
+  // slippage control lives on the review screen (no header gear), hence the
+  // location-specific hint.
+  const quoteErrorMessage = useMemo(
+    () => (quote ? undefined : pendleQuoteErrorMessage(quoteError?.message)),
+    [quote, quoteError]
   );
+  const prepareErrorMessage = useMemo(
+    () =>
+      !writeHook.prepared
+        ? pendlePrepareErrorMessage(
+            writeHook.error?.message,
+            t`Current market price exceeds your slippage tolerance. Adjust slippage on the review screen, or wait for the quote to refresh.`
+          )
+        : undefined,
+    [writeHook.prepared, writeHook.error]
+  );
+  const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
 
-  // Read-only: the row shows a dash until this resolves, and the confirm button never
-  // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const feeCell = useModalFeeCell({
     calls: writeHook.calls ?? [],
     chainId,
     shouldUseBatch: !!writeHook.isBatch,
     enabled: amountReady
   });
 
-  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
-  // every render, so depending on its identity would give the review breakdown a
-  // new identity every render — and the live push that carries it would re-enter
-  // the provider on each of its re-renders (the update loop the modal forms guard
-  // against). Same field-by-field list the convert launch hook keeps.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
-    [
-      networkFee?.formatted,
-      networkFee?.batchSaving,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.canBundle,
-      bundleState.promoVisible
-    ]
-  );
-
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
 
-  // --- Grid economics (see the component doc for the PT-at-maturity model). ---
+  // --- Grid economics (see the component doc for the per-order model). ---
   const { data: marketsApi } = usePendleMarketsApiData();
   const stats = marketsApi?.[market.marketAddress];
   const impliedApy = stats?.impliedApy;
@@ -340,50 +344,87 @@ export function PendleModalForm({
     0,
     Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
   );
-  const claimDate = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const claimDate = formatMaturity(expirySec);
 
   // Pegged markets (1 PT → 1 USDS at expiry) display position values as USDS.
   const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
+  const ptSymbol = ptToken.symbol;
 
-  const claimBefore = parseFloat(formatUnits(ptBalance, ptDecimals));
-  const ptDelta = isSupply
-    ? parseFloat(formatUnits(quote?.amountOut ?? 0n, ptDecimals))
-    : -parseFloat(formatUnits(amount, ptDecimals));
-  const claimAfter = Math.max(0, claimBefore + ptDelta);
-
-  // Present value discounts the maturity claim at the implied rate — the
-  // "Supply" column; earnings-to-maturity are the complement.
-  const discount = impliedApy !== undefined ? 1 / Math.pow(1 + impliedApy, daysToMaturity / 365) : undefined;
   const fmt = (n: number) => formatNumber(n, { maxDecimals: 2 });
-  const pv = (claim: number) => (discount !== undefined ? fmt(claim * discount) : NO_VALUE);
-  const earningsToMaturity = (claim: number) =>
-    discount !== undefined ? fmt(claim * (1 - discount)) : NO_VALUE;
+  const inFloat = parseFloat(formatUnits(amount, inputDecimals));
+  const outDecimals = isSupply ? ptDecimals : selectedDecimals;
+  const outFloat = quote ? parseFloat(formatUnits(quote.amountOut, outDecimals)) : undefined;
 
-  const rateBefore = impliedApy !== undefined ? formatDecimalPercentage(impliedApy) : NO_VALUE;
-  const rateAfter = quote ? formatDecimalPercentage(quote.effectiveApy) : rateBefore;
-  const hasAmount = amount > 0n && !!quote;
+  // Rate this order locks: the quote's effective APY once sized, the market
+  // implied rate before an amount is entered.
+  const rate = quote
+    ? formatDecimalPercentage(quote.effectiveApy)
+    : impliedApy !== undefined
+      ? formatDecimalPercentage(impliedApy)
+      : NO_VALUE;
+
+  // Supply: this order's value at maturity is the quoted PT out; earnings are
+  // that maturity value less today's cost, both legs through the USD source.
+  const claimAtMaturity = isSupply && outFloat !== undefined ? fmt(outFloat) : NO_VALUE;
+  const supplyMaturityUsd =
+    isSupply && outFloat !== undefined ? valueUsd(displaySymbol, outFloat) : undefined;
+  const supplyCostUsd = isSupply && quote ? valueUsd(selectedToken.symbol, inFloat) : undefined;
+  const estEarnings =
+    supplyMaturityUsd !== undefined && supplyCostUsd !== undefined
+      ? fmt(supplyMaturityUsd - supplyCostUsd)
+      : NO_VALUE;
+
+  // Withdraw: what the early sell returns now, and what it forfeits vs holding
+  // to maturity (the sold PT's maturity value less the receive-now leg).
+  const receiveAmount = !isSupply && outFloat !== undefined ? fmt(outFloat) : NO_VALUE;
+  const withdrawMaturityUsd = !isSupply && quote ? valueUsd(displaySymbol, inFloat) : undefined;
+  const withdrawReceiveUsd =
+    !isSupply && outFloat !== undefined ? valueUsd(selectedToken.symbol, outFloat) : undefined;
+  const lost =
+    withdrawMaturityUsd !== undefined && withdrawReceiveUsd !== undefined
+      ? fmt(withdrawMaturityUsd - withdrawReceiveUsd)
+      : NO_VALUE;
+
+  // Slippage floor: the minimum the quote guarantees (PT on supply, output token on withdraw).
+  const minReceived = quote ? fmt(parseFloat(formatUnits(quote.apiMinOut, outDecimals))) : NO_VALUE;
 
   // The Network cells describe where the trade executes — the engine chain,
   // which the connected chain only matches while Pendle stays mainnet-gated.
   const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
 
-  const entryRows = buildPendleEntryRows({
-    rateBefore,
-    rateAfter,
-    network: networkName,
-    networkChainId: engineChainId,
-    displaySymbol,
-    supplyBefore: pv(claimBefore),
-    supplyAfter: pv(claimAfter),
-    earningsBefore: earningsToMaturity(claimBefore),
-    earningsAfter: earningsToMaturity(claimAfter),
-    claimBefore: fmt(claimBefore),
-    claimAfter: fmt(claimAfter),
-    daysToMaturity,
-    claimDate,
-    hasAmount,
-    networkFee: networkFee?.formatted ?? NO_VALUE
-  });
+  const lostTooltip = getTooltipById('early-withdrawal-impact');
+  const entryRows = isSupply
+    ? buildPendleSupplyEntryRows({
+        rate,
+        claimDate,
+        displaySymbol,
+        claimAtMaturity,
+        estEarnings,
+        daysToMaturity,
+        network: networkName,
+        networkChainId: engineChainId,
+        networkFee: feeCell.fee?.formatted ?? NO_VALUE
+      })
+    : buildPendleWithdrawEntryRows({
+        tokenSelector: (
+          <TokenSelectorPill
+            tokens={tokenOptions}
+            selected={selectedToken}
+            onSelect={setSelectedToken}
+            testId="pendle-modal-token-select"
+          />
+        ),
+        receiveAmount,
+        receiveSymbol: selectedToken.symbol,
+        lost,
+        displaySymbol,
+        lostInfo: lostTooltip ? (
+          <PopoverInfo title={lostTooltip.title} description={lostTooltip.tooltip} iconSize={12} />
+        ) : undefined,
+        network: networkName,
+        networkChainId: engineChainId,
+        networkFee: feeCell.fee?.formatted ?? NO_VALUE
+      });
 
   const setMaxAmount = () => setValue(formatUnits(available, inputDecimals));
   const setPercentAmount = (pct: PercentPreset) => {
@@ -411,35 +452,42 @@ export function PendleModalForm({
     [heroLabel, amountDisplay, inputSymbol]
   );
 
-  // Review breakdown (Figma 859:41264 supply / 859:41679 withdrawal): the
-  // amount hero over the review grid. Scalar deps keep the memo stable across
-  // unrelated renders (matches the savings/vault forms).
-  const receiveAmount = quote
-    ? fmt(parseFloat(formatUnits(quote.amountOut, isSupply ? ptDecimals : selectedDecimals)))
-    : NO_VALUE;
-  const slippageDisplay = `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`;
-  const slippageMode = slippage === defaultSlippage ? t`Auto` : t`Custom`;
+  // Review breakdown (Figma 2193:73734 supply / 2193:73807 withdrawal): the
+  // amount hero over the review grid. The withdraw review leads with what the
+  // sell returns ("You'll receive now", the comp's hero) rather than the PT
+  // input, which moves into the grid's Withdrawal-amount cell. Scalar deps
+  // keep the memo stable across unrelated renders (matches the savings/vault
+  // forms).
   // Sign-flipped like the legacy modal and the redeem sheet, so positive reads
   // as a cost to the user (PR #1781 review) — see formatPriceImpact.
   const priceImpactDisplay = formatPriceImpact(quote?.priceImpact) ?? NO_VALUE;
-  const claimAfterDisplay = fmt(claimAfter);
-  const earningsAfterDisplay = earningsToMaturity(claimAfter);
   const selectedSymbol = selectedToken.symbol;
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`pendle-modal-${flow}-review`}>
-        {transactionScreenContent}
+        {isSupply ? (
+          transactionScreenContent
+        ) : (
+          <TransactionAmountHero
+            label={t`You'll receive now`}
+            amount={receiveAmount}
+            symbol={selectedSymbol}
+            dataTestId="pendle-receive-summary"
+          />
+        )}
         <ModalSummaryGrid
           rows={toGridCells(
             buildPendleReviewRows(flow, {
               displaySymbol,
-              claimAfter: claimAfterDisplay,
+              claimAtMaturity,
               claimDate,
-              earningsAfter: earningsAfterDisplay,
+              estEarnings,
               daysToMaturity,
-              receiveAmount,
+              rate,
+              withdrawalAmount: amountDisplay,
+              ptSymbol,
               receiveSymbol: selectedSymbol,
-              rate: rateAfter,
+              minReceived,
               // Figma 859:41308: "Pendle sUSDS (PT-sUSDS)" — the PT naming
               // convention, not the market's marketing name ("Fixed Yield").
               product: `Pendle ${market.underlyingSymbol} (PT-${market.underlyingSymbol})`,
@@ -448,18 +496,10 @@ export function PendleModalForm({
               slippage: slippageDisplay,
               slippageMode,
               priceImpact: priceImpactDisplay,
-              slippageAction: (
-                <SlippageMenu
-                  value={slippage}
-                  defaultValue={defaultSlippage}
-                  onChange={setSlippage}
-                  triggerClassName="text-fgTertiary hover:text-fgPrimary data-[state=open]:text-fgPrimary p-0 [&>svg]:size-3.5"
-                  dataTestId="pendle-slippage-menu"
-                />
-              ),
+              slippageAction,
               network: networkName,
               networkChainId: engineChainId,
-              networkFee: networkFee?.formatted ?? NO_VALUE
+              networkFee: feeCell.fee?.formatted ?? NO_VALUE
             }),
             'pendle-modal-row',
             feeCell
@@ -470,27 +510,27 @@ export function PendleModalForm({
     ),
     [
       flow,
+      isSupply,
       transactionScreenContent,
       displaySymbol,
-      claimAfterDisplay,
+      claimAtMaturity,
       claimDate,
-      earningsAfterDisplay,
+      estEarnings,
       daysToMaturity,
+      rate,
+      amountDisplay,
+      ptSymbol,
       receiveAmount,
       selectedSymbol,
-      rateAfter,
+      minReceived,
       market.underlyingSymbol,
-      market.name,
       slippageDisplay,
       slippageMode,
-      slippage,
-      defaultSlippage,
-      setSlippage,
+      slippageAction,
       priceImpactDisplay,
       networkName,
       engineChainId,
-      feeCell,
-      networkFee
+      feeCell
     ]
   );
 
@@ -498,6 +538,7 @@ export function PendleModalForm({
     sessionId,
     execute: writeHook.execute,
     confirmDisabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps
@@ -508,24 +549,32 @@ export function PendleModalForm({
   const body = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid={`pendle-modal-${flow}-form`}>
       <ModalAmountField
-        label={<Trans>Amount</Trans>}
+        label={isSupply ? <Trans>Amount</Trans> : <Trans>{ptSymbol} amount</Trans>}
         tokenSymbol={inputSymbol}
         value={value}
+        decimals={inputDecimals}
         onInput={setValue}
         disabled={!isConnected}
         balance={
           <>
-            <Trans>Balance</Trans>: {isConnected ? balanceDisplay : NO_VALUE}
+            <Trans>Balance</Trans>: {isConnected && balanceKnown ? balanceDisplay : NO_VALUE}
           </>
         }
         onPercent={setPercentAmount}
         selector={
-          <TokenSelectorPill
-            tokens={tokenOptions}
-            selected={selectedToken}
-            onSelect={setSelectedToken}
-            testId="pendle-modal-token-select"
-          />
+          isSupply ? (
+            <TokenSelectorPill
+              tokens={tokenOptions}
+              selected={selectedToken}
+              onSelect={setSelectedToken}
+              testId="pendle-modal-token-select"
+            />
+          ) : (
+            // The withdraw input is the PT itself (Figma 2193:73598 draws a
+            // static PT-sUSDS chip); the output choice lives in the grid's
+            // Withdrawal-token cell.
+            <TokenSelectorPill tokens={[ptToken]} selected={ptToken} testId="pendle-modal-pt-token" />
+          )
         }
         error={
           insufficient ? (
@@ -541,13 +590,7 @@ export function PendleModalForm({
 
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
 
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
-
-      {prepareErrorMessage && amountReady && (
-        <Text className="text-error text-sm" data-testid="pendle-modal-error">
-          {prepareErrorMessage}
-        </Text>
-      )}
+      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { TxStatus } from '@/widgets';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
-import type { TransactionConfig } from '@/modules/ui/context/transactionContract';
+import type { TransactionAnalytics, TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 
 /**
@@ -26,6 +26,13 @@ type ModalEntryBodyLive = {
    * the normal confirm, so an override never outlives its condition.
    */
   confirmAction?: () => void;
+  /**
+   * User-readable engine/prepare failure shown above the confirm button on both
+   * first screens. Always pushed — `undefined` clears it, so a stale message
+   * never outlives the engine recovering. Explanatory only: pair it with
+   * `confirmDisabled` to actually block the confirm.
+   */
+  errorMessage?: string;
   /** Read-only breakdown for a three-screen flow's review stage. */
   transactionContent?: ReactNode;
   /** Compact amount summary rendered on the wallet/status screen. */
@@ -34,6 +41,15 @@ type ModalEntryBodyLive = {
   steps?: TransactionStep[];
   /** Per-state minimized-toast titles. */
   toast?: TransactionConfig['toast'];
+  /**
+   * Analytics attribution for the lifecycle events the provider emits. Pass a
+   * MEMOIZED object (the sync effect below depends on its identity). The last
+   * IDLE push is what the confirm-click's `onMutate` reads, so it always
+   * reflects the amount/token that produced the calldata. Two-CTA flows whose
+   * `action` depends on which button was clicked push at confirm instead
+   * (the stake-claim pattern) — don't pass this from those.
+   */
+  analytics?: TransactionAnalytics;
 };
 
 type UseModalEntryBodyParams = ModalEntryBodyLive & {
@@ -64,10 +80,12 @@ export function useModalEntryBody({
   confirmDisabled,
   confirmLabel,
   confirmAction,
+  errorMessage,
   transactionContent,
   transactionScreenContent,
   steps,
-  toast
+  toast,
+  analytics
 }: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
   const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
@@ -92,22 +110,26 @@ export function useModalEntryBody({
   useEffect(() => {
     if (txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
-      // `confirmDisabled` gates the entry screen via the entry descriptor and the
-      // review stage via the top-level field — same value, both screens.
-      // `confirmLabel` merges only when supplied (bodies that don't pass it keep
-      // their launch-time label); `confirmAction` is always pushed so clearing
-      // it (undefined) reliably restores the normal confirm.
+      // `confirmDisabled` and `errorMessage` gate/annotate the entry screen via
+      // the entry descriptor and the review stage via the top-level field — same
+      // value, both screens. `confirmLabel` merges only when supplied (bodies
+      // that don't pass it keep their launch-time label); `confirmAction` and
+      // `errorMessage` are always pushed so clearing them (undefined) reliably
+      // restores the normal confirm / drops a stale error.
       entry: {
         confirmDisabled,
         ...(confirmLabel !== undefined ? { confirmLabel } : {}),
-        confirmAction
+        confirmAction,
+        errorMessage
       },
       confirmDisabled,
+      errorMessage,
       onConfirm,
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
-      ...(toast !== undefined ? { toast } : {})
+      ...(toast !== undefined ? { toast } : {}),
+      ...(analytics !== undefined ? { analytics } : {})
     });
   }, [
     sessionId,
@@ -115,10 +137,12 @@ export function useModalEntryBody({
     confirmDisabled,
     confirmLabel,
     confirmAction,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,
     toast,
+    analytics,
     onConfirm,
     updateModalContent
   ]);

@@ -25,7 +25,6 @@ const h = vi.hoisted(() => ({
   activeSupplyExecute: vi.fn(),
   idleSupplyExecute: vi.fn(),
   withdrawExecute: vi.fn(),
-  launchMock: vi.fn(),
   // USDS -> sUSDS allowance (useSavingsAllowance) and DAI -> daiUsds allowance
   // (useTokenAllowance). Both derivations live inside the engine; the test only
   // controls the on-chain values they read.
@@ -135,7 +134,7 @@ vi.mock('@/hooks/tokens/useTokenAllowance', () => ({
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
-    launch: h.launchMock,
+    launch: () => undefined,
     updateModalContent: () => undefined,
     isModalOpen: false,
     txCallbacks: {
@@ -210,7 +209,6 @@ describe('useSavingsLaunch — mainnet DAI upgrade-and-supply calldata parity', 
     h.activeSupplyExecute.mockClear();
     h.idleSupplyExecute.mockClear();
     h.withdrawExecute.mockClear();
-    h.launchMock.mockClear();
     h.usdsAllowance = 0n;
     h.daiAllowance = 0n;
   });
@@ -315,33 +313,16 @@ describe('useSavingsLaunch — landmine #1: dual allowance derivation stays in t
   });
 });
 
-describe('useSavingsLaunch — DAI upgrade-and-supply launch() config', () => {
+describe('useSavingsLaunch — DAI upgrade-and-supply routing + steps', () => {
   beforeEach(() => {
     h.capturedCalls = [];
     h.activeSupplyExecute.mockClear();
     h.idleSupplyExecute.mockClear();
     h.withdrawExecute.mockClear();
-    h.launchMock.mockClear();
     h.usdsAllowance = 0n;
     h.daiAllowance = 0n;
   });
   afterEach(() => cleanup());
-
-  it('opens the modal with savings supply analytics under originToken DAI', () => {
-    h.daiAllowance = HAS_ALLOWANCE;
-    h.usdsAllowance = HAS_ALLOWANCE;
-    const { result } = renderHook(() =>
-      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.dai, amount: AMOUNT, referralCode: REF })
-    );
-    act(() => result.current.launch());
-
-    expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.analytics.widgetName).toBe('savings');
-    expect(config.analytics.flow).toBe('supply');
-    expect(config.analytics.action).toBe('supply');
-    expect(config.analytics.data.originToken).toBe('DAI');
-  });
 
   it('renders the full 4-step progression when no allowance is present', () => {
     h.daiAllowance = 0n;
@@ -349,10 +330,7 @@ describe('useSavingsLaunch — DAI upgrade-and-supply launch() config', () => {
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.dai, amount: AMOUNT, referralCode: REF })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.steps).toEqual([
+    expect(result.current.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'DAI', failureDetail: "The DAI hasn't been approved." },
       'Upgrade DAI to USDS',
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
@@ -366,10 +344,7 @@ describe('useSavingsLaunch — DAI upgrade-and-supply launch() config', () => {
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.dai, amount: AMOUNT, referralCode: REF })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.steps).toEqual(['Upgrade DAI to USDS', { label: 'Supply', tokenSymbol: 'USDS' }]);
+    expect(result.current.steps).toEqual(['Upgrade DAI to USDS', { label: 'Supply', tokenSymbol: 'USDS' }]);
   });
 
   it('routes onConfirm to the enabled upgrade engine (not the disabled supply engine, not withdraw)', () => {
@@ -378,10 +353,7 @@ describe('useSavingsLaunch — DAI upgrade-and-supply launch() config', () => {
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.dai, amount: AMOUNT, referralCode: REF })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    config.onConfirm();
+    act(() => result.current.execute());
     expect(h.activeSupplyExecute).toHaveBeenCalledTimes(1);
     expect(h.idleSupplyExecute).not.toHaveBeenCalled();
     expect(h.withdrawExecute).not.toHaveBeenCalled();

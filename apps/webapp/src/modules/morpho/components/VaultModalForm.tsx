@@ -15,6 +15,9 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
 import { useNetworkFee } from '@/hooks';
 import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
@@ -78,6 +81,7 @@ export function VaultModalForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,
@@ -91,10 +95,14 @@ export function VaultModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, calls, isBatch } = useVaultLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     shouldUseBatch: isBatch,
     enabled: amountReady
@@ -107,17 +115,20 @@ export function VaultModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
   );
   const disabled = !amountReady || !prepared;
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // The stars accent marks an incentive-boosted rate, mirroring the vault rate
   // popover (`MorphoRateBreakdownPopover`) — read from the same market data.
@@ -236,6 +247,27 @@ export function VaultModalForm({
     ]
   );
 
+  // Legacy VaultWidget payload shape (APP-444 B7): withdraw amounts negative.
+  // `module` follows the provider — 'morpho' for every legacy vault (parity),
+  // 'sky' for the redesign-only Sky provider vaults.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'vaults',
+      flow,
+      action: flow,
+      data: {
+        module: provider,
+        product: vaultName,
+        productAddress: vaultAddress,
+        assetAddress: assetToken.address[chainId],
+        assetSymbol: assetToken.symbol,
+        isBatchTx: isBatch,
+        amount: signedAmount(parseFloat(formatUnits(amount, decimals)), flow)
+      }
+    }),
+    [flow, provider, vaultName, vaultAddress, assetToken, chainId, isBatch, amount, decimals]
+  );
+
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
   // keeps the shared modal's confirm gating / review breakdown / step labels /
   // wallet summary / toast titles in sync, and the entry-slot portal.
@@ -243,10 +275,12 @@ export function VaultModalForm({
     sessionId,
     execute,
     confirmDisabled: disabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,
-    toast
+    toast,
+    analytics
   });
 
   const body = (
@@ -256,13 +290,14 @@ export function VaultModalForm({
           label={<Trans>Amount</Trans>}
           tokenSymbol={assetToken.symbol}
           value={value}
+          decimals={decimals}
           onInput={onInput}
           disabled={!isConnected}
           balance={
             // "Available", not "Balance", when liquidity caps the figure below the position.
             <>
               {!isSupply && isLiquidityConstrained ? <Trans>Available</Trans> : <Trans>Balance</Trans>}:{' '}
-              {isConnected ? formatAsset(available) : NO_VALUE}
+              {isConnected && availableKnown ? formatAsset(available) : NO_VALUE}
             </>
           }
           onPercent={setPercentAmount}

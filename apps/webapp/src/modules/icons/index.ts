@@ -50,10 +50,12 @@ import { Pendle } from './Pendle';
 import { Merkl } from './Merkl';
 import { StarsFilled } from './StarsFilled';
 import { SparklesMorpho } from './SparklesMorpho';
+import { TrendingDown } from './TrendingDown';
 import { TrendingUp } from './TrendingUp';
 import { TrendingUpGradient } from './TrendingUpGradient';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
+import { IllustrationSkyLogomark } from './IllustrationSkyLogomark';
 
 export {
   ArrowDown,
@@ -108,8 +110,10 @@ export {
   Merkl,
   StarsFilled,
   SparklesMorpho,
+  TrendingDown,
   TrendingUp,
   TrendingUpGradient,
   IllustrationStaked,
-  IllustrationStakingLogomark
+  IllustrationStakingLogomark,
+  IllustrationSkyLogomark
 };

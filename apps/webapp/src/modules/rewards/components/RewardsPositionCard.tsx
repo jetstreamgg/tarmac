@@ -15,6 +15,7 @@ import {
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   NO_VALUE,
   ProductActions,
@@ -94,9 +95,16 @@ export function RewardsPositionCard({
     contractAddress,
     supplyToken: contract.supplyToken,
     displayName: rewardContractDisplayName(contract),
+    productName: contract.name,
     rewardTokenSymbol: isPointsFarm ? undefined : contract.rewardToken.symbol,
     rate
   };
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position.
+  if (isConnected && suppliedBalance === undefined) {
+    return <PositionCardSkeleton testId="rewards-position-card-skeleton" />;
+  }
 
   const staked = suppliedBalance ?? 0n;
   const hasPosition = staked > 0n;

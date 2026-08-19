@@ -15,6 +15,7 @@ import { TermsDialog } from './TermsDialog';
 import { getTermsContent } from './terms-loader';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 
 export function TermsModal() {
   const { closeModal, isModalOpen, openModal } = useTermsModal();
@@ -122,6 +123,7 @@ export function TermsModal() {
       // Dismissing the modal without accepting must disconnect the wallet, otherwise wagmi stays
       // connected while the terms-gated app UI shows "not connected" (split-brain state).
       if (!isConnectedAndAcceptedTerms) {
+        setDisconnectSource('terms_dismissed');
         disconnect();
       }
       closeModal();
@@ -130,6 +132,7 @@ export function TermsModal() {
 
   const handleReject = () => {
     setIsChecked(false);
+    setDisconnectSource('terms_declined');
     disconnect();
     closeModal();
   };

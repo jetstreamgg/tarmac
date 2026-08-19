@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useChains } from 'wagmi';
-import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
@@ -11,15 +10,19 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
-import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import {
+  ProductDetailTemplate,
+  ProductDetailRow,
+  DetailValue
+} from '@/components/product/ProductDetailTemplate';
 import { PendleDetailChart } from './PendleDetailChart';
 import { PendlePositionCard } from './PendlePositionCard';
 import { PendleTransactionsTable } from './PendleTransactionsTable';
 import { PendleMaturityProgress } from './PendleMaturityProgress';
 import { PendleAboutContent } from './PendleAboutContent';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 
-const NO_VALUE = '–';
 const SECONDS_PER_DAY = 86_400;
 
 export type PendleProductDetailProps = {
@@ -43,26 +46,38 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
     [chains]
   );
 
-  const { data: marketsApi } = usePendleMarketsApiData();
+  const { data: marketsApi, isLoading: statsLoading } = usePendleMarketsApiData();
   const stats = marketsApi?.[market.marketAddress];
 
   const expirySec = stats?.expirySec ?? market.expiry;
   const remainingSeconds = Math.max(0, expirySec - Math.floor(Date.now() / 1000));
   const remainingDays = Math.floor(remainingSeconds / SECONDS_PER_DAY);
-  const maturityDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const maturityDateLabel = formatMaturity(expirySec);
 
   const details: ProductDetailRow[] = [
     {
       id: 'fixed-apy',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Fixed APY</Trans>,
-      value: stats?.impliedApy !== undefined ? formatDecimalPercentage(stats.impliedApy) : NO_VALUE
+      value: (
+        <DetailValue
+          loading={statsLoading}
+          value={stats?.impliedApy !== undefined ? formatDecimalPercentage(stats.impliedApy) : undefined}
+        />
+      )
     },
     {
       id: 'underlying-apy',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Underlying APY</Trans>,
-      value: stats?.underlyingApy !== undefined ? formatDecimalPercentage(stats.underlyingApy) : NO_VALUE
+      value: (
+        <DetailValue
+          loading={statsLoading}
+          value={
+            stats?.underlyingApy !== undefined ? formatDecimalPercentage(stats.underlyingApy) : undefined
+          }
+        />
+      )
     },
     {
       id: 'risk',
@@ -89,14 +104,27 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       id: 'tvl',
       icon: <Vault className="h-3 w-3" />,
       label: <Trans>TVL</Trans>,
-      value: stats?.tvl !== undefined ? `$${formatNumber(stats.tvl, { compact: true })}` : NO_VALUE
+      value: (
+        <DetailValue
+          loading={statsLoading}
+          value={stats?.tvl !== undefined ? `$${formatNumber(stats.tvl, { compact: true })}` : undefined}
+        />
+      )
     },
     {
       id: 'liquidity',
       icon: <Droplet className="h-3 w-3" />,
       label: <Trans>Liquidity</Trans>,
-      value:
-        stats?.liquidity !== undefined ? `$${formatNumber(stats.liquidity, { maxDecimals: 0 })}` : NO_VALUE
+      value: (
+        <DetailValue
+          loading={statsLoading}
+          value={
+            stats?.liquidity !== undefined
+              ? `$${formatNumber(stats.liquidity, { maxDecimals: 0 })}`
+              : undefined
+          }
+        />
+      )
     }
   ];
 

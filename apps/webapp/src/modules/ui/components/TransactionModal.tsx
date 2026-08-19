@@ -83,6 +83,8 @@ export type TransactionModalProps = {
   onConfirm: () => void;
   /** Fires for the entry's optional secondary CTA (see `TransactionEntry.secondaryConfirmLabel`). */
   onSecondaryConfirm?: () => void;
+  /** Fires when a three-screen flow's entry advances to its review stage. */
+  onReviewStage?: () => void;
   onRetry?: () => void;
   onBack?: () => void;
   txStatus: TxStatus;
@@ -90,6 +92,12 @@ export type TransactionModalProps = {
   confirmLabel?: string;
   /** Disables the Confirm button (e.g. while a quote is refetching). */
   confirmDisabled?: boolean;
+  /**
+   * User-readable engine/prepare failure rendered above the review screen's
+   * confirm button; the entry screen reads `entry.errorMessage` instead (same
+   * dual sourcing as `confirmDisabled`).
+   */
+  errorMessage?: string;
   successLabel?: string;
   errorLabel?: string;
   steps?: TransactionStep[];
@@ -128,12 +136,14 @@ export function TransactionModal({
   titleBadge,
   onConfirm,
   onSecondaryConfirm,
+  onReviewStage,
   onRetry,
   onBack,
   txStatus,
   externalLink,
   confirmLabel,
   confirmDisabled,
+  errorMessage,
   successLabel,
   errorLabel,
   steps,
@@ -178,6 +188,7 @@ export function TransactionModal({
   // live by the in-modal body); the review screen uses the top-level config.
   const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
   const firstScreenConfirmDisabled = isEntry ? entry?.confirmDisabled : confirmDisabled;
+  const firstScreenErrorMessage = isEntry ? entry?.errorMessage : errorMessage;
   // The wallet/status screen shows a compact summary when supplied; otherwise it
   // falls back to the review body (review path only), so consumers that pass only
   // `transactionContent` keep their previous transaction-screen content.
@@ -215,6 +226,7 @@ export function TransactionModal({
     // nothing fires on-chain until the review's confirm.
     if (isEntry && hasReviewStage) {
       setStep('review');
+      onReviewStage?.();
       return;
     }
     if (reviewRef.current) {
@@ -222,7 +234,7 @@ export function TransactionModal({
     }
     setStep('transaction');
     onConfirm();
-  }, [isEntry, hasReviewStage, onConfirm, entryConfirmAction]);
+  }, [isEntry, hasReviewStage, onConfirm, entryConfirmAction, onReviewStage]);
 
   // The entry's secondary CTA (entry-only flows — see the contract): same
   // advance to the wallet screen, firing the secondary action's handler.
@@ -466,6 +478,14 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
+                {/* Explanatory only — the flow's confirmDisabled does the actual blocking. */}
+                {firstScreenErrorMessage && (
+                  <div role="alert">
+                    <Text className="text-error text-sm" data-testid="transaction-modal-error">
+                      {firstScreenErrorMessage}
+                    </Text>
+                  </div>
+                )}
                 {hasSecondaryConfirm ? (
                   // Comp 1036:214001: two flex-1 CTAs with a 20px gutter.
                   <div className="flex w-full gap-5">

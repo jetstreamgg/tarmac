@@ -622,7 +622,7 @@ export function PositionDetailsModal({
                 </StatCell>
                 <StatPairDivider className="md:hidden" />
                 <StatCell label={<Trans>Claimable rewards</Trans>}>
-                  {detail.claimableLoading ? (
+                  {detail.claimableUsdLoading ? (
                     <Skeleton className="h-4 w-14" />
                   ) : (
                     <>

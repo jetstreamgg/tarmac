@@ -477,10 +477,7 @@ export function TokenInput({
                 </HStack>
               </motion.div>
             )}
-            <VStack
-              className="scrollbar-thin-always space-y-2 overflow-y-scroll"
-              style={{ maxHeight: `${maxTokenListHeight}px` }}
-            >
+            <VStack className="space-y-2 overflow-y-scroll" style={{ maxHeight: `${maxTokenListHeight}px` }}>
               {filteredTokenList?.map((token, index) => (
                 <TokenListItem
                   key={token.symbol}

@@ -14,6 +14,8 @@ const h = vi.hoisted(() => ({
   // L2 PSM mocks: the sUSDS→token converted balance (withdraw source) and the
   // sUSDS-in ceiling for a specific withdraw, plus the supply slippage floor.
   convertedValue: 0n as bigint,
+  // The converted-balance preview read is still in flight (its value is the 0n fallback).
+  previewLoading: false,
   maxAmountIn: 0n as bigint,
   minAmountOut: 0n as bigint,
   // Mainnet USDC supply gate (PSM wrapper reads): open module by default.
@@ -87,7 +89,7 @@ vi.mock('@/hooks', async importOriginal => {
     // it stays disabled here; stubbed only to keep the read out of real wagmi.
     useReadSavingsUsds: () => ({ data: undefined }),
     // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
-    usePreviewSwapExactIn: () => ({ value: h.convertedValue }),
+    usePreviewSwapExactIn: () => ({ value: h.convertedValue, isLoading: h.previewLoading }),
     usePreviewSwapExactOut: () => ({ value: h.maxAmountIn }),
     // Mainnet USDC supply gate: the PSM wrapper's live / fee / halt switches.
     // Default to an open module (live, zero fee, nothing halted).
@@ -117,7 +119,6 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
   }) => {
     h.launchParams = params;
     return {
-      launch: vi.fn(),
       execute: h.execute,
       steps: ['Supply'],
       prepared: h.prepared,
@@ -175,6 +176,7 @@ vi.mock('./SavingsOriginSelect', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { SavingsModalForm } from './SavingsModalForm';
+import { TOKENS } from '@/hooks';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -451,6 +453,7 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     // the default USDS destination is 18-dec). Proves withdraw caps on the converted
     // balance, not the 100-USDS position.
     h.convertedValue = 200n * 10n ** 18n;
+    h.previewLoading = false;
     h.maxAmountIn = 7n * 10n ** 18n; // sUSDS-in ceiling for a specific withdraw
     h.minAmountOut = 49n * 10n ** 17n; // 4.9 sUSDS slippage floor
     h.psmLive = 1n;
@@ -513,10 +516,81 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     expect(lastDisabled()).toBe(false);
   });
 
+  it('holds the withdraw balance and validation while the sUSDS→token preview is in flight', () => {
+    // The sUSDS balance has landed but the PSM preview that values it in the
+    // destination token has not — its 0n fallback must not read as "Balance: 0.00"
+    // or flag typed amounts as insufficient (APP-491).
+    h.previewLoading = true;
+    h.convertedValue = 0n;
+    renderForm('withdraw');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '150' } });
+    expect(screen.queryByTestId('savings-modal-amount-error')).toBeNull();
+    expect(lastDisabled()).toBe(true);
+  });
+
   it('caps a specific L2 withdraw via the sUSDS-in ceiling (swapExactOut)', () => {
     renderForm('withdraw');
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
     expect(h.launchParams?.max).toBe(false);
     expect(h.launchParams?.maxAmountInForWithdraw).toBe(h.maxAmountIn);
+  });
+});
+
+// The last analytics blob live-merged to the modal (what the provider will emit from).
+const lastAnalytics = () => {
+  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
+  return withAnalytics.at(-1)?.[1].analytics;
+};
+
+describe('SavingsModalForm — analytics parity blob (APP-444 B1/B2)', () => {
+  beforeEach(() => {
+    h.chainId = 1;
+    h.walletBalance = 100n * 10n ** 18n;
+    h.convertedValue = 0n;
+    h.maxAmountIn = 0n;
+    h.minAmountOut = 0n;
+    h.psmLive = 1n;
+    h.psmTin = 0n;
+    h.psmHalted = 0n;
+    h.prepared = true;
+    h.execute.mockClear();
+    h.update.mockClear();
+  });
+  afterEach(() => cleanup());
+
+  it('pushes the legacy SavingsWidget supply blob: module/assetAddress/assetSymbol/isBatchTx + positive amount', () => {
+    renderForm('supply');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(lastAnalytics()).toEqual({
+      widgetName: 'savings',
+      flow: 'supply',
+      action: 'supply',
+      data: {
+        module: 'savings',
+        assetAddress: TOKENS.usds.address[1],
+        assetSymbol: 'USDS',
+        isBatchTx: false,
+        amount: 10
+      }
+    });
+  });
+
+  it('signs the withdraw amount negative (pipeline sign rule)', () => {
+    renderForm('withdraw');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '5' } });
+    const analytics = lastAnalytics();
+    expect(analytics.flow).toBe('withdraw');
+    expect(analytics.action).toBe('withdraw');
+    expect(analytics.data.amount).toBe(-5);
+  });
+
+  it('tracks the USDC origin: 6-dec amount reported in token units with the USDC address', () => {
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    const analytics = lastAnalytics();
+    expect(analytics.data.assetAddress).toBe(TOKENS.usdc.address[1]);
+    expect(analytics.data.assetSymbol).toBe('USDC');
+    expect(analytics.data.amount).toBe(10);
   });
 });

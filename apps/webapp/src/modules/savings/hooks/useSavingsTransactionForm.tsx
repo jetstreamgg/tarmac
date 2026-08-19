@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   getTokenDecimals,
@@ -14,6 +14,7 @@ import {
   type Token
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isL2ChainId, math } from '@/utils';
+import { parseAmountInput } from '@/lib/amountInput';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { SavingsAmountSummary } from '../components/SavingsAmountSummary';
 import {
@@ -72,6 +73,8 @@ export interface SavingsTransactionForm {
   max: boolean;
   /** Source balance for the active flow (wallet for supply; position / converted sUSDS for withdraw). */
   available: bigint;
+  /** The `available` read has resolved — display and validation wait on it. */
+  availableKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
   /** True when the amount/connection gate is satisfied; combine with the engine's `prepared` for the submit gate. */
@@ -113,17 +116,6 @@ export interface SavingsTransactionForm {
   clearAmount: () => void;
   /** Reset the amount, Max, and token back to USDS — for a flow (Supply/Withdraw) switch. */
   resetToUsds: () => void;
-}
-
-// Parse the raw input to a bigint at the origin token's decimals (USDC is 6 on
-// every chain); partial/invalid input → 0.
-function parseAmount(raw: string, decimals: number): bigint {
-  if (!raw) return 0n;
-  try {
-    return parseUnits(raw, decimals);
-  } catch {
-    return 0n;
-  }
 }
 
 /**
@@ -185,7 +177,7 @@ export function useSavingsTransactionForm({
   const originOptions: OriginSymbol[] = showOriginSelect ? origins : ['USDS'];
   const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
-  const amount = parseAmount(value, originDecimals);
+  const amount = parseAmountInput(value, originDecimals);
 
   const { data: walletBalance } = useTokenBalance({
     address,
@@ -239,11 +231,19 @@ export function useSavingsTransactionForm({
   // position (mainnet: the USDS savings balance; L2: sUSDS converted to the
   // destination token).
   const available = isSupply ? (walletBalance?.value ?? 0n) : isL2 ? convertedBalance.value : position;
+  // Never validate against the unresolved balance's 0n fallback. The L2 withdraw
+  // balance is the sUSDS balance seen through the PSM preview — two reads, so it
+  // waits on both (a 0n balance previews to 0n by definition and never loads).
+  const availableKnown = isSupply
+    ? walletBalance !== undefined
+    : isL2
+      ? susdsBalance !== undefined && !convertedBalance.isLoading
+      : savingsData?.userSavingsBalance !== undefined;
   const isZero = amount === 0n;
   // A max withdraw bypasses the amount check — the redeem is driven by the flag, not
   // the displayed (rounded) value.
-  const insufficient = isConnected && !max && amount > available;
-  const amountReady = isConnected && usdcGateReady && !(!max && (isZero || insufficient));
+  const insufficient = isConnected && !max && availableKnown && amount > available;
+  const amountReady = isConnected && usdcGateReady && availableKnown && !(!max && (isZero || insufficient));
 
   const engineParams: SavingsEngineParams = {
     flow,
@@ -291,7 +291,7 @@ export function useSavingsTransactionForm({
   const onInput = useCallback((raw: string) => {
     // Typing overrides a previous Max selection.
     setMax(false);
-    setValue(raw.replace(/[^0-9.]/g, ''));
+    setValue(raw);
   }, []);
 
   const setMaxAmount = useCallback(() => {
@@ -345,6 +345,7 @@ export function useSavingsTransactionForm({
     amount,
     max,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,

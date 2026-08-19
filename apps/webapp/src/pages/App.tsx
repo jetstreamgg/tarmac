@@ -25,6 +25,7 @@ import { PostHogProvider, POSTHOG_ENABLED } from '@/modules/analytics/PostHogPro
 import { CookieConsentBanner } from '@/modules/analytics/components/CookieConsentBanner';
 import { GeoConfigProvider } from '@/modules/geo-config';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
+import { useNavigationAnalytics } from '@/modules/analytics/hooks/useNavigationAnalytics';
 import { CORPUS_VERSION, CORPUS_BRANCH, CORPUS_COMMIT } from '@/data/version';
 
 // Expose corpus version to browser console for debugging
@@ -44,6 +45,9 @@ const useTestnetConfig =
 const config = useMock ? mockWagmiConfig : useTestnetConfig ? wagmiConfigDev : wagmiConfigMainnet;
 
 const AppContent = () => {
+  // Central nav subscription: lives outside the route tree so it survives
+  // every navigation, 404s included.
+  useNavigationAnalytics();
   return (
     <ConnectedProvider>
       <TermsModalProvider>
@@ -62,8 +66,12 @@ const AppContent = () => {
 
                         The DismissableLayerBranch keeps toasts *clickable*
                         while a modal Radix surface (wallet drawer, any
-                        dialog) is open. */}
-                    <DismissableLayerBranch className="pointer-events-auto">
+                        dialog) is open.
+
+                        app-loader-cover-hidden: this tree mounts outside
+                        Layout, so it hides via the loader's document flag
+                        while the cover plays (globals.css). */}
+                    <DismissableLayerBranch className="app-loader-cover-hidden pointer-events-auto">
                       <Toaster className="!z-[60]" />
                       <ToastCloseAll />
                     </DismissableLayerBranch>
@@ -92,7 +100,11 @@ export const App = () => (
                     <AppContent />
                   </ConnectModalProvider>
                 </AnalyticsFlowProvider>
-                {POSTHOG_ENABLED && <CookieConsentBanner />}
+                {POSTHOG_ENABLED && (
+                  <div className="app-loader-cover-hidden">
+                    <CookieConsentBanner />
+                  </div>
+                )}
               </GeoConfigProvider>
             </PostHogProvider>
           </CookieConsentProvider>

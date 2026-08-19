@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
+import { useChainId, useChains } from 'wagmi';
 import {
   getTokenDecimals,
   isMarketMatured,
@@ -11,17 +12,13 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import {
-  pendleAnalyticsData,
-  pendleNonPtLeg,
-  usePendleSlippage,
-  usePendleTokens,
-  usePendleUsdValue
-} from '@/widgets';
-import { SlippageMenu } from '@/components/ui/SlippageMenu';
+import { chainId as chainIdMap, isTestnetId } from '@/utils';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { PendleRedeem } from '../components/PendleRedeem';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 type Options = {
   /** Called after redeem confirms onchain — for refetching balances etc. */
@@ -36,7 +33,7 @@ type Options = {
  * USDS, or USDC.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options = {}) {
-  const { launch, updateModalContent, isModalOpen, txCallbacks } = useTransaction();
+  const { launch, updateModalContent, isModalOpen, txStatus, txCallbacks } = useTransaction();
   // Per-instance id so the provider can ignore live updates from sibling cards.
   const sessionId = useId();
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
@@ -48,7 +45,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(withdrawTokenList[0]);
   const outputTokenAddress = selectedOutputToken.address[mainnet.id] as `0x${string}`;
 
-  const { slippage, setSlippage, defaultSlippage } = usePendleSlippage('redeem');
+  const { slippage, slippageDisplay, slippageMode, slippageAction } = usePendleSlippageCell('redeem');
   // Values the redeemed output leg in USD for the analytics `amount` property.
   const valueUsd = usePendleUsdValue();
 
@@ -80,7 +77,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     slippage,
     enabled: isRedeemable,
     shouldUseBatch: true,
-    onMutate: () => txCallbacks.onMutate(),
+    // Forward wagmi's write variables so the approve leg reports action 'approve'.
+    onMutate: variables => txCallbacks.onMutate(variables),
     onStart: hash => txCallbacks.onStart(hash),
     onSuccess: hash => {
       mutatePtBalances();
@@ -103,14 +101,29 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   });
 
   // Map raw revert messages to user-friendly copy — shared with the buy/sell
-  // modal so users see consistent guidance across all three flows.
+  // modal so users see consistent guidance across all three flows. Only while
+  // unprepared, so a recovered simulation drops the stale message.
   const prepareErrorMessage = useMemo<string | undefined>(
-    () => pendlePrepareErrorMessage(writeHook.error?.message),
-    [writeHook.error]
+    () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
+    [writeHook.prepared, writeHook.error]
   );
   // DEMO BRANCH — DO NOT MERGE: the write hook can't prepare against a
   // not-actually-matured market, so suppress its error in the modal.
   const demoPrepareErrorMessage = undefined;
+
+  // The Network cell describes where the trade executes — the engine chain,
+  // which the connected chain only matches while Pendle stays mainnet-gated.
+  const chainId = useChainId();
+  const chains = useChains();
+  const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
+
+  const feeCell = useModalFeeCell({
+    calls: writeHook.calls ?? [],
+    chainId,
+    shouldUseBatch: !!writeHook.isBatch,
+    enabled: isRedeemable && !!quote
+  });
 
   const transactionContent = useMemo(
     () => (
@@ -121,8 +134,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
         selectedOutputToken={selectedOutputToken}
         onOutputTokenChange={setSelectedOutputToken}
         quote={quote}
-        isFetchingQuote={isFetchingQuote}
-        slippage={slippage}
+        slippageDisplay={slippageDisplay}
+        slippageMode={slippageMode}
+        slippageAction={slippageAction}
+        network={networkName}
+        networkChainId={engineChainId}
+        feeCell={feeCell}
         prepareErrorMessage={demoPrepareErrorMessage}
       />
     ),
@@ -132,22 +149,14 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       withdrawTokenList,
       selectedOutputToken,
       quote,
-      isFetchingQuote,
-      slippage,
+      slippageDisplay,
+      slippageMode,
+      slippageAction,
+      networkName,
+      engineChainId,
+      feeCell,
       prepareErrorMessage
     ]
-  );
-
-  const rightHeaderComponent = useMemo(
-    () => (
-      <SlippageMenu
-        value={slippage}
-        defaultValue={defaultSlippage}
-        onChange={setSlippage}
-        dataTestId="pendle-slippage-menu"
-      />
-    ),
-    [slippage, defaultSlippage, setSlippage]
   );
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
@@ -157,7 +166,18 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const executeRef = useRef<() => void>(() => undefined);
   executeRef.current = () => writeHook.execute();
 
-  const openRedeemModal = useCallback(() => {
+  // `amount` = USD value of the redeemed output leg (the non-PT side), so
+  // sUSDS/PT redeems don't mis-sum the inflow/outflow tiles. amountFrom /
+  // amountTo in `data` keep the raw token counts. useAppAnalytics has no
+  // sign-flip helper, so emit the withdrawal sign explicitly — dashboard
+  // tiles filtering `properties.amount < 0` pick up redeem as a withdrawal
+  // alongside SELL. Omit `amount` when no price is available rather than
+  // emit a wrong-unit number. (pendleNonPtLeg/valueUsd are total — they never
+  // throw — and the eventual capture is guarded by safeCapture, matching the
+  // amount-math-unguarded / capture-guarded pattern in the other widgets.)
+  // Memoized so the launch seeds it AND the live-update effect below keeps it
+  // fresh — the output token stays changeable after launch (APP-444 B14).
+  const analytics = useMemo(() => {
     const toDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
     const data = pendleAnalyticsData({
       market,
@@ -172,15 +192,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       quote,
       isBatchTx: true
     });
-    // `amount` = USD value of the redeemed output leg (the non-PT side), so
-    // sUSDS/PT redeems don't mis-sum the inflow/outflow tiles. amountFrom /
-    // amountTo in `data` keep the raw token counts. useAppAnalytics has no
-    // sign-flip helper, so emit the withdrawal sign explicitly — dashboard
-    // tiles filtering `properties.amount < 0` pick up redeem as a withdrawal
-    // alongside SELL. Omit `amount` when no price is available rather than
-    // emit a wrong-unit number. (pendleNonPtLeg/valueUsd are total — they never
-    // throw — and the eventual capture is guarded by safeCapture, matching the
-    // amount-math-unguarded / capture-guarded pattern in the other widgets.)
     const leg = pendleNonPtLeg('redeem', {
       originSymbol: ptToken.symbol,
       targetSymbol: selectedOutputToken.symbol,
@@ -190,43 +201,37 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       toDecimals
     });
     const usd = valueUsd(leg.symbol, leg.amount);
+    return {
+      widgetName: 'fixed',
+      flow: 'redeem',
+      action: 'redeem',
+      data: {
+        ...data,
+        ...(usd !== undefined ? { amount: -Math.abs(usd) } : {})
+      }
+    };
+  }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
+
+  const openRedeemModal = useCallback(() => {
+    // The CTAs that open this modal say "Claim" (Figma 2306:72334 / the
+    // matured product page) — the title and confirm follow.
     launch({
-      title: t`Redeem PT-${market.underlyingSymbol}`,
+      title: t`Claim matured position`,
       transactionContent,
-      rightHeaderComponent,
-      confirmLabel: t`Confirm`,
+      confirmLabel: t`Claim`,
       confirmDisabled,
       onConfirm: () => executeRef.current(),
       sessionId,
-      analytics: {
-        widgetName: 'fixed',
-        flow: 'redeem',
-        action: 'redeem',
-        data: {
-          ...data,
-          ...(usd !== undefined ? { amount: -Math.abs(usd) } : {})
-        }
-      }
+      analytics
     });
-  }, [
-    launch,
-    market,
-    ptToken,
-    ptBalance,
-    selectedOutputToken,
-    quote,
-    slippage,
-    valueUsd,
-    transactionContent,
-    rightHeaderComponent,
-    confirmDisabled,
-    sessionId
-  ]);
+  }, [launch, transactionContent, confirmDisabled, sessionId, analytics]);
 
   useEffect(() => {
-    if (!isModalOpen) return;
-    updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled });
-  }, [isModalOpen, sessionId, updateModalContent, transactionContent, rightHeaderComponent, confirmDisabled]);
+    // Freeze once the flow leaves IDLE (same as useModalEntryBody): the quote
+    // repolls mid-flight and must not rewrite the blob the signed tx started with.
+    if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
+    updateModalContent(sessionId, { transactionContent, confirmDisabled, analytics });
+  }, [isModalOpen, txStatus, sessionId, updateModalContent, transactionContent, confirmDisabled, analytics]);
 
   return {
     openRedeemModal,

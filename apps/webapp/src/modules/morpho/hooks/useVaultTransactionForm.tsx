@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   type Token,
@@ -12,6 +12,7 @@ import {
   type VaultProvider
 } from '@/hooks';
 import { formatNumber } from '@/utils';
+import { parseAmountInput } from '@/lib/amountInput';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
 import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
 
@@ -21,14 +22,6 @@ export type VaultModalPreset = { amount?: string };
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDC supplied!"). */
 export type VaultToastTitles = { loading: string; success: string; error: string };
 
-const parseAmount = (value: string, decimals: number): bigint => {
-  try {
-    return value ? parseUnits(value, decimals) : 0n;
-  } catch {
-    return 0n;
-  }
-};
-
 export interface VaultTransactionForm {
   isConnected: boolean;
   isSupply: boolean;
@@ -37,6 +30,8 @@ export interface VaultTransactionForm {
   amount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / max withdraw (withdraw). */
   available: bigint;
+  /** The `available` read has resolved — display and validation wait on it. */
+  availableKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
   amountReady: boolean;
@@ -85,7 +80,7 @@ export function useVaultTransactionForm({
   // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
   const [max, setMax] = useState(false);
 
-  const amount = parseAmount(value, decimals);
+  const amount = parseAmountInput(value, decimals);
 
   const { data: walletBalance } = useTokenBalance({
     address,
@@ -125,9 +120,11 @@ export function useVaultTransactionForm({
   // While the liquidity read is in flight the position backs the input (no
   // "Balance: 0" flash); if liquidity settles lower the insufficient gate re-clamps.
   const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? position);
+  // Never validate against the unresolved balance/position read's 0n fallback.
+  const availableKnown = isSupply ? walletBalance !== undefined : vaultData !== undefined;
   const isZero = amount === 0n;
-  const insufficient = amount > available;
-  const amountReady = isConnected && !isZero && !insufficient;
+  const insufficient = availableKnown && amount > available;
+  const amountReady = isConnected && amount > 0n && availableKnown && !insufficient;
 
   const onInput = (next: string) => {
     setMax(false);
@@ -199,6 +196,7 @@ export function useVaultTransactionForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,

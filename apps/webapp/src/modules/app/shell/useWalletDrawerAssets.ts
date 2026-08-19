@@ -10,7 +10,9 @@ import {
   type TokenItem
 } from '@/hooks';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
+import { useGeoConfig } from '@/modules/geo-config';
 import { buildIdleSupplyInfo } from '@/modules/portfolio/helpers/idleView';
+import { useGeoVisibleRows } from '@/modules/portfolio/hooks/useGeoVisibleRows';
 
 /**
  * The fixed set of tokens surfaced in the drawer's Assets tab, in display
@@ -40,6 +42,8 @@ export type WalletDrawerAsset = {
   bestRate?: number;
   /** Whether more than one venue accepts the token, i.e. the rate reads "up to". */
   multipleVenues: boolean;
+  /** Whether the region leaves the token anywhere to earn — gates the Start-earning CTA. */
+  canEarn: boolean;
 };
 
 export type UseWalletDrawerAssetsResult = {
@@ -75,8 +79,17 @@ export function useWalletDrawerAssets(): UseWalletDrawerAssetsResult {
   }
   const { data: rawBalances, isLoading: balancesLoading } = useTokenBalances({ address, chainTokenMap });
 
+  // Rates and venue counts come from the venues available in this region —
+  // the same geo-filtered rows the portfolio idle table quotes — so a
+  // restricted region sees the best rate it can actually access rather than
+  // no rates at all.
   const { rows } = useEarnMarketplace();
-  const supplyInfo = buildIdleSupplyInfo(rows);
+  const visibleRows = useGeoVisibleRows(rows);
+  const supplyInfo = buildIdleSupplyInfo(visibleRows);
+  const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
+  // Same loading default as useGeoVisibleRows: available until the config says
+  // otherwise, so the CTA doesn't blank for everyone while it loads.
+  const stakeAvailable = isGeoLoading || isModuleEnabled('stake');
 
   const { data: stakeRewardContracts } = useStakeRewardContracts();
   const { data: stakeChartsData } = useMultipleRewardsChartInfo({
@@ -112,15 +125,26 @@ export function useWalletDrawerAssets(): UseWalletDrawerAssetsResult {
     const entry = bySymbol.get(symbol) ?? { amount: 0, amountUsd: 0 };
     const rateInfo =
       symbol === 'SKY'
-        ? { bestRate: stakeRate > 0 ? stakeRate : undefined, venueCount: stakeVenueCount }
-        : { bestRate: supplyInfo.get(symbol)?.bestRate, venueCount: supplyInfo.get(symbol)?.venueCount ?? 0 };
+        ? {
+            bestRate: stakeAvailable && stakeRate > 0 ? stakeRate : undefined,
+            venueCount: stakeAvailable ? stakeVenueCount : 0,
+            // Module-gated rather than venue-counted: the venue count only
+            // materializes once the stake chart data lands.
+            canEarn: stakeAvailable
+          }
+        : {
+            bestRate: supplyInfo.get(symbol)?.bestRate,
+            venueCount: supplyInfo.get(symbol)?.venueCount ?? 0,
+            canEarn: (supplyInfo.get(symbol)?.venueCount ?? 0) > 0
+          };
     return {
       symbol,
       name,
       amount: entry.amount,
       amountUsd: entry.amountUsd,
       bestRate: rateInfo.bestRate,
-      multipleVenues: rateInfo.venueCount > 1
+      multipleVenues: rateInfo.venueCount > 1,
+      canEarn: rateInfo.canEarn
     };
   }).sort((a, b) => b.amountUsd - a.amountUsd);
 

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { formatUnits, parseUnits } from 'viem';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -18,6 +18,11 @@ import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
+import { setUpgradeModalOpen } from '@/modules/analytics/lib/destination';
+import { parseAmountInput } from '@/lib/amountInput';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
 import { buildUpgradeModalRows } from './upgradeModalRows';
 
@@ -26,14 +31,6 @@ const UPGRADE_SOURCE_TOKENS = [TOKENS.dai, TOKENS.mkr];
 
 // DAI, MKR, USDS and SKY are all 18-decimal on mainnet.
 const DECIMALS = 18;
-
-const parseAmount = (value: string): bigint => {
-  try {
-    return value ? parseUnits(value, DECIMALS) : 0n;
-  } catch {
-    return 0n;
-  }
-};
 
 // The comps pin two decimals on every amount — balance line, grid values and
 // the confirm-screen hero alike ("7,500.00" / "9,000.00", Figma 1310:130760).
@@ -51,7 +48,6 @@ const formatAmount = (amount: bigint) =>
  * The MKR→SKY figures come from the immutable 1:24,000 contract rate net of
  * the governance fee (`useMkrSkyFee`) — the engine's calldata takes the raw
  * amount, so the preview math (`math.calculateConversion`) is display-only.
- * Analytics-free by design, following the stUSDS-modal precedent.
  */
 export function UpgradeModalForm({
   sessionId,
@@ -67,7 +63,7 @@ export function UpgradeModalForm({
   const [token, setToken] = useState<UpgradeSourceToken>(initialToken);
   const [value, setValue] = useState('');
 
-  const amount = parseAmount(value);
+  const amount = parseAmountInput(value, DECIMALS);
   const debouncedAmount = useDebounce(amount);
   const debouncePending = debouncedAmount !== amount;
 
@@ -81,12 +77,17 @@ export function UpgradeModalForm({
     chainId
   });
 
-  const { data: mkrSkyFee } = useMkrSkyFee();
+  const { data: mkrSkyFee, error: mkrSkyFeeError } = useMkrSkyFee();
+  // Unknown fee = unknown economics: the penalty/receive cells and the confirm
+  // both wait on it. A failed read settles the cells on "Unavailable" instead
+  // of an endless pulse — the confirm stays disabled either way.
+  const feeUnknown = isMkr && mkrSkyFee === undefined;
+  const feeFailed = feeUnknown && mkrSkyFeeError !== null;
   const fee = isMkr ? (mkrSkyFee ?? 0n) : 0n;
   const receiveAmount = math.calculateConversion({ symbol: token }, debouncedAmount, fee);
 
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
-  const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending;
+  const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
   const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
@@ -95,7 +96,11 @@ export function UpgradeModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: isBatch,
@@ -109,12 +114,14 @@ export function UpgradeModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -124,13 +131,24 @@ export function UpgradeModalForm({
   // see `confirmAction`), and reverts to the gated "Continue" once connected.
   const { openConnectModal } = useConnectModal();
   const disabled = isConnected && (!amountReady || !prepared);
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // The wallet balance is chain state the engine's success doesn't refetch —
   // sync it so the entry screen shows the post-upgrade balance if revisited.
-  const { txStatus } = useTransaction();
+  const { txStatus, isModalOpen, isMinimized } = useTransaction();
   useEffect(() => {
     if (txStatus === TxStatus.SUCCESS) refetchBalance();
   }, [txStatus, refetchBalance]);
+
+  // Upgrade is the one URL-less surface: while its modal is visibly open the
+  // destination stamp reads 'upgrade' (APP-444 D2/B6). Gated on visibility, not
+  // mount — this body stays mounted (hidden) through minimize, and while
+  // minimized events belong to the section the user is actually browsing.
+  const modalVisible = isModalOpen && !isMinimized;
+  useEffect(() => {
+    setUpgradeModalOpen(modalVisible);
+    return () => setUpgradeModalOpen(false);
+  }, [modalVisible]);
 
   const amountLabel = `${formatAmount(debouncedAmount)} ${token}`;
 
@@ -159,15 +177,41 @@ export function UpgradeModalForm({
     [token, target, debouncedAmount, receiveAmount]
   );
 
+  // Legacy UpgradeWidget payload shape (APP-444 B6): widget_name 'convert', the
+  // redesign modal only upgrades (no revert direction), so the amount is always
+  // positive.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'convert',
+      flow: 'upgrade',
+      action: 'upgrade',
+      data: {
+        module: 'upgrade',
+        assetAddress: sourceToken.address[chainId],
+        assetSymbol: token,
+        targetSymbol: target,
+        targetAddress: (target === 'USDS' ? TOKENS.usds : TOKENS.sky).address[chainId],
+        isBatchTx: isBatch,
+        amount: signedAmount(parseFloat(formatUnits(debouncedAmount, DECIMALS)), 'upgrade')
+      }
+    }),
+    [sourceToken, chainId, token, target, isBatch, debouncedAmount]
+  );
+
+  // Stable identity — an inline arrow here re-triggers useModalEntryBody's sync effect every render.
+  const connectAction = useCallback(() => openConnectModal('upgrade_modal'), [openConnectModal]);
+
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
-    confirmAction: isConnected ? undefined : openConnectModal,
+    confirmAction: isConnected ? undefined : connectAction,
+    errorMessage,
     steps,
     transactionScreenContent,
-    toast
+    toast,
+    analytics
   });
 
   const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
@@ -183,14 +227,17 @@ export function UpgradeModalForm({
     targetRate: isMkr
       ? formatNumber(Number(math.MKR_TO_SKY_RATE), { minDecimals: 2, maxDecimals: 2 })
       : '1.00',
-    receiveAmount: formatAmount(receiveAmount),
+    receiveAmount: feeFailed ? t`Unavailable` : formatAmount(receiveAmount),
     penalty: isMkr
-      ? `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
+      ? feeFailed
+        ? t`Unavailable`
+        : `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
       : undefined,
     // 12px info glyph after the label (Figma 1343:79562).
     penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} height={12} /> : undefined,
     network: networkName,
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE,
+    feeLoading: feeUnknown && !feeFailed
   });
 
   const body = (
@@ -199,6 +246,7 @@ export function UpgradeModalForm({
         label={<Trans>Amount</Trans>}
         tokenSymbol={token}
         value={value}
+        decimals={DECIMALS}
         onInput={setValue}
         disabled={!isConnected}
         balance={
@@ -235,11 +283,6 @@ export function UpgradeModalForm({
         <ModalSummaryGrid rows={toGridCells(rows, 'upgrade-modal-row', feeCell)} dividerClassName="h-6" />
 
         {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
-        {error && amountReady && (
-          <Text className="text-error text-sm" data-testid="upgrade-modal-error">
-            <Trans>Something went wrong preparing the transaction. Please try again.</Trans>
-          </Text>
-        )}
       </div>
     </div>
   );

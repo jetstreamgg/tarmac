@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import type { TxStatus } from '@/widgets';
+import type { TxMutateVariables } from '@/hooks';
 
 /**
  * The frozen transaction-orchestration contract: a flow calls `launch(config)`,
@@ -41,6 +42,13 @@ export type TransactionEntry = {
   confirmLabel?: string;
   /** Disables the entry's confirm button (e.g. amount is zero / over balance). */
   confirmDisabled?: boolean;
+  /**
+   * User-readable engine/prepare failure rendered above the entry's confirm
+   * button (e.g. a failed withdraw simulation). Explanatory only — pair it with
+   * `confirmDisabled` to actually block the confirm. Push `undefined` to clear
+   * it when the engine recovers.
+   */
+  errorMessage?: string;
   /**
    * Label for an optional second CTA drawn beside the primary one (Figma
    * 1036:214001: the stake claim entry pairs a secondary "Claim" with the
@@ -140,6 +148,12 @@ export type TransactionConfig = {
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
+  /**
+   * User-readable engine/prepare failure rendered above the review screen's
+   * confirm button (the entry screen reads `entry.errorMessage` instead — the
+   * same dual sourcing as `confirmDisabled`).
+   */
+  errorMessage?: string;
   successLabel?: string;
   errorLabel?: string;
   onSuccess?: () => void;
@@ -172,6 +186,7 @@ export type LiveModalUpdate = Partial<
     | 'transactionScreenContent'
     | 'rightHeaderComponent'
     | 'confirmDisabled'
+    | 'errorMessage'
     | 'onConfirm'
     | 'onSecondaryConfirm'
     | 'onRetry'
@@ -191,7 +206,8 @@ export type LiveModalUpdate = Partial<
  * the EIP-5792 rule above).
  */
 export type TxCallbacks = {
-  onMutate: () => void;
+  /** `variables.functionName` (sequential legs only) discriminates approve legs in analytics. */
+  onMutate: (variables?: TxMutateVariables) => void;
   onStart: (hash?: string) => void;
   onSuccess: (hash?: string) => void;
   onError: (error: Error, hash?: string) => void;

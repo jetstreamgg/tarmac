@@ -5,7 +5,7 @@ import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/navi
 import { QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { getRouteChainAction } from '@/lib/widget-network-map';
-import { pathToIntent } from '@/lib/routes';
+import { pathToIntent, ROUTES } from '@/lib/routes';
 
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
 import { useAvailableTokenRewardContracts } from '@/hooks';
@@ -21,6 +21,9 @@ import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useUpgradeDeepLink } from '@/modules/upgrade/hooks/useUpgradeDeepLink';
+import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import type { AutoSwitchTrigger } from '@/modules/analytics/constants';
 
 /**
  * App-level orchestration that must run once for every module route: route
@@ -51,13 +54,29 @@ export function useAppOrchestration(): { intent: Intent } {
   const chains = useChains();
 
   const { connector } = useConnection();
+  const { trackNetworkAutoSwitched } = useAppAnalytics();
+
+  // Attribution hand-off between the route guard (which writes the network
+  // param) and the param-driven switch effect below that acts on it (D-2).
+  const autoSwitchTriggerRef = useRef<AutoSwitchTrigger | null>(null);
+
   useConnectionEffect({
     // Once the user connects their wallet, check if the network param is set and switch chains if necessary
-    onConnect() {
+    onConnect(data) {
       const parsedChainId = chains.find(
         chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network || '')
       )?.id;
       if (parsedChainId) {
+        if (parsedChainId !== chainId) {
+          // Fires on silent auto-reconnects too — is_reconnect keeps those
+          // distinguishable from a fresh connect's prompt (APP-444 D-2).
+          trackNetworkAutoSwitched({
+            trigger: 'connect',
+            fromChainId: chainId,
+            toChainId: parsedChainId,
+            isReconnect: data.isReconnected
+          });
+        }
         switchChain({ chainId: parsedChainId });
       }
     }
@@ -168,6 +187,7 @@ export function useAppOrchestration(): { intent: Intent } {
       if (targetChainId !== undefined && targetChainId !== chainId) {
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
+        autoSwitchTriggerRef.current = 'route_guard';
       }
       setSearchParams(
         params => {
@@ -179,18 +199,26 @@ export function useAppOrchestration(): { intent: Intent } {
       return;
     }
 
-    // Module not available (or coming soon) on the target chain → Balances.
+    // Module not available (or coming soon) on the target chain → Portfolio,
+    // named explicitly: it is the one surface available on every network.
+    // "/" is no longer a synonym — it forwards to the visitor's home
+    // (Portfolio or Earn, APP-295), which is the wrong semantic here.
     if (action.kind === 'redirect-home') {
-      void navigate({ to: '/', search: keepSearch, replace: true });
+      trackRouteRedirected({ fromPath: pathname, toPath: ROUTES.PORTFOLIO, reason: 'module_unavailable' });
+      void navigate({ to: ROUTES.PORTFOLIO, search: keepSearch, replace: true });
       return;
     }
 
     // Reward detail routes must point at a reward contract available on the
-    // target chain.
+    // target chain. The intent check pins the branch to rewards routes: the
+    // matched $rewardContract param lags the location by a render, and acting
+    // on the stale param mid-transition re-navigates forever (redirect loop).
     if (
+      intent === Intent.REWARDS_INTENT &&
       rewardContract !== undefined &&
       !rewardContracts?.some(c => c.contractAddress?.toLowerCase() === rewardContract.toLowerCase())
     ) {
+      trackRouteRedirected({ fromPath: pathname, toPath: '/earn/rewards', reason: 'unknown_reward' });
       void navigate({ to: '/earn/rewards', search: keepSearch, replace: true });
     }
   }, [intent, rewardContract, newChainId, rewardContracts, navigate]);
@@ -222,6 +250,11 @@ export function useAppOrchestration(): { intent: Intent } {
         chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network)
       )?.id;
       if (parsedChainId && parsedChainId !== chainId) {
+        // Read-and-clear: 'route_guard' when the mainnet-only guard wrote the
+        // param this effect is reacting to, else a deep link / stale URL.
+        const trigger = autoSwitchTriggerRef.current ?? 'url_param';
+        autoSwitchTriggerRef.current = null;
+        trackNetworkAutoSwitched({ trigger, fromChainId: chainId, toChainId: parsedChainId });
         switchChain({ chainId: parsedChainId });
       }
     }

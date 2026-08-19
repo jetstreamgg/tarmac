@@ -10,6 +10,7 @@ import {
 } from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useMemo, useRef } from 'react';
+import { VaultProvider } from '@/hooks/vaults/types';
 import { VaultAction, VaultFlow } from '../lib/constants';
 
 interface UseVaultTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
@@ -26,6 +27,8 @@ interface UseVaultTransactionCallbacksParameters extends Pick<WidgetProps, 'onWi
   assetAddress: `0x${string}`;
   /** Display name for the vault */
   vaultName: string;
+  /** Which provider operates the vault — reported as the analytics `module`. */
+  provider: VaultProvider;
   /** Whether the supply flow requires a token approval step */
   needsAllowance: boolean;
   /** Whether batch mode is active (approve+deposit bundled into one call) */
@@ -42,6 +45,7 @@ export const useVaultTransactionCallbacks = ({
   vaultAddress,
   assetAddress,
   vaultName,
+  provider,
   needsAllowance,
   shouldUseBatch,
   mutateAllowance,
@@ -59,7 +63,9 @@ export const useVaultTransactionCallbacks = ({
 
   const formattedAmount = Number(formatUnits(amount, assetDecimals));
   const vaultData = {
-    module: 'morpho',
+    // 'morpho' for every legacy vault (parity), 'sky' for the Sky-provider vaults —
+    // this pane is what the sky vault detail page renders, not the redesign modal.
+    module: provider,
     product: vaultName,
     productAddress: vaultAddress,
     assetAddress,

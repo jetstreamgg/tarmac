@@ -1,76 +1,97 @@
+import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
-import { buildPendleEntryRows, buildPendleReviewRows, type PendleReviewRowInput } from './pendleModalRows';
+import {
+  buildPendleReviewRows,
+  buildPendleSupplyEntryRows,
+  buildPendleWithdrawEntryRows,
+  type PendleReviewRowInput
+} from './pendleModalRows';
 
-const entryInput = {
-  rateBefore: '4.20%',
-  rateAfter: '3.97%',
-  network: 'Ethereum',
-  displaySymbol: 'USDS',
-  supplyBefore: '100,000.00',
-  supplyAfter: '110,000.00',
-  earningsBefore: '184.80',
-  earningsAfter: '228.22',
-  claimBefore: '100,184.80',
-  claimAfter: '110,228.22',
-  daysToMaturity: 49,
+const supplyEntryInput = {
+  rate: '4.20%',
   claimDate: '18 Jun 2026',
-  hasAmount: true,
+  displaySymbol: 'USDS',
+  claimAtMaturity: '10,228.22',
+  estEarnings: '228.22',
+  daysToMaturity: 49,
+  network: 'Ethereum',
   networkFee: '–'
 };
 
-describe('buildPendleEntryRows', () => {
-  it('pairs the cells per the Figma entry grid (859:41388)', () => {
-    const rows = buildPendleEntryRows(entryInput);
+describe('buildPendleSupplyEntryRows', () => {
+  it('pairs the cells per the Figma supply entry grid (2193:73513)', () => {
+    const rows = buildPendleSupplyEntryRows(supplyEntryInput);
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
-      ['Fixed rate', 'Network'],
-      ['Supply', 'Est. earnings (49D)'],
-      ["You'll claim", 'Claim date'],
-      ['Network fee']
+      ['Fixed rate', 'Claim date'],
+      ['Claim at maturity', 'Est. earnings (49D)'],
+      ['Network', 'Network fee']
     ]);
+    expect(rows[0][0]).toMatchObject({ kind: 'single', value: '4.20%', rateAccent: 'savings' });
+    expect(rows[1][0]).toMatchObject({ value: '10,228.22', token: 'USDS' });
+    expect(rows[1][1]).toMatchObject({ value: '228.22', token: 'USDS' });
   });
 
   it('pins the Network cell to the engine chain when one is given', () => {
-    const rows = buildPendleEntryRows({ ...entryInput, networkChainId: 1 });
-    expect(rows[0][1]).toMatchObject({ label: 'Network', network: true, networkChainId: 1 });
-  });
-
-  it('draws deltas with the amount entered, including the green-accented rate', () => {
-    const rows = buildPendleEntryRows(entryInput);
-    expect(rows[0][0]).toMatchObject({
-      kind: 'delta',
-      before: '4.20%',
-      after: '3.97%',
-      rateAccent: 'savings'
-    });
-    expect(rows[1][0]).toMatchObject({ kind: 'delta', token: 'USDS', before: '100,000.00' });
-    expect(rows[2][0]).toMatchObject({ kind: 'delta', before: '100,184.80', after: '110,228.22' });
-  });
-
-  it('collapses to single values without an amount', () => {
-    const rows = buildPendleEntryRows({ ...entryInput, hasAmount: false });
-    expect(rows[0][0]).toMatchObject({ kind: 'single', value: '4.20%' });
-    expect(rows[1][1]).toMatchObject({ kind: 'single', value: '184.80', token: 'USDS' });
-    expect(rows[2][0]).toMatchObject({ kind: 'single', value: '100,184.80' });
+    const rows = buildPendleSupplyEntryRows({ ...supplyEntryInput, networkChainId: 1 });
+    expect(rows[2][0]).toMatchObject({ label: 'Network', network: true, networkChainId: 1 });
   });
 
   it('bakes the days-to-maturity into the earnings label', () => {
-    const rows = buildPendleEntryRows({ ...entryInput, daysToMaturity: 7 });
+    const rows = buildPendleSupplyEntryRows({ ...supplyEntryInput, daysToMaturity: 7 });
     expect(rows[1][1].label).toBe('Est. earnings (7D)');
+  });
+});
+
+const withdrawEntryInput = {
+  tokenSelector: { marker: 'selector' } as unknown as ReactNode,
+  receiveAmount: '100,000.80',
+  receiveSymbol: 'USDS',
+  lost: '184.00',
+  displaySymbol: 'USDS',
+  network: 'Ethereum',
+  networkFee: '–'
+};
+
+describe('buildPendleWithdrawEntryRows', () => {
+  it('pairs the cells per the Figma "Early withdrawal" entry grid (2193:73598)', () => {
+    const rows = buildPendleWithdrawEntryRows(withdrawEntryInput);
+    expect(rows.map(row => row.map(cell => cell.label))).toEqual([
+      ['Withdrawal token', "You'll receive"],
+      ['Lost on early withdrawal', 'Network'],
+      ['Network fee']
+    ]);
+    expect(rows[0][1]).toMatchObject({ kind: 'single', value: '100,000.80', token: 'USDS' });
+  });
+
+  it('passes the token selector through opaquely as a node cell', () => {
+    const rows = buildPendleWithdrawEntryRows(withdrawEntryInput);
+    expect(rows[0][0]).toMatchObject({ kind: 'node' });
+    expect((rows[0][0] as { node: unknown }).node).toBe(withdrawEntryInput.tokenSelector);
+  });
+
+  it('draws the lost cell with the red down-trend and the trailing token icon', () => {
+    const info = { marker: 'info' } as unknown as ReactNode;
+    const rows = buildPendleWithdrawEntryRows({ ...withdrawEntryInput, lostInfo: info });
+    const lost = rows[1][0];
+    expect(lost).toMatchObject({ kind: 'single', value: '184.00', trend: 'down', trailingToken: 'USDS' });
+    expect(lost.labelAction).toBe(info);
   });
 });
 
 const reviewInput: PendleReviewRowInput = {
   displaySymbol: 'USDS',
-  claimAfter: '110,228.22',
+  claimAtMaturity: '10,228.22',
   claimDate: '18 Jun 2026',
-  earningsAfter: '228.22',
+  estEarnings: '228.22',
   daysToMaturity: 49,
-  receiveAmount: '10,000.00',
+  rate: '4.20%',
+  withdrawalAmount: '100,184.80',
+  ptSymbol: 'PT-sUSDS',
   receiveSymbol: 'USDC',
-  rate: '3.97%',
+  minReceived: '99,500.30',
   product: 'Pendle sUSDS (PT-sUSDS)',
   productSymbol: 'sUSDS',
-  withdrawal: 'Anytime',
+  withdrawal: 'At maturity or via market sell',
   slippage: '0.50%',
   slippageMode: 'Auto',
   priceImpact: '0.02%',
@@ -79,34 +100,34 @@ const reviewInput: PendleReviewRowInput = {
 };
 
 describe('buildPendleReviewRows', () => {
-  it('pairs the supply review cells per Figma 859:41264, with the price-impact cell restored', () => {
+  it('pairs the supply review cells per Figma 2193:73734, with min-received and price-impact kept', () => {
     const rows = buildPendleReviewRows('supply', reviewInput);
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
-      ['Total at maturity', 'Claim date'],
-      ['Total earnings', 'Fixed rate'],
+      ['Fixed rate', 'Claim date'],
+      ['Claim at maturity', 'Est. earnings (49D)'],
       ['Product', 'Withdrawal'],
       ['Slippage', 'Price impact'],
-      ['Network', 'Network fee']
+      ['Min. received', 'Network'],
+      ['Network fee']
     ]);
-    expect(rows[0][0]).toMatchObject({ value: '110,228.22', token: 'USDS' });
-    expect(rows[1][0]).toMatchObject({ trend: true, trailingToken: 'USDS' });
-    expect(rows[1][1]).toMatchObject({ value: '3.97%', rateAccent: 'savings' });
+    expect(rows[0][0]).toMatchObject({ value: '4.20%', rateAccent: 'savings' });
+    expect(rows[1][0]).toMatchObject({ value: '10,228.22', token: 'USDS' });
     expect(rows[2][0]).toMatchObject({ value: 'Pendle sUSDS (PT-sUSDS)', productIcon: 'pendle' });
-    expect(rows[3][1]).toMatchObject({ kind: 'single', value: '0.02%' });
+    expect(rows[2][1]).toMatchObject({ value: 'At maturity or via market sell' });
+    expect(rows[4][0]).toMatchObject({ value: '99,500.30', token: 'PT-sUSDS' });
   });
 
-  it('pairs the withdraw review cells per Figma 859:41679 with the slippage and price-impact cells slotted in', () => {
-    const rows = buildPendleReviewRows('withdraw', { ...reviewInput, withdrawal: 'Instant' });
+  it('pairs the withdraw review cells per Figma 2193:73807, with min-received and price-impact slotted in', () => {
+    const rows = buildPendleReviewRows('withdraw', reviewInput);
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
-      ["You'll receive", 'Est. earnings (49D)'],
-      ['Product', 'Fixed rate'],
-      ['Withdrawal', 'Slippage'],
+      ['Product', 'Withdrawal amount'],
+      ['Slippage', 'Min. received'],
       ['Price impact', 'Network'],
       ['Network fee']
     ]);
-    expect(rows[0][0]).toMatchObject({ value: '10,000.00', token: 'USDC' });
-    expect(rows[2][0]).toMatchObject({ value: 'Instant' });
-    expect(rows[3][0]).toMatchObject({ kind: 'single', value: '0.02%' });
+    expect(rows[0][1]).toMatchObject({ value: '100,184.80', token: 'PT-sUSDS' });
+    expect(rows[1][1]).toMatchObject({ value: '99,500.30', token: 'USDC' });
+    expect(rows[2][0]).toMatchObject({ kind: 'single', value: '0.02%' });
   });
 
   it('carries the slippage mode badge and passes the action through opaquely', () => {

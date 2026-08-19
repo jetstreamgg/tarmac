@@ -25,6 +25,7 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
@@ -35,6 +36,9 @@ import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
+
+const FOOTER_NOTE_CLASSES =
+  'flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left';
 
 /** Reopen context (F6, C17): the takeover re-funds an EXISTING emptied urn. */
 export interface ReopenContext {
@@ -103,7 +107,12 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   // Live simulation for the slider and display surfaces: useSimulatedVault's
   // per-amount work is pure math over cached chain reads, so it can track the
   // raw amounts frame-for-frame while the RPC-bound seams stay debounced.
-  const { data: simulatedVault } = useSimulatedVault(state.skyToLock, state.usdsToBorrow, 0n, ilkName);
+  const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
+    state.skyToLock,
+    state.usdsToBorrow,
+    0n,
+    ilkName
+  );
   // Same simulation with no new debt — feeds the slider's floor math.
   const { data: vaultNoBorrow } = useSimulatedVault(state.skyToLock, 0n, 0n, ilkName);
   // Debounced simulation for validation, so errors wait for typing to settle.
@@ -112,7 +121,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     isLoading: simulationLoading,
     error: simulationError
   } = useSimulatedVault(debouncedSkyToLock, debouncedUsdsToBorrow, 0n, ilkName);
-  const { data: collateralData } = useCollateralData(ilkName);
+  const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
 
   // A-Q2 (recorded on APP-311): the baseline takeover has no reward picker; the
   // engine still requires a selectFarm call, so default to the SKY farm. The
@@ -135,7 +144,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const rewardSymbol = farmRewardSymbol(selectedRewardContract, chainId) ?? 'SKY';
 
   // The selected farm's live rate → card-1 stats.
-  const { data: rewardsChartInfo } = useMultipleRewardsChartInfo({
+  const { data: rewardsChartInfo, isLoading: rateLoading } = useMultipleRewardsChartInfo({
     rewardContractAddresses: selectedRewardContract ? [selectedRewardContract] : []
   });
   const highestRateData = useHighestRateFromChartData(rewardsChartInfo ?? []);
@@ -185,14 +194,16 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     // ceiling binds) stays valid — strict < left Confirm disabled with no error.
     ((debouncedUsdsToBorrow > 0n && debouncedUsdsToBorrow <= availableBorrowFromDebtCeiling) ||
       !debouncedUsdsToBorrow);
+  // No amount gate: a lock-only simulation failure must still say why Confirm
+  // is dead. minCollateralNotMet keeps its own warning card instead; at a
+  // staged borrow of 0 the mapper swaps in generic copy (the amount can't be
+  // the problem — see formatSimulationErrorMessage).
   const borrowError =
     debouncedUsdsToBorrow > availableBorrowFromDebtCeiling
       ? t`Requested borrow amount exceeds the debt ceiling`
       : minCollateralNotMet
         ? undefined
-        : debouncedUsdsToBorrow > 0n
-          ? formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust)
-          : undefined;
+        : formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust, debouncedUsdsToBorrow);
 
   const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
 
@@ -262,7 +273,21 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     onSuccess
   });
 
-  const { launch, prepared, isLoading: launchLoading } = reopen ? reopenLaunch : openLaunch;
+  const {
+    launch,
+    prepared,
+    isLoading: launchLoading,
+    error: launchError
+  } = reopen ? reopenLaunch : openLaunch;
+  // This host outlives the transaction (page-mounted), so pass null while the
+  // form is invalid — a stale execution error must not masquerade as a prepare
+  // failure once the engine is disabled. Same while the engine is re-simulating
+  // (`prepared` dips false with the previous run's write/mining error still
+  // set): a genuine prepare failure survives the load and shows on settle.
+  const launchErrorMessage = enginePrepareErrorMessage(
+    prepared,
+    formValid && !launchLoading ? launchError : null
+  );
 
   // The launch seam prepares calldata from the DEBOUNCED amounts; until they
   // catch up with what's typed, `prepared` refers to stale calldata (e.g. an
@@ -286,10 +311,23 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       dataTestId="stake-takeover"
       footer={
         <>
-          {/* 237px is the comp's two-line measure for this copy (1036:209863). */}
-          <p className="text-fgSecondary flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left">
-            <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
-          </p>
+          {/* 237px is the comp's two-line measure for this copy (1036:209863).
+              An engine prepare failure takes over the slot — the helper copy
+              would be a lie next to a dead Confirm. Two elements (not one
+              recolored <p>) so the alert mounts fresh for screen readers. */}
+          {launchErrorMessage ? (
+            <p
+              className={`text-error ${FOOTER_NOTE_CLASSES}`}
+              data-testid="stake-takeover-error"
+              role="alert"
+            >
+              {launchErrorMessage}
+            </p>
+          ) : (
+            <p className={`text-fgSecondary ${FOOTER_NOTE_CLASSES}`}>
+              <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
+            </p>
+          )}
           <Button
             variant="primary"
             size="xl"
@@ -312,6 +350,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         balance={skyBalance?.value}
         balanceLoading={balanceLoading}
         rewardsRate={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : null}
+        rateLoading={rateLoading}
         estAnnualRewards={estAnnualRewards}
         rewardSymbol={rewardSymbol}
         minStakeToBorrow={state.borrowEnabled ? simulatedVault?.minCollateralForDust : undefined}
@@ -329,8 +368,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         minCollateralForDust={simulatedVault?.minCollateralForDust}
         skyToLock={debouncedSkyToLock}
         simulatedVault={simulatedVault}
+        simulationLoading={liveSimLoading}
         vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
+        collateralLoading={collateralLoading}
         error={borrowError}
       />
 

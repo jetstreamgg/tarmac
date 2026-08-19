@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useCallback } from 'react';
-import { useSwitchChain, useConnection, useChains } from 'wagmi';
+import { useSwitchChain, useConnection, useChains, useChainId } from 'wagmi';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { toastWithClose } from '@/components/ui/use-toast';
 import { HStack } from '@/modules/layout/components/HStack';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -12,10 +14,13 @@ import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedReques
 type ChainModalContextType = {
   handleSwitchChain: ({
     chainId,
+    source,
     onSuccess,
     onSettled
   }: {
     chainId: number;
+    /** Which surface asked for the switch (APP-444 D-1). */
+    source?: NetworkSwitchSource;
     onSuccess?: (data: any, variables: { chainId: number }) => void;
     onSettled?: () => void;
   }) => void;
@@ -33,24 +38,39 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const { switchChain, isPending, variables } = useSwitchChain();
   const { connector } = useConnection();
   const chains = useChains();
+  const currentChainId = useChainId();
+  const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
   const duration = 10000;
 
   const handleSwitchChain = useCallback(
     ({
       chainId,
+      source = 'chain_modal',
       onSuccess,
       onSettled
     }: {
       chainId: number;
+      source?: NetworkSwitchSource;
       onSuccess?: (data: any, variables: { chainId: number }) => void;
       onSettled?: () => void;
     }) => {
+      const fromChainId = currentChainId;
+      trackNetworkSwitchRequested({ source, fromChainId, toChainId: chainId });
       switchChain(
         { chainId },
         {
-          onSuccess,
+          onSuccess: (data, vars) => {
+            trackNetworkSwitchCompleted({ source, fromChainId, toChainId: chainId, status: 'success' });
+            onSuccess?.(data, vars);
+          },
           onSettled,
           onError: error => {
+            trackNetworkSwitchCompleted({
+              source,
+              fromChainId,
+              toChainId: chainId,
+              status: isUserRejectedRequestError(error) ? 'rejected' : 'error'
+            });
             if (isUserRejectedRequestError(error)) {
               return;
             }
@@ -128,7 +148,7 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       );
     },
-    [switchChain, connector, chains]
+    [switchChain, connector, chains, currentChainId, trackNetworkSwitchRequested, trackNetworkSwitchCompleted]
   );
 
   return (
