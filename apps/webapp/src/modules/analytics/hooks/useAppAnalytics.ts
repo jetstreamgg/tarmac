@@ -11,6 +11,7 @@ import {
   type ConnectReason,
   type ConnectMethod,
   type GatedActionOutcome,
+  type TermsSignatureDeclineMethod,
   type NetworkSwitchSource,
   type NetworkSwitchStatus,
   type AutoSwitchTrigger
@@ -118,6 +119,38 @@ export function useAppAnalytics() {
         viewport: getViewport(),
         flow_id: flowId ?? getFlowId(),
         timestamp: new Date().toISOString()
+      });
+    },
+    [posthog, address, getChainName, getFlowId]
+  );
+
+  const trackTermsSignatureDeclined = useCallback(
+    ({
+      method,
+      chainId,
+      widgetName,
+      flow,
+      action,
+      flowId
+    }: {
+      method: TermsSignatureDeclineMethod;
+      chainId: number;
+      widgetName?: string;
+      flow?: string;
+      action?: string;
+      flowId?: string;
+    }) => {
+      safeCapture(posthog, AppEvents.TERMS_SIGNATURE_DECLINED, {
+        method,
+        chain_id: chainId,
+        chain_name: getChainName(chainId),
+        wallet_address: address,
+        viewport: getViewport(),
+        flow_id: flowId ?? getFlowId(),
+        timestamp: new Date().toISOString(),
+        ...(widgetName && { widget_name: widgetName }),
+        ...(flow && { flow }),
+        ...(action && { action })
       });
     },
     [posthog, address, getChainName, getFlowId]
@@ -324,6 +357,7 @@ export function useAppAnalytics() {
     trackWidgetSelected,
     trackTransactionStarted,
     trackTransactionCompleted,
+    trackTermsSignatureDeclined,
     trackWidgetReviewViewed,
     trackWalletConnected,
     trackWalletDisconnected,

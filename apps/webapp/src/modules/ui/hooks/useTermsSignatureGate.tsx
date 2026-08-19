@@ -10,7 +10,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
 import { addressScreeningQueryKey, fetchAddressScreening, type AddressScreeningResult } from '@/hooks';
-import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConnectedContext, type SignTermsResult } from '@/modules/ui/context/ConnectedContext';
 import { TermsLink } from '@/modules/ui/components/TermsModal';
 import type {
   GateControls,
@@ -97,7 +97,7 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
     address: undefined as string | undefined,
     hasSignedCurrentTerms: false,
     termsMessageToSign: undefined as string | undefined,
-    signTerms: async () => false as boolean,
+    signTerms: async () => 'failed' as SignTermsResult,
     retryTermsCheck: () => {},
     isUsUser: undefined as boolean | undefined,
     isConnectedToVpn: undefined as boolean | undefined
@@ -171,7 +171,7 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
 
       return (async () => {
         controls.setPreludeSteps([termsSignatureStep()]);
-        controls.setGateStatus('initialized', signaturePendingCopy());
+        controls.setGateStatus('signature', signaturePendingCopy());
         if (!s.termsMessageToSign) {
           // The /check response didn't carry the text (or never landed), so
           // nothing verifiable can be signed. Fail the step — and kick the
@@ -185,14 +185,18 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
         if (controls.isStale() || live.current.address !== gatedAddress) {
           return { allow: false };
         }
-        const signed = await s.signTerms();
+        const signResult = await s.signTerms();
         if (controls.isStale() || live.current.address !== gatedAddress) {
           // Session closed or wallet switched while the prompt was up: the
           // controls below would no-op anyway (or belong to a new address's
           // session); just deny silently.
           return { allow: false };
         }
-        if (!signed) {
+        if (signResult !== 'signed') {
+          // Only a genuine wallet rejection is a decline the analytics care
+          // about — a technical failure is telemetry (reported inside
+          // signTerms), not a user choice.
+          if (signResult === 'rejected') controls.reportSignatureRejected();
           controls.setGateStatus('error', signatureFailedCopy());
           return { allow: false };
         }
@@ -230,7 +234,7 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
       const hadStaleVerdict = cached?.data !== undefined;
       return (async () => {
         // The modal is already on its transaction screen; don't leave it on IDLE.
-        controls.setGateStatus('initialized', screeningCopy());
+        controls.setGateStatus('screening', screeningCopy());
         let screening: AddressScreeningResult;
         try {
           screening = await s.queryClient.fetchQuery({
