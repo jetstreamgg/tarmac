@@ -19,12 +19,19 @@ vi.mock('@/hooks', async io => ({
   useIsBatchSupported: () => ({ data: false })
 }));
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));
+const analytics = vi.hoisted(() => ({
+  trackWidgetReviewViewed: vi.fn(),
+  trackTransactionStarted: vi.fn(),
+  trackTransactionCompleted: vi.fn(),
+  trackTermsSignatureDeclined: vi.fn()
+}));
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
-  useAppAnalytics: () => ({
-    trackWidgetReviewViewed: vi.fn(),
-    trackTransactionStarted: vi.fn(),
-    trackTransactionCompleted: vi.fn()
-  })
+  useAppAnalytics: () => analytics
+}));
+const toastWithCloseMock = vi.hoisted(() => vi.fn());
+vi.mock('@/components/ui/use-toast', () => ({
+  toast: { dismiss: vi.fn() },
+  toastWithClose: toastWithCloseMock
 }));
 vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
   useAnalyticsFlow: () => ({ startNewFlow: vi.fn(), getFlowId: () => 'flow-test' })
@@ -85,6 +92,12 @@ function renderWithGate(gate: PreTransactionGate, config: TransactionConfig): Tx
 }
 
 const flush = () => act(async () => {});
+
+// Render the node the provider handed to toastWithClose (header + body notice).
+const renderLastToast = () => {
+  const renderFn = toastWithCloseMock.mock.calls.at(-1)![0] as (id: string) => ReactNode;
+  return render(<I18nProvider i18n={i18n}>{renderFn('toast-id')}</I18nProvider>);
+};
 
 describe('TransactionProvider pre-transaction gate', () => {
   beforeEach(() => {
@@ -189,7 +202,7 @@ describe('TransactionProvider pre-transaction gate', () => {
       controls.setPreludeSteps([
         { label: 'Terms signature', kind: 'signature', description: 'Sign in your wallet' }
       ]);
-      controls.setGateStatus('initialized');
+      controls.setGateStatus('signature');
       return new Promise(resolve => {
         resolveSigned = (ok: boolean) => {
           if (!ok) controls.setGateStatus('error');
@@ -224,7 +237,7 @@ describe('TransactionProvider pre-transaction gate', () => {
       controls.setPreludeSteps([
         { label: 'Terms signature', kind: 'signature', description: 'Sign in your wallet' }
       ]);
-      controls.setGateStatus('initialized');
+      controls.setGateStatus('signature');
       return Promise.resolve({ allow: false }).then(v => {
         controls.setGateStatus('error');
         return v;
@@ -245,7 +258,7 @@ describe('TransactionProvider pre-transaction gate', () => {
   it('gate copy overrides the status message and subtitle while set', async () => {
     const gate: PreTransactionGate = ({ controls }) => {
       controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
-      controls.setGateStatus('initialized', {
+      controls.setGateStatus('signature', {
         message: 'Sign the confirmation in your wallet.',
         subtitle: 'Signature needed to continue.'
       });
@@ -271,7 +284,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     let resolveSigned!: () => void;
     const gate: PreTransactionGate = ({ controls }) => {
       controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
-      controls.setGateStatus('initialized', {
+      controls.setGateStatus('signature', {
         message: 'Sign the confirmation in your wallet.',
         subtitle: 'Signature needed to continue.'
       });
@@ -309,7 +322,7 @@ describe('TransactionProvider pre-transaction gate', () => {
         firstCall = false;
         staleControls = controls;
         controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
-        controls.setGateStatus('initialized');
+        controls.setGateStatus('signature');
         return new Promise(() => {}); // the wallet prompt never answered
       }
       return { allow: true };
@@ -370,7 +383,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     const onConfirm = vi.fn();
     const gate = vi.fn(({ controls }: { controls: Parameters<PreTransactionGate>[0]['controls'] }) => {
       controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' as const }]);
-      controls.setGateStatus('initialized');
+      controls.setGateStatus('signature');
       return Promise.resolve({ allow: false }).then(v => {
         controls.setGateStatus('error');
         return v;
@@ -409,5 +422,118 @@ describe('TransactionProvider pre-transaction gate', () => {
     expect(gate).toHaveBeenCalledWith(expect.objectContaining({ trigger: 'secondaryConfirm' }));
     expect(onSecondaryConfirm).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('closing during the screening phase tears down silently: no cancelled event, no toast', async () => {
+    // The re-screen holds INITIALIZED before any wallet interaction exists.
+    // Closing here abandons nothing: no app_widget_flow_started has fired
+    // (so a cancelled completion would pair with nothing) and no request is
+    // sitting in the wallet (so the discarded-request toast would lie).
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setGateStatus('screening', { message: 'Verifying your wallet address…' });
+      return new Promise(() => {}); // the re-screen never resolves
+    };
+    renderWithGate(gate, {
+      title: 'Supply',
+      onConfirm: vi.fn(),
+      analytics: { widgetName: 'savings', flow: 'supply', action: 'supply' }
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    fireEvent.click(screen.getByTestId('transaction-modal-close'));
+    await flush();
+
+    expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
+    expect(analytics.trackTermsSignatureDeclined).not.toHaveBeenCalled();
+    expect(toastWithCloseMock).not.toHaveBeenCalled();
+  });
+
+  it('closing during the pending signature step declines the terms — not a phantom transaction cancel', async () => {
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
+      controls.setGateStatus('signature', { message: 'Sign the confirmation in your wallet.' });
+      return new Promise(() => {}); // the sign prompt never answered
+    };
+    renderWithGate(gate, {
+      title: 'Supply',
+      onConfirm: vi.fn(),
+      analytics: { widgetName: 'savings', flow: 'supply', action: 'supply' }
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    toastWithCloseMock.mockClear();
+    fireEvent.click(screen.getByTestId('transaction-modal-close'));
+    await flush();
+
+    // The decline is its own event, attributed to the gated flow; the
+    // started↔completed pairing stays untouched.
+    expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
+    expect(analytics.trackTermsSignatureDeclined).toHaveBeenCalledTimes(1);
+    expect(analytics.trackTermsSignatureDeclined).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'abandoned', widgetName: 'savings', flow: 'supply' })
+    );
+    // The toast names the SIGN request — a transaction toast would misstate
+    // what may still be sitting in the wallet.
+    expect(toastWithCloseMock).toHaveBeenCalledTimes(1);
+    const notice = renderLastToast();
+    expect(notice.getByText('Signature request discarded')).toBeDefined();
+  });
+
+  it('launching another flow during the pending signature step declines the terms, not a cancel', async () => {
+    const onConfirm = vi.fn();
+    let firstCall = true;
+    const gate: PreTransactionGate = ({ controls }) => {
+      if (firstCall) {
+        firstCall = false;
+        controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
+        controls.setGateStatus('signature');
+        return new Promise(() => {});
+      }
+      return { allow: true };
+    };
+    function RelaunchHarness() {
+      const { launch } = useTransaction();
+      return (
+        <>
+          <button
+            data-testid="launch-a"
+            onClick={() =>
+              launch({
+                title: 'Flow A',
+                onConfirm,
+                analytics: { widgetName: 'savings', flow: 'supply', action: 'supply' }
+              })
+            }
+          >
+            a
+          </button>
+          <button data-testid="launch-b" onClick={() => launch({ title: 'Flow B', onConfirm })}>
+            b
+          </button>
+        </>
+      );
+    }
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider gate={gate}>
+            <RelaunchHarness />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+
+    fireEvent.click(screen.getByTestId('launch-a'));
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    fireEvent.click(screen.getByTestId('launch-b'));
+    await flush();
+
+    expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
+    expect(analytics.trackTermsSignatureDeclined).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'abandoned', widgetName: 'savings' })
+    );
+    // The new session is live and unpolluted.
+    expect(screen.queryByText('Flow B')).not.toBeNull();
+    expect(screen.queryByText('Terms signature')).toBeNull();
   });
 });

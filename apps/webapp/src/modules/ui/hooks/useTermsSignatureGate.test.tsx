@@ -5,6 +5,7 @@ import { I18nProvider } from '@lingui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import type { GateControls } from '@/modules/ui/context/preTransactionGate';
+import type { SignTermsResult } from '@/modules/ui/context/ConnectedContext';
 
 const ADDRESS = '0x1234567890123456789012345678901234567890';
 const FOUR_HOURS = 4 * 60 * 60 * 1000;
@@ -13,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   shouldSkipAuthChecks: vi.fn(() => false),
   wagmiAddress: '0x1234567890123456789012345678901234567890' as string | undefined,
   fetchAddressScreening: vi.fn(),
-  signTerms: vi.fn(async () => true),
+  signTerms: vi.fn<() => Promise<SignTermsResult>>(async () => 'signed'),
   retryTermsCheck: vi.fn(),
   retryAccessChecks: vi.fn(),
   connected: {
@@ -67,6 +68,7 @@ const makeControls = () => ({
   setGateStatus: vi.fn<GateControls['setGateStatus']>(),
   setPreludeSteps: vi.fn<GateControls['setPreludeSteps']>(),
   closeModal: vi.fn<GateControls['closeModal']>(),
+  reportSignatureRejected: vi.fn<GateControls['reportSignatureRejected']>(),
   isStale: vi.fn<GateControls['isStale']>(() => false)
 });
 
@@ -146,7 +148,7 @@ describe('useTermsSignatureGate', () => {
     expect(verdict).toBeInstanceOf(Promise);
     expect(controls.setPreludeSteps).toHaveBeenCalledWith([expect.objectContaining({ kind: 'signature' })]);
     const statuses = () => controls.setGateStatus.mock.calls.map(([status]) => status);
-    expect(statuses()).toContain('initialized');
+    expect(statuses()).toContain('signature');
 
     await expect(verdict).resolves.toEqual({ allow: true });
     expect(mocks.signTerms).toHaveBeenCalledTimes(1);
@@ -178,16 +180,30 @@ describe('useTermsSignatureGate', () => {
     expect(mocks.signTerms).toHaveBeenCalled();
   });
 
-  it('a rejected or failed signature denies and drives the failed step', async () => {
+  it('a wallet-rejected signature denies, drives the failed step, and reports the decline', async () => {
     seedScreening(true);
     mocks.connected.isUsUser = true;
     mocks.connected.vpnData.isConnectedToVpn = false;
-    mocks.signTerms.mockResolvedValueOnce(false);
+    mocks.signTerms.mockResolvedValueOnce('rejected');
     const { gate } = renderGate();
     const controls = makeControls();
 
     await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
     expect(controls.setGateStatus.mock.calls.at(-1)?.[0]).toBe('error');
+    expect(controls.reportSignatureRejected).toHaveBeenCalledTimes(1);
+  });
+
+  it('a technically failed signature denies and drives the failed step — with NO decline event', async () => {
+    seedScreening(true);
+    mocks.connected.isUsUser = true;
+    mocks.connected.vpnData.isConnectedToVpn = false;
+    mocks.signTerms.mockResolvedValueOnce('failed');
+    const { gate } = renderGate();
+    const controls = makeControls();
+
+    await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
+    expect(controls.setGateStatus.mock.calls.at(-1)?.[0]).toBe('error');
+    expect(controls.reportSignatureRejected).not.toHaveBeenCalled();
   });
 
   it('a missing messageToSign fails the step without signing, and kicks the terms check', async () => {
@@ -224,7 +240,7 @@ describe('useTermsSignatureGate', () => {
 
     const verdict = gate({ trigger: 'confirm', controls });
     expect(verdict).toBeInstanceOf(Promise);
-    expect(controls.setGateStatus.mock.calls[0][0]).toBe('initialized');
+    expect(controls.setGateStatus.mock.calls[0][0]).toBe('screening');
 
     await expect(verdict).resolves.toEqual({ allow: true });
     expect(mocks.fetchAddressScreening).toHaveBeenCalledTimes(1);
@@ -362,14 +378,15 @@ describe('useTermsSignatureGate', () => {
     mocks.connected.isUsUser = true;
     mocks.connected.vpnData.isConnectedToVpn = false;
     mocks.fetchAddressScreening.mockResolvedValueOnce({ addressAllowed: true });
-    mocks.signTerms.mockResolvedValueOnce(false);
+    mocks.signTerms.mockResolvedValueOnce('failed');
     const { gate } = renderGate();
     const controls = makeControls();
 
     await expect(gate({ trigger: 'confirm', controls })).resolves.toEqual({ allow: false });
 
     const copyOf = (status: string) => controls.setGateStatus.mock.calls.find(([s]) => s === status)?.[1];
-    expect(copyOf('initialized')).toBeDefined(); // screening copy on the re-screen
+    expect(copyOf('screening')).toBeDefined(); // screening copy on the re-screen
+    expect(copyOf('signature')).toBeDefined(); // sign-in-your-wallet copy on the prompt
     expect(copyOf('error')?.subtitle).toBeTruthy(); // gate-owned failure subtitle
   });
 });

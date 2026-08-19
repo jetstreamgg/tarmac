@@ -21,6 +21,13 @@ import { useTermsAcceptance } from '@/modules/ui/hooks/useTermsAcceptance';
 export type AccessBlockReason =
   'region-restricted' | 'ip-check-unavailable' | 'wallet-blocked' | 'screening-unavailable';
 
+/**
+ * How a `signTerms` attempt ended. 'rejected' is specifically the user
+ * declining the sign request in their wallet; every technical failure
+ * (missing message, signing fault, failed POST, address switch) is 'failed'.
+ */
+export type SignTermsResult = 'signed' | 'rejected' | 'failed';
+
 interface ConnectedContextType {
   isConnectedAndAcceptedTerms: boolean;
   isAuthorized: boolean;
@@ -73,11 +80,14 @@ interface ConnectedContextType {
   /**
    * Phase B (APP-501): prompts the wallet to sign `termsMessageToSign`, posts
    * the signature to `/terms-acceptance/sign`, and — only once the worker
-   * recorded it — flips `hasSignedCurrentTerms`. Resolves false on a wallet
-   * rejection or a failed POST; the caller (the pre-transaction gate) renders
-   * the failed signature step and retries by calling again.
+   * recorded it — flips `hasSignedCurrentTerms`. Anything but 'signed' denies:
+   * the caller (the pre-transaction gate) renders the failed signature step
+   * and retries by calling again. 'rejected' vs 'failed' only tells the
+   * caller whether the user declined the prompt (an analytics-worthy choice)
+   * or something technical went wrong (no message, signing fault, failed
+   * POST, address switch mid-flight).
    */
-  signTerms: () => Promise<boolean>;
+  signTerms: () => Promise<SignTermsResult>;
   authData: {
     addressAllowed?: boolean;
     authIsLoading: boolean;
@@ -104,7 +114,7 @@ export const ConnectedContext = createContext<ConnectedContextType>({
   hasAcceptedTerms: false,
   hasSignedCurrentTerms: false,
   acceptTerms: async () => false,
-  signTerms: async () => false,
+  signTerms: async () => 'failed',
   authData: {
     authIsLoading: false
   },
@@ -315,12 +325,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const termsMessageToSign = termsCheck?.messageToSign;
 
-  const signTerms = useCallback(async (): Promise<boolean> => {
+  const signTerms = useCallback(async (): Promise<SignTermsResult> => {
     // No message means nothing verifiable can be signed: the worker holds the
     // only copy of the text (APP-508), so without `messageToSign` from /check
     // there is no string whose signature it would accept. Refuse rather than
     // sign a guess.
-    if (!address || !chainId || !termsMessageToSign) return false;
+    if (!address || !chainId || !termsMessageToSign) return 'failed';
 
     let signature: string;
     try {
@@ -330,16 +340,15 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // a wallet that can't sign, a connector fault — is worth telemetry:
       // for the affected user every transaction is now blocked.
       const normalized = toError(error);
-      if (!isUserRejectedRequestError(normalized)) {
-        reportError(normalized, {
-          module: 'auth',
-          flow: 'terms-signature',
-          action: 'sign',
-          type: 'terms_signature_error',
-          extra: { chainId, connector: connector?.name }
-        });
-      }
-      return false;
+      if (isUserRejectedRequestError(normalized)) return 'rejected';
+      reportError(normalized, {
+        module: 'auth',
+        flow: 'terms-signature',
+        action: 'sign',
+        type: 'terms_signature_error',
+        extra: { chainId, connector: connector?.name }
+      });
+      return 'failed';
     }
 
     // Mirror acceptTerms: the mock wallet's signature can't verify against
@@ -352,9 +361,9 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // The address guard still applies: a switch while the prompt was up must
     // not stamp the flag onto the new address's check.
     if (import.meta.env.VITE_USE_MOCK_WALLET === 'true') {
-      if (activeAddressRef.current !== address) return false;
+      if (activeAddressRef.current !== address) return 'failed';
       setTermsCheck(prev => (prev ? { ...prev, signedForCurrentVersion: true } : prev));
-      return true;
+      return 'signed';
     }
 
     const result = await signTermsAcceptance(address, chainId, signature);
@@ -362,7 +371,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Discard the continuation if the address changed (or disconnected) while
     // the POST was in flight — the signature belongs to the previous address,
     // and flipping the new one's flag would skip its own signature step.
-    if (activeAddressRef.current !== address) return false;
+    if (activeAddressRef.current !== address) return 'failed';
 
     if (!result.ok) {
       reportError(result.lastError ?? new Error('Terms signature submission failed'), {
@@ -373,13 +382,13 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         statusCode: result.status,
         extra: { chainId, connector: connector?.name }
       });
-      return false;
+      return 'failed';
     }
 
     // 201 recorded it; 200 means the worker already had one for this address
     // and version — an idempotent no-op, equally a success.
     setTermsCheck(prev => (prev ? { ...prev, signedForCurrentVersion: true } : prev));
-    return true;
+    return 'signed';
   }, [address, chainId, connector?.name, signMessageAsync, termsMessageToSign]);
 
   // A VPN is deliberately absent here (APP-497): VPN users browse and transact
