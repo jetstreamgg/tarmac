@@ -18,6 +18,7 @@ import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
 import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
+import { useWalletEarnings } from '../hooks/useWalletEarnings';
 import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
@@ -39,6 +40,9 @@ export function ConnectedPortfolio() {
   const connectedChainId = useChainId();
   const { rows, isLoading, isPositionsError } = useEarnMarketplace();
   const { balances, isLoading: balancesLoading, isError: balancesError } = useStablecoinBalances();
+  // APP-450: aggregated per-wallet earnings (Total earned / Earned this month
+  // in the card footer, "Already earned" on each position card).
+  const earnings = useWalletEarnings();
   // Geo-restricted positions are hidden from every Portfolio surface (APP-484),
   // so all totals/views build from the visible rows, and the savings promos
   // (callouts, idle-tab rate stats) drop when the savings module is restricted.
@@ -222,6 +226,7 @@ export function ConnectedPortfolio() {
           idleView={idleView}
           idleLoading={balancesLoading}
           savingsRate={savingsAvailable ? savingsRate : undefined}
+          earnings={earnings}
           tab={tab}
           onTabChange={setUserTab}
         />
@@ -233,6 +238,7 @@ export function ConnectedPortfolio() {
           idleView={idleView}
           idleSupplyInfo={idleSupplyInfo}
           idleLoading={balancesLoading}
+          earnings={earnings}
           tab={tab}
           onTabChange={setUserTab}
         />

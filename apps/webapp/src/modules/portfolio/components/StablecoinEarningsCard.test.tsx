@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
+import { combineWalletEarnings } from '../earnings/combineWalletEarnings';
+import { notAvailable, ok, type ProtocolEarnings, type WalletEarnings } from '../earnings/types';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).
 const breakpoint = vi.hoisted(() => ({ isMobile: false }));
@@ -66,6 +68,41 @@ const IDLE: IdleView = {
   idleCount: 1
 } as IdleView;
 
+// APP-450 earnings fixtures: literal per-source figures with the combined
+// stats derived by the real fold, so fixtures can't drift from the contract.
+const proto = (
+  id: ProtocolEarnings['id'],
+  rowIds: string[],
+  totalEarned: ProtocolEarnings['totalEarned'],
+  earnedThisMonth: ProtocolEarnings['earnedThisMonth'],
+  extra: Partial<ProtocolEarnings> = {}
+): ProtocolEarnings => ({
+  id,
+  rowIds,
+  totalEarned,
+  earnedThisMonth,
+  isLoading: false,
+  error: null,
+  ...extra
+});
+
+const walletEarnings = (protocols: ProtocolEarnings[], isLoading = false): WalletEarnings => ({
+  protocols,
+  combined: combineWalletEarnings(protocols),
+  isLoading,
+  window: { startSec: 0, endSec: 0 }
+});
+
+// Steady state: total 20 + 4 + 70 + 46.4 = 140.4; month 10 + 7 + 5 = 22;
+// announced gaps only (Merkl monthly, stUSDS unlisted).
+const EARNINGS = walletEarnings([
+  proto('morpho-flagship', ['vault-morpho-0xflagship'], ok({ usd: 20 }), ok({ usd: 10 })),
+  proto('merkl', ['vault-morpho-0xflagship'], ok({ usd: 4 }), notAvailable('merkl-monthly-unsupported')),
+  proto('pendle', ['fixed-0xmkt'], ok({ usd: 70 }), ok({ usd: 7 })),
+  proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 })),
+  proto('stusds', ['stusds'], notAvailable('stusds-not-listed'), notAvailable('stusds-not-listed'))
+]);
+
 const renderCard = (over: Partial<Parameters<typeof StablecoinEarningsCard>[0]> = {}) =>
   render(
     <I18nProvider i18n={i18n}>
@@ -75,6 +112,7 @@ const renderCard = (over: Partial<Parameters<typeof StablecoinEarningsCard>[0]> 
         idleView={IDLE}
         idleLoading={false}
         savingsRate={0.0375}
+        earnings={EARNINGS}
         tab="supplied"
         onTabChange={() => {}}
         {...over}
@@ -139,6 +177,7 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
           idleView={IDLE}
           idleLoading={false}
           savingsRate={0.0375}
+          earnings={EARNINGS}
           tab="supplied"
           onTabChange={() => {}}
         />
@@ -186,5 +225,96 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
     expect(donut.className).toContain('h-40');
     expect(donut.className).toContain('md:h-[178px]');
     expect(donut.className).toContain('order-2');
+  });
+});
+
+describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
+  afterEach(() => cleanup());
+
+  const totalText = () => screen.getByTestId('earnings-total-value').textContent;
+  const monthText = () => screen.getByTestId('earnings-month-value').textContent;
+
+  it('renders the combined Total earned and Earned this month', () => {
+    renderCard();
+    expect(totalText()).toBe('+$140.40');
+    expect(monthText()).toBe('+$22.00');
+  });
+
+  it('shows a skeleton per stat while the earnings hook loads', () => {
+    const loading = walletEarnings(
+      EARNINGS.protocols.map(p => ({
+        ...p,
+        totalEarned: notAvailable('loading'),
+        earnedThisMonth: notAvailable('loading'),
+        isLoading: true
+      })),
+      true
+    );
+    renderCard({ earnings: loading });
+    expect(screen.getAllByTestId('earnings-stat-skeleton')).toHaveLength(2);
+  });
+
+  it('marks announced gaps with the info glyph, never the partial-data indicator', () => {
+    renderCard();
+    // Total misses stUSDS, month misses Merkl + stUSDS — both announced.
+    expect(screen.getAllByTestId('earnings-info')).toHaveLength(2);
+    expect(screen.queryByTestId('earnings-partial')).toBeNull();
+  });
+
+  it('flips to the partial-data indicator when a source errors, excluding it from the sum', () => {
+    const morphoDown = walletEarnings([
+      proto(
+        'morpho-flagship',
+        ['vault-morpho-0xflagship'],
+        notAvailable('source-error'),
+        notAvailable('source-error')
+      ),
+      ...EARNINGS.protocols.slice(1)
+    ]);
+    renderCard({ earnings: morphoDown });
+    // 4 + 70 + 46.4 = 120.4; month 7 + 5 = 12.
+    expect(totalText()).toContain('+$120.40');
+    expect(monthText()).toContain('+$12.00');
+    expect(screen.getAllByTestId('earnings-partial')).toHaveLength(2);
+  });
+
+  it('renders dashes, not $0.00, when every source is unavailable', () => {
+    const allDown = walletEarnings(
+      EARNINGS.protocols.map(p => ({
+        ...p,
+        totalEarned: notAvailable('source-error'),
+        earnedThisMonth: notAvailable('source-error')
+      }))
+    );
+    renderCard({ earnings: allDown });
+    expect(totalText()).toBe('—');
+    expect(monthText()).toBe('—');
+  });
+
+  it('renders a negative combined total signed with a minus', () => {
+    const pendleUnderwater = walletEarnings(
+      EARNINGS.protocols.map(p => (p.id === 'pendle' ? { ...p, totalEarned: ok({ usd: -100 }) } : p))
+    );
+    renderCard({ earnings: pendleUnderwater });
+    // 20 + 4 - 100 + 46.4 = -29.6.
+    expect(totalText()).toBe('-$29.60');
+  });
+
+  it("collapses both stats to the hovered position's figures", () => {
+    renderCard();
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /Sky Savings Rate/ }));
+    expect(totalText()).toBe('+$46.40');
+    expect(monthText()).toBe('+$5.00');
+  });
+
+  it('shows a dash when the hovered position is outside APP-450 scope', () => {
+    const outOfScope = {
+      ...SUPPLIED,
+      positions: [{ ...SUPPLIED.positions[0], id: 'vault-other-0xdead', name: 'Other Vault' }]
+    };
+    renderCard({ suppliedView: outOfScope });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /Other Vault/ }));
+    expect(totalText()).toBe('—');
+    expect(monthText()).toBe('—');
   });
 });

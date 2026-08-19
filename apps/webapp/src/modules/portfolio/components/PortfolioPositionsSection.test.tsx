@@ -7,6 +7,8 @@ import { Intent } from '@/lib/enums';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import type { SuppliedPosition, SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
+import { combineWalletEarnings } from '../earnings/combineWalletEarnings';
+import { notAvailable, ok, type ProtocolEarnings, type WalletEarnings } from '../earnings/types';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -128,7 +130,41 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
   networksWithPositions: [1]
 });
 
-function renderSection(positions: SuppliedPosition[]) {
+// APP-450 earnings fixture: literal per-source figures, combined via the real
+// fold. Covers a savings row, a Pendle row with the realized/MTM split, and
+// the always-unlisted stUSDS entry; VAULT ('vault-sky-1') stays out of scope.
+const proto = (
+  id: ProtocolEarnings['id'],
+  rowIds: string[],
+  totalEarned: ProtocolEarnings['totalEarned'],
+  earnedThisMonth: ProtocolEarnings['earnedThisMonth'],
+  extra: Partial<ProtocolEarnings> = {}
+): ProtocolEarnings => ({
+  id,
+  rowIds,
+  totalEarned,
+  earnedThisMonth,
+  isLoading: false,
+  error: null,
+  ...extra
+});
+
+const walletEarnings = (protocols: ProtocolEarnings[], isLoading = false): WalletEarnings => ({
+  protocols,
+  combined: combineWalletEarnings(protocols),
+  isLoading,
+  window: { startSec: 0, endSec: 0 }
+});
+
+const EARNINGS = walletEarnings([
+  proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 })),
+  proto('pendle', ['fixed-0xmkt'], ok({ usd: 916.82 }), ok({ usd: 635.39 }), {
+    pendleSplit: { realizedUsd: 895.05, markToMarketUsd: 21.77 }
+  }),
+  proto('stusds', ['stusds'], notAvailable('stusds-not-listed'), notAvailable('stusds-not-listed'))
+]);
+
+function renderSection(positions: SuppliedPosition[], earnings: WalletEarnings = EARNINGS) {
   return render(
     <I18nProvider i18n={i18n}>
       <AnalyticsFlowProvider>
@@ -138,6 +174,7 @@ function renderSection(positions: SuppliedPosition[]) {
           idleView={{ tokens: [] } as unknown as IdleView}
           idleSupplyInfo={new Map()}
           idleLoading={false}
+          earnings={earnings}
           tab="supplied"
           onTabChange={() => undefined}
         />
@@ -264,5 +301,48 @@ describe('PositionCard — DS comp conformance', () => {
     renderSection([position({ id: 'multi', name: 'Multi', chainIds: [1, 8453] })]);
     const card = screen.getAllByTestId('position-card')[0];
     expect(within(card).getByTestId('position-card-networks').textContent).toContain('2 networks');
+  });
+});
+
+describe('PositionCard — Already earned (APP-450)', () => {
+  afterEach(() => cleanup());
+
+  const alreadyEarned = (card: HTMLElement) => within(card).getByTestId('position-already-earned');
+
+  it("renders the position's total earned for an in-scope row", () => {
+    renderSection([SAVINGS]);
+    expect(alreadyEarned(screen.getAllByTestId('position-card')[0]).textContent).toBe('$46.40');
+  });
+
+  it('renders a dash for a row outside APP-450 scope', () => {
+    renderSection([VAULT]); // 'vault-sky-1' matches no earnings source
+    expect(alreadyEarned(screen.getAllByTestId('position-card')[0]).textContent).toBe('—');
+  });
+
+  it('renders a dash for the unlisted stUSDS row', () => {
+    renderSection([position({ id: 'stusds', name: 'stUSDS' })]);
+    expect(alreadyEarned(screen.getAllByTestId('position-card')[0]).textContent).toBe('—');
+  });
+
+  it('exposes the realized/mark-to-market split on the Pendle figure', () => {
+    renderSection([position({ id: 'fixed-0xmkt', name: 'PT sUSDS', kind: 'fixed' })]);
+    const card = screen.getAllByTestId('position-card')[0];
+    expect(alreadyEarned(card).textContent).toBe('$916.82');
+    expect(within(card).getByTestId('earnings-pendle-split')).toBeTruthy();
+  });
+
+  it('shows a skeleton while the earnings hook loads', () => {
+    const loading = walletEarnings(
+      EARNINGS.protocols.map(p => ({
+        ...p,
+        totalEarned: notAvailable('loading'),
+        earnedThisMonth: notAvailable('loading'),
+        isLoading: true
+      })),
+      true
+    );
+    renderSection([SAVINGS], loading);
+    const card = screen.getAllByTestId('position-card')[0];
+    expect(within(card).getByTestId('earnings-stat-skeleton')).toBeTruthy();
   });
 });

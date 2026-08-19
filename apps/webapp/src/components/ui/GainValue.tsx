@@ -11,16 +11,20 @@ import { formatUsd } from '@/utils';
 export function GainValue({
   value,
   format = formatUsd,
+  signed = false,
   className
 }: {
   value: number;
   format?: (value: number) => string;
+  /** Negative values render a red `-` instead of the green `+` (APP-450). */
+  signed?: boolean;
   className?: string;
 }) {
+  const negative = signed && value < 0;
   return (
     <span className={cn('text-text', className)} data-testid="gain-value">
-      <span className="text-bullish">+</span>
-      {format(value)}
+      <span className={negative ? 'text-error' : 'text-bullish'}>{negative ? '-' : '+'}</span>
+      {format(Math.abs(value))}
     </span>
   );
 }
