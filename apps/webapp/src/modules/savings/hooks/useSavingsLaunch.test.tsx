@@ -276,58 +276,19 @@ describe('useSavingsLaunch — landmine #1: approve/allowance derivation stays i
   });
 });
 
-describe('useSavingsLaunch — launch() config', () => {
+describe('useSavingsLaunch — routing + steps', () => {
   beforeEach(() => {
     h.capturedCalls = [];
     h.mockExecute.mockClear();
-    h.launchMock.mockClear();
     h.allowance = 0n;
   });
   afterEach(() => cleanup());
 
-  it('opens the modal with savings analytics (widgetName/flow/action) on launch()', () => {
+  it('routes execute to the engine execute', () => {
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
     );
-    act(() => result.current.launch());
-
-    expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.analytics.widgetName).toBe('savings');
-    expect(config.analytics.flow).toBe('supply');
-    expect(config.analytics.action).toBe('supply');
-  });
-
-  it('titles the review "Review supply" and the wallet/status screen "Confirm in the wallet"', () => {
-    const { result } = renderHook(() =>
-      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
-    );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    // Figma 527:7812 (Review supply) → 527:8273 (Confirm in the wallet).
-    expect(config.title).toBe('Review supply');
-    expect(config.transactionTitle).toBe('Confirm in the wallet');
-  });
-
-  it('sets an amount-aware title for the minimized toast', () => {
-    const { result } = renderHook(() =>
-      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
-    );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.toast.success).toBe('10 USDS supplied!');
-  });
-
-  it('routes onConfirm to the engine execute', () => {
-    const { result } = renderHook(() =>
-      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
-    );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    config.onConfirm();
+    act(() => result.current.execute());
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
@@ -336,21 +297,18 @@ describe('useSavingsLaunch — launch() config', () => {
     const a = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
     );
-    act(() => a.result.current.launch());
     // Figma 527:8273 — the supply steps name their token; step count is unchanged.
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+    expect(a.result.current.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
       { label: 'Supply', tokenSymbol: 'USDS' }
     ]);
     a.unmount();
-    h.launchMock.mockClear();
 
     h.allowance = HAS_ALLOWANCE;
     const b = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
     );
-    act(() => b.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDS' }]);
+    expect(b.result.current.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDS' }]);
     b.unmount();
   });
 });

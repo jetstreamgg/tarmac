@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SheetClose } from '@/components/ui/sheet';
 import { NetworkSelector } from './NetworkSelector';
 import { useWalletDrawerAssets } from './useWalletDrawerAssets';
+import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 
 const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -114,7 +115,10 @@ export function WalletPreviewHeader({
                 <HeaderIconButton
                   label={t`Disconnect wallet`}
                   testId="wallet-drawer-disconnect"
-                  onClick={onDisconnect}
+                  onClick={() => {
+                    setDisconnectSource('wallet_drawer');
+                    onDisconnect();
+                  }}
                 >
                   <Unlink className={mobile ? 'size-3' : 'size-3.5'} />
                 </HeaderIconButton>

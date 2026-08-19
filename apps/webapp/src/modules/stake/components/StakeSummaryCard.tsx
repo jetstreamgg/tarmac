@@ -109,7 +109,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
       { replace: true }
     );
   }, [setSearchParams]);
-  const onOpenPosition = useConnectThenAct(openPosition);
+  const onOpenPosition = useConnectThenAct(openPosition, 'stake_open');
 
   const totalStaked = (positions ?? []).reduce((total, position) => total + position.skyLocked, 0n);
   const subgraphTotalBorrowed = (positions ?? []).reduce((total, position) => total + position.usdsDebt, 0n);

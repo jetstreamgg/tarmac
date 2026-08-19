@@ -27,6 +27,7 @@ import { PortfolioStatistics } from './PortfolioStatistics';
 import { SavingsTvlCallout } from './SavingsTvlCallout';
 import { AllocateStablecoinsBanner } from './AllocateStablecoinsBanner';
 import { type PortfolioTab } from './PortfolioTabs';
+import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 
 /**
  * The Portfolio page for connected wallets: header, onboarding callout, the
@@ -127,7 +128,10 @@ export function ConnectedPortfolio() {
     cachedDecision?.tab ??
     (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
 
-  const goToSavings = () => void navigate({ to: ROUTES.EARN_SAVINGS, search: retainOnNavigate });
+  const goToSavings = () => {
+    setPendingNavIntent('card', ROUTES.EARN_SAVINGS);
+    void navigate({ to: ROUTES.EARN_SAVINGS, search: retainOnNavigate });
+  };
 
   // The filter lists every supported chain — idle balances may sit on a chain
   // where the user has no supplied position.

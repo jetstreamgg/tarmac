@@ -20,7 +20,6 @@ const h = vi.hoisted(() => ({
   activeSupplyExecute: vi.fn(),
   idleSupplyExecute: vi.fn(),
   withdrawExecute: vi.fn(),
-  launchMock: vi.fn(),
   // USDS -> sUSDS allowance (useSavingsAllowance) and USDC -> PSM-wrapper allowance
   // (useTokenAllowance, keyed on the spender below). Both derivations live inside
   // the engine; the test only controls the on-chain values they read.
@@ -134,7 +133,7 @@ vi.mock('@/hooks/tokens/useTokenAllowance', () => ({
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
-    launch: h.launchMock,
+    launch: () => undefined,
     updateModalContent: () => undefined,
     isModalOpen: false,
     txCallbacks: {
@@ -206,7 +205,6 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply calldata parity', ()
     h.activeSupplyExecute.mockClear();
     h.idleSupplyExecute.mockClear();
     h.withdrawExecute.mockClear();
-    h.launchMock.mockClear();
     h.usdsAllowance = 0n;
     h.usdcAllowance = 0n;
     h.live = 1n;
@@ -276,13 +274,12 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply calldata parity', ()
   });
 });
 
-describe('useSavingsLaunch — mainnet USDC swap-and-supply launch() config', () => {
+describe('useSavingsLaunch — mainnet USDC swap-and-supply routing + steps', () => {
   beforeEach(() => {
     h.capturedCalls = [];
     h.activeSupplyExecute.mockClear();
     h.idleSupplyExecute.mockClear();
     h.withdrawExecute.mockClear();
-    h.launchMock.mockClear();
     h.usdsAllowance = 0n;
     h.usdcAllowance = 0n;
     h.live = 1n;
@@ -295,10 +292,7 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply launch() config', ()
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usdc, amount: AMOUNT, referralCode: REF })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.steps).toEqual([
+    expect(result.current.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'USDC', failureDetail: "The USDC hasn't been approved." },
       'Convert USDC to USDS',
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
@@ -312,24 +306,7 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply launch() config', ()
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usdc, amount: AMOUNT, referralCode: REF })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.steps).toEqual(['Convert USDC to USDS', { label: 'Supply', tokenSymbol: 'USDS' }]);
-  });
-
-  it('reports the amount in USDC units in the analytics payload', () => {
-    h.usdcAllowance = HAS_ALLOWANCE;
-    h.usdsAllowance = HAS_ALLOWANCE;
-    const { result } = renderHook(() =>
-      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usdc, amount: AMOUNT, referralCode: REF })
-    );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.analytics.data.originToken).toBe('USDC');
-    // 10 USDC, read at 6 decimals — not 1e-11.
-    expect(config.analytics.data.amount).toBe(10);
+    expect(result.current.steps).toEqual(['Convert USDC to USDS', { label: 'Supply', tokenSymbol: 'USDS' }]);
   });
 
   it('routes onConfirm to the enabled USDC engine (not the idle engines, not withdraw)', () => {
@@ -338,10 +315,7 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply launch() config', ()
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usdc, amount: AMOUNT, referralCode: REF })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    config.onConfirm();
+    act(() => result.current.execute());
     expect(h.activeSupplyExecute).toHaveBeenCalledTimes(1);
     expect(h.idleSupplyExecute).not.toHaveBeenCalled();
     expect(h.withdrawExecute).not.toHaveBeenCalled();
@@ -364,7 +338,6 @@ describe('useSavingsLaunch — the USDC engine is armed only while the PSM gate 
     h.capturedCalls = [];
     h.activeSupplyExecute.mockClear();
     h.idleSupplyExecute.mockClear();
-    h.launchMock.mockClear();
     // Both allowances present, so nothing but the gate can hold the engine back.
     h.usdsAllowance = HAS_ALLOWANCE;
     h.usdcAllowance = HAS_ALLOWANCE;
@@ -390,8 +363,7 @@ describe('useSavingsLaunch — the USDC engine is armed only while the PSM gate 
     // Nothing reached the transaction flow: no engine was enabled.
     expect(h.capturedCalls).toEqual([]);
 
-    act(() => result.current.launch());
-    h.launchMock.mock.calls[0][0].onConfirm();
+    act(() => result.current.execute());
     expect(h.activeSupplyExecute).not.toHaveBeenCalled();
     expect(h.idleSupplyExecute).toHaveBeenCalledTimes(1);
   });
@@ -405,8 +377,7 @@ describe('useSavingsLaunch — the USDC engine is armed only while the PSM gate 
 
     expect(h.capturedCalls.map(c => c.functionName)).toEqual(['sellGem', 'deposit']);
 
-    act(() => result.current.launch());
-    h.launchMock.mock.calls[0][0].onConfirm();
+    act(() => result.current.execute());
     expect(h.activeSupplyExecute).toHaveBeenCalledTimes(1);
   });
 });

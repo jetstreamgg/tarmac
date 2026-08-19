@@ -4,7 +4,7 @@ import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee, useTransactionFlow } from '@/hooks';
+import { useAvailableTokenRewardContracts, useNetworkFee, useTransactionFlow } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +13,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { NETWORK_FEE_LABEL, toGridCells } from '@/components/product/ModalGridCells';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
 import { merklAdapter } from '../adapters/merklAdapter';
 import { skyRewardsAdapter } from '../adapters/skyRewardsAdapter';
@@ -141,11 +142,65 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     [allRewards]
   );
 
+  // Attribution follows the scope (APP-444 B4/B8): a reward-contract claim reports
+  // under the legacy rewards widget, the ecosystem "Claim all" as its claim_all
+  // variant, and the Merkl scopes under the vaults widget (module 'morpho'). The
+  // stake scope claims through StakeClaimModal (its own confirm-time push) and
+  // 'all' has no launcher — neither attributes from here.
+  const rewardContracts = useAvailableTokenRewardContracts(chainId);
+  const analytics = useMemo<TransactionAnalytics | undefined>(() => {
+    const claimedRewards = allRewards.map(({ tokenSymbol, amount, tokenAddress }) => ({
+      tokenSymbol,
+      amount,
+      tokenAddress
+    }));
+    switch (scope.kind) {
+      case 'reward-contract': {
+        const contract = rewardContracts.find(
+          c => c.contractAddress?.toLowerCase() === scope.address.toLowerCase()
+        );
+        return {
+          widgetName: 'rewards',
+          flow: 'claim',
+          action: 'claim',
+          data: {
+            module: 'rewards',
+            product: contract?.name,
+            productAddress: contract?.contractAddress,
+            assetAddress: contract?.supplyToken.address[chainId],
+            assetSymbol: contract?.supplyToken.symbol ?? '',
+            isBatchTx: !!flow.isBatch,
+            claimedRewards
+          }
+        };
+      }
+      case 'sky-rewards':
+        return {
+          widgetName: 'rewards',
+          flow: 'claim',
+          action: 'claim_all',
+          data: { module: 'rewards', claimedRewards }
+        };
+      case 'vault':
+      case 'merkl':
+      case 'merkl-token':
+        return {
+          widgetName: 'vaults',
+          flow: 'claim',
+          action: 'claim',
+          data: { module: 'morpho', claimedRewards }
+        };
+      default:
+        return undefined;
+    }
+  }, [scope, allRewards, rewardContracts, chainId, flow.isBatch]);
+
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute: flow.execute,
     confirmDisabled: disabled,
-    transactionScreenContent
+    transactionScreenContent,
+    analytics
   });
 
   // All three engines are mainnet, so the network is the connected chain.
