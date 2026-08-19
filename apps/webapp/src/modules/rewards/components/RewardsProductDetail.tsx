@@ -20,7 +20,11 @@ import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
-import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import {
+  ProductDetailTemplate,
+  ProductDetailRow,
+  DetailValue
+} from '@/components/product/ProductDetailTemplate';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
 import { RewardsDetailChart } from './RewardsDetailChart';
 import { RewardsPositionCard } from './RewardsPositionCard';
@@ -90,8 +94,10 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
   // One BA Labs series feeds the stat rows (latest entry + 30-day trailing
   // average); the chart fetches its own timeframe-scoped window. TVL comes from
   // the subgraph contract info, matching the legacy statistics section.
-  const { data: chartInfo } = useRewardsChartInfo({ rewardContractAddress: contract.contractAddress });
-  const { data: contractInfo } = useRewardContractInfo({
+  const { data: chartInfo, isLoading: chartLoading } = useRewardsChartInfo({
+    rewardContractAddress: contract.contractAddress
+  });
+  const { data: contractInfo, isLoading: contractInfoLoading } = useRewardContractInfo({
     chainId: contract.chainId,
     rewardContractAddress: contract.contractAddress
   });
@@ -111,17 +117,47 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
   // Rate is a decimal fraction; zero means "no live rate" (Chronicle, the
   // deprecated SKY farm) and renders as "–" everywhere.
   const rateValue = latest && parseFloat(latest.rate) > 0 ? parseFloat(latest.rate) : undefined;
-  const currentRate = rateValue !== undefined ? formatDecimalPercentage(rateValue) : NO_VALUE;
-  const formattedThirtyDayRate =
-    thirtyDayRate !== undefined && thirtyDayRate > 0 ? formatDecimalPercentage(thirtyDayRate) : NO_VALUE;
+  const currentRate = (
+    <DetailValue
+      loading={chartLoading}
+      value={rateValue !== undefined ? formatDecimalPercentage(rateValue) : undefined}
+    />
+  );
+  const formattedThirtyDayRate = (
+    <DetailValue
+      loading={chartLoading}
+      value={
+        thirtyDayRate !== undefined && thirtyDayRate > 0 ? formatDecimalPercentage(thirtyDayRate) : undefined
+      }
+    />
+  );
 
-  const tvl = contractInfo?.totalSupplied
-    ? `$${formatNumber(parseFloat(formatUnits(contractInfo.totalSupplied, 18)))}`
-    : NO_VALUE;
-  const suppliers = latest?.suppliers !== undefined ? formatNumber(latest.suppliers) : NO_VALUE;
-  const totalRewarded = latest?.totalRewarded
-    ? `${formatNumber(parseFloat(latest.totalRewarded), { compact: true })} ${rewardSymbol}`
-    : NO_VALUE;
+  const tvl = (
+    <DetailValue
+      loading={contractInfoLoading}
+      value={
+        contractInfo?.totalSupplied
+          ? `$${formatNumber(parseFloat(formatUnits(contractInfo.totalSupplied, 18)))}`
+          : undefined
+      }
+    />
+  );
+  const suppliers = (
+    <DetailValue
+      loading={chartLoading}
+      value={latest?.suppliers !== undefined ? formatNumber(latest.suppliers) : undefined}
+    />
+  );
+  const totalRewarded = (
+    <DetailValue
+      loading={chartLoading}
+      value={
+        latest?.totalRewarded
+          ? `${formatNumber(parseFloat(latest.totalRewarded), { compact: true })} ${rewardSymbol}`
+          : undefined
+      }
+    />
+  );
 
   const details: ProductDetailRow[] = [
     {

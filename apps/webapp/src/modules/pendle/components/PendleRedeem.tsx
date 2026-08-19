@@ -11,6 +11,7 @@ import {
   type Token
 } from '@/hooks';
 import { getTooltipById, TokenDropdown, TransactionOverview } from '@/widgets';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Text } from '@/modules/layout/components/Typography';
@@ -170,9 +171,13 @@ export const PendleRedeem = ({
           <Text variant="medium" className="text-textSecondary">
             <Trans>You receive</Trans>
           </Text>
-          <Text className="text-lg">
-            {formatBigInt(quote?.amountOut ?? 0n, { unit: outDecimals, maxDecimals: 4 })}
-          </Text>
+          {quote === undefined && isFetchingQuote ? (
+            <Skeleton className="h-7 w-24" data-testid="pendle-redeem-output-loading" />
+          ) : (
+            <Text className="text-lg">
+              {formatBigInt(quote?.amountOut ?? 0n, { unit: outDecimals, maxDecimals: 4 })}
+            </Text>
+          )}
         </div>
         <TokenDropdown
           token={selectedOutputToken}

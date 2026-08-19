@@ -26,6 +26,8 @@ const h = vi.hoisted(() => ({
   usdsBalance: 0n,
   existingCollateral: 0n,
   existingDebt: 0n,
+  // When true, the position-detail mock reports an in-flight vault read.
+  vaultLoading: false,
   dust: 0n,
   voteDelegate: undefined as `0x${string}` | undefined,
   // Simulation knobs.
@@ -134,17 +136,19 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
   return {
     useStakePositionDetail: () => ({
       urnAddress: URN_ADDRESS,
-      vault: {
-        collateralType: 'LSEV2-SKY-A',
-        collateralAmount: h.existingCollateral,
-        debtValue: h.existingDebt,
-        dust: h.dust,
-        riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
-        liquidationProximityPercentage: h.existingDebt > 0n ? 30 : 0,
-        liquidationPrice: h.simLiqPrice,
-        delayedPrice: h.simDelayedPrice
-      },
-      vaultLoading: false,
+      vault: h.vaultLoading
+        ? undefined
+        : {
+            collateralType: 'LSEV2-SKY-A',
+            collateralAmount: h.existingCollateral,
+            debtValue: h.existingDebt,
+            dust: h.dust,
+            riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
+            liquidationProximityPercentage: h.existingDebt > 0n ? 30 : 0,
+            liquidationPrice: h.simLiqPrice,
+            delayedPrice: h.simDelayedPrice
+          },
+      vaultLoading: h.vaultLoading,
       hasDebt: h.existingDebt > 0n,
       rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
       rewardSymbol: 'SKY',
@@ -216,6 +220,7 @@ describe('ManagePositionTakeover', () => {
     h.usdsBalance = 100_000n * WAD;
     h.existingCollateral = 3_000_000n * WAD;
     h.existingDebt = 30_000n * WAD;
+    h.vaultLoading = false;
     h.dust = 30_000n * WAD;
     h.voteDelegate = CURRENT_DELEGATE;
     h.simLiqPrice = 432n * 10n ** 14n;
@@ -287,6 +292,18 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '4000000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toBe('Insufficient funds');
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('holds the withdraw insufficient check until the vault read resolves (APP-491)', () => {
+    h.vaultLoading = true;
+    renderSheet({ stakeCard: 'withdraw' });
+
+    // While the collateral read is in flight the staked amount is a premature
+    // 0n — any typed amount would flash a false error. No error, but Confirm
+    // stays gated until the read lands.
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '4000000' } });
+    expect(screen.queryByTestId('stake-manage-stake-amount-error')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 

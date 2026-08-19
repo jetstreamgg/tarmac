@@ -76,12 +76,17 @@ export function UpgradeModalForm({
     chainId
   });
 
-  const { data: mkrSkyFee } = useMkrSkyFee();
+  const { data: mkrSkyFee, error: mkrSkyFeeError } = useMkrSkyFee();
+  // Unknown fee = unknown economics: the penalty/receive cells and the confirm
+  // both wait on it. A failed read settles the cells on "Unavailable" instead
+  // of an endless pulse — the confirm stays disabled either way.
+  const feeUnknown = isMkr && mkrSkyFee === undefined;
+  const feeFailed = feeUnknown && mkrSkyFeeError !== null;
   const fee = isMkr ? (mkrSkyFee ?? 0n) : 0n;
   const receiveAmount = math.calculateConversion({ symbol: token }, debouncedAmount, fee);
 
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
-  const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending;
+  const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
   const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
@@ -90,7 +95,11 @@ export function UpgradeModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: isBatch,
@@ -104,12 +113,14 @@ export function UpgradeModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -213,14 +224,17 @@ export function UpgradeModalForm({
     targetRate: isMkr
       ? formatNumber(Number(math.MKR_TO_SKY_RATE), { minDecimals: 2, maxDecimals: 2 })
       : '1.00',
-    receiveAmount: formatAmount(receiveAmount),
+    receiveAmount: feeFailed ? t`Unavailable` : formatAmount(receiveAmount),
     penalty: isMkr
-      ? `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
+      ? feeFailed
+        ? t`Unavailable`
+        : `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
       : undefined,
     // 12px info glyph after the label (Figma 1343:79562).
     penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} height={12} /> : undefined,
     network: networkName,
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE,
+    feeLoading: feeUnknown && !feeFailed
   });
 
   const body = (

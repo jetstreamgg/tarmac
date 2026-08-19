@@ -80,6 +80,7 @@ export function VaultModalForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     amountReady,
@@ -96,7 +97,11 @@ export function VaultModalForm({
   const { execute, steps, prepared, calls, isBatch } = useVaultLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     shouldUseBatch: isBatch,
     enabled: amountReady
@@ -109,12 +114,14 @@ export function VaultModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -287,7 +294,7 @@ export function VaultModalForm({
             // "Available", not "Balance", when liquidity caps the figure below the position.
             <>
               {!isSupply && isLiquidityConstrained ? <Trans>Available</Trans> : <Trans>Balance</Trans>}:{' '}
-              {isConnected ? formatAsset(available) : NO_VALUE}
+              {isConnected && availableKnown ? formatAsset(available) : NO_VALUE}
             </>
           }
           onPercent={setPercentAmount}

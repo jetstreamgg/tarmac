@@ -103,7 +103,12 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   // Live simulation for the slider and display surfaces: useSimulatedVault's
   // per-amount work is pure math over cached chain reads, so it can track the
   // raw amounts frame-for-frame while the RPC-bound seams stay debounced.
-  const { data: simulatedVault } = useSimulatedVault(state.skyToLock, state.usdsToBorrow, 0n, ilkName);
+  const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
+    state.skyToLock,
+    state.usdsToBorrow,
+    0n,
+    ilkName
+  );
   // Same simulation with no new debt — feeds the slider's floor math.
   const { data: vaultNoBorrow } = useSimulatedVault(state.skyToLock, 0n, 0n, ilkName);
   // Debounced simulation for validation, so errors wait for typing to settle.
@@ -112,7 +117,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     isLoading: simulationLoading,
     error: simulationError
   } = useSimulatedVault(debouncedSkyToLock, debouncedUsdsToBorrow, 0n, ilkName);
-  const { data: collateralData } = useCollateralData(ilkName);
+  const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
 
   // A-Q2 (recorded on APP-311): the baseline takeover has no reward picker; the
   // engine still requires a selectFarm call, so default to the SKY farm. The
@@ -135,7 +140,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const rewardSymbol = farmRewardSymbol(selectedRewardContract, chainId) ?? 'SKY';
 
   // The selected farm's live rate → card-1 stats.
-  const { data: rewardsChartInfo } = useMultipleRewardsChartInfo({
+  const { data: rewardsChartInfo, isLoading: rateLoading } = useMultipleRewardsChartInfo({
     rewardContractAddresses: selectedRewardContract ? [selectedRewardContract] : []
   });
   const highestRateData = useHighestRateFromChartData(rewardsChartInfo ?? []);
@@ -312,6 +317,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         balance={skyBalance?.value}
         balanceLoading={balanceLoading}
         rewardsRate={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : null}
+        rateLoading={rateLoading}
         estAnnualRewards={estAnnualRewards}
         rewardSymbol={rewardSymbol}
         minStakeToBorrow={state.borrowEnabled ? simulatedVault?.minCollateralForDust : undefined}
@@ -329,8 +335,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         minCollateralForDust={simulatedVault?.minCollateralForDust}
         skyToLock={debouncedSkyToLock}
         simulatedVault={simulatedVault}
+        simulationLoading={liveSimLoading}
         vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
+        collateralLoading={collateralLoading}
         error={borrowError}
       />
 

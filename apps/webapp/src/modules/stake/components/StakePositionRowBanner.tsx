@@ -56,13 +56,13 @@ export function StakePositionRowBanner({
     chainId,
     enabled: Boolean(urnAddress && rewardContracts?.length)
   });
-  const { data: prices } = usePrices();
+  const { data: prices, isLoading: pricesLoading } = usePrices();
 
   if (isLiquidatedStakePosition(position)) {
     // The risk-cell badge already marks the row as liquidated from the pure
     // predicate; hold the banner (which quotes the refund/reward figures) until
     // the reads land so it never flashes a 0.00 refund.
-    if (vaultLoading || claimableLoading) return null;
+    if (vaultLoading || claimableLoading || pricesLoading) return null;
 
     const claimable = toClaim ?? [];
     // A failed claimables read is "unknown", not $0.00.

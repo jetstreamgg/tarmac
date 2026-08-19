@@ -196,7 +196,9 @@ export function useNetworkFee({
 
   return {
     data,
-    isLoading: isGasLoading || isFeesLoading || isPricesLoading,
+    // Gated on `enabled`: the always-on prices query must not report a disabled
+    // estimate as loading (the row's dash means "nothing to estimate").
+    isLoading: enabled && (isGasLoading || isFeesLoading || isPricesLoading),
     error: gasError || feesError,
     mutate: () => {
       refetchGas();

@@ -83,7 +83,7 @@ function useStakeClaimable(scope: ClaimScope): ClaimableResult {
   const chainId = useChainId();
   const index = scope.kind === 'stake' ? scope.index : undefined;
   const { rewards, isLoading, refresh } = useStakeUrnRewards(index);
-  const { data: prices } = usePrices();
+  const { data: prices, isLoading: pricesLoading } = usePrices();
 
   return useMemo(() => {
     if (index === undefined) return { rewards: [], isLoading: false, refresh };
@@ -114,8 +114,10 @@ function useStakeClaimable(scope: ClaimScope): ClaimableResult {
       };
     });
 
-    return { rewards: mapped, isLoading, refresh };
-  }, [index, rewards, prices, chainId, isLoading, refresh]);
+    // Prices count as loading: a claim valued at $0.00 off the missing feed
+    // reads as worthless, not pending.
+    return { rewards: mapped, isLoading: isLoading || pricesLoading, refresh };
+  }, [index, rewards, prices, chainId, isLoading, pricesLoading, refresh]);
 }
 
 function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOptions): ClaimCallsResult {

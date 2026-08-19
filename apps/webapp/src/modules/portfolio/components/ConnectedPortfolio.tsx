@@ -77,9 +77,13 @@ export function ConnectedPortfolio() {
   const idleSupplyInfo = buildIdleSupplyInfo(visibleRows);
 
   // Sky Savings Rate as a decimal fraction (drives the Idle footer + projection).
-  const savingsRate = overallSkyData?.skySavingsRatecRate
-    ? parseFloat(overallSkyData.skySavingsRatecRate)
-    : 0;
+  // undefined while the query is in flight — the copy would otherwise quote
+  // "today's 0.00% Sky Savings Rate" as fact.
+  const savingsRate = skyDataLoading
+    ? undefined
+    : overallSkyData?.skySavingsRatecRate
+      ? parseFloat(overallSkyData.skySavingsRatecRate)
+      : 0;
   // undefined while the query is in flight — the callout chips the figure.
   const savingsTvlUsd = skyDataLoading
     ? undefined

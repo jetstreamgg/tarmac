@@ -20,6 +20,7 @@ import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
@@ -93,7 +94,7 @@ export function ManagePositionTakeover({
   const liveUsdsToWipe = state.borrowEnabled && state.borrowMode === 'repay' ? state.usdsAmount : 0n;
   const liveCollateralAmount = existingCollateral + liveSkyToLock - liveSkyToFree;
   const liveDebtValue = existingDebt + liveUsdsToBorrow - liveUsdsToWipe;
-  const { data: simulatedVault } = useSimulatedVault(
+  const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
     liveCollateralAmount > 0n ? liveCollateralAmount : 0n,
     liveDebtValue > 0n ? liveDebtValue : 0n,
     existingDebt,
@@ -117,14 +118,14 @@ export function ManagePositionTakeover({
     existingDebt,
     ilkName
   );
-  const { data: collateralData } = useCollateralData(ilkName);
+  const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
 
   const { data: skyBalance, isLoading: skyBalanceLoading } = useTokenBalance({
     address,
     token: TOKENS.sky.address[chainId as keyof typeof TOKENS.sky.address],
     chainId
   });
-  const { data: usdsBalance } = useTokenBalance({
+  const { data: usdsBalance, isLoading: usdsBalanceLoading } = useTokenBalance({
     address,
     token: TOKENS.usds.address[chainId as keyof typeof TOKENS.usds.address],
     chainId
@@ -154,7 +155,8 @@ export function ManagePositionTakeover({
       ? skyBalance !== undefined && state.skyAmount > skyBalance.value && state.skyAmount !== 0n
         ? t`Insufficient funds`
         : undefined
-      : state.skyAmount > existingCollateral && state.skyAmount !== 0n
+      : // Never validate against the unresolved vault read's 0n fallback.
+        existingVault !== undefined && state.skyAmount > existingCollateral && state.skyAmount !== 0n
         ? t`Insufficient funds`
         : // The capped-OSM state implies max liquidation risk (the F8 proximity
           // short-circuit reports 100 whenever liquidation price ≥ delayed
@@ -246,7 +248,9 @@ export function ManagePositionTakeover({
   const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
   const hasChange =
     skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll || delegateChanged;
-  const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid;
+  // Every staged change is relative to the existing position, so nothing may
+  // confirm against an unresolved vault read.
+  const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid && !detail.vaultLoading;
 
   const close = useCallback(() => {
     onClose();
@@ -366,7 +370,11 @@ export function ManagePositionTakeover({
             </span>
             <span className="text-text font-circle flex items-center gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
               <TokenIcon token={{ symbol: 'SKY' }} width={40} className="h-10 w-10" showChainIcon={false} />
-              {formatBigInt(existingCollateral)}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-[35px] w-24" />
+              ) : (
+                formatBigInt(existingCollateral)
+              )}
             </span>
           </div>
           <span className="bg-borderPrimary h-12 w-px shrink-0 self-center" aria-hidden />
@@ -376,7 +384,7 @@ export function ManagePositionTakeover({
             </span>
             <span className="text-text font-circle flex items-center gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
               <TokenIcon token={{ symbol: 'USDS' }} width={40} className="h-10 w-10" showChainIcon={false} />
-              {formatBigInt(existingDebt)}
+              {detail.vaultLoading ? <Skeleton className="h-[35px] w-24" /> : formatBigInt(existingDebt)}
             </span>
           </div>
         </div>
@@ -386,7 +394,11 @@ export function ManagePositionTakeover({
               <Trans>Rewards earned</Trans>
             </span>
             <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
-              {`+${formatUsd(detail.rewardsEarnedUsd)}`}
+              {detail.rewardsEarnedLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                `+${formatUsd(detail.rewardsEarnedUsd)}`
+              )}
               {detail.rewardSymbol && (
                 <TokenIcon
                   token={{ symbol: detail.rewardSymbol }}
@@ -403,7 +415,9 @@ export function ManagePositionTakeover({
               <Trans>Liquidation risk</Trans>
             </span>
             <span className="text-text font-circle flex h-4 items-center text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingDebt > 0n && existingVault?.riskLevel ? (
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingDebt > 0n && existingVault?.riskLevel ? (
                 <RiskBadge riskLevel={existingVault.riskLevel} />
               ) : (
                 NO_VALUE
@@ -416,9 +430,13 @@ export function ManagePositionTakeover({
               <Trans>Liquidation price</Trans>
             </span>
             <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingDebt > 0n && existingVault?.liquidationPrice !== undefined
-                ? `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-                : NO_VALUE}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingDebt > 0n && existingVault?.liquidationPrice !== undefined ? (
+                `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+              ) : (
+                NO_VALUE
+              )}
             </span>
           </div>
           <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
@@ -428,9 +446,13 @@ export function ManagePositionTakeover({
               <Info className="h-3 w-3" aria-hidden />
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingVault?.delayedPrice !== undefined
-                ? `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-                : NO_VALUE}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingVault?.delayedPrice !== undefined ? (
+                `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+              ) : (
+                NO_VALUE
+              )}
               <UpdatedHourlyBadge />
             </span>
           </div>
@@ -447,10 +469,13 @@ export function ManagePositionTakeover({
         walletBalance={skyBalance?.value}
         walletBalanceLoading={skyBalanceLoading}
         stakedAmount={existingCollateral}
+        stakedAmountLoading={detail.vaultLoading}
         rewardsRate={detail.rewardsRate}
+        rateLoading={detail.rateLoading}
         estCurrentSky={detail.estAnnualRewardsSky}
         estNextSky={estNextSky}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
+        minStakeToBorrowLoading={liveSimLoading}
         error={stakeError}
       />
 
@@ -464,11 +489,15 @@ export function ManagePositionTakeover({
           dispatch({ type: 'setUsdsAmount', amount, wipeAll: stagedWipeAll })
         }
         existingVault={existingVault}
+        positionLoading={detail.vaultLoading}
         simulatedVault={simulatedVault}
+        simulationLoading={liveSimLoading}
         vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
+        collateralLoading={collateralLoading}
         maxBorrowable={availableBorrowBalance}
         maxRepayable={maxRepayable}
+        usdsBalanceLoading={usdsBalanceLoading}
         wipeAll={state.wipeAll}
         minCollateralNotMet={minCollateralNotMet}
         minCollateralForDust={simulatedVault?.minCollateralForDust}

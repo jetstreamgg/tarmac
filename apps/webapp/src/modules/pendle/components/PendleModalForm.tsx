@@ -123,8 +123,10 @@ export function PendleModalForm({
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
   const available = isSupply ? (walletBalance?.value ?? 0n) : ptBalance;
 
-  const insufficient = amount > available;
-  const amountReady = isConnected && amount > 0n && !insufficient;
+  // Never validate against the unresolved balance's 0n fallback.
+  const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
+  const insufficient = balanceKnown && amount > available;
+  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient;
 
   const { slippage, setSlippage, defaultSlippage } = usePendleSlippage(
     isSupply ? PendleFlow.BUY : PendleFlow.WITHDRAW
@@ -296,7 +298,11 @@ export function PendleModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls: writeHook.calls ?? [],
     chainId,
     shouldUseBatch: !!writeHook.isBatch,
@@ -310,12 +316,14 @@ export function PendleModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -509,7 +517,7 @@ export function PendleModalForm({
         disabled={!isConnected}
         balance={
           <>
-            <Trans>Balance</Trans>: {isConnected ? balanceDisplay : NO_VALUE}
+            <Trans>Balance</Trans>: {isConnected && balanceKnown ? balanceDisplay : NO_VALUE}
           </>
         }
         onPercent={setPercentAmount}

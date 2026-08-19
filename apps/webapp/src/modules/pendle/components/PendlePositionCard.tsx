@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Pendle } from '@/widgets';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   NO_VALUE,
   ProductActions,
@@ -182,6 +183,12 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   }, [mutateBalances]);
 
   const { openSupply, openWithdraw } = usePendleModal({ onSuccess: refresh });
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position.
+  if (isConnected && ptBalances === undefined) {
+    return <PositionCardSkeleton testId="pendle-position-card-skeleton" />;
+  }
 
   if (ptBalance === 0n) {
     return (

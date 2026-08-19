@@ -10,8 +10,17 @@ import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { Pendle } from '@/widgets';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
+
+/** The row's rate, or an inline skeleton while its source is still loading. */
+function RateFigure({ row, className = 'h-4 w-12' }: { row: EarnProductRow; className?: string }) {
+  if (row.rate.value === undefined && row.isLoading) {
+    return <Skeleton className={cn('inline-block rounded align-baseline', className)} />;
+  }
+  return <>{row.rate.formatted}</>;
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NO_VALUE = '–';
@@ -124,9 +133,18 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
       </div>
       <div className="flex flex-col gap-2">
         <h3 className="text-fgPrimary font-circle max-w-[671px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
+          {/* While the rate loads the figure wears the pulsing-pill dress (class
+              changes keep the extracted message identical). */}
           <Trans>
             Supply {row.supplyTokens.join('/')} and earn{' '}
-            <span className="bg-linear-to-b from-[#949aff] to-[#504dff] bg-clip-text text-transparent">
+            <span
+              className={cn(
+                'bg-linear-to-b from-[#949aff] to-[#504dff] bg-clip-text text-transparent',
+                row.rate.value === undefined &&
+                  row.isLoading &&
+                  'bg-surface animate-pulse rounded-lg bg-none bg-clip-border select-none'
+              )}
+            >
               {row.rate.formatted}
             </span>{' '}
             APY
@@ -146,7 +164,13 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
               <Trans>TVL</Trans>
             </span>
             <span className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
-              {row.tvl ? formatUsdCompact(row.tvl.totalUsd) : NO_VALUE}
+              {row.tvl ? (
+                formatUsdCompact(row.tvl.totalUsd)
+              ) : row.isLoading ? (
+                <Skeleton className="h-5 w-16 rounded" />
+              ) : (
+                NO_VALUE
+              )}
             </span>
           </div>
           <div className="bg-borderPrimary h-8 w-px shrink-0" />
@@ -207,7 +231,9 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     ),
     stats: row => (
       <>
-        <Stat label={<RateLabel />}>{row.rate.formatted}</Stat>
+        <Stat label={<RateLabel />}>
+          <RateFigure row={row} />
+        </Stat>
         <StatDivider />
         <Stat label={<Trans>Risk</Trans>}>
           <RiskTierDetailsTrigger profile={row.riskProfile} />
@@ -254,7 +280,9 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     },
     stats: row => (
       <>
-        <Stat label={<RateLabel />}>{row.rate.formatted}</Stat>
+        <Stat label={<RateLabel />}>
+          <RateFigure row={row} />
+        </Stat>
         <StatDivider />
         {row.maturity && (
           <>

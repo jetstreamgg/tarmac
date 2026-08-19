@@ -23,6 +23,13 @@ const USDS = '0xdC035D45d973E3EC169d2276DDab16f1e407384F' as const;
 const GROSS = '40000000000000000';
 const CLAIMED = '20000000000000000';
 
+// Unresolved vault read (data undefined) holds the card slot: skeleton while in
+// flight, error card if the read failed.
+const h = vi.hoisted(() => ({
+  vaultUnresolved: false,
+  vaultError: null as Error | null
+}));
+
 const merklPayload = (claimed = CLAIMED) => [
   {
     chain: { id: 1, name: 'Ethereum', icon: '', endOfDisputePeriod: 0, liveCampaigns: 1 },
@@ -71,7 +78,11 @@ vi.mock('@/hooks', async importOriginal => {
     ...actual,
     getTokenDecimals: () => 18,
     // 8.24 USDS supplied — enough of a position to render the "My position" card.
-    useErc4626VaultData: () => ({ data: { userAssets: 8_240_000_000_000_000_000n }, mutate: () => {} }),
+    useErc4626VaultData: () => ({
+      data: h.vaultUnresolved ? undefined : { userAssets: 8_240_000_000_000_000_000n },
+      error: h.vaultError,
+      mutate: () => {}
+    }),
     useVaultMarketData: () => ({ data: { rate: { netRate: 0.05 } } })
   };
 });
@@ -130,8 +141,42 @@ const stubMerkl = (claimed?: string) =>
     vi.fn(async () => new Response(JSON.stringify(merklPayload(claimed)), { status: 200 }))
   );
 
+describe('VaultPositionCard held slot (APP-491)', () => {
+  beforeEach(() => {
+    stubMerkl();
+    h.vaultUnresolved = false;
+    h.vaultError = null;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  it('holds the slot with a skeleton while the position read is in flight', () => {
+    h.vaultUnresolved = true;
+    renderCard();
+
+    expect(screen.queryByTestId('vault-position-card-skeleton')).not.toBeNull();
+    expect(screen.queryByTestId('vault-position-card-error')).toBeNull();
+  });
+
+  it('settles a failed position read on the error card, not an endless skeleton', () => {
+    h.vaultUnresolved = true;
+    h.vaultError = new Error('read failed');
+    renderCard();
+
+    expect(screen.queryByTestId('vault-position-card-error')).not.toBeNull();
+    expect(screen.queryByTestId('vault-position-card-skeleton')).toBeNull();
+  });
+});
+
 describe('VaultPositionCard claimable rewards (APP-442)', () => {
-  beforeEach(() => stubMerkl());
+  beforeEach(() => {
+    stubMerkl();
+    h.vaultUnresolved = false;
+    h.vaultError = null;
+  });
 
   afterEach(() => {
     vi.unstubAllGlobals();
