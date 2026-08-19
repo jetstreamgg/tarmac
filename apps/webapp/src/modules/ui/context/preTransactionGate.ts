@@ -84,6 +84,17 @@ export type GateControls = {
   /** Tears the transaction modal down — the gate is replacing it with its own surface. */
   closeModal: () => void;
   /**
+   * Hands the modal back to its first screen (entry or review) with the
+   * status reset to IDLE — the surface for an enhanced-screening denial
+   * (APP-517): the modal-side preflight reads the same query the gate just
+   * settled, so the blocked/unavailable message renders above the disabled
+   * CTAs there. A transaction-screen 'error' is NOT an alternative for
+   * these: on multi-step flows the step list's failure rendering replaces
+   * the status row, so copy set alongside 'error' never shows and the
+   * denial reads as an on-chain failure.
+   */
+  returnToFirstScreen: () => void;
+  /**
    * The user rejected the terms sign request in their wallet. Emits the
    * terms-signature-declined analytics event (method 'wallet_rejected'),
    * attributed to the gated config — the provider owns the attribution

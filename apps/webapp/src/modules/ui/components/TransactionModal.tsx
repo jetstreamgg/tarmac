@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus, Clock, InProgress, SuccessCheck, FailedX, Cancel } from '@/widgets';
 import { ArrowLeft } from 'lucide-react';
@@ -49,6 +49,13 @@ export type TransactionModalProps = {
    * its editable inputs here). Called with the node on mount and null on unmount.
    */
   registerEntrySlot?: (el: HTMLElement | null) => void;
+  /**
+   * Registers the modal's back-to-first-screen action while mounted (null on
+   * unmount). The pre-transaction gate drives it on an enhanced-screening
+   * denial (APP-517): the first screen — where the preflight renders the
+   * blocked message above the disabled CTAs — is that denial's surface.
+   */
+  registerReturnToFirstScreen?: (fn: (() => void) | null) => void;
   onClose: () => void;
   /**
    * Hide the modal while keeping the transaction running. When provided, dismissing
@@ -158,7 +165,8 @@ export function TransactionModal({
   steps,
   currentStep = 0,
   gateCopy,
-  preflight
+  preflight,
+  registerReturnToFirstScreen
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
   // read-only review. Initialised per mount (the provider remounts the modal on
@@ -311,6 +319,14 @@ export function TransactionModal({
     setStep(firstStep);
     setContentHeight(undefined);
   }, [onBack, firstStep]);
+
+  // Hand the provider the same back-to-first-screen the header arrow uses, so
+  // the gate's returnToFirstScreen control (enhanced-screening denials) lands
+  // on an identical screen state — onBack's progress reset included.
+  useEffect(() => {
+    registerReturnToFirstScreen?.(handleBack);
+    return () => registerReturnToFirstScreen?.(null);
+  }, [registerReturnToFirstScreen, handleBack]);
 
   // Header back arrow (Figma chrome on every screen): on the flow's first screen
   // it closes (there's nothing before it — the inputs live on the page/entry); on

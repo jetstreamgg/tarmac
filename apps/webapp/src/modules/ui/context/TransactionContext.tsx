@@ -505,6 +505,15 @@ export function TransactionProvider({
     handleCloseRef.current = handleClose;
   });
 
+  // The modal's back-to-first-screen action, registered while it is mounted
+  // (the screen is modal-internal state the provider can't reach otherwise).
+  // Driven by the gate's returnToFirstScreen control on an enhanced-screening
+  // denial (APP-517).
+  const returnToFirstScreenRef = useRef<(() => void) | null>(null);
+  const registerReturnToFirstScreen = useCallback((fn: (() => void) | null) => {
+    returnToFirstScreenRef.current = fn;
+  }, []);
+
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
   // has nothing left to animate.
   useEffect(() => () => (exitTimerRef.current ? clearTimeout(exitTimerRef.current) : undefined), []);
@@ -602,6 +611,19 @@ export function TransactionProvider({
         closeModal: () => {
           if (!live()) return;
           handleCloseRef.current();
+        },
+        returnToFirstScreen: () => {
+          if (!live()) return;
+          // IDLE first, and synchronously: the first screen must be fully live
+          // again — the entry body's pushes freeze while txStatus !== IDLE, and
+          // close/dismiss semantics key off the status. Phase and copy clear
+          // with it, exactly like setGateStatus('idle').
+          setTxStatus(TxStatus.IDLE);
+          txStatusRef.current = TxStatus.IDLE;
+          gatePhaseRef.current = null;
+          gateCopyRef.current = null;
+          setGateCopy(null);
+          returnToFirstScreenRef.current?.();
         },
         reportSignatureRejected: () => {
           if (!live()) return;
@@ -926,6 +948,7 @@ export function TransactionProvider({
             // what tells Radix to play the exit rather than the enter.
             open={open && !minimized && !!activeConfig}
             registerEntrySlot={setEntrySlotEl}
+            registerReturnToFirstScreen={registerReturnToFirstScreen}
             onClose={handleClose}
             onMinimize={minimize}
             title={modalView.config.title}

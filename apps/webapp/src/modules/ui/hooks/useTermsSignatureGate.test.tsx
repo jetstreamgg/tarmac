@@ -74,6 +74,7 @@ const makeControls = () => ({
   setGateStatus: vi.fn<GateControls['setGateStatus']>(),
   setPreludeSteps: vi.fn<GateControls['setPreludeSteps']>(),
   closeModal: vi.fn<GateControls['closeModal']>(),
+  returnToFirstScreen: vi.fn<GateControls['returnToFirstScreen']>(),
   reportSignatureRejected: vi.fn<GateControls['reportSignatureRejected']>(),
   isStale: vi.fn<GateControls['isStale']>(() => false)
 });
@@ -482,20 +483,22 @@ describe('useTermsSignatureGate', () => {
       expect(mocks.fetchAddressScreening).not.toHaveBeenCalled();
     });
 
-    it('a risky enhanced verdict denies IN the modal (error status + copy), never closing it', () => {
+    it('a risky enhanced verdict returns the modal to its first screen (the preflight surface), never closing it', () => {
       seedEnhancedScreening(false);
       const { gate } = renderGate();
       const controls = makeControls();
 
       expect(gate({ trigger: 'confirm', usdValue: OVER_THRESHOLD, controls })).toEqual({ allow: false });
       expect(controls.closeModal).not.toHaveBeenCalled();
-      const lastStatus = controls.setGateStatus.mock.calls.at(-1);
-      expect(lastStatus?.[0]).toBe('error');
-      expect(lastStatus?.[1]?.subtitle).toBeTruthy();
+      expect(controls.returnToFirstScreen).toHaveBeenCalledTimes(1);
+      // No 'error' status: a transaction-screen error would be swallowed by the
+      // step-list failure rendering on multi-step flows and misread as an
+      // on-chain failure — the preflight owns the denial's copy.
+      expect(controls.setGateStatus).not.toHaveBeenCalled();
       expect(mocks.signTerms).not.toHaveBeenCalled();
     });
 
-    it('a risky enhanced re-screen (no cache) denies in the modal the same way', async () => {
+    it('a risky enhanced re-screen (no cache) returns to the first screen the same way', async () => {
       mocks.fetchEnhancedAddressScreening.mockResolvedValueOnce({ addressAllowed: false });
       const { gate } = renderGate();
       const controls = makeControls();
@@ -504,10 +507,13 @@ describe('useTermsSignatureGate', () => {
         allow: false
       });
       expect(controls.closeModal).not.toHaveBeenCalled();
-      expect(controls.setGateStatus.mock.calls.at(-1)?.[0]).toBe('error');
+      expect(controls.returnToFirstScreen).toHaveBeenCalledTimes(1);
+      const statuses = controls.setGateStatus.mock.calls.map(([status]) => status);
+      expect(statuses).toContain('screening');
+      expect(statuses).not.toContain('error');
     });
 
-    it('an unavailable enhanced check fails closed, in the modal — no app-level dialog', async () => {
+    it('an unavailable enhanced check fails closed, back on the first screen — no app-level dialog', async () => {
       mocks.fetchEnhancedAddressScreening.mockRejectedValue(new Error('enhanced screening down'));
 
       let gateRef!: ReturnType<typeof useTermsSignatureGate>;
@@ -525,7 +531,8 @@ describe('useTermsSignatureGate', () => {
       });
 
       expect(controls.closeModal).not.toHaveBeenCalled();
-      expect(controls.setGateStatus.mock.calls.at(-1)?.[0]).toBe('error');
+      expect(controls.returnToFirstScreen).toHaveBeenCalledTimes(1);
+      expect(controls.setGateStatus.mock.calls.map(([status]) => status)).not.toContain('error');
       // The standard path's screening-unavailable dialog stays down.
       expect(screen.queryByText(/unable to verify this wallet/i)).toBeNull();
       expect(mocks.signTerms).not.toHaveBeenCalled();

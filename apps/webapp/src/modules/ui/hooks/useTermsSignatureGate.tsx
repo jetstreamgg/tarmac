@@ -73,10 +73,12 @@ const termsSignatureStep = (): TransactionStep => ({
  * Step 1 is tiered by the transaction's USD value (APP-517): at/above the
  * enhanced-screening threshold — or when the value is unknown — the address
  * is screened via the enhanced endpoint (stricter provider settings, its own
- * cache key) instead of the standard one, and a denial renders in the modal
- * rather than closing into the app-level blocked dialog. The modal-side
- * preflight (`useEnhancedScreeningPreflight`) warms the same query, so this
- * usually passes synchronously.
+ * cache key) instead of the standard one. A denial returns the modal to its
+ * FIRST screen, where the modal-side preflight
+ * (`useEnhancedScreeningPreflight`) — reading the very query this gate just
+ * settled — renders the blocked/unavailable message above the disabled CTAs;
+ * it never closes into the app-level blocked dialog. The preflight also warms
+ * the query on the way in, so this usually passes synchronously.
  */
 export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDialog: ReactNode } {
   const queryClient = useQueryClient();
@@ -137,28 +139,6 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
     const screeningCopy = (): GateStatusCopy => ({
       message: <Trans>Verifying your wallet address…</Trans>,
       subtitle: t`Running a quick check before your transaction starts.`
-    });
-    // Enhanced-screening denials render IN the modal (error status + copy)
-    // rather than closing into an app-level surface: no app-level dialog reads
-    // the enhanced verdict — a wallet blocked for high-value transactions can
-    // still browse and transact below the threshold (APP-517).
-    const enhancedBlockedCopy = (): GateStatusCopy => ({
-      message: (
-        <Trans>
-          This wallet didn&apos;t pass the additional verification required for transactions of this size, so
-          the transaction can&apos;t be completed.
-        </Trans>
-      ),
-      subtitle: t`The transaction was not started.`
-    });
-    const enhancedUnavailableCopy = (): GateStatusCopy => ({
-      message: (
-        <Trans>
-          We couldn&apos;t run the additional verification required for transactions of this size, so it
-          can&apos;t be submitted right now. This is usually temporary — please try again in a few minutes.
-        </Trans>
-      ),
-      subtitle: t`The transaction was not started.`
     });
     const signaturePendingCopy = (): GateStatusCopy => ({
       message: <Trans>Review and sign the Terms of Use confirmation in your wallet.</Trans>,
@@ -264,10 +244,16 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
       if (hasFreshVerdict) {
         if (!cached!.data!.addressAllowed) {
           if (enhanced) {
-            // Status is IDLE on this sync path; drive it straight to the
-            // in-modal error (see enhancedBlockedCopy). The preflight reading
-            // the same cache keeps the first-screen CTAs disabled on Back.
-            controls.setGateStatus('error', enhancedBlockedCopy());
+            // The denial's surface is the modal's FIRST screen: the preflight
+            // reads this same cached verdict and renders the blocked message
+            // above the disabled CTAs. Driving a transaction-screen 'error'
+            // instead would misreport it on multi-step flows — the step list's
+            // failure rendering replaces the status row, so the compliance
+            // copy never shows and the denial reads as an on-chain failure
+            // with a retry that can only re-fail. No app-level surface: a
+            // wallet blocked for high-value transactions can still browse and
+            // transact below the threshold (APP-517).
+            controls.returnToFirstScreen();
             return { allow: false };
           }
           // Risky: the transaction must not start, and the app-level blocked
@@ -300,7 +286,10 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
           // transaction (APP-501 AC). No dialog if the session already ended.
           if (controls.isStale()) return { allow: false };
           if (enhanced) {
-            controls.setGateStatus('error', enhancedUnavailableCopy());
+            // Back to the first screen: the preflight observes this query's
+            // error state and renders the unavailable message there — and its
+            // retry cadence self-recovers without the user relaunching.
+            controls.returnToFirstScreen();
             return { allow: false };
           }
           if (hadStaleVerdict && live.current.address === gatedAddress) {
@@ -315,7 +304,9 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
         }
         if (!screening.addressAllowed) {
           if (enhanced) {
-            controls.setGateStatus('error', enhancedBlockedCopy());
+            // Same surface as the sync-cached denial above: first screen,
+            // preflight message, disabled CTAs.
+            controls.returnToFirstScreen();
             return { allow: false };
           }
           return denyAndClose(controls);

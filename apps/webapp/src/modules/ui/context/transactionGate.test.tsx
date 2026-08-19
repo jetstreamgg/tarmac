@@ -414,6 +414,45 @@ describe('TransactionProvider pre-transaction gate', () => {
     expect(gate).toHaveBeenLastCalledWith(expect.objectContaining({ trigger: 'retry' }));
   });
 
+  it('returnToFirstScreen hands a multi-step flow back to its first screen — no failed step, no error framing', async () => {
+    // The C9 enhanced-denial shape: 'screening' while the verdict is fetched,
+    // then returnToFirstScreen instead of a transaction-screen 'error' (which
+    // the step list's failure rendering would swallow — the compliance copy
+    // would never show and the denial would read as an on-chain failure).
+    const onConfirm = vi.fn();
+    let deny!: () => void;
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setGateStatus('screening');
+      return new Promise(resolve => {
+        deny = () => {
+          controls.returnToFirstScreen();
+          resolve({ allow: false });
+        };
+      });
+    };
+    renderWithGate(gate, {
+      title: 'Supply',
+      usdValue: 300_000,
+      onConfirm,
+      steps: ['Approve USDS', 'Supply USDS']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^confirm$/i }));
+    // On the transaction screen while the gate screens: the step list is up.
+    expect(screen.getByText('Approve USDS')).not.toBeNull();
+
+    await act(async () => deny());
+
+    // Back on the first screen at IDLE: the live confirm CTA is available
+    // again (the preflight surface renders there), the step list is gone, and
+    // nothing suggests an on-chain failure.
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /^confirm$/i })).not.toBeNull();
+    expect(screen.queryByText('Approve USDS')).toBeNull();
+    expect(screen.queryByRole('button', { name: /retry|try again/i })).toBeNull();
+    expect(screen.queryByText(/failed/i)).toBeNull();
+  });
+
   it("the entry's secondary CTA is gated with its own trigger", () => {
     const onConfirm = vi.fn();
     const onSecondaryConfirm = vi.fn();
