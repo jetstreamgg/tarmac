@@ -57,11 +57,32 @@ const hoisted = vi.hoisted(() => ({
   ) => number | undefined
 }));
 
+vi.mock('wagmi', async importOriginal => {
+  const actual = await importOriginal<typeof import('wagmi')>();
+  return {
+    ...actual,
+    useChainId: () => 1,
+    useChains: () => [{ id: 1, name: 'Ethereum' }]
+  };
+});
+
+vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
+  useBatchToggle: () => [true, () => undefined]
+}));
+
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     isMarketMatured: () => hoisted.matured,
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
+    useIsBatchSupported: () => ({ data: true, isLoading: false }),
     usePendleUserPtBalances: () => ({
       data: { [MATURED_MARKET.marketAddress]: PT_BALANCE },
       isLoading: false,

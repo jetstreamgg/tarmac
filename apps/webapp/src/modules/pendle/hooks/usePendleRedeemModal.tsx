@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
+import { useChainId, useChains } from 'wagmi';
 import {
   getTokenDecimals,
   isMarketMatured,
   PendleConvertSide,
   useBatchPendleConvert,
+  useNetworkFee,
   usePendleUserPtBalances,
   useQuotePendleConvert,
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
+import { chainId as chainIdMap, isTestnetId } from '@/utils';
+import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import {
   pendleAnalyticsData,
   pendleNonPtLeg,
@@ -112,6 +116,41 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     [writeHook.prepared, writeHook.error]
   );
 
+  // The Network cell describes where the trade executes — the engine chain,
+  // which the connected chain only matches while Pendle stays mainnet-gated.
+  const chainId = useChainId();
+  const chains = useChains();
+  const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
+
+  // Read-only: the fee cell shows a skeleton until this resolves; confirm never waits on it.
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
+    calls: writeHook.calls ?? [],
+    chainId,
+    shouldUseBatch: !!writeHook.isBatch,
+    enabled: isRedeemable && !!quote
+  });
+  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee, !!networkFeeError);
+  // Scalar deps, not the objects — same rationale as the buy/sell form's feeCell.
+  const feeCell = useMemo(
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
+    [
+      networkFee?.formatted,
+      networkFee?.batchSaving,
+      networkFeeLoading,
+      bundleState.ready,
+      bundleState.settled,
+      bundleState.failed,
+      bundleState.canBundle,
+      bundleState.promoVisible
+    ]
+  );
+
+  const slippageMode = slippage === defaultSlippage ? t`Auto` : t`Custom`;
   const transactionContent = useMemo(
     () => (
       <PendleRedeem
@@ -121,8 +160,20 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
         selectedOutputToken={selectedOutputToken}
         onOutputTokenChange={setSelectedOutputToken}
         quote={quote}
-        isFetchingQuote={isFetchingQuote}
         slippage={slippage}
+        slippageMode={slippageMode}
+        slippageAction={
+          <SlippageMenu
+            value={slippage}
+            defaultValue={defaultSlippage}
+            onChange={setSlippage}
+            triggerClassName="text-fgTertiary hover:text-fgPrimary data-[state=open]:text-fgPrimary p-0 [&>svg]:size-3.5"
+            dataTestId="pendle-slippage-menu"
+          />
+        }
+        network={networkName}
+        networkChainId={engineChainId}
+        feeCell={feeCell}
         prepareErrorMessage={prepareErrorMessage}
       />
     ),
@@ -132,22 +183,15 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       withdrawTokenList,
       selectedOutputToken,
       quote,
-      isFetchingQuote,
       slippage,
+      slippageMode,
+      defaultSlippage,
+      setSlippage,
+      networkName,
+      engineChainId,
+      feeCell,
       prepareErrorMessage
     ]
-  );
-
-  const rightHeaderComponent = useMemo(
-    () => (
-      <SlippageMenu
-        value={slippage}
-        defaultValue={defaultSlippage}
-        onChange={setSlippage}
-        dataTestId="pendle-slippage-menu"
-      />
-    ),
-    [slippage, defaultSlippage, setSlippage]
   );
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
@@ -204,30 +248,30 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
 
   const openRedeemModal = useCallback(() => {
+    // The CTAs that open this modal say "Claim" (Figma 2306:72334 / the
+    // matured product page) — the title and confirm follow.
     launch({
-      title: t`Redeem PT-${market.underlyingSymbol}`,
+      title: t`Claim matured position`,
       transactionContent,
-      rightHeaderComponent,
-      confirmLabel: t`Confirm`,
+      confirmLabel: t`Claim`,
       confirmDisabled,
       onConfirm: () => executeRef.current(),
       sessionId,
       analytics
     });
-  }, [launch, market, transactionContent, rightHeaderComponent, confirmDisabled, sessionId, analytics]);
+  }, [launch, transactionContent, confirmDisabled, sessionId, analytics]);
 
   useEffect(() => {
     // Freeze once the flow leaves IDLE (same as useModalEntryBody): the quote
     // repolls mid-flight and must not rewrite the blob the signed tx started with.
     if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
-    updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled, analytics });
+    updateModalContent(sessionId, { transactionContent, confirmDisabled, analytics });
   }, [
     isModalOpen,
     txStatus,
     sessionId,
     updateModalContent,
     transactionContent,
-    rightHeaderComponent,
     confirmDisabled,
     analytics
   ]);

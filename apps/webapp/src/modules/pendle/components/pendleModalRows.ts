@@ -139,6 +139,110 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
   ];
 }
 
+/**
+ * Display strings for the matured-claim modal. No comp exists for this flow
+ * (APP-505 item 5) — the shape follows the reworked withdraw grids
+ * (2193:73598 / 2193:73807) and the matured-position cards' "Claim" CTA
+ * (2306:72334).
+ */
+export type PendleRedeemRowInput = {
+  /** Product display name (e.g. "Pendle sUSDS (PT-sUSDS)"). */
+  product: string;
+  /** Underlying symbol for the Product cell's ringed icon. */
+  productSymbol: string;
+  /** The full matured PT amount being claimed, formatted. */
+  claimAmount: string;
+  /** The market's PT symbol (e.g. "PT-sUSDS") — the Claim amount icon. */
+  ptSymbol: string;
+  /** The Claim-token selector (interactive, passed through opaquely). */
+  tokenSelector: ReactNode;
+  /**
+   * True when the quote routes through an aggregator (a non-SY-accepted output
+   * token) — the only case slippage/price-impact math applies; a pure PT burn
+   * at the expiry-frozen rate has none.
+   */
+  aggregator: boolean;
+  /** Current slippage, formatted. */
+  slippage: string;
+  /** Slippage mode badge text. */
+  slippageMode: string;
+  /** Inline gear opening the slippage menu. */
+  slippageAction?: ReactNode;
+  /** Slippage floor in the output token, formatted. */
+  minReceived: string;
+  /** Symbol of the token received. */
+  receiveSymbol: string;
+  /** Quote price impact, formatted (positive = a cost to the user). */
+  priceImpact: string;
+  /** Pendle's fee, formatted (e.g. "$0.04"). */
+  pendleFee: string;
+  /** Network the transaction runs on. */
+  network: string;
+  /** Chain the engine runs on, for the Network cell's icon. */
+  networkChainId?: number;
+  /** Network fee, formatted. */
+  networkFee: string;
+};
+
+/**
+ * Grid for the matured-claim modal: [Product | Claim amount], [Claim token |
+ * Network], then — only on aggregator routes, where swap math exists —
+ * [Slippage | Min. received], [Price impact | Pendle fee] before the fee row.
+ * A pure redemption keeps just [Pendle fee | Network fee]: the slippage
+ * control is deliberately absent there (redeeming to an SY-accepted token is
+ * fixed-rate; a gear would imply a tolerance that cannot bind).
+ */
+export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
+  const feeCell: ModalGridCell = { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee };
+  const pendleFeeCell: ModalGridCell = { kind: 'single', label: 'Pendle fee', value: input.pendleFee };
+  return [
+    [
+      {
+        kind: 'single',
+        label: 'Product',
+        value: input.product,
+        token: input.productSymbol,
+        productIcon: 'pendle'
+      },
+      { kind: 'single', label: 'Claim amount', value: input.claimAmount, token: input.ptSymbol }
+    ],
+    [
+      { kind: 'node', label: 'Claim token', node: input.tokenSelector },
+      {
+        kind: 'single',
+        label: 'Network',
+        value: input.network,
+        network: true,
+        networkChainId: input.networkChainId
+      }
+    ],
+    ...(input.aggregator
+      ? [
+          [
+            {
+              kind: 'single' as const,
+              label: 'Slippage',
+              labelBadge: input.slippageMode,
+              value: input.slippage,
+              action: input.slippageAction
+            },
+            {
+              kind: 'single' as const,
+              label: 'Min. received',
+              value: input.minReceived,
+              token: input.receiveSymbol
+            }
+          ],
+          [
+            { kind: 'single' as const, label: 'Price impact', value: input.priceImpact },
+            pendleFeeCell
+          ],
+          [feeCell]
+        ]
+      : [[pendleFeeCell, feeCell]])
+  ];
+}
+
 /** Display strings for the Pendle review stages (Figma 2193:73734 supply / 2193:73807 withdrawal). */
 export type PendleReviewRowInput = {
   /** Display symbol for the 12px value icons — USDS on pegged markets. */
