@@ -31,6 +31,10 @@ const h = vi.hoisted(() => ({
   // The urn's current farm (defaults to the mainnet SKY farm in beforeEach).
   rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc' as `0x${string}`,
   rewardDeprecated: false,
+  // Indexer farm outside the generated address books, and the on-chain
+  // rewardsToken symbols backing the useRewardContractTokens mock.
+  extraFarm: undefined as `0x${string}` | undefined,
+  farmTokenSymbols: {} as Record<string, string>,
   // Simulation knobs.
   simLiqPrice: 432n * 10n ** 14n,
   simDelayedPrice: 608n * 10n ** 14n,
@@ -132,11 +136,22 @@ vi.mock('@/hooks', async importOriginal => {
       data: [
         { contractAddress: actual.lsSkySpkRewardAddress[1] },
         { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
-        { contractAddress: actual.lsSkySkyRewardAddress[1] }
+        { contractAddress: actual.lsSkySkyRewardAddress[1] },
+        ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
       ],
       isLoading: false,
       error: null,
       mutate: () => undefined
+    }),
+    useRewardContractTokens: (address?: `0x${string}`) => ({
+      data:
+        address && h.farmTokenSymbols[address.toLowerCase()]
+          ? { rewardsToken: { symbol: h.farmTokenSymbols[address.toLowerCase()] } }
+          : undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => undefined,
+      dataSources: []
     }),
     useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null })
   };
@@ -236,6 +251,8 @@ describe('ManagePositionTakeover', () => {
     h.voteDelegate = CURRENT_DELEGATE;
     h.rewardContract = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
     h.rewardDeprecated = false;
+    h.extraFarm = undefined;
+    h.farmTokenSymbols = {};
     h.simLiqPrice = 432n * 10n ** 14n;
     h.simDelayedPrice = 608n * 10n ** 14n;
     h.simProximity = 36;
@@ -519,6 +536,26 @@ describe('ManagePositionTakeover', () => {
     // change staged.
     expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
     expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('reward: an out-of-address-book farm previews with its on-chain token in the From → To block', () => {
+    // The indexer can list a farm before the webapp ships its generated
+    // addresses. The review body must still preview the change — hiding the
+    // block would confirm a reward-only multicall behind an empty summary.
+    const unknownFarm = '0x9999999999999999999999999999999999999999' as const;
+    h.extraFarm = unknownFarm;
+    h.farmTokenSymbols[unknownFarm] = 'FOO';
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${unknownFarm}`));
+    expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
+    expect(confirmButton().disabled).toBe(false);
+
+    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
+    const block = screen.getByTestId('stake-manage-summary-reward');
+    // From: the urn's current farm token; To: the staged farm's real token.
+    expect(block.textContent).toContain('SKY');
+    expect(block.textContent).toContain('FOO');
   });
 
   it('reward: a deprecated current farm renders pre-selected with its chip and warning (CTA deep-link)', () => {

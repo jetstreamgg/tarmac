@@ -23,9 +23,9 @@ import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
-import { farmRewardSymbol } from '../lib/farmRewardSymbol';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
+import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
@@ -243,6 +243,9 @@ export function ManagePositionTakeover({
   // Effective reward: staged change, else the urn's current one so the calldata
   // gating sees "no change" — the delegate recipe (M12).
   const effectiveRewardContract = rewardChanged ? state.selectedRewardContract : detail.rewardContract;
+  // The staged farm's reward token for the review screen — the picker offers
+  // every indexer farm, including ones the address books don't know yet.
+  const stagedRewardSymbol = useFarmRewardSymbol(rewardChanged ? state.selectedRewardContract : undefined);
 
   // ---- Delegate change ------------------------------------------------------
   const currentDelegate =
@@ -295,8 +298,14 @@ export function ManagePositionTakeover({
         usdsToBorrow={usdsToBorrow}
         usdsToWipe={usdsToWipe}
         skyPriceUsd={detail.skyPriceUsd}
-        rewardFrom={detail.rewardSymbol}
-        rewardTo={rewardChanged ? farmRewardSymbol(state.selectedRewardContract, chainId) : undefined}
+        rewardFrom={
+          currentRewardContract ? { address: currentRewardContract, symbol: detail.rewardSymbol } : undefined
+        }
+        rewardTo={
+          rewardChanged && state.selectedRewardContract
+            ? { address: state.selectedRewardContract, symbol: stagedRewardSymbol }
+            : undefined
+        }
         delegateFrom={currentDelegate}
         delegateTo={delegateChanged ? state.selectedDelegate : undefined}
       />
@@ -308,9 +317,10 @@ export function ManagePositionTakeover({
       usdsToWipe,
       detail.skyPriceUsd,
       detail.rewardSymbol,
+      currentRewardContract,
       rewardChanged,
       state.selectedRewardContract,
-      chainId,
+      stagedRewardSymbol,
       currentDelegate,
       delegateChanged,
       state.selectedDelegate

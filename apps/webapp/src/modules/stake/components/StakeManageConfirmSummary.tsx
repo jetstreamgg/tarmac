@@ -7,6 +7,25 @@ import { CustomAvatar } from '@/modules/ui/components/Avatar';
 
 const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
+/** A reward-block endpoint: the farm, plus its reward-token symbol when known. */
+export interface StakeRewardEndpoint {
+  address: `0x${string}`;
+  /** Missing = outside the address books with the on-chain symbol unresolved — renders the shortened farm address. */
+  symbol?: string;
+}
+
+/** Icon + symbol when the token is known; the shortened farm address otherwise. */
+function RewardEndpoint({ endpoint }: { endpoint: StakeRewardEndpoint }) {
+  return (
+    <>
+      {endpoint.symbol && (
+        <TokenIcon token={{ symbol: endpoint.symbol }} width={28} className="h-7 w-7" showChainIcon={false} />
+      )}
+      {endpoint.symbol ?? shortenAddress(endpoint.address)}
+    </>
+  );
+}
+
 function AmountHero({
   label,
   amount,
@@ -54,9 +73,9 @@ export function StakeManageConfirmSummary({
   usdsToBorrow: bigint;
   usdsToWipe: bigint;
   skyPriceUsd: number | null;
-  /** Reward token symbols — `rewardTo` set renders the reward From → To block. */
-  rewardFrom?: string;
-  rewardTo?: string;
+  /** Reward farms — `rewardTo` set renders the reward From → To block. */
+  rewardFrom?: StakeRewardEndpoint;
+  rewardTo?: StakeRewardEndpoint;
   /** Set both to render the delegate From → To block. */
   delegateFrom?: `0x${string}`;
   delegateTo?: `0x${string}`;
@@ -114,19 +133,7 @@ export function StakeManageConfirmSummary({
               <Trans>From</Trans>
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
-              {rewardFrom ? (
-                <>
-                  <TokenIcon
-                    token={{ symbol: rewardFrom }}
-                    width={28}
-                    className="h-7 w-7"
-                    showChainIcon={false}
-                  />
-                  {rewardFrom}
-                </>
-              ) : (
-                <Trans>No reward</Trans>
-              )}
+              {rewardFrom ? <RewardEndpoint endpoint={rewardFrom} /> : <Trans>No reward</Trans>}
             </span>
           </div>
           <ArrowDown className="text-textSecondary h-4 w-4" aria-hidden />
@@ -135,8 +142,7 @@ export function StakeManageConfirmSummary({
               <Trans>To</Trans>
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
-              <TokenIcon token={{ symbol: rewardTo! }} width={28} className="h-7 w-7" showChainIcon={false} />
-              {rewardTo}
+              <RewardEndpoint endpoint={rewardTo!} />
             </span>
           </div>
         </div>

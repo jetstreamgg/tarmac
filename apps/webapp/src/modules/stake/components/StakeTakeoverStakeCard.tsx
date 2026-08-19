@@ -52,7 +52,8 @@ export function StakeTakeoverStakeCard({
   rewardsRate: string | null;
   /** In reward-token units; null renders the design's "–" empty marker. */
   estAnnualRewards: bigint | null;
-  rewardSymbol: string;
+  /** Undefined while the selected farm's reward token is unresolved — the icon waits. */
+  rewardSymbol?: string;
   /** Shown only when Borrow is enabled (minCollateralForDust). */
   minStakeToBorrow: bigint | undefined;
   error?: string;
@@ -131,12 +132,14 @@ export function StakeTakeoverStakeCard({
             {estAnnualRewards !== null && estAnnualRewards > 0n ? (
               <>
                 {formatBigInt(estAnnualRewards)}
-                <TokenIcon
-                  token={{ symbol: rewardSymbol }}
-                  width={12}
-                  className="h-3 w-3"
-                  showChainIcon={false}
-                />
+                {rewardSymbol && (
+                  <TokenIcon
+                    token={{ symbol: rewardSymbol }}
+                    width={12}
+                    className="h-3 w-3"
+                    showChainIcon={false}
+                  />
+                )}
               </>
             ) : (
               NO_VALUE

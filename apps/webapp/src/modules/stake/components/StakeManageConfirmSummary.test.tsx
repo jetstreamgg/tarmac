@@ -15,6 +15,8 @@ import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 const WAD = 10n ** 18n;
 const DELEGATE_A = '0x1111111111111111111111111111111111111111' as const;
 const DELEGATE_B = '0x2222222222222222222222222222222222222222' as const;
+const FARM_A = '0x8888888888888888888888888888888888888888' as const;
+const FARM_B = '0x9999999999999999999999999999999999999999' as const;
 
 const renderSummary = (props: Partial<React.ComponentProps<typeof StakeManageConfirmSummary>> = {}) =>
   render(
@@ -60,7 +62,10 @@ describe('StakeManageConfirmSummary', () => {
   });
 
   it('renders the reward From → To block for a staged reward change (APP-516)', () => {
-    renderSummary({ rewardFrom: 'SKY', rewardTo: 'USDS' });
+    renderSummary({
+      rewardFrom: { address: FARM_A, symbol: 'SKY' },
+      rewardTo: { address: FARM_B, symbol: 'USDS' }
+    });
 
     const block = screen.getByTestId('stake-manage-summary-reward');
     expect(block.textContent).toContain('From');
@@ -70,8 +75,19 @@ describe('StakeManageConfirmSummary', () => {
   });
 
   it('omits the reward block when no change is staged', () => {
-    renderSummary({ skyToLock: 100n * WAD, rewardFrom: 'SKY' });
+    renderSummary({ skyToLock: 100n * WAD, rewardFrom: { address: FARM_A, symbol: 'SKY' } });
 
     expect(screen.queryByTestId('stake-manage-summary-reward')).toBeNull();
+  });
+
+  it('falls back to the shortened farm address when the reward token is unknown', () => {
+    // A farm outside the generated address books whose on-chain symbol hasn't
+    // resolved must still preview — the multicall carries its selectFarm leg
+    // either way, and a hidden or mislabeled block under-reports what's signed.
+    renderSummary({ rewardTo: { address: FARM_B } });
+
+    const block = screen.getByTestId('stake-manage-summary-reward');
+    expect(block.textContent).toContain('No reward');
+    expect(block.textContent).toContain('0x9999...9999');
   });
 });

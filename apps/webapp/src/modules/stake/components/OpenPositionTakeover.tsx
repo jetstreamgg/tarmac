@@ -28,8 +28,8 @@ import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
+import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
-import { farmRewardSymbol } from '../lib/farmRewardSymbol';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
 import { StakeTakeoverRewardCard } from './StakeTakeoverRewardCard';
@@ -126,15 +126,23 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   // Reopen (C18): the urn's farm is the selection baseline — an untouched
   // picker passes the raw urn read through so the manage seam emits no
   // selectFarm leg; a never-farmed urn falls back to the SKY default (which
-  // correctly stages one).
+  // correctly stages one). "Never farmed" is a RESOLVED read of ZERO_ADDRESS —
+  // `undefined` means the urnFarms read is still pending (or errored), and
+  // falling back to the instantly-available SKY default during that window
+  // would bake a spurious selectFarm(SKY) into the multicall of an urn that
+  // farms something else. Until the read resolves, nothing is pre-selected and
+  // Confirm stays gated below.
+  const rewardBaselineResolved = !reopen || urnRewardContract !== undefined;
   const reopenRewardBaseline =
     reopen && urnRewardContract && urnRewardContract !== ZERO_ADDRESS ? urnRewardContract : undefined;
-  const selectedRewardContract =
-    state.selectedRewardContract ?? reopenRewardBaseline ?? defaultRewardContract;
+  const selectedRewardContract = rewardBaselineResolved
+    ? (state.selectedRewardContract ?? reopenRewardBaseline ?? defaultRewardContract)
+    : state.selectedRewardContract;
 
   // The selected farm's reward token, for the surfaces that echo the picker's
-  // selection. Unknown farms fall back to SKY, the default selection.
-  const rewardSymbol = farmRewardSymbol(selectedRewardContract, chainId) ?? 'SKY';
+  // selection (address-book symbol, else the on-chain one for farms the books
+  // don't know yet).
+  const rewardSymbol = useFarmRewardSymbol(selectedRewardContract);
 
   // The selected farm's live rate → card-1 stats.
   const { data: rewardsChartInfo } = useMultipleRewardsChartInfo({
@@ -196,7 +204,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
           ? formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust)
           : undefined;
 
-  const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
+  const formValid =
+    stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet) && rewardBaselineResolved;
 
   const closeOpenFlow = useCallback(() => {
     setSearchParams(
@@ -232,9 +241,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         skyToLock={debouncedSkyToLock}
         usdsToBorrow={debouncedUsdsToBorrow}
         rewardSymbol={rewardSymbol}
+        rewardContract={selectedRewardContract}
       />
     ),
-    [debouncedSkyToLock, debouncedUsdsToBorrow, rewardSymbol]
+    [debouncedSkyToLock, debouncedUsdsToBorrow, rewardSymbol, selectedRewardContract]
   );
 
   const openLaunch = useStakeLaunch({

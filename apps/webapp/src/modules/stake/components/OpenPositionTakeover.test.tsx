@@ -26,6 +26,10 @@ const h = vi.hoisted(() => ({
   // The reopened urn's on-chain context (reopen-mode tests).
   urnDelegate: undefined as string | undefined,
   urnRewardContract: undefined as string | undefined,
+  // Indexer farm outside the generated address books, and the on-chain
+  // rewardsToken symbols backing the useRewardContractTokens mock.
+  extraFarm: undefined as `0x${string}` | undefined,
+  farmTokenSymbols: {} as Record<string, string>,
   // Simulation knobs (see the useSimulatedVault mock below).
   minCollateralForDust: 0n,
   dust: 0n,
@@ -113,11 +117,22 @@ vi.mock('@/hooks', async importOriginal => {
       data: [
         { contractAddress: actual.lsSkySpkRewardAddress[1] },
         { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
-        { contractAddress: actual.lsSkySkyRewardAddress[1] }
+        { contractAddress: actual.lsSkySkyRewardAddress[1] },
+        ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
       ],
       isLoading: false,
       error: null,
       mutate: () => undefined
+    }),
+    useRewardContractTokens: (address?: `0x${string}`) => ({
+      data:
+        address && h.farmTokenSymbols[address.toLowerCase()]
+          ? { rewardsToken: { symbol: h.farmTokenSymbols[address.toLowerCase()] } }
+          : undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => undefined,
+      dataSources: []
     }),
     useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null }),
     useHighestRateFromChartData: () => ({ rate: '0.015' }),
@@ -217,6 +232,8 @@ describe('OpenPositionTakeover', () => {
     h.manageLaunchParams = undefined;
     h.urnDelegate = undefined;
     h.urnRewardContract = undefined;
+    h.extraFarm = undefined;
+    h.farmTokenSymbols = {};
     h.prepared = true;
     h.balance = 1000n * WAD;
     h.debounceLag = false;
@@ -269,6 +286,39 @@ describe('OpenPositionTakeover', () => {
     // Switching back re-selects SKY — plain single-select, never empty.
     fireEvent.click(screen.getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`));
     expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
+  });
+
+  it('labels an out-of-address-book farm by its on-chain reward token, never SKY', () => {
+    // The indexer can list a farm before the webapp ships its generated
+    // addresses; the review surfaces must name its real reward token — a
+    // hardcoded SKY fallback would sign the user up for a different farm than
+    // the summary shows.
+    const unknownFarm = '0x9999999999999999999999999999999999999999' as const;
+    h.extraFarm = unknownFarm;
+    h.farmTokenSymbols[unknownFarm] = 'FOO';
+    renderTakeover();
+    typeStakeAmount('100');
+
+    const row = screen.getByTestId(`stake-takeover-reward-${unknownFarm}`);
+    expect(row.textContent).toContain('0x9999...9999');
+    fireEvent.click(row);
+    expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
+
+    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
+    const rewardRow = screen.getByTestId('stake-takeover-confirm-reward');
+    expect(rewardRow.textContent).toContain('FOO');
+    expect(rewardRow.textContent).not.toContain('SKY');
+  });
+
+  it('falls back to the shortened farm address while the on-chain symbol is unresolved', () => {
+    const unknownFarm = '0x9999999999999999999999999999999999999999' as const;
+    h.extraFarm = unknownFarm;
+    renderTakeover();
+    typeStakeAmount('100');
+
+    fireEvent.click(screen.getByTestId(`stake-takeover-reward-${unknownFarm}`));
+    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
+    expect(screen.getByTestId('stake-takeover-confirm-reward').textContent).toContain('0x9999...9999');
   });
 
   it('enables Confirm for a valid stake amount and launches the confirm modal', () => {
@@ -515,6 +565,8 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     h.manageLaunchParams = undefined;
     h.urnDelegate = DELEGATE_A;
     h.urnRewardContract = lsSkySkyRewardAddress[1];
+    h.extraFarm = undefined;
+    h.farmTokenSymbols = {};
     h.prepared = true;
     h.balance = 1000n * WAD;
     h.debounceLag = false;
@@ -582,6 +634,36 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
         .getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`)
         .getAttribute('aria-pressed')
     ).toBe('true');
+  });
+
+  it('holds the picker and Confirm until the urn farm read resolves (no spurious selectFarm)', () => {
+    // urnFarms answers ZERO_ADDRESS for a never-farmed urn, so `undefined`
+    // means the read is pending or errored. Falling back to the SKY default
+    // during that window would bake selectFarm(SKY) into the multicall of an
+    // urn farming something else — and pre-highlighting SKY would invite a
+    // click that pins the wrong selection past the read resolving.
+    h.urnRewardContract = undefined;
+    renderReopen();
+    typeStakeAmount('100');
+
+    expect(h.manageLaunchParams?.selectedRewardContract).toBeUndefined();
+    expect(h.manageLaunchParams?.enabled).toBe(false);
+    expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen
+        .getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`)
+        .getAttribute('aria-pressed')
+    ).toBe('false');
+  });
+
+  it('falls back to the SKY default only once the read RESOLVES to zero (never-farmed urn)', () => {
+    h.urnRewardContract = ZERO_ADDRESS;
+    renderReopen();
+    typeStakeAmount('100');
+
+    expect(h.manageLaunchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
+    expect(h.manageLaunchParams?.enabled).toBe(true);
+    expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('stages a different farm once the user selects one (switch without unstaking)', () => {
