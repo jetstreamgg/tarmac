@@ -203,21 +203,23 @@ export function ManagePositionTakeover({
 
   // No amount gates on the simulation branches: a lock/free-only simulation
   // failure must still say why Confirm is dead. minCollateralNotMet keeps its
-  // own warning card instead.
+  // own warning card instead; at a staged amount of 0 the mapper swaps in
+  // generic copy (the amount can't be the problem — see
+  // formatSimulationErrorMessage).
   const borrowError =
     state.borrowMode === 'borrow'
       ? usdsToBorrow > availableBorrowFromDebtCeiling
         ? t`Requested borrow amount exceeds the debt ceiling`
         : minCollateralNotMet
           ? undefined
-          : formatSimulationErrorMessage(simulationError?.message, existingVault?.dust)
+          : formatSimulationErrorMessage(simulationError?.message, existingVault?.dust, usdsToBorrow)
       : minDebtNotMet
         ? t`Debt must be paid off entirely, or left with a minimum of ${formatBigInt(existingVault?.dust ?? 0n)}`
         : !hasEnoughUsds && usdsToWipe > 0n
           ? t`Not enough USDS in your wallet`
           : newDebtValue < 0n
             ? t`Amount exceeds debt`
-            : (simulationError?.message ?? undefined);
+            : formatSimulationErrorMessage(simulationError?.message, undefined, usdsToWipe);
 
   const borrowCardValid =
     !state.borrowEnabled ||
@@ -314,8 +316,13 @@ export function ManagePositionTakeover({
   const confirmDisabled = !formValid || !prepared || launchLoading;
   // This host outlives the transaction (page-mounted), so pass null while the
   // form is invalid — a stale execution error must not masquerade as a prepare
-  // failure once the engine is disabled.
-  const launchErrorMessage = enginePrepareErrorMessage(prepared, formValid ? launchError : null);
+  // failure once the engine is disabled. Same while the engine is re-simulating
+  // (`prepared` dips false with the previous run's write/mining error still
+  // set): a genuine prepare failure survives the load and shows on settle.
+  const launchErrorMessage = enginePrepareErrorMessage(
+    prepared,
+    formValid && !launchLoading ? launchError : null
+  );
 
   // Est. annual rewards delta for card 1 (M22): rate × simulated collateral.
   const estNextSky =

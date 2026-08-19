@@ -190,13 +190,15 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     ((debouncedUsdsToBorrow > 0n && debouncedUsdsToBorrow <= availableBorrowFromDebtCeiling) ||
       !debouncedUsdsToBorrow);
   // No amount gate: a lock-only simulation failure must still say why Confirm
-  // is dead. minCollateralNotMet keeps its own warning card instead.
+  // is dead. minCollateralNotMet keeps its own warning card instead; at a
+  // staged borrow of 0 the mapper swaps in generic copy (the amount can't be
+  // the problem — see formatSimulationErrorMessage).
   const borrowError =
     debouncedUsdsToBorrow > availableBorrowFromDebtCeiling
       ? t`Requested borrow amount exceeds the debt ceiling`
       : minCollateralNotMet
         ? undefined
-        : formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust);
+        : formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust, debouncedUsdsToBorrow);
 
   const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
 
@@ -274,8 +276,13 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   } = reopen ? reopenLaunch : openLaunch;
   // This host outlives the transaction (page-mounted), so pass null while the
   // form is invalid — a stale execution error must not masquerade as a prepare
-  // failure once the engine is disabled.
-  const launchErrorMessage = enginePrepareErrorMessage(prepared, formValid ? launchError : null);
+  // failure once the engine is disabled. Same while the engine is re-simulating
+  // (`prepared` dips false with the previous run's write/mining error still
+  // set): a genuine prepare failure survives the load and shows on settle.
+  const launchErrorMessage = enginePrepareErrorMessage(
+    prepared,
+    formValid && !launchLoading ? launchError : null
+  );
 
   // The launch seam prepares calldata from the DEBOUNCED amounts; until they
   // catch up with what's typed, `prepared` refers to stale calldata (e.g. an
