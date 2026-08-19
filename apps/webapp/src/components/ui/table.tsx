@@ -1,8 +1,12 @@
 import * as React from 'react';
 
 import { cn } from '@/lib/cn';
-import { HTMLMotionProps, motion, useReducedMotion } from 'motion/react';
-import { fadeAnimations, rowCollapseAnimations, rowCollapseTransition } from '@/modules/ui/animation/presets';
+import { HTMLMotionProps, motion } from 'motion/react';
+import { fadeAnimations, rowCollapseAnimations } from '@/modules/ui/animation/presets';
+import {
+  ROW_SURFACE_TRANSITION_CLASSES,
+  useRowCollapseTransition
+} from '@/modules/ui/animation/useRowCollapse';
 
 // Design-system table (Figma Patterns/Tables 5178:37455). The construction is
 // unusual: rows are separated by a 2px transparent gap (border-spacing, page
@@ -23,8 +27,10 @@ import { fadeAnimations, rowCollapseAnimations, rowCollapseTransition } from '@/
 //    collapses with the row;
 //  - the structural corner selectors would keep matching a row AnimatePresence
 //    is exiting, leaving the surviving edge row square for the whole exit, so
-//    the caller owns the radii per-row instead (computed from its data, where
-//    exiting rows are already gone).
+//    the caller declares the edge rows instead — `data-first` / `data-last` on
+//    TableRow, computed from its data (where exiting rows are already gone).
+//    The selectors that style those edges live on TableRow below, so the
+//    cell's internal markup stays private to this file.
 
 const TableAnimationContext = React.createContext(false);
 
@@ -93,7 +99,19 @@ const TableRow = React.forwardRef<HTMLTableRowElement, HTMLMotionProps<'tr'>>(
         className={cn(
           'group/row',
           animateRows
-            ? 'has-[td]:hover:[&>td>div>div]:bg-bgTertiary data-[state=selected]:[&>td>div>div]:bg-bgTertiary'
+            ? cn(
+                'has-[td]:hover:[&>td>div>div]:bg-bgTertiary data-[state=selected]:[&>td>div>div]:bg-bgTertiary',
+                // Edge rows are caller-declared (data-first/data-last): the
+                // radii, and — on the last row — the 2px the border-spacing
+                // construction leaves below the body. Both sit inside the cell
+                // clip, so they collapse and hand off with the row (the
+                // surface's transition glides them onto the survivor).
+                'data-[first=true]:[&>td:first-child>div>div]:rounded-tl-[24px] data-[first=true]:[&>td:last-child>div>div]:rounded-tr-[24px]',
+                'data-[last=true]:[&>td:first-child>div>div]:rounded-bl-[24px] data-[last=true]:[&>td:last-child>div>div]:rounded-br-[24px] data-[last=true]:[&>td>div>div]:mb-0.5',
+                // Non-interactive tables (data-hover="off") re-pin the hover
+                // tint to the resting surface.
+                'data-[hover=off]:has-[td]:hover:[&>td>div>div]:bg-bgSecondary'
+              )
             : 'has-[td]:hover:[&>td]:bg-bgTertiary data-[state=selected]:[&>td]:bg-bgTertiary',
           className
         )}
@@ -128,7 +146,7 @@ const TableCell = React.forwardRef<
   React.TdHTMLAttributes<HTMLTableCellElement> & { className?: string }
 >(({ className, children, ...props }, ref) => {
   const animateRows = React.useContext(TableAnimationContext);
-  const reduceMotion = useReducedMotion();
+  const collapseTransition = useRowCollapseTransition();
 
   if (!animateRows) {
     return (
@@ -150,16 +168,18 @@ const TableCell = React.forwardRef<
   // Collapsible construction: the td is a transparent zero-padding container
   // (text styles stay here so callers' `[&>td]:text-*` overrides keep
   // working), the motion wrapper clips the collapse, and the inner div is the
-  // 88px row surface. Its 2px top margin is the inter-row gap — inside the
-  // clip, so it collapses with the row (the wrapper is a formatting context,
-  // so the margin can't escape). The surface transitions background (hover,
-  // 150ms as before) and border-radius (300ms — the caller hands the corner
-  // radii from an exiting edge row to the surviving one, see Table).
+  // row surface — min-h, not h, so tall content still grows the row like the
+  // plain construction's td minimum did (the wrapper animates from 'auto', so
+  // a taller row just collapses from its natural height). The surface's 2px
+  // top margin is the inter-row gap — inside the clip, so it collapses with
+  // the row (the wrapper is a formatting context, so the margin can't
+  // escape). ROW_SURFACE_TRANSITION_CLASSES carries the hover/handoff
+  // transitions (see useRowCollapse.ts).
   return (
     <td
       ref={ref}
       className={cn(
-        'text-fgPrimary font-circle p-0 align-top text-sm leading-4 font-medium tracking-[-0.28px] [&:first-child>div>div]:pl-6',
+        'text-fgPrimary font-circle p-0 align-top text-sm leading-4 font-medium tracking-[-0.28px] transition-colors [&:first-child>div>div]:pl-6 [&:has([role=checkbox])>div>div]:pr-0',
         className
       )}
       {...props}
@@ -167,9 +187,14 @@ const TableCell = React.forwardRef<
       <motion.div
         className="overflow-hidden"
         variants={rowCollapseAnimations}
-        transition={reduceMotion ? { duration: 0 } : rowCollapseTransition}
+        transition={collapseTransition}
       >
-        <div className="bg-bgSecondary mt-0.5 flex h-[88px] items-center px-2 transition-[background-color,border-radius] [transition-duration:150ms,300ms]">
+        <div
+          className={cn(
+            'bg-bgSecondary mt-0.5 flex min-h-[88px] items-center px-2',
+            ROW_SURFACE_TRANSITION_CLASSES
+          )}
+        >
           {children}
         </div>
       </motion.div>

@@ -1,13 +1,13 @@
 import { KeyboardEvent, ReactNode, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
+import { rowCollapseAnimations, rowCollapseContainerAnimations } from '@/modules/ui/animation/presets';
 import {
-  rowCollapseAnimations,
-  rowCollapseContainerAnimations,
-  rowCollapseTransition
-} from '@/modules/ui/animation/presets';
+  ROW_SURFACE_TRANSITION_CLASSES,
+  useRowCollapseTransition
+} from '@/modules/ui/animation/useRowCollapse';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import type { EarnRiskProfileId } from '@/hooks';
@@ -77,6 +77,13 @@ export type EarnTableProps = {
   sort: EarnTableSort;
   onSortChange: (column: EarnTableColumn) => void;
   onRowSelect?: (id: string) => void;
+  /**
+   * Fires when a batch of filtered-out rows finishes its exit animation
+   * (AnimatePresence's onExitComplete, both tiers). Lets the caller hold a
+   * wrapper mounted through the collapse — correct at any animation speed,
+   * including prefers-reduced-motion's duration 0.
+   */
+  onRowsExitComplete?: () => void;
   /**
    * The "Products unavailable in the US" treatment (1036:201476): logos,
    * network/supply stacks and the risk pill drop to 50% opacity, the product
@@ -159,11 +166,16 @@ function TokenCell({ row, dimmed }: { row: EarnTableRowItem; dimmed?: boolean })
 function EarnCardList({
   rows,
   onRowSelect,
+  onRowsExitComplete,
   dimmed,
   testIdPrefix: tid = DEFAULT_TEST_ID_PREFIX
-}: Pick<EarnTableProps, 'rows' | 'onRowSelect' | 'dimmed' | 'testIdPrefix'>) {
+}: Pick<EarnTableProps, 'rows' | 'onRowSelect' | 'onRowsExitComplete' | 'dimmed' | 'testIdPrefix'>) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const reduceMotion = useReducedMotion();
+  const collapseTransition = useRowCollapseTransition();
+
+  // A filtered-out card must not come back expanded (its exiting twin is a
+  // frozen element, so it still collapses from whatever was on screen).
+  if (expandedId !== null && !rows.some(row => row.id === expandedId)) setExpandedId(null);
 
   // The 2px card gap is a margin on the card (not the container's gap) so a
   // collapsing card takes its slit with it, and the first/last radii are
@@ -172,7 +184,7 @@ function EarnCardList({
   // the desktop table.
   return (
     <div data-testid={`${tid}-opportunities-table`} className="flex w-full flex-col">
-      <AnimatePresence initial={false}>
+      <AnimatePresence initial={false} onExitComplete={onRowsExitComplete}>
         {rows.map((row, index) => {
           const isExpanded = expandedId === row.id;
           return (
@@ -184,12 +196,12 @@ function EarnCardList({
               initial={AnimationLabels.initial}
               animate={AnimationLabels.animate}
               exit={AnimationLabels.exit}
-              transition={reduceMotion ? { duration: 0 } : rowCollapseTransition}
+              transition={collapseTransition}
             >
               <div
                 className={cn(
                   'bg-bgSecondary flex flex-col gap-6 p-5 backdrop-blur-[20px]',
-                  'transition-[margin,border-radius] duration-300',
+                  ROW_SURFACE_TRANSITION_CLASSES,
                   index === 0 ? 'rounded-t-3xl' : 'mt-0.5',
                   index === rows.length - 1 && 'rounded-b-3xl'
                 )}
@@ -310,6 +322,7 @@ export function EarnTable({
   sort,
   onSortChange,
   onRowSelect,
+  onRowsExitComplete,
   dimmed,
   testIdPrefix: tid = DEFAULT_TEST_ID_PREFIX
 }: EarnTableProps) {
@@ -326,7 +339,15 @@ export function EarnTable({
   };
 
   if (bpi < BP.md)
-    return <EarnCardList rows={rows} onRowSelect={handleRowSelect} dimmed={dimmed} testIdPrefix={tid} />;
+    return (
+      <EarnCardList
+        rows={rows}
+        onRowSelect={handleRowSelect}
+        onRowsExitComplete={onRowsExitComplete}
+        dimmed={dimmed}
+        testIdPrefix={tid}
+      />
+    );
 
   return (
     <Table animateRows data-testid={`${tid}-opportunities-table`}>
@@ -365,7 +386,7 @@ export function EarnTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        <AnimatePresence initial={false}>
+        <AnimatePresence initial={false} onExitComplete={onRowsExitComplete}>
           {rows.map((row, index) => (
             <TableRow
               key={row.id}
@@ -380,21 +401,18 @@ export function EarnTable({
               initial={AnimationLabels.initial}
               animate={AnimationLabels.animate}
               exit={AnimationLabels.exit}
-              // The hover tint lives on the row surface (TableRow), so
-              // neutralizing it means re-declaring the same variant chain with
-              // the resting surface. The corner radii are index-driven (not
-              // :first-child/:last-child) because an exiting row is still in
-              // the DOM: the surviving edge row takes the radius immediately
-              // and the surface's border-radius transition glides it in, while
-              // the exiting row keeps its frozen corners as it collapses.
-              className={cn(
-                handleRowSelect ? 'cursor-pointer' : 'has-[td]:hover:[&>td>div>div]:bg-bgSecondary',
-                dimmed && '[&>td]:text-fgTertiary',
-                index === 0 &&
-                  '[&>td:first-child>div>div]:rounded-tl-[24px] [&>td:last-child>div>div]:rounded-tr-[24px]',
-                index === rows.length - 1 &&
-                  '[&>td:first-child>div>div]:rounded-bl-[24px] [&>td:last-child>div>div]:rounded-br-[24px]'
-              )}
+              // Edge rows are declared from the data (index), not CSS
+              // :first-child/:last-child — an exiting row is still in the DOM,
+              // and the data must win so the survivor takes the radius (and
+              // the last row's trailing 2px) immediately while the surface's
+              // transition glides them in; the exiting row keeps its frozen
+              // edge as it collapses. The selectors themselves live on
+              // TableRow in ui/table.tsx. data-hover="off" re-pins the hover
+              // tint on the inert dimmed table.
+              data-first={index === 0 ? true : undefined}
+              data-last={index === rows.length - 1 ? true : undefined}
+              data-hover={handleRowSelect ? undefined : 'off'}
+              className={cn(handleRowSelect && 'cursor-pointer', dimmed && '[&>td]:text-fgTertiary')}
             >
               {/* The Figma active-position iconbox (CellToken `active`) is not
                 wired here on purpose: its trigger follows product logic that
