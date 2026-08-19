@@ -27,7 +27,7 @@ vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   })
 }));
 vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
-  useAnalyticsFlow: () => ({ startNewFlow: vi.fn() })
+  useAnalyticsFlow: () => ({ startNewFlow: vi.fn(), getFlowId: () => 'flow-test' })
 }));
 
 // Render motion elements synchronously so AnimatePresence transitions are deterministic.

@@ -231,7 +231,16 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       sessionId,
       analytics
     });
-  }, [launch, market, transactionContent, rightHeaderComponent, confirmDisabled, sessionId, analytics, usdValue]);
+  }, [
+    launch,
+    market,
+    transactionContent,
+    rightHeaderComponent,
+    confirmDisabled,
+    sessionId,
+    analytics,
+    usdValue
+  ]);
 
   useEffect(() => {
     // Freeze once the flow leaves IDLE (same as useModalEntryBody): the quote
