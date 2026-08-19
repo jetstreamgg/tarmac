@@ -100,8 +100,10 @@ describe('EarnTable — mobile accordion cards (M5)', () => {
   it('applies the M6.2 comp scale: 24px list corners, Label 5 title, Label 6 rate value', () => {
     renderEarn();
 
-    expect(screen.getByTestId('earn-row-savings').className).toContain('rounded-t-3xl');
-    expect(screen.getByTestId('earn-row-spk').className).toContain('rounded-b-3xl');
+    // The row testid sits on the collapse wrapper; the radii live on the card
+    // surface inside it.
+    expect(screen.getByTestId('earn-row-savings').firstElementChild?.className).toContain('rounded-t-3xl');
+    expect(screen.getByTestId('earn-row-spk').firstElementChild?.className).toContain('rounded-b-3xl');
 
     const title = screen.getByText('Sky Savings');
     expect(title.className).toContain('text-sm');

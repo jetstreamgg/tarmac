@@ -15,6 +15,8 @@ import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterX, IllustrationStaked } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { useExitHold } from '@/modules/ui/hooks/useExitHold';
+import { ROW_COLLAPSE_MS } from '@/modules/ui/animation/presets';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
@@ -239,6 +241,9 @@ export function EarnPage() {
     () => visibleUnavailableRows.map(row => toTableRow(row, true)),
     [visibleUnavailableRows]
   );
+  // When a filter empties the section, unmounting it in the same tick would
+  // silently kill the rows' collapse — hold it through the exit instead.
+  const showUnavailable = useExitHold(unavailableItems.length > 0, ROW_COLLAPSE_MS);
 
   const handleRowSelect = (id: string) => {
     const row = rows.find(r => r.id === id);
@@ -354,7 +359,7 @@ export function EarnPage() {
           the active filters) leaves nothing to list. When the geo lookup never
           resolved a country we fall back to the restrictive config, so the
           section names no region and says why instead (PR #1776 review). */}
-      {unavailableItems.length > 0 && (
+      {showUnavailable && (
         <section className="flex flex-col gap-6 md:gap-8" data-testid="earn-unavailable">
           <div className="flex flex-col gap-2">
             <h2 className={SECTION_HEADING}>
