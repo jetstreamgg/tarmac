@@ -110,9 +110,6 @@ vi.mock('./PortfolioTransactionsSection', () => ({
 vi.mock('./PortfolioStatistics', () => ({
   PortfolioStatistics: () => <div data-testid="portfolio-statistics" />
 }));
-vi.mock('@/modules/pendle/components/PendleReadyToRedeemList', () => ({
-  PendleReadyToRedeemList: () => null
-}));
 
 i18n.load('en', {});
 i18n.activate('en');

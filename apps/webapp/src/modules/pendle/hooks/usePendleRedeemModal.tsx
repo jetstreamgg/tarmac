@@ -266,15 +266,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     // repolls mid-flight and must not rewrite the blob the signed tx started with.
     if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, { transactionContent, confirmDisabled, analytics });
-  }, [
-    isModalOpen,
-    txStatus,
-    sessionId,
-    updateModalContent,
-    transactionContent,
-    confirmDisabled,
-    analytics
-  ]);
+  }, [isModalOpen, txStatus, sessionId, updateModalContent, transactionContent, confirmDisabled, analytics]);
 
   return {
     openRedeemModal,

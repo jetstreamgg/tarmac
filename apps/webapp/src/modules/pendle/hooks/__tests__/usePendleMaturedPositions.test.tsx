@@ -1,14 +1,10 @@
 /// <reference types="vite/client" />
 
 import { act } from 'react';
-import { i18n } from '@lingui/core';
-import { I18nProvider } from '@lingui/react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
-i18n.load('en', {});
-i18n.activate('en');
 
 const ACTIVE_MARKET_ADDRESS = '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as const;
 const MATURED_MARKET_ADDRESS = '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1' as const;
@@ -88,17 +84,23 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
-// The card pulls redeem previews/earnings/modal wiring — stub it; this suite
-// covers the list's own held-matured filter, not the card.
-vi.mock('../PendleMaturedPositionCard', () => ({
-  PendleMaturedPositionCard: ({ market }: { market: { name: string } }) => (
-    <div data-testid="pendle-matured-position-card">{market.name}</div>
-  )
-}));
+import { usePendleMaturedPositions } from '../usePendleMaturedPositions';
 
-import { PendleReadyToRedeemList } from '../PendleReadyToRedeemList';
+/** Probe rendering the hook's result as inspectable DOM. */
+function Probe() {
+  const { maturedPositions, onPendleChain } = usePendleMaturedPositions();
+  return (
+    <div data-testid="probe" data-on-pendle-chain={onPendleChain}>
+      {maturedPositions.map(({ market }) => (
+        <span key={market.marketAddress} data-testid="matured-position">
+          {market.name}
+        </span>
+      ))}
+    </div>
+  );
+}
 
-describe('PendleReadyToRedeemList', () => {
+describe('usePendleMaturedPositions', () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
 
@@ -122,25 +124,23 @@ describe('PendleReadyToRedeemList', () => {
 
   const render = () => {
     act(() => {
-      root.render(
-        <I18nProvider i18n={i18n}>
-          <PendleReadyToRedeemList />
-        </I18nProvider>
-      );
+      root.render(<Probe />);
     });
   };
 
-  it('renders nothing while disconnected', () => {
+  const positions = () => container.querySelectorAll('[data-testid="matured-position"]');
+
+  it('returns nothing while disconnected', () => {
     hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
     render();
-    expect(container.querySelector('[data-testid="pendle-ready-to-redeem"]')).toBeNull();
+    expect(positions()).toHaveLength(0);
   });
 
-  it('renders nothing when connected but holding zero matured PT', () => {
+  it('returns nothing when connected but holding zero matured PT', () => {
     hoisted.userAddress = '0x1111111111111111111111111111111111111111';
     hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 0n, [ACTIVE_MARKET_ADDRESS]: 5_000_000n };
     render();
-    expect(container.querySelector('[data-testid="pendle-ready-to-redeem"]')).toBeNull();
+    expect(positions()).toHaveLength(0);
   });
 
   it('auto-switches to Ethereum when holding matured PT on an L2 — once per mount, flagged automatic', () => {
@@ -158,17 +158,21 @@ describe('PendleReadyToRedeemList', () => {
     // A declined prompt (chain unchanged) must not re-fire on re-render.
     render();
     expect(hoisted.setSearchParamsMock).toHaveBeenCalledTimes(1);
-    // The section stays visible with the network hint while off-chain.
-    expect(container.querySelector('[data-testid="pendle-ready-to-redeem"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="pendle-redeem-network-hint"]')).not.toBeNull();
+    // The positions stay listed while off-chain — the cards disable Claim instead.
+    expect(positions()).toHaveLength(1);
+    expect(container.querySelector('[data-testid="probe"]')?.getAttribute('data-on-pendle-chain')).toBe(
+      'false'
+    );
   });
 
-  it('does not switch on mainnet, and shows no hint', () => {
+  it('does not switch on mainnet', () => {
     hoisted.userAddress = '0x1111111111111111111111111111111111111111';
     hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
     render();
     expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
-    expect(container.querySelector('[data-testid="pendle-redeem-network-hint"]')).toBeNull();
+    expect(container.querySelector('[data-testid="probe"]')?.getAttribute('data-on-pendle-chain')).toBe(
+      'true'
+    );
   });
 
   it('does not switch on a tenderly testnet — the fork session is valid for redemption', () => {
@@ -177,8 +181,7 @@ describe('PendleReadyToRedeemList', () => {
     hoisted.chainId = 314310; // tenderly vnet
     render();
     expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
-    expect(container.querySelector('[data-testid="pendle-ready-to-redeem"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="pendle-redeem-network-hint"]')).toBeNull();
+    expect(positions()).toHaveLength(1);
   });
 
   it('does not switch off-chain when there is nothing to redeem', () => {
@@ -189,13 +192,11 @@ describe('PendleReadyToRedeemList', () => {
     expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
   });
 
-  it('renders a redeem card per matured market the user holds PT for — active markets excluded', () => {
+  it('lists one position per matured market the user holds PT for — active markets excluded', () => {
     hoisted.userAddress = '0x1111111111111111111111111111111111111111';
     hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n, [ACTIVE_MARKET_ADDRESS]: 5_000_000n };
     render();
-    expect(container.querySelector('[data-testid="pendle-ready-to-redeem"]')).not.toBeNull();
-    expect(container.textContent).toContain('Your matured positions');
-    const cards = container.querySelectorAll('[data-testid="pendle-matured-position-card"]');
+    const cards = positions();
     expect(cards).toHaveLength(1);
     expect(cards[0].textContent).toBe('PT-MATURED');
   });

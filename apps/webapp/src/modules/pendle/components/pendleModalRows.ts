@@ -233,10 +233,7 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
               token: input.receiveSymbol
             }
           ],
-          [
-            { kind: 'single' as const, label: 'Price impact', value: input.priceImpact },
-            pendleFeeCell
-          ],
+          [{ kind: 'single' as const, label: 'Price impact', value: input.priceImpact }, pendleFeeCell],
           [feeCell]
         ]
       : [[pendleFeeCell, feeCell]])

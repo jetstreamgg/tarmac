@@ -23,6 +23,12 @@ const h = vi.hoisted(() => ({
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => h.navigate }));
 
+// Matured PT cards pull the redeem preview/modal stack — out of scope here
+// (covered by usePendleMaturedPositions.test / PendleRedeem.test).
+vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
+  usePendleMaturedPositions: () => ({ maturedPositions: [], onPendleChain: true })
+}));
+
 // The resolver reads the connected chain to place in-place supply and switches
 // when the position lives elsewhere; keep real wagmi exports, override only
 // the chain and switch hooks.
