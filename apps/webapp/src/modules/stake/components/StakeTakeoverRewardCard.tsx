@@ -45,7 +45,7 @@ export function RewardList({
   const { data: chartInfo } = useMultipleRewardsChartInfo({
     rewardContractAddresses: farms.map(farm => farm.contractAddress)
   });
-  // Most recent entry per farm — the series arrive aligned to the input order.
+  // The chart series arrive aligned to the input address order.
   const latestFor = (index: number) => {
     const series = chartInfo?.[index];
     if (!series || series.length === 0) return undefined;
@@ -92,8 +92,6 @@ export function RewardList({
                 aria-pressed={isSelected}
                 className={cn(
                   'flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition-colors md:rounded-[20px] md:px-5 md:py-4',
-                  // Selected recipe from DelegateList: brand ring over the 10%
-                  // brand gradient, applied at every tier.
                   isSelected
                     ? 'border-brandBorder from-brand3-start to-brand3-end bg-linear-to-b'
                     : 'border-borderPrimary bg-transparent'
@@ -143,8 +141,7 @@ export function RewardList({
       </ul>
 
       {currentFarmDeprecated && (
-        // Legacy SelectRewardContract's SPK-sunset warning, copy verbatim so the
-        // existing translation carries over.
+        // Copy kept verbatim so the existing translation carries over.
         <p
           data-testid={`${dataTestIdPrefix}-deprecated-warning`}
           className="text-textSecondary text-xs leading-[18px]"

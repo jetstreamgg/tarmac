@@ -698,11 +698,9 @@ export function PositionDetailsModal({
               </StatPair>
             </div>
 
-            {/* Deprecated-farm warning (APP-516): the old front-end's persistent
-                position-detail banner, rebuilt on the F4 warning-box recipe.
-                Active urns only — an inactive urn picks its next farm through
-                the reopen takeover's picker. The CTA rides the existing menu
-                route, landing in the manage sheet with the reward card open. */}
+            {/* Deprecated-farm warning (APP-516, F4 warning-box recipe). Active
+                urns only — an inactive urn picks its next farm through the
+                reopen takeover's picker. */}
             {detail.rewardDeprecated && !isInactive && !detail.vaultLoading && (
               <div
                 data-testid="stake-position-reward-deprecated-warning"

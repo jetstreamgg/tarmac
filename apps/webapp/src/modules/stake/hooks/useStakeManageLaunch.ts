@@ -142,8 +142,6 @@ export function useStakeManageLaunch({
     urn: urnAddress || ZERO_ADDRESS
   });
 
-  // Reward-less callers pass the urn's current farm through so an untouched
-  // form never emits a selectFarm leg.
   const effectiveRewardContract = selectedRewardContract ?? urnSelectedRewardContract;
 
   const { calldata } = useStakeCalldata({

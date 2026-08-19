@@ -234,9 +234,6 @@ export function ManagePositionTakeover({
         (!borrowError && !simulationError && !simulationLoading));
 
   // ---- Reward change (APP-516) ----------------------------------------------
-  // A deprecated current farm needs no special handling here: the details
-  // modal's warning banner owns the nudge, and its CTA arrives with
-  // `rewardCard: true` so this card mounts already open.
   const currentRewardContract =
     detail.rewardContract && detail.rewardContract !== ZERO_ADDRESS ? detail.rewardContract : undefined;
   const rewardChanged =

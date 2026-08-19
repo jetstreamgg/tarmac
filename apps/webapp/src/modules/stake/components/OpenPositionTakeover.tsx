@@ -325,8 +325,6 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       <StakeTakeoverRewardCard
         selectedRewardContract={selectedRewardContract}
         onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
-        // Reopen keeps a deprecated current farm visible so the holder can
-        // switch away; a plain open never offers deprecated farms.
         keepAddress={reopenRewardBaseline}
       />
 
