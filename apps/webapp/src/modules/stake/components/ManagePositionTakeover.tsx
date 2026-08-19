@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -234,19 +234,11 @@ export function ManagePositionTakeover({
         (!borrowError && !simulationError && !simulationLoading));
 
   // ---- Reward change (APP-516) ----------------------------------------------
+  // A deprecated current farm needs no special handling here: the details
+  // modal's warning banner owns the nudge, and its CTA arrives with
+  // `rewardCard: true` so this card mounts already open.
   const currentRewardContract =
     detail.rewardContract && detail.rewardContract !== ZERO_ADDRESS ? detail.rewardContract : undefined;
-  // A position sitting on a deprecated farm accrues nothing — open the Change
-  // reward card for it once the read resolves, so the holder lands on the
-  // switch-away nudge (chip + warning) instead of a collapsed row. Fire-once:
-  // toggling the card back off must stick.
-  const rewardCardAutoOpened = useRef(false);
-  useEffect(() => {
-    if (detail.rewardDeprecated && !rewardCardAutoOpened.current) {
-      rewardCardAutoOpened.current = true;
-      dispatch({ type: 'setRewardEnabled', enabled: true });
-    }
-  }, [detail.rewardDeprecated, dispatch]);
   const rewardChanged =
     state.rewardEnabled &&
     !!state.selectedRewardContract &&

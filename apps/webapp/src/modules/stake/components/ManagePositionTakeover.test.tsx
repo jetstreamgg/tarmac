@@ -521,29 +521,22 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('reward: auto-opens the card when the current farm is deprecated', () => {
+  it('reward: a deprecated current farm renders pre-selected with its chip and warning (CTA deep-link)', () => {
+    // The details-modal banner CTA arrives with rewardCard: true — no
+    // auto-open in the sheet itself; the card opens via init.
     h.rewardContract = lsSkySpkRewardAddress[1];
     h.rewardDeprecated = true;
-    renderSheet();
+    renderSheet({ rewardCard: true });
 
-    // No rewardCard init — the deprecated-farm nudge opened it on its own,
-    // with the current SPK farm pre-selected, chipped, and warned about.
     const spkRow = screen.getByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`);
     expect(spkRow.getAttribute('aria-pressed')).toBe('true');
     expect(spkRow.textContent).toContain('Deprecated');
     expect(screen.getByTestId('stake-manage-reward-deprecated-warning')).toBeTruthy();
   });
 
-  it('reward: the auto-open does not re-force the card after the user closes it', () => {
+  it('reward: the card stays collapsed by default, deprecated farm or not', () => {
     h.rewardContract = lsSkySpkRewardAddress[1];
     h.rewardDeprecated = true;
-    renderSheet();
-
-    fireEvent.click(screen.getByTestId('stake-manage-reward-card-toggle'));
-    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
-  });
-
-  it('reward: no auto-open for a live farm', () => {
     renderSheet();
     expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
   });
