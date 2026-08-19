@@ -46,7 +46,9 @@ export const useEnhancedScreeningPreflight: PreflightHook = ({ usdValue, active,
 
   const { data, isError } = useQuery({
     queryKey: enhancedAddressScreeningQueryKey(address),
-    queryFn: () => fetchEnhancedAddressScreening(address, getAuthUrl()),
+    // `required` (the enabled flag) guarantees the address; the fetcher
+    // demands one at the type level.
+    queryFn: () => fetchEnhancedAddressScreening(address!, getAuthUrl()),
     enabled: required,
     staleTime: SCREENING_MAX_AGE_MS,
     retry: 1,

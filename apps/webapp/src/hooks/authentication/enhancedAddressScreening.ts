@@ -31,25 +31,22 @@ export const requiresEnhancedScreening = (usdValue: number | undefined): boolean
  */
 export const enhancedAddressScreeningQueryKey = (address?: string) => ['auth-enhanced', address];
 
+// Unlike the standard fetcher's optional address (whose no-address call
+// defaults to allowed), this one requires it: both callers already guard on a
+// connected address, and a fail-open default has no place in a file whose
+// every other path fails closed.
 export const fetchEnhancedAddressScreening = async (
-  address?: string,
+  address: string,
   authUrl?: string
 ): Promise<AddressScreeningResult> => {
   if (!authUrl) {
     throw new Error('Missing auth URL');
   }
-  const wholeUrl = `${authUrl}/address/status/enhanced?address=${address}`;
-
-  let addressAllowed = true;
-  if (address) {
-    const res = await fetch(wholeUrl);
-    if (res.status === 200) {
-      const data = await res.json();
-      addressAllowed = data.addressAllowed;
-    } else {
-      // Fail closed: an unavailable enhanced check must block, never pass.
-      throw new Error('non 200 response received');
-    }
+  const res = await fetch(`${authUrl}/address/status/enhanced?address=${address}`);
+  if (res.status !== 200) {
+    // Fail closed: an unavailable enhanced check must block, never pass.
+    throw new Error('non 200 response received');
   }
-  return { addressAllowed };
+  const data = await res.json();
+  return { addressAllowed: data.addressAllowed };
 };
