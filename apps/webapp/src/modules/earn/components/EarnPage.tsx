@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
@@ -15,7 +15,6 @@ import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterX, IllustrationStaked } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useExitHold } from '@/modules/ui/hooks/useExitHold';
 import { ROW_COLLAPSE_MS } from '@/modules/ui/animation/presets';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
@@ -242,8 +241,27 @@ export function EarnPage() {
     [visibleUnavailableRows]
   );
   // When a filter empties the section, unmounting it in the same tick would
-  // silently kill the rows' collapse — hold it through the exit instead.
-  const showUnavailable = useExitHold(unavailableItems.length > 0, ROW_COLLAPSE_MS);
+  // silently kill the rows' collapse — hold it until the table reports the
+  // exit finished (onRowsExitComplete). Completion-gated rather than a timer,
+  // so it's correct at any animation speed: a busy main thread stretches the
+  // hold with the animation, and prefers-reduced-motion's duration-0 exit
+  // releases it immediately instead of parking an empty section for 300ms.
+  const hasUnavailable = unavailableItems.length > 0;
+  const [unavailableExitHold, setUnavailableExitHold] = useState(false);
+  const [prevHasUnavailable, setPrevHasUnavailable] = useState(hasUnavailable);
+  if (prevHasUnavailable !== hasUnavailable) {
+    setPrevHasUnavailable(hasUnavailable);
+    setUnavailableExitHold(!hasUnavailable);
+  }
+  // Backstop: if the presence boundary unmounts mid-exit (a breakpoint swap
+  // replaces the table with the card list), onExitComplete never fires — don't
+  // hold a header over an empty section forever.
+  useEffect(() => {
+    if (!unavailableExitHold) return;
+    const timer = setTimeout(() => setUnavailableExitHold(false), ROW_COLLAPSE_MS * 2);
+    return () => clearTimeout(timer);
+  }, [unavailableExitHold]);
+  const showUnavailable = hasUnavailable || unavailableExitHold;
 
   const handleRowSelect = (id: string) => {
     const row = rows.find(r => r.id === id);
@@ -382,6 +400,7 @@ export function EarnPage() {
             rows={unavailableItems}
             sort={sort}
             onSortChange={toggleSort}
+            onRowsExitComplete={() => setUnavailableExitHold(false)}
             dimmed
             testIdPrefix="earn-unavailable"
           />
