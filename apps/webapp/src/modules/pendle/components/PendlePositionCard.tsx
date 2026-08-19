@@ -55,7 +55,7 @@ function PendleSupplyCard({
 
   // The CTA stays enabled while disconnected: clicking routes through the
   // connect flow and continues into the supply modal once connected.
-  const onSupplyOrConnect = useConnectThenAct(onSupply);
+  const onSupplyOrConnect = useConnectThenAct(onSupply, 'pendle_supply');
 
   // Pendle markets are mainnet-only; balances follow the fork in dev mode.
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;

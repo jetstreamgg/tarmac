@@ -144,6 +144,7 @@ const reward = (contract: `0x${string}`, symbol: string): ClaimableReward => ({
   tokenSymbol: symbol,
   icon: null,
   formattedAmount: '0',
+  amount: 0,
   amountUsd: 0,
   chainId: 1
 });

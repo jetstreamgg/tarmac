@@ -27,6 +27,7 @@ import { PostHogProvider, POSTHOG_ENABLED } from '@/modules/analytics/PostHogPro
 import { CookieConsentBanner } from '@/modules/analytics/components/CookieConsentBanner';
 import { GeoConfigProvider } from '@/modules/geo-config';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
+import { useNavigationAnalytics } from '@/modules/analytics/hooks/useNavigationAnalytics';
 import { CORPUS_VERSION, CORPUS_BRANCH, CORPUS_COMMIT } from '@/data/version';
 
 // Expose corpus version to browser console for debugging
@@ -61,6 +62,9 @@ const GatedTransactionProvider = ({ children }: { children: React.ReactNode }) =
 };
 
 const AppContent = () => {
+  // Central nav subscription: lives outside the route tree so it survives
+  // every navigation, 404s included.
+  useNavigationAnalytics();
   return (
     <ConnectedProvider>
       <TermsModalProvider>

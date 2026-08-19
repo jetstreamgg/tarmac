@@ -1,12 +1,11 @@
-import { useCallback, useMemo, type ReactNode } from 'react';
-import { formatUnits, type Call } from 'viem';
+import { useMemo } from 'react';
+import { type Call } from 'viem';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
   type Token,
   TOKENS,
   daiUsdsAddress,
-  getTokenDecimals,
   mcdDaiAddress,
   psm3L2Address,
   useBatchPsmSwapAndSavingsSupply,
@@ -20,7 +19,7 @@ import {
   useTokenAllowance,
   usdsPsmWrapperAddress
 } from '@/hooks';
-import { formatNumber, isL2ChainId, math } from '@/utils';
+import { isL2ChainId, math } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
@@ -59,25 +58,17 @@ export interface UseSavingsLaunchParams {
   sUsdsBalance?: bigint;
   minAmountOutForWithdrawAll?: bigint;
   maxAmountInForWithdraw?: bigint;
-  /** Review-screen body; the panel passes a token/amount preview. */
-  transactionContent?: ReactNode;
-  /** Compact body for the wallet/status screen ("Confirm in the wallet"). */
-  transactionScreenContent?: ReactNode;
-  /** Refetch position / balances after a successful transaction. */
-  onSuccess?: () => void;
 }
 
 export interface UseSavingsLaunchResult {
-  /** Opens the standard review modal for the configured flow (no-position / inline flow). */
-  launch: () => void;
   /**
    * Fires the routed engine call directly (txCallbacks already spread in). Used by
-   * the has-position editable modal entry body, whose own confirm button replaces
-   * the review screen — the modal is already open, so it executes rather than
-   * re-launching. Same call as `launch()`'s `onConfirm`, so calldata is identical.
+   * the editable modal entry body (`SavingsModalForm`), whose confirm button
+   * drives the shared modal — the modal is already open, so it executes rather
+   * than launching.
    */
   execute: () => void;
-  /** Steps for the configured flow (e.g. ["Approve", "Supply"]); matches `launch()`. */
+  /** Steps for the configured flow (e.g. ["Approve", "Supply"]). */
   steps: TransactionStep[];
   /** Whether the routed call-builder hook is ready to execute. */
   prepared: boolean;
@@ -90,10 +81,10 @@ export interface UseSavingsLaunchResult {
 }
 
 /**
- * The single seam between the redesigned Savings UI and
- * `TransactionContext.launch()`. Given a flow + origin token + amount it routes
- * to the correct (unmodified) call-builder engine hook, spreads the context's
- * `txCallbacks` into it, and describes the review modal.
+ * The single seam between the redesigned Savings UI and the transaction
+ * engines. Given a flow + origin token + amount it routes to the correct
+ * (unmodified) call-builder engine hook, spreads the context's `txCallbacks`
+ * into it, and labels the modal's steps.
  *
  * Routing (slices 01–04):
  *  - supply + USDS (mainnet) → `useBatchSavingsSupply` (optional approve → deposit)
@@ -119,12 +110,9 @@ export function useSavingsLaunch({
   minAmountOut,
   sUsdsBalance,
   minAmountOutForWithdrawAll,
-  maxAmountInForWithdraw,
-  transactionContent,
-  transactionScreenContent,
-  onSuccess
+  maxAmountInForWithdraw
 }: UseSavingsLaunchParams): UseSavingsLaunchResult {
-  const { launch: launchModal, txCallbacks } = useTransaction();
+  const { txCallbacks } = useTransaction();
   const { address } = useAccount();
   const chainId = useChainId();
 
@@ -144,7 +132,6 @@ export function useSavingsLaunch({
   // handled by the PSM3 swapExactIn engine instead.
   const isMainnetUsdc = isSupply && !isL2 && originToken.symbol === TOKENS.usdc.symbol;
   const isL2Withdraw = !isSupply && isL2;
-  const originDecimals = getTokenDecimals(originToken, chainId);
   // What the USDC supply's USDS legs (approve + deposit) actually spend — the
   // wrapper mints `amount * 1e12` USDS at a zero fee.
   const usdcSupplyUsdsAmount = isMainnetUsdc ? math.convertUSDCtoWad(amount) : amount;
@@ -344,101 +331,7 @@ export function useSavingsLaunch({
     originToken.symbol
   ]);
 
-  const launch = useCallback(() => {
-    // Amount-aware titles for the minimized toast (parity with the editable
-    // SavingsModalForm path), e.g. "10,000 USDS supplied!".
-    const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, originDecimals)), { maxDecimals: 2 })} ${originToken.symbol}`;
-    const toast = isSupply
-      ? {
-          loading: t`Supplying ${amountLabel}`,
-          success: t`${amountLabel} supplied!`,
-          error: t`Supply failed`
-        }
-      : {
-          loading: t`Withdrawing ${amountLabel}`,
-          success: t`${amountLabel} withdrawn!`,
-          error: t`Withdrawal failed`
-        };
-
-    if (isSupply) {
-      launchModal({
-        // $1-pegged origin; the amount is fixed at launch (enhanced
-        // screening, APP-517).
-        usdValue: parseFloat(formatUnits(amount, originDecimals)),
-        title: t`Review supply`,
-        transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your supply is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully supplied to Sky Savings.`,
-          error: t`An error occurred while supplying to Sky Savings.`
-        },
-        toast,
-        transactionContent,
-        transactionScreenContent,
-        steps,
-        confirmLabel: t`Confirm`,
-        onConfirm: execute,
-        onSuccess,
-        analytics: {
-          widgetName: 'savings',
-          flow: 'supply',
-          action: 'supply',
-          data: {
-            module: 'savings',
-            originToken: originToken.symbol,
-            amount: Number(formatUnits(amount, originDecimals))
-          }
-        }
-      });
-    } else {
-      // Mainnet withdraw is a single signature (you already own the sUSDS); L2
-      // withdraw swaps sUSDS → token through the PSM (approve elided when the
-      // sUSDS → psm3L2 allowance already covers it). `steps` is the hoisted memo.
-      launchModal({
-        // $1-pegged origin; the amount is fixed at launch (enhanced
-        // screening, APP-517).
-        usdValue: parseFloat(formatUnits(amount, originDecimals)),
-        title: t`Withdraw from Sky Savings`,
-        transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully withdrawn from Sky Savings.`,
-          error: t`An error occurred while withdrawing from Sky Savings.`
-        },
-        toast,
-        transactionContent,
-        transactionScreenContent,
-        steps,
-        confirmLabel: t`Confirm`,
-        onConfirm: execute,
-        onSuccess,
-        analytics: {
-          widgetName: 'savings',
-          flow: 'withdraw',
-          action: 'withdraw',
-          data: {
-            module: 'savings',
-            originToken: originToken.symbol,
-            amount: Number(formatUnits(amount, originDecimals))
-          }
-        }
-      });
-    }
-  }, [
-    isSupply,
-    launchModal,
-    amount,
-    originToken.symbol,
-    originDecimals,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    execute,
-    onSuccess
-  ]);
-
   return {
-    launch,
     execute,
     steps,
     prepared: activeHook.prepared,

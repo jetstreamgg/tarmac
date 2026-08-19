@@ -466,7 +466,8 @@ export type {
   TrustLevel,
   DataSource,
   ReadHookParams,
-  BatchWriteHookParams
+  BatchWriteHookParams,
+  TxMutateVariables
 } from './hooks';
 export type { PaginationOption } from './filters';
 export type { RewardContract, RewardContractInfo } from './rewards/rewards';

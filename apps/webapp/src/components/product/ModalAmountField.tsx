@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { BP, useBreakpointIndex } from '@/hooks';
+import { sanitizeAmountInput } from '@/lib/amountInput';
 import { cn } from '@/lib/cn';
 
 const PERCENT_PRESETS = [25, 50, 100] as const;
@@ -12,12 +13,15 @@ export type PercentPreset = (typeof PERCENT_PRESETS)[number];
  * 1104:128308): "Amount" label over a 24px token icon + Heading-3 input on the
  * left; balance line over the 25/50/100% mini-chips and the token selector on
  * the right; a hairline underlining the whole field. Shared by the modal entry
- * bodies (Savings first, siblings migrate per module).
+ * bodies (Savings first, siblings migrate per module). Input is masked to a
+ * plain decimal at the token's precision — `onInput` only ever sees a string
+ * that parses exactly to the transacted amount (APP-492).
  */
 export function ModalAmountField({
   label,
   tokenSymbol,
   value,
+  decimals,
   onInput,
   disabled = false,
   balance,
@@ -32,6 +36,8 @@ export function ModalAmountField({
   /** Symbol behind the 24px icon beside the input. */
   tokenSymbol: string;
   value: string;
+  /** Token decimals — the mask caps the fraction at this many digits. */
+  decimals: number;
   onInput: (raw: string) => void;
   disabled?: boolean;
   /** Right-aligned balance line (e.g. "Balance: 100,000.00"). */
@@ -89,7 +95,7 @@ export function ModalAmountField({
               inputMode="decimal"
               placeholder="0"
               value={value}
-              onChange={e => onInput(e.target.value)}
+              onChange={e => onInput(sanitizeAmountInput(e.target.value, decimals))}
               disabled={disabled}
               aria-label={inputAriaLabel}
               data-testid={inputTestId}

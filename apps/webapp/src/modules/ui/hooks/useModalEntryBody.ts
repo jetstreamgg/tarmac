@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { TxStatus } from '@/widgets';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
-import type { TransactionConfig } from '@/modules/ui/context/transactionContract';
+import type { TransactionAnalytics, TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 
 /**
@@ -43,6 +43,15 @@ type ModalEntryBodyLive = {
    * launch-time value is already final.
    */
   usdValue?: number;
+  /**
+   * Analytics attribution for the lifecycle events the provider emits. Pass a
+   * MEMOIZED object (the sync effect below depends on its identity). The last
+   * IDLE push is what the confirm-click's `onMutate` reads, so it always
+   * reflects the amount/token that produced the calldata. Two-CTA flows whose
+   * `action` depends on which button was clicked push at confirm instead
+   * (the stake-claim pattern) — don't pass this from those.
+   */
+  analytics?: TransactionAnalytics;
 };
 
 type UseModalEntryBodyParams = ModalEntryBodyLive & {
@@ -78,7 +87,8 @@ export function useModalEntryBody(params: UseModalEntryBodyParams): (body: React
     transactionScreenContent,
     steps,
     toast,
-    usdValue
+    usdValue,
+    analytics
   } = params;
   // `usdValue: undefined` means "unknown" and must reach the config (it flips
   // the enhanced-screening path on), so presence is keyed on the param being
@@ -123,7 +133,8 @@ export function useModalEntryBody(params: UseModalEntryBodyParams): (body: React
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
       ...(toast !== undefined ? { toast } : {}),
-      ...(hasUsdValue ? { usdValue } : {})
+      ...(hasUsdValue ? { usdValue } : {}),
+      ...(analytics !== undefined ? { analytics } : {})
     });
   }, [
     sessionId,
@@ -137,6 +148,7 @@ export function useModalEntryBody(params: UseModalEntryBodyParams): (body: React
     toast,
     hasUsdValue,
     usdValue,
+    analytics,
     onConfirm,
     updateModalContent
   ]);

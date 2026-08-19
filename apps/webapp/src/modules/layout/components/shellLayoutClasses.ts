@@ -51,10 +51,12 @@ export const shellHeaderClasses = () =>
     // transparent: same bar, no edge to see.
     'bg-linear-to-b from-navbarGradientStart via-navbarGradientEnd via-75% to-transparent backdrop-blur-[6px]',
     // Pages scroll on the document, so the header pins as a sticky, see-through
-    // frosted bar. Note that carrying a backdrop-filter makes the bar a
-    // backdrop root for its descendants: anything nested here that wants its
-    // own backdrop-filter would sample the bar, not the page. Nothing does —
-    // the nav pills are borders and gradients, and both menus portal to body.
+    // frosted bar. The Earn Opportunities heading's scroll-mt-24 (EarnPage)
+    // budgets for this bar's height — revisit it if the bar grows. Note that
+    // carrying a backdrop-filter makes the bar a backdrop root for its
+    // descendants: anything nested here that wants its own backdrop-filter
+    // would sample the bar, not the page. Nothing does — the nav pills are
+    // borders and gradients, and both menus portal to body.
     'sticky top-0 z-30'
   );
 

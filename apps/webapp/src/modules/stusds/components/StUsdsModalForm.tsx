@@ -4,7 +4,7 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { StUsdsProviderType, TOKENS } from '@/hooks';
+import { StUsdsProviderType, TOKENS, stUsdsAddress } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
@@ -18,6 +18,8 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import { signedAmount } from '@/modules/analytics/constants';
 import { useStUsdsLaunch, type StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
 import { useStUsdsTransactionForm, type StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 import { stUsdsPrepareErrorMessage } from '../lib/prepareErrorMessage';
@@ -67,6 +69,7 @@ export function StUsdsModalForm({
   const {
     isConnected,
     isSupply,
+    decimals,
     value,
     amount,
     available,
@@ -165,28 +168,46 @@ export function StUsdsModalForm({
     : amountDisplay;
   const earningsAfterDisplay = projectEarnings(positionAfter);
   const isCurveRoute = providerSelection.selectedProvider === StUsdsProviderType.CURVE;
+  const impactPercent = priceImpactBps !== undefined ? Math.floor(priceImpactBps / 100) : 0;
+  // A checked acknowledgement lapses if the impact floors above the accepted
+  // percent while the user sits on review (the checkbox lives on the entry
+  // screen) — this line explains the disabled confirm in place.
+  const impactLapsed = needsImpactAcknowledgement && !impactAccepted;
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`stusds-modal-${flow}-review`}>
         {transactionScreenContent}
-        <ModalSummaryGrid
-          rows={toGridCells(
-            buildStUsdsReviewRows(flow, {
-              amount: amountDisplay,
-              receive: receiveDisplay,
-              estEarnings: earningsAfterDisplay,
-              rate: rateDisplay,
-              route: isCurveRoute ? t`Curve` : t`Native`,
-              routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
-              withdrawal: i18n._(withdrawalWording('stusds', flow)),
-              network: networkName,
-              networkFee: networkFee?.formatted ?? NO_VALUE
-            }),
-            'stusds-modal-row',
-            feeCell
+        <div className="flex flex-col gap-4">
+          <ModalSummaryGrid
+            rows={toGridCells(
+              buildStUsdsReviewRows(flow, {
+                amount: amountDisplay,
+                receive: receiveDisplay,
+                estEarnings: earningsAfterDisplay,
+                rate: rateDisplay,
+                route: isCurveRoute ? t`Curve` : t`Native`,
+                routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
+                withdrawal: i18n._(withdrawalWording('stusds', flow)),
+                network: networkName,
+                networkFee: networkFee?.formatted ?? NO_VALUE
+              }),
+              'stusds-modal-row',
+              feeCell
+            )}
+            dividerClassName="h-6"
+          />
+          {impactLapsed && (
+            <Text
+              className="text-fgSecondary text-xs leading-[18px]"
+              data-testid="stusds-modal-review-impact-lapsed"
+            >
+              <Trans>
+                The price impact has risen and now exceeds {impactPercent}%. Go back to accept the new price
+                impact before confirming.
+              </Trans>
+            </Text>
           )}
-          dividerClassName="h-6"
-        />
+        </div>
       </div>
     ),
     [
@@ -199,8 +220,30 @@ export function StUsdsModalForm({
       isCurveRoute,
       networkName,
       feeCell,
-      networkFee
+      networkFee,
+      impactLapsed,
+      impactPercent
     ]
+  );
+
+  // Legacy StUSDSWidget payload shape (APP-444 B5): widget_name 'expert',
+  // assetSymbol hardcoded USDS (both directions move USDS), no assetAddress.
+  const analytics = useMemo<TransactionAnalytics>(
+    () => ({
+      widgetName: 'expert',
+      flow,
+      action: flow,
+      data: {
+        module: 'expert',
+        product: 'stUSDS',
+        productAddress: stUsdsAddress[chainId as keyof typeof stUsdsAddress],
+        assetSymbol: 'USDS',
+        isBatchTx: isBatch,
+        provider: isCurveRoute ? 'curve' : 'native',
+        amount: signedAmount(parseFloat(formatUnits(amount, DECIMALS)), flow)
+      }
+    }),
+    [flow, chainId, isBatch, isCurveRoute, amount]
   );
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -216,12 +259,12 @@ export function StUsdsModalForm({
     toast,
     // Amounts are USDS-denominated in both flows ($1-pegged) — enhanced
     // screening, APP-517.
-    usdValue: parseFloat(formatUnits(amount, DECIMALS))
+    usdValue: parseFloat(formatUnits(amount, DECIMALS)),
+    analytics
   });
 
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);
 
-  const impactPercent = priceImpactBps !== undefined ? Math.floor(priceImpactBps / 100) : 0;
   const impactColor =
     priceImpactBps !== undefined && priceImpactBps > PRICE_IMPACT_HIGH_THRESHOLD_BPS
       ? 'text-error'
@@ -245,6 +288,7 @@ export function StUsdsModalForm({
         label={<Trans>Amount</Trans>}
         tokenSymbol="USDS"
         value={value}
+        decimals={decimals}
         onInput={onInput}
         disabled={!isConnected}
         balance={

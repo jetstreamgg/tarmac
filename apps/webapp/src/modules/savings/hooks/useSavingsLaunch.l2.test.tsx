@@ -18,7 +18,6 @@ const BASE = 8453;
 const h = vi.hoisted(() => ({
   capturedCalls: [] as RawCall[],
   mockExecute: vi.fn(),
-  launchMock: vi.fn(),
   allowance: 0n as bigint | undefined
 }));
 
@@ -128,7 +127,7 @@ vi.mock('@/hooks/savings/useSavingsAllowance', () => ({
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
-    launch: h.launchMock,
+    launch: () => undefined,
     updateModalContent: () => undefined,
     isModalOpen: false,
     txCallbacks: {
@@ -221,7 +220,6 @@ describe('useSavingsLaunch — L2 PSM supply calldata parity', () => {
   beforeEach(() => {
     h.capturedCalls = [];
     h.mockExecute.mockClear();
-    h.launchMock.mockClear();
     h.allowance = 0n;
   });
   afterEach(() => cleanup());
@@ -297,33 +295,13 @@ describe('useSavingsLaunch — L2 landmine #1: approve/allowance derivation stay
   });
 });
 
-describe('useSavingsLaunch — L2 supply launch() config', () => {
+describe('useSavingsLaunch — L2 supply routing + steps', () => {
   beforeEach(() => {
     h.capturedCalls = [];
     h.mockExecute.mockClear();
-    h.launchMock.mockClear();
     h.allowance = 0n;
   });
   afterEach(() => cleanup());
-
-  it('opens the modal with savings analytics (widgetName/flow/action) on launch()', () => {
-    const { result } = renderHook(() =>
-      useSavingsLaunch({
-        flow: 'supply',
-        originToken: TOKENS.usds,
-        amount: AMOUNT,
-        minAmountOut: MIN_OUT,
-        referralCode: REF
-      })
-    );
-    act(() => result.current.launch());
-
-    expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.analytics.widgetName).toBe('savings');
-    expect(config.analytics.flow).toBe('supply');
-    expect(config.analytics.action).toBe('supply');
-  });
 
   it('routes onConfirm to the PSM engine execute', () => {
     const { result } = renderHook(() =>
@@ -335,10 +313,7 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
         referralCode: REF
       })
     );
-    act(() => result.current.launch());
-
-    const config = h.launchMock.mock.calls[0][0];
-    config.onConfirm();
+    act(() => result.current.execute());
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
@@ -353,14 +328,12 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
         referralCode: REF
       })
     );
-    act(() => a.result.current.launch());
     // DS Steps chips are token-derived (APP-354), so L2 flows carry the origin token too.
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+    expect(a.result.current.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
       { label: 'Supply', tokenSymbol: 'USDS' }
     ]);
     a.unmount();
-    h.launchMock.mockClear();
 
     h.allowance = HAS_ALLOWANCE;
     const b = renderHook(() =>
@@ -372,8 +345,7 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
         referralCode: REF
       })
     );
-    act(() => b.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDS' }]);
+    expect(b.result.current.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDS' }]);
     b.unmount();
   });
 });
