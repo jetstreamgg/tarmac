@@ -129,6 +129,13 @@ export type TransactionConfig = {
     success?: string;
     error?: string;
   };
+  /**
+   * Starts the flow's write(s). The provider consults the pre-transaction
+   * gate (`./preTransactionGate`) before invoking this — and before
+   * `onSecondaryConfirm` / `onRetry` — so a denied verdict never reaches the
+   * engine. The stub gate allows synchronously, keeping this (and the
+   * engine's `onMutate`) in the same tick as the user's confirm click.
+   */
   onConfirm: () => void;
   /**
    * Fires when the entry's secondary CTA is clicked (see
