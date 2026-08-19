@@ -36,13 +36,14 @@ type ModalEntryBodyLive = {
   toast?: TransactionConfig['toast'];
   /**
    * Live USD notional of the transaction, for the enhanced-screening
-   * threshold (APP-517; see `TransactionConfig.usdValue`). A body that can
-   * value its amount must pass it EVERY render — an entry in the params list
-   * is always pushed (`undefined` meaning "unknown" is a real value there,
-   * treated as above-threshold); omit the param entirely only when the
-   * launch-time value is already final.
+   * threshold (APP-517; see `TransactionConfig.usdValue`). REQUIRED, like
+   * the launch-time field, and always pushed: an editable body owns the live
+   * amount, so it must state its valuation every render — `undefined` means
+   * "unknown" and is treated as above-threshold (fail closed). Were this
+   * optional, a future form could compile while silently screening a $300k
+   * transaction on the standard tier through its stale launch value.
    */
-  usdValue?: number;
+  usdValue: number | undefined;
   /**
    * Analytics attribution for the lifecycle events the provider emits. Pass a
    * MEMOIZED object (the sync effect below depends on its identity). The last
@@ -90,10 +91,6 @@ export function useModalEntryBody(params: UseModalEntryBodyParams): (body: React
     usdValue,
     analytics
   } = params;
-  // `usdValue: undefined` means "unknown" and must reach the config (it flips
-  // the enhanced-screening path on), so presence is keyed on the param being
-  // listed — not on its value.
-  const hasUsdValue = 'usdValue' in params;
   const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
 
@@ -133,7 +130,9 @@ export function useModalEntryBody(params: UseModalEntryBodyParams): (body: React
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
       ...(toast !== undefined ? { toast } : {}),
-      ...(hasUsdValue ? { usdValue } : {}),
+      // Always pushed: `undefined` means "unknown" and must reach the config
+      // (it flips the enhanced-screening path on).
+      usdValue,
       ...(analytics !== undefined ? { analytics } : {})
     });
   }, [
@@ -146,7 +145,6 @@ export function useModalEntryBody(params: UseModalEntryBodyParams): (body: React
     transactionScreenContent,
     steps,
     toast,
-    hasUsdValue,
     usdValue,
     analytics,
     onConfirm,
