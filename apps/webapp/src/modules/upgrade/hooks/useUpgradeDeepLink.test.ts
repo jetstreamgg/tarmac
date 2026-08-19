@@ -1,3 +1,4 @@
+import { createElement, StrictMode, type ReactNode } from 'react';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useUpgradeDeepLink } from './useUpgradeDeepLink';
@@ -5,7 +6,10 @@ import { useUpgradeDeepLink } from './useUpgradeDeepLink';
 const mocks = vi.hoisted(() => ({
   open: vi.fn(),
   setSearchParams: vi.fn(),
-  search: ''
+  trackWidgetSelected: vi.fn(),
+  startNewFlow: vi.fn(),
+  search: '',
+  pathname: '/convert'
 }));
 
 vi.mock('@/lib/navigation', () => ({
@@ -14,6 +18,23 @@ vi.mock('@/lib/navigation', () => ({
 
 vi.mock('./useUpgradeModal', () => ({
   useUpgradeModal: () => ({ open: mocks.open })
+}));
+
+vi.mock('@tanstack/react-router', () => ({
+  useRouterState: ({ select }: { select: (s: { location: { pathname: string } }) => string }) =>
+    select({ location: { pathname: mocks.pathname } })
+}));
+
+vi.mock('wagmi', () => ({
+  useChainId: () => 1
+}));
+
+vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
+  useAppAnalytics: () => ({ trackWidgetSelected: mocks.trackWidgetSelected })
+}));
+
+vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
+  useAnalyticsFlow: () => ({ startNewFlow: mocks.startNewFlow })
 }));
 
 /** Applies the recorded setSearchParams updater to the current search. */
@@ -59,5 +80,36 @@ describe('useUpgradeDeepLink', () => {
 
     expect(mocks.open).not.toHaveBeenCalled();
     expect(mocks.setSearchParams).not.toHaveBeenCalled();
+  });
+
+  it('rotates the flow and emits app_widget_selected for the upgrade modal', () => {
+    mocks.search = 'upgrade=mkr';
+    mocks.pathname = '/portfolio';
+    renderHook(() => useUpgradeDeepLink());
+
+    expect(mocks.startNewFlow).toHaveBeenCalledOnce();
+    expect(mocks.trackWidgetSelected).toHaveBeenCalledWith({
+      widgetName: 'upgrade',
+      previousWidget: 'balances',
+      selectionMethod: 'deeplink',
+      chainId: 1
+    });
+  });
+
+  it('does not emit for unknown values', () => {
+    mocks.search = 'upgrade=usdc';
+    renderHook(() => useUpgradeDeepLink());
+
+    expect(mocks.trackWidgetSelected).not.toHaveBeenCalled();
+  });
+
+  it('opens and emits once under StrictMode double-run (J6)', () => {
+    mocks.search = 'upgrade=dai';
+    renderHook(() => useUpgradeDeepLink(), {
+      wrapper: ({ children }: { children: ReactNode }) => createElement(StrictMode, null, children)
+    });
+
+    expect(mocks.open).toHaveBeenCalledOnce();
+    expect(mocks.trackWidgetSelected).toHaveBeenCalledOnce();
   });
 });

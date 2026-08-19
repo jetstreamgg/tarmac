@@ -62,6 +62,8 @@ function useSkyRewardsClaimable(scope: ClaimScope): ClaimableResult {
           <TokenIcon token={{ symbol: rewardSymbol }} width={32} showChainIcon={false} className="h-8 w-8" />
         ),
         formattedAmount: formatBigInt(claimBalance, { unit: decimals, maxDecimals: 2 }),
+        amount: parseFloat(formatUnits(claimBalance, decimals)),
+        tokenAddress: rewardToken?.address?.[chainId],
         amountUsd,
         chainId
       };

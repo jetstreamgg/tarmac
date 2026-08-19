@@ -38,7 +38,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
 
   // The CTA stays enabled while disconnected: clicking routes through the
   // connect flow and continues into the supply modal once connected.
-  const onSupplyOrConnect = useConnectThenAct(onSupply);
+  const onSupplyOrConnect = useConnectThenAct(onSupply, 'savings_supply');
 
   // The supply tokens this card advertises = the same chain-aware origins the
   // supply modal offers (USDS/DAI on mainnet, USDS/USDC on L2). Drives both the

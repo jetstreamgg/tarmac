@@ -1,24 +1,60 @@
+import { useEffect, useRef } from 'react';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { UnsupportedNetwork } from '@/modules/icons/UnsupportedNetwork';
-import { useChains, useSwitchChain } from 'wagmi';
+import { useChains, useConnection, useSwitchChain } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { useAppSearchParams } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
 export const UnsupportedNetworkPage = ({ children }: { children: React.ReactNode }) => {
   const chains = useChains();
   const { switchChain } = useSwitchChain();
   const [, setSearchParams] = useAppSearchParams();
+  const { chainId: walletChainId } = useConnection();
+  const { trackUnsupportedNetworkShown, trackNetworkSwitchRequested, trackNetworkSwitchCompleted } =
+    useAppAnalytics();
+
+  // Full-page block, recorded as a plain pageview until now (APP-444 D-4).
+  const shownTracked = useRef(false);
+  useEffect(() => {
+    if (shownTracked.current) return;
+    shownTracked.current = true;
+    trackUnsupportedNetworkShown({ walletChainId });
+  }, [trackUnsupportedNetworkShown, walletChainId]);
 
   const handleSwitchChain = (chainId: number, name: string) => {
+    // The wallet sits on an off-config chain, so wagmi's fallback chainId is
+    // not the real origin — report the wallet's actual chain when known.
+    const fromChainId = walletChainId ?? -1;
+    trackNetworkSwitchRequested({ source: 'unsupported_network_page', fromChainId, toChainId: chainId });
     setSearchParams(params => {
       params.set(QueryParams.Network, normalizeUrlParam(name));
       return params;
     });
-    switchChain({ chainId });
+    switchChain(
+      { chainId },
+      {
+        onSuccess: () =>
+          trackNetworkSwitchCompleted({
+            source: 'unsupported_network_page',
+            fromChainId,
+            toChainId: chainId,
+            status: 'success'
+          }),
+        onError: error =>
+          trackNetworkSwitchCompleted({
+            source: 'unsupported_network_page',
+            fromChainId,
+            toChainId: chainId,
+            status: isUserRejectedRequestError(error) ? 'rejected' : 'error'
+          })
+      }
+    );
   };
 
   return (

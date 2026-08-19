@@ -28,6 +28,7 @@ const reward = (id: string, symbol: string, name: string): ClaimableReward => ({
   tokenName: name,
   icon: null,
   formattedAmount: '18.78',
+  amount: 18.78,
   amountUsd: 20.78,
   chainId: 1
 });

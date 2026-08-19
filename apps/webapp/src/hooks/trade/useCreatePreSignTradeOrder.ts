@@ -66,7 +66,7 @@ export const useCreatePreSignTradeOrder = ({
   const { data: orderId, mutate: createOrder } = useMutation({
     mutationKey: ['create-cow-trade-order', order?.id],
     mutationFn: () => createTradeOrder(order!, chainId),
-    onMutate,
+    onMutate: () => onMutate(),
     onSuccess: data => {
       onStart(data || '');
       setShouldSendTransaction(true);

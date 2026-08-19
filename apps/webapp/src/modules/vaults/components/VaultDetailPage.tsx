@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { useChainId } from 'wagmi';
-import { Navigate } from '@tanstack/react-router';
+import { Navigate, useRouterState } from '@tanstack/react-router';
 import { Intent } from '@/lib/enums';
+import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
@@ -21,15 +23,23 @@ import { VaultProductDetail } from '@/modules/morpho/components/VaultProductDeta
 export function VaultDetailPage() {
   const chainId = useChainId();
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
+  const pathname = useRouterState({ select: s => s.location.pathname });
 
   const routeVaultAddress = (useRouteEntityParams().vaultAddress ?? null) as `0x${string}` | null;
 
   const vault = VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === routeVaultAddress?.toLowerCase());
   const vaultAddress = vault?.vaultAddress[chainId];
 
+  const fallbackToMarketplace = !vault || !vaultAddress;
+  useEffect(() => {
+    if (fallbackToMarketplace) {
+      trackRouteRedirected({ fromPath: pathname, toPath: '/earn', reason: 'unknown_vault' });
+    }
+  }, [fallbackToMarketplace, pathname]);
+
   // Known vault, but not deployed on the active chain (e.g. the network param
   // switched under the URL) — the marketplace lists what this chain offers.
-  if (!vault || !vaultAddress) {
+  if (fallbackToMarketplace) {
     return <Navigate to="/earn" search={keepSearch} replace />;
   }
 

@@ -9,10 +9,12 @@ import {
   Suspense
 } from 'react';
 import { ConnectModal } from '../components/ConnectModal';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import type { ConnectReason } from '@/modules/analytics/constants';
 
 interface ConnectModalContextType {
   isOpen: boolean;
-  openConnectModal: () => void;
+  openConnectModal: (reason?: ConnectReason) => void;
   closeConnectModal: () => void;
 }
 
@@ -23,6 +25,7 @@ const MODAL_EXIT_MS = 300;
 
 export function ConnectModalProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const { trackConnectModalOpened } = useAppAnalytics();
   // `isOpen` gates the modal so its lazy chunk stays off the initial load, but
   // that also unmounted it in the same tick it was told to close, cutting the
   // exit animation. Mounting is held for the length of that animation and then
@@ -42,7 +45,16 @@ export function ConnectModalProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => () => (unmountTimer.current ? clearTimeout(unmountTimer.current) : undefined), []);
 
-  const openConnectModal = useCallback(() => setOpen(true), [setOpen]);
+  // Funnel top (APP-444 C4): every open names why — gated actions pass their
+  // reason through ConnectThenAct; bare opens are the generic connect button.
+  // Callers use this as an onClick handler, so the first arg may be an event.
+  const openConnectModal = useCallback(
+    (reason?: ConnectReason) => {
+      trackConnectModalOpened({ connectReason: typeof reason === 'string' ? reason : 'connect_button' });
+      setOpen(true);
+    },
+    [setOpen, trackConnectModalOpened]
+  );
   const closeConnectModal = useCallback(() => setOpen(false), [setOpen]);
 
   return (

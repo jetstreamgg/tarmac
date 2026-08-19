@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { trackPromoImpression, trackPromoClicked } from '@/modules/analytics/lib/trackAmbientSurfaces';
 
 /**
  * Top-of-page banner shown to disconnected visitors: a short pitch and the same
@@ -10,6 +12,10 @@ import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal'
  */
 export function ConnectWalletCard() {
   const connect = useCustomConnectModal();
+
+  useEffect(() => {
+    trackPromoImpression({ promoId: 'connect_wallet_card' });
+  }, []);
 
   // Not-connected comps (1222:16510 mobile / 1222:14807 desktop): the
   // layered-glass-panels asset in a 96px box on the phone tier, 160 from md
@@ -41,7 +47,10 @@ export function ConnectWalletCard() {
           variant="primary"
           size="xl"
           className="h-12 w-full md:h-14 md:w-auto"
-          onClick={connect}
+          onClick={() => {
+            trackPromoClicked({ promoId: 'connect_wallet_card' });
+            connect();
+          }}
           data-testid="portfolio-connect-card-button"
         >
           <Trans>Connect wallet</Trans>
