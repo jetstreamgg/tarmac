@@ -11,6 +11,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useNetworkFee } from '@/hooks';
@@ -96,8 +97,9 @@ export function SavingsModalForm({
     switchOrigin
   } = form;
 
-  const { execute, steps, prepared, calls, isBatch } = useSavingsLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useSavingsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
@@ -266,6 +268,7 @@ export function SavingsModalForm({
     sessionId,
     execute,
     confirmDisabled: disabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,

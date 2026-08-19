@@ -25,6 +25,7 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
@@ -35,6 +36,9 @@ import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
+
+const FOOTER_NOTE_CLASSES =
+  'flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left';
 
 /** Reopen context (F6, C17): the takeover re-funds an EXISTING emptied urn. */
 export interface ReopenContext {
@@ -190,14 +194,16 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     // ceiling binds) stays valid — strict < left Confirm disabled with no error.
     ((debouncedUsdsToBorrow > 0n && debouncedUsdsToBorrow <= availableBorrowFromDebtCeiling) ||
       !debouncedUsdsToBorrow);
+  // No amount gate: a lock-only simulation failure must still say why Confirm
+  // is dead. minCollateralNotMet keeps its own warning card instead; at a
+  // staged borrow of 0 the mapper swaps in generic copy (the amount can't be
+  // the problem — see formatSimulationErrorMessage).
   const borrowError =
     debouncedUsdsToBorrow > availableBorrowFromDebtCeiling
       ? t`Requested borrow amount exceeds the debt ceiling`
       : minCollateralNotMet
         ? undefined
-        : debouncedUsdsToBorrow > 0n
-          ? formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust)
-          : undefined;
+        : formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust, debouncedUsdsToBorrow);
 
   const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
 
@@ -267,7 +273,21 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     onSuccess
   });
 
-  const { launch, prepared, isLoading: launchLoading } = reopen ? reopenLaunch : openLaunch;
+  const {
+    launch,
+    prepared,
+    isLoading: launchLoading,
+    error: launchError
+  } = reopen ? reopenLaunch : openLaunch;
+  // This host outlives the transaction (page-mounted), so pass null while the
+  // form is invalid — a stale execution error must not masquerade as a prepare
+  // failure once the engine is disabled. Same while the engine is re-simulating
+  // (`prepared` dips false with the previous run's write/mining error still
+  // set): a genuine prepare failure survives the load and shows on settle.
+  const launchErrorMessage = enginePrepareErrorMessage(
+    prepared,
+    formValid && !launchLoading ? launchError : null
+  );
 
   // The launch seam prepares calldata from the DEBOUNCED amounts; until they
   // catch up with what's typed, `prepared` refers to stale calldata (e.g. an
@@ -291,10 +311,23 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       dataTestId="stake-takeover"
       footer={
         <>
-          {/* 237px is the comp's two-line measure for this copy (1036:209863). */}
-          <p className="text-fgSecondary flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left">
-            <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
-          </p>
+          {/* 237px is the comp's two-line measure for this copy (1036:209863).
+              An engine prepare failure takes over the slot — the helper copy
+              would be a lie next to a dead Confirm. Two elements (not one
+              recolored <p>) so the alert mounts fresh for screen readers. */}
+          {launchErrorMessage ? (
+            <p
+              className={`text-error ${FOOTER_NOTE_CLASSES}`}
+              data-testid="stake-takeover-error"
+              role="alert"
+            >
+              {launchErrorMessage}
+            </p>
+          ) : (
+            <p className={`text-fgSecondary ${FOOTER_NOTE_CLASSES}`}>
+              <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
+            </p>
+          )}
           <Button
             variant="primary"
             size="xl"

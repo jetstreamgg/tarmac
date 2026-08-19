@@ -319,3 +319,67 @@ describe('TransactionModal — editable entry step', () => {
     expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
   });
 });
+
+describe('TransactionModal — engine error slot', () => {
+  it('renders entry.errorMessage above the confirm and drops it when the body pushes undefined (engine recovered)', () => {
+    const SESSION = 'savings-supply-err';
+    const get = renderModal(() => ({
+      title: 'Supply to Sky Savings',
+      sessionId: SESSION,
+      entry: {
+        content: <div>fields</div>,
+        confirmLabel: 'Supply',
+        confirmDisabled: true,
+        errorMessage: 'Something went wrong preparing the transaction. Please try again.'
+      },
+      onConfirm: () => {}
+    }));
+
+    const error = screen.getByTestId('transaction-modal-error');
+    expect(error.textContent).toMatch(/something went wrong preparing/i);
+
+    // The engine recovers: the body pushes errorMessage: undefined (the
+    // always-push contract) and re-enables the confirm.
+    act(() =>
+      get().updateModalContent(SESSION, { entry: { confirmDisabled: false, errorMessage: undefined } })
+    );
+    expect(screen.queryByTestId('transaction-modal-error')).toBeNull();
+  });
+
+  it('renders the top-level errorMessage on a review-only config (no entry)', () => {
+    renderModal(() => ({
+      title: 'Review conversion',
+      transactionContent: <div data-testid="review-body">review</div>,
+      confirmLabel: 'Confirm',
+      confirmDisabled: true,
+      errorMessage: 'Something went wrong preparing the transaction. Please try again.',
+      onConfirm: () => {}
+    }));
+
+    expect(screen.queryByTestId('review-body')).not.toBeNull();
+    expect(screen.getByTestId('transaction-modal-error').textContent).toMatch(
+      /something went wrong preparing/i
+    );
+  });
+
+  it('appears when a live push surfaces a prepare failure mid-session', () => {
+    const SESSION = 'vault-withdraw-err';
+    const get = renderModal(() => ({
+      title: 'Withdraw',
+      sessionId: SESSION,
+      entry: { content: <div>fields</div>, confirmLabel: 'Review', confirmDisabled: false },
+      onConfirm: () => {}
+    }));
+
+    expect(screen.queryByTestId('transaction-modal-error')).toBeNull();
+
+    act(() =>
+      get().updateModalContent(SESSION, {
+        entry: { confirmDisabled: true, errorMessage: 'Insufficient vault liquidity for this withdrawal.' }
+      })
+    );
+    expect(screen.getByTestId('transaction-modal-error').textContent).toMatch(
+      /insufficient vault liquidity/i
+    );
+  });
+});

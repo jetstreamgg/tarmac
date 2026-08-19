@@ -15,6 +15,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useNetworkFee } from '@/hooks';
@@ -94,7 +95,7 @@ export function VaultModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, calls, isBatch } = useVaultLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   const {
@@ -127,6 +128,7 @@ export function VaultModalForm({
     ]
   );
   const disabled = !amountReady || !prepared;
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // The stars accent marks an incentive-boosted rate, mirroring the vault rate
   // popover (`MorphoRateBreakdownPopover`) — read from the same market data.
@@ -273,6 +275,7 @@ export function VaultModalForm({
     sessionId,
     execute,
     confirmDisabled: disabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,

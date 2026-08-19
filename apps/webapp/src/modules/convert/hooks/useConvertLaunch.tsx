@@ -10,6 +10,7 @@ import { TxStatus } from '@/widgets';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { usePsmConversion, type UsePsmConversionResult } from './usePsmConversion';
@@ -92,6 +93,10 @@ export function useConvertLaunch({
 
   const confirmDisabled =
     amount === 0n || !!conversion.disabledReason || !conversion.prepared || conversion.isLoading;
+  // This hook outlives the transaction (page-mounted), so pass null while the
+  // form is idle — a stale execution error must not masquerade as a prepare
+  // failure once the engine is disabled.
+  const errorMessage = enginePrepareErrorMessage(conversion.prepared, amount > 0n ? conversion.error : null);
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
@@ -215,6 +220,7 @@ export function useConvertLaunch({
       steps,
       confirmLabel: t`Confirm`,
       confirmDisabled,
+      errorMessage,
       onConfirm: () => executeRef.current(),
       onSuccess: handleSuccess,
       sessionId,
@@ -242,6 +248,7 @@ export function useConvertLaunch({
     transactionScreenContent,
     steps,
     confirmDisabled,
+    errorMessage,
     handleSuccess,
     sessionId,
     direction,
@@ -258,7 +265,13 @@ export function useConvertLaunch({
   // on the wallet/status screens.
   useEffect(() => {
     if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
-    updateModalContent(sessionId, { transactionContent, transactionScreenContent, confirmDisabled, steps });
+    updateModalContent(sessionId, {
+      transactionContent,
+      transactionScreenContent,
+      confirmDisabled,
+      errorMessage,
+      steps
+    });
   }, [
     isModalOpen,
     txStatus,
@@ -267,6 +280,7 @@ export function useConvertLaunch({
     transactionContent,
     transactionScreenContent,
     confirmDisabled,
+    errorMessage,
     steps
   ]);
 

@@ -22,6 +22,7 @@ import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
@@ -202,24 +203,25 @@ export function ManagePositionTakeover({
   const hasEnoughUsds =
     !!usdsBalance?.value && usdsBalance.value > 0n && usdsBalance.value >= debouncedUsdsAmount;
 
+  // No amount gates on the simulation branches: a lock/free-only simulation
+  // failure must still say why Confirm is dead. minCollateralNotMet keeps its
+  // own warning card instead; at a staged amount of 0 the mapper swaps in
+  // generic copy (the amount can't be the problem — see
+  // formatSimulationErrorMessage).
   const borrowError =
     state.borrowMode === 'borrow'
       ? usdsToBorrow > availableBorrowFromDebtCeiling
         ? t`Requested borrow amount exceeds the debt ceiling`
         : minCollateralNotMet
           ? undefined
-          : usdsToBorrow > 0n
-            ? formatSimulationErrorMessage(simulationError?.message, existingVault?.dust)
-            : undefined
+          : formatSimulationErrorMessage(simulationError?.message, existingVault?.dust, usdsToBorrow)
       : minDebtNotMet
         ? t`Debt must be paid off entirely, or left with a minimum of ${formatBigInt(existingVault?.dust ?? 0n)}`
         : !hasEnoughUsds && usdsToWipe > 0n
           ? t`Not enough USDS in your wallet`
           : newDebtValue < 0n
             ? t`Amount exceeds debt`
-            : usdsToWipe > 0n
-              ? (simulationError?.message ?? undefined)
-              : undefined;
+            : formatSimulationErrorMessage(simulationError?.message, undefined, usdsToWipe);
 
   const borrowCardValid =
     !state.borrowEnabled ||
@@ -299,7 +301,8 @@ export function ManagePositionTakeover({
   const {
     launch,
     prepared,
-    isLoading: launchLoading
+    isLoading: launchLoading,
+    error: launchError
   } = useStakeManageLaunch({
     urnIndex: BigInt(urnIndex),
     urnAddress: detail.urnAddress,
@@ -315,6 +318,15 @@ export function ManagePositionTakeover({
   });
 
   const confirmDisabled = !formValid || !prepared || launchLoading;
+  // This host outlives the transaction (page-mounted), so pass null while the
+  // form is invalid — a stale execution error must not masquerade as a prepare
+  // failure once the engine is disabled. Same while the engine is re-simulating
+  // (`prepared` dips false with the previous run's write/mining error still
+  // set): a genuine prepare failure survives the load and shows on settle.
+  const launchErrorMessage = enginePrepareErrorMessage(
+    prepared,
+    formValid && !launchLoading ? launchError : null
+  );
 
   // Est. annual rewards delta for card 1 (M22): rate × simulated collateral.
   const estNextSky =
@@ -338,9 +350,18 @@ export function ManagePositionTakeover({
       dataTestId="stake-manage-takeover"
       footer={
         <>
-          <p className="text-textSecondary max-w-xs text-sm">
-            <Trans>Review the changes to your position, and continue to confirm it in your wallet.</Trans>
-          </p>
+          {/* An engine prepare failure takes over the slot — the helper copy
+              would be a lie next to a dead Confirm. Two elements (not one
+              recolored <p>) so the alert mounts fresh for screen readers. */}
+          {launchErrorMessage ? (
+            <p className="text-error max-w-xs text-sm" data-testid="stake-manage-error" role="alert">
+              {launchErrorMessage}
+            </p>
+          ) : (
+            <p className="text-textSecondary max-w-xs text-sm">
+              <Trans>Review the changes to your position, and continue to confirm it in your wallet.</Trans>
+            </p>
+          )}
           <Button
             variant="primary"
             size="xl"

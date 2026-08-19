@@ -18,6 +18,7 @@ import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { setUpgradeModalOpen } from '@/modules/analytics/lib/destination';
@@ -130,6 +131,7 @@ export function UpgradeModalForm({
   // see `confirmAction`), and reverts to the gated "Continue" once connected.
   const { openConnectModal } = useConnectModal();
   const disabled = isConnected && (!amountReady || !prepared);
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // The wallet balance is chain state the engine's success doesn't refetch —
   // sync it so the entry screen shows the post-upgrade balance if revisited.
@@ -205,6 +207,7 @@ export function UpgradeModalForm({
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
     confirmAction: isConnected ? undefined : connectAction,
+    errorMessage,
     steps,
     transactionScreenContent,
     toast,
@@ -280,11 +283,6 @@ export function UpgradeModalForm({
         <ModalSummaryGrid rows={toGridCells(rows, 'upgrade-modal-row', feeCell)} dividerClassName="h-6" />
 
         {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
-        {error && amountReady && (
-          <Text className="text-error text-sm" data-testid="upgrade-modal-error">
-            <Trans>Something went wrong preparing the transaction. Please try again.</Trans>
-          </Text>
-        )}
       </div>
     </div>
   );

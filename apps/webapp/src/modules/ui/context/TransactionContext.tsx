@@ -646,6 +646,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             externalLink={modalView.externalLink}
             confirmLabel={modalView.config.confirmLabel}
             confirmDisabled={modalView.config.confirmDisabled}
+            errorMessage={modalView.config.errorMessage}
             successLabel={modalView.config.successLabel}
             errorLabel={modalView.config.errorLabel}
             steps={modalView.config.steps}
