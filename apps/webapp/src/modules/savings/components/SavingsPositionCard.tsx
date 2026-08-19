@@ -8,7 +8,7 @@ import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PositionHero } from '@/components/product/PositionHero';
-import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
+import { PositionCardError, PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   NO_VALUE,
   ProductActions,
@@ -42,7 +42,7 @@ const formatToken = (value?: bigint) =>
 export function SavingsPositionCard() {
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
-  const { data: savingsData, mutate: mutateSavings } = useSavingsData();
+  const { data: savingsData, error: savingsError, mutate: mutateSavings } = useSavingsData();
   const { data: susdsBalance, refetch: refetchSusds } = useTokenBalance({
     address,
     chainId,
@@ -64,9 +64,14 @@ export function SavingsPositionCard() {
   const { openSupply, openWithdraw } = useSavingsModal({ onSuccess: refreshPosition });
 
   // Hold the card slot until the position read resolves — deciding on the 0n
-  // fallback flashes the supply pitch at users who hold a position.
+  // fallback flashes the supply pitch at users who hold a position. A failed
+  // read settles on the error card rather than pulsing forever.
   if (isConnected && savingsData === undefined) {
-    return <PositionCardSkeleton testId="savings-position-card-skeleton" />;
+    return savingsError ? (
+      <PositionCardError testId="savings-position-card-error" />
+    ) : (
+      <PositionCardSkeleton testId="savings-position-card-skeleton" />
+    );
   }
 
   const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;

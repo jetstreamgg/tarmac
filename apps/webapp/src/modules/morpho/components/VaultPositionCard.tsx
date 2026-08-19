@@ -14,7 +14,7 @@ import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PositionHero } from '@/components/product/PositionHero';
-import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
+import { PositionCardError, PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   ProductActions,
   ProductPositionCard,
@@ -59,7 +59,7 @@ export function VaultPositionCard({
   });
   const netRate = marketData?.rate?.netRate;
 
-  const { data: vaultData, mutate: mutateVault } = useErc4626VaultData({ vaultAddress });
+  const { data: vaultData, error: vaultError, mutate: mutateVault } = useErc4626VaultData({ vaultAddress });
 
   // Rewards read through the same claim adapter the "Claim rewards" modal uses,
   // so the amount on this card is by construction the amount the modal quotes
@@ -87,9 +87,14 @@ export function VaultPositionCard({
   const modalArgs = { vaultAddress, assetToken, vaultName, netRate, provider };
 
   // Hold the card slot until the position read resolves — deciding on the 0n
-  // fallback flashes the supply pitch at users who hold a position.
+  // fallback flashes the supply pitch at users who hold a position. A failed
+  // read settles on the error card rather than pulsing forever.
   if (isConnected && vaultData === undefined) {
-    return <PositionCardSkeleton testId="vault-position-card-skeleton" />;
+    return vaultError ? (
+      <PositionCardError testId="vault-position-card-error" />
+    ) : (
+      <PositionCardSkeleton testId="vault-position-card-skeleton" />
+    );
   }
 
   const userAssets = vaultData?.userAssets ?? 0n;

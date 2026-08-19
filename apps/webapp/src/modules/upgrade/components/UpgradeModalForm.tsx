@@ -76,10 +76,12 @@ export function UpgradeModalForm({
     chainId
   });
 
-  const { data: mkrSkyFee } = useMkrSkyFee();
+  const { data: mkrSkyFee, error: mkrSkyFeeError } = useMkrSkyFee();
   // Unknown fee = unknown economics: the penalty/receive cells and the confirm
-  // both wait on it.
+  // both wait on it. A failed read settles the cells on "Unavailable" instead
+  // of an endless pulse — the confirm stays disabled either way.
   const feeUnknown = isMkr && mkrSkyFee === undefined;
+  const feeFailed = feeUnknown && mkrSkyFeeError !== null;
   const fee = isMkr ? (mkrSkyFee ?? 0n) : 0n;
   const receiveAmount = math.calculateConversion({ symbol: token }, debouncedAmount, fee);
 
@@ -222,15 +224,17 @@ export function UpgradeModalForm({
     targetRate: isMkr
       ? formatNumber(Number(math.MKR_TO_SKY_RATE), { minDecimals: 2, maxDecimals: 2 })
       : '1.00',
-    receiveAmount: formatAmount(receiveAmount),
+    receiveAmount: feeFailed ? t`Unavailable` : formatAmount(receiveAmount),
     penalty: isMkr
-      ? `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
+      ? feeFailed
+        ? t`Unavailable`
+        : `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
       : undefined,
     // 12px info glyph after the label (Figma 1343:79562).
     penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} height={12} /> : undefined,
     network: networkName,
     networkFee: networkFee?.formatted ?? NO_VALUE,
-    feeLoading: feeUnknown
+    feeLoading: feeUnknown && !feeFailed
   });
 
   const body = (
