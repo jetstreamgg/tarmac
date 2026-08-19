@@ -3,6 +3,7 @@ import { useConnection, useSignMessage } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
+import { setVpnSuperProperties } from '@/modules/analytics/superProperties';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import { toError } from '@/hooks';
@@ -409,6 +410,25 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refetchVpnCheck();
     if (enabled) refetchAddressCheck();
   }, [refetchVpnCheck, refetchAddressCheck, enabled]);
+
+  // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
+  // PostHog event carries them. Unlike the fire-once tracking below, this re-runs
+  // whenever the periodic check produces a changed result — VPN status can change
+  // mid-session. Fresh data wins over a transient poll error (react-query keeps
+  // the last good result); 'unknown' is only registered when the check has failed
+  // without ever succeeding. Skipped checks (private deployments, mock wallet)
+  // register nothing.
+  useEffect(() => {
+    if (skipAuthCheck) return;
+    if (vpnData) {
+      setVpnSuperProperties({
+        is_vpn: vpnData.isConnectedToVpn ?? 'unknown',
+        is_restricted_region: vpnData.isRestrictedRegion ?? 'unknown'
+      });
+    } else if (vpnError) {
+      setVpnSuperProperties({ is_vpn: 'unknown', is_restricted_region: 'unknown' });
+    }
+  }, [skipAuthCheck, vpnData, vpnError]);
 
   useEffect(() => {
     if (skipAuthCheck || vpnIsLoading || vpnTrackedRef.current) return;

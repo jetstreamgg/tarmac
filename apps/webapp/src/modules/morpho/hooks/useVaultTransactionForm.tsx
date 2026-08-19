@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   type Token,
@@ -12,6 +12,7 @@ import {
   type VaultProvider
 } from '@/hooks';
 import { formatNumber } from '@/utils';
+import { parseAmountInput } from '@/lib/amountInput';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
 import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
 
@@ -20,14 +21,6 @@ export type VaultModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDC supplied!"). */
 export type VaultToastTitles = { loading: string; success: string; error: string };
-
-const parseAmount = (value: string, decimals: number): bigint => {
-  try {
-    return value ? parseUnits(value, decimals) : 0n;
-  } catch {
-    return 0n;
-  }
-};
 
 export interface VaultTransactionForm {
   isConnected: boolean;
@@ -85,7 +78,7 @@ export function useVaultTransactionForm({
   // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
   const [max, setMax] = useState(false);
 
-  const amount = parseAmount(value, decimals);
+  const amount = parseAmountInput(value, decimals);
 
   const { data: walletBalance } = useTokenBalance({
     address,
@@ -127,7 +120,7 @@ export function useVaultTransactionForm({
   const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? position);
   const isZero = amount === 0n;
   const insufficient = amount > available;
-  const amountReady = isConnected && !isZero && !insufficient;
+  const amountReady = isConnected && amount > 0n && !insufficient;
 
   const onInput = (next: string) => {
     setMax(false);

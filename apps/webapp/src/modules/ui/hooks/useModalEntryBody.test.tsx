@@ -15,17 +15,20 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 import { TxStatus } from '@/widgets';
 import { useModalEntryBody } from './useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 
 function Host({
   steps,
   transactionContent,
   confirmLabel,
-  confirmAction
+  confirmAction,
+  analytics
 }: {
   steps?: TransactionStep[];
   transactionContent?: ReactNode;
   confirmLabel?: string;
   confirmAction?: () => void;
+  analytics?: TransactionAnalytics;
 }) {
   const renderInSlot = useModalEntryBody({
     sessionId: 's1',
@@ -34,7 +37,8 @@ function Host({
     confirmLabel,
     confirmAction,
     steps,
-    transactionContent
+    transactionContent,
+    analytics
   });
   return <>{renderInSlot(<div data-testid="body" />)}</>;
 }
@@ -118,5 +122,28 @@ describe('useModalEntryBody — entry CTA overrides', () => {
     expect('confirmAction' in entry).toBe(true);
     expect(entry.confirmAction).toBeUndefined();
     expect(entry.confirmLabel).toBe('Continue');
+  });
+});
+
+describe('useModalEntryBody — analytics live merge', () => {
+  beforeEach(() => {
+    h.txStatus = TxStatus.IDLE;
+    h.updateModalContent.mockClear();
+  });
+
+  it('pushes analytics alongside the rest of the live config while IDLE', () => {
+    const analytics: TransactionAnalytics = {
+      widgetName: 'savings',
+      flow: 'supply',
+      action: 'supply',
+      data: { module: 'savings', amount: 100 }
+    };
+    render(<Host analytics={analytics} />);
+    expect(h.updateModalContent).toHaveBeenCalledWith('s1', expect.objectContaining({ analytics }));
+  });
+
+  it('omits the analytics key entirely when not supplied — never clobbers a launch-time blob', () => {
+    render(<Host />);
+    expect('analytics' in h.updateModalContent.mock.calls[0][1]).toBe(false);
   });
 });

@@ -2,6 +2,13 @@ import { isUserRejection, extractErrorCode } from '@/hooks/helpers';
 
 export type WidgetErrorKind = 'user_rejected' | 'reverted' | 'wallet_error' | 'unknown';
 
+export interface TransactionErrorProperties {
+  error_kind: WidgetErrorKind;
+  is_user_rejection: boolean;
+  error_code?: number;
+  error_name?: string;
+}
+
 /**
  * Classifies a widget tx failure into bounded, address-free properties for
  * analytics. `hasTxHash` splits on-chain reverts (a tx was broadcast) from
@@ -9,7 +16,7 @@ export type WidgetErrorKind = 'user_rejected' | 'reverted' | 'wallet_error' | 'u
  * the enum, the numeric code, and the viem class name are captured — never the
  * raw message, which can embed wallet addresses and calldata.
  */
-export function classifyTransactionError(error: unknown, hasTxHash: boolean): Record<string, unknown> {
+export function classifyTransactionError(error: unknown, hasTxHash: boolean): TransactionErrorProperties {
   // A rejection happens before broadcast, so it never carries a tx_hash. If one
   // exists the tx reached the chain and can't be a rejection — this also stops a
   // revert reason that happens to contain "user rejected"/"user denied" from

@@ -29,7 +29,7 @@ vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => analytics
 }));
 vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
-  useAnalyticsFlow: () => ({ startNewFlow: vi.fn() })
+  useAnalyticsFlow: () => ({ startNewFlow: vi.fn(), getFlowId: () => 'flow-test' })
 }));
 
 // Capture the styled toast surfaced while minimized (the app's toastWithClose).
