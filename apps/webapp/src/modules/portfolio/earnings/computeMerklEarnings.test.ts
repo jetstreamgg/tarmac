@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MerklClaimRaw, MerklUserRewardRaw } from '../../../hooks/morpho/merklEarnedClient';
-import { computeMerklEarnings } from './computeMerklEarnings';
+import { attributedRewardTokenAddresses, computeMerklEarnings } from './computeMerklEarnings';
 import baLabsHistoricFixture from './baLabsUsdsHistoric.golden.fixtures.json';
 import claimsFixture from './merklClaims.golden.fixtures.json';
 import rewardsFixture from './merklUserRewards.golden.fixtures.json';
@@ -320,6 +320,55 @@ describe('computeMerklEarnings', () => {
 
       expect(result.totalEarned).toEqual({ status: 'ok', value: { usd: 0 } });
       expect(result.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 0 } });
+    });
+  });
+
+  describe('attributedRewardTokenAddresses', () => {
+    it('finds exactly the USDS reward token in the golden fixture (9 reward tokens, 1 attributed)', () => {
+      // Ground truth: USDS mainnet token address; the other 8 fixture rewards
+      // (MORPHO, GHO, aEthRLUSD, …) have no Flagship-attributed breakdown.
+      expect(attributedRewardTokenAddresses(goldenRewards, FLAGSHIP)).toEqual([
+        '0xdc035d45d973e3ec169d2276ddab16f1e407384f'
+      ]);
+    });
+
+    it('counts airdrop-name attributions and dedupes per token', () => {
+      const airdropOnly = reward({
+        breakdowns: [
+          {
+            reason: 'usds-flagship-ssr',
+            amount: wei(1),
+            claimed: wei(0),
+            pending: wei(0),
+            campaignId: '0x2'
+          },
+          {
+            reason: `ERC20_${FLAGSHIP}`,
+            amount: wei(2),
+            claimed: wei(0),
+            pending: wei(0),
+            campaignId: '0x3'
+          }
+        ]
+      });
+      expect(attributedRewardTokenAddresses([airdropOnly], FLAGSHIP)).toEqual([
+        '0xaaa0000000000000000000000000000000000001'
+      ]);
+    });
+
+    it('returns [] when no breakdown is attributed', () => {
+      const other = reward({
+        breakdowns: [
+          {
+            reason: 'ERC20_0xSomeOtherVault',
+            amount: wei(1),
+            claimed: wei(0),
+            pending: wei(0),
+            campaignId: '0x4'
+          }
+        ]
+      });
+      expect(attributedRewardTokenAddresses([other], FLAGSHIP)).toEqual([]);
     });
   });
 });
