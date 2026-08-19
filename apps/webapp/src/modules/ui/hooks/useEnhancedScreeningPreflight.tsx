@@ -33,7 +33,11 @@ const PENDING: TransactionPreflight = { kind: 'pending' };
  *
  * Fail closed: an errored check blocks. The query keeps retrying on a
  * 60s interval (matching the connect-time screening cadence) so a transient
- * outage recovers without the user having to relaunch the flow.
+ * outage recovers without the user having to relaunch the flow. A RISKY
+ * verdict re-polls too, on a gentler 5-minute cadence: false positives are
+ * expected most on this tier and the backend ships an admin purge for them
+ * (api-workers #114) — without the re-poll a purged wallet would keep
+ * showing the denial for the full cache age unless the user reloaded.
  */
 export const useEnhancedScreeningPreflight: PreflightHook = ({ usdValue, active, actionable }) => {
   const { address } = useConnection();
@@ -46,7 +50,12 @@ export const useEnhancedScreeningPreflight: PreflightHook = ({ usdValue, active,
     enabled: required,
     staleTime: SCREENING_MAX_AGE_MS,
     retry: 1,
-    refetchInterval: query => (query.state.status === 'error' ? 60_000 : false)
+    refetchInterval: query =>
+      query.state.status === 'error'
+        ? 60_000
+        : query.state.data?.addressAllowed === false
+          ? 5 * 60_000
+          : false
   });
 
   if (!required) return CLEAR;

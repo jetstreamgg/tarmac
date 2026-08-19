@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -124,6 +124,28 @@ describe('useEnhancedScreeningPreflight', () => {
     const { result } = renderPreflight(300_000);
 
     await waitFor(() => expect(result.current.kind).toBe('blocked'));
+  });
+
+  it('a risky verdict re-polls on the 5-minute cadence — an admin purge clears the block without a reload', async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.fetchEnhancedAddressScreening
+        .mockResolvedValueOnce({ addressAllowed: false })
+        .mockResolvedValueOnce({ addressAllowed: true });
+      const { result } = renderPreflight(300_000);
+
+      await act(async () => await vi.advanceTimersByTimeAsync(0));
+      expect(result.current.kind).toBe('blocked');
+
+      await act(async () => await vi.advanceTimersByTimeAsync(5 * 60_000));
+      expect(mocks.fetchEnhancedAddressScreening).toHaveBeenCalledTimes(2);
+      // The observer notification rides its own short timer — flush it (well
+      // under the next 5-minute tick).
+      await act(async () => await vi.advanceTimersByTimeAsync(1_000));
+      expect(result.current).toEqual({ kind: 'clear' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('a cached verdict from the GATE clears without a fetch (shared cache)', () => {
