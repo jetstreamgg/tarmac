@@ -28,6 +28,17 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
 export type GateTrigger = 'confirm' | 'secondaryConfirm' | 'retry';
 
 /**
+ * Which gate phase currently owns the modal's INITIALIZED status. The
+ * provider needs the distinction when the user closes (or relaunches over)
+ * a pending gate phase: neither is an abandoned *transaction* — no
+ * `app_widget_flow_started` has fired yet — so neither may emit the
+ * cancelled completion event. 'screening' has nothing in the wallet at all
+ * (no toast either); 'signature' has a sign request the user is walking
+ * away from (signature-specific toast + the terms-signature-declined event).
+ */
+export type GatePhase = 'screening' | 'signature';
+
+/**
  * Gate-owned copy shown in place of the flow's own while a gate status is
  * driving the modal — the flow's copy narrates on-chain writes ("Confirm this
  * transaction in your wallet", the flow's error sentence), which is wrong
@@ -53,16 +64,18 @@ export type GateStatusCopy = {
  */
 export type GateControls = {
   /**
-   * Drives the modal's status while the verdict is pending ('initialized'),
-   * on a denial the user recovers from in place ('error' — with a signature
-   * prelude step mounted this renders the failed-signature row + retry), or
-   * back to 'idle' immediately before allowing an action that will drive the
-   * status itself. That last one matters: the engine's `onMutate` advances
-   * `currentStep` when it fires at INITIALIZED — correct exactly when a
-   * prelude step was inserted and now needs stepping past, wrong otherwise.
-   * The optional copy replaces the flow's status copy while set.
+   * Drives the modal's status while the verdict is pending ('screening' and
+   * 'signature' both render as INITIALIZED, but the provider records which
+   * phase owns it — see GatePhase), on a denial the user recovers from in
+   * place ('error' — with a signature prelude step mounted this renders the
+   * failed-signature row + retry), or back to 'idle' immediately before
+   * allowing an action that will drive the status itself. That last one
+   * matters: the engine's `onMutate` advances `currentStep` when it fires at
+   * INITIALIZED — correct exactly when a prelude step was inserted and now
+   * needs stepping past, wrong otherwise. The optional copy replaces the
+   * flow's status copy while set.
    */
-  setGateStatus: (status: 'initialized' | 'error' | 'idle', copy?: GateStatusCopy) => void;
+  setGateStatus: (status: GatePhase | 'error' | 'idle', copy?: GateStatusCopy) => void;
   /**
    * Mounts off-chain prelude steps ahead of the config's own step list (or
    * clears them with null). Cleared automatically on launch and close.
@@ -70,6 +83,16 @@ export type GateControls = {
   setPreludeSteps: (steps: TransactionStep[] | null) => void;
   /** Tears the transaction modal down — the gate is replacing it with its own surface. */
   closeModal: () => void;
+  /**
+   * The user rejected the terms sign request in their wallet. Emits the
+   * terms-signature-declined analytics event (method 'wallet_rejected'),
+   * attributed to the gated config — the provider owns the attribution
+   * (widget/flow/action/flow_id), which the gate never sees. Call it only
+   * for a genuine user rejection, never for a technical signing failure.
+   * The provider emits the 'abandoned' counterpart itself when the modal is
+   * closed (or relaunched over) during the pending signature phase.
+   */
+  reportSignatureRejected: () => void;
   /**
    * True once the session this gate run belongs to has closed or been
    * replaced. Check it after every await — and always before starting a
