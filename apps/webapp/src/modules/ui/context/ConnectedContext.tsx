@@ -6,15 +6,41 @@ import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { setVpnSuperProperties } from '@/modules/analytics/superProperties';
 import { reportError } from '@/modules/sentry/reportError';
-import { checkTermsWithRetry } from '@/modules/ui/lib/checkTermsWithRetry';
+import { addTermsAcceptance } from '@/modules/ui/lib/addTermsAcceptance';
+import { checkTermsWithRetry, type TermsCheckData } from '@/modules/ui/lib/checkTermsWithRetry';
+import { useTermsAcceptance } from '@/modules/ui/hooks/useTermsAcceptance';
 
 interface ConnectedContextType {
   isConnectedAndAcceptedTerms: boolean;
   isAuthorized: boolean;
-  setHasAcceptedTerms: (value: boolean) => void;
   isCheckingTerms: boolean;
   termsCheckError: boolean;
   retryTermsCheck: () => void;
+  /**
+   * The localStorage flag AND the DB's `accepted` — either half missing
+   * re-prompts. Gates browsing (APP-499).
+   */
+  hasAcceptedTerms: boolean;
+  /**
+   * `signedForCurrentVersion` from `/check`. Gates the per-transaction
+   * signature step (C6) and nothing else — a user with no signature browses
+   * normally, which is the whole point of the two-phase split.
+   */
+  hasSignedCurrentTerms: boolean;
+  /** Current terms version: keys the local flag, and renders in the modal footer (C4). */
+  latestTermsVersion?: string;
+  /**
+   * The exact text C6 passes to `signMessage`. Served by the worker on
+   * `/check` (APP-508) — the webapp holds no copy of it, so the string the
+   * user signs is the one the worker verifies.
+   */
+  termsMessageToSign?: string;
+  /**
+   * Phase A acceptance: posts to `/terms-acceptance/add`, then writes the
+   * local flag — in that order. Resolves false if the write failed, leaving
+   * the user re-prompted rather than browsing unrecorded.
+   */
+  acceptTerms: () => Promise<boolean>;
   authData: {
     addressAllowed?: boolean;
     authIsLoading: boolean;
@@ -33,10 +59,12 @@ interface ConnectedContextType {
 export const ConnectedContext = createContext<ConnectedContextType>({
   isConnectedAndAcceptedTerms: false,
   isAuthorized: false,
-  setHasAcceptedTerms: () => {},
   isCheckingTerms: false,
   termsCheckError: false,
   retryTermsCheck: () => {},
+  hasAcceptedTerms: false,
+  hasSignedCurrentTerms: false,
+  acceptTerms: async () => false,
   authData: {
     authIsLoading: false
   },
@@ -46,8 +74,8 @@ export const ConnectedContext = createContext<ConnectedContextType>({
 });
 
 export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isConnected, address } = useConnection();
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const { isConnected, address, chainId, connector } = useConnection();
+  const [termsCheck, setTermsCheck] = useState<TermsCheckData | undefined>(undefined);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -114,20 +142,21 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     setIsCheckingTerms(false);
 
-    if (result.error) {
+    if (result.status === 'error') {
       reportError(result.lastError ?? new Error('Terms check failed after retries'), {
         module: 'auth',
         flow: 'terms-check',
         action: 'fetch',
         type: 'terms_check_error'
       });
+      setTermsCheck(undefined);
       setTermsCheckError(true);
-    } else if (result.accessDenied) {
+    } else if (result.status === 'access-denied') {
       // 403 is an intentional access denial (VPN/region or sanctioned address).
-      // The VPN/address hooks handle the blocked UI — just mark terms as not accepted.
-      setHasAcceptedTerms(false);
+      // The VPN/address hooks handle the blocked UI — just hold no terms state.
+      setTermsCheck(undefined);
     } else {
-      setHasAcceptedTerms(result.termsAccepted);
+      setTermsCheck(result);
     }
   }, []);
 
@@ -138,17 +167,85 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [isConnected, address, checkTermsAcceptance]);
 
   useEffect(() => {
-    if (skipAuthCheck) {
-      setHasAcceptedTerms(true);
-      return;
-    }
+    if (skipAuthCheck) return;
     if (isConnected && address) {
       checkTermsAcceptance(address);
     } else {
-      setHasAcceptedTerms(false);
+      setTermsCheck(undefined);
       setTermsCheckError(false);
     }
   }, [isConnected, address, skipAuthCheck, checkTermsAcceptance]);
+
+  const { hasLocalAcceptance, recordLocalAcceptance } = useTermsAcceptance({
+    address,
+    version: termsCheck?.latestVersion
+  });
+
+  // The AND gate (APP-499). A DB row alone doesn't prove this browser was ever
+  // shown the terms for this address, and a local flag alone doesn't prove
+  // anything was recorded — so either half missing re-prompts.
+  const hasAcceptedTerms = skipAuthCheck || (!!termsCheck?.accepted && hasLocalAcceptance);
+
+  // `skipAuthCheck` is the dev/e2e bypass. It opens both halves so no
+  // environment that skips the gate ends up demanding a signature at Confirm
+  // instead; C7 aligns the bypasses with the two-phase model.
+  const hasSignedCurrentTerms = skipAuthCheck || !!termsCheck?.signedForCurrentVersion;
+
+  /**
+   * Writes the local flag and reports if it could not be written. Returning
+   * true regardless is what would strand a user: the DB row exists, the AND
+   * gate's local half does not, so the modal reopens and every retry appends
+   * another acceptance event. Surfacing false keeps the modal open with its
+   * error instead of looping silently.
+   */
+  const reportUnlessRecorded = useCallback(() => {
+    if (recordLocalAcceptance()) return true;
+
+    reportError(new Error('Terms accepted but the local flag could not be recorded'), {
+      module: 'auth',
+      flow: 'terms-acceptance',
+      action: 'submit',
+      type: 'terms_local_flag_error'
+    });
+    return false;
+  }, [recordLocalAcceptance]);
+
+  const acceptTerms = useCallback(async (): Promise<boolean> => {
+    // Without an address, or before the check has reported a version, there is
+    // no key for the local flag — so the gate could never open, and posting
+    // anyway would leave an acceptance event that nothing can ever satisfy.
+    // Refuse before writing. The modal holds its loading state until the check
+    // resolves, so this is a guard rather than a path users take.
+    if (!address || !termsCheck?.latestVersion) return false;
+
+    // The mock wallet can't produce a real acceptance record, and local dev
+    // points at the shared staging endpoint — so bypass the write, as the old
+    // signature path did.
+    if (import.meta.env.VITE_USE_MOCK_WALLET === 'true') {
+      setTermsCheck(prev => (prev ? { ...prev, accepted: true } : prev));
+      return reportUnlessRecorded();
+    }
+
+    const result = await addTermsAcceptance(address);
+
+    if (!result.ok) {
+      reportError(result.lastError ?? new Error('Terms acceptance failed'), {
+        module: 'auth',
+        flow: 'terms-acceptance',
+        action: 'submit',
+        type: 'terms_acceptance_error',
+        statusCode: result.status,
+        extra: { chainId, connector: connector?.name }
+      });
+      return false;
+    }
+
+    // Order matters: the local flag goes on only after the DB write succeeded.
+    // The reverse leaves a user browsing with no record anywhere — the exact
+    // hole this gate exists to close.
+    setTermsCheck(prev => (prev ? { ...prev, accepted: true } : prev));
+    return reportUnlessRecorded();
+  }, [address, chainId, connector?.name, reportUnlessRecorded, termsCheck?.latestVersion]);
 
   const isAllowed = useMemo(
     () =>
@@ -211,10 +308,14 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         isConnectedAndAcceptedTerms,
         isAuthorized,
-        setHasAcceptedTerms,
         isCheckingTerms,
         termsCheckError,
         retryTermsCheck,
+        hasAcceptedTerms,
+        hasSignedCurrentTerms,
+        latestTermsVersion: termsCheck?.latestVersion,
+        termsMessageToSign: termsCheck?.messageToSign,
+        acceptTerms,
         authData: {
           addressAllowed: authData?.addressAllowed,
           authIsLoading,

@@ -24,8 +24,7 @@ const h = vi.hoisted(() => ({
   onConnectCallbacks: [] as ((data: { address: string; isReconnected: boolean }) => void)[],
   scrolledToEnd: false,
   disconnect: undefined as ReturnType<typeof vi.fn> | undefined,
-  navigate: undefined as ReturnType<typeof vi.fn> | undefined,
-  signMutation: undefined as { onSuccess?: (data: string) => void } | undefined
+  navigate: undefined as ReturnType<typeof vi.fn> | undefined
 }));
 
 vi.mock('wagmi', async importOriginal => ({
@@ -42,12 +41,6 @@ vi.mock('wagmi', async importOriginal => ({
   }) => {
     if (config.onConnect) h.onConnectCallbacks.push(config.onConnect);
   },
-  useSignMessage: (config: { mutation: { onSuccess?: (data: string) => void } }) => ({
-    signMessage: () => {
-      h.signMutation = config.mutation;
-      config.mutation.onSuccess?.('0xsignature');
-    }
-  }),
   useDisconnect: () => ({ disconnect: h.disconnect! })
 }));
 vi.mock('@tanstack/react-router', () => ({
@@ -119,7 +112,15 @@ function Harness() {
   const value = useMemo(
     () => ({
       isConnectedAndAcceptedTerms: h.isConnected && hasAcceptedTerms,
-      setHasAcceptedTerms,
+      hasAcceptedTerms,
+      hasSignedCurrentTerms: false,
+      latestTermsVersion: '2026-01-15',
+      // Stands in for the real Phase A write (POST /add, then the local flag),
+      // which ConnectedContext owns and its own suite covers.
+      acceptTerms: async () => {
+        setHasAcceptedTerms(true);
+        return true;
+      },
       isCheckingTerms: false,
       termsCheckError: false,
       retryTermsCheck: () => {},
@@ -160,7 +161,6 @@ beforeEach(() => {
   h.disconnect = vi.fn();
   // Must sit on sanitizeUrl's domain allowlist or the POST silently drops.
   vi.stubEnv('VITE_TERMS_ENDPOINT', 'https://staging-api.sky.money/terms-acceptance');
-  vi.stubEnv('VITE_TERMS_MESSAGE_TO_SIGN', 'test terms message');
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => ({ ok: true, json: async () => ({}) }))
@@ -187,19 +187,21 @@ describe('loader/terms flow (real modal)', () => {
     expect((screen.getByRole('checkbox') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('signing accepts the terms, closes the modal, and only then releases the loader', async () => {
+  it('accepting closes the modal, and only then releases the loader', async () => {
     const { rerender } = render(<Harness />);
     connect(rerender);
     expect(phase()).toBe('off');
 
-    // Read to the end, then check the box — TermsModal signs on check, the
-    // signature POSTs to the terms endpoint, and acceptance flips.
+    // Read to the end, tick the box, then agree. Ticking no longer accepts
+    // anything on its own — the signature that used to fire here is gone.
     h.scrolledToEnd = true;
     rerender(<Harness />);
     fireEvent.click(screen.getByRole('checkbox'));
+    expect(screen.getByTestId('end-of-terms')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Agree and continue' }));
 
     await waitFor(() => expect(screen.queryByTestId('end-of-terms')).toBeNull());
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('https://staging-api.sky.money/terms-acceptance/add');
     // Acceptance is what releases the loader: the cover is up only now.
     expect(phase()).toBe('cover');
     expect(screen.getByTestId('app-loader')).toBeTruthy();

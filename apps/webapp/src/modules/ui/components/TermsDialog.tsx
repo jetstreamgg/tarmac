@@ -78,9 +78,16 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
   ) : (
     <DialogContent aria-describedby={undefined} className="bg-containerDark max-h-[95dvh] overflow-y-auto">
       <DialogTitle className="sr-only">{title}</DialogTitle>
+      {/*
+        The value is an effective date, not a version label: the terms carry a
+        date and no version number (Kacper with Ann Sofie, 13 Aug 2026 —
+        APP-513), and `terms_version.latest_version` holds that date. Wording
+        here is provisional until legal signs off; C4 rebuilds this footer and
+        owns the final copy, including whether the prop keeps its name.
+      */}
       {termsVersion && (
         <Text className="text-text/50 light:text-textDimmed text-center text-xs">
-          <Trans>Terms version: {termsVersion}</Trans>
+          <Trans>Terms of Use effective {termsVersion}</Trans>
         </Text>
       )}
 
