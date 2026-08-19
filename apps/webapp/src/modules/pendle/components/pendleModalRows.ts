@@ -5,16 +5,11 @@
  * as the savings/vault builders: rows of shared `ModalGridCell`s, asserted in
  * `pendleModalRows.test.ts`.
  *
- * The comps drop the old position-total deltas for per-order economics: the
- * supply grids pin this order's maturity claim ("Claim at maturity") and
- * earnings, and the withdraw grids replace the rate rows with what the early
- * sell actually costs ("Lost on early withdrawal", red down-trend). Two
- * deliberate divergences carry over from the previous iteration: Price impact
- * stays (material AMM risk info, PR #1773) and the supply Withdrawal cell keeps
- * the risk-sheet wording over the comp's "Anytime" (single-sourced per
- * APP-447). "Min. received" is restored on both reviews (APP-505) — the
- * slippage floor the quote guarantees, which the comps' own disclosure ("your
- * final amount may be lower than shown") begs a number for.
+ * Deliberate divergences from the comps: Price impact stays (material AMM
+ * risk info, PR #1773), the supply Withdrawal cell keeps the risk-sheet
+ * wording over the comp's "Anytime" (single-sourced per APP-447), and
+ * "Min. received" appears on both reviews — the slippage floor the
+ * disclosure's "may be lower than shown" refers to.
  */
 
 import type { ReactNode } from 'react';
@@ -183,10 +178,9 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
 }
 
 /**
- * Display strings for the matured-claim modal. No comp exists for this flow
- * (APP-505 item 5) — the shape follows the reworked withdraw grids
- * (2193:73598 / 2193:73807) and the matured-position cards' "Claim" CTA
- * (2306:72334).
+ * Display strings for the matured-claim modal. No comp exists for this flow —
+ * the shape follows the withdraw grids (Figma 2193:73598 / 2193:73807) and the
+ * matured-position cards' "Claim" CTA (2306:72334).
  */
 export type PendleRedeemRowInput = {
   /** Product display name (e.g. "Pendle sUSDS (PT-sUSDS)"). */

@@ -210,8 +210,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
 
   const openRedeemModal = useCallback(() => {
-    // The CTAs that open this modal say "Claim" (Figma 2306:72334 / the
-    // matured product page) — the title and confirm follow.
     launch({
       title: t`Claim matured position`,
       transactionContent,

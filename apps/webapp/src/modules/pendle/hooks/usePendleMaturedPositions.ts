@@ -18,8 +18,8 @@ export type PendleMaturedPosition = { market: PendleMarketConfig; ptBalance: big
 /**
  * Matured PT the connected user holds, per market (G6 — the marketplace
  * filters matured markets out, so the Portfolio matured cards are these
- * positions' only surface). Extracted from the retired PendleReadyToRedeemList
- * when the cards moved into the Supplied carousel (Figma 2306:72334).
+ * positions' only surface, rendered in the Supplied carousel — Figma
+ * 2306:72334).
  *
  * Balances are read from mainnet regardless of the connected chain, but the
  * redeem transaction must be signed there — so holding matured PT while on an

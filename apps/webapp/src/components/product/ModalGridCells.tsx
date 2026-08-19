@@ -98,8 +98,8 @@ export const singleOrDelta = (
 
 /**
  * The savings-green treatment on a value's trailing "%" (Figma gradient-savings,
- * per WalletDrawerAssets). Negative rates render plain — a losing rate must not
- * carry the healthy-green accent (APP-505).
+ * per WalletDrawerAssets). Negative rates render plain — a losing rate must
+ * not carry the healthy-green accent.
  */
 function RatePercent({ value }: { value: string }) {
   if (!value.endsWith('%') || value.startsWith('-') || value.startsWith('−')) return <>{value}</>;

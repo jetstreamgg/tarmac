@@ -38,8 +38,7 @@ type PendleMaturedPositionCardProps = {
  * A matured Pendle position in the Portfolio Supplied carousel (Figma
  * 2306:72334): the PositionCard chrome with a "Matured" badge, the
  * ready-to-withdraw summary, My position / Mature date stats and a single
- * Claim CTA opening the redeem modal. Replaces the retired below-Transactions
- * "Your matured positions" section.
+ * Claim CTA opening the redeem modal.
  */
 export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPositionCardProps) => {
   const maturityLabel = formatMaturity(market.expiry);

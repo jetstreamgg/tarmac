@@ -45,12 +45,10 @@ type PendleRedeemProps = {
 
 /**
  * Body of the matured-claim modal: the receive hero over the shared summary
- * grid, restyled from the legacy single-column overview onto the modal
- * primitives every other flow uses. No comp exists for this flow (APP-505
- * item 5) — the layout follows the reworked withdraw comps (2193:73598 /
- * 2193:73807). Slippage/price-impact cells appear only on aggregator routes;
- * a pure PT burn at the SY's expiry-frozen rate has no swap math (the reason
- * the old header gear — shown always — came out).
+ * grid. No comp exists for this flow — the layout follows the withdraw comps
+ * (Figma 2193:73598 / 2193:73807). Slippage/price-impact cells appear only on
+ * aggregator routes; a pure PT burn at the SY's expiry-frozen rate has no
+ * swap math.
  */
 export const PendleRedeem = ({
   market,
