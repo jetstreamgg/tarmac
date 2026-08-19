@@ -10,11 +10,38 @@ import { addTermsAcceptance } from '@/modules/ui/lib/addTermsAcceptance';
 import { checkTermsWithRetry, type TermsCheckData } from '@/modules/ui/lib/checkTermsWithRetry';
 import { useTermsAcceptance } from '@/modules/ui/hooks/useTermsAcceptance';
 
+/**
+ * Why the access gate is closed. `undefined` while allowed or still resolving
+ * (the loading state is carried by `authData`/`vpnData`). Every reason is
+ * fail-closed: an unavailable check never opens the gate, it gets its own
+ * distinct state instead so users can tell "blocked" from "try again later".
+ */
+export type AccessBlockReason =
+  'region-restricted' | 'ip-check-unavailable' | 'wallet-blocked' | 'screening-unavailable';
+
 interface ConnectedContextType {
   isConnectedAndAcceptedTerms: boolean;
   isAuthorized: boolean;
+  accessBlockReason?: AccessBlockReason;
+  /**
+   * The user is browsing from the US, per `/ip/status`'s country code. Gates
+   * the per-transaction signature step (C6) together with
+   * `vpnData.isConnectedToVpn`. Undefined until the check resolves — the
+   * consumer decides how to treat an unknown location.
+   */
+  isUsUser?: boolean;
+  /** Re-runs the /ip/status and address-screening checks (the "check again" path). */
+  retryAccessChecks: () => void;
   isCheckingTerms: boolean;
   termsCheckError: boolean;
+  /**
+   * The worker answered `/check` with a 403: its own gate (screening or
+   * region) refused this address even though the client-side checks let it
+   * through — the two are independent data sources and can disagree. Renders
+   * a dead-end state instead of an interactive modal whose accept is
+   * guaranteed to fail on the missing-version guard.
+   */
+  termsCheckDenied: boolean;
   retryTermsCheck: () => void;
   /**
    * The localStorage flag AND the DB's `accepted` — either half missing
@@ -59,8 +86,10 @@ interface ConnectedContextType {
 export const ConnectedContext = createContext<ConnectedContextType>({
   isConnectedAndAcceptedTerms: false,
   isAuthorized: false,
+  retryAccessChecks: () => {},
   isCheckingTerms: false,
   termsCheckError: false,
+  termsCheckDenied: false,
   retryTermsCheck: () => {},
   hasAcceptedTerms: false,
   hasSignedCurrentTerms: false,
@@ -78,7 +107,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [termsCheck, setTermsCheck] = useState<TermsCheckData | undefined>(undefined);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
-  const [enabled, setEnabled] = useState(false);
+  const [termsCheckDenied, setTermsCheckDenied] = useState(false);
+  // Derived, not state: an effect-synced copy lags `address` by a render, and
+  // in that render a fresh connection reads as authorized before screening has
+  // even started — long enough for the terms modal to latch open (APP-497 QA).
+  const enabled = !!address;
 
   const skipAuthCheck =
     (!IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true') || isPrivateDeployment();
@@ -87,13 +120,15 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const {
     data: authData,
     isLoading: authIsLoading,
-    error: authError
+    error: authError,
+    refetch: refetchAddressCheck
   } = useRestrictedAddressCheck({ address, authUrl, enabled });
 
   const {
     data: vpnData,
     isLoading: vpnIsLoading,
-    error: vpnError
+    error: vpnError,
+    refetch: refetchVpnCheck
   } = useVpnCheck({ authUrl, skip: skipAuthCheck });
 
   // Track VPN check result once when data or error resolves
@@ -122,10 +157,6 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [authError]);
 
-  useEffect(() => {
-    setEnabled(!!address);
-  }, [address]);
-
   // Guard against stale responses when the address changes mid-flight
   const activeAddressRef = useRef<string | null>(null);
 
@@ -134,6 +165,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     activeAddressRef.current = addr;
     setIsCheckingTerms(true);
     setTermsCheckError(false);
+    setTermsCheckDenied(false);
 
     const result = await checkTermsWithRetry(addr);
 
@@ -152,9 +184,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setTermsCheck(undefined);
       setTermsCheckError(true);
     } else if (result.status === 'access-denied') {
-      // 403 is an intentional access denial (VPN/region or sanctioned address).
-      // The VPN/address hooks handle the blocked UI — just hold no terms state.
+      // 403 is an intentional refusal by the worker's own gate. Screening runs
+      // before this check ever fires (APP-497), so reaching here means the
+      // worker disagreed with the client-side verdict — the modal must show a
+      // dead end rather than terms whose accept can never succeed.
       setTermsCheck(undefined);
+      setTermsCheckDenied(true);
     } else {
       setTermsCheck(result);
     }
@@ -166,15 +201,29 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [isConnected, address, checkTermsAcceptance]);
 
+  // The address changing (including to undefined on disconnect) invalidates
+  // any terms verdict already held — it belongs to the previous address. The
+  // ref moves with it so a continuation still in flight for the previous
+  // address (a check, or an acceptance POST) can tell it has been overtaken.
+  useEffect(() => {
+    activeAddressRef.current = address ?? null;
+    setTermsCheck(undefined);
+    setTermsCheckError(false);
+    setTermsCheckDenied(false);
+  }, [address]);
+
+  // The flow puts address screening between wallet selection and the T&C gate
+  // (APP-497): the terms check fires only once screening has cleared the
+  // address, so a blocked wallet sees the blocked screen, never the terms
+  // modal — and the ordering is guaranteed rather than incidental.
+  const addressScreeningPassed = authData?.addressAllowed === true;
+
   useEffect(() => {
     if (skipAuthCheck) return;
-    if (isConnected && address) {
+    if (isConnected && address && addressScreeningPassed) {
       checkTermsAcceptance(address);
-    } else {
-      setTermsCheck(undefined);
-      setTermsCheckError(false);
     }
-  }, [isConnected, address, skipAuthCheck, checkTermsAcceptance]);
+  }, [isConnected, address, addressScreeningPassed, skipAuthCheck, checkTermsAcceptance]);
 
   const { hasLocalAcceptance, recordLocalAcceptance } = useTermsAcceptance({
     address,
@@ -228,6 +277,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const result = await addTermsAcceptance(address);
 
+    // Discard the continuation if the address changed (or disconnected) while
+    // the POST was in flight: stamping `accepted` onto the new address's check
+    // — or writing the old address's local flag via this closure — would open
+    // the gate for an owner this browser never showed the terms to.
+    if (activeAddressRef.current !== address) return false;
+
     if (!result.ok) {
       reportError(result.lastError ?? new Error('Terms acceptance failed'), {
         module: 'auth',
@@ -247,21 +302,38 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return reportUnlessRecorded();
   }, [address, chainId, connector?.name, reportUnlessRecorded, termsCheck?.latestVersion]);
 
-  const isAllowed = useMemo(
-    () =>
-      !vpnData?.isConnectedToVpn &&
-      !vpnData?.isRestrictedRegion &&
-      (!enabled || (enabled && authData?.addressAllowed)) &&
-      // Fail closed only when there is no verdict at all. A failed background
-      // refetch keeps the cached data and sets `error`, so gating on `authError`
-      // alone would discard an approval we already hold.
-      !(authError && !authData) &&
-      !vpnError,
-    [vpnData?.isConnectedToVpn, vpnData?.isRestrictedRegion, enabled, authData, authError, vpnError]
-  );
+  // A VPN is deliberately absent here (APP-497): VPN users browse and transact
+  // normally, and the safeguard is the per-transaction terms signature (C6),
+  // not a wall. Genuinely restricted jurisdictions still block.
+  const accessBlockReason = useMemo<AccessBlockReason | undefined>(() => {
+    if (vpnData?.isRestrictedRegion) return 'region-restricted';
+    // Fail closed only when there is no verdict at all. A failed background
+    // refetch keeps the cached data and sets `error`, so gating on the error
+    // alone would discard a verdict we already hold.
+    if (vpnError && !vpnData) return 'ip-check-unavailable';
+    if (enabled) {
+      if (authData?.addressAllowed === false) return 'wallet-blocked';
+      if (authError && !authData) return 'screening-unavailable';
+    }
+    return undefined;
+  }, [vpnData, vpnError, enabled, authData, authError]);
+
+  // `undefined !== true` while screening is in flight, so a connected address
+  // stays gated (behind the loading dialog) until a verdict lands.
+  const isAllowed = !accessBlockReason && (!enabled || authData?.addressAllowed === true);
 
   const isAuthorized = isAllowed || skipAuthCheck;
   const isConnectedAndAcceptedTerms = isConnected && hasAcceptedTerms;
+
+  // "Is US" for the pre-transaction signature gate (C6): US or VPN users sign
+  // the current terms at Confirm. Derived from the same `/ip/status` payload
+  // as `isConnectedToVpn`, so the pair shares one loading state and verdict.
+  const isUsUser = vpnData ? vpnData.countryCode === 'US' : undefined;
+
+  const retryAccessChecks = useCallback(() => {
+    refetchVpnCheck();
+    if (enabled) refetchAddressCheck();
+  }, [refetchVpnCheck, refetchAddressCheck, enabled]);
 
   // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
   // PostHog event carries them. Unlike the fire-once tracking below, this re-runs
@@ -286,15 +358,15 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (skipAuthCheck || vpnIsLoading || vpnTrackedRef.current) return;
     if (!vpnData && !vpnError) return;
     vpnTrackedRef.current = true;
+    // A VPN no longer blocks (APP-497), so it is not an outcome here — the
+    // captured `is_vpn` property carries that fact instead.
     const result = vpnError
       ? 'error'
-      : vpnData?.isConnectedToVpn
-        ? 'vpn_blocked'
-        : vpnData?.isRestrictedRegion
-          ? 'region_blocked'
-          : isAllowed
-            ? 'allowed'
-            : 'unknown';
+      : vpnData?.isRestrictedRegion
+        ? 'region_blocked'
+        : isAllowed
+          ? 'allowed'
+          : 'unknown';
     trackVpnCheckCompleted({
       isVpn: vpnData?.isConnectedToVpn ?? null,
       isRestrictedRegion: vpnData?.isRestrictedRegion ?? null,
@@ -308,8 +380,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         isConnectedAndAcceptedTerms,
         isAuthorized,
+        accessBlockReason,
+        isUsUser,
+        retryAccessChecks,
         isCheckingTerms,
         termsCheckError,
+        termsCheckDenied,
         retryTermsCheck,
         hasAcceptedTerms,
         hasSignedCurrentTerms,

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { termsAcceptanceKey } from '@/modules/ui/lib/termsAcceptanceStorage';
 
@@ -22,7 +22,20 @@ const mocks = vi.hoisted(() => ({
   trackVpnCheckCompleted: vi.fn(),
   reportError: vi.fn(),
   isPrivateDeployment: vi.fn(() => false),
-  address: '0x1234567890123456789012345678901234567890' as string | undefined
+  address: '0x1234567890123456789012345678901234567890' as string | undefined,
+  authCheck: {
+    data: { addressAllowed: true } as { addressAllowed: boolean } | undefined,
+    isLoading: false,
+    error: undefined as Error | undefined
+  },
+  vpnCheck: {
+    data: { isConnectedToVpn: false, isRestrictedRegion: false, countryCode: 'US' } as
+      { isConnectedToVpn: boolean; isRestrictedRegion: boolean; countryCode: string } | undefined,
+    isLoading: false,
+    error: undefined as Error | undefined
+  },
+  refetchAddressCheck: vi.fn(),
+  refetchVpnCheck: vi.fn()
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -40,12 +53,8 @@ vi.mock('wagmi', async importOriginal => {
 });
 
 vi.mock('@/hooks', () => ({
-  useRestrictedAddressCheck: () => ({ data: { addressAllowed: true }, isLoading: false, error: undefined }),
-  useVpnCheck: () => ({
-    data: { isConnectedToVpn: false, isRestrictedRegion: false, countryCode: 'US' },
-    isLoading: false,
-    error: undefined
-  })
+  useRestrictedAddressCheck: () => ({ ...mocks.authCheck, refetch: mocks.refetchAddressCheck }),
+  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck })
 }));
 
 vi.mock('@/lib/isPrivateDeployment', () => ({
@@ -75,19 +84,31 @@ function Consumer() {
     hasAcceptedTerms,
     hasSignedCurrentTerms,
     isConnectedAndAcceptedTerms,
+    isAuthorized,
+    accessBlockReason,
+    isUsUser,
     latestTermsVersion,
     termsMessageToSign,
-    acceptTerms
+    termsCheckDenied,
+    acceptTerms,
+    retryAccessChecks
   } = useConnectedContext();
   return (
     <div>
       <span data-testid="accepted">{String(hasAcceptedTerms)}</span>
       <span data-testid="browsing">{String(isConnectedAndAcceptedTerms)}</span>
       <span data-testid="signed">{String(hasSignedCurrentTerms)}</span>
+      <span data-testid="authorized">{String(isAuthorized)}</span>
+      <span data-testid="block-reason">{accessBlockReason ?? 'none'}</span>
+      <span data-testid="is-us">{String(isUsUser)}</span>
       <span data-testid="version">{latestTermsVersion ?? 'none'}</span>
       <span data-testid="message">{termsMessageToSign ?? 'none'}</span>
+      <span data-testid="denied">{String(termsCheckDenied)}</span>
       <button data-testid="accept" onClick={() => void acceptTerms()}>
         accept
+      </button>
+      <button data-testid="retry-access" onClick={retryAccessChecks}>
+        retry
       </button>
     </div>
   );
@@ -120,6 +141,12 @@ describe('ConnectedContext — the terms AND gate', () => {
     mocks.isPrivateDeployment.mockReturnValue(false);
     mocks.checkTermsWithRetry.mockResolvedValue(checkResult());
     mocks.addTermsAcceptance.mockResolvedValue({ ok: true });
+    mocks.authCheck = { data: { addressAllowed: true }, isLoading: false, error: undefined };
+    mocks.vpnCheck = {
+      data: { isConnectedToVpn: false, isRestrictedRegion: false, countryCode: 'US' },
+      isLoading: false,
+      error: undefined
+    };
     vi.stubEnv('VITE_SKIP_AUTH_CHECK', 'false');
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
   });
@@ -329,6 +356,159 @@ describe('ConnectedContext — the terms AND gate', () => {
     });
   });
 
+  /**
+   * The access gate rework (APP-497): a VPN stopped being a wall — the
+   * safeguard for VPN/US users is the per-transaction signature (C6) — while
+   * restricted regions, blocked wallets and unavailable checks all stay
+   * fail-closed, each with its own distinct reason.
+   */
+  describe('access gating (APP-497)', () => {
+    const blockReason = () => screen.getByTestId('block-reason').textContent;
+    const authorized = () => screen.getByTestId('authorized').textContent;
+
+    it('authorizes a VPN user and still runs the terms flow', async () => {
+      mocks.vpnCheck.data = { isConnectedToVpn: true, isRestrictedRegion: false, countryCode: 'US' };
+
+      renderProvider();
+
+      expect(authorized()).toBe('true');
+      expect(blockReason()).toBe('none');
+      // VPN users browse normally, so the browse gate (terms modal) applies.
+      await waitFor(() => expect(mocks.checkTermsWithRetry).toHaveBeenCalledWith(ADDRESS_A));
+    });
+
+    it('reports a VPN as allowed, not blocked, to analytics', async () => {
+      mocks.vpnCheck.data = { isConnectedToVpn: true, isRestrictedRegion: false, countryCode: 'US' };
+
+      renderProvider();
+
+      await waitFor(() =>
+        expect(mocks.trackVpnCheckCompleted).toHaveBeenCalledWith(
+          expect.objectContaining({ isVpn: true, result: 'allowed' })
+        )
+      );
+    });
+
+    it('still blocks a restricted region', () => {
+      mocks.vpnCheck.data = { isConnectedToVpn: false, isRestrictedRegion: true, countryCode: 'XX' };
+
+      renderProvider();
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('region-restricted');
+    });
+
+    it('blocks a screened-out wallet and never asks it for terms', async () => {
+      mocks.authCheck.data = { addressAllowed: false };
+
+      renderProvider();
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('wallet-blocked');
+      // The flow puts screening before the T&C gate: a blocked wallet gets the
+      // blocked screen, so nothing here should reach the terms endpoint.
+      await waitFor(() => expect(mocks.trackVpnCheckCompleted).toHaveBeenCalled());
+      expect(mocks.checkTermsWithRetry).not.toHaveBeenCalled();
+    });
+
+    it('holds the gate closed, without a block reason, while screening is in flight', () => {
+      mocks.authCheck = { data: undefined, isLoading: true, error: undefined };
+
+      renderProvider();
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('none');
+      expect(mocks.checkTermsWithRetry).not.toHaveBeenCalled();
+    });
+
+    it('runs the terms check only after screening resolves in favor', async () => {
+      mocks.authCheck = { data: undefined, isLoading: true, error: undefined };
+
+      const { rerender } = renderProvider();
+      expect(mocks.checkTermsWithRetry).not.toHaveBeenCalled();
+
+      mocks.authCheck = { data: { addressAllowed: true }, isLoading: false, error: undefined };
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+
+      await waitFor(() => expect(mocks.checkTermsWithRetry).toHaveBeenCalledWith(ADDRESS_A));
+      expect(authorized()).toBe('true');
+    });
+
+    it('fails closed with a distinct state when screening is unavailable', () => {
+      mocks.authCheck = { data: undefined, isLoading: false, error: new Error('screening down') };
+
+      renderProvider();
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('screening-unavailable');
+      expect(mocks.checkTermsWithRetry).not.toHaveBeenCalled();
+    });
+
+    it('keeps a cached screening approval through a failed refetch', () => {
+      mocks.authCheck = {
+        data: { addressAllowed: true },
+        isLoading: false,
+        error: new Error('refetch failed')
+      };
+
+      renderProvider();
+
+      expect(authorized()).toBe('true');
+      expect(blockReason()).toBe('none');
+    });
+
+    it('fails closed when /ip/status is unavailable with no cached verdict', () => {
+      mocks.vpnCheck = { data: undefined, isLoading: false, error: new Error('ip status down') };
+
+      renderProvider();
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('ip-check-unavailable');
+    });
+
+    it('keeps a cached /ip/status verdict through a failed refetch', () => {
+      mocks.vpnCheck.error = new Error('refetch failed');
+
+      renderProvider();
+
+      expect(authorized()).toBe('true');
+      expect(blockReason()).toBe('none');
+    });
+
+    it('retryAccessChecks re-runs both checks', () => {
+      mocks.authCheck = { data: undefined, isLoading: false, error: new Error('screening down') };
+
+      renderProvider();
+      fireEvent.click(screen.getByTestId('retry-access'));
+
+      expect(mocks.refetchVpnCheck).toHaveBeenCalled();
+      expect(mocks.refetchAddressCheck).toHaveBeenCalled();
+    });
+
+    describe('isUsUser (for the C6 signature gate)', () => {
+      it('is true for a US country code', () => {
+        renderProvider();
+        expect(screen.getByTestId('is-us').textContent).toBe('true');
+      });
+
+      it('is false for a non-US country code', () => {
+        mocks.vpnCheck.data = { isConnectedToVpn: false, isRestrictedRegion: false, countryCode: 'DE' };
+        renderProvider();
+        expect(screen.getByTestId('is-us').textContent).toBe('false');
+      });
+
+      it('is undefined until /ip/status resolves', () => {
+        mocks.vpnCheck = { data: undefined, isLoading: true, error: undefined };
+        renderProvider();
+        expect(screen.getByTestId('is-us').textContent).toBe('undefined');
+      });
+    });
+  });
+
   describe('check failures', () => {
     it('keeps the gate closed and reports when the check errors', async () => {
       localStorage.setItem(termsAcceptanceKey(ADDRESS_A, VERSION), 'true');
@@ -347,9 +527,67 @@ describe('ConnectedContext — the terms AND gate', () => {
 
       renderProvider();
 
-      await waitFor(() => expect(mocks.checkTermsWithRetry).toHaveBeenCalled());
+      // The denial gets its own state (APP-497 review): the worker refused an
+      // address the client-side screening let through, and without the flag
+      // the modal would render interactive terms whose accept can never
+      // succeed — a "check your connection" loop with no way out.
+      await waitFor(() => expect(screen.getByTestId('denied').textContent).toBe('true'));
       expect(accepted()).toBe('false');
       expect(mocks.reportError).not.toHaveBeenCalled();
+    });
+
+    // The acceptance POST has the same stale-continuation hazard the check
+    // guards against: without the address guard, a POST that lands after an
+    // account switch stamps `accepted` onto the NEW address's check and
+    // writes the OLD address's local flag via the stale closure.
+    it('discards an acceptance that lands after an address switch', async () => {
+      let resolveAdd: (value: { ok: boolean }) => void = () => {};
+      mocks.addTermsAcceptance.mockReturnValue(new Promise(resolve => (resolveAdd = resolve)));
+
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      fireEvent.click(screen.getByTestId('accept'));
+
+      mocks.address = ADDRESS_B;
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      resolveAdd({ ok: true });
+      // Let the stale continuation run to completion before asserting that it
+      // changed nothing.
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(accepted()).toBe('false');
+      expect(localStorage.getItem(termsAcceptanceKey(ADDRESS_A, VERSION))).toBeNull();
+      expect(localStorage.getItem(termsAcceptanceKey(ADDRESS_B, VERSION))).toBeNull();
+    });
+
+    it('discards an acceptance that lands after a disconnect', async () => {
+      let resolveAdd: (value: { ok: boolean }) => void = () => {};
+      mocks.addTermsAcceptance.mockReturnValue(new Promise(resolve => (resolveAdd = resolve)));
+
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      fireEvent.click(screen.getByTestId('accept'));
+
+      mocks.address = undefined;
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+
+      resolveAdd({ ok: true });
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(accepted()).toBe('false');
+      expect(localStorage.getItem(termsAcceptanceKey(ADDRESS_A, VERSION))).toBeNull();
     });
   });
 });

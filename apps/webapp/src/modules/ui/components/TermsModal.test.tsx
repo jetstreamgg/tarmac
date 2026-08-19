@@ -1,6 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { i18n } from '@lingui/core';
+import { I18nProvider } from '@lingui/react';
 import { TermsModal } from './TermsModal';
+
+i18n.load('en', {});
+i18n.activate('en');
 
 // Mutable state + spies shared between the mocks and the assertions.
 const mocks = vi.hoisted(() => ({
@@ -9,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   openModal: vi.fn(),
   acceptTerms: vi.fn(),
   retryTermsCheck: vi.fn(),
-  connected: { isConnectedAndAcceptedTerms: false },
+  connected: { isConnectedAndAcceptedTerms: false, termsCheckDenied: false },
   termsModal: { isModalOpen: true }
 }));
 
@@ -33,6 +38,7 @@ vi.mock('../context/ConnectedContext', () => ({
   useConnectedContext: () => ({
     isCheckingTerms: false,
     termsCheckError: null,
+    termsCheckDenied: mocks.connected.termsCheckDenied,
     retryTermsCheck: mocks.retryTermsCheck,
     isConnectedAndAcceptedTerms: mocks.connected.isConnectedAndAcceptedTerms,
     latestTermsVersion: '2026-01-15',
@@ -45,40 +51,75 @@ vi.mock('./terms-loader', () => ({
 }));
 
 // Stub the dialog so we can drive its callbacks directly. This isolates TermsModal's
-// handlers (the unit under test) from Radix Dialog internals and intersection observers.
-vi.mock('./TermsDialog', () => ({
-  TermsDialog: ({
-    isOpen,
-    onOpenChange,
-    onAccept,
-    onDecline
-  }: {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    onAccept: () => void;
-    onDecline: () => void;
-  }) =>
-    isOpen ? (
-      <div>
-        <button data-testid="dismiss" onClick={() => onOpenChange(false)}>
-          dismiss
-        </button>
-        <button data-testid="accept" onClick={onAccept}>
-          accept
-        </button>
-        <button data-testid="decline" onClick={onDecline}>
-          decline
-        </button>
-      </div>
-    ) : null
-}));
+// handlers (the unit under test) from Radix Dialog internals and intersection
+// observers. The loading branch keeps a real Radix root: the content it renders
+// (error/denied screens) uses DialogTitle, which throws outside a Dialog.
+vi.mock('./TermsDialog', async () => {
+  const { Dialog } = await import('@/components/ui/dialog');
+  return {
+    TermsDialog: ({
+      isOpen,
+      onOpenChange,
+      onAccept,
+      onDecline,
+      showLoadingState,
+      loadingContent
+    }: {
+      isOpen: boolean;
+      onOpenChange: (open: boolean) => void;
+      onAccept: () => void;
+      onDecline: () => void;
+      showLoadingState?: boolean;
+      loadingContent?: React.ReactNode;
+    }) =>
+      isOpen ? (
+        showLoadingState ? (
+          <Dialog open>
+            <div data-testid="loading-state">{loadingContent}</div>
+          </Dialog>
+        ) : (
+          <div>
+            <button data-testid="dismiss" onClick={() => onOpenChange(false)}>
+              dismiss
+            </button>
+            <button data-testid="accept" onClick={onAccept}>
+              accept
+            </button>
+            <button data-testid="decline" onClick={onDecline}>
+              decline
+            </button>
+          </div>
+        )
+      ) : null
+  };
+});
 
 describe('TermsModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.acceptTerms.mockResolvedValue(true);
     mocks.connected.isConnectedAndAcceptedTerms = false;
+    mocks.connected.termsCheckDenied = false;
     mocks.termsModal.isModalOpen = true;
+  });
+
+  // The worker's /check refused the address (403) after client-side screening
+  // let it through: the modal must show a dead end with a disconnect way out,
+  // not interactive terms whose accept is guaranteed to fail (APP-497 review).
+  it('shows the access-restricted dead end instead of the terms when the check was denied', () => {
+    mocks.connected.termsCheckDenied = true;
+    render(
+      <I18nProvider i18n={i18n}>
+        <TermsModal />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText('Access restricted')).toBeTruthy();
+    expect(screen.queryByTestId('accept')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect Wallet' }));
+    expect(mocks.disconnect).toHaveBeenCalledTimes(1);
+    expect(mocks.closeModal).toHaveBeenCalledTimes(1);
   });
 
   it('disconnects the wallet when the modal is dismissed without accepting terms', () => {

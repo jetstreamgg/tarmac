@@ -19,6 +19,7 @@ export function TermsModal() {
   const {
     isCheckingTerms,
     termsCheckError,
+    termsCheckDenied,
     retryTermsCheck,
     isConnectedAndAcceptedTerms,
     latestTermsVersion,
@@ -146,6 +147,28 @@ export function TermsModal() {
     </div>
   );
 
+  // The worker's /check refused this address (403) after the client-side
+  // screening let it through. A dead end with a way out — not the interactive
+  // terms, whose accept would loop on a misleading connection error, and not
+  // the error screen, whose retry can never change a deliberate refusal.
+  const termsCheckDeniedContent = (
+    <div className="flex flex-col items-center gap-4 p-4">
+      <DialogTitle asChild>
+        <Text className="text-text text-center">
+          <Trans>Access restricted</Trans>
+        </Text>
+      </DialogTitle>
+      <Text className="text-textSecondary text-center text-sm leading-none md:leading-tight">
+        <Trans>This wallet can&apos;t be used with Sky.money from your current location.</Trans>
+      </Text>
+      <Button variant="outline" onClick={handleReject}>
+        <Text>
+          <Trans>Disconnect Wallet</Trans>
+        </Text>
+      </Button>
+    </div>
+  );
+
   // Renders in the navbar wallet slot, so it wears the same DS connect recipe
   // as WalletChip (Figma 5069:27086): primary button at navbar height.
   const triggerButton = (
@@ -172,8 +195,10 @@ export function TermsModal() {
       showScrollInstruction={false}
       hideScrollTracking={false}
       triggerButton={triggerButton}
-      showLoadingState={isCheckingTerms || termsCheckError}
-      loadingContent={termsCheckError ? termsCheckErrorContent : undefined}
+      showLoadingState={isCheckingTerms || termsCheckError || termsCheckDenied}
+      loadingContent={
+        termsCheckDenied ? termsCheckDeniedContent : termsCheckError ? termsCheckErrorContent : undefined
+      }
     />
   );
 }
