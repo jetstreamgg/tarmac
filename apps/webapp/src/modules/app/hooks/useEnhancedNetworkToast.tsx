@@ -93,6 +93,7 @@ const NetworkQuickSwitchButtons = ({
   chains: readonly Chain[];
   handleSwitchChain: (params: {
     chainId: number;
+    source?: 'network_toast';
     onSuccess?: (data: any, variables: { chainId: number }) => void;
     onSettled?: () => void;
   }) => void;
@@ -147,6 +148,7 @@ const NetworkQuickSwitchButtons = ({
 
               handleSwitchChain({
                 chainId: chain.id,
+                source: 'network_toast',
                 onSuccess: (_: any, { chainId: newChainId }: { chainId: number }) => {
                   const newChainName = chains.find(c => c.id === newChainId)?.name;
                   if (newChainName) {

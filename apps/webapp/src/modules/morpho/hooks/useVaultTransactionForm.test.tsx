@@ -194,3 +194,40 @@ describe('useVaultTransactionForm Max routing (APP-488)', () => {
     expect(result.current.engineParams.max).toBe(false);
   });
 });
+
+describe('useVaultTransactionForm amount gating (APP-492)', () => {
+  afterEach(() => cleanup());
+
+  it('a negative amount never readies the form or grows the withdraw preview', () => {
+    setVaultState({ liquidity: parseUnits('5000', 18) });
+    const { result } = renderForm();
+
+    // parseUnits('-5') returns a negative bigint without throwing — it must
+    // die in the parse layer, not reach `position - amount` previews.
+    act(() => result.current.onInput('-5'));
+    expect(result.current.amount).toBe(0n);
+    expect(result.current.amountReady).toBe(false);
+  });
+
+  it('exponential and multi-dot strings parse to zero and keep the form unready', () => {
+    setVaultState({ liquidity: parseUnits('5000', 18) });
+    const { result } = renderForm();
+
+    act(() => result.current.onInput('1e9'));
+    expect(result.current.amount).toBe(0n);
+    expect(result.current.amountReady).toBe(false);
+
+    act(() => result.current.onInput('1.2.3'));
+    expect(result.current.amount).toBe(0n);
+    expect(result.current.amountReady).toBe(false);
+  });
+
+  it('a plain positive amount within the balance readies the form', () => {
+    setVaultState({ liquidity: parseUnits('5000', 18) });
+    const { result } = renderForm();
+
+    act(() => result.current.onInput('250'));
+    expect(result.current.amount).toBe(parseUnits('250', 18));
+    expect(result.current.amountReady).toBe(true);
+  });
+});

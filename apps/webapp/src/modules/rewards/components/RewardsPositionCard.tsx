@@ -94,6 +94,7 @@ export function RewardsPositionCard({
     contractAddress,
     supplyToken: contract.supplyToken,
     displayName: rewardContractDisplayName(contract),
+    productName: contract.name,
     rewardTokenSymbol: isPointsFarm ? undefined : contract.rewardToken.symbol,
     rate
   };

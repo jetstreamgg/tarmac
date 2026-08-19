@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { TxStatus, InProgress, Cancel } from '@/widgets';
-import { toError } from '@/hooks';
+import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
@@ -12,6 +12,7 @@ import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
+import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type {
   TransactionConfig,
@@ -168,12 +169,15 @@ export function TransactionProvider({
   const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
   const txHashRef = useRef<string | undefined>(undefined);
+  // flow_id latched at launch so this session's review/started/completed events
+  // stay joined even if navigation rotates the live flow id mid-transaction.
+  const flowIdRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
   const { address } = useConnection();
   const isSafeWallet = useIsSafeWallet();
   const { trackWidgetReviewViewed, trackTransactionStarted, trackTransactionCompleted } = useAppAnalytics();
-  const { startNewFlow } = useAnalyticsFlow();
+  const { startNewFlow, getFlowId } = useAnalyticsFlow();
 
   const launch = useCallback(
     (config: TransactionConfig) => {
@@ -211,7 +215,8 @@ export function TransactionProvider({
             txStatus: 'cancelled',
             action: abandoned.action,
             flow: abandoned.flow,
-            data: abandoned.data
+            data: abandoned.data,
+            flowId: flowIdRef.current
           });
           startNewFlow();
         }
@@ -220,6 +225,8 @@ export function TransactionProvider({
 
       sessionGenRef.current += 1;
       setSessionGen(sessionGenRef.current);
+      // Latch this session's flow id (after any abandon rotation above).
+      flowIdRef.current = getFlowId();
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveConfig(config);
@@ -232,17 +239,41 @@ export function TransactionProvider({
       setLaunchCount(c => c + 1);
       setOpen(true);
 
-      // Track review viewed
-      if (config.analytics) {
+      // Review-first flows open on the review screen, so launch IS the review
+      // view. Entry-first flows open on the editable entry — their review event
+      // (if the flow has a review stage at all) fires at the entry→review
+      // transition instead (onReviewStage below), and entry-only flows (claims,
+      // upgrade) emit none, matching the legacy widgets.
+      if (config.analytics && !config.entry) {
         trackWidgetReviewViewed({
           widgetName: config.analytics.widgetName,
           chainId,
-          flow: config.analytics.flow
+          flow: config.analytics.flow,
+          action: config.analytics.action,
+          data: config.analytics.data,
+          flowId: flowIdRef.current
         });
       }
     },
-    [chainId, trackWidgetReviewViewed, trackTransactionCompleted, startNewFlow]
+    [chainId, trackWidgetReviewViewed, trackTransactionCompleted, startNewFlow, getFlowId]
   );
+
+  // Entry→review transition of a three-screen flow. Read off the config ref:
+  // the editable body live-merges its analytics while the user edits, so the
+  // ref holds the blob matching what the review is about to show.
+  const handleReviewStage = useCallback(() => {
+    const analytics = configRef.current?.analytics;
+    if (analytics) {
+      trackWidgetReviewViewed({
+        widgetName: analytics.widgetName,
+        chainId,
+        flow: analytics.flow,
+        action: analytics.action,
+        data: analytics.data,
+        flowId: flowIdRef.current
+      });
+    }
+  }, [chainId, trackWidgetReviewViewed]);
 
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
     (sessionId, partial) => {
@@ -275,9 +306,11 @@ export function TransactionProvider({
 
   const handleClose = useCallback(() => {
     // Closing during INITIALIZED abandons an un-signed session: track the
-    // cancellation and warn about the wallet prompt we can't dismiss.
+    // cancellation and warn about the wallet prompt we can't dismiss. Read the
+    // status from the ref — a click queued in the same tick as the transition
+    // would otherwise see the closure's stale state and skip the event.
     const analytics = configRef.current?.analytics;
-    if (txStatus === TxStatus.INITIALIZED) {
+    if (txStatusRef.current === TxStatus.INITIALIZED) {
       if (analytics) {
         trackTransactionCompleted({
           widgetName: analytics.widgetName,
@@ -285,7 +318,8 @@ export function TransactionProvider({
           txStatus: 'cancelled',
           action: analytics.action,
           flow: analytics.flow,
-          data: analytics.data
+          data: analytics.data,
+          flowId: flowIdRef.current
         });
         startNewFlow();
       }
@@ -320,7 +354,7 @@ export function TransactionProvider({
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [txStatus, chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
+  }, [chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
 
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
   // has nothing left to animate.
@@ -455,33 +489,37 @@ export function TransactionProvider({
   // and drops itself when the generation has moved on — the caller is an
   // engine from a session that was closed or abandoned.
   const txCallbacks: TxCallbacks = {
-    onMutate: useCallback(() => {
-      if (sessionGen !== sessionGenRef.current) return;
-      // Latch the write to this session; the settle callbacks check it. Fires
-      // synchronously from the user's confirm, so it can trust its closure.
-      writeGenRef.current = sessionGenRef.current;
-      writeHashRef.current = undefined;
-      // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
-      if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
-        setCurrentStep(s => s + 1);
-      }
-      setTxStatus(TxStatus.INITIALIZED);
-      txStatusRef.current = TxStatus.INITIALIZED;
-      setExternalLink(undefined);
-      txHashRef.current = undefined;
+    onMutate: useCallback(
+      (variables?: TxMutateVariables) => {
+        if (sessionGen !== sessionGenRef.current) return;
+        // Latch the write to this session; the settle callbacks check it. Fires
+        // synchronously from the user's confirm, so it can trust its closure.
+        writeGenRef.current = sessionGenRef.current;
+        writeHashRef.current = undefined;
+        // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
+        if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
+          setCurrentStep(s => s + 1);
+        }
+        setTxStatus(TxStatus.INITIALIZED);
+        txStatusRef.current = TxStatus.INITIALIZED;
+        setExternalLink(undefined);
+        txHashRef.current = undefined;
 
-      // Track transaction started
-      const analytics = configRef.current?.analytics;
-      if (analytics) {
-        trackTransactionStarted({
-          widgetName: analytics.widgetName,
-          chainId,
-          action: analytics.action,
-          flow: analytics.flow,
-          data: analytics.data
-        });
-      }
-    }, [sessionGen, chainId, trackTransactionStarted]),
+        // Track transaction started; approve legs report action 'approve' (dev parity)
+        const analytics = configRef.current?.analytics;
+        if (analytics) {
+          trackTransactionStarted({
+            widgetName: analytics.widgetName,
+            chainId,
+            action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
+            flow: analytics.flow,
+            data: analytics.data,
+            flowId: flowIdRef.current
+          });
+        }
+      },
+      [sessionGen, chainId, trackTransactionStarted]
+    ),
 
     onStart: useCallback(
       (hash?: string) => {
@@ -517,12 +555,16 @@ export function TransactionProvider({
             txHash: hash,
             action: analytics.action,
             flow: analytics.flow,
-            data: analytics.data
+            data: analytics.data,
+            flowId: flowIdRef.current
           });
-          startNewFlow();
         }
 
         configRef.current?.onSuccess?.();
+        // Rotate AFTER the consumer callback so anything it emits joins this flow
+        if (analytics) {
+          startNewFlow();
+        }
       },
       [
         sessionGen,
@@ -546,20 +588,22 @@ export function TransactionProvider({
           txHashRef.current = hash;
         }
 
-        // Track transaction completed (error)
+        // Track transaction completed (error). Bounded classification props only —
+        // never the raw message, which can embed addresses and calldata. A wallet
+        // rejection is the user backing out, not a failure (APP-444 D1).
         const analytics = configRef.current?.analytics;
         if (analytics) {
+          const classification = classifyTransactionError(error, !!hash);
           trackTransactionCompleted({
             widgetName: analytics.widgetName,
             chainId,
-            txStatus: 'error',
+            txStatus: classification.is_user_rejection ? 'cancelled' : 'error',
             txHash: hash,
-            errorContext: error.message,
             action: analytics.action,
             flow: analytics.flow,
-            data: analytics.data
+            data: { ...analytics.data, ...classification },
+            flowId: flowIdRef.current
           });
-          startNewFlow();
         }
 
         const normalizedError = toError(error);
@@ -581,6 +625,10 @@ export function TransactionProvider({
         }
 
         configRef.current?.onError?.();
+        // Rotate AFTER the consumer callback so anything it emits joins this flow
+        if (analytics) {
+          startNewFlow();
+        }
       },
       [
         sessionGen,
@@ -651,6 +699,7 @@ export function TransactionProvider({
             // Only defined when the config carries the callback — the modal
             // keys the two-CTA footer off its presence.
             onSecondaryConfirm={modalView.config.onSecondaryConfirm ? gatedSecondaryConfirm : undefined}
+            onReviewStage={handleReviewStage}
             onRetry={handleRetry}
             onBack={resetTransactionProgress}
             txStatus={modalView.txStatus}

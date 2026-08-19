@@ -16,6 +16,7 @@ import { CheckedState } from '@radix-ui/react-checkbox';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Close } from '@/modules/icons';
 import { LoadingSpinner } from './LoadingSpinner';
+import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 
 const TERMS_OF_USE_URL = 'https://docs.sky.money/legal/skybase-international/terms-of-use';
 const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal/skybase-international/privacy-policy';
@@ -136,6 +137,7 @@ export function TermsModal() {
       // Dismissing the modal without accepting must disconnect the wallet, otherwise wagmi stays
       // connected while the terms-gated app UI shows "not connected" (split-brain state).
       if (!isConnectedAndAcceptedTerms) {
+        setDisconnectSource('terms_dismissed');
         disconnect();
       }
       closeModal();
@@ -148,6 +150,7 @@ export function TermsModal() {
     // the next auto-open, since the component stays mounted across reconnects.
     setSubmitStatus('idle');
     setIsChecked(false);
+    setDisconnectSource('terms_declined');
     disconnect();
     closeModal();
   };
