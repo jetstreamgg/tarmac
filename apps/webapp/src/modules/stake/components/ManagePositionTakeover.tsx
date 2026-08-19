@@ -6,7 +6,6 @@ import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
 import {
   getIlkName,
-  isDeprecatedStakeReward,
   RISK_LEVEL_THRESHOLDS,
   RiskLevel,
   TOKENS,
@@ -242,14 +241,12 @@ export function ManagePositionTakeover({
   // switch-away nudge (chip + warning) instead of a collapsed row. Fire-once:
   // toggling the card back off must stick.
   const rewardCardAutoOpened = useRef(false);
-  const currentFarmDeprecated =
-    !!currentRewardContract && isDeprecatedStakeReward(currentRewardContract, chainId);
   useEffect(() => {
-    if (currentFarmDeprecated && !rewardCardAutoOpened.current) {
+    if (detail.rewardDeprecated && !rewardCardAutoOpened.current) {
       rewardCardAutoOpened.current = true;
       dispatch({ type: 'setRewardEnabled', enabled: true });
     }
-  }, [currentFarmDeprecated, dispatch]);
+  }, [detail.rewardDeprecated, dispatch]);
   const rewardChanged =
     state.rewardEnabled &&
     !!state.selectedRewardContract &&

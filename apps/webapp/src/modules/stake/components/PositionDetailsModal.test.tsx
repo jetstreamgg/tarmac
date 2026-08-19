@@ -42,6 +42,7 @@ const baseDetail: StakePositionDetail = {
   hasBorrowHistory: true,
   rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
   rewardSymbol: 'SKY',
+  rewardDeprecated: false,
   voteDelegate: DELEGATE,
   rewardsRate: 0.015,
   estAnnualRewardsSky: parseUnits('10693', 18),
@@ -177,6 +178,34 @@ describe('PositionDetailsModal', () => {
     expect(onAction).toHaveBeenLastCalledWith('delegate');
     fireEvent.click(screen.getByTestId('stake-manage-cta-stake'));
     expect(onAction).toHaveBeenLastCalledWith('stake');
+  });
+
+  it('shows the deprecated-farm chip, warning, and change-reward CTA (APP-516)', () => {
+    const { onAction } = renderModal({ rewardSymbol: 'SPK', rewardDeprecated: true });
+
+    expect(screen.getByTestId('stake-position-reward-deprecated-chip')).toBeTruthy();
+    const warning = screen.getByTestId('stake-position-reward-deprecated-warning');
+    expect(warning.textContent).toContain('choose another reward');
+
+    fireEvent.click(screen.getByTestId('stake-position-reward-deprecated-cta'));
+    expect(onAction).toHaveBeenLastCalledWith('reward');
+  });
+
+  it('hides the deprecated-farm warning on a live farm and on an inactive urn', () => {
+    renderModal();
+    expect(screen.queryByTestId('stake-position-reward-deprecated-warning')).toBeNull();
+    expect(screen.queryByTestId('stake-position-reward-deprecated-chip')).toBeNull();
+    cleanup();
+
+    // Inactive urns pick their next farm through the reopen takeover instead —
+    // the chip may still label the stat, but the warning/CTA stay hidden.
+    renderModal({
+      rewardDeprecated: true,
+      isInactive: true,
+      hasDebt: false,
+      vault: { ...baseDetail.vault!, collateralAmount: 0n, debtValue: 0n }
+    });
+    expect(screen.queryByTestId('stake-position-reward-deprecated-warning')).toBeNull();
   });
 
   it('routes the change-reward row to the sheet (APP-516)', () => {

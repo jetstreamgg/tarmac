@@ -3,6 +3,7 @@ import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';
 import {
   getIlkName,
+  isDeprecatedStakeReward,
   useCollateralData,
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
@@ -32,6 +33,8 @@ export interface StakePositionDetail {
   /** The urn's current reward contract / vote delegate (ZERO_ADDRESS = none). */
   rewardContract: `0x${string}` | undefined;
   rewardSymbol: string | undefined;
+  /** The urn's farm is sunset (APP-516) — surfaces show the switch-away nudge. */
+  rewardDeprecated: boolean;
   voteDelegate: `0x${string}` | undefined;
   /** Live staking-reward rate of the urn's farm, as a decimal (0.0569 = 5.69%). */
   rewardsRate: number | null;
@@ -131,6 +134,8 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     hasBorrowHistory: hasStakeBorrowHistory(urnHistory),
     rewardContract,
     rewardSymbol: rewardContractTokens?.rewardsToken?.symbol,
+    rewardDeprecated:
+      !!rewardContract && rewardContract !== ZERO_ADDRESS && isDeprecatedStakeReward(rewardContract, chainId),
     voteDelegate,
     rewardsRate,
     estAnnualRewardsSky,

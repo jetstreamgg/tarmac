@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Gem,
   Info,
+  TriangleAlert,
   UserRound,
   X
 } from 'lucide-react';
@@ -593,6 +594,14 @@ export function PositionDetailsModal({
                         showChainIcon={false}
                       />
                       {detail.rewardSymbol}
+                      {detail.rewardDeprecated && (
+                        <span
+                          data-testid="stake-position-reward-deprecated-chip"
+                          className="bg-surfaceAlt text-textSecondary font-circle rounded-full px-2 py-0.5 text-xs font-medium"
+                        >
+                          <Trans>Deprecated</Trans>
+                        </span>
+                      )}
                     </>
                   ) : (
                     NO_VALUE
@@ -688,6 +697,41 @@ export function PositionDetailsModal({
                 </StatCell>
               </StatPair>
             </div>
+
+            {/* Deprecated-farm warning (APP-516): the old front-end's persistent
+                position-detail banner, rebuilt on the F4 warning-box recipe.
+                Active urns only — an inactive urn picks its next farm through
+                the reopen takeover's picker. The CTA rides the existing menu
+                route, landing in the manage sheet with the reward card open. */}
+            {detail.rewardDeprecated && !isInactive && !detail.vaultLoading && (
+              <div
+                data-testid="stake-position-reward-deprecated-warning"
+                className="flex items-start gap-3 rounded-xl border border-orange-400/40 bg-orange-400/10 p-4"
+              >
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" aria-hidden />
+                <div className="flex flex-col items-start gap-1 text-sm">
+                  <span className="text-text font-circle font-medium">
+                    <Trans>This reward is deprecated</Trans>
+                  </span>
+                  <span className="text-fgSecondary">
+                    <Trans>
+                      Please <span className="text-text font-circle font-medium">choose another reward.</span>{' '}
+                      The SPK rewards are disabled as a Staking Reward option, and the SPK rate set to zero.
+                      The pool of SPK will remain forever so that you can claim your rewards anytime.
+                    </Trans>
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="s"
+                    className="mt-2"
+                    onClick={() => onAction('reward')}
+                    data-testid="stake-position-reward-deprecated-cta"
+                  >
+                    <Trans>Change reward</Trans>
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {showInactiveBorrowBlock && (
               <>
