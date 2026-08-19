@@ -5,12 +5,17 @@ import { AppLink } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/modules/layout/components/Typography';
 import { reportError } from '@/modules/sentry/reportError';
+import { trackRouteErrorViewed } from '@/modules/analytics/lib/trackAmbientSurfaces';
 
 function ErrorPage({ error }: { error?: unknown }): React.ReactElement {
   // Route-level errors surface inside the shell's Layout (header included);
   // wrapping again there would draw the header twice. Only a boundary above the
   // shell — where no chrome survived the error — supplies its own Layout.
   const insideLayout = useContext(InsideLayoutContext);
+
+  useEffect(() => {
+    trackRouteErrorViewed({ path: window.location.pathname });
+  }, []);
 
   useEffect(() => {
     if (!error) return;

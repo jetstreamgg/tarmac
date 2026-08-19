@@ -3,7 +3,14 @@ import { usePostHog } from 'posthog-js/react';
 import { useChains, useConnection } from 'wagmi';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import type { WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
-import { AppEvents, safeCapture, getViewport, reportAnalyticsError, type TxStatus } from '../constants';
+import {
+  AppEvents,
+  safeCapture,
+  getViewport,
+  reportAnalyticsError,
+  signedAmount,
+  type TxStatus
+} from '../constants';
 import { useAnalyticsFlow } from '../context/AnalyticsFlowContext';
 import { classifyTransactionError } from '../lib/classifyTransactionError';
 
@@ -48,15 +55,17 @@ export function useWidgetAnalytics(widgetName: string, chainId: number) {
         const eventName = EVENT_NAME_MAP[event.event];
         if (!eventName) return;
 
-        const txStatus = TX_STATUS_MAP[event.event];
-
-        // Withdrawals and reverts are represented as negative amounts
-        const amount =
-          event.amount != null
-            ? event.flow === 'withdraw' || event.flow === 'revert'
-              ? -Math.abs(event.amount)
-              : Math.abs(event.amount)
+        const classification =
+          event.event === WidgetAnalyticsEventType.TRANSACTION_ERROR
+            ? classifyTransactionError(event.error, !!event.txHash)
             : undefined;
+
+        // A wallet rejection is the user backing out, not a failure (APP-444 D1)
+        const txStatus: TxStatus | undefined = classification?.is_user_rejection
+          ? 'cancelled'
+          : TX_STATUS_MAP[event.event];
+
+        const amount = signedAmount(event.amount, event.flow);
 
         const properties: Record<string, unknown> = {
           widget_name: widgetName,
@@ -72,9 +81,7 @@ export function useWidgetAnalytics(widgetName: string, chainId: number) {
           ...(event.txHash && { tx_hash: event.txHash }),
           ...(amount != null && { amount }),
           ...event.data,
-          ...(event.event === WidgetAnalyticsEventType.TRANSACTION_ERROR
-            ? classifyTransactionError(event.error, !!event.txHash)
-            : {})
+          ...classification
         };
 
         safeCapture(posthog, eventName, properties);
