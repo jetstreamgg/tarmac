@@ -1,7 +1,6 @@
 import { Trans } from '@lingui/react/macro';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
-import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatBigInt, formatNumber, getChainIcon, getChainName } from '@/utils';
@@ -18,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Text } from '@/modules/layout/components/Typography';
 import { usePendleRedeemModal } from '../hooks/usePendleRedeemModal';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 
 // The PositionCard type tokens (486:20195 → 486:20044) — this card sits in the
 // same carousel and must match its siblings' rhythm.
@@ -42,7 +42,7 @@ type PendleMaturedPositionCardProps = {
  * "Your matured positions" section.
  */
 export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPositionCardProps) => {
-  const maturityLabel = format(new Date(market.expiry * 1000), 'd MMM yyyy');
+  const maturityLabel = formatMaturity(market.expiry);
 
   const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
   const { earnings, currency } = usePendleMaturedPositionEarnings(market, ptBalance);

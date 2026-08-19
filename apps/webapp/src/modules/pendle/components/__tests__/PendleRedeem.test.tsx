@@ -79,7 +79,7 @@ const baseProps = {
   selectedOutputToken: USDG_TOKEN,
   onOutputTokenChange: () => undefined,
   quote: undefined as PendleConvertQuote | undefined,
-  slippage: 0.01,
+  slippageDisplay: '1%',
   slippageMode: 'Auto',
   network: 'Ethereum',
   networkChainId: 1

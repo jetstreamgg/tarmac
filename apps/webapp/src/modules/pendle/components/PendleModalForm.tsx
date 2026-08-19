@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
-import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -28,7 +27,6 @@ import {
   pendleAnalyticsData,
   pendleNonPtLeg,
   PopoverInfo,
-  usePendleSlippage,
   usePendleTokens,
   usePendleUsdValue,
   type PendleAnalyticsSide
@@ -41,11 +39,8 @@ import {
   isTestnetId
 } from '@/utils';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
-import { SlippageMenu } from '@/components/ui/SlippageMenu';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
@@ -55,11 +50,14 @@ import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { usePendleSlippageCell } from '../hooks/usePendleSlippageCell';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { parseAmountInput } from '@/lib/amountInput';
 import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { formatPriceImpact } from '../utils/priceImpact';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import {
   buildPendleReviewRows,
   buildPendleSupplyEntryRows,
@@ -138,7 +136,7 @@ export function PendleModalForm({
   const insufficient = balanceKnown && amount > available;
   const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient;
 
-  const { slippage, setSlippage, defaultSlippage } = usePendleSlippage(
+  const { slippage, slippageDisplay, slippageMode, slippageAction } = usePendleSlippageCell(
     isSupply ? PendleFlow.BUY : PendleFlow.WITHDRAW
   );
   const valueUsd = usePendleUsdValue();
@@ -327,38 +325,12 @@ export function PendleModalForm({
   );
   const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
 
-  // Read-only: the row shows a dash until this resolves, and the confirm button never
-  // waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
+  const feeCell = useModalFeeCell({
     calls: writeHook.calls ?? [],
     chainId,
     shouldUseBatch: !!writeHook.isBatch,
     enabled: amountReady
   });
-
-  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
-  // every render, so depending on its identity would give the review breakdown a
-  // new identity every render — and the live push that carries it would re-enter
-  // the provider on each of its re-renders (the update loop the modal forms guard
-  // against). Same field-by-field list the convert launch hook keeps.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
-    [
-      networkFee?.formatted,
-      networkFee?.batchSaving,
-      networkFeeLoading,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
-    ]
-  );
 
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
 
@@ -372,7 +344,7 @@ export function PendleModalForm({
     0,
     Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
   );
-  const claimDate = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const claimDate = formatMaturity(expirySec);
 
   // Pegged markets (1 PT → 1 USDS at expiry) display position values as USDS.
   const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
@@ -431,7 +403,7 @@ export function PendleModalForm({
         daysToMaturity,
         network: networkName,
         networkChainId: engineChainId,
-        networkFee: networkFee?.formatted ?? NO_VALUE
+        networkFee: feeCell.fee?.formatted ?? NO_VALUE
       })
     : buildPendleWithdrawEntryRows({
         tokenSelector: (
@@ -451,7 +423,7 @@ export function PendleModalForm({
         ) : undefined,
         network: networkName,
         networkChainId: engineChainId,
-        networkFee: networkFee?.formatted ?? NO_VALUE
+        networkFee: feeCell.fee?.formatted ?? NO_VALUE
       });
 
   const setMaxAmount = () => setValue(formatUnits(available, inputDecimals));
@@ -486,8 +458,6 @@ export function PendleModalForm({
   // input, which moves into the grid's Withdrawal-amount cell. Scalar deps
   // keep the memo stable across unrelated renders (matches the savings/vault
   // forms).
-  const slippageDisplay = `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`;
-  const slippageMode = slippage === defaultSlippage ? t`Auto` : t`Custom`;
   // Sign-flipped like the legacy modal and the redeem sheet, so positive reads
   // as a cost to the user (PR #1781 review) — see formatPriceImpact.
   const priceImpactDisplay = formatPriceImpact(quote?.priceImpact) ?? NO_VALUE;
@@ -526,18 +496,10 @@ export function PendleModalForm({
               slippage: slippageDisplay,
               slippageMode,
               priceImpact: priceImpactDisplay,
-              slippageAction: (
-                <SlippageMenu
-                  value={slippage}
-                  defaultValue={defaultSlippage}
-                  onChange={setSlippage}
-                  triggerClassName="text-fgTertiary hover:text-fgPrimary data-[state=open]:text-fgPrimary p-0 [&>svg]:size-3.5"
-                  dataTestId="pendle-slippage-menu"
-                />
-              ),
+              slippageAction,
               network: networkName,
               networkChainId: engineChainId,
-              networkFee: networkFee?.formatted ?? NO_VALUE
+              networkFee: feeCell.fee?.formatted ?? NO_VALUE
             }),
             'pendle-modal-row',
             feeCell
@@ -564,14 +526,11 @@ export function PendleModalForm({
       market.underlyingSymbol,
       slippageDisplay,
       slippageMode,
-      slippage,
-      defaultSlippage,
-      setSlippage,
+      slippageAction,
       priceImpactDisplay,
       networkName,
       engineChainId,
-      feeCell,
-      networkFee
+      feeCell
     ]
   );
 
@@ -631,7 +590,7 @@ export function PendleModalForm({
 
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
 
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

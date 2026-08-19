@@ -27,8 +27,8 @@ type PendleRedeemProps = {
   selectedOutputToken: Token;
   onOutputTokenChange: (token: Token) => void;
   quote?: PendleConvertQuote;
-  /** Slippage tolerance as a decimal (e.g. 0.01 = 1%). */
-  slippage: number;
+  /** Current slippage, formatted (e.g. "0.50%"). */
+  slippageDisplay: string;
   /** Slippage mode badge text — "Auto" at the flow default, "Custom" otherwise. */
   slippageMode: string;
   /** Inline gear opening the slippage menu — drawn only on aggregator routes. */
@@ -59,7 +59,7 @@ export const PendleRedeem = ({
   selectedOutputToken,
   onOutputTokenChange,
   quote,
-  slippage,
+  slippageDisplay,
   slippageMode,
   slippageAction,
   network,
@@ -85,7 +85,7 @@ export const PendleRedeem = ({
       />
     ),
     aggregator: !!aggregatorName,
-    slippage: `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`,
+    slippage: slippageDisplay,
     slippageMode,
     slippageAction,
     minReceived: quote ? formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE,

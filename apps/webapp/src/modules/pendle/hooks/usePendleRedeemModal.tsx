@@ -7,26 +7,18 @@ import {
   isMarketMatured,
   PendleConvertSide,
   useBatchPendleConvert,
-  useNetworkFee,
   usePendleUserPtBalances,
   useQuotePendleConvert,
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
 import { chainId as chainIdMap, isTestnetId } from '@/utils';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import {
-  pendleAnalyticsData,
-  pendleNonPtLeg,
-  usePendleSlippage,
-  usePendleTokens,
-  usePendleUsdValue,
-  TxStatus
-} from '@/widgets';
-import { SlippageMenu } from '@/components/ui/SlippageMenu';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { PendleRedeem } from '../components/PendleRedeem';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 type Options = {
   /** Called after redeem confirms onchain — for refetching balances etc. */
@@ -53,7 +45,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(withdrawTokenList[0]);
   const outputTokenAddress = selectedOutputToken.address[mainnet.id] as `0x${string}`;
 
-  const { slippage, setSlippage, defaultSlippage } = usePendleSlippage('redeem');
+  const { slippage, slippageDisplay, slippageMode, slippageAction } = usePendleSlippageCell('redeem');
   // Values the redeemed output leg in USD for the analytics `amount` property.
   const valueUsd = usePendleUsdValue();
 
@@ -123,34 +115,13 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
   const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
 
-  // Read-only: the fee cell shows a skeleton until this resolves; confirm never waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
+  const feeCell = useModalFeeCell({
     calls: writeHook.calls ?? [],
     chainId,
     shouldUseBatch: !!writeHook.isBatch,
     enabled: isRedeemable && !!quote
   });
-  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects — same rationale as the buy/sell form's feeCell.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
-    [
-      networkFee?.formatted,
-      networkFee?.batchSaving,
-      networkFeeLoading,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
-    ]
-  );
 
-  const slippageMode = slippage === defaultSlippage ? t`Auto` : t`Custom`;
   const transactionContent = useMemo(
     () => (
       <PendleRedeem
@@ -160,17 +131,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
         selectedOutputToken={selectedOutputToken}
         onOutputTokenChange={setSelectedOutputToken}
         quote={quote}
-        slippage={slippage}
+        slippageDisplay={slippageDisplay}
         slippageMode={slippageMode}
-        slippageAction={
-          <SlippageMenu
-            value={slippage}
-            defaultValue={defaultSlippage}
-            onChange={setSlippage}
-            triggerClassName="text-fgTertiary hover:text-fgPrimary data-[state=open]:text-fgPrimary p-0 [&>svg]:size-3.5"
-            dataTestId="pendle-slippage-menu"
-          />
-        }
+        slippageAction={slippageAction}
         network={networkName}
         networkChainId={engineChainId}
         feeCell={feeCell}
@@ -183,10 +146,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       withdrawTokenList,
       selectedOutputToken,
       quote,
-      slippage,
+      slippageDisplay,
       slippageMode,
-      defaultSlippage,
-      setSlippage,
+      slippageAction,
       networkName,
       engineChainId,
       feeCell,

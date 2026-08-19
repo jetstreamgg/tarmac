@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
-import { format } from 'date-fns';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
@@ -32,6 +31,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -176,7 +176,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
     0,
     Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
   );
-  const claimDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const claimDateLabel = formatMaturity(expirySec);
 
   const refresh = useCallback(() => {
     mutateBalances();

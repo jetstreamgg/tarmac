@@ -24,6 +24,81 @@ import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type PendleModalGridRow = ModalGridCell[];
 
+// --- Shared cell shapes — every builder draws these identically. ---
+
+const networkCell = (network: string, networkChainId?: number): ModalGridCell => ({
+  kind: 'single',
+  label: 'Network',
+  value: network,
+  network: true,
+  networkChainId
+});
+
+const networkFeeCell = (value: string): ModalGridCell => ({
+  kind: 'single',
+  label: NETWORK_FEE_LABEL,
+  value
+});
+
+const productCell = (product: string, productSymbol: string): ModalGridCell => ({
+  kind: 'single',
+  label: 'Product',
+  value: product,
+  token: productSymbol,
+  productIcon: 'pendle'
+});
+
+const minReceivedCell = (value: string, token: string): ModalGridCell => ({
+  kind: 'single',
+  label: 'Min. received',
+  value,
+  token
+});
+
+type SlippageInput = { slippage: string; slippageMode: string; slippageAction?: ReactNode };
+const slippageCell = ({ slippage, slippageMode, slippageAction }: SlippageInput): ModalGridCell => ({
+  kind: 'single',
+  label: 'Slippage',
+  labelBadge: slippageMode,
+  value: slippage,
+  action: slippageAction
+});
+
+type SupplyEconomicsInput = {
+  rate: string;
+  claimDate: string;
+  displaySymbol: string;
+  claimAtMaturity: string;
+  estEarnings: string;
+  daysToMaturity: number;
+};
+
+/**
+ * The supply screens' shared economics rows — the comps draw the entry
+ * (2193:73513) and review (2193:73734) grids opening identically:
+ * [Fixed rate | Claim date], [Claim at maturity | Est. earnings (ND)].
+ */
+const supplyEconomicsRows = (input: SupplyEconomicsInput): PendleModalGridRow[] => [
+  [
+    { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' },
+    { kind: 'single', label: 'Claim date', value: input.claimDate }
+  ],
+  [
+    {
+      kind: 'single',
+      label: 'Claim at maturity',
+      value: input.claimAtMaturity,
+      token: input.displaySymbol
+    },
+    {
+      kind: 'single',
+      label: `Est. earnings (${input.daysToMaturity}D)`,
+      value: input.estEarnings,
+      token: input.displaySymbol
+    }
+  ]
+];
+
 /** Display strings for the Pendle supply entry screen (Figma 2193:73513). */
 export type PendleSupplyEntryRowInput = {
   /** Rate this order locks — the quote's effective APY, the market implied rate before an amount. */
@@ -52,34 +127,8 @@ export type PendleSupplyEntryRowInput = {
  */
 export function buildPendleSupplyEntryRows(input: PendleSupplyEntryRowInput): PendleModalGridRow[] {
   return [
-    [
-      { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' },
-      { kind: 'single', label: 'Claim date', value: input.claimDate }
-    ],
-    [
-      {
-        kind: 'single',
-        label: 'Claim at maturity',
-        value: input.claimAtMaturity,
-        token: input.displaySymbol
-      },
-      {
-        kind: 'single',
-        label: `Est. earnings (${input.daysToMaturity}D)`,
-        value: input.estEarnings,
-        token: input.displaySymbol
-      }
-    ],
-    [
-      {
-        kind: 'single',
-        label: 'Network',
-        value: input.network,
-        network: true,
-        networkChainId: input.networkChainId
-      },
-      { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }
-    ]
+    ...supplyEconomicsRows(input),
+    [networkCell(input.network, input.networkChainId), networkFeeCell(input.networkFee)]
   ];
 }
 
@@ -127,15 +176,9 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
         trailingToken: input.displaySymbol,
         labelAction: input.lostInfo
       },
-      {
-        kind: 'single',
-        label: 'Network',
-        value: input.network,
-        network: true,
-        networkChainId: input.networkChainId
-      }
+      networkCell(input.network, input.networkChainId)
     ],
-    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
+    [networkFeeCell(input.networkFee)]
   ];
 }
 
@@ -193,46 +236,20 @@ export type PendleRedeemRowInput = {
  * fixed-rate; a gear would imply a tolerance that cannot bind).
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
-  const feeCell: ModalGridCell = { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee };
+  const feeCell = networkFeeCell(input.networkFee);
   const pendleFeeCell: ModalGridCell = { kind: 'single', label: 'Pendle fee', value: input.pendleFee };
   return [
     [
-      {
-        kind: 'single',
-        label: 'Product',
-        value: input.product,
-        token: input.productSymbol,
-        productIcon: 'pendle'
-      },
+      productCell(input.product, input.productSymbol),
       { kind: 'single', label: 'Claim amount', value: input.claimAmount, token: input.ptSymbol }
     ],
     [
       { kind: 'node', label: 'Claim token', node: input.tokenSelector },
-      {
-        kind: 'single',
-        label: 'Network',
-        value: input.network,
-        network: true,
-        networkChainId: input.networkChainId
-      }
+      networkCell(input.network, input.networkChainId)
     ],
     ...(input.aggregator
       ? [
-          [
-            {
-              kind: 'single' as const,
-              label: 'Slippage',
-              labelBadge: input.slippageMode,
-              value: input.slippage,
-              action: input.slippageAction
-            },
-            {
-              kind: 'single' as const,
-              label: 'Min. received',
-              value: input.minReceived,
-              token: input.receiveSymbol
-            }
-          ],
+          [slippageCell(input), minReceivedCell(input.minReceived, input.receiveSymbol)],
           [{ kind: 'single' as const, label: 'Price impact', value: input.priceImpact }, pendleFeeCell],
           [feeCell]
         ]
@@ -300,73 +317,31 @@ export function buildPendleReviewRows(
   flow: 'supply' | 'withdraw',
   input: PendleReviewRowInput
 ): PendleModalGridRow[] {
-  const slippageCell: ModalGridCell = {
-    kind: 'single',
-    label: 'Slippage',
-    labelBadge: input.slippageMode,
-    value: input.slippage,
-    action: input.slippageAction
-  };
   const priceImpactCell: ModalGridCell = {
     kind: 'single',
     label: 'Price impact',
     value: input.priceImpact
   };
-  const productCell: ModalGridCell = {
-    kind: 'single',
-    label: 'Product',
-    value: input.product,
-    token: input.productSymbol,
-    productIcon: 'pendle'
-  };
-  const networkCell: ModalGridCell = {
-    kind: 'single',
-    label: 'Network',
-    value: input.network,
-    network: true,
-    networkChainId: input.networkChainId
-  };
-  const feeCell: ModalGridCell = { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee };
+  const product = productCell(input.product, input.productSymbol);
+  const network = networkCell(input.network, input.networkChainId);
+  const feeCell = networkFeeCell(input.networkFee);
 
   if (flow === 'supply') {
     return [
-      [
-        { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' },
-        { kind: 'single', label: 'Claim date', value: input.claimDate }
-      ],
-      [
-        {
-          kind: 'single',
-          label: 'Claim at maturity',
-          value: input.claimAtMaturity,
-          token: input.displaySymbol
-        },
-        {
-          kind: 'single',
-          label: `Est. earnings (${input.daysToMaturity}D)`,
-          value: input.estEarnings,
-          token: input.displaySymbol
-        }
-      ],
-      [productCell, { kind: 'single', label: 'Withdrawal', value: input.withdrawal }],
-      [slippageCell, priceImpactCell],
-      [
-        { kind: 'single', label: 'Min. received', value: input.minReceived, token: input.ptSymbol },
-        networkCell
-      ],
+      ...supplyEconomicsRows(input),
+      [product, { kind: 'single', label: 'Withdrawal', value: input.withdrawal }],
+      [slippageCell(input), priceImpactCell],
+      [minReceivedCell(input.minReceived, input.ptSymbol), network],
       [feeCell]
     ];
   }
   return [
     [
-      productCell,
+      product,
       { kind: 'single', label: 'Withdrawal amount', value: input.withdrawalAmount, token: input.ptSymbol }
     ],
-    [
-      slippageCell,
-      { kind: 'single', label: 'Min. received', value: input.minReceived, token: input.receiveSymbol }
-    ],
-    [priceImpactCell, networkCell],
+    [slippageCell(input), minReceivedCell(input.minReceived, input.receiveSymbol)],
+    [priceImpactCell, network],
     [feeCell]
   ];
 }

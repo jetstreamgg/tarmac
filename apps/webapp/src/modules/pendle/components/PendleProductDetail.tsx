@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useChains } from 'wagmi';
-import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
@@ -22,6 +21,7 @@ import { PendleTransactionsTable } from './PendleTransactionsTable';
 import { PendleMaturityProgress } from './PendleMaturityProgress';
 import { PendleAboutContent } from './PendleAboutContent';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -52,7 +52,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
   const expirySec = stats?.expirySec ?? market.expiry;
   const remainingSeconds = Math.max(0, expirySec - Math.floor(Date.now() / 1000));
   const remainingDays = Math.floor(remainingSeconds / SECONDS_PER_DAY);
-  const maturityDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const maturityDateLabel = formatMaturity(expirySec);
 
   const details: ProductDetailRow[] = [
     {
