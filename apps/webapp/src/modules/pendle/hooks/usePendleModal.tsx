@@ -60,9 +60,15 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
     (market: PendleMarketConfig) => {
       const ptName = `PT-${market.underlyingSymbol}`;
       launch({
-        title: t`Withdraw from ${ptName}`,
+        // Pre-maturity the only withdrawal IS an early one (matured positions
+        // go through the redeem flow), so the modal is titled by what the
+        // action really is and leads with the market-price disclosure
+        // (Figma 2193:73598 / 2193:73807 — the `review` subtitle renders on
+        // both first screens).
+        title: t`Early withdrawal`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
+          review: t`Early withdrawal is settled at the current market price, not your locked-in rate. Your final amount may be lower than shown if market conditions change before the transaction confirms.`,
           loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
           success: t`You've successfully withdrawn from ${ptName}.`,
           error: t`An error occurred while withdrawing from ${ptName}.`

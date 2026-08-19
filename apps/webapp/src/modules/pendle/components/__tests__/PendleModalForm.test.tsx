@@ -266,26 +266,33 @@ describe('PendleModalForm', () => {
       expect(hoisted.quoteArgs?.enabled).toBe(true);
     });
 
-    it("draws the You'll claim delta from the quoted PT amount", () => {
+    it('draws the per-order Claim at maturity and Est. earnings from the quote', () => {
       renderForm('supply');
       typeAmount('100');
 
-      // 500 PT held + 102 PT quoted out → 500 → 602 at maturity.
-      const claim = screen.getByTestId("pendle-modal-row-You'll claim").textContent;
-      expect(claim).toContain('500');
-      expect(claim).toContain('602');
+      // This order: 100 USDG in → 102 PT out at maturity, earning 2.
+      expect(screen.getByTestId('pendle-modal-row-Claim at maturity').textContent).toContain('102');
+      const days = Math.max(0, Math.floor((MARKET.expiry - Math.floor(Date.now() / 1000)) / 86_400));
+      expect(screen.getByTestId(`pendle-modal-row-Est. earnings (${days}D)`).textContent).toContain('2');
     });
 
-    it('shows the entry grid per the Figma pairing with the rate delta', () => {
+    it('shows the quoted effective rate as the Fixed rate once an amount is entered', () => {
+      renderForm('supply');
+
+      // Market implied rate before an amount, the quote's effective rate after.
+      expect(screen.getByTestId('pendle-modal-row-Fixed rate').textContent).toContain('4.20%');
+      typeAmount('100');
+      expect(screen.getByTestId('pendle-modal-row-Fixed rate').textContent).toContain('4.90%');
+      expect(screen.getByTestId('pendle-modal-row-Claim date').textContent).toBeTruthy();
+      expect(screen.getByTestId('pendle-modal-row-Network fee')).toBeTruthy();
+    });
+
+    it('shows the review Min. received from the quote floor', () => {
       renderForm('supply');
       typeAmount('100');
 
-      // Implied 4.20% → effective 4.90% from the quote.
-      const rate = screen.getByTestId('pendle-modal-row-Fixed rate').textContent;
-      expect(rate).toContain('4.20%');
-      expect(rate).toContain('4.90%');
-      expect(screen.getByTestId('pendle-modal-row-Claim date').textContent).toBeTruthy();
-      expect(screen.getByTestId('pendle-modal-row-Network fee')).toBeTruthy();
+      const review = renderLastReviewContent();
+      expect(review.getByTestId('pendle-modal-row-Min. received').textContent).toContain('101');
     });
 
     it('shows the review price impact sign-flipped, not absolute', () => {
@@ -421,6 +428,32 @@ describe('PendleModalForm', () => {
         { label: 'Approve', tokenSymbol: 'PT-USDG' },
         { label: 'Withdraw', tokenSymbol: 'PT-USDG' }
       ]);
+    });
+
+    it('shows what the early sell returns and forfeits in the entry grid', () => {
+      renderForm('withdraw');
+      typeAmount('200');
+
+      // 200 PT sold → 102 USDG now; the 200 maturity claim forfeits 98.
+      expect(screen.getByTestId("pendle-modal-row-You'll receive").textContent).toContain('102');
+      expect(screen.getByTestId('pendle-modal-row-Lost on early withdrawal').textContent).toContain('98');
+    });
+
+    it('hosts the output-token selector in the Withdrawal token cell', () => {
+      renderForm('withdraw');
+
+      const cell = screen.getByTestId('pendle-modal-row-Withdrawal token');
+      expect(cell.querySelector('[data-testid="pendle-modal-token-select"]')).toBeTruthy();
+    });
+
+    it('reviews with the receive-now hero and the PT amount in the grid', () => {
+      renderForm('withdraw');
+      typeAmount('200');
+
+      const review = renderLastReviewContent();
+      expect(review.getByTestId('pendle-receive-summary').textContent).toContain('102');
+      expect(review.getByTestId('pendle-modal-row-Withdrawal amount').textContent).toContain('200');
+      expect(review.getByTestId('pendle-modal-row-Min. received').textContent).toContain('101');
     });
 
     it('fires withdraw-flavored analytics', () => {

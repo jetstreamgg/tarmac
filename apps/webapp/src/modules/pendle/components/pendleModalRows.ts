@@ -1,68 +1,132 @@
 /**
- * Pure cell builders for the Pendle transaction modals (Figma 859:41118 /
- * 859:41388 supply entries, 859:41473 withdraw entry, 859:41264 / 859:41606
- * review supply, 859:41679 review withdrawal). Same grid contract as the
- * savings/vault builders: rows of shared `ModalGridCell`s, asserted in
- * `pendleModalRows.test.ts`. Pendle-specific hints: the Fixed rate cells carry
- * the savings green-percent accent (deltas accent both values), the review
- * Product cell draws the underlying icon inside the pendle-gradient ring, and
- * the Slippage cell carries the mode badge plus the inline gear `action`.
+ * Pure cell builders for the Pendle transaction modals, per the reworked comps
+ * (Figma 2193:73513 supply entry, 2193:73598 "Early withdrawal" entry,
+ * 2193:73734 review supply, 2193:73807 review withdrawal). Same grid contract
+ * as the savings/vault builders: rows of shared `ModalGridCell`s, asserted in
+ * `pendleModalRows.test.ts`.
+ *
+ * The comps drop the old position-total deltas for per-order economics: the
+ * supply grids pin this order's maturity claim ("Claim at maturity") and
+ * earnings, and the withdraw grids replace the rate rows with what the early
+ * sell actually costs ("Lost on early withdrawal", red down-trend). Two
+ * deliberate divergences carry over from the previous iteration: Price impact
+ * stays (material AMM risk info, PR #1773) and the supply Withdrawal cell keeps
+ * the risk-sheet wording over the comp's "Anytime" (single-sourced per
+ * APP-447). "Min. received" is restored on both reviews (APP-505) — the
+ * slippage floor the quote guarantees, which the comps' own disclosure ("your
+ * final amount may be lower than shown") begs a number for.
  */
 
 import type { ReactNode } from 'react';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL, singleOrDelta } from '@/components/product/ModalGridCells';
+import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type PendleModalGridRow = ModalGridCell[];
 
-/** Display strings for the Pendle supply/withdraw entry screens (Figma 859:41118 / 859:41473). */
-export type PendleEntryRowInput = {
-  /** Market fixed rate, formatted (e.g. "4.20%"). */
-  rateBefore: string;
-  /** Effective rate at the entered amount (quote), formatted. */
-  rateAfter: string;
+/** Display strings for the Pendle supply entry screen (Figma 2193:73513). */
+export type PendleSupplyEntryRowInput = {
+  /** Rate this order locks — the quote's effective APY, the market implied rate before an amount. */
+  rate: string;
+  /** Market expiry, formatted (e.g. "18 Jun 2026"). */
+  claimDate: string;
+  /** Display symbol for the 12px value icons — USDS on pegged markets. */
+  displaySymbol: string;
+  /** This order's value at maturity (the quoted PT amount), formatted. */
+  claimAtMaturity: string;
+  /** This order's earnings to maturity (maturity value − cost), formatted. */
+  estEarnings: string;
+  /** Whole days until market expiry — the "(49D)" suffix. */
+  daysToMaturity: number;
   /** Network the transaction runs on (e.g. "Ethereum"). */
   network: string;
   /** Chain the engine runs on, for the Network cell's icon (mainnet/tenderly, not necessarily the connected chain). */
   networkChainId?: number;
-  /** Display symbol for the 12px value icons — USDS on pegged markets. */
-  displaySymbol: string;
-  /** Position present value before/after the action. */
-  supplyBefore: string;
-  supplyAfter: string;
-  /** Earnings-to-maturity on the position before/after the action. */
-  earningsBefore: string;
-  earningsAfter: string;
-  /** Claimable at maturity before/after the action. */
-  claimBefore: string;
-  claimAfter: string;
-  /** Whole days until market expiry — the "(49D)" suffix. */
-  daysToMaturity: number;
-  /** Market expiry, formatted (e.g. "18 Jun 2026"). */
-  claimDate: string;
-  /** When false the delta cells collapse to their `before` value (no delta drawn). */
-  hasAmount: boolean;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
+  /** Network fee, formatted. */
   networkFee: string;
 };
 
 /**
- * Grid for the Pendle entry screens — one shape for both flows (Figma draws
- * supply 859:41388 and withdraw 859:41473 identically, only the delta
- * directions differ): [Fixed rate | Network], [Supply | Est. earnings (ND)],
- * [You'll claim | Claim date], then Network fee full-width.
+ * Grid for the supply entry screen (Figma 2193:73513): [Fixed rate | Claim
+ * date], [Claim at maturity | Est. earnings (ND)], [Network | Network fee].
  */
-export function buildPendleEntryRows(input: PendleEntryRowInput): PendleModalGridRow[] {
-  const earningsLabel = `Est. earnings (${input.daysToMaturity}D)`;
+export function buildPendleSupplyEntryRows(input: PendleSupplyEntryRowInput): PendleModalGridRow[] {
   return [
     [
-      singleOrDelta(
-        { label: 'Fixed rate', rateAccent: 'savings' },
-        input.rateBefore,
-        input.rateAfter,
-        input.hasAmount
-      ),
+      { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' },
+      { kind: 'single', label: 'Claim date', value: input.claimDate }
+    ],
+    [
+      {
+        kind: 'single',
+        label: 'Claim at maturity',
+        value: input.claimAtMaturity,
+        token: input.displaySymbol
+      },
+      {
+        kind: 'single',
+        label: `Est. earnings (${input.daysToMaturity}D)`,
+        value: input.estEarnings,
+        token: input.displaySymbol
+      }
+    ],
+    [
+      {
+        kind: 'single',
+        label: 'Network',
+        value: input.network,
+        network: true,
+        networkChainId: input.networkChainId
+      },
+      { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }
+    ]
+  ];
+}
+
+/** Display strings for the "Early withdrawal" entry screen (Figma 2193:73598). */
+export type PendleWithdrawEntryRowInput = {
+  /** The Withdrawal-token selector (interactive, passed through opaquely). */
+  tokenSelector: ReactNode;
+  /** Amount received now in the selected token, formatted. */
+  receiveAmount: string;
+  /** Symbol of the token received. */
+  receiveSymbol: string;
+  /** Yield forfeited vs holding to maturity (maturity value − receive now), formatted. */
+  lost: string;
+  /** Display symbol for the maturity-value icons — USDS on pegged markets. */
+  displaySymbol: string;
+  /** Info popover beside the Lost label (the early-withdrawal-impact tooltip). */
+  lostInfo?: ReactNode;
+  /** Network the transaction runs on. */
+  network: string;
+  /** Chain the engine runs on, for the Network cell's icon. */
+  networkChainId?: number;
+  /** Network fee, formatted. */
+  networkFee: string;
+};
+
+/**
+ * Grid for the "Early withdrawal" entry screen (Figma 2193:73598):
+ * [Withdrawal token | You'll receive], [Lost on early withdrawal | Network],
+ * then Network fee full-width. The output-token choice lives here (the amount
+ * field's pill is the fixed PT input), and the rate rows are gone — the cost
+ * of selling early is stated directly, in tokens, under the red down-trend.
+ */
+export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput): PendleModalGridRow[] {
+  return [
+    [
+      { kind: 'node', label: 'Withdrawal token', node: input.tokenSelector },
+      { kind: 'single', label: "You'll receive", value: input.receiveAmount, token: input.receiveSymbol }
+    ],
+    [
+      {
+        kind: 'single',
+        label: 'Lost on early withdrawal',
+        value: input.lost,
+        trend: 'down',
+        trailingToken: input.displaySymbol,
+        labelAction: input.lostInfo
+      },
       {
         kind: 'single',
         label: 'Network',
@@ -71,56 +135,37 @@ export function buildPendleEntryRows(input: PendleEntryRowInput): PendleModalGri
         networkChainId: input.networkChainId
       }
     ],
-    [
-      singleOrDelta(
-        { label: 'Supply', token: input.displaySymbol },
-        input.supplyBefore,
-        input.supplyAfter,
-        input.hasAmount
-      ),
-      singleOrDelta(
-        { label: earningsLabel, token: input.displaySymbol },
-        input.earningsBefore,
-        input.earningsAfter,
-        input.hasAmount
-      )
-    ],
-    [
-      singleOrDelta(
-        { label: "You'll claim", token: input.displaySymbol },
-        input.claimBefore,
-        input.claimAfter,
-        input.hasAmount
-      ),
-      { kind: 'single', label: 'Claim date', value: input.claimDate }
-    ],
     [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
   ];
 }
 
-/** Display strings for the Pendle review stages (Figma 859:41264 supply / 859:41679 withdrawal). */
+/** Display strings for the Pendle review stages (Figma 2193:73734 supply / 2193:73807 withdrawal). */
 export type PendleReviewRowInput = {
   /** Display symbol for the 12px value icons — USDS on pegged markets. */
   displaySymbol: string;
-  /** Supply: the whole position's maturity claim after the action (existing PT + this trade's). */
-  claimAfter: string;
+  /** Supply: this order's value at maturity (the quoted PT amount), formatted. */
+  claimAtMaturity: string;
   /** Market expiry, formatted. */
   claimDate: string;
-  /** Earnings-to-maturity on the position after the action. */
-  earningsAfter: string;
+  /** Supply: this order's earnings to maturity, formatted. */
+  estEarnings: string;
   /** Whole days until market expiry. */
   daysToMaturity: number;
-  /** Withdraw: amount received now, formatted. */
-  receiveAmount: string;
-  /** Withdraw: symbol of the token received. */
-  receiveSymbol: string;
-  /** Effective rate of the trade, formatted. */
+  /** Supply: rate this order locks, formatted. */
   rate: string;
+  /** Withdraw: the PT amount being sold, formatted. */
+  withdrawalAmount: string;
+  /** The market's PT symbol (e.g. "PT-sUSDS") — the Withdrawal amount / supply Min. received icon. */
+  ptSymbol: string;
+  /** Withdraw: symbol of the token received — the Min. received icon. */
+  receiveSymbol: string;
+  /** Slippage floor: the minimum the quote guarantees, formatted (PT on supply, output token on withdraw). */
+  minReceived: string;
   /** Product display name (e.g. "Pendle sUSDS (PT-sUSDS)"). */
   product: string;
   /** Underlying symbol for the Product cell's ringed icon. */
   productSymbol: string;
-  /** Withdrawal availability — supply: "At maturity or via market sell" per the risk sheet (RiskTierDetails, diverging from the comp's "Anytime"); withdraw: "Instant" (the market sell executes now). */
+  /** Supply: withdrawal availability per the risk sheet ("At maturity or via market sell"). */
   withdrawal: string;
   /** Current slippage, formatted (e.g. "0.50%"). */
   slippage: string;
@@ -137,23 +182,18 @@ export type PendleReviewRowInput = {
   network: string;
   /** Chain the engine runs on, for the Network cell's icon. */
   networkChainId?: number;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
+  /** Network fee, formatted. */
   networkFee: string;
 };
 
 /**
- * Grid for the Pendle review stages. Supply (Figma 859:41264): [Total at
- * maturity | Claim date], [Total earnings | Fixed rate], [Product |
- * Withdrawal], [Slippage | Price impact], [Network | Network fee]. The comp
- * labels the first cell "You'll claim", but its value is the whole position's
- * maturity claim (existing PT + this trade's) and would read as this trade's
- * output under that label — "Total at maturity" says what the number is, the
- * same way the comp's own "Total earnings" does (PR #1773 review). Withdraw
- * follows 859:41679 with the Slippage cell slotted in — the comp omits
- * slippage, but the sell quote uses it the same way the buy does, so the
- * control must stay reachable. Price impact is also absent from the comps, but
- * the old modal surfaced it and it's material risk info for an AMM swap, so
- * both reviews keep it beside Slippage (PR #1773 review).
+ * Grid for the Pendle review stages. Supply (Figma 2193:73734): [Fixed rate |
+ * Claim date], [Claim at maturity | Est. earnings (ND)], [Product |
+ * Withdrawal], then the two rows the comp omits but this app keeps — [Slippage
+ * | Price impact], [Min. received | Network] — and Network fee. Withdraw
+ * (Figma 2193:73807): [Product | Withdrawal amount], [Slippage | Min.
+ * received], [Price impact | Network], Network fee; the disclosure paragraph
+ * renders as the modal subtitle, not a grid row.
  */
 export function buildPendleReviewRows(
   flow: 'supply' | 'withdraw',
@@ -190,37 +230,41 @@ export function buildPendleReviewRows(
   if (flow === 'supply') {
     return [
       [
-        { kind: 'single', label: 'Total at maturity', value: input.claimAfter, token: input.displaySymbol },
+        { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' },
         { kind: 'single', label: 'Claim date', value: input.claimDate }
       ],
       [
         {
           kind: 'single',
-          label: 'Total earnings',
-          value: input.earningsAfter,
-          trend: true,
-          trailingToken: input.displaySymbol
+          label: 'Claim at maturity',
+          value: input.claimAtMaturity,
+          token: input.displaySymbol
         },
-        { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' }
+        {
+          kind: 'single',
+          label: `Est. earnings (${input.daysToMaturity}D)`,
+          value: input.estEarnings,
+          token: input.displaySymbol
+        }
       ],
       [productCell, { kind: 'single', label: 'Withdrawal', value: input.withdrawal }],
       [slippageCell, priceImpactCell],
-      [networkCell, feeCell]
+      [
+        { kind: 'single', label: 'Min. received', value: input.minReceived, token: input.ptSymbol },
+        networkCell
+      ],
+      [feeCell]
     ];
   }
   return [
     [
-      { kind: 'single', label: "You'll receive", value: input.receiveAmount, token: input.receiveSymbol },
-      {
-        kind: 'single',
-        label: `Est. earnings (${input.daysToMaturity}D)`,
-        value: input.earningsAfter,
-        trend: true,
-        trailingToken: input.displaySymbol
-      }
+      productCell,
+      { kind: 'single', label: 'Withdrawal amount', value: input.withdrawalAmount, token: input.ptSymbol }
     ],
-    [productCell, { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' }],
-    [{ kind: 'single', label: 'Withdrawal', value: input.withdrawal }, slippageCell],
+    [
+      slippageCell,
+      { kind: 'single', label: 'Min. received', value: input.minReceived, token: input.receiveSymbol }
+    ],
     [priceImpactCell, networkCell],
     [feeCell]
   ];
