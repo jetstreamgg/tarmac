@@ -231,11 +231,13 @@ export function useSavingsTransactionForm({
   // position (mainnet: the USDS savings balance; L2: sUSDS converted to the
   // destination token).
   const available = isSupply ? (walletBalance?.value ?? 0n) : isL2 ? convertedBalance.value : position;
-  // Never validate against the unresolved balance's 0n fallback.
+  // Never validate against the unresolved balance's 0n fallback. The L2 withdraw
+  // balance is the sUSDS balance seen through the PSM preview — two reads, so it
+  // waits on both (a 0n balance previews to 0n by definition and never loads).
   const availableKnown = isSupply
     ? walletBalance !== undefined
     : isL2
-      ? susdsBalance !== undefined
+      ? susdsBalance !== undefined && !convertedBalance.isLoading
       : savingsData?.userSavingsBalance !== undefined;
   const isZero = amount === 0n;
   // A max withdraw bypasses the amount check — the redeem is driven by the flag, not
