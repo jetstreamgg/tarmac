@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { type Call } from 'viem';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
