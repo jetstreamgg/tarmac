@@ -41,9 +41,13 @@ export type RedirectReason =
   | 'market_matured'
   | 'not_found';
 export type TxStatus = 'success' | 'error' | 'cancelled';
-export type VpnCheckResult = 'allowed' | 'vpn_blocked' | 'region_blocked' | 'error' | 'unknown';
+export type ErrorContext = string;
+// A VPN stopped being a block outcome in APP-497 ('vpn_blocked'/'vpn_detected'
+// retired): VPN users transact behind the per-transaction signature instead,
+// and the `is_vpn` property on the events carries the fact.
+export type VpnCheckResult = 'allowed' | 'region_blocked' | 'error' | 'unknown';
 export type BlockReason =
-  'vpn_detected' | 'restricted_region' | 'address_restricted' | 'network_error' | 'auth_error' | 'unknown';
+  'restricted_region' | 'address_restricted' | 'network_error' | 'auth_error' | 'unknown';
 export type Viewport = 'mobile' | 'tablet' | 'desktop';
 export type DisconnectSource = 'wallet_drawer' | 'terms_declined' | 'terms_dismissed' | 'external';
 /** Why the connect modal opened: the generic button, or the gated action that needed a wallet. */

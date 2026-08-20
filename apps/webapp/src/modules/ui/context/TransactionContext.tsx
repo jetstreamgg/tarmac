@@ -20,6 +20,7 @@ import type {
   TxCallbacks,
   TransactionContextValue
 } from './transactionContract';
+import { allowAllGate, type GateTrigger, type PreTransactionGate } from './preTransactionGate';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
@@ -84,7 +85,16 @@ type TransactionModalView = {
  */
 const MODAL_EXIT_MS = 300;
 
-export function TransactionProvider({ children }: { children: ReactNode }) {
+export function TransactionProvider({
+  children,
+  // The pre-transaction gate (see ./preTransactionGate). Injectable so tests
+  // can exercise the deny/async paths; the app mounts the allow-all stub until
+  // the signature verdict lands (APP-501).
+  gate = allowAllGate
+}: {
+  children: ReactNode;
+  gate?: PreTransactionGate;
+}) {
   // Warm the EIP-5792 capability probe from the provider, which is mounted for the whole
   // session, so it runs on connect rather than the first time a flow needs the answer.
   // A multi-call flow genuinely has to know whether the wallet can bundle before it can
@@ -393,16 +403,64 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     };
   }, [minimized, txStatus]);
 
+  // The single gate point between the user's confirm and the config callback
+  // (APP-496): every way a write can start — confirm, the entry's secondary
+  // CTA, retry — funnels through here, so the gate cannot be bypassed by any
+  // launch site. A synchronous allow (the current stub) runs the action in the
+  // same tick, preserving the contract that the engine's `onMutate` fires
+  // synchronously from the user's confirm. An async verdict (the C6 signature
+  // flow) resolves later, so it re-checks the session generation: the user may
+  // have closed or relaunched while it was pending, and a stale allow must not
+  // fire into a torn-down or newer session. Note minimize does NOT advance the
+  // generation, so a verdict resolving while minimized still applies — the
+  // session is alive, just hidden. A rejected verdict counts as a denial.
+  const runGated = useCallback(
+    (trigger: GateTrigger, action: () => void) => {
+      const verdict = gate({ trigger });
+      if (verdict instanceof Promise) {
+        const gen = sessionGenRef.current;
+        verdict.then(
+          v => {
+            if (gen !== sessionGenRef.current) return;
+            if (v.allow) action();
+          },
+          () => {}
+        );
+        return;
+      }
+      if (verdict.allow) action();
+    },
+    [gate]
+  );
+
+  // Config callbacks are read through the ref at fire time (not the render's
+  // closure): a two-action entry swaps `onConfirm`/`onRetry` via
+  // updateModalContent in the same click that executes, and the ref is the
+  // synchronously-assigned copy. After close the ref is null and these are
+  // no-ops — an exiting modal's snapshot can no longer start anything.
+  const gatedConfirm = useCallback(
+    () => runGated('confirm', () => configRef.current?.onConfirm()),
+    [runGated]
+  );
+  const gatedSecondaryConfirm = useCallback(
+    () => runGated('secondaryConfirm', () => configRef.current?.onSecondaryConfirm?.()),
+    [runGated]
+  );
+
   const handleRetry = useCallback(() => {
-    resetTransactionProgress();
+    // The reset lives inside the gate: a denied retry must leave the failure
+    // view in place, not clear it and then do nothing.
+    runGated('retry', () => {
+      resetTransactionProgress();
 
-    if (configRef.current?.onRetry) {
-      configRef.current.onRetry();
-      return;
-    }
+      if (configRef.current?.onRetry) {
+        configRef.current.onRetry();
+        return;
+      }
 
-    configRef.current?.onConfirm();
-  }, [resetTransactionProgress]);
+      configRef.current?.onConfirm();
+    });
+  }, [runGated, resetTransactionProgress]);
 
   // A settle callback belongs to the running session only if BOTH its closure
   // and the write it reports on were made in the current generation (see
@@ -637,8 +695,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             entry={modalView.config.entry}
             rightHeaderComponent={modalView.config.rightHeaderComponent}
             titleBadge={modalView.config.titleBadge}
-            onConfirm={modalView.config.onConfirm}
-            onSecondaryConfirm={modalView.config.onSecondaryConfirm}
+            onConfirm={gatedConfirm}
+            // Only defined when the config carries the callback — the modal
+            // keys the two-CTA footer off its presence.
+            onSecondaryConfirm={modalView.config.onSecondaryConfirm ? gatedSecondaryConfirm : undefined}
             onReviewStage={handleReviewStage}
             onRetry={handleRetry}
             onBack={resetTransactionProgress}

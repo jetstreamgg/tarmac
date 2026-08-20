@@ -71,10 +71,14 @@ function MemoryRouterProvider({ children }: { children?: React.ReactNode }) {
 const testConnectedContextValue = {
   isConnectedAndAcceptedTerms: true,
   isAuthorized: true,
-  setHasAcceptedTerms: () => {},
   isCheckingTerms: false,
   termsCheckError: false,
+  termsCheckDenied: false,
   retryTermsCheck: () => {},
+  retryAccessChecks: () => {},
+  hasAcceptedTerms: true,
+  hasSignedCurrentTerms: true,
+  acceptTerms: async () => true,
   authData: { authIsLoading: false },
   vpnData: { vpnIsLoading: false }
 };

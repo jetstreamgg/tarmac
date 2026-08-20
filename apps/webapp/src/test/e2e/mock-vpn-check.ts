@@ -12,6 +12,9 @@ export const mockVpnCheck = (route: Route) => {
       },
       contentType: 'application/json',
       body: JSON.stringify({
+        // Non-US so the pre-transaction signature gate (C6) stays out of e2e
+        // flows that don't exercise it.
+        country_code: 'XX',
         is_vpn: false,
         is_restricted_region: false
       })

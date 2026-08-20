@@ -7,9 +7,11 @@ export const connectMockWalletAndAcceptTerms = async (page: Page, { batch }: { b
     .click();
 
   try {
-    await page.getByTestId('end-of-terms').scrollIntoViewIfNeeded({ timeout: 2000 });
+    // The signature-free modal (APP-500): no scroll gate any more — the box is
+    // tickable immediately and gates the CTA on its own.
+    await page.getByTestId('terms-modal').waitFor({ timeout: 2000 });
     await page.getByRole('checkbox').click();
-    await page.getByRole('button', { name: 'Agree and Sign' }).click();
+    await page.getByRole('button', { name: 'Agree and continue' }).click();
     await page.waitForTimeout(5000);
   } catch (error) {
     console.error('Error accepting terms: ', error);
