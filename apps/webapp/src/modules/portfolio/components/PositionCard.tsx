@@ -112,7 +112,7 @@ export function PositionCard({
         <div className="flex">
           <Stat
             className="w-[112px]"
-            label={<Trans>Already earned</Trans>}
+            label={<Trans>Accrued to date</Trans>}
             value={
               <EarningsFigureValue
                 figure={alreadyEarned?.totalEarned ?? null}
@@ -130,7 +130,7 @@ export function PositionCard({
           <StatDivider />
           <Stat
             className="flex-1"
-            label={<Trans>1Y projected earnings</Trans>}
+            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
             value={
               position.rateLoading ? (
                 <Skeleton className="h-4 w-14" />

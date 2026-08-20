@@ -50,7 +50,7 @@ describe('StakeAboutTab', () => {
     renderTab();
 
     const howItWorks = screen.getByTestId('stake-how-it-works');
-    expect(howItWorks.textContent).toContain('Stake SKY & earn rewards');
+    expect(howItWorks.textContent).toContain('Stake SKY & accrue rewards');
     expect(howItWorks.textContent).toContain('Borrow USDS');
     expect(howItWorks.textContent).toContain('Delegate Voting Power');
     // The two optional steps carry a separate right-aligned "(Optional)" tag.

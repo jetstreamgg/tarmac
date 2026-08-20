@@ -73,11 +73,12 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
           <Text variant="small" className="text-textSecondary mt-4">
             {apy !== undefined ? (
               <Trans>
-                You&apos;ve earned {formatNumber(earnings)} {currency} with {formatDecimalPercentage(apy)} APY
+                You&apos;ve accrued {formatNumber(earnings)} {currency} with {formatDecimalPercentage(apy)}{' '}
+                APY
               </Trans>
             ) : (
               <Trans>
-                You&apos;ve earned {formatNumber(earnings)} {currency}
+                You&apos;ve accrued {formatNumber(earnings)} {currency}
               </Trans>
             )}
           </Text>

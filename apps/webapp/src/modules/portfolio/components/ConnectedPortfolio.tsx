@@ -193,7 +193,7 @@ export function ConnectedPortfolio() {
             size="md"
             className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
           >
-            <Trans>Your Stablecoin Earnings</Trans>
+            <Trans>Your Stablecoin Savings</Trans>
           </PageHeading>
           <FilterSelect
             options={networkOptions}

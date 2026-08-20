@@ -181,7 +181,7 @@ function SuppliedContent({
 
       <FooterStats>
         <Stat
-          label={<Trans>Total earned</Trans>}
+          label={<Trans>Total accrued</Trans>}
           value={
             activePosition ? (
               <EarningsFigureValue
@@ -201,7 +201,7 @@ function SuppliedContent({
           }
         />
         <Stat
-          label={<Trans>Earned this month</Trans>}
+          label={<Trans>Accrued this month</Trans>}
           value={
             activePosition ? (
               <EarningsFigureValue
@@ -221,7 +221,7 @@ function SuppliedContent({
           }
         />
         <Stat
-          label={<Trans>1Y projected earnings</Trans>}
+          label={<Trans>Projected 1Y yield (at current rate)</Trans>}
           value={
             ratesPending ? (
               <Skeleton className="h-4 w-14" />
@@ -336,7 +336,7 @@ function IdleContent({
         )}
         {displayProjected !== undefined && (
           <Stat
-            label={<Trans>1Y projected earnings</Trans>}
+            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
             value={<GainValue value={displayProjected} className={LABEL_4} />}
           />
         )}
