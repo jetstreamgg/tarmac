@@ -266,14 +266,14 @@ describe('PendleModalForm', () => {
       expect(hoisted.quoteArgs?.enabled).toBe(true);
     });
 
-    it('draws the per-order Claim at maturity and Est. earnings from the quote', () => {
+    it('draws the per-order Claim at maturity and Est. yield from the quote', () => {
       renderForm('supply');
       typeAmount('100');
 
       // This order: 100 USDG in → 102 PT out at maturity, earning 2.
       expect(screen.getByTestId('pendle-modal-row-Claim at maturity').textContent).toContain('102');
       const days = Math.max(0, Math.floor((MARKET.expiry - Math.floor(Date.now() / 1000)) / 86_400));
-      expect(screen.getByTestId(`pendle-modal-row-Est. earnings (${days}D)`).textContent).toContain('2');
+      expect(screen.getByTestId(`pendle-modal-row-Est. ${days}D yield`).textContent).toContain('2');
     });
 
     it('shows the quoted effective rate as the Fixed rate once an amount is entered', () => {

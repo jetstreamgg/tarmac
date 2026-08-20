@@ -21,18 +21,34 @@ const renderSummary = (props: Partial<React.ComponentProps<typeof StakeTakeoverC
 describe('StakeTakeoverConfirmSummary', () => {
   afterEach(cleanup);
 
-  it('names the automatically selected reward token when provided', () => {
+  it('names the selected reward token when provided', () => {
     renderSummary({ rewardSymbol: 'SKY' });
 
     const row = screen.getByTestId('stake-takeover-confirm-reward');
-    expect(row.textContent).toContain('Reward (selected automatically)');
+    expect(row.textContent).toContain('Reward');
     expect(row.textContent).toContain('SKY');
   });
 
-  it('omits the reward row when no reward symbol is passed', () => {
+  it('omits the reward row when no reward is passed at all', () => {
     renderSummary();
 
     expect(screen.queryByTestId('stake-takeover-confirm-reward')).toBeNull();
+  });
+
+  it('falls back to the shortened farm address when the symbol is unknown', () => {
+    // A picked farm outside the generated address books must still show in the
+    // review — the multicall carries its selectFarm leg either way.
+    renderSummary({ rewardContract: '0x9999999999999999999999999999999999999999' });
+
+    expect(screen.getByTestId('stake-takeover-confirm-reward').textContent).toContain('0x9999...9999');
+  });
+
+  it('prefers the symbol over the address when both are known', () => {
+    renderSummary({ rewardSymbol: 'FOO', rewardContract: '0x9999999999999999999999999999999999999999' });
+
+    const row = screen.getByTestId('stake-takeover-confirm-reward');
+    expect(row.textContent).toContain('FOO');
+    expect(row.textContent).not.toContain('0x9999');
   });
 
   it('keeps the borrow hero conditional on a non-zero amount', () => {

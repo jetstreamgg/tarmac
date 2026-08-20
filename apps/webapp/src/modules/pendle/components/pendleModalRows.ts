@@ -71,7 +71,7 @@ type SupplyEconomicsInput = {
 /**
  * The supply screens' shared economics rows — the comps draw the entry
  * (2193:73513) and review (2193:73734) grids opening identically:
- * [Fixed rate | Claim date], [Claim at maturity | Est. earnings (ND)].
+ * [Fixed rate | Claim date], [Claim at maturity | Est. ND yield].
  */
 const supplyEconomicsRows = (input: SupplyEconomicsInput): PendleModalGridRow[] => [
   [
@@ -87,7 +87,7 @@ const supplyEconomicsRows = (input: SupplyEconomicsInput): PendleModalGridRow[] 
     },
     {
       kind: 'single',
-      label: `Est. earnings (${input.daysToMaturity}D)`,
+      label: `Est. ${input.daysToMaturity}D yield`,
       value: input.estEarnings,
       token: input.displaySymbol
     }
@@ -118,7 +118,7 @@ export type PendleSupplyEntryRowInput = {
 
 /**
  * Grid for the supply entry screen (Figma 2193:73513): [Fixed rate | Claim
- * date], [Claim at maturity | Est. earnings (ND)], [Network | Network fee].
+ * date], [Claim at maturity | Est. ND yield], [Network | Network fee].
  */
 export function buildPendleSupplyEntryRows(input: PendleSupplyEntryRowInput): PendleModalGridRow[] {
   return [
@@ -327,7 +327,7 @@ export type PendleReviewRowInput = {
 
 /**
  * Grid for the Pendle review stages. Supply (Figma 2193:73734): [Fixed rate |
- * Claim date], [Claim at maturity | Est. earnings (ND)], [Product |
+ * Claim date], [Claim at maturity | Est. ND yield], [Product |
  * Withdrawal], then the two rows the comp omits but this app keeps — [Slippage
  * | Price impact], [Min. received | Network] — and Network fee. Withdraw
  * (Figma 2193:73807): [Product | Withdrawal amount], [Slippage | Min.

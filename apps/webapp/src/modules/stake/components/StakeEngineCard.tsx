@@ -132,7 +132,7 @@ export function StakeEngineCard() {
         <span data-testid="stake-engine-headline">
           <Trans>
             Stake <InlineTokenIcon symbol="SKY" />
-            SKY to earn rewards, delegate votes and borrow <InlineTokenIcon symbol="USDS" />
+            SKY to accrue rewards, delegate votes and borrow <InlineTokenIcon symbol="USDS" />
             USDS
           </Trans>
         </span>

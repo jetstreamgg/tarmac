@@ -30,6 +30,13 @@ const h = vi.hoisted(() => ({
   vaultLoading: false,
   dust: 0n,
   voteDelegate: undefined as `0x${string}` | undefined,
+  // The urn's current farm (defaults to the mainnet SKY farm in beforeEach).
+  rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc' as `0x${string}`,
+  rewardDeprecated: false,
+  // Indexer farm outside the generated address books, and the on-chain
+  // rewardsToken symbols backing the useRewardContractTokens mock.
+  extraFarm: undefined as `0x${string}` | undefined,
+  farmTokenSymbols: {} as Record<string, string>,
   // Simulation knobs.
   simLiqPrice: 432n * 10n ** 14n,
   simDelayedPrice: 608n * 10n ** 14n,
@@ -130,7 +137,29 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => undefined,
       dataSources: []
-    })
+    }),
+    useStakeRewardContracts: () => ({
+      data: [
+        { contractAddress: actual.lsSkySpkRewardAddress[1] },
+        { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
+        { contractAddress: actual.lsSkySkyRewardAddress[1] },
+        ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
+      ],
+      isLoading: false,
+      error: null,
+      mutate: () => undefined
+    }),
+    useRewardContractTokens: (address?: `0x${string}`) => ({
+      data:
+        address && h.farmTokenSymbols[address.toLowerCase()]
+          ? { rewardsToken: { symbol: h.farmTokenSymbols[address.toLowerCase()] } }
+          : undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => undefined,
+      dataSources: []
+    }),
+    useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null })
   };
 });
 
@@ -154,7 +183,8 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
           },
       vaultLoading: h.vaultLoading,
       hasDebt: h.existingDebt > 0n,
-      rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
+      rewardContract: h.rewardContract,
+      rewardDeprecated: h.rewardDeprecated,
       rewardSymbol: 'SKY',
       voteDelegate: h.voteDelegate,
       rewardsRate: 0.015,
@@ -197,6 +227,7 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks';
 import { ManagePositionTakeover } from './ManagePositionTakeover';
 
 const renderSheet = (init: StakeManageFlowInit = {}) => {
@@ -227,6 +258,10 @@ describe('ManagePositionTakeover', () => {
     h.vaultLoading = false;
     h.dust = 30_000n * WAD;
     h.voteDelegate = CURRENT_DELEGATE;
+    h.rewardContract = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
+    h.rewardDeprecated = false;
+    h.extraFarm = undefined;
+    h.farmTokenSymbols = {};
     h.simLiqPrice = 432n * 10n ** 14n;
     h.simDelayedPrice = 608n * 10n ** 14n;
     h.simProximity = 36;
@@ -241,14 +276,16 @@ describe('ManagePositionTakeover', () => {
     document.documentElement.style.overflow = '';
   });
 
-  it('renders summary strip + three cards, all off by default, Confirm disabled', () => {
+  it('renders summary strip + four cards, all off by default, Confirm disabled', () => {
     renderSheet();
 
     expect(screen.getByTestId('stake-manage-position-summary')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-stake-card')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-borrow-card')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-reward-card')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-delegate-card')).toBeTruthy();
     expect(screen.queryByTestId('stake-manage-stake-amount')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
@@ -493,6 +530,86 @@ describe('ManagePositionTakeover', () => {
     // Click-again-to-deselect on the pre-selected row → staged selection gone,
     // effective delegate back to current → no change staged.
     expect(h.launchParams?.selectedDelegate).toBe(CURRENT_DELEGATE);
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('reward: picking a different farm stages the change and enables Confirm (APP-516)', () => {
+    renderSheet({ rewardCard: true });
+    expect(confirmButton().disabled).toBe(true);
+
+    // SPK is deprecated and not the urn's farm → hidden; the current SKY farm
+    // renders pre-selected.
+    expect(screen.queryByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`)).toBeNull();
+    expect(
+      screen
+        .getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`)
+        .getAttribute('aria-pressed')
+    ).toBe('true');
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkyUsdsRewardAddress[1]);
+    expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('reward: re-selecting the current farm stages no change', () => {
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`));
+    // Back on the urn's own farm → effective reward is the current one → no
+    // change staged.
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('reward: an out-of-address-book farm previews with its on-chain token in the From → To block', () => {
+    // The indexer can list a farm before the webapp ships its generated
+    // addresses. The review body must still preview the change — hiding the
+    // block would confirm a reward-only multicall behind an empty summary.
+    const unknownFarm = '0x9999999999999999999999999999999999999999' as const;
+    h.extraFarm = unknownFarm;
+    h.farmTokenSymbols[unknownFarm] = 'FOO';
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${unknownFarm}`));
+    expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
+    expect(confirmButton().disabled).toBe(false);
+
+    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
+    const block = screen.getByTestId('stake-manage-summary-reward');
+    // From: the urn's current farm token; To: the staged farm's real token.
+    expect(block.textContent).toContain('SKY');
+    expect(block.textContent).toContain('FOO');
+  });
+
+  it('reward: a deprecated current farm renders pre-selected with its chip and warning (CTA deep-link)', () => {
+    // The details-modal banner CTA arrives with rewardCard: true — no
+    // auto-open in the sheet itself; the card opens via init.
+    h.rewardContract = lsSkySpkRewardAddress[1];
+    h.rewardDeprecated = true;
+    renderSheet({ rewardCard: true });
+
+    const spkRow = screen.getByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`);
+    expect(spkRow.getAttribute('aria-pressed')).toBe('true');
+    expect(spkRow.textContent).toContain('Deprecated');
+    expect(screen.getByTestId('stake-manage-reward-deprecated-warning')).toBeTruthy();
+  });
+
+  it('reward: the card stays collapsed by default, deprecated farm or not', () => {
+    h.rewardContract = lsSkySpkRewardAddress[1];
+    h.rewardDeprecated = true;
+    renderSheet();
+    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
+  });
+
+  it('reward: toggling the card off clears a staged change', () => {
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    expect(confirmButton().disabled).toBe(false);
+
+    fireEvent.click(screen.getByTestId('stake-manage-reward-card-toggle'));
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
     expect(confirmButton().disabled).toBe(true);
   });
 

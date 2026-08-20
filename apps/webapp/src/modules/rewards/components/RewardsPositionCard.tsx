@@ -177,7 +177,7 @@ export function RewardsPositionCard({
               {supplyIcon}
               {formatNumber(positionValue, { maxDecimals: 2 })}
             </ProductStat>
-            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
+            <ProductStat label={<Trans>Est. 1Y yield (at current rate)</Trans>}>
               {rate !== undefined && rate > 0 ? (
                 <>
                   <TrendingUp className="text-bullish h-3 w-3 shrink-0" />

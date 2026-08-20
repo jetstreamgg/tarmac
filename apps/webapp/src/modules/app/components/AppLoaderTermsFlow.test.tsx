@@ -88,6 +88,9 @@ vi.mock('@/modules/ui/context/ConnectedContext', async () => {
 vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
   useConnectModal: () => ({ openConnectModal: () => {} })
 }));
+vi.mock('@/modules/ui/context/TransactionContext', () => ({
+  useTransaction: () => ({ isModalOpen: false })
+}));
 vi.mock('@/modules/ui/components/terms-loader', () => ({
   getTermsContent: () => '# Terms of use'
 }));

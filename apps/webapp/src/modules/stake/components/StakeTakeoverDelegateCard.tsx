@@ -136,7 +136,7 @@ export function DelegateList({
 }
 
 /**
- * Card 3 · Delegate Voting Power (Optional): search + single-select delegate
+ * Card 4 · Delegate Voting Power (Optional): search + single-select delegate
  * list (hi-fi 486:32657 — selected row ringed). Toggle OFF is the default
  * (decision A-Q1); turning it off clears the selection via the reducer.
  */
@@ -153,7 +153,7 @@ export function StakeTakeoverDelegateCard({
 }) {
   return (
     <StakeTakeoverCard
-      step={3}
+      step={4}
       title={<Trans>Delegate Voting Power</Trans>}
       optional
       enabled={enabled}

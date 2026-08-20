@@ -30,7 +30,7 @@ describe('buildRewardsSupplyModalRows — "Supply to {farm}" entry grid (Savings
     const rows = buildRewardsSupplyModalRows({ ...ENTRY_INPUT, rewardsIn: 'SPK' });
     expect(gridLabels(rows)).toEqual([
       ['Rate', 'Network'],
-      ['Supply', 'Est. earnings (1Y)'],
+      ['Supply', 'Est. 1Y yield (at current rate)'],
       ['Rewards in', 'Network fee']
     ]);
   });
@@ -38,13 +38,17 @@ describe('buildRewardsSupplyModalRows — "Supply to {farm}" entry grid (Savings
   it('marks Supply and Est. earnings as before→after deltas once an amount is entered', () => {
     const cells = byLabel(buildRewardsSupplyModalRows({ ...ENTRY_INPUT, rewardsIn: 'SPK' }));
     expect(cells['Supply']).toMatchObject({ kind: 'delta', before: '100', after: '110', token: 'USDS' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'delta', before: '$4.50', after: '$4.95' });
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({
+      kind: 'delta',
+      before: '$4.50',
+      after: '$4.95'
+    });
   });
 
   it('collapses the delta cells to their current value with no amount', () => {
     const cells = byLabel(buildRewardsSupplyModalRows({ ...ENTRY_INPUT, hasAmount: false }));
     expect(cells['Supply']).toMatchObject({ kind: 'single', value: '100' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'single', value: '$4.50' });
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({ kind: 'single', value: '$4.50' });
   });
 
   it('threads the single-value cells with their presentation hints', () => {
@@ -58,7 +62,7 @@ describe('buildRewardsSupplyModalRows — "Supply to {farm}" entry grid (Savings
   it('drops the Rewards in cell for point farms (no reward token)', () => {
     expect(gridLabels(buildRewardsSupplyModalRows(ENTRY_INPUT))).toEqual([
       ['Rate', 'Network'],
-      ['Supply', 'Est. earnings (1Y)'],
+      ['Supply', 'Est. 1Y yield (at current rate)'],
       ['Network fee']
     ]);
   });
@@ -68,7 +72,7 @@ describe('buildRewardsWithdrawModalRows — "Withdraw from {farm}" entry grid', 
   it('mirrors the supply grid pairing without the Rewards in cell', () => {
     expect(gridLabels(buildRewardsWithdrawModalRows({ ...ENTRY_INPUT, supplyAfter: '90' }))).toEqual([
       ['Rate', 'Network'],
-      ['Supply', 'Est. earnings (1Y)'],
+      ['Supply', 'Est. 1Y yield (at current rate)'],
       ['Network fee']
     ]);
   });
@@ -94,7 +98,7 @@ describe('buildRewardsSupplyReviewRows — "Review supply" grid', () => {
 
   it('produces exactly the adapted review pairing, in order', () => {
     expect(gridLabels(buildRewardsSupplyReviewRows(REVIEW_INPUT))).toEqual([
-      ['Rewards in', 'Est. earnings (1Y)'],
+      ['Rewards in', 'Est. 1Y yield (at current rate)'],
       ['Product', 'Rate'],
       ['Withdrawal', 'Network'],
       ['Network fee']
@@ -107,7 +111,7 @@ describe('buildRewardsSupplyReviewRows — "Review supply" grid', () => {
 
     const cells = byLabel(rows);
     expect(cells['Rewards in']).toMatchObject({ value: 'SPK', token: 'SPK' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ value: '$4.95', trend: true });
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({ value: '$4.95', trend: true });
     expect(cells['Product']).toMatchObject({ value: 'SPK Rewards', token: 'SPK', productIcon: 'default' });
     expect(cells['Rate']).toMatchObject({ value: '4.50%', rateAccent: 'savings' });
     expect(cells['Withdrawal']).toMatchObject({ value: 'Anytime' });
@@ -117,7 +121,7 @@ describe('buildRewardsSupplyReviewRows — "Review supply" grid', () => {
   it('lets Est. earnings stand alone for point farms (no Rewards in cell)', () => {
     const rows = buildRewardsSupplyReviewRows({ ...REVIEW_INPUT, rewardsIn: undefined });
     expect(gridLabels(rows)).toEqual([
-      ['Est. earnings (1Y)'],
+      ['Est. 1Y yield (at current rate)'],
       ['Product', 'Rate'],
       ['Withdrawal', 'Network'],
       ['Network fee']
@@ -140,7 +144,7 @@ describe('buildRewardsWithdrawReviewRows — "Review withdrawal" grid', () => {
 
   it('produces exactly the adapted withdraw review pairing, in order', () => {
     expect(gridLabels(buildRewardsWithdrawReviewRows(REVIEW_INPUT))).toEqual([
-      ["You'll receive", 'Est. earnings (1Y)'],
+      ["You'll receive", 'Est. 1Y yield (at current rate)'],
       ['Product', 'Rate'],
       ['Withdrawal', 'Network'],
       ['Network fee']
@@ -153,7 +157,7 @@ describe('buildRewardsWithdrawReviewRows — "Review withdrawal" grid', () => {
 
     const cells = byLabel(rows);
     expect(cells["You'll receive"]).toMatchObject({ value: '908.93 USDS', token: 'USDS' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ value: '$4.05', trend: true });
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({ value: '$4.05', trend: true });
     expect(cells['Product']).toMatchObject({ value: 'SPK Rewards', token: 'SPK', productIcon: 'default' });
     expect(cells['Rate']).toMatchObject({ value: '4.50%', rateAccent: 'savings' });
     expect(cells['Withdrawal']).toMatchObject({ value: 'Instant' });

@@ -6,8 +6,8 @@ import { useReducer } from 'react';
  * Both optional cards start OFF (decision A-Q1 — the "01" mock showing the
  * delegate list expanded on an otherwise-empty form is a mock inconsistency).
  * `selectedRewardContract` exists so the engine's required `selectFarm` call is
- * explicit state — the takeover auto-defaults it to the SKY farm (A-Q2, pending
- * product ruling on a visible picker).
+ * explicit state — the reward picker card stages it, with the SKY farm as the
+ * pre-selected default (A-Q2 resolved by APP-516: always-on picker).
  */
 export interface StakeFlowState {
   skyToLock: bigint;

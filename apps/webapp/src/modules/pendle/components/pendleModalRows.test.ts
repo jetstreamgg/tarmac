@@ -23,7 +23,7 @@ describe('buildPendleSupplyEntryRows', () => {
     const rows = buildPendleSupplyEntryRows(supplyEntryInput);
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
       ['Fixed rate', 'Claim date'],
-      ['Claim at maturity', 'Est. earnings (49D)'],
+      ['Claim at maturity', 'Est. 49D yield'],
       ['Network', 'Network fee']
     ]);
     expect(rows[0][0]).toMatchObject({ kind: 'single', value: '4.20%', rateAccent: 'savings' });
@@ -38,7 +38,7 @@ describe('buildPendleSupplyEntryRows', () => {
 
   it('bakes the days-to-maturity into the earnings label', () => {
     const rows = buildPendleSupplyEntryRows({ ...supplyEntryInput, daysToMaturity: 7 });
-    expect(rows[1][1].label).toBe('Est. earnings (7D)');
+    expect(rows[1][1].label).toBe('Est. 7D yield');
   });
 });
 
@@ -104,7 +104,7 @@ describe('buildPendleReviewRows', () => {
     const rows = buildPendleReviewRows('supply', reviewInput);
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
       ['Fixed rate', 'Claim date'],
-      ['Claim at maturity', 'Est. earnings (49D)'],
+      ['Claim at maturity', 'Est. 49D yield'],
       ['Product', 'Withdrawal'],
       ['Slippage', 'Price impact'],
       ['Min. received', 'Network'],

@@ -175,7 +175,7 @@ export const SupplyWithdraw = ({
               error={
                 error
                   ? isOverDepositCap
-                    ? t`Exceeds the vault's remaining deposit capacity`
+                    ? t`Exceeds the vault's remaining supply capacity`
                     : t`Insufficient funds`
                   : undefined
               }
@@ -189,7 +189,7 @@ export const SupplyWithdraw = ({
               >
                 <Text variant="small">
                   <Trans>
-                    This vault has reached its deposit cap. Deposits are temporarily unavailable until
+                    This vault has reached its supply cap. New supplies are temporarily unavailable until
                     capacity frees up.
                   </Trans>
                 </Text>
