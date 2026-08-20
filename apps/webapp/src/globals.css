@@ -328,8 +328,10 @@
   --animate-donut-sweep: donut-sweep 900ms ease-out 300ms both;
 
   /* Menu panel (Figma 2134:88604): scales up from 0.9 out of its top-right
-     anchor while sliding 14px left / 20px down into place, 300ms on quart;
-     the close runs the same track backwards. Reduced motion swaps the tokens
+     anchor, 300ms on quart; the close runs the same track backwards. The
+     comp's x/y tracks (14, -20) are just the offset of a centre-scaled frame
+     pinned to its top-right corner — `transform-origin: top right` already
+     accounts for them, so there is no translate here. Reduced motion swaps the tokens
      for a plain crossfade (see the media query by the `.nav-menu-icon` rules). */
   --animate-menu-in: menu-in 300ms var(--ease-in-out-quart) both;
   --animate-menu-out: menu-out 300ms var(--ease-in-out-quart) both;
@@ -457,21 +459,21 @@
   @keyframes menu-in {
     from {
       opacity: 0;
-      transform: translate(14px, -20px) scale(0.9);
+      transform: scale(0.9);
     }
     to {
       opacity: 1;
-      transform: translate(0, 0) scale(1);
+      transform: scale(1);
     }
   }
   @keyframes menu-out {
     from {
       opacity: 1;
-      transform: translate(0, 0) scale(1);
+      transform: scale(1);
     }
     to {
       opacity: 0;
-      transform: translate(14px, -20px) scale(0.9);
+      transform: scale(0.9);
     }
   }
   @keyframes donut-sweep {
@@ -1037,7 +1039,11 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
    theme-invariant like the nav-icon active fill; rest/hover stay fg-primary
    via currentColor. */
 [data-state='open'] > .nav-menu-icon {
-  stroke: url(#nav-icon-gradient);
+  /* The icon's own userSpaceOnUse gradient (set inline by MenuToggleIcon), not
+     the shared #nav-icon-gradient: that one is objectBoundingBox, and a
+     horizontal stroke has a zero-height bounding box, which SVG refuses to
+     paint a bbox-relative gradient on — the lines simply vanish. */
+  stroke: var(--nav-menu-icon-active-stroke);
 }
 /* Portfolio donut fill mask — see `--animate-donut-sweep`. Registered so the
    angle interpolates; without `@property` a custom property animates

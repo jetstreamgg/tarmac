@@ -176,8 +176,8 @@ function MoreMenu() {
           over a 100px backdrop blur, 24px radius, 20px padding, 24px between
           sections with a hairline divider after the bundling block. */}
       {/* Motion (Figma 2134:88604): the panel grows out of its top-right
-          anchor — 0.9 → 1 while sliding in 14px from the right and 20px from
-          above, 300ms on quart — and leaves the same way. `animated={false}`
+          anchor, 0.9 → 1 over 300ms on quart, and leaves the same way.
+          `animated={false}`
           drops the shared popover's zoom/slide pair so these utilities are
           the only animation on the element. */}
       <PopoverContent
