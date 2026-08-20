@@ -30,6 +30,7 @@ const hoisted = vi.hoisted(() => ({
   userAddress: undefined as `0x${string}` | undefined,
   ptBalances: undefined as Record<`0x${string}`, bigint> | undefined,
   chainId: 1,
+  geo: { fixedEnabled: true, isLoading: false },
   setSearchParamsMock: vi.fn(),
   setIsSwitchingNetworkMock: vi.fn(),
   setIsAutoSwitchingMock: vi.fn()
@@ -75,6 +76,13 @@ vi.mock('@/lib/navigation', async importOriginal => {
   };
 });
 
+vi.mock('@/modules/geo-config', () => ({
+  useGeoConfig: () => ({
+    isModuleEnabled: (id: string) => (id === 'fixed' ? hoisted.geo.fixedEnabled : true),
+    isLoading: hoisted.geo.isLoading
+  })
+}));
+
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     isSwitchingNetwork: false,
@@ -112,6 +120,7 @@ describe('usePendleMaturedPositions', () => {
     hoisted.userAddress = undefined;
     hoisted.ptBalances = undefined;
     hoisted.chainId = 1;
+    hoisted.geo = { fixedEnabled: true, isLoading: false };
     hoisted.setSearchParamsMock.mockClear();
     hoisted.setIsSwitchingNetworkMock.mockClear();
     hoisted.setIsAutoSwitchingMock.mockClear();
@@ -191,6 +200,25 @@ describe('usePendleMaturedPositions', () => {
     hoisted.chainId = 8453;
     render();
     expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
+  });
+
+  it('hides matured positions while the fixed module is geo-restricted (APP-484)', () => {
+    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
+    hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
+    hoisted.geo = { fixedEnabled: false, isLoading: false };
+    hoisted.chainId = 8453; // Base — would auto-switch if a position were listed
+    render();
+    expect(positions()).toHaveLength(0);
+    // No visible claim surface, so no switch prompt either.
+    expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
+  });
+
+  it('passes positions through while the geo config is still loading (restrictive default)', () => {
+    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
+    hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
+    hoisted.geo = { fixedEnabled: false, isLoading: true };
+    render();
+    expect(positions()).toHaveLength(1);
   });
 
   it('lists one position per matured market the user holds PT for — active markets excluded', () => {
