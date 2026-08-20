@@ -7,9 +7,10 @@ export type BorrowCardMode = 'borrow' | 'repay';
  * Manage-sheet form state (UX B.3): three independently-toggleable cards, the
  * first two with a segmented mode (Stake|Withdraw, Borrow|Repay). `skyAmount` /
  * `usdsAmount` are interpreted through the card's mode (lock vs free, borrow vs
- * wipe). `selectedDelegate` is the STAGED selection only — the container
- * resolves the effective delegate as `staged ?? urn's current` so the calldata
- * gating (needsDelegateUpdate) sees "no change" until the user picks another.
+ * wipe). `selectedDelegate` / `selectedRewardContract` are the STAGED
+ * selections only — the container resolves the effective value as
+ * `staged ?? urn's current` so the calldata gating (needsDelegateUpdate /
+ * needsRewardUpdate) sees "no change" until the user picks another.
  */
 export interface StakeManageFlowState {
   stakeEnabled: boolean;
@@ -20,6 +21,8 @@ export interface StakeManageFlowState {
   usdsAmount: bigint;
   /** Legacy Repay semantics (M11): only the exact-max staging may set this. */
   wipeAll: boolean;
+  rewardEnabled: boolean;
+  selectedRewardContract: `0x${string}` | undefined;
   delegateEnabled: boolean;
   selectedDelegate: `0x${string}` | undefined;
 }
@@ -31,6 +34,8 @@ export type StakeManageFlowAction =
   | { type: 'setBorrowEnabled'; enabled: boolean }
   | { type: 'setBorrowMode'; mode: BorrowCardMode }
   | { type: 'setUsdsAmount'; amount: bigint; wipeAll?: boolean }
+  | { type: 'setRewardEnabled'; enabled: boolean }
+  | { type: 'selectRewardContract'; rewardContract: `0x${string}` }
   | { type: 'setDelegateEnabled'; enabled: boolean }
   | { type: 'selectDelegate'; delegate: `0x${string}` };
 
@@ -38,12 +43,14 @@ export type StakeManageFlowAction =
 export interface StakeManageFlowInit {
   stakeCard?: StakeCardMode;
   borrowCard?: BorrowCardMode;
+  rewardCard?: boolean;
   delegateCard?: boolean;
 }
 
 export function initStakeManageFlowState({
   stakeCard,
   borrowCard,
+  rewardCard,
   delegateCard
 }: StakeManageFlowInit): StakeManageFlowState {
   return {
@@ -54,6 +61,8 @@ export function initStakeManageFlowState({
     borrowMode: borrowCard ?? 'borrow',
     usdsAmount: 0n,
     wipeAll: false,
+    rewardEnabled: rewardCard ?? false,
+    selectedRewardContract: undefined,
     delegateEnabled: delegateCard ?? false,
     selectedDelegate: undefined
   };
@@ -87,6 +96,16 @@ export function stakeManageFlowReducer(
       // Typing always resets wipeAll (legacy Repay onChange); the 100%-chip
       // staging passes wipeAll explicitly when it equals the full debt.
       return { ...state, usdsAmount: action.amount, wipeAll: action.wipeAll ?? false };
+    case 'setRewardEnabled':
+      return {
+        ...state,
+        rewardEnabled: action.enabled,
+        selectedRewardContract: action.enabled ? state.selectedRewardContract : undefined
+      };
+    case 'selectRewardContract':
+      // Plain set, no click-again-to-deselect: a position always has a farm, so
+      // "unstage" is re-picking the current one (the gating then sees no change).
+      return { ...state, selectedRewardContract: action.rewardContract };
     case 'setDelegateEnabled':
       return {
         ...state,

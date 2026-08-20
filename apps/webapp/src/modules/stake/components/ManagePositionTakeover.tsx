@@ -27,12 +27,14 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
+import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import { StakeManageStakeCard } from './StakeManageStakeCard';
 import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
+import { StakeManageRewardCard } from './StakeManageRewardCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 
@@ -40,7 +42,7 @@ const NO_VALUE = '–';
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
- * strip and three independently-toggleable cards over one Confirm. All data
+ * strip and four independently-toggleable cards over one Confirm. All data
  * wiring lives here; the cards render props. Simulation composes the legacy
  * Free/Repay math verbatim (M9): collateral = existing + lock − free, debt =
  * existing + borrow − wipe, both floored at zero, simulated against the
@@ -235,6 +237,20 @@ export function ManagePositionTakeover({
       : (state.usdsAmount === 0n && !state.wipeAll) ||
         (!borrowError && !simulationError && !simulationLoading));
 
+  // ---- Reward change (APP-516) ----------------------------------------------
+  const currentRewardContract =
+    detail.rewardContract && detail.rewardContract !== ZERO_ADDRESS ? detail.rewardContract : undefined;
+  const rewardChanged =
+    state.rewardEnabled &&
+    !!state.selectedRewardContract &&
+    state.selectedRewardContract.toLowerCase() !== detail.rewardContract?.toLowerCase();
+  // Effective reward: staged change, else the urn's current one so the calldata
+  // gating sees "no change" — the delegate recipe (M12).
+  const effectiveRewardContract = rewardChanged ? state.selectedRewardContract : detail.rewardContract;
+  // The staged farm's reward token for the review screen — the picker offers
+  // every indexer farm, including ones the address books don't know yet.
+  const stagedRewardSymbol = useFarmRewardSymbol(rewardChanged ? state.selectedRewardContract : undefined);
+
   // ---- Delegate change ------------------------------------------------------
   const currentDelegate =
     detail.voteDelegate && detail.voteDelegate !== ZERO_ADDRESS ? detail.voteDelegate : undefined;
@@ -249,7 +265,13 @@ export function ManagePositionTakeover({
   // ---- Confirm gating (M20) -------------------------------------------------
   const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
   const hasChange =
-    skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll || delegateChanged;
+    skyToLock > 0n ||
+    skyToFree > 0n ||
+    usdsToBorrow > 0n ||
+    usdsToWipe > 0n ||
+    wipeAll ||
+    rewardChanged ||
+    delegateChanged;
   // Every staged change is relative to the existing position, so nothing may
   // confirm against an unresolved vault read.
   const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid && !detail.vaultLoading;
@@ -282,6 +304,14 @@ export function ManagePositionTakeover({
         usdsToBorrow={usdsToBorrow}
         usdsToWipe={usdsToWipe}
         skyPriceUsd={detail.skyPriceUsd}
+        rewardFrom={
+          currentRewardContract ? { address: currentRewardContract, symbol: detail.rewardSymbol } : undefined
+        }
+        rewardTo={
+          rewardChanged && state.selectedRewardContract
+            ? { address: state.selectedRewardContract, symbol: stagedRewardSymbol }
+            : undefined
+        }
         delegateFrom={currentDelegate}
         delegateTo={delegateChanged ? state.selectedDelegate : undefined}
       />
@@ -292,6 +322,11 @@ export function ManagePositionTakeover({
       usdsToBorrow,
       usdsToWipe,
       detail.skyPriceUsd,
+      detail.rewardSymbol,
+      currentRewardContract,
+      rewardChanged,
+      state.selectedRewardContract,
+      stagedRewardSymbol,
       currentDelegate,
       delegateChanged,
       state.selectedDelegate
@@ -311,6 +346,7 @@ export function ManagePositionTakeover({
     usdsToBorrow,
     usdsToWipe,
     wipeAll,
+    selectedRewardContract: effectiveRewardContract,
     selectedDelegate: effectiveDelegate,
     enabled: formValid,
     transactionContent: confirmSummary,
@@ -524,6 +560,14 @@ export function ManagePositionTakeover({
         minCollateralForDust={simulatedVault?.minCollateralForDust}
         currentCollateral={newCollateralAmount > 0n ? newCollateralAmount : 0n}
         error={borrowError}
+      />
+
+      <StakeManageRewardCard
+        enabled={state.rewardEnabled}
+        onEnabledChange={enabled => dispatch({ type: 'setRewardEnabled', enabled })}
+        currentRewardContract={currentRewardContract}
+        stagedRewardContract={state.selectedRewardContract}
+        onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
       />
 
       <StakeManageDelegateCard

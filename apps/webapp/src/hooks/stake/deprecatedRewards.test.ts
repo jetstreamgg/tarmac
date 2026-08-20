@@ -16,10 +16,10 @@ describe('Deprecated Stake Rewards', () => {
   const NON_DEPRECATED_ADDRESS = '0x1234567890123456789012345678901234567890' as `0x${string}`;
 
   describe('DEPRECATED_STAKE_REWARDS', () => {
-    it('should contain SPK and USDS reward addresses', () => {
-      expect(DEPRECATED_STAKE_REWARDS).toHaveLength(2);
-      expect(DEPRECATED_STAKE_REWARDS).toContain(lsSkyUsdsRewardAddress);
+    it('should contain only the SPK reward address', () => {
+      expect(DEPRECATED_STAKE_REWARDS).toHaveLength(1);
       expect(DEPRECATED_STAKE_REWARDS).toContain(lsSkySpkRewardAddress);
+      expect(DEPRECATED_STAKE_REWARDS).not.toContain(lsSkyUsdsRewardAddress);
     });
   });
 
@@ -28,8 +28,8 @@ describe('Deprecated Stake Rewards', () => {
       expect(isDeprecatedStakeReward(SPK_REWARD_ADDRESS_MAINNET, MAINNET_CHAIN_ID)).toBe(true);
     });
 
-    it('should return true for USDS reward address on mainnet', () => {
-      expect(isDeprecatedStakeReward(USDS_REWARD_ADDRESS_MAINNET, MAINNET_CHAIN_ID)).toBe(true);
+    it('should return false for USDS reward address on mainnet (re-enabled)', () => {
+      expect(isDeprecatedStakeReward(USDS_REWARD_ADDRESS_MAINNET, MAINNET_CHAIN_ID)).toBe(false);
     });
 
     it('should return true for SPK reward address on tenderly', () => {
@@ -65,8 +65,10 @@ describe('Deprecated Stake Rewards', () => {
     it('should filter out deprecated rewards', () => {
       const filtered = filterDeprecatedRewards(mockContracts, MAINNET_CHAIN_ID);
 
-      expect(filtered).toHaveLength(1);
-      expect(filtered[0].name).toBe('SKY Reward');
+      expect(filtered).toHaveLength(2);
+      expect(filtered.some(c => c.name === 'USDS Reward')).toBe(true);
+      expect(filtered.some(c => c.name === 'SKY Reward')).toBe(true);
+      expect(filtered.some(c => c.name === 'SPK Reward')).toBe(false);
     });
 
     it('should keep non-deprecated rewards', () => {
@@ -81,7 +83,7 @@ describe('Deprecated Stake Rewards', () => {
     it('should keep the keepAddress even if deprecated', () => {
       const filtered = filterDeprecatedRewards(mockContracts, MAINNET_CHAIN_ID, SPK_REWARD_ADDRESS_MAINNET);
 
-      expect(filtered).toHaveLength(2);
+      expect(filtered).toHaveLength(3);
       expect(filtered.some(c => c.contractAddress === SPK_REWARD_ADDRESS_MAINNET)).toBe(true);
       expect(filtered.some(c => c.contractAddress === NON_DEPRECATED_ADDRESS)).toBe(true);
     });
@@ -91,7 +93,7 @@ describe('Deprecated Stake Rewards', () => {
 
       const filtered = filterDeprecatedRewards(mockContracts, MAINNET_CHAIN_ID, lowercaseKeepAddress);
 
-      expect(filtered).toHaveLength(2);
+      expect(filtered).toHaveLength(3);
       expect(filtered.some(c => c.contractAddress === SPK_REWARD_ADDRESS_MAINNET)).toBe(true);
     });
 
@@ -102,10 +104,7 @@ describe('Deprecated Stake Rewards', () => {
     });
 
     it('should return empty array when all rewards are deprecated', () => {
-      const deprecatedOnly = [
-        { contractAddress: SPK_REWARD_ADDRESS_MAINNET, name: 'SPK Reward' },
-        { contractAddress: USDS_REWARD_ADDRESS_MAINNET, name: 'USDS Reward' }
-      ];
+      const deprecatedOnly = [{ contractAddress: SPK_REWARD_ADDRESS_MAINNET, name: 'SPK Reward' }];
 
       const filtered = filterDeprecatedRewards(deprecatedOnly, MAINNET_CHAIN_ID);
 
