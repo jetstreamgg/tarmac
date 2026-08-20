@@ -1,7 +1,7 @@
 import { formatUnits } from 'viem';
 import { useMemo } from 'react';
 import { Data, TimeFrame } from '@/modules/ui/components/Chart';
-import { resolveSampleInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
+import { getTimeFrameInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
 
 type TokenChartTvl = { blockTimestamp: number; amount: bigint; holders: number };
 
@@ -130,17 +130,12 @@ function generateDataPoints(
   // Sort tvl by timestamp in ascending order to ensure correct processing
   const sortedTvl = [...tvl].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
-  // One sample per timeframe interval, floored at the feed's own cadence. The
-  // long ranges used to be flattened to seven equidistant points instead, which
-  // drew the Total USDS and DAI chart's 1Y and All as a six-segment polyline
-  // while every other chart in the app (all of which run through
+  // One sample per timeframe interval — daily, or 3-daily on 1Y. The long
+  // ranges used to be flattened to seven equidistant points instead, which drew
+  // the Total USDS and DAI chart's 1Y and All as a six-segment polyline while
+  // every other chart in the app (all of which run through
   // `useParseTvlChartData`) plotted the real daily shape (APP-456 #5).
-  const interval = resolveSampleInterval(
-    timeFrame,
-    sortedTvl.map(item => item.blockTimestamp),
-    startTimestamp,
-    endTimestamp
-  );
+  const interval = getTimeFrameInterval(timeFrame);
   const dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval);
 
   //Find min and max points

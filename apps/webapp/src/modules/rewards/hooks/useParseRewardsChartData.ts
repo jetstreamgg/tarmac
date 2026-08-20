@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Data, TimeFrame } from '@/modules/ui/components/Chart';
-import { resolveSampleInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
+import { getTimeFrameInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
 import { RewardsChartInfoParsed } from '@/hooks';
 
 export function useParseRewardsChartData(
@@ -93,15 +93,8 @@ function generateDataPoints(
     const interval = (endTimestamp - startTimestamp) / (totalPoints - 1);
     dataPoints = interpolateDataPoints(sortedChartData, startTimestamp, endTimestamp, interval, dataType);
   } else {
-    // For other timeframes, calculate the interval based on the timeframe —
-    // floored at the feed's own cadence so a coarse series is never upsampled
-    // into a staircase.
-    const interval = resolveSampleInterval(
-      timeFrame,
-      sortedChartData.map(item => item.blockTimestamp),
-      startTimestamp,
-      endTimestamp
-    );
+    // For other timeframes, calculate the interval based on the timeframe
+    const interval = getTimeFrameInterval(timeFrame);
     dataPoints = interpolateDataPoints(sortedChartData, startTimestamp, endTimestamp, interval, dataType);
   }
 

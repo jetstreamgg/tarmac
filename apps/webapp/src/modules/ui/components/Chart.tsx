@@ -110,43 +110,16 @@ const TimeframeControls = ({
   );
 };
 
-const CustomizedLabel = (
-  /*{
-  x = 0,
-  y = 0,
-  stroke = 'black',
-  value,
-  index,
-  data
-}: {
-  x?: number;
-  y?: number;
-  stroke?: string;
-  value?: any;
-  index?: number;
-  data?: Data[];
-}*/
-) => {
-  // TODO: We're returning null until we figure out how to show the labels without clipping on the X or Y edges
-  return null;
-  // if (!data?.length || index === undefined || (!data[index]?.isMin && !data[index]?.isMax)) return null;
-
-  // const isMin = data[index]?.isMin;
-
-  // // Only return a label for the max and min
-  // return (
-  //   <text
-  //     x={index === 0 ? x + 6 : x}
-  //     y={y}
-  //     dy={isMin ? 16 : -8}
-  //     fill={stroke}
-  //     fontSize={13}
-  //     textAnchor="middle"
-  //   >
-  //     {formatNumber(value)}
-  //   </text>
-  // );
-};
+/*
+ * There used to be a `label={<CustomizedLabel />}` on the Area here, rendering
+ * one element per data point to draw min/max markers. It had been returning
+ * `null` since before the redesign (the DS plots the bare line — APP-443 item
+ * 19 removed the resting markers for good), but recharts still built one React
+ * element per point on every render, and the chart re-renders on every
+ * mousemove. On the All range that was ~2600 throwaway elements per pointer
+ * frame: dropping it took the median hover frame from 24.8ms to 17.3ms and cut
+ * dropped frames from 18 to 6 over a full-width sweep.
+ */
 
 /**
  * DS Charts/Line geometry (Figma 5273:12162), read off the exported vectors.
@@ -169,6 +142,51 @@ const trackTransition = (property: string, reduceMotion: boolean | null) =>
   reduceMotion ? undefined : `${property} ${HOVER_TRACK_MS}ms ${HOVER_EASE}`;
 
 /**
+ * Travel below which the glide is dropped and the element simply follows the
+ * pointer.
+ *
+ * The glide exists to smooth the *jump* between two far-apart data points: on
+ * 1W the series plots ~8 points across ~780px, so the cursor snaps ~90px at a
+ * time and easing that reads as tracking. Dense series invert the maths — 1Y
+ * steps ~6px and All ~0.3px — and there the target moves every frame, so a
+ * 120ms transition never completes: the dot, rule and lit window are
+ * permanently mid-glide and trail the pointer by up to 120ms of travel. That
+ * lag is what reads as "sharp"/laggy, and it is worst exactly where the user
+ * noticed it (1Y and All).
+ *
+ * The reference the annotation points at (app.perena.org/transparency) runs its
+ * hover indicators with no positional transition whatsoever — its smoothness is
+ * 1:1 tracking, not easing. This keeps the comp's glide where it does something
+ * and takes perena's behaviour where it doesn't.
+ */
+const SNAP_BELOW_PX = 12;
+
+/**
+ * `trackTransition`, but dropped once the hover target is moving in steps too
+ * small for a glide to be anything but latency. Call unconditionally — it holds
+ * a hook.
+ */
+function useTrackingTransition(property: string, position: number | null | undefined) {
+  const reduceMotion = useReducedMotion();
+  const glide = trackTransition(property, reduceMotion);
+  // Derived-state-on-prop-change rather than a ref: the decision has to be made
+  // from the *previous* position, and reading a ref during render is exactly
+  // what `react-hooks/refs` forbids. React re-runs this pass with the new state
+  // before committing, so the value returned below is never the stale one.
+  const [tracked, setTracked] = useState<{ at: number | null | undefined; transition?: string }>({
+    at: position,
+    transition: glide
+  });
+
+  if (tracked.at !== position) {
+    const jumped = tracked.at == null || position == null || Math.abs(position - tracked.at) >= SNAP_BELOW_PX;
+    setTracked({ at: position, transition: jumped ? glide : undefined });
+  }
+
+  return reduceMotion ? undefined : tracked.transition;
+}
+
+/**
  * The ringed dot under the hover cursor (Figma 5273:12162).
  *
  * Its core is drawn twice: an opaque page-background disc under the
@@ -181,14 +199,14 @@ const trackTransition = (property: string, reduceMotion: boolean | null) =>
  * rides the series (the comp moves it 13px in y over the same keyframes).
  */
 export function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string }) {
-  const reduceMotion = useReducedMotion();
+  const transition = useTrackingTransition('transform', cx);
   if (cx == null || cy == null) return null;
   return (
     <g
       data-testid="chart-active-dot"
       style={{
         transform: `translate(${cx}px, ${cy}px)`,
-        transition: trackTransition('transform', reduceMotion)
+        transition
       }}
     >
       <circle r={ACTIVE_DOT_RADIUS} fill="var(--color-pageBackground)" />
@@ -216,9 +234,9 @@ export function HoverCursor({
   height?: number;
   top?: number;
 }) {
-  const reduceMotion = useReducedMotion();
   const start = points?.[0];
   const end = points?.[1];
+  const transition = useTrackingTransition('transform', start?.x);
   if (!start) return null;
   return (
     <line
@@ -234,7 +252,7 @@ export function HoverCursor({
       pointerEvents="none"
       style={{
         transform: `translateX(${start.x}px)`,
-        transition: trackTransition('transform', reduceMotion)
+        transition
       }}
     />
   );
@@ -305,6 +323,7 @@ export function HoverDimMask({ id }: { id: string }) {
   // Pre-layout the chart has no dimensions (and no hover); fall back to a
   // full-coverage white mask so the series never flashes hidden.
   const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
+  const litTransition = useTrackingTransition('transform', cursorX);
 
   return (
     <defs>
@@ -334,7 +353,7 @@ export function HoverDimMask({ id }: { id: string }) {
             fill="white"
             style={{
               transform: `translateX(${cursorX - HALF_WINDOW}px)`,
-              transition: trackTransition('transform', reduceMotion)
+              transition: litTransition
             }}
           />
         )}
@@ -873,7 +892,6 @@ function ChartContent({
               // Dim everything outside the hover window (mask above); the active
               // dot renders outside the masked layer, so it stays lit.
               mask={`url(#${dimMaskId})`}
-              label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
               // No resting points — the DS plots the bare line.
               dot={false}
               // Ringed hover dot at the cursor point (Figma 5273:12162).

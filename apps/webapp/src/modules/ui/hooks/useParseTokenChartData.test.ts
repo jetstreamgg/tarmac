@@ -2,7 +2,6 @@ import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { useParseTokenChartData } from './useParseTokenChartData';
 
-const HOUR = 3600;
 const DAY = 86400;
 
 /** `days` daily points ending now, oldest first, at 1e18 per unit. */
@@ -26,8 +25,8 @@ const spacing = (points: { date: Date }[]) => {
 
 describe('useParseTokenChartData', () => {
   // APP-456 #5 rescued 1Y and All from seven equidistant points; Figma
-  // 2376:225261 then asked for finer sampling still — "every 4 hours for a
-  // week, every day for a month, and every 3 days for a year".
+  // 2376:225261 then tightened 1Y again, from weekly to 3-daily, so it plots
+  // ~120 of the ~365 rows it has instead of ~52.
   it('samples 1Y every three days', () => {
     const points = parse('y', dailySeries(400));
 
@@ -46,28 +45,15 @@ describe('useParseTokenChartData', () => {
     expect(spacing(parse('m', dailySeries(60)))).toBe(DAY);
   });
 
-  // The 4-hourly 1W interval only buys detail when the feed has it. BA Labs
-  // publishes `overall/historic/` once a day, and the interpolator step-holds,
-  // so upsampling it drew the week as a six-tread staircase instead of a line.
-  it('does not sample 1W below the feed cadence', () => {
+  // 1W stays daily. Every chart feed publishes one row per day and the sampler
+  // step-holds, so a sub-daily interval would repeat each value rather than add
+  // detail — it drew the week as a six-tread staircase.
+  it('samples 1W daily', () => {
     expect(spacing(parse('w', dailySeries(30)))).toBe(DAY);
   });
 
-  it('samples 1W every four hours when the feed is finer than that', () => {
-    const now = Math.floor(Date.now() / 1000);
-    const hourly = Array.from({ length: 200 }, (_, i) => ({
-      blockTimestamp: now - (199 - i) * HOUR,
-      amount: BigInt(200 - i) * 10n ** 18n,
-      holders: 0
-    }));
-
-    expect(spacing(parse('w', hourly))).toBe(4 * HOUR);
-  });
-
-  // The callers prepend the last record from *before* the window so the plot
-  // starts at the right level. Measuring cadence over that leading gap set the
-  // interval wider than the window itself and collapsed the chart to a single
-  // point, which recharts draws as no line at all.
+  // A series whose only records sit outside (or barely inside) the window still
+  // has to plot a line, not a lone point.
   it('does not collapse a sparse series to a single point', () => {
     const now = Math.floor(Date.now() / 1000);
     const sparse = [
