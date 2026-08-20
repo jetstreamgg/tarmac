@@ -4,7 +4,6 @@ import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
   useBatchStakeMulticall,
-  useIsBatchSupported,
   useRewardContractTokens,
   useStakeSkyAllowance,
   useStakeUrnSelectedRewardContract,
@@ -14,12 +13,12 @@ import {
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { parseStakeId, stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 
 /**
  * Claim confirm-modal step labels, derived from the selection (Figma
@@ -165,9 +164,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
   const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
 
   // Legacy StakeModuleWidget/index.tsx:205 (the USDS leg is always zero here).
-  const [batchEnabled] = useBatchToggle();
-  const { data: batchSupported } = useIsBatchSupported();
-  const shouldUseBatch = !!batchEnabled && !!batchSupported && (needsSkyAllowance || calldata.length > 1);
+  const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);
 
   const restakeEngine = useBatchStakeMulticall({
     calldata,

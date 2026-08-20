@@ -5,7 +5,6 @@ import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
 import {
   useBatchStakeMulticall,
-  useIsBatchSupported,
   useRewardContractTokens,
   useStakeSkyAllowance,
   useStakeUsdsAllowance,
@@ -16,12 +15,12 @@ import {
 import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 // Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, needsDelegateUpdate, useStakeCalldata } from './useStakeCalldata';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 
 /**
  * Manage confirm-modal step labels, derived from the calldata set in the manage
@@ -166,9 +165,7 @@ export function useStakeManageLaunch({
   // bundled claim counts toward the multi-leg batch condition without a
   // separate check here.
   const needsAllowance = needsSkyAllowance || needsUsdsAllowance;
-  const [batchEnabled] = useBatchToggle();
-  const { data: batchSupported } = useIsBatchSupported();
-  const shouldUseBatch = !!batchEnabled && !!batchSupported && (needsAllowance || calldata.length > 1);
+  const shouldUseBatch = useShouldUseBatch(needsAllowance || calldata.length > 1);
 
   const engine = useBatchStakeMulticall({
     calldata,
