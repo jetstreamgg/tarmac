@@ -10,7 +10,15 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL, singleOrDelta } from '@/components/product/ModalGridCells';
+import {
+  estEarningsTrendCell,
+  networkCell,
+  networkFeeCell,
+  productCell,
+  rateCell,
+  singleOrDelta,
+  withdrawalCell
+} from '@/components/product/ModalGridCells';
 
 /** One labelled grid cell — the shared modal-grid cell model (single or before→after delta). */
 export type SavingsModalCell = ModalGridCell;
@@ -53,12 +61,9 @@ export type SupplyModalRowInput = {
  * the PSM slippage floor.
  */
 export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalGridRow[] {
-  const networkFee: SavingsModalCell = { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee };
+  const networkFee = networkFeeCell(input.networkFee);
   return [
-    [
-      { kind: 'single', label: 'Savings rate', value: input.savingsRate, rateAccent: 'savings' },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
+    [rateCell('Savings rate', input.savingsRate, 'savings'), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: 'USDS' },
@@ -107,10 +112,7 @@ export type WithdrawModalRowInput = {
  */
 export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsModalGridRow[] {
   return [
-    [
-      { kind: 'single', label: 'Savings rate', value: input.savingsRate, rateAccent: 'savings' },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
+    [rateCell('Savings rate', input.savingsRate, 'savings'), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: 'USDS' },
@@ -125,7 +127,7 @@ export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsMod
         input.hasAmount
       )
     ],
-    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
+    [networkFeeCell(input.networkFee)]
   ];
 }
 
@@ -156,25 +158,13 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
   return [
     [
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: 'sUSDS' },
-      {
-        kind: 'single',
-        label: 'Est. earnings (1Y)',
-        value: input.estEarnings,
-        trend: true,
-        // The projection is USDS-denominated whatever you supplied — name it, as
-        // the vault and stUSDS reviews do.
-        trailingToken: 'USDS'
-      }
+      // The projection is USDS-denominated whatever you supplied — name it, as
+      // the vault and stUSDS reviews do.
+      estEarningsTrendCell(input.estEarnings, 'USDS')
     ],
-    [
-      { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: 'default' },
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' }
-    ],
-    [
-      { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
-    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
+    [productCell(input.product, 'sUSDS', 'default'), rateCell('Rate', input.rate, 'savings')],
+    [withdrawalCell(input.withdrawal), networkCell(input.network)],
+    [networkFeeCell(input.networkFee)]
   ];
 }
 
@@ -207,22 +197,10 @@ export function buildWithdrawReviewRows(input: WithdrawReviewRowInput): SavingsM
   return [
     [
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
-      {
-        kind: 'single',
-        label: 'Est. earnings (1Y)',
-        value: input.estEarnings,
-        trend: true,
-        trailingToken: 'USDS'
-      }
+      estEarningsTrendCell(input.estEarnings, 'USDS')
     ],
-    [
-      { kind: 'single', label: 'Product', value: input.product, token: 'sUSDS', productIcon: 'default' },
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' }
-    ],
-    [
-      { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
-    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
+    [productCell(input.product, 'sUSDS', 'default'), rateCell('Rate', input.rate, 'savings')],
+    [withdrawalCell(input.withdrawal), networkCell(input.network)],
+    [networkFeeCell(input.networkFee)]
   ];
 }

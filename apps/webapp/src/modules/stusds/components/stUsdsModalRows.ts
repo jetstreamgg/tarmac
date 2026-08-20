@@ -11,7 +11,15 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL, singleOrDelta } from '@/components/product/ModalGridCells';
+import {
+  estEarningsTrendCell,
+  networkCell,
+  networkFeeCell,
+  productCell,
+  rateCell,
+  singleOrDelta,
+  withdrawalCell
+} from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type StUsdsModalGridRow = ModalGridCell[];
@@ -43,10 +51,7 @@ export type StUsdsEntryRowInput = {
  */
 export function buildStUsdsEntryRows(input: StUsdsEntryRowInput): StUsdsModalGridRow[] {
   return [
-    [
-      { kind: 'single', label: 'Rate', value: input.rate },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
+    [rateCell('Rate', input.rate), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: 'USDS' },
@@ -61,7 +66,7 @@ export function buildStUsdsEntryRows(input: StUsdsEntryRowInput): StUsdsModalGri
         input.hasAmount
       )
     ],
-    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
+    [networkFeeCell(input.networkFee)]
   ];
 }
 
@@ -108,27 +113,15 @@ export function buildStUsdsReviewRows(
         ]
       : [
           { kind: 'single', label: "You'll receive", value: input.receive, token: 'USDS' },
-          {
-            kind: 'single',
-            label: 'Est. earnings (1Y)',
-            value: input.estEarnings,
-            trend: true,
-            trailingToken: 'USDS'
-          }
+          estEarningsTrendCell(input.estEarnings, 'USDS')
         ];
   return [
     firstRow,
-    [
-      { kind: 'single', label: 'Product', value: 'stUSDS', token: 'stUSDS', productIcon: 'default' },
-      { kind: 'single', label: 'Rate', value: input.rate }
-    ],
-    [
-      { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
+    [productCell('stUSDS', 'stUSDS', 'default'), rateCell('Rate', input.rate)],
+    [withdrawalCell(input.withdrawal), networkCell(input.network)],
     [
       { kind: 'single', label: 'Route', labelBadge: input.route, value: input.routeDetail },
-      { kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }
+      networkFeeCell(input.networkFee)
     ]
   ];
 }

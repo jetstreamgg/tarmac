@@ -86,6 +86,62 @@ export const singleOrDelta = (
 ): ModalGridCell =>
   hasAmount ? { ...base, kind: 'delta', before, after } : { ...base, kind: 'single', value: before };
 
+/**
+ * Factories for the cells every module's row builders repeat. Emitting through
+ * these keeps each label spelled once — NETWORK_FEE_LABEL especially, which
+ * `toGridCells` keys the live estimate on, so a hand-typed 'Network fee'
+ * that drifts would silently unhook a module's fee cell.
+ */
+export const networkCell = (network: string, networkChainId?: number): ModalGridCell => ({
+  kind: 'single',
+  label: 'Network',
+  value: network,
+  network: true,
+  networkChainId
+});
+
+export const networkFeeCell = (networkFee: string): ModalGridCell => ({
+  kind: 'single',
+  label: NETWORK_FEE_LABEL,
+  value: networkFee
+});
+
+/** Rate cell — the label varies per module ('Savings rate' / 'Rate' / 'Fixed rate'), the accent per product. */
+export const rateCell = (label: string, rate: string, accent?: 'savings' | 'morpho'): ModalGridCell => ({
+  kind: 'single',
+  label,
+  value: rate,
+  rateAccent: accent
+});
+
+/** Review Product cell: display name + 12px token icon inside the ringed iconbox. */
+export const productCell = (
+  product: string,
+  token: string,
+  ring: 'default' | 'morpho' | 'pendle'
+): ModalGridCell => ({
+  kind: 'single',
+  label: 'Product',
+  value: product,
+  token,
+  productIcon: ring
+});
+
+export const withdrawalCell = (withdrawal: string): ModalGridCell => ({
+  kind: 'single',
+  label: 'Withdrawal',
+  value: withdrawal
+});
+
+/** Review "Est. earnings (1Y)" cell: green trend glyph, optional trailing denomination icon. */
+export const estEarningsTrendCell = (value: string, trailingToken?: string): ModalGridCell => ({
+  kind: 'single',
+  label: 'Est. earnings (1Y)',
+  value,
+  trend: true,
+  trailingToken
+});
+
 /** The savings-green treatment on a value's trailing "%" (Figma gradient-savings, per WalletDrawerAssets). */
 function RatePercent({ value }: { value: string }) {
   if (!value.endsWith('%')) return <>{value}</>;

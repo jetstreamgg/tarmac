@@ -8,7 +8,7 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
+import { networkCell, networkFeeCell } from '@/components/product/ModalGridCells';
 
 export type ConvertModalRowInput = {
   /** Origin token symbol (e.g. "USDS") — icons the Rate pair's left side. */
@@ -36,12 +36,12 @@ export function buildConvertModalRows(input: ConvertModalRowInput): ModalGridCel
         right: '1.00',
         rightToken: input.targetSymbol
       },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
+      networkCell(input.network)
     ],
     [
       { kind: 'single', label: 'Slippage', value: '0.00%' },
       { kind: 'single', label: 'Fee', value: '$0.00' }
     ],
-    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
+    [networkFeeCell(input.networkFee)]
   ];
 }
