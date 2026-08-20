@@ -164,10 +164,10 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
 
       <FooterStats>
         {/* TODO(D1): Total earned / Earned this month need a cost-basis source (no hook yet). */}
-        <Stat label={<Trans>Total earned</Trans>} value={<TodoValue />} />
-        <Stat label={<Trans>Earned this month</Trans>} value={<TodoValue />} />
+        <Stat label={<Trans>Total accrued</Trans>} value={<TodoValue />} />
+        <Stat label={<Trans>Accrued this month</Trans>} value={<TodoValue />} />
         <Stat
-          label={<Trans>1Y projected earnings</Trans>}
+          label={<Trans>Projected 1Y yield (at current rate)</Trans>}
           value={
             ratesPending ? (
               <Skeleton className="h-4 w-14" />
@@ -282,7 +282,7 @@ function IdleContent({
         )}
         {displayProjected !== undefined && (
           <Stat
-            label={<Trans>1Y projected earnings</Trans>}
+            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
             value={<GainValue value={displayProjected} className={LABEL_4} />}
           />
         )}

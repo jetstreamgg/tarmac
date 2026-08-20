@@ -95,12 +95,12 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
 
   it('names the reward per farm: SPK farm promises SPK tokens, Chronicle promises points', () => {
     renderCard('low', 'rewards-spk');
-    expect(screen.getByText(/earn SPK tokens/)).toBeTruthy();
+    expect(screen.getByText(/receive SPK tokens/)).toBeTruthy();
     expect(screen.getByText('Instant')).toBeTruthy();
     cleanup();
 
     renderCard('low', 'rewards-cle');
-    expect(screen.getByText(/earn Chronicle Points/)).toBeTruthy();
+    expect(screen.getByText(/receive Chronicle Points/)).toBeTruthy();
     expect(screen.queryByText(/tokens/)).toBeNull();
   });
 

@@ -31,7 +31,7 @@ export function ConnectWalletCard() {
       heading={
         <p className="font-circle text-fgPrimary max-w-[480px] text-2xl leading-[26px] font-medium tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]">
           <Trans>
-            <BannerAccent>Connect your wallet</BannerAccent> to see your balances and start earning
+            <BannerAccent>Connect your wallet</BannerAccent> to see your balances and get started
           </Trans>
         </p>
       }

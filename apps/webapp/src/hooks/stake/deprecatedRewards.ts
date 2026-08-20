@@ -1,4 +1,4 @@
-import { lsSkyUsdsRewardAddress, lsSkySpkRewardAddress } from '../generated';
+import { lsSkySpkRewardAddress } from '../generated';
 
 type ChainAddresses = { [chainId: number]: `0x${string}` };
 
@@ -7,7 +7,7 @@ type ChainAddresses = { [chainId: number]: `0x${string}` };
  * These rewards should not be offered to new positions, but existing
  * positions with these rewards can still claim and change rewards.
  */
-export const DEPRECATED_STAKE_REWARDS: ChainAddresses[] = [lsSkyUsdsRewardAddress, lsSkySpkRewardAddress];
+export const DEPRECATED_STAKE_REWARDS: ChainAddresses[] = [lsSkySpkRewardAddress];
 
 /**
  * Checks if a given reward contract address is deprecated.

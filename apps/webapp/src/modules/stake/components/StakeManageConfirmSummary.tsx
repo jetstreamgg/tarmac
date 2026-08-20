@@ -7,6 +7,25 @@ import { CustomAvatar } from '@/modules/ui/components/Avatar';
 
 const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
+/** A reward-block endpoint: the farm, plus its reward-token symbol when known. */
+export interface StakeRewardEndpoint {
+  address: `0x${string}`;
+  /** Missing = outside the address books with the on-chain symbol unresolved — renders the shortened farm address. */
+  symbol?: string;
+}
+
+/** Icon + symbol when the token is known; the shortened farm address otherwise. */
+function RewardEndpoint({ endpoint }: { endpoint: StakeRewardEndpoint }) {
+  return (
+    <>
+      {endpoint.symbol && (
+        <TokenIcon token={{ symbol: endpoint.symbol }} width={28} className="h-7 w-7" showChainIcon={false} />
+      )}
+      {endpoint.symbol ?? shortenAddress(endpoint.address)}
+    </>
+  );
+}
+
 function AmountHero({
   label,
   amount,
@@ -34,8 +53,9 @@ function AmountHero({
 
 /**
  * Manage review-screen body (M8, UX 1104:6429 / 1104:20198 / 1104:21216): one
- * amount hero per staged action; a delegate-only change renders From → To rows
- * instead. USD subvalues: SKY via the protocol price, USDS at parity.
+ * amount hero per staged action; staged reward/delegate changes render
+ * From → To blocks instead (token chip vs avatar rows). USD subvalues: SKY via
+ * the protocol price, USDS at parity.
  */
 export function StakeManageConfirmSummary({
   skyToLock,
@@ -43,6 +63,8 @@ export function StakeManageConfirmSummary({
   usdsToBorrow,
   usdsToWipe,
   skyPriceUsd,
+  rewardFrom,
+  rewardTo,
   delegateFrom,
   delegateTo
 }: {
@@ -51,14 +73,18 @@ export function StakeManageConfirmSummary({
   usdsToBorrow: bigint;
   usdsToWipe: bigint;
   skyPriceUsd: number | null;
+  /** Reward farms — `rewardTo` set renders the reward From → To block. */
+  rewardFrom?: StakeRewardEndpoint;
+  rewardTo?: StakeRewardEndpoint;
   /** Set both to render the delegate From → To block. */
   delegateFrom?: `0x${string}`;
   delegateTo?: `0x${string}`;
 }) {
   const skyUsd = (amount: bigint) =>
     skyPriceUsd !== null ? Number(formatUnits(amount, 18)) * skyPriceUsd : null;
-  // A staged delegate change always previews — including mixed bundles where
-  // amounts are staged too, since "Change delegate" is a step either way.
+  // A staged reward/delegate change always previews — including mixed bundles
+  // where amounts are staged too, since each is a step either way.
+  const showReward = !!rewardTo;
   const showDelegate = !!delegateTo;
 
   return (
@@ -98,6 +124,28 @@ export function StakeManageConfirmSummary({
           usdValue={Number(formatUnits(usdsToWipe, 18))}
           dataTestId="stake-manage-summary-repay"
         />
+      )}
+
+      {showReward && (
+        <div className="flex flex-col gap-3" data-testid="stake-manage-summary-reward">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-textSecondary text-sm">
+              <Trans>From</Trans>
+            </span>
+            <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
+              {rewardFrom ? <RewardEndpoint endpoint={rewardFrom} /> : <Trans>No reward</Trans>}
+            </span>
+          </div>
+          <ArrowDown className="text-textSecondary h-4 w-4" aria-hidden />
+          <div className="flex flex-col gap-1.5">
+            <span className="text-textSecondary text-sm">
+              <Trans>To</Trans>
+            </span>
+            <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
+              <RewardEndpoint endpoint={rewardTo!} />
+            </span>
+          </div>
+        </div>
       )}
 
       {showDelegate && (
