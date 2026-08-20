@@ -115,11 +115,14 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
   const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
 
+  // Simulate on the engine chain (the calldata is mainnet's even when the
+  // wallet sits elsewhere), and only while the modal is up — this hook mounts
+  // once per matured card, and the estimate is only shown inside the modal.
   const feeCell = useModalFeeCell({
     calls: writeHook.calls ?? [],
-    chainId,
+    chainId: engineChainId,
     shouldUseBatch: !!writeHook.isBatch,
-    enabled: isRedeemable && !!quote
+    enabled: isModalOpen && isRedeemable && !!quote
   });
 
   const transactionContent = useMemo(
@@ -131,6 +134,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
         selectedOutputToken={selectedOutputToken}
         onOutputTokenChange={setSelectedOutputToken}
         quote={quote}
+        isFetchingQuote={isFetchingQuote}
         slippageDisplay={slippageDisplay}
         slippageMode={slippageMode}
         slippageAction={slippageAction}
@@ -146,6 +150,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       withdrawTokenList,
       selectedOutputToken,
       quote,
+      isFetchingQuote,
       slippageDisplay,
       slippageMode,
       slippageAction,

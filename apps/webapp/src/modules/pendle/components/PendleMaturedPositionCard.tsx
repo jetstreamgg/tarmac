@@ -3,7 +3,14 @@ import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { Clock } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { formatBigInt, formatNumber, getChainIcon, getChainName } from '@/utils';
+import {
+  chainId as chainIdMap,
+  formatBigInt,
+  formatNumber,
+  getChainIcon,
+  getChainName,
+  isTestnetId
+} from '@/utils';
 import {
   isPendleChain,
   type PendleMarketConfig,
@@ -56,10 +63,14 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
   const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
 
   // Redemption signs on mainnet; the portfolio has already prompted a network
-  // switch (usePendleMaturedPositions), so a still-mismatched chain means the
-  // user declined — keep the card visible but the action disabled instead of
-  // letting the confirm fail with a wallet chain-mismatch error.
-  const onPendleChain = isPendleChain(useChainId());
+  // switch (usePendleMaturedNetworkSwitch), so a still-mismatched chain means
+  // the user declined — keep the card visible but the action disabled instead
+  // of letting the confirm fail with a wallet chain-mismatch error.
+  const chainId = useChainId();
+  const onPendleChain = isPendleChain(chainId);
+  // Where the claim executes — matches the redeem modal's Network cell (the
+  // fork in dev sessions, mainnet otherwise).
+  const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : mainnet.id;
 
   return (
     <Card
@@ -83,8 +94,8 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
             </span>
           </span>
           <span className={badgePill}>
-            <span className="flex h-4 w-4 shrink-0">{getChainIcon(mainnet.id, 'h-full w-full')}</span>
-            <span className={cn(badgeText, 'text-fgPrimary')}>{getChainName(mainnet.id)}</span>
+            <span className="flex h-4 w-4 shrink-0">{getChainIcon(engineChainId, 'h-full w-full')}</span>
+            <span className={cn(badgeText, 'text-fgPrimary')}>{getChainName(engineChainId)}</span>
           </span>
         </div>
       </div>

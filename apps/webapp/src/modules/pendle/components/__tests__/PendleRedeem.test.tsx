@@ -10,7 +10,7 @@ import type { PendleConvertQuote } from '@/hooks';
 i18n.load('en', {});
 i18n.activate('en');
 
-const MARKET = {
+const MARKET: import('@/hooks').PendleMarketConfig = {
   name: 'PT-USDG',
   slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as `0x${string}`,
@@ -79,6 +79,7 @@ const baseProps = {
   selectedOutputToken: USDG_TOKEN,
   onOutputTokenChange: () => undefined,
   quote: undefined as PendleConvertQuote | undefined,
+  isFetchingQuote: false,
   slippageDisplay: '1%',
   slippageMode: 'Auto',
   network: 'Ethereum',
@@ -166,5 +167,56 @@ describe('PendleRedeem', () => {
   it('names the network in the Network cell', () => {
     renderRedeem();
     expect(screen.getByTestId('pendle-redeem-row-Network').textContent).toContain('Ethereum');
+  });
+
+  it('names the aggregator route in the Routed via cell', () => {
+    renderRedeem({ quote: { ...baseQuote, aggregatorType: 'kyberswap' } });
+    expect(screen.getByTestId('pendle-redeem-row-Routed via').textContent).toContain('Pendle redeem →');
+  });
+
+  it('keeps the slippage gear reachable before a quote resolves on a non-SY output', () => {
+    // USDS is outside the market's SY-accepted list here, so the route will
+    // need an aggregator — the gear must exist even while no quote has landed
+    // (a too-tight tolerance can be the reason it doesn't).
+    renderRedeem({
+      market: { ...MARKET, syAcceptedTokens: [MARKET.underlyingToken] },
+      selectedOutputToken: USDS_TOKEN,
+      quote: undefined
+    });
+    expect(screen.getByTestId('pendle-redeem-row-Slippage')).toBeTruthy();
+  });
+
+  it('holds skeletons (not dashes) while the quote is in flight', () => {
+    renderRedeem({
+      market: { ...MARKET, syAcceptedTokens: [MARKET.underlyingToken] },
+      selectedOutputToken: USDS_TOKEN,
+      quote: undefined,
+      isFetchingQuote: true
+    });
+    expect(screen.getByTestId('hero-loading')).toBeTruthy();
+    expect(
+      screen.getByTestId('pendle-redeem-row-Min. received').querySelector('[data-testid="cell-loading"]')
+    ).toBeTruthy();
+  });
+
+  it('formats the output legs in the selected token decimals (18d), the claim amount in PT decimals (6d)', () => {
+    // Guards the 6-vs-18 mixup: reusing the PT decimals for an 18-decimal
+    // output would print a trillions-scale number.
+    renderRedeem({
+      selectedOutputToken: USDS_TOKEN,
+      quote: {
+        ...baseQuote,
+        amountOut: 1_499_500_000_000_000_000n, // 1.4995 USDS (18 decimals)
+        apiMinOut: 1_450_000_000_000_000_000n,
+        aggregatorType: 'kyberswap'
+      }
+    });
+    const hero = screen.getByTestId('pendle-redeem-hero').textContent!;
+    expect(hero).toContain('1.5');
+    expect(hero).toContain('USDS');
+    expect(hero).not.toContain('PT-USDG');
+    expect(hero).not.toContain(',');
+    expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.45');
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('1.5');
   });
 });

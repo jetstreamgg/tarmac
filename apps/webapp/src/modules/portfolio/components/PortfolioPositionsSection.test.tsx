@@ -23,10 +23,10 @@ const h = vi.hoisted(() => ({
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => h.navigate }));
 
-// Matured PT cards pull the redeem preview/modal stack — out of scope here
-// (covered by usePendleMaturedPositions.test / PendleRedeem.test).
+// The mainnet auto-switch pulls navigation/network-switch contexts — out of
+// scope here (covered by usePendleMaturedPositions.test).
 vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
-  usePendleMaturedPositions: () => ({ maturedPositions: [], onPendleChain: true })
+  usePendleMaturedNetworkSwitch: () => undefined
 }));
 
 // The resolver reads the connected chain to place in-place supply and switches
@@ -143,6 +143,8 @@ function renderSection(positions: SuppliedPosition[]) {
         <PortfolioPositionsSection
           suppliedView={view(positions)}
           suppliedLoading={false}
+          maturedPositions={[]}
+          maturedLoading={false}
           idleView={{ tokens: [] } as unknown as IdleView}
           idleSupplyInfo={new Map()}
           idleLoading={false}

@@ -15,7 +15,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SuppliedEmpty } from '@/modules/icons';
 import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
-import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import {
+  usePendleMaturedNetworkSwitch,
+  type PendleMaturedPosition
+} from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { PendleMaturedPositionCard } from '@/modules/pendle/components/PendleMaturedPositionCard';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
@@ -40,6 +43,8 @@ const INLINE_ARROW = 'static left-auto right-auto top-auto translate-y-0';
 export function PortfolioPositionsSection({
   suppliedView,
   suppliedLoading,
+  maturedPositions,
+  maturedLoading,
   idleView,
   idleSupplyInfo,
   idleLoading,
@@ -48,6 +53,9 @@ export function PortfolioPositionsSection({
 }: {
   suppliedView: SuppliedView;
   suppliedLoading: boolean;
+  /** Matured PT held (network-scoped by the caller) — leads the Supplied carousel. */
+  maturedPositions: PendleMaturedPosition[];
+  maturedLoading: boolean;
   idleView: IdleView;
   idleSupplyInfo: Map<string, IdleSupplyInfo>;
   idleLoading: boolean;
@@ -59,7 +67,9 @@ export function PortfolioPositionsSection({
   // switching the wallet to the position's chain first when needed; products
   // without one — and all Manage buttons — route to the product page.
   const resolveSupplyAction = usePortfolioSupplyActions();
-  const { maturedPositions } = usePendleMaturedPositions();
+  // Redemption signs on mainnet — prompt the switch only while a claim card
+  // is actually visible (Supplied tab, matured PT held).
+  usePendleMaturedNetworkSwitch(tab === 'supplied' && maturedPositions.length > 0);
   const goToProduct = (detailPath: string) => {
     setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
@@ -99,7 +109,7 @@ export function PortfolioPositionsSection({
     return (
       <section data-testid="portfolio-positions">
         <PortfolioTabs tab={tab} onTabChange={onTabChange} />
-        {suppliedLoading ? (
+        {suppliedLoading || maturedLoading ? (
           <CarouselSkeleton />
         ) : (
           <EmptyState className="mt-8" illustration={<SuppliedEmpty aria-hidden />}>

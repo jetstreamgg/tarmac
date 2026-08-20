@@ -199,6 +199,8 @@ export type PendleRedeemRowInput = {
    * at the expiry-frozen rate has none.
    */
   aggregator: boolean;
+  /** Quote still in flight — the quote-derived cells hold skeletons instead of dashes. */
+  quoteLoading: boolean;
   /** Current slippage, formatted. */
   slippage: string;
   /** Slippage mode badge text. */
@@ -211,6 +213,8 @@ export type PendleRedeemRowInput = {
   receiveSymbol: string;
   /** Quote price impact, formatted (positive = a cost to the user). */
   priceImpact: string;
+  /** Aggregator route description (e.g. "Pendle redeem → KyberSwap"). */
+  routedVia: string;
   /** Pendle's fee, formatted (e.g. "$0.04"). */
   pendleFee: string;
   /** Network the transaction runs on. */
@@ -224,14 +228,21 @@ export type PendleRedeemRowInput = {
 /**
  * Grid for the matured-claim modal: [Product | Claim amount], [Claim token |
  * Network], then — only on aggregator routes, where swap math exists —
- * [Slippage | Min. received], [Price impact | Pendle fee] before the fee row.
- * A pure redemption keeps just [Pendle fee | Network fee]: the slippage
- * control is deliberately absent there (redeeming to an SY-accepted token is
- * fixed-rate; a gear would imply a tolerance that cannot bind).
+ * [Slippage | Min. received], [Price impact | Routed via], [Pendle fee |
+ * Network fee]. A pure redemption keeps just [Pendle fee | Network fee]: the
+ * slippage control is deliberately absent there (redeeming to an SY-accepted
+ * token is fixed-rate; a gear would imply a tolerance that cannot bind), and
+ * so is the per-leg price-impact breakdown the legacy overview drew — the
+ * aggregate number plus the route line carry the risk info.
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
   const feeCell = networkFeeCell(input.networkFee);
-  const pendleFeeCell: ModalGridCell = { kind: 'single', label: 'Pendle fee', value: input.pendleFee };
+  const pendleFeeCell: ModalGridCell = {
+    kind: 'single',
+    label: 'Pendle fee',
+    value: input.pendleFee,
+    loading: input.quoteLoading
+  };
   return [
     [
       productCell(input.product, input.productSymbol),
@@ -243,9 +254,25 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
     ],
     ...(input.aggregator
       ? [
-          [slippageCell(input), minReceivedCell(input.minReceived, input.receiveSymbol)],
-          [{ kind: 'single' as const, label: 'Price impact', value: input.priceImpact }, pendleFeeCell],
-          [feeCell]
+          [
+            slippageCell(input),
+            { ...minReceivedCell(input.minReceived, input.receiveSymbol), loading: input.quoteLoading }
+          ],
+          [
+            {
+              kind: 'single' as const,
+              label: 'Price impact',
+              value: input.priceImpact,
+              loading: input.quoteLoading
+            },
+            {
+              kind: 'single' as const,
+              label: 'Routed via',
+              value: input.routedVia,
+              loading: input.quoteLoading
+            }
+          ],
+          [pendleFeeCell, feeCell]
         ]
       : [[pendleFeeCell, feeCell]])
   ];
