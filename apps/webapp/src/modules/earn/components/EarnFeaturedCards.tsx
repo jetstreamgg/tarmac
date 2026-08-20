@@ -15,6 +15,7 @@ import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
 import { NO_VALUE } from '@/lib/constants';
 import { remainingDaysToMaturity } from '../helpers/daysToMaturity';
+import { FixedYieldTerm } from './FixedYieldTerm';
 
 /** The row's rate, or an inline skeleton while its source is still loading. */
 function RateFigure({ row, className = 'h-4 w-12' }: { row: EarnProductRow; className?: string }) {
@@ -268,13 +269,15 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     ),
     title: row => row.name,
     description: (row, { now }) => {
-      // Days until PT maturity, for "…for the next N days".
       const days = row.maturity ? remainingDaysToMaturity(row.maturity, now) : undefined;
       return (
-        <Trans>
-          Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
-          maturity. Fix your yield at {row.rate.formatted} APY for the next {days} days.
-        </Trans>
+        <>
+          <Trans>
+            Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
+            maturity.
+          </Trans>{' '}
+          <FixedYieldTerm rate={row.rate.formatted} days={days} />
+        </>
       );
     },
     stats: row => (
