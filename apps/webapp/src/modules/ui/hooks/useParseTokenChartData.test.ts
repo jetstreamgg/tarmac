@@ -2,8 +2,8 @@ import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { useParseTokenChartData } from './useParseTokenChartData';
 
+const HOUR = 3600;
 const DAY = 86400;
-const WEEK = 604800;
 
 /** `days` daily points ending now, oldest first, at 1e18 per unit. */
 const dailySeries = (days: number) => {
@@ -25,14 +25,14 @@ const spacing = (points: { date: Date }[]) => {
 };
 
 describe('useParseTokenChartData', () => {
-  // APP-456 #5: 1Y and All were flattened to seven equidistant points, so the
-  // Total USDS and DAI chart drew a six-segment polyline while every other chart
-  // plotted the real daily shape.
-  it('samples 1Y weekly rather than collapsing it to seven points', () => {
+  // APP-456 #5 rescued 1Y and All from seven equidistant points; Figma
+  // 2376:225261 then asked for finer sampling still — "every 4 hours for a
+  // week, every day for a month, and every 3 days for a year".
+  it('samples 1Y every three days', () => {
     const points = parse('y', dailySeries(400));
 
-    expect(points.length).toBeGreaterThan(50);
-    expect(spacing(points)).toBe(WEEK);
+    expect(points.length).toBeGreaterThan(100);
+    expect(spacing(points)).toBe(3 * DAY);
   });
 
   it('samples All daily across the whole series', () => {
@@ -42,9 +42,26 @@ describe('useParseTokenChartData', () => {
     expect(spacing(points)).toBe(DAY);
   });
 
-  it('keeps the short ranges on their existing daily cadence', () => {
-    expect(spacing(parse('w', dailySeries(30)))).toBe(DAY);
+  it('samples 1M daily', () => {
     expect(spacing(parse('m', dailySeries(60)))).toBe(DAY);
+  });
+
+  // The 4-hourly 1W interval only buys detail when the feed has it. BA Labs
+  // publishes `overall/historic/` once a day, and the interpolator step-holds,
+  // so upsampling it drew the week as a six-tread staircase instead of a line.
+  it('does not sample 1W below the feed cadence', () => {
+    expect(spacing(parse('w', dailySeries(30)))).toBe(DAY);
+  });
+
+  it('samples 1W every four hours when the feed is finer than that', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const hourly = Array.from({ length: 200 }, (_, i) => ({
+      blockTimestamp: now - (199 - i) * HOUR,
+      amount: BigInt(200 - i) * 10n ** 18n,
+      holders: 0
+    }));
+
+    expect(spacing(parse('w', hourly))).toBe(4 * HOUR);
   });
 
   it('still marks a min and a max on the long ranges', () => {

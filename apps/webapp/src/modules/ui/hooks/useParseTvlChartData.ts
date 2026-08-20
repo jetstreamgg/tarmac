@@ -1,7 +1,7 @@
 import { formatUnits } from 'viem';
 import { useMemo } from 'react';
 import { Data, TimeFrame } from '@/modules/ui/components/Chart';
-import { getTimeFrameInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
+import { resolveSampleInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
 
 type TvlData = { blockTimestamp: number; amount: bigint };
 
@@ -137,8 +137,14 @@ function generateDataPoints(
   // Sort tvl by timestamp in ascending order to ensure correct processing
   const sortedTvl = [...tvl].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
-  // Use daily interval (86400s) for all timeframes by default
-  const interval = intervalOverride || getTimeFrameInterval(timeFrame);
+  // One sample per timeframe interval, floored at the feed's own cadence so a
+  // coarse series is never upsampled into a staircase.
+  const interval =
+    intervalOverride ||
+    resolveSampleInterval(
+      timeFrame,
+      sortedTvl.map(item => item.blockTimestamp)
+    );
   const dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval, decimals);
 
   //Find min and max points

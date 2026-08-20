@@ -39,7 +39,8 @@ export function PortfolioStatistics() {
         <Trans>Sky Protocol Statistics</Trans>
       </Heading>
 
-      <Card className="p-6">
+      {/* 32px, not 24 (Figma 2376:225244, "Update inner padding - should be 32px"). */}
+      <Card className="p-8">
         {/* The detail Chart ships its own Card surface; flatten it so the
             chart blends into this statistics card. */}
         <div className="[&_[data-testid=portfolio-totals-chart]]:border-0! [&_[data-testid=portfolio-totals-chart]]:bg-transparent! [&_[data-testid=portfolio-totals-chart]]:backdrop-blur-none">

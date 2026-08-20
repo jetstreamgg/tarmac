@@ -339,9 +339,20 @@
   /* First-visit AppLoader reveal (Figma 1875:6834): after the logomark
      timeline, the page content fades in rising 30px and the chrome (navbars)
      just fades, both on quint-out. Durations are the Figma timeline segments
-     (1.6-1.9s and 1.6-2.23s of the 3s loop). `both` holds the hidden state
-     through the frame between class swap and animation start. */
-  --animate-app-loader-content-reveal: app-loader-content-reveal 300ms var(--ease-out-quint) both;
+     (1.6-1.9s and 1.6-2.23s of the 3s loop).
+
+     The content reveal fills `backwards`, not `both`. The fill is only ever
+     needed *before* the animation starts, to hold the hidden state through the
+     frame between class swap and animation start — exactly what `backwards`
+     does on its own. A forwards fill instead keeps the effect applying the
+     `to` keyframe for the life of the page, and an animated `transform: none`
+     computes to an identity matrix rather than to the `none` keyword. That
+     left this wrapper a permanent backdrop root, so every glass Card inside it
+     carried a `backdrop-filter` with nothing to sample: the page background is
+     a fixed layer painted outside the wrapper (Figma 2376:225134, "Missing
+     blur in main cards"). The animation's end state is the element's base
+     style, so dropping the forwards fill changes nothing visually. */
+  --animate-app-loader-content-reveal: app-loader-content-reveal 300ms var(--ease-out-quint) backwards;
   --animate-app-loader-chrome-reveal: app-loader-chrome-reveal 625ms var(--ease-out-quint) both;
 
   --max-height-screen-70: calc(100vh - 70px);
@@ -422,11 +433,12 @@
     }
     to {
       opacity: 1;
-      /* `none`, not translateY(0): the class stays on for the rest of the page
-         load and `both` holds this frame's value, so a zero translate would
-         leave the content wrapper a permanent containing block for every
-         fixed/sticky descendant (full-screen takeovers would offset by the
-         header height). `none` interpolates as identity and holds clean. */
+      /* `none`, not translateY(0) — but note this alone is not enough to keep
+         the wrapper transform-free once the animation ends: an animated
+         `transform: none` still computes to an identity matrix, which is a
+         containing block for fixed/sticky descendants and a backdrop root all
+         the same. The animation not filling forwards (see the shorthand above)
+         is what actually clears it. */
       transform: none;
     }
   }
@@ -1151,9 +1163,18 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
    above), which is what actually delivers the instant swap the fallback is
    supposed to be — the alternative is a UA-default crossfade of the page's
    top edge whenever a search param changes. The test mirrors TanStack's own,
-   with our real name substituted for its probe. */
+   with our real name substituted for its probe.
+
+   The name is scoped to a *running* transition rather than set permanently.
+   A `view-transition-name` makes its element a backdrop root, and the page
+   background is a fixed layer painted outside this wrapper — so while the name
+   stood at rest, every glass Card in the app carried a `backdrop-filter` with
+   nothing behind it to sample and simply did not frost (Figma 2376:225134,
+   "Missing blur in main cards"). `:active-view-transition-type(page)` matches
+   from the moment the transition is created, which is before either snapshot
+   is captured, so the name is in place for both. */
 @supports selector(:active-view-transition-type(page)) {
-  .page-transition {
+  :root:active-view-transition-type(page) .page-transition {
     view-transition-name: page;
   }
 }

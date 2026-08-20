@@ -154,9 +154,16 @@ export function ConnectedPortfolio() {
     )
   }));
 
+  // The stack is decoration on an "All networks" label, so it shows the leading
+  // three chains rather than every supported one (Figma 2376:225130, "Limit
+  // here to maximum 3 top networks"): past three the 8px-overlapped discs eat
+  // the trigger's width and stop reading as distinct marks. The filter list
+  // below still offers every chain.
+  const stackedChainIds = supportedChainIds.slice(0, 3);
+
   const allNetworksLabel = (
     <span className="flex items-center gap-2">
-      <IconStack size={24}>{supportedChainIds.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>
+      <IconStack size={24}>{stackedChainIds.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>
       <Trans>All networks</Trans>
     </span>
   );

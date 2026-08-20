@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { RateBadge } from '@/components/ui/RateBadge';
+import { RollingValue } from '@/components/ui/rolling-value';
 import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
@@ -525,6 +527,10 @@ interface ChartProps {
   metrics?: { value: string; label: React.ReactNode }[];
   activeMetric?: string;
   onMetricChange?: (value: string) => void;
+  /** detail variant: tag the headline with the period's change as a DS
+   * Badges / Special pill (Figma 2376:225249). Opt-in — only the supply-style
+   * series the comp draws it on wants it; a rate series does not. */
+  showTrend?: boolean;
   /** Line/area color. Omit for the default teal; pass a hex to theme the series
    * (e.g. the Stake destination chart's brand indigo #757dff). */
   color?: string;
@@ -640,6 +646,7 @@ function DetailHeaderValue({
   isLoading,
   icons,
   valueSuffix,
+  trend,
   mobile = false
 }: {
   data: Data[];
@@ -654,6 +661,9 @@ function DetailHeaderValue({
   /** Optional mark trailing the figure — the Morpho vault chart tags its rate
    *  with the DS stars mark the same way the card and Details row do. */
   valueSuffix?: React.ReactNode;
+  /** Optional Badges / Special pill trailing the figure — the period's change
+   *  (Figma 2376:225249, "missing trend badge"). */
+  trend?: React.ReactNode;
   /** M6.3 mobile figure: Heading 5 (24/26, Circular Medium). */
   mobile?: boolean;
 }) {
@@ -661,9 +671,11 @@ function DetailHeaderValue({
     return <Skeleton className="h-9 w-32" />;
   }
   const value = displayValue ?? data[data.length - 1]?.value ?? 0;
-  const formatted = `${prefix || ''}${formatNumber(value, { maxDecimals: 2, compact: true })}${
-    isPercentage ? '%' : symbol ? ` ${symbol}` : ''
-  }`;
+  // The token mark already names the series, so a figure that carries `icons`
+  // drops the trailing symbol rather than saying it twice (Figma 2376:225248,
+  // "Keep only icon instead fo USDS label").
+  const unit = isPercentage ? '%' : symbol && !icons ? ` ${symbol}` : '';
+  const formatted = `${prefix || ''}${formatNumber(value, { maxDecimals: 2, compact: true })}${unit}`;
   const figure = (
     <span
       data-testid="chart-detail-value"
@@ -677,15 +689,40 @@ function DetailHeaderValue({
           : 'text-[44px] leading-[48px] tracking-[-0.88px]'
       )}
     >
-      {formatted}
+      {/* The figure rolls over when the metric or timeframe swaps it rather
+          than snapping (Figma 2376:225248 → 1598:76582, "Animate numbers"). It
+          only ever changes discretely here — no caller drives it from hover. */}
+      <RollingValue value={formatted} />
     </span>
   );
-  if (!icons && !valueSuffix) return figure;
+  if (!icons && !valueSuffix && !trend) return figure;
   return (
     <span className="flex items-center gap-2">
       {icons}
       {figure}
       {valueSuffix}
+      {trend}
+    </span>
+  );
+}
+
+/**
+ * DS Badges / Special carrying a period's change (Figma 2376:225249). Up takes
+ * the success gradient `RateBadge` the comp draws; down mirrors its geometry in
+ * the error token, which the comp never has to show but the data can produce.
+ */
+function TrendBadge({ percentage, formatted }: { percentage: number; formatted: string }) {
+  const isDown = percentage < 0;
+  const label = `${isDown ? '' : '+'}${formatted}`;
+  if (!isDown) {
+    return <RateBadge data-testid="chart-trend-badge">{label}</RateBadge>;
+  }
+  return (
+    <span
+      data-testid="chart-trend-badge"
+      className="border-error/50 bg-error/10 text-error font-circle inline-flex shrink-0 items-center rounded-full border-[0.5px] px-1.5 py-[3px] text-[11px] leading-3 font-medium tracking-[-0.24px] md:text-xs md:leading-[14px]"
+    >
+      {label}
     </span>
   );
 }
@@ -876,6 +913,7 @@ export function Chart({
   metrics,
   activeMetric,
   onMetricChange,
+  showTrend = false,
   color
 }: ChartProps) {
   const isDetail = variant === 'detail';
@@ -899,6 +937,12 @@ export function Chart({
   }, [data, isPercentage]);
   const formattedPercentage = formatPercentage(percentage, isLarge);
   const isZeroPercentage = formattedPercentage.replace('-', '').replace(/%/g, '') === '0';
+  // A flat period has no direction to report, so the pill drops out rather than
+  // claiming "+0%"; so does a still-loading series, whose change is meaningless.
+  const trendBadge =
+    showTrend && !isLoading && !isZeroPercentage && data.length > 1 ? (
+      <TrendBadge percentage={percentage} formatted={formattedPercentage.replace('-', '')} />
+    ) : undefined;
   const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>('w');
   const [width, setWidth] = useState<number>(0);
   const dateAxis = formatedXAxis(data, activeTimeframe, bpi);
@@ -961,6 +1005,7 @@ export function Chart({
                   isLoading={isLoading}
                   icons={icons}
                   valueSuffix={valueSuffix}
+                  trend={trendBadge}
                 />
               </div>
             </div>
@@ -981,6 +1026,7 @@ export function Chart({
                   isLoading={isLoading}
                   icons={icons}
                   valueSuffix={valueSuffix}
+                  trend={trendBadge}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">

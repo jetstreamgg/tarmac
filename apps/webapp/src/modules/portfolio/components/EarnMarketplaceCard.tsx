@@ -22,18 +22,15 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
   return (
     <Card className="flex h-full flex-col gap-8 p-5" data-testid="earn-marketplace-card">
       {/* DS Iconbox / Status keeps the family tint (ring + dot) in sync with
-          the detail headers; 48px box holding the 40px token. */}
-      <IconboxStatus
-        size="l"
-        type={productStatusType(row)}
-        dot={!!productStatusType(row)}
-        className="size-12"
-      >
+          the detail headers. Sized at the DS `l` the comp draws — a 64px box
+          around a 48px token — rather than the 48/40 it was shrunk to (Figma
+          2376:225234 → I…;5320:41748, "update icon size"). */}
+      <IconboxStatus size="l" type={productStatusType(row)} dot={!!productStatusType(row)}>
         <TokenIcon
           token={{ symbol: productIconSymbol(row) }}
-          width={40}
+          width={48}
           showChainIcon={false}
-          className="h-10 w-10"
+          className="h-12 w-12"
         />
       </IconboxStatus>
 
