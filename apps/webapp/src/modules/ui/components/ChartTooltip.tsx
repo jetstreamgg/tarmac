@@ -1,8 +1,7 @@
-import { RefObject, useLayoutEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'motion/react';
+import { RefObject, useLayoutEffect, useState } from 'react';
 import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
-import { HOVER_EASE, HOVER_TRACK_MS } from './chartMotion';
+import { TRACK_TAU_MS, useFollow } from './chartMotion';
 
 /** Gap between the hover point and the panel — recharts' own default offset. */
 const CURSOR_OFFSET = 10;
@@ -28,19 +27,31 @@ function useTooltipPlacement(
   coordinate: { x: number; y: number } | undefined,
   anchorRef: RefObject<HTMLElement | null> | undefined
 ) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
   // Only the panel's *size* is tracked, never its position: the panel carries
   // the placement transform, so storing its left/top would re-enter this hook
   // on every animated frame and spin forever.
   const [panelSize, setPanelSize] = useState<Size | null>(null);
   const [anchor, setAnchor] = useState<Box | null>(null);
-  // Whether a previous render already placed the panel. Until one has, the
-  // glide is off — otherwise the first hover animates the panel in from the
-  // layer's origin, i.e. across the page from the top-left corner.
-  const [placed, setPlaced] = useState(false);
 
-  const positioned = Boolean(coordinate && anchorRef && anchor && panelSize);
+  const ready = !!coordinate && !!anchorRef && !!anchor && !!panelSize;
+
+  // Flip to the other side of the cursor when the panel would leave the plot,
+  // which is what recharts does with the default allowEscapeViewBox.
+  const flipX = ready && coordinate.x + CURSOR_OFFSET + panelSize.width > anchor.width;
+  const x = ready
+    ? anchor.left + coordinate.x + (flipX ? -CURSOR_OFFSET - panelSize.width : CURSOR_OFFSET)
+    : null;
+  // The panel rides the top of the plot instead of the point's own height. The
+  // comp animates the tooltip on x only (Figma 1598:76196 has no y track), and
+  // it is what the reference app does: a panel pinned to one line never covers
+  // the part of the series you are reading, and the eye stops having to chase
+  // it up and down while scrubbing.
+  const y = ready ? anchor.top + CURSOR_OFFSET : null;
+
+  // The panel names the point the dot and rule mark, so it shares their time
+  // constant and arrives with them rather than trailing like the lit window.
+  // `useFollow` owns `transform`; it must stay out of the style prop below.
+  const panelRef = useFollow<HTMLDivElement>(x, y, TRACK_TAU_MS);
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
@@ -54,42 +65,15 @@ function useTooltipPlacement(
       const next = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
       setAnchor(prev => (sameBox(prev, next) ? prev : next));
     }
-    if (positioned) setPlaced(true);
   });
 
   if (!coordinate || !anchorRef) return { panelRef, style: undefined };
 
   // First paint after activation has no measurements yet — keep the panel out
   // of sight for that frame instead of flashing it at the layer's origin.
-  if (!anchor || !panelSize)
-    return { panelRef, style: { position: 'absolute', visibility: 'hidden' } as const };
+  if (!ready) return { panelRef, style: { position: 'absolute', visibility: 'hidden' } as const };
 
-  // Flip to the other side of the cursor when the panel would leave the plot,
-  // which is what recharts does with the default allowEscapeViewBox.
-  const flipX = coordinate.x + CURSOR_OFFSET + panelSize.width > anchor.width;
-  const x = anchor.left + coordinate.x + (flipX ? -CURSOR_OFFSET - panelSize.width : CURSOR_OFFSET);
-  // The panel rides the top of the plot instead of the point's own height. The
-  // comp animates the tooltip on x only (Figma 1598:76196 has no y track), and
-  // it is what the reference app does: a panel pinned to one line never covers
-  // the part of the series you are reading, and the eye stops having to chase
-  // it up and down while scrubbing.
-  const y = anchor.top + CURSOR_OFFSET;
-
-  return {
-    panelRef,
-    style: {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      // Transform, not left/top, so the move is compositor-driven. Timing
-      // matches the dot and rule (Chart.tsx): the panel names the point they
-      // mark, so it has to arrive with them rather than trail like the lit
-      // window. It replaces a 400ms ease-out inherited from recharts' own
-      // wrapper, which left the panel behind all of them.
-      transform: `translate(${x}px, ${y}px)`,
-      transition: placed && !reduceMotion ? `transform ${HOVER_TRACK_MS}ms ${HOVER_EASE}` : 'none'
-    } as const
-  };
+  return { panelRef, style: { position: 'absolute', left: 0, top: 0 } as const };
 }
 
 /*

@@ -2,7 +2,6 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ActiveDot, Chart, HoverCursor, HoverDimMask, resolveTooltipLabel } from './Chart';
-import { HOVER_EASE, HOVER_TRACK_MS } from './chartMotion';
 
 const h = vi.hoisted(() => ({
   isActive: false,
@@ -54,14 +53,17 @@ describe('resolveTooltipLabel', () => {
   });
 });
 
-// Figma: Sky App: UI 1598:76169 — the comp moves the cursor line, the dot, the
-// lit window and the tooltip panel on the same keyframes. Sharing one duration
-// and easing is what keeps them arriving together, so the pieces are checked
-// against the shared constants rather than against numbers of their own.
+// Figma: Sky App: UI 1598:76169. The comp's quart ease-in-out cannot drive
+// these: while the pointer is in flight the target moves every frame, so each
+// frame restarts the transition and only the curve's flattest opening is ever
+// used (~1.3% of the remaining distance per frame). `useFollow` integrates
+// toward the target instead — see chartMotion.ts — which is why the assertions
+// below check for a written transform and the *absence* of a CSS transition.
 describe('hover tracking', () => {
-  const expectTracks = (el: Element) => {
-    expect(el.getAttribute('style')).toContain(`${HOVER_TRACK_MS}ms`);
-    expect(el.getAttribute('style')).toContain(HOVER_EASE);
+  /** The follower places the first frame outright, with nothing to ease. */
+  const expectFollowed = (el: HTMLElement | SVGElement, transform: string) => {
+    expect(el.style.transform).toBe(transform);
+    expect(el.style.transition).toBe('');
   };
 
   it('carries the dot on a transform so it can glide in both axes', () => {
@@ -74,9 +76,8 @@ describe('hover tracking', () => {
     const dot = screen.getByTestId('chart-active-dot');
     // Position lives on the group; the circles stay at the origin, which is
     // what lets one transform move the whole dot.
-    expect(dot.style.transform).toBe('translate(120px, 40px)');
     expect(dot.querySelector('circle')?.getAttribute('cx')).toBeNull();
-    expectTracks(dot);
+    expectFollowed(dot, 'translate(120px, 40px)');
   });
 
   it('draws the cursor as a translated rule rather than moving x1/x2', () => {
@@ -94,9 +95,8 @@ describe('hover tracking', () => {
     const cursor = screen.getByTestId('chart-hover-cursor');
     expect(cursor.getAttribute('x1')).toBe('0');
     expect(cursor.getAttribute('x2')).toBe('0');
-    expect(cursor.style.transform).toBe('translateX(200px)');
     expect(cursor.getAttribute('stroke-dasharray')).toBe('3 3');
-    expectTracks(cursor);
+    expectFollowed(cursor, 'translate(200px, 0px)');
   });
 
   it('renders nothing until there is a hover point to track', () => {
@@ -129,10 +129,10 @@ describe('HoverDimMask', () => {
     expect(Number(screen.getByTestId('chart-dim-mask-base').getAttribute('opacity'))).toBeLessThan(1);
 
     // The window holds its geometry and travels on `transform` so the boundary
-    // can be transitioned — an SVG rect's `x` is not reliably animatable.
+    // can be animated — an SVG rect's `x` is not reliably animatable.
     const lit = screen.getByTestId('chart-dim-mask-lit');
     expect(lit.getAttribute('width')).toBe('44');
-    expect(lit.style.transform).toBe('translateX(278px)');
+    expect(lit.style.transform).toBe('translate(278px, 0px)');
     expect(lit.getAttribute('fill')).toBe('white');
   });
 
@@ -147,7 +147,7 @@ describe('HoverDimMask', () => {
     // the boundary glide instead of resizing as it nears an edge.
     const lit = screen.getByTestId('chart-dim-mask-lit');
     expect(lit.getAttribute('width')).toBe('44');
-    expect(lit.style.transform).toBe('translateX(-22px)');
+    expect(lit.style.transform).toBe('translate(-22px, 0px)');
 
     const mask = lit.closest('mask');
     expect(mask?.getAttribute('x')).toBe('0');

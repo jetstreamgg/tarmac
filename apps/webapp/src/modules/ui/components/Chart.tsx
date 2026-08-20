@@ -22,7 +22,7 @@ import {
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
-import { HOVER_EASE, HOVER_TRACK_MS, TAIL_TRACK_MS } from './chartMotion';
+import { HOVER_EASE, HOVER_FADE_MS, TAIL_TAU_MS, TRACK_TAU_MS, useFollow } from './chartMotion';
 import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Select,
@@ -132,62 +132,12 @@ const SERIES_STROKE_WIDTH = 1.5;
 const ACTIVE_DOT_RADIUS = 5.25;
 
 /**
- * Every hover element tracks on `transform`, never on SVG geometry: `x1`/`x2`
- * on a line are not CSS properties at all, and `x`/`width` only became
- * animatable with SVG 2 geometry properties. One mechanism across all of them,
- * working everywhere the app already runs. Timing is shared with the tooltip —
- * see `chartMotion.ts` for why the comp's own durations are not used.
+ * The dim mask's on/off fade — a discrete state change, not a follow, so a
+ * transition is still the right tool for it. Everything that *moves* with the
+ * pointer uses `useFollow` instead; see `chartMotion.ts` for why.
  */
-const trackTransition = (property: string, reduceMotion: boolean | null) =>
-  reduceMotion ? undefined : `${property} ${HOVER_TRACK_MS}ms ${HOVER_EASE}`;
-
-/**
- * Travel below which the glide is dropped and the element simply follows the
- * pointer.
- *
- * This governs the two elements that report *where the pointer is* — the ringed
- * dot and the dashed rule. (The lit window is not one of them; it keeps the
- * comp's full 500ms and is meant to trail. See `TAIL_TRACK_MS`.)
- *
- * A glide smooths the *jump* between two far-apart data points: on 1W the
- * series plots ~8 points across ~780px, so the dot moves ~90px at a time and
- * easing that reads as tracking. Dense series invert the maths — 1Y steps ~6px
- * and All ~0.3px — and there the target moves every frame, so a 120ms
- * transition never completes: the indicator sits permanently mid-glide and
- * trails the pointer by up to 120ms of travel. An indicator that lags is just
- * wrong about where you are, which is what read as laggy on 1Y and All.
- *
- * The reference the annotation points at (app.perena.org/transparency) runs its
- * hover indicators with no positional transition whatsoever — its smoothness is
- * 1:1 tracking, not easing. This keeps the comp's glide where it does something
- * and takes perena's behaviour where it doesn't.
- */
-const SNAP_BELOW_PX = 12;
-
-/**
- * `trackTransition`, but dropped once the hover target is moving in steps too
- * small for a glide to be anything but latency. Call unconditionally — it holds
- * a hook.
- */
-function useTrackingTransition(property: string, position: number | null | undefined) {
-  const reduceMotion = useReducedMotion();
-  const glide = trackTransition(property, reduceMotion);
-  // Derived-state-on-prop-change rather than a ref: the decision has to be made
-  // from the *previous* position, and reading a ref during render is exactly
-  // what `react-hooks/refs` forbids. React re-runs this pass with the new state
-  // before committing, so the value returned below is never the stale one.
-  const [tracked, setTracked] = useState<{ at: number | null | undefined; transition?: string }>({
-    at: position,
-    transition: glide
-  });
-
-  if (tracked.at !== position) {
-    const jumped = tracked.at == null || position == null || Math.abs(position - tracked.at) >= SNAP_BELOW_PX;
-    setTracked({ at: position, transition: jumped ? glide : undefined });
-  }
-
-  return reduceMotion ? undefined : tracked.transition;
-}
+const fadeTransition = (reduceMotion: boolean | null) =>
+  reduceMotion ? undefined : `opacity ${HOVER_FADE_MS}ms ${HOVER_EASE}`;
 
 /**
  * The ringed dot under the hover cursor (Figma 5273:12162).
@@ -202,16 +152,11 @@ function useTrackingTransition(property: string, position: number | null | undef
  * rides the series (the comp moves it 13px in y over the same keyframes).
  */
 export function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string }) {
-  const transition = useTrackingTransition('transform', cx);
+  const ref = useFollow<SVGGElement>(cx, cy, TRACK_TAU_MS);
   if (cx == null || cy == null) return null;
+  // No `transform` in the style prop — `useFollow` owns it (chartMotion.ts).
   return (
-    <g
-      data-testid="chart-active-dot"
-      style={{
-        transform: `translate(${cx}px, ${cy}px)`,
-        transition
-      }}
-    >
+    <g ref={ref} data-testid="chart-active-dot">
       <circle r={ACTIVE_DOT_RADIUS} fill="var(--color-pageBackground)" />
       <circle
         r={ACTIVE_DOT_RADIUS}
@@ -239,7 +184,7 @@ export function HoverCursor({
 }) {
   const start = points?.[0];
   const end = points?.[1];
-  const transition = useTrackingTransition('transform', start?.x);
+  const ref = useFollow<SVGLineElement>(start?.x, 0, TRACK_TAU_MS);
   if (!start) return null;
   return (
     <line
@@ -253,10 +198,7 @@ export function HoverCursor({
       strokeDasharray="3 3"
       strokeLinecap="round"
       pointerEvents="none"
-      style={{
-        transform: `translateX(${start.x}px)`,
-        transition
-      }}
+      ref={ref}
     />
   );
 }
@@ -326,6 +268,8 @@ export function HoverDimMask({ id }: { id: string }) {
   // Pre-layout the chart has no dimensions (and no hover); fall back to a
   // full-coverage white mask so the series never flashes hidden.
   const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
+  // The tail lags on purpose — a longer time constant than the dot and rule.
+  const litRef = useFollow<SVGRectElement>(cursorX == null ? null : cursorX - HALF_WINDOW, 0, TAIL_TAU_MS);
 
   return (
     <defs>
@@ -338,7 +282,7 @@ export function HoverDimMask({ id }: { id: string }) {
           height={height ?? '100%'}
           fill="white"
           opacity={cursorX != null ? POST_CURSOR_ALPHA : 1}
-          style={{ transition: trackTransition('opacity', reduceMotion) }}
+          style={{ transition: fadeTransition(reduceMotion) }}
         />
         {cursorX != null && (
           /* Full-width window translated into place rather than clamped by
@@ -347,18 +291,13 @@ export function HoverDimMask({ id }: { id: string }) {
              leave visible — and holding the geometry still is what lets the
              boundary travel with the cursor on `transform`. */
           <rect
+            ref={litRef}
             data-testid="chart-dim-mask-lit"
             x={0}
             y={0}
             width={HALF_WINDOW * 2}
             height={height ?? '100%'}
             fill="white"
-            style={{
-              transform: `translateX(${cursorX - HALF_WINDOW}px)`,
-              // The comp's own 500ms, unconditionally — this is the one piece
-              // of hover chrome meant to trail the pointer (see TAIL_TRACK_MS).
-              transition: reduceMotion ? undefined : `transform ${TAIL_TRACK_MS}ms ${HOVER_EASE}`
-            }}
           />
         )}
       </mask>
