@@ -5,13 +5,16 @@ import type {
 } from '../../../hooks/vaults/fyi/vaultsFyiClient';
 import { computeSavingsEarnings, stUsdsPlaceholderEarnings } from './computeSavingsEarnings';
 import type { EarningsWindow } from './types';
+import goldenFixture from './vaultsFyiReturns.golden.fixtures.json';
 
 /**
- * Scenario tests only: vaults.fyi is key-gated and NO live fixture exists yet,
- * so there is no golden test here. The wire shape below comes from the official
- * OpenAPI specs (2026-08-19); the golden (ref wallet 0x8583…, Aug ~46.4 USDS)
- * lands at QA once the key exists. Until then every parse is hard-gated and
- * any surprise degrades — a wrong number is worse than no number.
+ * Scenario tests use synthetic payloads (decimals: 6 keeps arithmetic
+ * visible); the golden block at the bottom pins live API bodies captured
+ * 2026-08-20 through the proxy route. Live findings folded in here: the
+ * ticket's reference wallet (0x8583…) had fully exited sUSDS and vaults.fyi
+ * reports returnsNative "0" for exited positions (unlike Morpho, which keeps
+ * lifetime PnL) — so the golden pair is a live holder (0x0858…) plus the
+ * exited wallet pinning the zeroing semantics.
  */
 
 const AUG_WINDOW: EarningsWindow = {
@@ -124,9 +127,23 @@ describe('computeSavingsEarnings — earned this month', () => {
     expect(earnedThisMonth.status).toBe('ok');
   });
 
-  it('DEGRADES when the resolved start is EARLIER than the window start (would include pre-month earnings)', () => {
+  it('accepts a resolved start slightly before the window start (live API snaps to a sample 1s early)', () => {
     const { earnedThisMonth } = compute({
       partial: partialPayload({ fromTimestamp: AUG_WINDOW.startSec - 1 })
+    });
+    expect(earnedThisMonth.status).toBe('ok');
+  });
+
+  it('accepts a resolved start exactly at the one-hour tolerance boundary', () => {
+    const { earnedThisMonth } = compute({
+      partial: partialPayload({ fromTimestamp: AUG_WINDOW.startSec - 3600 })
+    });
+    expect(earnedThisMonth.status).toBe('ok');
+  });
+
+  it('DEGRADES when the resolved start is more than an hour before the window start (would include pre-month earnings)', () => {
+    const { earnedThisMonth } = compute({
+      partial: partialPayload({ fromTimestamp: AUG_WINDOW.startSec - 3601 })
     });
     expect(earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'reconciliation-failed' });
   });
@@ -168,6 +185,68 @@ describe('computeSavingsEarnings — figure independence', () => {
     });
     expect(totalEarned.status).toBe('ok');
     expect(earnedThisMonth.status).toBe('notAvailable');
+  });
+});
+
+describe('golden fixtures (live API bodies, captured 2026-08-20 via the proxy route)', () => {
+  // Requested fromTimestamp was 1785542400 (Aug 1 2026 00:00 UTC) for both
+  // wallets; the live holder's echo came back 1s earlier — the observation
+  // behind WINDOW_START_TOLERANCE_SEC.
+  const GOLDEN_WINDOW: EarningsWindow = { startSec: 1785542400, endSec: 1787215111 };
+
+  // --- Hand-derived from the frozen fixture strings (never from the code under test) ---
+  const GOLDEN_PRICE = Number('0.9999561');
+  const GOLDEN_TOTAL_NATIVE = Number('105777124203820296734810') / 1e18; // ≈ 105,777.12 USDS lifetime
+  const GOLDEN_MONTH_NATIVE = Number('945522329409243189511') / 1e18; // ≈ 945.52 USDS Aug 1–20
+
+  it('live holder: lifetime and month-to-date figures parse from the real wire values', () => {
+    const { totalEarned, earnedThisMonth } = computeSavingsEarnings({
+      totalReturns: goldenFixture.totalReturnsLive,
+      partialReturns: goldenFixture.partialReturnsLive,
+      window: GOLDEN_WINDOW
+    });
+    expect(totalEarned).toEqual({
+      status: 'ok',
+      value: {
+        usd: GOLDEN_TOTAL_NATIVE * GOLDEN_PRICE,
+        native: { amount: GOLDEN_TOTAL_NATIVE, symbol: 'USDS' }
+      }
+    });
+    expect(earnedThisMonth).toEqual({
+      status: 'ok',
+      value: {
+        usd: GOLDEN_MONTH_NATIVE * GOLDEN_PRICE,
+        native: { amount: GOLDEN_MONTH_NATIVE, symbol: 'USDS' }
+      }
+    });
+  });
+
+  it('live holder: the real 1s-early resolved start passes the tolerance gate', () => {
+    expect(goldenFixture.partialReturnsLive.fromTimestamp).toBe(GOLDEN_WINDOW.startSec - 1);
+    const { earnedThisMonth } = computeSavingsEarnings({
+      totalReturns: goldenFixture.totalReturnsLive,
+      partialReturns: goldenFixture.partialReturnsLive,
+      window: GOLDEN_WINDOW
+    });
+    expect(earnedThisMonth.status).toBe('ok');
+  });
+
+  it('exited wallet: vaults.fyi zeroes returns after a full exit — parses as a factual ok(0), not a gap', () => {
+    // Divergence from Morpho semantics (which keeps lifetime PnL at 0 balance):
+    // an exited savings position reports $0 earned, documented in the PR.
+    const { totalEarned, earnedThisMonth } = computeSavingsEarnings({
+      totalReturns: goldenFixture.totalReturnsExited,
+      partialReturns: goldenFixture.partialReturnsExited,
+      window: GOLDEN_WINDOW
+    });
+    expect(totalEarned).toEqual({
+      status: 'ok',
+      value: { usd: 0, native: { amount: 0, symbol: 'USDS' } }
+    });
+    expect(earnedThisMonth).toEqual({
+      status: 'ok',
+      value: { usd: 0, native: { amount: 0, symbol: 'USDS' } }
+    });
   });
 });
 

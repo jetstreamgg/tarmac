@@ -3,11 +3,12 @@ import { VAULTS_FYI_API_URL } from './constants';
 /**
  * Shared shape of both returns endpoints, from the official OpenAPI specs
  * (api.vaults.fyi/v2/documentation/json + /beta/documentation/json,
- * 2026-08-19). `returnsNative` is documented only as "total returns in native
- * token amount"; the response carrying `decimals` (and sibling vault fields
- * being "denominated in asset wei") points to base units, but NO live fixture
- * exists yet (key-gated) — the compute layer hard-gates the parse and
- * degrades on any surprise. Goldens land at QA once the key exists.
+ * 2026-08-19). Live fixtures captured 2026-08-20 (pinned in
+ * modules/portfolio/earnings/vaultsFyiReturns.golden.fixtures.json) confirmed
+ * `returnsNative` is base units; the compute layer keeps its hard parse gates
+ * as regression protection. Known upstream semantics: a fully exited position
+ * reports `returnsNative` "0" on BOTH endpoints — lifetime returns are zeroed
+ * on exit, unlike Morpho vault PnL which persists at zero balance.
  */
 export type VaultsFyiReturnsRaw = {
   /** Asset (underlying token) address, NOT the vault address. */

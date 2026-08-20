@@ -21,10 +21,21 @@ export type SavingsEarnings = {
 const BASE_UNITS_PATTERN = /^-?\d+$/;
 
 /**
- * Shared parse for both endpoints' asset+returns payload. Every gate exists
- * because NO live fixture has verified the wire values yet (key-gated API):
- * `returnsNative` is presumed base units, so a decimal string would make the
- * scaled figure wrong by 10^decimals — degrade instead of rendering it.
+ * The beta endpoint snaps the requested fromTimestamp to its nearest data
+ * point, observed 1s EARLY on the live API (2026-08-20: requested 1785542400,
+ * echoed 1785542399). An exact lower bound would dash the monthly figure over
+ * a sub-cent sliver of pre-month yield. One hour of tolerance is immaterial
+ * for a monthly figure while still catching a genuinely wrong window (a
+ * lifetime or prior-month window is off by days, not seconds).
+ */
+const WINDOW_START_TOLERANCE_SEC = 3600;
+
+/**
+ * Shared parse for both endpoints' asset+returns payload. Live fixtures
+ * (2026-08-20, pinned in vaultsFyiReturns.golden.fixtures.json) confirmed
+ * `returnsNative` is base units. The gates stay as regression protection: a
+ * decimal string would make the scaled figure wrong by 10^decimals — degrade
+ * instead of rendering it.
  */
 function figureFromReturns(payload: VaultsFyiReturnsRaw): Maybe<EarningsFigure> {
   const { returnsNative, decimals, assetPriceInUsd, symbol } = payload;
@@ -51,8 +62,10 @@ function figureFromReturns(payload: VaultsFyiReturnsRaw): Maybe<EarningsFigure> 
  * independently — a broken payload on one never sinks the other.
  *
  * Monthly reconciliation: the beta endpoint echoes the resolved period. A
- * resolved start EARLIER than our window start would fold pre-month earnings
- * into "this month" — degrade. Later is fine (position younger than the
+ * resolved start MORE THAN AN HOUR earlier than our window start would fold
+ * meaningful pre-month earnings into "this month" — degrade. Within the
+ * tolerance is expected sample-boundary snapping (see
+ * WINDOW_START_TOLERANCE_SEC); later is fine (position younger than the
  * month). The resolved end is NOT gated against window.endSec: endSec is
  * "now" at window computation and the fetch resolves moments later.
  */
@@ -69,7 +82,7 @@ export function computeSavingsEarnings({
       typeof fromTimestamp !== 'number' ||
       typeof toTimestamp !== 'number' ||
       fromTimestamp > toTimestamp ||
-      fromTimestamp < window.startSec
+      fromTimestamp < window.startSec - WINDOW_START_TOLERANCE_SEC
     ) {
       return notAvailable('reconciliation-failed');
     }

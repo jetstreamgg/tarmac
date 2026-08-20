@@ -1,0 +1,50 @@
+{
+  "totalReturnsLive": {
+    "address": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "assetCaip": "eip155:1/erc20:0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "name": "USDS Stablecoin",
+    "symbol": "USDS",
+    "decimals": 18,
+    "assetLogo": "https://images.vaults.fyi/tokens/usds.png",
+    "assetPriceInUsd": "0.9999561",
+    "assetGroup": "USD",
+    "returnsNative": "105777124203820296734810"
+  },
+  "partialReturnsLive": {
+    "address": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "assetCaip": "eip155:1/erc20:0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "name": "USDS Stablecoin",
+    "symbol": "USDS",
+    "decimals": 18,
+    "assetLogo": "https://images.vaults.fyi/tokens/usds.png",
+    "assetPriceInUsd": "0.9999561",
+    "assetGroup": "USD",
+    "returnsNative": "945522329409243189511",
+    "fromTimestamp": 1785542399,
+    "toTimestamp": 1787215111
+  },
+  "totalReturnsExited": {
+    "address": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "assetCaip": "eip155:1/erc20:0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "name": "USDS Stablecoin",
+    "symbol": "USDS",
+    "decimals": 18,
+    "assetLogo": "https://images.vaults.fyi/tokens/usds.png",
+    "assetPriceInUsd": "0.9999561",
+    "assetGroup": "USD",
+    "returnsNative": "0"
+  },
+  "partialReturnsExited": {
+    "address": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "assetCaip": "eip155:1/erc20:0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "name": "USDS Stablecoin",
+    "symbol": "USDS",
+    "decimals": 18,
+    "assetLogo": "https://images.vaults.fyi/tokens/usds.png",
+    "assetPriceInUsd": "0.9999561",
+    "assetGroup": "USD",
+    "returnsNative": "0",
+    "fromTimestamp": 1785542400,
+    "toTimestamp": 1787215007
+  }
+}
