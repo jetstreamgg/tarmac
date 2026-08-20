@@ -300,7 +300,9 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
           Protocol features" block the comp no longer draws is gone. */}
       <DialogContent
         aria-describedby={undefined}
-        className="bg-containerDark max-h-[calc(100dvh-32px)] gap-8 overflow-auto p-8 sm:max-w-[490px] sm:min-w-[490px]"
+        // app-loader-cover-hidden: keeps this dialog's exit animation from
+        // flashing over the app loader cover a first connect arms (APP-515).
+        className="app-loader-cover-hidden bg-containerDark max-h-[calc(100dvh-32px)] gap-8 overflow-auto p-8 sm:max-w-[490px] sm:min-w-[490px]"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >

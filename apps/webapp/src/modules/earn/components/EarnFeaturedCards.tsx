@@ -135,7 +135,7 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
           {/* While the rate loads the figure wears the pulsing-pill dress (class
               changes keep the extracted message identical). */}
           <Trans>
-            Supply {row.supplyTokens.join('/')} and earn{' '}
+            Supply {row.supplyTokens.join('/')} at{' '}
             <span
               className={cn(
                 'bg-linear-to-b from-[#949aff] to-[#504dff] bg-clip-text text-transparent',

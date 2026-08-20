@@ -148,7 +148,7 @@ export function VaultPositionCard({
               {assetIcon}
               {formatNumber(positionValue, { maxDecimals: 2 })}
             </ProductStat>
-            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
+            <ProductStat label={<Trans>Est. 1Y yield (at current rate)</Trans>}>
               {netRate === undefined && rateLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : netRate === undefined ? (
@@ -164,7 +164,7 @@ export function VaultPositionCard({
           </ProductStatPair>
           <ProductStatPair grow>
             {/* No cost-basis source yet → dash (PRD: unavailable values read "–"). */}
-            <ProductStat label={<Trans>Already earned</Trans>}>
+            <ProductStat label={<Trans>Accrued to date</Trans>}>
               <span className="text-fgSecondary">{NO_VALUE}</span>
             </ProductStat>
             <ProductStat label={<Trans>Claimable rewards</Trans>}>

@@ -108,7 +108,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
       }
       title={
         <Trans>
-          Supply {supplyTokens} and earn {rate} APY
+          Supply {supplyTokens} at {rate} APY
         </Trans>
       }
       description={

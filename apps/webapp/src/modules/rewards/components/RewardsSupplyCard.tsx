@@ -102,11 +102,11 @@ export function RewardsSupplyCard({
       title={
         isPointsFarm ? (
           <Trans>
-            Supply {supplyToken} and earn {rewardToken} points
+            Supply {supplyToken} to receive {rewardToken} points
           </Trans>
         ) : (
           <Trans>
-            Supply {supplyToken} and earn {rewardToken} rewards
+            Supply {supplyToken} to receive {rewardToken} rewards
           </Trans>
         )
       }

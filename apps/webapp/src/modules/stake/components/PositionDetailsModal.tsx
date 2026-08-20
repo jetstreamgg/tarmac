@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Gem,
   Info,
+  TriangleAlert,
   UserRound,
   X
 } from 'lucide-react';
@@ -33,7 +34,7 @@ import { NO_VALUE } from '@/lib/constants';
 const CLAIM_DUST_WAD = 10n ** 16n;
 
 /** The manage actions F5 implements — rows/CTAs route these to the sheet. */
-export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'delegate';
+export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'reward' | 'delegate';
 
 // F4 risk pill palette (StakeTakeoverBorrowCard parity).
 const RISK_PILL_COLOR: Record<RiskLevel, string> = {
@@ -120,8 +121,8 @@ function MenuRow({
 // The contextual menu rows, shared verbatim between the desktop right panel
 // and the mobile manage sheet. Composition follows the debt state; an emptied
 // urn reorders to the frame layouts (C16) with mostly-disabled rows. The
-// undesigned `Change reward` / `Close position` flows render disabled —
-// flagged on APP-312, not improvised.
+// undesigned `Close position` flow renders disabled — flagged on APP-312, not
+// improvised.
 function ManageMenuRows({
   loading,
   isInactive,
@@ -173,8 +174,9 @@ function ManageMenuRows({
             chip={claimChip}
           />
         )}
-        {/* Change reward stays an undesigned stub even though the UX frame
-            draws it enabled (B-Q1/M4, flagged — C16). */}
+        {/* An inactive urn stakes nothing, so switching its farm is a no-op —
+            the reopen takeover's picker (APP-516) is where its next farm gets
+            chosen; the row stays disabled here. */}
         <MenuRow
           {...rowProps}
           icon={<Coins className="h-4 w-4" />}
@@ -272,12 +274,11 @@ function ManageMenuRows({
         onClick={() => onAction('withdraw')}
         dataTestId={`stake-manage-menu-withdraw${idSuffix}`}
       />
-      {/* Undesigned flows (B-Q1) — disabled, flagged on APP-312 (M4). */}
       <MenuRow
         {...rowProps}
         icon={<Coins className="h-4 w-4" />}
         label={<Trans>Change reward</Trans>}
-        disabled
+        onClick={() => onAction('reward')}
         dataTestId={`stake-manage-menu-change-reward${idSuffix}`}
       />
       <MenuRow
@@ -587,6 +588,14 @@ export function PositionDetailsModal({
                         showChainIcon={false}
                       />
                       {detail.rewardSymbol}
+                      {detail.rewardDeprecated && (
+                        <span
+                          data-testid="stake-position-reward-deprecated-chip"
+                          className="bg-surfaceAlt text-textSecondary font-circle rounded-full px-2 py-0.5 text-xs font-medium"
+                        >
+                          <Trans>Deprecated</Trans>
+                        </span>
+                      )}
                     </>
                   ) : (
                     NO_VALUE
@@ -660,7 +669,7 @@ export function PositionDetailsModal({
                   )}
                 </StatCell>
                 <StatPairDivider />
-                <StatCell label={<Trans>Rewards earned</Trans>}>
+                <StatCell label={<Trans>Rewards received</Trans>}>
                   {detail.rewardsEarnedLoading ? (
                     // A still-loading history leg reads as $0.00 otherwise — hold
                     // the figure like the claimable cell above does.
@@ -682,6 +691,39 @@ export function PositionDetailsModal({
                 </StatCell>
               </StatPair>
             </div>
+
+            {/* Deprecated-farm warning (APP-516, F4 warning-box recipe). Active
+                urns only — an inactive urn picks its next farm through the
+                reopen takeover's picker. */}
+            {detail.rewardDeprecated && !isInactive && !detail.vaultLoading && (
+              <div
+                data-testid="stake-position-reward-deprecated-warning"
+                className="flex items-start gap-3 rounded-xl border border-orange-400/40 bg-orange-400/10 p-4"
+              >
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" aria-hidden />
+                <div className="flex flex-col items-start gap-1 text-sm">
+                  <span className="text-text font-circle font-medium">
+                    <Trans>This reward is deprecated</Trans>
+                  </span>
+                  <span className="text-fgSecondary">
+                    <Trans>
+                      Please <span className="text-text font-circle font-medium">choose another reward.</span>{' '}
+                      The SPK rewards are disabled as a Staking Reward option, and the SPK rate set to zero.
+                      The pool of SPK will remain forever so that you can claim your rewards anytime.
+                    </Trans>
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="s"
+                    className="mt-2"
+                    onClick={() => onAction('reward')}
+                    data-testid="stake-position-reward-deprecated-cta"
+                  >
+                    <Trans>Change reward</Trans>
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {showInactiveBorrowBlock && (
               <>

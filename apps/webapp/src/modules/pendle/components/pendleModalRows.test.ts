@@ -23,7 +23,7 @@ describe('buildPendleEntryRows', () => {
     const rows = buildPendleEntryRows(entryInput);
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
       ['Fixed rate', 'Network'],
-      ['Supply', 'Est. earnings (49D)'],
+      ['Supply', 'Est. 49D yield'],
       ["You'll claim", 'Claim date'],
       ['Network fee']
     ]);
@@ -55,7 +55,7 @@ describe('buildPendleEntryRows', () => {
 
   it('bakes the days-to-maturity into the earnings label', () => {
     const rows = buildPendleEntryRows({ ...entryInput, daysToMaturity: 7 });
-    expect(rows[1][1].label).toBe('Est. earnings (7D)');
+    expect(rows[1][1].label).toBe('Est. 7D yield');
   });
 });
 
@@ -98,7 +98,7 @@ describe('buildPendleReviewRows', () => {
   it('pairs the withdraw review cells per Figma 859:41679 with the slippage and price-impact cells slotted in', () => {
     const rows = buildPendleReviewRows('withdraw', { ...reviewInput, withdrawal: 'Instant' });
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
-      ["You'll receive", 'Est. earnings (49D)'],
+      ["You'll receive", 'Est. 49D yield'],
       ['Product', 'Fixed rate'],
       ['Withdrawal', 'Slippage'],
       ['Price impact', 'Network'],

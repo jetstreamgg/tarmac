@@ -133,10 +133,10 @@ export const withdrawalCell = (withdrawal: string): ModalGridCell => ({
   value: withdrawal
 });
 
-/** Review "Est. earnings (1Y)" cell: green trend glyph, optional trailing denomination icon. */
+/** Review "Est. 1Y yield" cell: green trend glyph, optional trailing denomination icon. */
 export const estEarningsTrendCell = (value: string, trailingToken?: string): ModalGridCell => ({
   kind: 'single',
-  label: 'Est. earnings (1Y)',
+  label: 'Est. 1Y yield (at current rate)',
   value,
   trend: true,
   trailingToken

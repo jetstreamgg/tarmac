@@ -72,7 +72,7 @@ export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalGr
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)', token: 'USDS' },
+        { label: 'Est. 1Y yield (at current rate)', token: 'USDS' },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
@@ -121,7 +121,7 @@ export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsMod
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)', token: 'USDS' },
+        { label: 'Est. 1Y yield (at current rate)', token: 'USDS' },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount

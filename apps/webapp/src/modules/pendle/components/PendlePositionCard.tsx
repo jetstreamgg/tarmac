@@ -100,7 +100,7 @@ function PendleSupplyCard({
       }
       title={
         <Trans>
-          Supply {inlineToken('USDS')} / {inlineToken('USDC')} and earn {rate} APY
+          Supply {inlineToken('USDS')} / {inlineToken('USDC')} at {rate} APY
         </Trans>
       }
       description={
@@ -222,7 +222,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
           <ProductStatPair grow>
             {/* No cost-basis source for active positions yet — placeholder per
                 the redesign (matches the vault card's already-earned gap). */}
-            <ProductStat label={<Trans>Current earnings</Trans>}>
+            <ProductStat label={<Trans>Accrued to date</Trans>}>
               <span className="text-fgSecondary">{NO_VALUE}</span>
             </ProductStat>
             <ProductStat label={<Trans>You&apos;ll claim</Trans>}>

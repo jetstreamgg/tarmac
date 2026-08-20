@@ -111,7 +111,7 @@ export function useWidgetItems(intent: Intent): {
       Stake,
       false,
       undefined,
-      'Stake SKY to earn rewards, delegate votes, and borrow USDS'
+      'Stake SKY to accrue rewards, delegate votes, and borrow USDS'
     ],
     [
       Intent.VAULTS_INTENT,

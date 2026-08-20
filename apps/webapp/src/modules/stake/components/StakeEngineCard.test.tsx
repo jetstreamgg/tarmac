@@ -76,7 +76,7 @@ describe('StakeEngineCard', () => {
     // Headline embeds inline SKY/USDS icons (stubbed to null), so assert the
     // whitespace-normalized text rather than a single text node.
     expect(screen.getByTestId('stake-engine-headline').textContent?.replace(/\s+/g, ' ').trim()).toBe(
-      'Stake SKY to earn rewards, delegate votes and borrow USDS'
+      'Stake SKY to accrue rewards, delegate votes and borrow USDS'
     );
     // Rewards rate from the mocked highest rate (0.075 -> 7.50%).
     expect(screen.getByText('7.50%')).toBeTruthy();

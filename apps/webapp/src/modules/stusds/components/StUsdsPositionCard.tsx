@@ -70,7 +70,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
       }
       title={
         <Trans>
-          Supply {usdsToken} and earn {rateLabel}
+          Supply {usdsToken} at {rateLabel}
         </Trans>
       }
       description={
@@ -169,7 +169,7 @@ export function StUsdsPositionCard() {
               {usdsIcon}
               {formatNumber(suppliedValue, { maxDecimals: 2 })}
             </ProductStat>
-            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
+            <ProductStat label={<Trans>Est. 1Y yield (at current rate)</Trans>}>
               <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
               {formatNumber(projectAnnualEarnings(suppliedValue, rate), { maxDecimals: 2 })}
               {usdsIcon}
@@ -178,7 +178,7 @@ export function StUsdsPositionCard() {
           <ProductStatPair grow>
             {/* No cost-basis source for active positions yet — placeholder per
                 the redesign (matches the vault card's already-earned gap). */}
-            <ProductStat label={<Trans>Already earned</Trans>}>
+            <ProductStat label={<Trans>Accrued to date</Trans>}>
               <span className="text-fgSecondary">{NO_VALUE}</span>
             </ProductStat>
             <ProductStat label={<Trans>Current rate</Trans>}>

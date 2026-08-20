@@ -63,7 +63,7 @@ export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRo
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)', token: input.assetSymbol },
+        { label: 'Est. 1Y yield (at current rate)', token: input.assetSymbol },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount

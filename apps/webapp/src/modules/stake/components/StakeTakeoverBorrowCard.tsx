@@ -111,7 +111,7 @@ export function StakeTakeoverBorrowCard({
 
   return (
     <StakeTakeoverCard
-      step={2}
+      step={3}
       title={<Trans>Borrow USDS</Trans>}
       optional
       enabled={enabled}
