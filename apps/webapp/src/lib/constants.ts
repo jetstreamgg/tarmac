@@ -3,6 +3,9 @@ import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
 
+/** The placeholder every product surface shows for a value it cannot source. */
+export const NO_VALUE = '–';
+
 // Navigation state (module, submodule, entity selection) lives in the path;
 // these are the params that remain query-driven.
 export enum QueryParams {

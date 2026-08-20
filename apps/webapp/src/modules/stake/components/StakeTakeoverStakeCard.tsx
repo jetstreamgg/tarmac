@@ -8,8 +8,7 @@ import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 function StatItem({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (

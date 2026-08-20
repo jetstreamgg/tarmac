@@ -25,8 +25,8 @@ import { setUpgradeModalOpen } from '@/modules/analytics/lib/destination';
 import { parseAmountInput } from '@/lib/amountInput';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
 import { buildUpgradeModalRows } from './upgradeModalRows';
+import { NO_VALUE } from '@/lib/constants';
 
-const NO_VALUE = '–';
 const UPGRADE_SOURCE_TOKENS = [TOKENS.dai, TOKENS.mkr];
 
 // DAI, MKR, USDS and SKY are all 18-decimal on mainnet.

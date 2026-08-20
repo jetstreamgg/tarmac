@@ -22,8 +22,7 @@ import { VaultPositionCard } from './VaultPositionCard';
 import { VaultTransactionsTable } from './VaultTransactionsTable';
 import { VaultRateBreakdown } from './VaultRateBreakdown';
 import { trailing30DayRate } from '../helpers/vaultRates';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * Morpho-vault product-detail page (D4) — composes the reusable

@@ -7,7 +7,7 @@ import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
-import { REFERRAL_CODE } from '@/lib/constants';
+import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
@@ -16,8 +16,6 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
 import { usePsmConversion, type UsePsmConversionResult } from './usePsmConversion';
 import { getPsmDecimalsForDirection, type PsmConversionDirection } from './usePsmConversion.helpers';
 import { ConvertReviewContent } from '../components/ConvertReviewContent';
-
-const NO_VALUE = '–';
 
 export interface UseConvertLaunchParams {
   direction: PsmConversionDirection;

@@ -13,6 +13,7 @@ import { Pendle } from '@/widgets';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
+import { NO_VALUE } from '@/lib/constants';
 
 /** The row's rate, or an inline skeleton while its source is still loading. */
 function RateFigure({ row, className = 'h-4 w-12' }: { row: EarnProductRow; className?: string }) {
@@ -23,7 +24,6 @@ function RateFigure({ row, className = 'h-4 w-12' }: { row: EarnProductRow; clas
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const NO_VALUE = '–';
 
 /** Render-time context handed to the content hooks of a descriptor. */
 type HighlightedProductContext = {

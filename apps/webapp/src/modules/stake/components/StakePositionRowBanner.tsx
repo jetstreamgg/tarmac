@@ -18,8 +18,7 @@ import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { isAtRiskOfLiquidation } from '../lib/liquidation';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { isLiquidatedStakePosition, StakeUserPosition } from '../hooks/useStakeUserPositions';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 function stopRowClick(event: MouseEvent) {
   event.stopPropagation();

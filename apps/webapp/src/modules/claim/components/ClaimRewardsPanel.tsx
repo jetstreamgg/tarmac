@@ -19,8 +19,7 @@ import { merklAdapter } from '../adapters/merklAdapter';
 import { skyRewardsAdapter } from '../adapters/skyRewardsAdapter';
 import { stakeAdapter } from '../adapters/stakeAdapter';
 import type { ClaimSource, ClaimableReward, ClaimScope } from '../types';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * One claimable reward (Figma 1036:190085): 32px token icon, Heading-2 amount

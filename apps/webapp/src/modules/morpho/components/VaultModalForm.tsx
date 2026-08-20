@@ -23,10 +23,9 @@ import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo'
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
 import { buildVaultEntryRows, buildVaultReviewRows } from './vaultModalRows';
+import { NO_VALUE } from '@/lib/constants';
 
 export type { VaultModalPreset } from '../hooks/useVaultTransactionForm';
-
-const NO_VALUE = '–';
 
 /**
  * Editable body for the vault "Supply to / Withdraw from {vault}" modals (Figma

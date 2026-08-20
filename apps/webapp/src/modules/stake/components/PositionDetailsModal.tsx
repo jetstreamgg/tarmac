@@ -27,8 +27,7 @@ import { RiskScaleMeter } from '@/components/product/RiskMeter';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /** 0.01 in wad — below this the claim chip keeps 4 decimals instead of "<0.01". */
 const CLAIM_DUST_WAD = 10n ** 16n;

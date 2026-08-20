@@ -25,8 +25,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { merklAdapter, useClaimRewardsModal } from '@/modules/claim';
 import { useVaultModal } from '../hooks/useVaultModal';
 import { VaultSupplyCard } from './VaultSupplyCard';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * Position-aware action card for the vault product page (ProductDetailTemplate

@@ -19,7 +19,6 @@ import { Pendle } from '@/widgets';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
-  NO_VALUE,
   ProductActions,
   ProductFigure,
   ProductPercent,
@@ -32,6 +31,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
+import { NO_VALUE } from '@/lib/constants';
 
 const SECONDS_PER_DAY = 86_400;
 

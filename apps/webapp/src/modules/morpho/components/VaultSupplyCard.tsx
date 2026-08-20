@@ -12,7 +12,6 @@ import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import {
-  NO_VALUE,
   ProductFigure,
   ProductStat,
   ProductStatPair,
@@ -22,6 +21,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { hasRateIncentives, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 import { Morpho } from '@/widgets';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * Per-vault blurb. Only the USDC Risk Capital vault has approved copy so far

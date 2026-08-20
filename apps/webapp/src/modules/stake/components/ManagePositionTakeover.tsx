@@ -16,7 +16,7 @@ import {
   ZERO_ADDRESS
 } from '@/hooks';
 import { formatBigInt, formatUsd, WAD_PRECISION } from '@/utils';
-import { QueryParams } from '@/lib/constants';
+import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
@@ -35,8 +35,6 @@ import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
-
-const NO_VALUE = '–';
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary

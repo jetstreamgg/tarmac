@@ -16,8 +16,8 @@ import {
   UpdatedHourlyBadge
 } from './StakeManageCard';
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
+import { NO_VALUE } from '@/lib/constants';
 
-const NO_VALUE = '–';
 const WAD = 10n ** 18n;
 
 // Badges/Risk dash mapping (comp 1036:213853) — the F3 table-meter levels on

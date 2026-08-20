@@ -26,8 +26,7 @@ import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import { lastStakeUrnBark, useStakeUserPositions } from '../hooks/useStakeUserPositions';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 function StatCell({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (

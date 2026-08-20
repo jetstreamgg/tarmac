@@ -12,8 +12,7 @@ import { InfoTooltip } from '@/components/InfoTooltip';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 // Risk-pill palette on the DS components/status colours (Badge I1036:209777) —
 // the same success/warning/error trio the risk meters took in APP-432 item 6.

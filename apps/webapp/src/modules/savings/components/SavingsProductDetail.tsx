@@ -27,8 +27,7 @@ import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
 import { SavingsTransactionsTable } from './SavingsTransactionsTable';
 import { SavingsTransactionsFilter, SavingsTxFilter } from './SavingsTransactionsFilter';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 export function SavingsProductDetail() {
   // The networks Savings is live on among the configured chains (which include

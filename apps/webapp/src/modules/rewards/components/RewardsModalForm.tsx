@@ -26,10 +26,9 @@ import {
   buildRewardsWithdrawModalRows,
   buildRewardsWithdrawReviewRows
 } from './rewardsModalRows';
+import { NO_VALUE } from '@/lib/constants';
 
 export type { RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
-
-const NO_VALUE = '–';
 
 const formatUsd = (value: number) => `$${formatNumber(value, { maxDecimals: 2 })}`;
 

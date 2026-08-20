@@ -10,7 +10,7 @@ import { TxStatus } from '@/widgets';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
-import { QueryParams } from '@/lib/constants';
+import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';
@@ -24,8 +24,6 @@ import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 // Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
 import { claimSubtitle } from '../lib/constants';
-
-const NO_VALUE = '–';
 
 /** SKY first (legacy dropdown sort), stable otherwise — the claim-execution order. */
 function sortSkyFirst(rewards: ClaimableReward[]): ClaimableReward[] {

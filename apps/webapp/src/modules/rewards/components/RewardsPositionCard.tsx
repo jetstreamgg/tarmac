@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
-  NO_VALUE,
   ProductActions,
   ProductFigure,
   ProductPercent,
@@ -30,6 +29,7 @@ import { useClaimRewardsModal } from '@/modules/claim';
 import { useRewardsModal, type RewardsModalArgs } from '../hooks/useRewardsModal';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
 import { RewardsSupplyCard } from './RewardsSupplyCard';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * Position-aware action card for the rewards product page (ProductDetailTemplate

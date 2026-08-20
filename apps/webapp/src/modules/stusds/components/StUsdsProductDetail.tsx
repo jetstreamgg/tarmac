@@ -27,8 +27,7 @@ import {
 import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 const formatUsd = (value: bigint | undefined): string =>
   value !== undefined ? `$${formatNumber(parseFloat(formatUnits(value, 18)))}` : NO_VALUE;

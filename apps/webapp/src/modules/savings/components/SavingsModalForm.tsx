@@ -26,12 +26,12 @@ import {
   buildWithdrawModalRows,
   buildWithdrawReviewRows
 } from './savingsModalRows';
+import { NO_VALUE } from '@/lib/constants';
 
 // `SavingsModalPreset` now lives with the shared form model; re-exported here so the
 // modal trigger (`useSavingsModal`) and tests keep importing it from this module.
 export type { SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 
-const NO_VALUE = '–';
 const USDS_DECIMALS = 18;
 
 const formatUsds = (value: bigint) =>

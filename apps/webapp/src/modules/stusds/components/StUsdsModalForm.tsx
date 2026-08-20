@@ -26,10 +26,10 @@ import { stUsdsPrepareErrorMessage } from '../lib/prepareErrorMessage';
 import { PRICE_IMPACT_HIGH_THRESHOLD_BPS, PRICE_IMPACT_WARNING_THRESHOLD_BPS } from '../lib/providerNotice';
 import { StUsdsProviderNotice } from './StUsdsProviderNotice';
 import { buildStUsdsEntryRows, buildStUsdsReviewRows } from './stUsdsModalRows';
+import { NO_VALUE } from '@/lib/constants';
 
 export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
-const NO_VALUE = '–';
 const DECIMALS = 18;
 
 // Decision-12 standard: amounts pin two decimals (hero + grid + balance line).

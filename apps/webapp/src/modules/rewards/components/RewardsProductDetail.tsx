@@ -29,8 +29,7 @@ import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName'
 import { RewardsDetailChart } from './RewardsDetailChart';
 import { RewardsPositionCard } from './RewardsPositionCard';
 import { RewardsTransactionsTable } from './RewardsTransactionsTable';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * About-slot content per farm. SPK and the (deprecated) SKY farm read the
