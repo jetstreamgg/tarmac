@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -27,6 +27,7 @@ import {
   buildRewardsWithdrawReviewRows
 } from './rewardsModalRows';
 import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 export type { RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
 
@@ -74,7 +75,6 @@ export function RewardsModalForm({
   preset?: RewardsModalPreset;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { i18n } = useLingui();
 
   const form = useRewardsTransactionForm({ flow, contractAddress, supplyToken, preset });
@@ -135,7 +135,7 @@ export function RewardsModalForm({
     ]
   );
 
-  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
   const rateValue = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
 
   // Position/earnings deltas from the parsed engine `amount` (not the raw input)

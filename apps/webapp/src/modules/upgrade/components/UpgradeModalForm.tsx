@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatUnits } from 'viem';
-import { useChainId, useChains, useConnection } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { TOKENS, useMkrSkyFee, useDebounce, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
@@ -26,6 +26,7 @@ import { parseAmountInput } from '@/lib/amountInput';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
 import { buildUpgradeModalRows } from './upgradeModalRows';
 import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 const UPGRADE_SOURCE_TOKENS = [TOKENS.dai, TOKENS.mkr];
 
@@ -58,7 +59,6 @@ export function UpgradeModalForm({
 }) {
   const { address, isConnected } = useConnection();
   const chainId = useChainId();
-  const chains = useChains();
 
   const [token, setToken] = useState<UpgradeSourceToken>(initialToken);
   const [value, setValue] = useState('');
@@ -214,7 +214,7 @@ export function UpgradeModalForm({
     analytics
   });
 
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
 
   const setPercent = (percent: PercentPreset) => {
     if (balance === undefined) return;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useNetworkFee } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
@@ -16,6 +16,7 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
 import { usePsmConversion, type UsePsmConversionResult } from './usePsmConversion';
 import { getPsmDecimalsForDirection, type PsmConversionDirection } from './usePsmConversion.helpers';
 import { ConvertReviewContent } from '../components/ConvertReviewContent';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 export interface UseConvertLaunchParams {
   direction: PsmConversionDirection;
@@ -56,7 +57,6 @@ export function useConvertLaunch({
   // Per-instance id so the provider ignores live updates from stale launches.
   const sessionId = useId();
   const chainId = useChainId();
-  const chains = useChains();
 
   // Honour the user's batch toggle; the engine additionally gates on wallet
   // support + needsAllowance (a no-approval flow stays a single signature).
@@ -76,7 +76,7 @@ export function useConvertLaunch({
   const targetDecimals = getPsmDecimalsForDirection(
     direction === 'USDC_TO_USDS' ? 'USDS_TO_USDC' : 'USDC_TO_USDS'
   );
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
 
   // Step 1 renders "Approve ◉ USDS" via the steps model's tokenSymbol chip
   // (Figma 1036:205564). The convert step's two inline icons aren't supported

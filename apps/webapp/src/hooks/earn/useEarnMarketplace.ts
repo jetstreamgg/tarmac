@@ -4,8 +4,7 @@ import { useQueries } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import {
-  chainId as chainIdConstants,
-  isTestnetId,
+  familyMainnetId as resolveFamilyMainnetId,
   calculateApyFromStr,
   formatDecimalPercentage,
   math
@@ -79,9 +78,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   const familyChainIds = getSupportedChainIds(connectedChainId);
   // Single-chain products (rewards, vaults, fixed, stUSDS) live on mainnet;
   // the Tenderly fork mirrors it under its own chain id.
-  const familyMainnetId = isTestnetId(connectedChainId)
-    ? chainIdConstants.tenderly
-    : chainIdConstants.mainnet;
+  const familyMainnetId = resolveFamilyMainnetId(connectedChainId);
 
   const { data: pricesData, isLoading: pricesLoading, error: pricesError } = usePrices();
 

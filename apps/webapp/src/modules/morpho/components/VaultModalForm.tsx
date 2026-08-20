@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -24,6 +24,7 @@ import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
 import { buildVaultEntryRows, buildVaultReviewRows } from './vaultModalRows';
 import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 export type { VaultModalPreset } from '../hooks/useVaultTransactionForm';
 
@@ -64,7 +65,6 @@ export function VaultModalForm({
   preset?: VaultModalPreset;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { i18n } = useLingui();
   // Openable vaults come from the registry, so the lookup only misses on an
   // unsupported chain; the fallback keeps the provider's wording in that case.
@@ -134,7 +134,7 @@ export function VaultModalForm({
   const { data: marketData } = useVaultMarketData({ provider, vaultAddress });
   const boostedRate = (marketData?.rate?.rewards?.length ?? 0) > 0;
 
-  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
   const rate = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
 
   const formatAsset = (units: bigint) =>

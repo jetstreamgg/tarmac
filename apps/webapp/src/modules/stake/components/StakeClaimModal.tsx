@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -24,6 +24,7 @@ import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 // Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
 import { claimSubtitle } from '../lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 /** SKY first (legacy dropdown sort), stable otherwise — the claim-execution order. */
 function sortSkyFirst(rewards: ClaimableReward[]): ClaimableReward[] {
@@ -64,7 +65,6 @@ function heroFor(reward: ClaimableReward, testIdPrefix: string, label?: boolean)
  */
 function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId: string }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
 
@@ -161,7 +161,7 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
     transactionScreenContent
   ]);
 
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
+  const networkName = useNetworkName(chainId, NO_VALUE);
 
   // [Network fee | Network] (Figma 1036:213990). The fee cell draws the live
   // estimate — the plain claim's, per `useStakeClaimLaunch`'s note on the

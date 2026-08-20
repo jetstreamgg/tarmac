@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -27,6 +27,7 @@ import {
   buildWithdrawReviewRows
 } from './savingsModalRows';
 import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 // `SavingsModalPreset` now lives with the shared form model; re-exported here so the
 // modal trigger (`useSavingsModal`) and tests keep importing it from this module.
@@ -64,7 +65,6 @@ export function SavingsModalForm({
   preset?: SavingsModalPreset;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { i18n } = useLingui();
 
   // The mainnet supply preview feeds the review's "You'll receive" (ERC-4626
@@ -134,7 +134,7 @@ export function SavingsModalForm({
     ]
   );
 
-  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
   // The position is always USDS-denominated (18-dec — on L2 `userSavingsBalance` is
   // the sUSDS balance pre-converted to USDS). Express the entered amount as a USDS
   // wad for the before→after delta: USDS/DAI are already 18-dec; a USDC amount

@@ -1,5 +1,5 @@
 import { useId, useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -27,6 +27,7 @@ import { PRICE_IMPACT_HIGH_THRESHOLD_BPS, PRICE_IMPACT_WARNING_THRESHOLD_BPS } f
 import { StUsdsProviderNotice } from './StUsdsProviderNotice';
 import { buildStUsdsEntryRows, buildStUsdsReviewRows } from './stUsdsModalRows';
 import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
@@ -62,7 +63,6 @@ export function StUsdsModalForm({
   preset?: StUsdsModalPreset;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { i18n } = useLingui();
 
   const form = useStUsdsTransactionForm({ flow, preset });
@@ -138,7 +138,7 @@ export function StUsdsModalForm({
   const impactCheckboxId = useId();
   const riskCheckboxId = useId();
 
-  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
   const rateDisplay = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
   const projectEarnings = (units: bigint) =>
     rate !== undefined

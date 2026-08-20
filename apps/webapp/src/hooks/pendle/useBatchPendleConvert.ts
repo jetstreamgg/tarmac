@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { Call, erc20Abi } from 'viem';
-import { chainId, isTestnetId } from '@/utils';
+import { familyMainnetId } from '@/utils';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { useTransactionFlow } from '../shared/useTransactionFlow';
@@ -84,7 +84,7 @@ export function useBatchPendleConvert({
 }: UseBatchPendleConvertParams): BatchWriteHook {
   const { address: connectedAddress, isConnected } = useConnection();
   const connectedChainId = useChainId();
-  const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
+  const chainIdToUse = familyMainnetId(connectedChainId);
   const routerAddress = PENDLE_ROUTER_V4_ADDRESS[chainIdToUse];
   const pinnedPendleSwap = PENDLE_PINNED_PENDLESWAP_ADDRESSES[chainIdToUse];
 

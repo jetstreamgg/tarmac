@@ -18,7 +18,7 @@ import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQueryHelpers';
 import { L2_HISTORY_CHAIN_IDS, tradeCutoffTimestamp } from './useL2sIndexerHistory';
 import { CombinedHistoryItem } from './shared';
-import { isTestnetId, chainId as chainIdMap } from '@/utils';
+import { familyMainnetId, chainId as chainIdMap } from '@/utils';
 
 /**
  * One Envio-backed history family, queried on its own. Used by the filtered
@@ -177,7 +177,7 @@ export function useHistoryFamilyQuery({
 }) {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const mainnetChainId = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const mainnetChainId = familyMainnetId(currentChainId);
   const includeMainnet =
     MAINNET_FAMILIES.includes(family) && (chainId === undefined || chainId === mainnetChainId);
   const l2ChainIds = L2_FAMILIES.includes(family)

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useChains, useChainId } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
@@ -20,6 +20,7 @@ import { skyRewardsAdapter } from '../adapters/skyRewardsAdapter';
 import { stakeAdapter } from '../adapters/stakeAdapter';
 import type { ClaimSource, ClaimableReward, ClaimScope } from '../types';
 import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 /**
  * One claimable reward (Figma 1036:190085): 32px token icon, Heading-2 amount
@@ -66,7 +67,6 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
 export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; scope: ClaimScope }) {
   const { txCallbacks } = useTransaction();
   const chainId = useChainId();
-  const chains = useChains();
 
   // Fixed trio — called unconditionally, in stable order (also the merge order).
   const merkl = merklAdapter.useClaimable(scope);
@@ -207,7 +207,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   });
 
   // All three engines are mainnet, so the network is the connected chain.
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
+  const networkName = useNetworkName(chainId, NO_VALUE);
 
   // [Network fee | Network] (Figma 1036:190091). Fee is stubbed like the other modules.
   const gridRows = toGridCells(

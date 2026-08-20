@@ -10,6 +10,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { ConvertAmountInput } from './ConvertAmountInput';
 import type { useConvertForm } from '../hooks/useConvertForm';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 export type ConvertFormModel = ReturnType<typeof useConvertForm>;
 
@@ -39,7 +40,7 @@ export function ConvertCard({ form }: { form: ConvertFormModel }) {
       ),
     [chains]
   );
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
 
   return (
     // Phone tier (comp 1295:25285, M6.9): 16px radius + 16px row padding; the

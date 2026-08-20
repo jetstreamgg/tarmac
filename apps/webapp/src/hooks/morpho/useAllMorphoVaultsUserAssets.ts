@@ -5,7 +5,7 @@ import { VAULTS } from '../vaults/constants';
 import { MorphoVaultConfig } from './morpho';
 import { ZERO_ADDRESS } from '../constants';
 import { sharesToAssets } from '../vaults/sharesToAssets';
-import { chainId, isTestnetId } from '@/utils';
+import { familyMainnetId } from '@/utils';
 import { ReadHook } from '../hooks';
 import { Token } from '../tokens/types';
 
@@ -43,7 +43,7 @@ export type AllMorphoVaultsUserAssetsData = {
 export function useAllMorphoVaultsUserAssets(): ReadHook & { data: AllMorphoVaultsUserAssetsData } {
   const { address: userAddress } = useConnection();
   const connectedChainId = useChainId();
-  const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
+  const chainIdToUse = familyMainnetId(connectedChainId);
 
   const vaultsWithAddress = useMemo(
     () =>
