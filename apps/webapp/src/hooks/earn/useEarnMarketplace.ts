@@ -44,8 +44,9 @@ const NO_RATE = '—';
 /** Window of the table's "30D Rate" column, in days. */
 const TRAILING_DAYS = 30;
 
-// Same valuation math as useSuppliedBalancesTotalUsd (which this supersedes):
-// WAD amount × BA Labs price. Portfolio must consume these rows, not refork it.
+// The canonical supplied-value math: WAD amount × BA Labs price. Portfolio
+// must consume these rows, not refork it (it superseded the deleted
+// useSuppliedBalancesTotalUsd).
 const bigintToUsd = (balance: bigint, priceStr: string | undefined) =>
   (Number(balance) / 1e18) * parseFloat(priceStr || '0');
 
