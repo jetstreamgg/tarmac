@@ -913,7 +913,9 @@
    cover; anything still within its lifetime pops back at reveal. */
 html[data-app-loader-cover] .app-loader-cover-hidden {
   opacity: 0;
-  pointer-events: none;
+  /* !important: Radix dialog content carries inline pointer-events (APP-515),
+     which would leave an invisible modal card clickable under the cover. */
+  pointer-events: none !important;
 }
 
 /* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
