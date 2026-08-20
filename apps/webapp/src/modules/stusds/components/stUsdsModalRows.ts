@@ -12,6 +12,7 @@
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import {
+  EST_EARNINGS_LABEL,
   estEarningsTrendCell,
   networkCell,
   networkFeeCell,
@@ -60,7 +61,7 @@ export function buildStUsdsEntryRows(input: StUsdsEntryRowInput): StUsdsModalGri
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. 1Y yield (at current rate)', token: 'USDS' },
+        { label: EST_EARNINGS_LABEL, token: 'USDS' },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount

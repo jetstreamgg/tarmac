@@ -1,9 +1,8 @@
-import { useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ChevronDown } from 'lucide-react';
-import { productNetworks } from '@/hooks';
+import { useProductNetworks } from '@/hooks';
 import { getChainIcon } from '@/utils';
 import { Intent } from '@/lib/enums';
 import { Text } from '@/modules/layout/components/Typography';
@@ -27,19 +26,11 @@ export type ConvertFormModel = ReturnType<typeof useConvertForm>;
  */
 export function ConvertCard({ form }: { form: ConvertFormModel }) {
   const chainId = useChainId();
-  const chains = useChains();
 
   // The networks Convert is live on among the configured chains (includes the
   // Tenderly fork in dev mode) — scopes the network selector like the product
   // pages do. PSM addresses exist on every supported chain, so no address map.
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.CONVERT_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.CONVERT_INTENT);
   const networkName = useNetworkName(chainId);
 
   return (

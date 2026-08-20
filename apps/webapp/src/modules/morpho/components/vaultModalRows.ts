@@ -10,6 +10,7 @@
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import {
+  EST_EARNINGS_LABEL,
   estEarningsTrendCell,
   networkCell,
   networkFeeCell,
@@ -63,7 +64,7 @@ export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRo
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. 1Y yield (at current rate)', token: input.assetSymbol },
+        { label: EST_EARNINGS_LABEL, token: input.assetSymbol },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount

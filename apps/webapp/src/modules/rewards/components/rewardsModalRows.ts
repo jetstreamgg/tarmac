@@ -11,6 +11,7 @@
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import {
+  EST_EARNINGS_LABEL,
   estEarningsTrendCell,
   networkCell,
   networkFeeCell,
@@ -71,7 +72,7 @@ export function buildRewardsSupplyModalRows(input: RewardsSupplyModalRowInput): 
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. 1Y yield (at current rate)', loading: input.positionLoading },
+        { label: EST_EARNINGS_LABEL, loading: input.positionLoading },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
@@ -102,7 +103,7 @@ export function buildRewardsWithdrawModalRows(input: RewardsWithdrawModalRowInpu
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. 1Y yield (at current rate)', loading: input.positionLoading },
+        { label: EST_EARNINGS_LABEL, loading: input.positionLoading },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount

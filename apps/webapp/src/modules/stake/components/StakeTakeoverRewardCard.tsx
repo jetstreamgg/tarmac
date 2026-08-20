@@ -6,16 +6,13 @@ import {
   useMultipleRewardsChartInfo,
   useStakeRewardContracts
 } from '@/hooks';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatAddress, formatDecimalPercentage, formatNumber } from '@/utils';
 import { cn } from '@/lib/cn';
+import { NO_VALUE } from '@/lib/constants';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { farmRewardSymbol } from '../lib/farmRewardSymbol';
-
-const NO_VALUE = '–';
-
-const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
 /**
  * The card body — single-select farm list, mirroring `DelegateList`'s row
@@ -102,7 +99,7 @@ export function RewardList({
                     <TokenIcon token={{ symbol }} width={24} className="h-6 w-6" showChainIcon={false} />
                   )}
                   <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
-                    {symbol ?? shortenAddress(address)}
+                    {symbol ?? formatAddress(address, 6, 4)}
                   </span>
                   {deprecated && (
                     <span className="bg-surfaceAlt text-textSecondary font-circle rounded-full px-2 py-0.5 text-xs font-medium">

@@ -133,10 +133,16 @@ export const withdrawalCell = (withdrawal: string): ModalGridCell => ({
   value: withdrawal
 });
 
+/**
+ * The projected-yield label, shared by the review cells below and the entry
+ * grids' `singleOrDelta` pairs so the wording is spelled once.
+ */
+export const EST_EARNINGS_LABEL = 'Est. 1Y yield (at current rate)';
+
 /** Review "Est. 1Y yield" cell: green trend glyph, optional trailing denomination icon. */
 export const estEarningsTrendCell = (value: string, trailingToken?: string): ModalGridCell => ({
   kind: 'single',
-  label: 'Est. 1Y yield (at current rate)',
+  label: EST_EARNINGS_LABEL,
   value,
   trend: true,
   trailingToken

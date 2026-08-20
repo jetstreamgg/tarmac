@@ -39,8 +39,11 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
   const stats = marketsApi?.[market.marketAddress];
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const remainingSeconds = Math.max(0, expirySec - Math.floor(Date.now() / 1000));
-  const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
+  // One instant for both, so the countdown and the day count can't straddle a
+  // second boundary and disagree.
+  const nowMs = Date.now();
+  const remainingSeconds = Math.max(0, expirySec - Math.floor(nowMs / 1000));
+  const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const maturityDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
 
   const details: ProductDetailRow[] = [
