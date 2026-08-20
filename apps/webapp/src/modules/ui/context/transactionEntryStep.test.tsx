@@ -127,6 +127,15 @@ describe('TransactionModal — editable entry step', () => {
     expect(screen.queryByRole('button', { name: 'Supply' })).not.toBeNull();
   });
 
+  it('the modal card wears app-loader-cover-hidden so a first-connect cover hides it (APP-515)', () => {
+    renderModal(() => ({
+      title: 'Supply to Sky Savings',
+      transactionContent: <div>review</div>,
+      onConfirm: () => {}
+    }));
+    expect(screen.getByRole('dialog').className).toContain('app-loader-cover-hidden');
+  });
+
   it('gates the entry confirm on the entry descriptor disabled flag', () => {
     const onConfirm = vi.fn();
     renderModal(() => ({

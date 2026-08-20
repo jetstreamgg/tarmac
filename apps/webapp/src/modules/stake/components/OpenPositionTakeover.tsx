@@ -29,10 +29,11 @@ import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMe
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
+import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
-import { farmRewardSymbol } from '../lib/farmRewardSymbol';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
+import { StakeTakeoverRewardCard } from './StakeTakeoverRewardCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
@@ -63,11 +64,11 @@ export interface ReopenContext {
  *
  * With a `reopen` context (F6, UX 1194:21595/21914) the same form re-funds an
  * existing emptied urn: the launch swaps to the manage seam (no `open()` leg,
- * manage ordering/copy/analytics), the urn's reward contract passes through
- * unchanged, and the delegate leg only fires when the user stages a DIFFERENT
- * delegate — an untouched form must never emit `selectVoteDelegate` (C18: with
- * `undefined` it would silently undelegate the urn). The frames keep the
- * "Open a position" header (C17a).
+ * manage ordering/copy/analytics), the urn's current reward/delegate are the
+ * picker baselines, and the selectFarm/selectVoteDelegate legs only fire when
+ * the user stages a DIFFERENT selection — an untouched form must never emit
+ * either (C18: with `undefined` the delegate leg would silently undelegate the
+ * urn). The frames keep the "Open a position" header (C17a).
  */
 export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const chainId = useChainId();
@@ -123,25 +124,34 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   } = useSimulatedVault(debouncedSkyToLock, debouncedUsdsToBorrow, 0n, ilkName);
   const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
 
-  // A-Q2 (recorded on APP-311): the baseline takeover has no reward picker; the
-  // engine still requires a selectFarm call, so default to the SKY farm. The
-  // reducer field stays so a picker can slot in when product rules.
+  // The reward picker card stages `selectedRewardContract`; the engine requires
+  // a selectFarm call for rewards to accrue, so the card is always-on with the
+  // SKY farm pre-selected (A-Q2 resolved by APP-516).
   const { data: rewardContracts } = useStakeRewardContracts();
   const skyFarm = lsSkySkyRewardAddress[chainId as keyof typeof lsSkySkyRewardAddress];
   const defaultRewardContract =
     rewardContracts?.find(contract => contract.contractAddress.toLowerCase() === skyFarm?.toLowerCase())
       ?.contractAddress ?? rewardContracts?.[0]?.contractAddress;
-  // Reopen (C18): an emptied urn keeps its farm — display its rate; the manage
-  // seam passes the urn's reward contract through on its own.
-  const selectedRewardContract =
-    reopen && urnRewardContract && urnRewardContract !== ZERO_ADDRESS
-      ? urnRewardContract
-      : (state.selectedRewardContract ?? defaultRewardContract);
+  // Reopen (C18): the urn's farm is the selection baseline — an untouched
+  // picker passes the raw urn read through so the manage seam emits no
+  // selectFarm leg; a never-farmed urn falls back to the SKY default (which
+  // correctly stages one). "Never farmed" is a RESOLVED read of ZERO_ADDRESS —
+  // `undefined` means the urnFarms read is still pending (or errored), and
+  // falling back to the instantly-available SKY default during that window
+  // would bake a spurious selectFarm(SKY) into the multicall of an urn that
+  // farms something else. Until the read resolves, nothing is pre-selected and
+  // Confirm stays gated below.
+  const rewardBaselineResolved = !reopen || urnRewardContract !== undefined;
+  const reopenRewardBaseline =
+    reopen && urnRewardContract && urnRewardContract !== ZERO_ADDRESS ? urnRewardContract : undefined;
+  const selectedRewardContract = rewardBaselineResolved
+    ? (state.selectedRewardContract ?? reopenRewardBaseline ?? defaultRewardContract)
+    : state.selectedRewardContract;
 
-  // The selected farm's reward token, for the surfaces that must say which
-  // reward the flow picked on the user's behalf (review feedback; AUD-19 is
-  // the real picker). Unknown farms fall back to SKY, the default selection.
-  const rewardSymbol = farmRewardSymbol(selectedRewardContract, chainId) ?? 'SKY';
+  // The selected farm's reward token, for the surfaces that echo the picker's
+  // selection (address-book symbol, else the on-chain one for farms the books
+  // don't know yet).
+  const rewardSymbol = useFarmRewardSymbol(selectedRewardContract);
 
   // The selected farm's live rate → card-1 stats.
   const { data: rewardsChartInfo, isLoading: rateLoading } = useMultipleRewardsChartInfo({
@@ -205,7 +215,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         ? undefined
         : formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust, debouncedUsdsToBorrow);
 
-  const formValid = stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet);
+  const formValid =
+    stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet) && rewardBaselineResolved;
 
   const closeOpenFlow = useCallback(() => {
     setSearchParams(
@@ -241,9 +252,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         skyToLock={debouncedSkyToLock}
         usdsToBorrow={debouncedUsdsToBorrow}
         rewardSymbol={rewardSymbol}
+        rewardContract={selectedRewardContract}
       />
     ),
-    [debouncedSkyToLock, debouncedUsdsToBorrow, rewardSymbol]
+    [debouncedSkyToLock, debouncedUsdsToBorrow, rewardSymbol, selectedRewardContract]
   );
 
   const openLaunch = useStakeLaunch({
@@ -257,8 +269,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   });
 
   // Reopen = manage-flow semantics under this form (C17): flow 'manage', no
-  // open() leg, MANAGE copy/analytics, and the C18 delegate pass-through — the
-  // urn's current delegate is the baseline so an untouched card emits nothing.
+  // open() leg, MANAGE copy/analytics, and the C18 reward/delegate
+  // pass-through — the urn's current selections are the baseline so an
+  // untouched card emits nothing.
   const reopenLaunch = useStakeManageLaunch({
     urnIndex: BigInt(reopen?.urnIndex ?? 0),
     urnAddress: reopenUrn,
@@ -267,6 +280,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     usdsToBorrow: debouncedUsdsToBorrow,
     usdsToWipe: 0n,
     wipeAll: false,
+    selectedRewardContract,
     selectedDelegate: state.selectedDelegate ?? reopenDelegateBaseline,
     enabled: !!reopen && formValid,
     transactionContent: confirmSummary,
@@ -355,6 +369,12 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         rewardSymbol={rewardSymbol}
         minStakeToBorrow={state.borrowEnabled ? simulatedVault?.minCollateralForDust : undefined}
         error={stakeError}
+      />
+
+      <StakeTakeoverRewardCard
+        selectedRewardContract={selectedRewardContract}
+        onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
+        keepAddress={reopenRewardBaseline}
       />
 
       <StakeTakeoverBorrowCard

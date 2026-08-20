@@ -108,13 +108,13 @@ export function PositionCard({
           {/* TODO(D1): Already earned needs a cost-basis source (no hook yet). */}
           <Stat
             className="w-[112px]"
-            label={<Trans>Already earned</Trans>}
+            label={<Trans>Accrued to date</Trans>}
             value={<span className={cn(statValue, 'text-fgSecondary')}>TODO</span>}
           />
           <StatDivider />
           <Stat
             className="flex-1"
-            label={<Trans>1Y projected earnings</Trans>}
+            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
             value={
               position.rateLoading ? (
                 <Skeleton className="h-4 w-14" />

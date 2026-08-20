@@ -105,7 +105,7 @@ export function getProviderMessage(
 
         default:
           return flow === 'supply'
-            ? i18n._(msg`Routing through Curve - native deposits unavailable`)
+            ? i18n._(msg`Routing through Curve - native supply unavailable`)
             : i18n._(msg`Routing through Curve - native withdrawals unavailable`);
       }
 

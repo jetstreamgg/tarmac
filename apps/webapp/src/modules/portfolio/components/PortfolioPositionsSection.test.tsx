@@ -257,11 +257,13 @@ describe('PositionCard — DS comp conformance', () => {
     expect(within(card).queryByText('APY')).toBeNull();
   });
 
-  it('orders the stats My position → Rate → Already earned → 1Y projected earnings', () => {
+  it('orders the stats My position → Rate → Accrued to date → Projected 1Y yield (at current rate)', () => {
     renderSection([VAULT]);
     const text = screen.getAllByTestId('position-card')[0].textContent ?? '';
-    expect(text.indexOf('My position')).toBeLessThan(text.indexOf('Already earned'));
-    expect(text.indexOf('Already earned')).toBeLessThan(text.indexOf('1Y projected earnings'));
+    expect(text.indexOf('My position')).toBeLessThan(text.indexOf('Accrued to date'));
+    expect(text.indexOf('Accrued to date')).toBeLessThan(
+      text.indexOf('Projected 1Y yield (at current rate)')
+    );
   });
 
   it('shows a single-chain network badge with the chain name', () => {

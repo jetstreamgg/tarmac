@@ -322,7 +322,10 @@ export function TransactionModal({
         // section gaps on the first screens per the comp; the wallet/status
         // screen spaces its sections with per-section padding instead.
         className={cn(
-          'bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
+          // app-loader-cover-hidden: a first connect from inside this modal arms
+          // the app loader's held cover (APP-515) — the card hides for the play
+          // and pops back at reveal; the frosted scrim stays as the backdrop.
+          'app-loader-cover-hidden bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
           !isTransaction && 'sm:gap-12'
         )}
         onOpenAutoFocus={e => e.preventDefault()}
