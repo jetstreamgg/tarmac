@@ -253,9 +253,9 @@ export function EarnPage() {
 
   // "Requires action" (2251:50832): matured markets the user still holds PT
   // for — the marketplace filters them out of the opportunities rows, so this
-  // is their only Earn surface. Not run through the geo split or the filters:
-  // an existing position stays claimable (and listed) regardless of region,
-  // and hiding a row that needs action behind a filter would defeat it.
+  // is their only Earn surface. Geo is enforced inside the hook (restricted
+  // positions hide app-wide, APP-484); the table filters are skipped — hiding
+  // a row that needs action behind a filter would defeat it.
   const { maturedPositions } = usePendleMaturedPositions();
   const valueUsd = usePendleUsdValue();
   const requiresActionItems = useMemo<EarnTableRowItem[]>(

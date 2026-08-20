@@ -11,6 +11,7 @@ import { Intent } from '@/lib/enums';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { getNetworkOverrideForIntent } from '@/lib/widget-network-map';
+import { useGeoConfig } from '@/modules/geo-config';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 
 export type PendleMaturedPosition = { market: PendleMarketConfig; ptBalance: bigint };
@@ -22,6 +23,12 @@ export type PendleMaturedPosition = { market: PendleMarketConfig; ptBalance: big
  * 2306:72334). Pure read: the mainnet auto-switch lives in
  * `usePendleMaturedNetworkSwitch`, enabled only where a claim surface is
  * actually visible.
+ *
+ * Geo: empty while the `fixed` module is region-restricted — restricted
+ * positions are hidden from every surface (APP-484 / useGeoVisibleRows), and
+ * every consumer of this hook is such a surface. Same loading tradeoff as
+ * useGeoVisibleRows: positions pass while the config is in flight, since the
+ * loading default is restrictive and would blank them for everyone.
  */
 export function usePendleMaturedPositions(): {
   maturedPositions: PendleMaturedPosition[];
@@ -32,9 +39,11 @@ export function usePendleMaturedPositions(): {
   const { address } = useConnection();
   const chainId = useChainId();
   const { data: ptBalances, isLoading } = usePendleUserPtBalances();
+  const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
+  const fixedAvailable = isGeoLoading || isModuleEnabled('fixed');
 
   const maturedPositions: PendleMaturedPosition[] = [];
-  if (address && ptBalances) {
+  if (fixedAvailable && address && ptBalances) {
     PENDLE_MARKETS.forEach(market => {
       if (!isMarketMatured(market.expiry)) return;
       const balance = ptBalances[market.marketAddress];
