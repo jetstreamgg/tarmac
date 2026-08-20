@@ -1,5 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Pie, PieChart, Sector } from 'recharts';
 import type { PieSectorShapeProps } from 'recharts';
 
@@ -14,6 +15,8 @@ export type DonutSegment = {
 };
 
 type PortfolioDonutChartProps = {
+  /** Keep this array referentially stable across hover renders — a new
+   * identity restarts the fill sweep. */
   segments: DonutSegment[];
   /** Shared with the legend/token cluster so hover stays in sync. */
   activeId: string | null;
@@ -38,6 +41,19 @@ const CORNER_RADIUS = 4; // = THICKNESS / 2 — fully rounded bar ends per the c
 const START_ANGLE = 90; // 12 o'clock
 const END_ANGLE = -270; // full sweep, clockwise
 const FULL_CIRCLE_EPS = 359.9;
+
+// Motion (Figma 2233:61099). The arcs fill in clockwise from 12 o'clock once
+// the data is in — recharts' own sweep, timed to land with the rest of the
+// card's entrance; the hairline ring fades up underneath it. Hovering swaps
+// the hovered arc to its hover color and dims the others to 50%, both on a
+// 350ms ease-out; the centre label rises 6px into the hole on the same clock
+// and leaves upward when the hover ends.
+const FILL_BEGIN_MS = 300;
+const FILL_DURATION_MS = 900;
+const HOVER_MS = 350;
+const HOVER_EASE = 'ease-out';
+const CENTER_IN = { y: 6, opacity: 0 };
+const CENTER_OUT = { y: -10, opacity: 0 };
 
 type Sector = { id: string; startAngle: number; endAngle: number };
 
@@ -89,7 +105,11 @@ export function PortfolioDonutChart({
   size = BASE_SIZE,
   className
 }: PortfolioDonutChartProps) {
-  const chartSegments = segments.filter(s => s.value > 0);
+  const prefersReducedMotion = useReducedMotion();
+  // Keyed on `segments` identity: recharts re-runs the sweep whenever its
+  // `data` changes, so callers must hand in a stable array (memoised on their
+  // source data, not rebuilt per hover render).
+  const chartSegments = useMemo(() => segments.filter(s => s.value > 0), [segments]);
   const sectors = computeSectors(chartSegments);
   const isEmpty = chartSegments.length === 0;
 
@@ -126,7 +146,10 @@ export function PortfolioDonutChart({
               paddingAngle={isSingle ? 0 : PADDING_ANGLE}
               cornerRadius={isSingle ? 0 : CORNER_RADIUS * scale}
               stroke="none"
-              isAnimationActive={false}
+              isAnimationActive={!prefersReducedMotion}
+              animationBegin={FILL_BEGIN_MS}
+              animationDuration={FILL_DURATION_MS}
+              animationEasing="ease-out"
               onMouseEnter={(_, index) => onActiveChange(chartSegments[index]?.id ?? null)}
               // `Cell` is deprecated (removed in recharts 4); per-sector fill +
               // hover dimming via the `shape` prop, rendering the same Sector.
@@ -142,7 +165,7 @@ export function PortfolioDonutChart({
                     fill={isActive ? (segment.hoverColor ?? segment.color) : segment.color}
                     fillOpacity={dim ? 0.5 : 1}
                     style={{
-                      transition: 'fill-opacity 150ms ease-out, fill 150ms ease-out',
+                      transition: `fill-opacity ${HOVER_MS}ms ${HOVER_EASE}, fill ${HOVER_MS}ms ${HOVER_EASE}`,
                       outline: 'none'
                     }}
                   />
@@ -156,11 +179,14 @@ export function PortfolioDonutChart({
       {/* Inner ring: mirrors the sectors (gaps + active highlight) or a plain
           full circle when there are 0 or 1 segments. The empty state renders a
           muted ring + "No tokens" label per the DS Pie (Figma 5051:133511). */}
-      <svg
+      <motion.svg
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         className="pointer-events-none absolute inset-0"
+        initial={prefersReducedMotion || isEmpty ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: FILL_DURATION_MS / 1000, delay: FILL_BEGIN_MS / 1000, ease: 'easeOut' }}
       >
         {/* Empty case (Figma 5272:12915): the colored band is replaced by an
             unbroken tinted band at the same radius, so the chart keeps its
@@ -201,12 +227,27 @@ export function PortfolioDonutChart({
             />
           ))
         )}
-      </svg>
+      </motion.svg>
 
-      {/* Active-segment token, centered in the hole. */}
-      {activeId && renderCenter && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          {renderCenter(activeId)}
+      {/* Active-segment token, centered in the hole. Keyed per segment so a
+          hover that moves straight from one arc to the next rolls the label
+          over (old up and out, new up and in) instead of swapping it. */}
+      {renderCenter && (
+        <div className="pointer-events-none absolute inset-0">
+          <AnimatePresence initial={false}>
+            {activeId && (
+              <motion.div
+                key={activeId}
+                className="absolute inset-0 flex items-center justify-center"
+                initial={prefersReducedMotion ? false : CENTER_IN}
+                animate={{ y: 0, opacity: 1 }}
+                exit={prefersReducedMotion ? undefined : CENTER_OUT}
+                transition={{ duration: prefersReducedMotion ? 0 : HOVER_MS / 1000, ease: 'easeOut' }}
+              >
+                {renderCenter(activeId)}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Cookie, FileText, FileWarning, Menu, Shield, SquareArrowUp, X } from 'lucide-react';
+import { Cookie, FileText, FileWarning, Shield, SquareArrowUp, X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { buttonVariants } from '@/components/ui/button';
+import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
 import { BATCH_TX_ENABLED } from '@/lib/constants';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -121,12 +122,9 @@ function MoreMenu() {
   const { bpi } = useBreakpointIndex();
 
   // Menu type of Button / Navbar: Radix supplies data-state=open for the
-  // active recipe, and the glyph flips hamburger → X while open.
-  const trigger = isOpen ? (
-    <X size={16} className="nav-menu-icon" />
-  ) : (
-    <Menu size={16} className="nav-menu-icon" />
-  );
+  // active recipe, and the same attribute folds the glyph hamburger → X
+  // (Figma 2134:88604; the motion lives on `.nav-menu-icon` in globals.css).
+  const trigger = <MenuToggleIcon />;
   // shrink-0: the trigger sits in the chip cluster's shrink chain (M2.2) and
   // must keep its 40px circle — the wallet chip is the only flexible member.
   const triggerClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }), 'w-10 shrink-0 px-0');
@@ -177,9 +175,14 @@ function MoreMenu() {
       {/* Menu dropdown panel (Figma 5069:27495): 274px glass panel — bg-secondary
           over a 100px backdrop blur, 24px radius, 20px padding, 24px between
           sections with a hairline divider after the bundling block. */}
+      {/* Motion (Figma 2134:88604): the panel grows out of its top-right
+          anchor — 0.9 → 1 while sliding in 14px from the right and 20px from
+          above, 300ms on quart — and leaves the same way. The tokens replace
+          the shared popover's zoom/slide pair (tailwind-merge collapses the
+          two `animate-*` utilities per state). */}
       <PopoverContent
         align="end"
-        className="bg-bgSecondary flex w-[274px] flex-col gap-6 rounded-3xl p-5 shadow-none backdrop-blur-[100px]"
+        className="bg-bgSecondary data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out flex w-[274px] origin-top-right flex-col gap-6 rounded-3xl p-5 shadow-none backdrop-blur-[100px]"
       >
         <MoreMenuContent closeMenu={closeMenu} />
       </PopoverContent>
