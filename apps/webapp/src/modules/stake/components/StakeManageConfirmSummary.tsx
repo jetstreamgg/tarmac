@@ -1,11 +1,9 @@
 import { Trans } from '@lingui/react/macro';
 import { ArrowDown } from 'lucide-react';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd, formatAddress } from '@/utils';
 import { formatUnits } from 'viem';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
-
-const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
 function AmountHero({
   label,
@@ -110,7 +108,7 @@ export function StakeManageConfirmSummary({
               {delegateFrom ? (
                 <>
                   <CustomAvatar address={delegateFrom} size={28} />
-                  {shortenAddress(delegateFrom)}
+                  {formatAddress(delegateFrom, 6, 4)}
                 </>
               ) : (
                 <Trans>No delegate</Trans>
@@ -124,7 +122,7 @@ export function StakeManageConfirmSummary({
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
               <CustomAvatar address={delegateTo!} size={28} />
-              {shortenAddress(delegateTo!)}
+              {formatAddress(delegateTo!, 6, 4)}
             </span>
           </div>
         </div>

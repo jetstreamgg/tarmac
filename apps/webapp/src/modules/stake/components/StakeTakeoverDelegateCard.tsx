@@ -4,15 +4,13 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ExternalLink, Search } from 'lucide-react';
 import { useStakeUserDelegates, useDebounce, ZERO_ADDRESS } from '@/hooks';
-import { formatBigInt } from '@/utils';
+import { formatBigInt, formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { delegateProfileUrl } from '../lib/delegateProfileUrl';
-
-const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
 /**
  * The card body — search + single-select list. Lives in its own component so
@@ -98,7 +96,7 @@ export function DelegateList({
                   <span className="flex min-w-0 items-center gap-3">
                     <CustomAvatar address={delegate.ownerAddress ?? delegate.id} size={24} />
                     <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
-                      {delegate.metadata?.name || shortenAddress(delegate.id)}
+                      {delegate.metadata?.name || formatAddress(delegate.id, 6, 4)}
                       <a
                         href={delegateProfileUrl(delegate.metadata?.externalProfileURL, delegate.id)}
                         target="_blank"

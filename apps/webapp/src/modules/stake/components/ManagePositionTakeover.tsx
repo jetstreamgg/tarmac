@@ -15,7 +15,7 @@ import {
   useTokenBalance,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt, formatUsd, WAD_PRECISION } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
@@ -35,6 +35,7 @@ import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
+import { formatOraclePrice } from '../lib/formatStakeAmount';
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
@@ -452,7 +453,7 @@ export function ManagePositionTakeover({
               {detail.vaultLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : existingDebt > 0n && existingVault?.liquidationPrice !== undefined ? (
-                `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+                formatOraclePrice(existingVault.liquidationPrice)
               ) : (
                 NO_VALUE
               )}
@@ -468,7 +469,7 @@ export function ManagePositionTakeover({
               {detail.vaultLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : existingVault?.delayedPrice !== undefined ? (
-                `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+                formatOraclePrice(existingVault.delayedPrice)
               ) : (
                 NO_VALUE
               )}
