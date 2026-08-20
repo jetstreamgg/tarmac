@@ -8,8 +8,15 @@ i18n.activate('en');
 
 const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 
-// Mutable savings balance — drives which card the router renders.
-const h = vi.hoisted(() => ({ savingsBalance: 0n as bigint, launch: vi.fn() }));
+// Mutable savings balance — drives which card the router renders. An unresolved
+// read (data undefined) holds the slot: skeleton while in flight, error card if
+// the read failed.
+const h = vi.hoisted(() => ({
+  savingsBalance: 0n as bigint,
+  savingsUnresolved: false,
+  savingsError: null as Error | null,
+  launch: vi.fn()
+}));
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
@@ -25,9 +32,11 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     useSavingsData: () => ({
-      data: { userSavingsBalance: h.savingsBalance, userNstBalance: 0n, savingsRate: 0n, savingsTvl: 0n },
-      error: null,
-      isLoading: false,
+      data: h.savingsUnresolved
+        ? undefined
+        : { userSavingsBalance: h.savingsBalance, userNstBalance: 0n, savingsRate: 0n, savingsTvl: 0n },
+      error: h.savingsError,
+      isLoading: h.savingsUnresolved && !h.savingsError,
       mutate: vi.fn(),
       dataSources: []
     }),
@@ -77,9 +86,30 @@ const renderCard = () =>
 describe('SavingsPositionCard — position routing', () => {
   beforeEach(() => {
     h.savingsBalance = 0n;
+    h.savingsUnresolved = false;
+    h.savingsError = null;
     h.launch.mockClear();
   });
   afterEach(() => cleanup());
+
+  it('holds the slot with a skeleton while the position read is in flight', () => {
+    h.savingsUnresolved = true;
+    renderCard();
+
+    expect(screen.queryByTestId('savings-position-card-skeleton')).not.toBeNull();
+    expect(screen.queryByTestId('savings-supply-card')).toBeNull();
+    expect(screen.queryByTestId('savings-position-card')).toBeNull();
+  });
+
+  it('settles a failed position read on the error card, not an endless skeleton', () => {
+    h.savingsUnresolved = true;
+    h.savingsError = new Error('read failed');
+    renderCard();
+
+    expect(screen.queryByTestId('savings-position-card-error')).not.toBeNull();
+    expect(screen.queryByTestId('savings-position-card-skeleton')).toBeNull();
+    expect(screen.queryByTestId('savings-supply-card')).toBeNull();
+  });
 
   it('renders the no-position "Supply" card when the savings balance is zero', () => {
     h.savingsBalance = 0n;

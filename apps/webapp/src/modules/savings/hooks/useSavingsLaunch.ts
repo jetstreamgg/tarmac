@@ -331,12 +331,17 @@ export function useSavingsLaunch({
     originToken.symbol
   ]);
 
+  // Plain-write engines report a failed prepare simulation via `prepareError`
+  // (the batch engines fold everything into `error`) — promote it so the modal
+  // surfaces withdraw-simulation failures, the stUSDS launch precedent.
+  const prepareError = 'prepareError' in activeHook ? (activeHook.prepareError as Error | null) : null;
+
   return {
     execute,
     steps,
     prepared: activeHook.prepared,
     isLoading: activeHook.isLoading,
-    error: activeHook.error,
+    error: activeHook.error ?? prepareError,
     calls: activeHook.calls ?? [],
     isBatch: !!activeHook.isBatch
   };

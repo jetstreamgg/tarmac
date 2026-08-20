@@ -45,6 +45,8 @@ const baseDetail: StakePositionDetail = {
   rewardDeprecated: false,
   voteDelegate: DELEGATE,
   rewardsRate: 0.015,
+  claimableUsdLoading: false,
+  rateLoading: false,
   estAnnualRewardsSky: parseUnits('10693', 18),
   claimableUsd: 90.22,
   claimableSymbols: ['SKY'],

@@ -38,6 +38,8 @@ export interface StakePositionDetail {
   voteDelegate: `0x${string}` | undefined;
   /** Live staking-reward rate of the urn's farm, as a decimal (0.0569 = 5.69%). */
   rewardsRate: number | null;
+  /** The farm-rate read is in flight — rate/est-rewards cells hold a skeleton. */
+  rateLoading: boolean;
   /** skyLocked × rate, in SKY (18 dec) — F4's 1e9-scaled math (M22). */
   estAnnualRewardsSky: bigint | null;
   claimableUsd: number;
@@ -45,9 +47,11 @@ export interface StakePositionDetail {
   /** Claimable balance of `claimableSymbols[0]`'s token only — the menu chip pairs it with that symbol. */
   claimableTokenAmount: bigint;
   claimableLoading: boolean;
+  /** The price feed valuing claimableUsd is still in flight — USD figures hold a skeleton. */
+  claimableUsdLoading: boolean;
   /** Claimed (subgraph history) + still claimable, in USD. */
   rewardsEarnedUsd: number;
-  /** True while either leg of rewardsEarnedUsd (history or claimables) is still loading. */
+  /** True while any leg of rewardsEarnedUsd (history, claimables, prices) is still loading. */
   rewardsEarnedLoading: boolean;
   stabilityFee: bigint | undefined;
   skyPriceUsd: number | null;
@@ -75,7 +79,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     rewardContract && rewardContract !== ZERO_ADDRESS ? rewardContract : undefined
   );
 
-  const { data: rewardsChartInfo } = useMultipleRewardsChartInfo({
+  const { data: rewardsChartInfo, isLoading: rateLoading } = useMultipleRewardsChartInfo({
     rewardContractAddresses: rewardContract && rewardContract !== ZERO_ADDRESS ? [rewardContract] : []
   });
   const highestRateData = useHighestRateFromChartData(rewardsChartInfo ?? []);
@@ -92,7 +96,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   // legacy PositionDetail read (C12): residual claimables from a previous farm
   // must surface here and in the claim modal alike. SKY-first order.
   const { claimables, isLoading: claimableLoading } = useStakeUrnClaimables(BigInt(urnIndex));
-  const { data: prices } = usePrices();
+  const { data: prices, isLoading: pricesLoading } = usePrices();
   const priceOf = useCallback((symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'), [prices]);
   const claimableUsd = claimables.reduce(
     (total, reward) => total + Number(formatUnits(reward.claimBalance, 18)) * priceOf(reward.rewardSymbol),
@@ -138,13 +142,15 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
       !!rewardContract && rewardContract !== ZERO_ADDRESS && isDeprecatedStakeReward(rewardContract, chainId),
     voteDelegate,
     rewardsRate,
+    rateLoading,
     estAnnualRewardsSky,
     claimableUsd,
     claimableSymbols,
     claimableTokenAmount,
     claimableLoading,
+    claimableUsdLoading: claimableLoading || pricesLoading,
     rewardsEarnedUsd,
-    rewardsEarnedLoading: historyLoading || claimableLoading,
+    rewardsEarnedLoading: historyLoading || claimableLoading || pricesLoading,
     stabilityFee: collateralData?.stabilityFee,
     skyPriceUsd,
     stakedUsd,

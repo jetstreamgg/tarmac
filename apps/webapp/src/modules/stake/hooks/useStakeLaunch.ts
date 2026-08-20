@@ -134,7 +134,10 @@ export function useStakeLaunch({
     skyAmount: lockAmount,
     usdsAmount,
     shouldUseBatch,
-    enabled: enabled && calldata.length > 0,
+    // The urn-index read must have resolved: calldata built on the 0n fallback
+    // targets urn 0 — an existing user's live position. The engine's open()
+    // index assertion would revert it in simulation, but don't rely on that.
+    enabled: enabled && currentUrnIndex !== undefined && calldata.length > 0,
     ...txCallbacks
   });
 

@@ -14,6 +14,8 @@ const h = vi.hoisted(() => ({
   // L2 PSM mocks: the sUSDS→token converted balance (withdraw source) and the
   // sUSDS-in ceiling for a specific withdraw, plus the supply slippage floor.
   convertedValue: 0n as bigint,
+  // The converted-balance preview read is still in flight (its value is the 0n fallback).
+  previewLoading: false,
   maxAmountIn: 0n as bigint,
   minAmountOut: 0n as bigint,
   // Mainnet USDC supply gate (PSM wrapper reads): open module by default.
@@ -87,7 +89,7 @@ vi.mock('@/hooks', async importOriginal => {
     // it stays disabled here; stubbed only to keep the read out of real wagmi.
     useReadSavingsUsds: () => ({ data: undefined }),
     // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
-    usePreviewSwapExactIn: () => ({ value: h.convertedValue }),
+    usePreviewSwapExactIn: () => ({ value: h.convertedValue, isLoading: h.previewLoading }),
     usePreviewSwapExactOut: () => ({ value: h.maxAmountIn }),
     // Mainnet USDC supply gate: the PSM wrapper's live / fee / halt switches.
     // Default to an open module (live, zero fee, nothing halted).
@@ -451,6 +453,7 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     // the default USDS destination is 18-dec). Proves withdraw caps on the converted
     // balance, not the 100-USDS position.
     h.convertedValue = 200n * 10n ** 18n;
+    h.previewLoading = false;
     h.maxAmountIn = 7n * 10n ** 18n; // sUSDS-in ceiling for a specific withdraw
     h.minAmountOut = 49n * 10n ** 17n; // 4.9 sUSDS slippage floor
     h.psmLive = 1n;
@@ -511,6 +514,18 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     // The whole sUSDS balance is handed to the engine for swapExactIn (no dust).
     expect(h.launchParams?.sUsdsBalance).toBe(h.walletBalance);
     expect(lastDisabled()).toBe(false);
+  });
+
+  it('holds the withdraw balance and validation while the sUSDS→token preview is in flight', () => {
+    // The sUSDS balance has landed but the PSM preview that values it in the
+    // destination token has not — its 0n fallback must not read as "Balance: 0.00"
+    // or flag typed amounts as insufficient (APP-491).
+    h.previewLoading = true;
+    h.convertedValue = 0n;
+    renderForm('withdraw');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '150' } });
+    expect(screen.queryByTestId('savings-modal-amount-error')).toBeNull();
+    expect(lastDisabled()).toBe(true);
   });
 
   it('caps a specific L2 withdraw via the sUSDS-in ceiling (swapExactOut)', () => {

@@ -101,10 +101,10 @@ describe('useBundleFeeState', () => {
   });
 });
 
-const renderValue = (data: NetworkFeeData | undefined, state: ReturnType<typeof stateOf>) =>
+const renderValue = (data: NetworkFeeData | undefined, state: ReturnType<typeof stateOf>, loading = false) =>
   render(
     <I18nWidgetProvider locale="en">
-      <NetworkFeeValue fee={data} state={state} />
+      <NetworkFeeValue fee={data} state={state} loading={loading} />
     </I18nWidgetProvider>
   );
 
@@ -157,6 +157,31 @@ describe('NetworkFeeValue', () => {
     mocks.batchEnabled = true;
     renderValue(undefined, stateOf(2, undefined, true));
     expect(await screen.findByTestId('bundle-toggle-badge')).toBeTruthy();
-    expect(screen.getByText('–')).toBeTruthy();
+    // Failed reads as failed, not as the not-applicable dash (APP-491).
+    expect(screen.getByTestId('network-fee-failed')).toBeTruthy();
+  });
+
+  it('draws the skeleton while the estimate is in flight (APP-491)', async () => {
+    renderValue(undefined, stateOf(1, undefined), true);
+    expect(await screen.findByTestId('network-fee-loading')).toBeTruthy();
+    expect(screen.queryByText('–')).toBeNull();
+  });
+
+  it('says the estimate failed instead of a dash (APP-491)', async () => {
+    // One call → no bundling badge; the failed marker stands alone.
+    renderValue(undefined, stateOf(1, undefined, true));
+    expect(await screen.findByTestId('network-fee-failed')).toBeTruthy();
+    expect(screen.getByText('Unavailable')).toBeTruthy();
+    expect(screen.queryByText('–')).toBeNull();
+  });
+
+  it('keeps a held figure through a failed refetch', async () => {
+    // `keepPreviousData` can hand back the last estimate alongside a new error —
+    // the figure wins over the failed marker.
+    const data = fee({ isBatch: false });
+    mocks.batchSupported = false;
+    renderValue(data, stateOf(1, data, true), false);
+    expect(await screen.findByText('$0.11')).toBeTruthy();
+    expect(screen.queryByTestId('network-fee-failed')).toBeNull();
   });
 });

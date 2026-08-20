@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { useChainId } from 'wagmi';
 import { ArrowRight } from 'lucide-react';
 import type { NetworkFeeData } from '@/hooks';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
@@ -53,6 +54,8 @@ export type ModalGridCellHints = {
   action?: React.ReactNode;
   /** Interactive element after the label (the upgrade Penalty info popover). */
   labelAction?: React.ReactNode;
+  /** Draw the skeleton in place of the value while its underlying read is unresolved. */
+  loading?: boolean;
 };
 
 /**
@@ -160,6 +163,10 @@ function CellToken({ symbol, ring }: { symbol: string; ring?: 'default' | 'morph
 
 /** Renders one grid cell's value: optional icons, then a single value or the before→after delta. */
 export function CellValue({ cell }: { cell: ModalGridCell }) {
+  if (cell.loading) {
+    return <Skeleton className="h-4 w-16 rounded" data-testid="cell-loading" />;
+  }
+
   const icon = cell.network ? (
     <NetworkIcon chainId={cell.networkChainId} />
   ) : cell.trend ? (
@@ -239,6 +246,8 @@ function LabelBadge({ text }: { text: string }) {
 export type ModalGridFee = {
   fee?: NetworkFeeData;
   state: BundleFeeState;
+  /** `useNetworkFee().isLoading` — draws the skeleton while the estimate is in flight. */
+  loading?: boolean;
 };
 
 /** Maps builder rows to `ModalSummaryGrid` cells; test ids are `${testIdPrefix}-${label}`. */
@@ -267,7 +276,7 @@ export const toGridCells = (
         ),
         testId: `${testIdPrefix}-${cell.label}`,
         content: isFeeCell ? (
-          <NetworkFeeValue fee={networkFee.fee} state={networkFee.state} />
+          <NetworkFeeValue fee={networkFee.fee} state={networkFee.state} loading={networkFee.loading} />
         ) : (
           <CellValue cell={cell} />
         )

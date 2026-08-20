@@ -56,7 +56,7 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { parseAmountInput } from '@/lib/amountInput';
-import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { formatPriceImpact } from '../utils/priceImpact';
 import { buildPendleEntryRows, buildPendleReviewRows } from './pendleModalRows';
 
@@ -123,8 +123,10 @@ export function PendleModalForm({
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
   const available = isSupply ? (walletBalance?.value ?? 0n) : ptBalance;
 
-  const insufficient = amount > available;
-  const amountReady = isConnected && amount > 0n && !insufficient;
+  // Never validate against the unresolved balance's 0n fallback.
+  const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
+  const insufficient = balanceKnown && amount > available;
+  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient;
 
   const { slippage, setSlippage, defaultSlippage } = usePendleSlippage(
     isSupply ? PendleFlow.BUY : PendleFlow.WITHDRAW
@@ -158,7 +160,11 @@ export function PendleModalForm({
     return needsAllowance ? [{ label: t`Approve`, tokenSymbol: inputSymbol }, convertStep] : [convertStep];
   }, [isSupply, needsAllowance, inputSymbol]);
 
-  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
+  const {
+    data: quote,
+    isLoading: isFetchingQuote,
+    error: quoteError
+  } = useQuotePendleConvert({
     side,
     marketAddress: market.marketAddress,
     inputToken: isSupply ? selectedAddress : market.ptToken,
@@ -289,14 +295,35 @@ export function PendleModalForm({
     }
   });
 
-  const prepareErrorMessage = useMemo(
-    () => pendlePrepareErrorMessage(writeHook.error?.message),
-    [writeHook.error]
+  // Quote failures win over write-layer prepare failures — an outage or
+  // no-route means there's nothing to prepare — but only once no usable quote
+  // remains: a failed background poll while the previous quote is still within
+  // TTL must not paint an outage banner over an enabled Confirm. The buy/sell
+  // slippage control lives on the review screen (no header gear), hence the
+  // location-specific hint.
+  const quoteErrorMessage = useMemo(
+    () => (quote ? undefined : pendleQuoteErrorMessage(quoteError?.message)),
+    [quote, quoteError]
   );
+  const prepareErrorMessage = useMemo(
+    () =>
+      !writeHook.prepared
+        ? pendlePrepareErrorMessage(
+            writeHook.error?.message,
+            t`Current market price exceeds your slippage tolerance. Adjust slippage on the review screen, or wait for the quote to refresh.`
+          )
+        : undefined,
+    [writeHook.prepared, writeHook.error]
+  );
+  const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls: writeHook.calls ?? [],
     chainId,
     shouldUseBatch: !!writeHook.isBatch,
@@ -310,12 +337,14 @@ export function PendleModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -491,6 +520,7 @@ export function PendleModalForm({
     sessionId,
     execute: writeHook.execute,
     confirmDisabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps
@@ -509,7 +539,7 @@ export function PendleModalForm({
         disabled={!isConnected}
         balance={
           <>
-            <Trans>Balance</Trans>: {isConnected ? balanceDisplay : NO_VALUE}
+            <Trans>Balance</Trans>: {isConnected && balanceKnown ? balanceDisplay : NO_VALUE}
           </>
         }
         onPercent={setPercentAmount}
@@ -536,12 +566,6 @@ export function PendleModalForm({
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
 
       {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
-
-      {prepareErrorMessage && amountReady && (
-        <Text className="text-error text-sm" data-testid="pendle-modal-error">
-          {prepareErrorMessage}
-        </Text>
-      )}
     </div>
   );
 

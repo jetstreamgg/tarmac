@@ -105,10 +105,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   });
 
   // Map raw revert messages to user-friendly copy — shared with the buy/sell
-  // modal so users see consistent guidance across all three flows.
+  // modal so users see consistent guidance across all three flows. Only while
+  // unprepared, so a recovered simulation drops the stale message.
   const prepareErrorMessage = useMemo<string | undefined>(
-    () => pendlePrepareErrorMessage(writeHook.error?.message),
-    [writeHook.error]
+    () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
+    [writeHook.prepared, writeHook.error]
   );
 
   const transactionContent = useMemo(

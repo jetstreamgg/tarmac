@@ -15,6 +15,7 @@ import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useRewardsLaunch, type RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
@@ -85,7 +86,9 @@ export function RewardsModalForm({
     value,
     amount,
     available,
+    availableKnown,
     position,
+    positionKnown,
     isZero,
     insufficient,
     amountReady,
@@ -96,12 +99,17 @@ export function RewardsModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, calls, isBatch } = useRewardsLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useRewardsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: isBatch,
@@ -115,12 +123,14 @@ export function RewardsModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the savings form keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -147,7 +157,8 @@ export function RewardsModalForm({
     hasAmount: !isZero,
     earningsBefore: earnings(positionUsd),
     earningsAfter: earnings(positionAfterUsd),
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE,
+    positionLoading: isConnected && !positionKnown
   };
   const rows = isSupply
     ? buildRewardsSupplyModalRows({ ...entryInput, rewardsIn: rewardTokenSymbol })
@@ -229,6 +240,7 @@ export function RewardsModalForm({
     sessionId,
     execute,
     confirmDisabled: disabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,
@@ -248,7 +260,7 @@ export function RewardsModalForm({
         balance={
           <>
             <Trans>Balance</Trans>:{' '}
-            {isConnected
+            {isConnected && availableKnown
               ? formatNumber(parseFloat(formatUnits(available, decimals)), { maxDecimals: 2 })
               : NO_VALUE}
           </>
