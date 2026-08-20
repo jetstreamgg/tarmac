@@ -1800,7 +1800,7 @@ function HeadersSection() {
           </p>
           <div className="flex items-center justify-between gap-4">
             <PageHeading size="md" tag="h3">
-              Your Stablecoin Earnings
+              Your Stablecoin Savings
             </PageHeading>
             <HeaderNetworkPill label="All networks" />
           </div>
@@ -2025,7 +2025,7 @@ function BannersSection() {
           }
           heading={
             <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
-              <BannerAccent>Connect your wallet</BannerAccent> to see your balances and start earning
+              <BannerAccent>Connect your wallet</BannerAccent> to see your balances and get started
             </p>
           }
           subtitle={
@@ -2070,7 +2070,7 @@ function BannersSection() {
           illustration={<img src="/illustrations/illustration-savings-2.png" alt="" className="size-full" />}
           heading={
             <p className="font-circle text-fgPrimary max-w-[480px] text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
-              <BannerAccent>$5.93b in stablecoins</BannerAccent> already earning the Sky Savings Rate
+              <BannerAccent>$5.93b in stablecoins</BannerAccent> already accruing the Sky Savings Rate
             </p>
           }
           subtitle={
@@ -2081,7 +2081,7 @@ function BannersSection() {
           }
           action={
             <Button variant="primary" size="xl">
-              Simulate earnings
+              Simulate your savings
             </Button>
           }
         />

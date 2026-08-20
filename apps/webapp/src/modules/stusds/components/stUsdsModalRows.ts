@@ -55,7 +55,7 @@ export function buildStUsdsEntryRows(input: StUsdsEntryRowInput): StUsdsModalGri
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)', token: 'USDS' },
+        { label: 'Est. 1Y yield (at current rate)', token: 'USDS' },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
@@ -110,7 +110,7 @@ export function buildStUsdsReviewRows(
           { kind: 'single', label: "You'll receive", value: input.receive, token: 'USDS' },
           {
             kind: 'single',
-            label: 'Est. earnings (1Y)',
+            label: 'Est. 1Y yield (at current rate)',
             value: input.estEarnings,
             trend: true,
             trailingToken: 'USDS'

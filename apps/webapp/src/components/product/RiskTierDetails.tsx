@@ -76,7 +76,7 @@ const RISK_PROFILE_DETAILS: Record<
   },
   rewards: {
     description: (
-      <Trans>Supply directly to Sky Protocol and earn rewards. Reward rates vary with emissions.</Trans>
+      <Trans>Supply directly to Sky Protocol to receive rewards. Reward rates vary with emissions.</Trans>
     ),
     exposureTokens: ['USDS'],
     liquidationRisk: <Trans>None</Trans>
@@ -84,7 +84,7 @@ const RISK_PROFILE_DETAILS: Record<
   'rewards-sky': {
     description: (
       <Trans>
-        Supply to Sky Protocol and earn SKY tokens. The reward rate is set by Sky Protocol governance and
+        Supply to Sky Protocol to receive SKY tokens. The reward rate is set by Sky Protocol governance and
         distributed proportionally to the supplied USDS.
       </Trans>
     ),
@@ -94,7 +94,7 @@ const RISK_PROFILE_DETAILS: Record<
   'rewards-spk': {
     description: (
       <Trans>
-        Supply to Sky Protocol and earn SPK tokens. The reward rate is set by Sky Protocol governance and
+        Supply to Sky Protocol to receive SPK tokens. The reward rate is set by Sky Protocol governance and
         distributed proportionally to the supplied USDS.
       </Trans>
     ),
@@ -104,7 +104,7 @@ const RISK_PROFILE_DETAILS: Record<
   'rewards-grove': {
     description: (
       <Trans>
-        Supply to Sky Protocol and earn GROVE tokens. The reward rate is set by Sky Protocol governance and
+        Supply to Sky Protocol to receive GROVE tokens. The reward rate is set by Sky Protocol governance and
         distributed proportionally to the supplied USDS.
       </Trans>
     ),
@@ -114,7 +114,7 @@ const RISK_PROFILE_DETAILS: Record<
   'rewards-cle': {
     description: (
       <Trans>
-        Supply to Sky Protocol and earn Chronicle Points. Point distribution and related opportunities are
+        Supply to Sky Protocol to receive Chronicle Points. Point distribution and related opportunities are
         managed by Chronicle.
       </Trans>
     ),
@@ -145,8 +145,8 @@ const RISK_PROFILE_DETAILS: Record<
     // PLACEHOLDER — this vault has no row in the APP-396 risk sheet.
     description: (
       <Trans>
-        Supply USDT and earn savings powered by Sky Protocol, with instant liquidity. Returns vary with the
-        Sky Savings Rate.
+        Supply USDT to access savings powered by Sky Protocol, with instant liquidity. The rate tracks the Sky
+        Savings Rate and is variable.
       </Trans>
     ),
     exposureTokens: ['sUSDS'],

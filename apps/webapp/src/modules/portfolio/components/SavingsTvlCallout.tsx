@@ -59,7 +59,7 @@ export function SavingsTvlCallout({
             data-testid={tvlUsd === undefined ? 'savings-tvl-skeleton' : undefined}
           >
             <Trans>
-              <TvlFigure tvlUsd={tvlUsd} /> in stablecoins already earning the Sky Savings Rate
+              <TvlFigure tvlUsd={tvlUsd} /> in stablecoins already accruing the Sky Savings Rate
             </Trans>
           </span>
         </Heading>
@@ -81,7 +81,7 @@ export function SavingsTvlCallout({
           setOpen(true);
         }}
       >
-        <Trans>Simulate earnings</Trans>
+        <Trans>Simulate your savings</Trans>
       </Button>
 
       <SimulateEarningsModal open={open} onOpenChange={setOpen} savingsRate={savingsRate ?? 0} />

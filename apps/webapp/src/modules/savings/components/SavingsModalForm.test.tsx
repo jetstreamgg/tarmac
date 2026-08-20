@@ -201,7 +201,7 @@ const lastToast = () => {
   return withToast.at(-1)?.[1].toast;
 };
 
-const FIGMA_ROWS = ['Savings rate', 'Network', 'Supply', 'Est. earnings (1Y)', 'Network fee'];
+const FIGMA_ROWS = ['Savings rate', 'Network', 'Supply', 'Est. 1Y yield (at current rate)', 'Network fee'];
 
 describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   beforeEach(() => {
@@ -257,11 +257,11 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     expect(screen.queryByTestId('savings-modal-amount-error')).not.toBeNull();
   });
 
-  // The projection the "Est. earnings (1Y)" cell draws: the 100-USDS position at
+  // The projection the "Est. 1Y yield (at current rate)" cell draws: the 100-USDS position at
   // the mocked 3.75% rate, and what it becomes once an amount is entered.
   it('projects 1Y earnings from the savings rate, before→after', () => {
     renderForm('supply');
-    const cell = () => screen.getByTestId('savings-modal-row-Est. earnings (1Y)');
+    const cell = () => screen.getByTestId('savings-modal-row-Est. 1Y yield (at current rate)');
     // 100 USDS × 3.75%
     expect(cell().textContent).toContain('3.75');
 
@@ -414,9 +414,9 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     );
     // Scoped to this render — the entry body still on screen carries the same test id.
     // 50 USDS left at 3.75%.
-    expect(within(container).getByTestId('savings-modal-row-Est. earnings (1Y)').textContent).toContain(
-      '1.88'
-    );
+    expect(
+      within(container).getByTestId('savings-modal-row-Est. 1Y yield (at current rate)').textContent
+    ).toContain('1.88');
   });
 
   it('disables the confirm and flags an error when the amount exceeds the position', () => {

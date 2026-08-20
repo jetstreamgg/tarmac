@@ -57,7 +57,7 @@ export function SimulateEarningsModal({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 pr-12">
             <DialogTitle className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
-              <Trans>Simulate earnings with Sky Savings</Trans>
+              <Trans>Simulate your savings with the Sky Savings Rate</Trans>
             </DialogTitle>
             {/* DS Badges / Special — the rate reads green in the comp. */}
             <RateBadge>{formatDecimalPercentage(savingsRate)}</RateBadge>
@@ -73,7 +73,7 @@ export function SimulateEarningsModal({
         <div className="mt-2 flex flex-col gap-3">
           <div className="text-textSecondary flex items-center gap-1.5">
             <Text variant="medium" tag="span">
-              <Trans>Balance deposited</Trans>
+              <Trans>Balance supplied</Trans>
             </Text>
             <Info className="h-3.5 w-3.5" />
           </div>
@@ -88,7 +88,7 @@ export function SimulateEarningsModal({
               max={MAX_BALANCE}
               step={STEP}
               onValueChange={([value]) => setBalance(value)}
-              aria-label="Balance deposited"
+              aria-label="Balance supplied"
             />
             <div className="text-fgSecondary flex items-center gap-4 text-xs">
               <span>$50k</span>
