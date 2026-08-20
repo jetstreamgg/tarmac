@@ -30,10 +30,19 @@ export type EarnTableRowItem = {
   supply?: ReactNode;
   /** Maturity chip text for fixed-yield rows (e.g. "18 Jun 2026"). */
   maturityLabel?: string;
+  /** Product-status suffix on the subline (the "Requires action" rows' orange "Matured", 2251:50832). */
+  statusLabel?: ReactNode;
   /** Stacked network icons slot. */
   network?: ReactNode;
-  /** Selects the risk tier + details copy (APP-396) — the Risk cell derives everything from it. */
-  riskProfile: EarnRiskProfileId;
+  /**
+   * Selects the risk tier + details copy (APP-396) — the Risk cell derives
+   * everything from it. Absent on "Requires action" rows, whose Risk cell
+   * (like their rate/TVL cells) is a dash: the product no longer accepts
+   * deposits, so its risk tier is moot.
+   */
+  riskProfile?: EarnRiskProfileId;
+  /** Mobile expanded-card primary CTA label; defaults to "Supply". */
+  ctaLabel?: ReactNode;
   rate: string;
   rate30d: string;
   tvl: string;
@@ -130,6 +139,12 @@ function TokenCell({ row, dimmed }: { row: EarnTableRowItem; dimmed?: boolean })
               {row.maturityLabel}
             </>
           )}
+          {row.statusLabel && (
+            <>
+              <span aria-hidden>·</span>
+              {row.statusLabel}
+            </>
+          )}
         </>
       }
     />
@@ -218,10 +233,12 @@ function EarnCardList({
                       : []),
                     {
                       label: <Trans>Risk</Trans>,
-                      value: (
+                      value: row.riskProfile ? (
                         <Dim dimmed={dimmed}>
                           <RiskTierDetailsTrigger profile={row.riskProfile} />
                         </Dim>
+                      ) : (
+                        <CellEmpty />
                       )
                     },
                     {
@@ -250,7 +267,7 @@ function EarnCardList({
                       className="flex-1"
                       onClick={() => onRowSelect?.(row.id)}
                     >
-                      <Trans>Supply</Trans>
+                      {row.ctaLabel ?? <Trans>Supply</Trans>}
                     </Button>
                     <Button
                       variant="secondary"
@@ -361,9 +378,13 @@ export function EarnTable({
               <Dim dimmed={dimmed}>{row.network}</Dim>
             </TableCell>
             <TableCell>
-              <Dim dimmed={dimmed}>
-                <RiskTierDetailsTrigger profile={row.riskProfile} />
-              </Dim>
+              {row.riskProfile ? (
+                <Dim dimmed={dimmed}>
+                  <RiskTierDetailsTrigger profile={row.riskProfile} />
+                </Dim>
+              ) : (
+                <CellEmpty />
+              )}
             </TableCell>
             <TableCell>
               <NumericValue value={row.rate} isLoading={row.isLoading} />
