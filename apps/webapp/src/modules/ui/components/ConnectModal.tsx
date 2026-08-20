@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Children, useCallback, useEffect, useRef, useState } from 'react';
 import {
   useConnect,
   useConnectors,
@@ -176,6 +176,7 @@ function WalletSearchInput({
 function FadingScrollList({ className, children }: { className?: string; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [faded, setFaded] = useState(false);
+  const rowCount = Children.count(children);
 
   const measure = useCallback(() => {
     const el = ref.current;
@@ -195,7 +196,11 @@ function FadingScrollList({ className, children }: { className?: string; childre
     // filtered list does — watch the content too.
     Array.from(el.children).forEach(child => observer.observe(child));
     return () => observer.disconnect();
-  }, [measure, children]);
+    // Keyed on the row count, not on `children` itself: `children` is a fresh
+    // array every render, which would tear the observer down and rebuild it on
+    // every keystroke in the search field. The rows are uniform, so the scroll
+    // height only moves when their number does.
+  }, [measure, rowCount]);
 
   return (
     <div

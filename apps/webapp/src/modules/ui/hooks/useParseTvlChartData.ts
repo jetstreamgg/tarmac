@@ -143,7 +143,9 @@ function generateDataPoints(
     intervalOverride ||
     resolveSampleInterval(
       timeFrame,
-      sortedTvl.map(item => item.blockTimestamp)
+      sortedTvl.map(item => item.blockTimestamp),
+      startTimestamp,
+      endTimestamp
     );
   const dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval, decimals);
 

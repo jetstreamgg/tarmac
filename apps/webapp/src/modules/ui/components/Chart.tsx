@@ -939,8 +939,15 @@ export function Chart({
   const isZeroPercentage = formattedPercentage.replace('-', '').replace(/%/g, '') === '0';
   // A flat period has no direction to report, so the pill drops out rather than
   // claiming "+0%"; so does a still-loading series, whose change is meaningless.
+  //
+  // A zero first sample is not a real starting level: `interpolateDataPoints`
+  // seeds the window at 0 for any span that precedes the feed's first record,
+  // which happens whenever the history is shorter than the timeframe. Measured
+  // against it the change comes out in the billions of percent, so the pill
+  // stays away rather than quote a number the series cannot support.
+  const hasBaseline = (data[0]?.value ?? 0) > 0 || isPercentage;
   const trendBadge =
-    showTrend && !isLoading && !isZeroPercentage && data.length > 1 ? (
+    showTrend && !isLoading && !isZeroPercentage && data.length > 1 && hasBaseline ? (
       <TrendBadge percentage={percentage} formatted={formattedPercentage.replace('-', '')} />
     ) : undefined;
   const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>('w');

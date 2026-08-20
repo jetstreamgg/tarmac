@@ -40,6 +40,9 @@ const medianCadence = (timestamps: number[]): number => {
   return gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0;
 };
 
+/** Fewest segments a plot may be reduced to, however sparse the feed is. */
+const MIN_SEGMENTS = 6;
+
 /**
  * The interval a series should actually be sampled at: the timeframe's, but
  * never finer than the source's own cadence.
@@ -50,6 +53,28 @@ const medianCadence = (timestamps: number[]): number => {
  * series as a staircase. The BA Labs `overall/historic/` endpoint behind the
  * Portfolio statistics chart is exactly that: one row per day. Charts fed from
  * the indexer, whose rows are per-event, do get the finer sampling.
+ *
+ * Cadence is measured from the records that fall *inside* the window, and the
+ * result is capped so the window always keeps at least `MIN_SEGMENTS` samples.
+ * Both guards matter: callers prepend the last record from before the window
+ * (so the plot starts at the right level), and on a sparse series that leading
+ * gap can be months wide — left in, it would set the interval wider than the
+ * whole window and collapse the chart to a single point, which draws no line
+ * at all.
  */
-export const resolveSampleInterval = (timeFrame: TimeFrame, timestamps: number[]): number =>
-  Math.max(getTimeFrameInterval(timeFrame), medianCadence(timestamps));
+export const resolveSampleInterval = (
+  timeFrame: TimeFrame,
+  timestamps: number[],
+  startTimestamp: number,
+  endTimestamp: number
+): number => {
+  const base = getTimeFrameInterval(timeFrame);
+  const inWindow = timestamps.filter(t => t >= startTimestamp && t <= endTimestamp);
+  const interval = Math.max(base, medianCadence(inWindow));
+
+  const window = endTimestamp - startTimestamp;
+  if (window <= 0) return interval;
+  // Never cap below `base` — a sparse feed must not be upsampled back into the
+  // staircase the cadence floor exists to prevent.
+  return Math.min(interval, Math.max(base, window / MIN_SEGMENTS));
+};

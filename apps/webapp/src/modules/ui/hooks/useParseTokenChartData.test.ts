@@ -64,6 +64,20 @@ describe('useParseTokenChartData', () => {
     expect(spacing(parse('w', hourly))).toBe(4 * HOUR);
   });
 
+  // The callers prepend the last record from *before* the window so the plot
+  // starts at the right level. Measuring cadence over that leading gap set the
+  // interval wider than the window itself and collapsed the chart to a single
+  // point, which recharts draws as no line at all.
+  it('does not collapse a sparse series to a single point', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const sparse = [
+      { blockTimestamp: now - 180 * DAY, amount: 1n * 10n ** 18n, holders: 0 },
+      { blockTimestamp: now - 3 * DAY, amount: 2n * 10n ** 18n, holders: 0 }
+    ];
+
+    expect(parse('w', sparse).length).toBeGreaterThanOrEqual(6);
+  });
+
   it('still marks a min and a max on the long ranges', () => {
     const points = parse('all', dailySeries(400));
 

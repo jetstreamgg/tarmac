@@ -98,7 +98,9 @@ function generateDataPoints(
     // into a staircase.
     const interval = resolveSampleInterval(
       timeFrame,
-      sortedChartData.map(item => item.blockTimestamp)
+      sortedChartData.map(item => item.blockTimestamp),
+      startTimestamp,
+      endTimestamp
     );
     dataPoints = interpolateDataPoints(sortedChartData, startTimestamp, endTimestamp, interval, dataType);
   }

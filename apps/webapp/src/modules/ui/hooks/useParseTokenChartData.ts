@@ -137,7 +137,9 @@ function generateDataPoints(
   // `useParseTvlChartData`) plotted the real daily shape (APP-456 #5).
   const interval = resolveSampleInterval(
     timeFrame,
-    sortedTvl.map(item => item.blockTimestamp)
+    sortedTvl.map(item => item.blockTimestamp),
+    startTimestamp,
+    endTimestamp
   );
   const dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval);
 
