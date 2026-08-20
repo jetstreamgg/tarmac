@@ -14,9 +14,7 @@ import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
-import { useNetworkFee } from '@/hooks';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 import { SavingsOriginSelect } from './SavingsOriginSelect';
@@ -28,6 +26,7 @@ import {
 } from './savingsModalRows';
 import { NO_VALUE } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
 // `SavingsModalPreset` now lives with the shared form model; re-exported here so the
 // modal trigger (`useSavingsModal`) and tests keep importing it from this module.
@@ -103,36 +102,7 @@ export function SavingsModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
-    calls,
-    chainId,
-    shouldUseBatch: isBatch,
-    enabled: amountReady
-  });
-
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
-  // every render, so depending on its identity would give the review breakdown a
-  // new identity every render — and the live push that carries it would re-enter
-  // the provider on each of its re-renders (the update loop the modal forms guard
-  // against). Same field-by-field list the convert launch hook keeps.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
-    [
-      networkFee?.formatted,
-      networkFee?.batchSaving,
-      networkFeeLoading,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
-    ]
-  );
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
 
   const networkName = useNetworkName(chainId);
   // The position is always USDS-denominated (18-dec — on L2 `userSavingsBalance` is
@@ -171,7 +141,7 @@ export function SavingsModalForm({
             : undefined,
         earningsBefore: projectEarnings(position),
         earningsAfter: projectEarnings(positionAfter),
-        networkFee: networkFee?.formatted ?? NO_VALUE
+        networkFee: feeCell.fee?.formatted ?? NO_VALUE
       })
     : buildWithdrawModalRows({
         savingsRate: apyDisplay,
@@ -181,7 +151,7 @@ export function SavingsModalForm({
         hasAmount: !isZero,
         earningsBefore: projectEarnings(position),
         earningsAfter: projectEarnings(positionAfter),
-        networkFee: networkFee?.formatted ?? NO_VALUE
+        networkFee: feeCell.fee?.formatted ?? NO_VALUE
       });
 
   // Review breakdown (Figma 859:36154): the amount hero the wallet screen also
@@ -209,7 +179,7 @@ export function SavingsModalForm({
           rate: apyDisplay,
           withdrawal: i18n._(withdrawalWording('savings', 'supply')),
           network: networkName,
-          networkFee: networkFee?.formatted ?? NO_VALUE
+          networkFee: feeCell.fee?.formatted ?? NO_VALUE
         })
       : buildWithdrawReviewRows({
           youReceive,
@@ -219,7 +189,7 @@ export function SavingsModalForm({
           rate: apyDisplay,
           withdrawal: i18n._(withdrawalWording('savings', 'withdraw')),
           network: networkName,
-          networkFee: networkFee?.formatted ?? NO_VALUE
+          networkFee: feeCell.fee?.formatted ?? NO_VALUE
         });
     return (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`savings-modal-${flow}-review`}>
@@ -240,7 +210,6 @@ export function SavingsModalForm({
     flow,
     transactionScreenContent,
     feeCell,
-    networkFee,
     i18n
   ]);
 
@@ -325,7 +294,7 @@ export function SavingsModalForm({
 
       <ModalSummaryGrid rows={toGridCells(rows, 'savings-modal-row', feeCell)} dividerClassName="h-8" />
 
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

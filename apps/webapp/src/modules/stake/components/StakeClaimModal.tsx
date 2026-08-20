@@ -8,8 +8,7 @@ import { i18n } from '@lingui/core';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee } from '@/hooks';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -92,17 +91,7 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
   });
 
   // Read-only: the cell shows a dash until this resolves, and neither CTA waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
-    calls,
-    chainId,
-    shouldUseBatch: isBatch
-  });
-
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch });
 
   const claimDisabled = rewards.length === 0 || !plainPrepared || plainLoading;
   const restakeDisabled = rewards.length === 0 || !restakePrepared || restakeLoading;
@@ -169,12 +158,12 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
   const gridRows = toGridCells(
     [
       [
-        { label: NETWORK_FEE_LABEL, kind: 'single', value: networkFee?.formatted ?? NO_VALUE },
+        { label: NETWORK_FEE_LABEL, kind: 'single', value: feeCell.fee?.formatted ?? NO_VALUE },
         { label: t`Network`, kind: 'single', value: networkName, network: true }
       ]
     ],
     'stake-claim-row',
-    { fee: networkFee, state: bundleState, loading: networkFeeLoading }
+    feeCell
   );
 
   const body = (
@@ -193,7 +182,7 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
 
       {rewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
 
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

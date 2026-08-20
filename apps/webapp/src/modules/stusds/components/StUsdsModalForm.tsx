@@ -7,8 +7,6 @@ import { useLingui } from '@lingui/react';
 import { StUsdsProviderType, TOKENS, stUsdsAddress } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
@@ -28,6 +26,7 @@ import { StUsdsProviderNotice } from './StUsdsProviderNotice';
 import { buildStUsdsEntryRows, buildStUsdsReviewRows } from './stUsdsModalRows';
 import { NO_VALUE } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
 export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
@@ -98,35 +97,7 @@ export function StUsdsModalForm({
   const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
-    calls,
-    shouldUseBatch: isBatch,
-    enabled: amountReady
-  });
-
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
-  // every render, so depending on its identity would give the review breakdown a
-  // new identity every render — and the live push that carries it would re-enter
-  // the provider on each of its re-renders (the update loop the modal forms guard
-  // against). Same field-by-field list the convert launch hook keeps.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
-    [
-      networkFee?.formatted,
-      networkFee?.batchSaving,
-      networkFeeLoading,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
-    ]
-  );
+  const feeCell = useModalFeeCell({ calls, shouldUseBatch: isBatch, enabled: amountReady });
 
   const disabled =
     !amountReady ||
@@ -160,7 +131,7 @@ export function StUsdsModalForm({
     earningsBefore: projectEarnings(position),
     earningsAfter: projectEarnings(positionAfter),
     hasAmount: !isZero,
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: feeCell.fee?.formatted ?? NO_VALUE
   });
 
   // Review breakdown: the from→to hero the wallet screen also draws, over the
@@ -196,7 +167,7 @@ export function StUsdsModalForm({
                 routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
                 withdrawal: i18n._(withdrawalWording('stusds', flow)),
                 network: networkName,
-                networkFee: networkFee?.formatted ?? NO_VALUE
+                networkFee: feeCell.fee?.formatted ?? NO_VALUE
               }),
               'stusds-modal-row',
               feeCell
@@ -227,7 +198,6 @@ export function StUsdsModalForm({
       isCurveRoute,
       networkName,
       feeCell,
-      networkFee,
       impactLapsed,
       impactPercent
     ]
@@ -317,7 +287,7 @@ export function StUsdsModalForm({
 
         <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row', feeCell)} dividerClassName="h-8" />
 
-        {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+        {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
 
         {needsImpactAcknowledgement && (
           <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">

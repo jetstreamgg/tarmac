@@ -3,8 +3,8 @@ import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useAvailableTokenRewardContracts, useNetworkFee, useTransactionFlow } from '@/hooks';
+import { useAvailableTokenRewardContracts, useTransactionFlow } from '@/hooks';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { formatUsd } from '@/utils';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -101,17 +101,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
-    calls,
-    chainId,
-    shouldUseBatch: !!flow.isBatch
-  });
-
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: !!flow.isBatch });
 
   // Disabled until there's something to send, no in-scope source is still preparing
   // (e.g. Merkl proofs mid-load, so we never claim a partial subset of the scope),
@@ -213,12 +203,12 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   const gridRows = toGridCells(
     [
       [
-        { label: NETWORK_FEE_LABEL, kind: 'single', value: networkFee?.formatted ?? NO_VALUE },
+        { label: NETWORK_FEE_LABEL, kind: 'single', value: feeCell.fee?.formatted ?? NO_VALUE },
         { label: t`Network`, kind: 'single', value: networkName, network: true }
       ]
     ],
     'claim-modal-row',
-    { fee: networkFee, state: bundleState, loading: networkFeeLoading }
+    feeCell
   );
 
   const body = (
@@ -248,7 +238,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
       {allRewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
 
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 
