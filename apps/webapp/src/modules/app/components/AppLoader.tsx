@@ -11,6 +11,7 @@ import {
 } from '@/lib/portfolioDecisionCache';
 import { useEarnMarketplace } from '@/hooks';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useStablecoinBalances } from '@/modules/portfolio/hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '@/modules/portfolio/hooks/useGeoVisibleRows';
 import { useGeoConfig } from '@/modules/geo-config';
@@ -120,10 +121,13 @@ export function useAppLoader(): {
   phase: AppLoaderPhase;
   coverMode: AppLoaderCoverMode;
   released: boolean;
+  /** False when the cover exited under an open transaction modal (APP-515). */
+  revealAnimated: boolean;
   endCover: () => void;
 } {
   const { status, address } = useConnection();
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
+  const { isModalOpen: txModalOpen } = useTransaction();
   const pathname = useRouterState({ select: s => s.location.pathname });
   const navigate = useNavigate();
 
@@ -238,7 +242,10 @@ export function useAppLoader(): {
 
   useEffect(() => {
     if (!instantTarget) return;
-    void navigate({ to: instantTarget.to, search: retainOnNavigate, replace: true });
+    // viewTransition: false — a cached-decision connect can land while the
+    // transaction modal is open, and the transition would flash the incoming
+    // page above its scrim (APP-515).
+    void navigate({ to: instantTarget.to, search: retainOnNavigate, replace: true, viewTransition: false });
   }, [instantTarget, navigate]);
 
   // The held cover's clock: minimum hold, then the safety cap.
@@ -252,7 +259,21 @@ export function useAppLoader(): {
     };
   }, [phase, coverMode]);
 
-  const endCover = useCallback(() => setPhase(p => (p === 'cover' ? 'reveal' : p)), []);
+  // A reveal under the transaction modal's frosted scrim skips the entrance
+  // animation (APP-515): the modal card returning is the only motion the user
+  // should see — content rising behind the frost reads as a flash of the page.
+  // Latched at release (not live) so closing the modal later never replays the
+  // entrance; a ref because endCover fires from animation callbacks.
+  const [revealAnimated, setRevealAnimated] = useState(true);
+  const txModalOpenRef = useRef(txModalOpen);
+  useEffect(() => {
+    txModalOpenRef.current = txModalOpen;
+  }, [txModalOpen]);
+
+  const endCover = useCallback(() => {
+    if (txModalOpenRef.current) setRevealAnimated(false);
+    setPhase(p => (p === 'cover' ? 'reveal' : p));
+  }, []);
 
   // Watchdog on the exiting cover (timed plays from the start; held once
   // `released` — until then the hold cap above is the bound): if the timeline
@@ -285,13 +306,17 @@ export function useAppLoader(): {
       });
       if (sort.surface && !released) {
         const target = landingFor(outcome);
-        if (target !== sort.surface) void navigate({ to: target, search: retainOnNavigate, replace: true });
+        // viewTransition: false — the swap happens under the cover (or the
+        // transaction modal's scrim), and a view transition's snapshots paint
+        // in the top layer ABOVE both, flashing the incoming page (APP-515).
+        if (target !== sort.surface)
+          void navigate({ to: target, search: retainOnNavigate, replace: true, viewTransition: false });
       }
     }
     setReleased(true);
   }, [sort, holdElapsed, decisionLoading, decisionError, address, depositedUsd, idleUsd, released, navigate]);
 
-  return { phase, coverMode, released, endCover };
+  return { phase, coverMode, released, revealAnimated, endCover };
 }
 
 /**
@@ -303,7 +328,8 @@ export function useAppLoader(): {
  */
 export function appLoaderRevealClasses(
   phase: AppLoaderPhase,
-  region: 'content' | 'chrome'
+  region: 'content' | 'chrome',
+  animated = true
 ): string | undefined {
   if (phase === 'off') return undefined;
   // Inert as well as invisible: opacity-0 alone keeps the hidden chrome and
@@ -311,6 +337,7 @@ export function appLoaderRevealClasses(
   // through (so a dialog opening during the cover — the terms modal mounts
   // above Layout — stays usable).
   if (phase === 'cover') return 'pointer-events-none opacity-0';
+  if (!animated) return undefined;
   return region === 'content' ? 'animate-app-loader-content-reveal' : 'animate-app-loader-chrome-reveal';
 }
 
