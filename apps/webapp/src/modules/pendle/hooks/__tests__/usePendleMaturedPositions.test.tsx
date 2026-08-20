@@ -84,11 +84,12 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
-import { usePendleMaturedPositions } from '../usePendleMaturedPositions';
+import { usePendleMaturedNetworkSwitch, usePendleMaturedPositions } from '../usePendleMaturedPositions';
 
-/** Probe rendering the hook's result as inspectable DOM. */
+/** Probe pairing the hooks the way PortfolioPositionsSection does. */
 function Probe() {
   const { maturedPositions, onPendleChain } = usePendleMaturedPositions();
+  usePendleMaturedNetworkSwitch(maturedPositions.length > 0);
   return (
     <div data-testid="probe" data-on-pendle-chain={onPendleChain}>
       {maturedPositions.map(({ market }) => (

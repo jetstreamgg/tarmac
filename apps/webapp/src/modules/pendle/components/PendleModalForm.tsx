@@ -325,9 +325,11 @@ export function PendleModalForm({
   );
   const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
 
+  // Simulate on the engine chain — the calls are built for it (mainnet, or the
+  // fork in dev), not necessarily the connected chain.
   const feeCell = useModalFeeCell({
     calls: writeHook.calls ?? [],
-    chainId,
+    chainId: engineChainId,
     shouldUseBatch: !!writeHook.isBatch,
     enabled: amountReady
   });

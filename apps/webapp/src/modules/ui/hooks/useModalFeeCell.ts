@@ -13,9 +13,8 @@ import type { ModalGridFee } from '@/components/product/ModalGridCells';
  * against).
  *
  * Read-only: the cell shows a skeleton until the estimate resolves; confirm
- * gating never waits on it. Extracted from the Pendle forms (APP-505); the
- * savings/vault/rewards/stusds/upgrade/convert forms carry the same block and
- * can migrate here.
+ * gating never waits on it. The savings/vault/rewards/stusds/upgrade/convert
+ * forms carry the same block inline and can migrate here.
  */
 export function useModalFeeCell(params: UseNetworkFeeParameters): ModalGridFee {
   const { data: fee, isLoading, error } = useNetworkFee(params);

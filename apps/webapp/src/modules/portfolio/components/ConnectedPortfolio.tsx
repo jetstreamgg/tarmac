@@ -4,7 +4,7 @@ import { useGeoConfig } from '@/modules/geo-config';
 import { useNavigate } from '@tanstack/react-router';
 import { mainnet } from 'viem/chains';
 import { Trans } from '@lingui/react/macro';
-import { useEarnMarketplace, useOverallSkyData } from '@/hooks';
+import { isPendleChain, useEarnMarketplace, useOverallSkyData } from '@/hooks';
 import { formatAddress, getChainIcon } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { ROUTES } from '@/lib/routes';
@@ -19,6 +19,7 @@ import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioC
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
+import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import { PortfolioRewardsSections } from './PortfolioRewardsSections';
 import { PortfolioTransactionsSection } from './PortfolioTransactionsSection';
@@ -71,6 +72,11 @@ export function ConnectedPortfolio() {
 
   const network = selectedNetwork === 'all' ? 'all' : Number(selectedNetwork);
   const suppliedView = buildSuppliedView(visibleRows, network);
+  // Matured PT rides beside suppliedView (the marketplace filters matured
+  // markets out, so it can't come from the rows). Mainnet-only, so a non-pendle
+  // network filter hides the cards like it hides mainnet positions.
+  const { maturedPositions: allMaturedPositions, isLoading: maturedLoading } = usePendleMaturedPositions();
+  const maturedPositions = network === 'all' || isPendleChain(network) ? allMaturedPositions : [];
   const idleView = buildIdleView(balances, network);
   // Best supply rate + venue count per token, for the idle table's rate badge.
   const idleSupplyInfo = buildIdleSupplyInfo(visibleRows);
@@ -122,14 +128,26 @@ export function ConnectedPortfolio() {
     if (!address || calloutLoading || isPositionsError || balancesError) return;
     writePortfolioDecision(address, {
       outcome: portfolioCallout(depositedUsd, idleTotalUsd),
-      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
+      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD && allMaturedPositions.length === 0 ? 'idle' : 'supplied'
     });
-  }, [address, calloutLoading, isPositionsError, balancesError, depositedUsd, idleTotalUsd]);
+  }, [
+    address,
+    calloutLoading,
+    isPositionsError,
+    balancesError,
+    depositedUsd,
+    idleTotalUsd,
+    allMaturedPositions.length
+  ]);
 
+  // Matured PT needs action (Claim) and renders only on Supplied, so it wins
+  // the default — and overrides a stale cached 'idle' from before maturity.
   const tab =
     userTab ??
-    cachedDecision?.tab ??
-    (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
+    (maturedPositions.length > 0
+      ? 'supplied'
+      : (cachedDecision?.tab ??
+        (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied')));
 
   const goToSavings = () => {
     setPendingNavIntent('card', ROUTES.EARN_SAVINGS);
@@ -233,6 +251,8 @@ export function ConnectedPortfolio() {
         <PortfolioPositionsSection
           suppliedView={suppliedView}
           suppliedLoading={isLoading}
+          maturedPositions={maturedPositions}
+          maturedLoading={maturedLoading}
           idleView={idleView}
           idleSupplyInfo={idleSupplyInfo}
           idleLoading={balancesLoading}

@@ -27,6 +27,7 @@ type PendleRedeemProps = {
   selectedOutputToken: Token;
   onOutputTokenChange: (token: Token) => void;
   quote?: PendleConvertQuote;
+  isFetchingQuote: boolean;
   /** Current slippage, formatted (e.g. "0.50%"). */
   slippageDisplay: string;
   /** Slippage mode badge text — "Auto" at the flow default, "Custom" otherwise. */
@@ -45,12 +46,10 @@ type PendleRedeemProps = {
 
 /**
  * Body of the matured-claim modal: the receive hero over the shared summary
- * grid, restyled from the legacy single-column overview onto the modal
- * primitives every other flow uses. No comp exists for this flow (APP-505
- * item 5) — the layout follows the reworked withdraw comps (2193:73598 /
- * 2193:73807). Slippage/price-impact cells appear only on aggregator routes;
- * a pure PT burn at the SY's expiry-frozen rate has no swap math (the reason
- * the old header gear — shown always — came out).
+ * grid. No comp exists for this flow — the layout follows the withdraw comps
+ * (Figma 2193:73598 / 2193:73807). Slippage/price-impact cells appear only on
+ * aggregator routes; a pure PT burn at the SY's expiry-frozen rate has no
+ * swap math.
  */
 export const PendleRedeem = ({
   market,
@@ -59,6 +58,7 @@ export const PendleRedeem = ({
   selectedOutputToken,
   onOutputTokenChange,
   quote,
+  isFetchingQuote,
   slippageDisplay,
   slippageMode,
   slippageAction,
@@ -70,6 +70,14 @@ export const PendleRedeem = ({
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const outDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
   const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
+  // Aggregator-ness derives from the token, not the quote: the slippage gear
+  // must stay reachable while no quote resolves (a too-tight tolerance can be
+  // the reason it doesn't), and only non-SY-accepted outputs route through one.
+  const outputAddress = selectedOutputToken.address[mainnet.id]?.toLowerCase();
+  const aggregator = market.syAcceptedTokens
+    ? !market.syAcceptedTokens.some(accepted => accepted.toLowerCase() === outputAddress)
+    : !!aggregatorName;
+  const quoteLoading = isFetchingQuote && !quote;
 
   const rows = buildPendleRedeemRows({
     product: `Pendle ${market.underlyingSymbol} (${ptSymbol})`,
@@ -84,13 +92,15 @@ export const PendleRedeem = ({
         testId="pendle-redeem-output-token"
       />
     ),
-    aggregator: !!aggregatorName,
+    aggregator,
+    quoteLoading,
     slippage: slippageDisplay,
     slippageMode,
     slippageAction,
     minReceived: quote ? formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE,
     receiveSymbol: selectedOutputToken.symbol,
     priceImpact: formatPriceImpact(quote?.priceImpact) ?? NO_VALUE,
+    routedVia: aggregatorName ? `Pendle redeem → ${aggregatorName}` : NO_VALUE,
     pendleFee:
       quote?.feeUsd !== undefined
         ? `$${formatNumber(quote.feeUsd, { maxDecimals: quote.feeUsd >= 1 ? 2 : 4 })}`
@@ -106,6 +116,7 @@ export const PendleRedeem = ({
         label={t`You'll claim`}
         amount={quote ? formatBigInt(quote.amountOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE}
         symbol={selectedOutputToken.symbol}
+        loading={quoteLoading}
         dataTestId="pendle-redeem-hero"
       />
 

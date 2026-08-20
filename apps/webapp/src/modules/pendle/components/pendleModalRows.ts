@@ -5,16 +5,11 @@
  * as the savings/vault builders: rows of shared `ModalGridCell`s, asserted in
  * `pendleModalRows.test.ts`.
  *
- * The comps drop the old position-total deltas for per-order economics: the
- * supply grids pin this order's maturity claim ("Claim at maturity") and
- * earnings, and the withdraw grids replace the rate rows with what the early
- * sell actually costs ("Lost on early withdrawal", red down-trend). Two
- * deliberate divergences carry over from the previous iteration: Price impact
- * stays (material AMM risk info, PR #1773) and the supply Withdrawal cell keeps
- * the risk-sheet wording over the comp's "Anytime" (single-sourced per
- * APP-447). "Min. received" is restored on both reviews (APP-505) — the
- * slippage floor the quote guarantees, which the comps' own disclosure ("your
- * final amount may be lower than shown") begs a number for.
+ * Deliberate divergences from the comps: Price impact stays (material AMM
+ * risk info, PR #1773), the supply Withdrawal cell keeps the risk-sheet
+ * wording over the comp's "Anytime" (single-sourced per APP-447), and
+ * "Min. received" appears on both reviews — the slippage floor the
+ * disclosure's "may be lower than shown" refers to.
  */
 
 import type { ReactNode } from 'react';
@@ -183,10 +178,9 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
 }
 
 /**
- * Display strings for the matured-claim modal. No comp exists for this flow
- * (APP-505 item 5) — the shape follows the reworked withdraw grids
- * (2193:73598 / 2193:73807) and the matured-position cards' "Claim" CTA
- * (2306:72334).
+ * Display strings for the matured-claim modal. No comp exists for this flow —
+ * the shape follows the withdraw grids (Figma 2193:73598 / 2193:73807) and the
+ * matured-position cards' "Claim" CTA (2306:72334).
  */
 export type PendleRedeemRowInput = {
   /** Product display name (e.g. "Pendle sUSDS (PT-sUSDS)"). */
@@ -205,6 +199,8 @@ export type PendleRedeemRowInput = {
    * at the expiry-frozen rate has none.
    */
   aggregator: boolean;
+  /** Quote still in flight — the quote-derived cells hold skeletons instead of dashes. */
+  quoteLoading: boolean;
   /** Current slippage, formatted. */
   slippage: string;
   /** Slippage mode badge text. */
@@ -217,6 +213,8 @@ export type PendleRedeemRowInput = {
   receiveSymbol: string;
   /** Quote price impact, formatted (positive = a cost to the user). */
   priceImpact: string;
+  /** Aggregator route description (e.g. "Pendle redeem → KyberSwap"). */
+  routedVia: string;
   /** Pendle's fee, formatted (e.g. "$0.04"). */
   pendleFee: string;
   /** Network the transaction runs on. */
@@ -230,14 +228,21 @@ export type PendleRedeemRowInput = {
 /**
  * Grid for the matured-claim modal: [Product | Claim amount], [Claim token |
  * Network], then — only on aggregator routes, where swap math exists —
- * [Slippage | Min. received], [Price impact | Pendle fee] before the fee row.
- * A pure redemption keeps just [Pendle fee | Network fee]: the slippage
- * control is deliberately absent there (redeeming to an SY-accepted token is
- * fixed-rate; a gear would imply a tolerance that cannot bind).
+ * [Slippage | Min. received], [Price impact | Routed via], [Pendle fee |
+ * Network fee]. A pure redemption keeps just [Pendle fee | Network fee]: the
+ * slippage control is deliberately absent there (redeeming to an SY-accepted
+ * token is fixed-rate; a gear would imply a tolerance that cannot bind), and
+ * so is the per-leg price-impact breakdown the legacy overview drew — the
+ * aggregate number plus the route line carry the risk info.
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
   const feeCell = networkFeeCell(input.networkFee);
-  const pendleFeeCell: ModalGridCell = { kind: 'single', label: 'Pendle fee', value: input.pendleFee };
+  const pendleFeeCell: ModalGridCell = {
+    kind: 'single',
+    label: 'Pendle fee',
+    value: input.pendleFee,
+    loading: input.quoteLoading
+  };
   return [
     [
       productCell(input.product, input.productSymbol),
@@ -249,9 +254,25 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
     ],
     ...(input.aggregator
       ? [
-          [slippageCell(input), minReceivedCell(input.minReceived, input.receiveSymbol)],
-          [{ kind: 'single' as const, label: 'Price impact', value: input.priceImpact }, pendleFeeCell],
-          [feeCell]
+          [
+            slippageCell(input),
+            { ...minReceivedCell(input.minReceived, input.receiveSymbol), loading: input.quoteLoading }
+          ],
+          [
+            {
+              kind: 'single' as const,
+              label: 'Price impact',
+              value: input.priceImpact,
+              loading: input.quoteLoading
+            },
+            {
+              kind: 'single' as const,
+              label: 'Routed via',
+              value: input.routedVia,
+              loading: input.quoteLoading
+            }
+          ],
+          [pendleFeeCell, feeCell]
         ]
       : [[pendleFeeCell, feeCell]])
   ];

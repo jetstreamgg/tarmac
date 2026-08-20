@@ -61,10 +61,8 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
       const ptName = `PT-${market.underlyingSymbol}`;
       launch({
         // Pre-maturity the only withdrawal IS an early one (matured positions
-        // go through the redeem flow), so the modal is titled by what the
-        // action really is and leads with the market-price disclosure
-        // (Figma 2193:73598 / 2193:73807 — the `review` subtitle renders on
-        // both first screens).
+        // go through the redeem flow); the `review` subtitle renders on both
+        // first screens (Figma 2193:73598 / 2193:73807).
         title: t`Early withdrawal`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {

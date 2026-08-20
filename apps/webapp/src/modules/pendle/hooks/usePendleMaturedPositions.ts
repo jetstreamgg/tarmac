@@ -18,29 +18,20 @@ export type PendleMaturedPosition = { market: PendleMarketConfig; ptBalance: big
 /**
  * Matured PT the connected user holds, per market (G6 — the marketplace
  * filters matured markets out, so the Portfolio matured cards are these
- * positions' only surface). Extracted from the retired PendleReadyToRedeemList
- * when the cards moved into the Supplied carousel (Figma 2306:72334).
- *
- * Balances are read from mainnet regardless of the connected chain, but the
- * redeem transaction must be signed there — so holding matured PT while on an
- * L2 auto-switches the wallet the way module navigation does (TopNav): flag
- * the switch as automatic, then point ?network= at Ethereum; the orchestration
- * performs the wallet switch (a rejection resets the param), the shell's
- * network toast announces the change, and testnets are exempt so a tenderly
- * session is never disrupted. Once per mount: a declined prompt must not
- * re-fire on every render, and the cards stay visible either way (they disable
- * their Claim buttons off-chain — `onPendleChain`).
+ * positions' only surface, rendered in the Supplied carousel — Figma
+ * 2306:72334). Pure read: the mainnet auto-switch lives in
+ * `usePendleMaturedNetworkSwitch`, enabled only where a claim surface is
+ * actually visible.
  */
 export function usePendleMaturedPositions(): {
   maturedPositions: PendleMaturedPosition[];
+  /** PT balances still resolving — matured holdings unknown, not absent. */
+  isLoading: boolean;
   onPendleChain: boolean;
 } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const chains = useChains();
-  const [, setSearchParams] = useAppSearchParams();
-  const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
-  const { data: ptBalances } = usePendleUserPtBalances();
+  const { data: ptBalances, isLoading } = usePendleUserPtBalances();
 
   const maturedPositions: PendleMaturedPosition[] = [];
   if (address && ptBalances) {
@@ -53,10 +44,33 @@ export function usePendleMaturedPositions(): {
     });
   }
 
-  const networkOverride =
-    maturedPositions.length > 0
-      ? getNetworkOverrideForIntent(Intent.FIXED_INTENT, chainId, chains)
-      : undefined;
+  return {
+    maturedPositions,
+    isLoading: !!address && (isLoading || ptBalances === undefined),
+    onPendleChain: isPendleChain(chainId)
+  };
+}
+
+/**
+ * Auto-switch the wallet to Ethereum while a claim surface is visible
+ * (`enabled`). Balances are read from mainnet regardless of the connected
+ * chain, but the redeem transaction must be signed there — so the switch works
+ * the way module navigation does (TopNav): flag it as automatic, then point
+ * ?network= at Ethereum; the orchestration performs the wallet switch (a
+ * rejection resets the param), the shell's network toast announces the change,
+ * and testnets are exempt so a tenderly session is never disrupted. Once per
+ * mount: a declined prompt must not re-fire on every render, and the cards
+ * stay visible either way (they disable their Claim buttons off-chain).
+ */
+export function usePendleMaturedNetworkSwitch(enabled: boolean): void {
+  const chainId = useChainId();
+  const chains = useChains();
+  const [, setSearchParams] = useAppSearchParams();
+  const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
+
+  const networkOverride = enabled
+    ? getNetworkOverrideForIntent(Intent.FIXED_INTENT, chainId, chains)
+    : undefined;
   const promptedRef = useRef(false);
   useEffect(() => {
     if (!networkOverride || promptedRef.current) return;
@@ -71,6 +85,4 @@ export function usePendleMaturedPositions(): {
       { replace: true }
     );
   }, [networkOverride, setSearchParams, setIsSwitchingNetwork, setIsAutoSwitching]);
-
-  return { maturedPositions, onPendleChain: isPendleChain(chainId) };
 }
