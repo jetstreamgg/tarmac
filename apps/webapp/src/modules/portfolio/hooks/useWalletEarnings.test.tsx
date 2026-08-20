@@ -14,7 +14,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
   address: undefined as string | undefined,
-  savingsEnabled: true,
   stusdsEnabled: false,
   fetchUserVaultV2Pnl: vi.fn(),
   fetchVaultV2TransactionsSince: vi.fn(),
@@ -54,9 +53,6 @@ vi.mock('../../../hooks/vaults/fyi/vaultsFyiClient', () => ({
 vi.mock('../../../hooks/vaults/fyi/constants', () => ({
   SUSDS_VAULT_ID_MAINNET: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
   STUSDS_VAULT_ID_MAINNET: '0x99CD4Ec3f88A45940936F469E4bB72A2A701EEB9',
-  get EARNINGS_SAVINGS_ENABLED() {
-    return h.savingsEnabled;
-  },
   get EARNINGS_STUSDS_ENABLED() {
     return h.stusdsEnabled;
   }
@@ -204,7 +200,6 @@ describe('useWalletEarnings', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW_MS);
     h.address = USER;
-    h.savingsEnabled = true;
     h.stusdsEnabled = false;
     h.fetchUserVaultV2Pnl.mockResolvedValue(morphoPositions);
     h.fetchVaultV2TransactionsSince.mockResolvedValue(morphoTransactions);
@@ -378,24 +373,6 @@ describe('useWalletEarnings', () => {
     });
     expect(savings.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'source-error' });
     expect(savings.error).toBeInstanceOf(Error);
-  });
-
-  it('reports savings as the announced disabled gap without fetching while the flag is off', async () => {
-    h.savingsEnabled = false;
-    const { result } = renderEarnings();
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    const savings = protocolById(result.current, 'savings');
-    expect(savings.totalEarned).toEqual({ status: 'notAvailable', reason: 'savings-disabled' });
-    expect(savings.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'savings-disabled' });
-    expect(savings.isLoading).toBe(false);
-    expect(h.fetchVaultsFyiTotalReturns).not.toHaveBeenCalled();
-    expect(h.fetchVaultsFyiPartialReturns).not.toHaveBeenCalled();
-
-    // The rest of the aggregate is unaffected by the flag.
-    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(20 + 4 + 70, 10);
-    expect(result.current.combined.missingFromTotal).toEqual(['savings', 'stusds']);
   });
 
   it('stUSDS flag on: fetches with the stUSDS vaultId and passes the negative month through signed', async () => {

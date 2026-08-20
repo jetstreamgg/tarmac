@@ -14,7 +14,6 @@ import {
 import { pendlePnlQueryKey } from '../../../hooks/pendle/usePendleAllPnlTransactions';
 import { fetchBaLabsHistoricDailyPrices } from '../../../hooks/prices/baLabsHistoricPrices';
 import {
-  EARNINGS_SAVINGS_ENABLED,
   EARNINGS_STUSDS_ENABLED,
   STUSDS_VAULT_ID_MAINNET,
   SUSDS_VAULT_ID_MAINNET
@@ -185,11 +184,10 @@ export function useWalletEarnings(): WalletEarnings {
   });
 
   // vaults.fyi is per-request billed: long staleTime, no focus refetch.
-  const savingsEnabled = EARNINGS_SAVINGS_ENABLED;
   const savingsTotalQuery = useQuery({
     queryKey: ['wallet-earnings', 'savings-total', user],
     queryFn: () => fetchVaultsFyiTotalReturns({ userAddress: address!, vaultId: SUSDS_VAULT_ID_MAINNET }),
-    enabled: connected && savingsEnabled,
+    enabled: connected,
     staleTime: VAULTS_FYI_STALE_MS,
     refetchOnWindowFocus: false
   });
@@ -202,7 +200,7 @@ export function useWalletEarnings(): WalletEarnings {
         vaultId: SUSDS_VAULT_ID_MAINNET,
         fromTimestamp: window.startSec
       }),
-    enabled: connected && savingsEnabled,
+    enabled: connected,
     staleTime: VAULTS_FYI_STALE_MS,
     refetchOnWindowFocus: false
   });
@@ -306,17 +304,6 @@ export function useWalletEarnings(): WalletEarnings {
     })();
 
     const savings: ProtocolEarnings = (() => {
-      if (!savingsEnabled) {
-        const off = notAvailable('savings-disabled');
-        return {
-          id: 'savings' as const,
-          rowIds: ['savings'],
-          totalEarned: off,
-          earnedThisMonth: off,
-          isLoading: false,
-          error: null
-        };
-      }
       // The two endpoints map one-to-one onto the two figures, so each
       // degrades on its own — a broken beta call never hides the total.
       const computed = computeSavingsEarnings({
@@ -370,7 +357,6 @@ export function useWalletEarnings(): WalletEarnings {
     connected,
     window,
     attributedTokens,
-    savingsEnabled,
     stusdsEnabled,
     morphoQuery,
     merklRewardsQuery,

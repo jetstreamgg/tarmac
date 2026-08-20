@@ -17,13 +17,6 @@ export const SUSDS_VAULT_ID_MAINNET = sUsdsAddress[mainnet.id];
 export const STUSDS_VAULT_ID_MAINNET = stUsdsAddress[mainnet.id];
 
 /**
- * APP-450 savings earnings (sUSDS via vaults.fyi). Default OFF until the
- * proxy-worker /vaultsfyi route and API key exist — flipping this without the
- * route just yields fetch errors and dashes.
- */
-export const EARNINGS_SAVINGS_ENABLED = import.meta.env?.VITE_EARNINGS_SAVINGS_ENABLED === 'true';
-
-/**
  * APP-450 stUSDS earnings entry. vaults.fyi listed stUSDS on 2026-08-20, but
  * the returns endpoints still answer 404 "Vault indexed data not yet
  * supported" (probed live same day) — their holder indexing lags the listing.
