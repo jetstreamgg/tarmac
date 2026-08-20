@@ -32,8 +32,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
 import { NO_VALUE } from '@/lib/constants';
-
-const SECONDS_PER_DAY = 86_400;
+import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 
 /**
  * No-position Pendle entry card (Figma 486:33862): "Supply USDS/USDC and earn
@@ -172,10 +171,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   const stats = marketsApi?.[market.marketAddress];
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const remainingDays = Math.max(
-    0,
-    Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
-  );
+  const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
   const claimDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
 
   const refresh = useCallback(() => {

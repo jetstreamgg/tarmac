@@ -20,8 +20,7 @@ import { PendleTransactionsTable } from './PendleTransactionsTable';
 import { PendleMaturityProgress } from './PendleMaturityProgress';
 import { PendleAboutContent } from './PendleAboutContent';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
-
-const SECONDS_PER_DAY = 86_400;
+import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 
 export type PendleProductDetailProps = {
   market: PendleMarketConfig;
@@ -41,7 +40,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
 
   const expirySec = stats?.expirySec ?? market.expiry;
   const remainingSeconds = Math.max(0, expirySec - Math.floor(Date.now() / 1000));
-  const remainingDays = Math.floor(remainingSeconds / SECONDS_PER_DAY);
+  const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
   const maturityDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
 
   const details: ProductDetailRow[] = [
