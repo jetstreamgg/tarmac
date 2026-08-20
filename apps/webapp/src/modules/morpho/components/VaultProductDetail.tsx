@@ -1,14 +1,14 @@
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Vault, Droplet, Percent } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import {
-  productNetworks,
+  getTokenDecimals,
+  type VaultConfig,
   useMorphoVaultChartInfo,
   useMorphoVaultMarketApiData,
-  getTokenDecimals,
-  type VaultConfig
+  useProductNetworks
 } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { Morpho } from '@/widgets';
@@ -38,12 +38,7 @@ export function VaultProductDetail({
   vaultAddress: `0x${string}`;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
-  const networks = productNetworks(
-    Intent.VAULTS_INTENT,
-    chains.map(chain => chain.id),
-    vault.vaultAddress
-  );
+  const networks = useProductNetworks(Intent.VAULTS_INTENT, vault.vaultAddress);
 
   const { data: marketData } = useMorphoVaultMarketApiData({ vaultAddress });
   // Daily series → trailing 30-day average for the "30D Rate" row (no dedicated

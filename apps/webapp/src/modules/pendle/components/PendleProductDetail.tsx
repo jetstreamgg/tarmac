@@ -1,11 +1,9 @@
-import { useMemo } from 'react';
-import { useChains } from 'wagmi';
 import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import { productNetworks, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { type PendleMarketConfig, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
@@ -36,15 +34,7 @@ export type PendleProductDetailProps = {
  * the $slug route resolves the slug and guards maturity before mounting this.
  */
 export function PendleProductDetail({ market }: PendleProductDetailProps) {
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.FIXED_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.FIXED_INTENT);
 
   const { data: marketsApi, isLoading: statsLoading } = usePendleMarketsApiData();
   const stats = marketsApi?.[market.marketAddress];

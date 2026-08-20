@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
-import { useChains } from 'wagmi';
+
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, Gauge, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import {
-  productNetworks,
+  trailingAverageRate,
   useOverallSkyData,
+  useProductNetworks,
   useStUsdsCapacityData,
   useStUsdsChartInfo,
-  useStUsdsData,
-  trailingAverageRate
+  useStUsdsData
 } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -40,15 +40,7 @@ const formatUsd = (value: bigint | undefined): string =>
  * route-bounce gate.
  */
 export function StUsdsProductDetail() {
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.EXPERT_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.EXPERT_INTENT);
 
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
   const { data: capacityData, isLoading: capacityLoading } = useStUsdsCapacityData();

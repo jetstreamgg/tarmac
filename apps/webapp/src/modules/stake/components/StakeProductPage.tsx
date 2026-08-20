@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useChains, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
-import { BP, productNetworks, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex, useProductNetworks } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -63,15 +63,7 @@ function parseStakeTab(value: string | null, fallback: StakeTab): StakeTab {
  * not a ProductDetailTemplate consumer — the tabs compose L1 pieces directly.
  */
 export function StakeProductPage() {
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.STAKE_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.STAKE_INTENT);
 
   const [searchParams, setSearchParams] = useAppSearchParams();
   // While the positions query is still loading the default stays `positions`

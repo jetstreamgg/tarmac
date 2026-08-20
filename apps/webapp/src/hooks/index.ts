@@ -301,6 +301,7 @@ export {
   rewardsRiskProfile,
   RISK_TIER_BY_PROFILE
 } from './earn/earnProducts';
+export { useProductNetworks } from './earn/useProductNetworks';
 export type {
   EarnMarketplaceResult,
   EarnProductDescriptor,

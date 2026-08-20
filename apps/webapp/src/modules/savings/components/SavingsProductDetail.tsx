@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react';
-import { useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import {
   BP,
-  productNetworks,
   useBreakpointIndex,
   useOverallSkyData,
+  useProductNetworks,
   useSavingsData,
   useSkySavingsRateHistoricData
 } from '@/hooks';
@@ -34,15 +33,7 @@ export function SavingsProductDetail() {
   // the Tenderly fork in dev mode) — scopes the header's network switcher to
   // chains where the module is available. Address-bound consumers should also
   // pass their address map here, matching buildEarnProducts.
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.SAVINGS_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.SAVINGS_INTENT);
 
   // Position-awareness (same derivation as SavingsPositionCard; the duplicate
   // useSavingsData() call is deduped by TanStack Query). The has-position page
