@@ -177,11 +177,12 @@ function MoreMenu() {
           sections with a hairline divider after the bundling block. */}
       {/* Motion (Figma 2134:88604): the panel grows out of its top-right
           anchor — 0.9 → 1 while sliding in 14px from the right and 20px from
-          above, 300ms on quart — and leaves the same way. The tokens replace
-          the shared popover's zoom/slide pair (tailwind-merge collapses the
-          two `animate-*` utilities per state). */}
+          above, 300ms on quart — and leaves the same way. `animated={false}`
+          drops the shared popover's zoom/slide pair so these utilities are
+          the only animation on the element. */}
       <PopoverContent
         align="end"
+        animated={false}
         className="bg-bgSecondary data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out flex w-[274px] origin-top-right flex-col gap-6 rounded-3xl p-5 shadow-none backdrop-blur-[100px]"
       >
         <MoreMenuContent closeMenu={closeMenu} />

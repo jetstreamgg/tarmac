@@ -25,10 +25,7 @@ export function GainValue({
   return (
     <span className={cn('text-text', className)} data-testid="gain-value">
       <span className="text-bullish">+</span>
-      {rolling ? <RollingValue value={formatted} duration={STAT_ROLL_SECONDS} /> : formatted}
+      {rolling ? <RollingValue value={formatted} speed="stat" /> : formatted}
     </span>
   );
 }
-
-/** Stat-sized figures roll faster than a hero figure (Figma 2233:61099: ~400ms). */
-export const STAT_ROLL_SECONDS = 0.4;

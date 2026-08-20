@@ -34,6 +34,7 @@ export function IconStack({
   className,
   children,
   animateIn,
+  activeIndex,
   ...props
 }: {
   /** Badge diameter in px; the overlap and ring scale off it. */
@@ -41,37 +42,69 @@ export function IconStack({
   children: ReactNode;
   /** Pop the badges in one after another on mount (the pie-card entrance). */
   animateIn?: IconStackEntrance;
+  /** Focus one badge: the others dim to 50% (Figma 2233:61121, "Badges / Set
+   * - Selected"). `null`/undefined means none focused. */
+  activeIndex?: number | null;
 } & ComponentPropsWithoutRef<'span'>) {
   const prefersReducedMotion = useReducedMotion();
   const badges = Children.toArray(children);
-  const pop = animateIn && !prefersReducedMotion;
+  const pop = !!animateIn && !prefersReducedMotion;
+  const badgeClass = 'ring-pageBackground relative inline-flex shrink-0 rounded-full ring-[1.5px]';
+  const hasFocus = activeIndex !== null && activeIndex !== undefined;
   return (
     <span className={cn('flex items-center', className)} {...props}>
       {/* `relative` lifts each badge (ring + icon) into the positioned paint
           phase: the icons inside are positioned, so without it every icon
           paints above every ring and the punched-out cut never shows. The
-          descending z-index puts the left badge in front. */}
-      {badges.map((child, index) => (
-        <motion.span
-          key={index}
-          className="ring-pageBackground relative inline-flex shrink-0 rounded-full ring-[1.5px]"
-          style={{
-            width: size,
-            height: size,
-            marginLeft: index === 0 ? 0 : -size / 3,
-            zIndex: badges.length - index
-          }}
-          initial={pop ? { scale: 0 } : false}
-          animate={{ scale: 1 }}
-          transition={{
-            duration: POP_DURATION,
-            ease: easeOutOvershoot,
-            delay: (animateIn?.delay ?? 0) + index * (animateIn?.stagger ?? POP_STAGGER)
-          }}
-        >
-          {child}
-        </motion.span>
-      ))}
+          descending z-index puts the left badge in front. The badge only
+          becomes a motion element when it has something to animate — this
+          stack sits in every table row and tooltip. */}
+      {badges.map((child, index) => {
+        const style = {
+          width: size,
+          height: size,
+          marginLeft: index === 0 ? 0 : -size / 3,
+          zIndex: badges.length - index
+        };
+        const content = (
+          <>
+            {child}
+            {/* Dimming goes OVER an opaque icon as a page-colored scrim rather
+                than through the icon's own opacity: the badges overlap, so a
+                translucent front badge would let the one behind bleed
+                through. The comp keeps the dimmed badge's backing solid for
+                exactly this reason. */}
+            <span
+              aria-hidden
+              data-testid="badge-scrim"
+              className={cn(
+                'bg-pageBackground pointer-events-none absolute inset-0 rounded-full transition-opacity duration-300 ease-out',
+                hasFocus && activeIndex !== index ? 'opacity-50' : 'opacity-0'
+              )}
+            />
+          </>
+        );
+        return pop ? (
+          <motion.span
+            key={index}
+            className={badgeClass}
+            style={style}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{
+              duration: POP_DURATION,
+              ease: easeOutOvershoot,
+              delay: (animateIn?.delay ?? 0) + index * (animateIn?.stagger ?? POP_STAGGER)
+            }}
+          >
+            {content}
+          </motion.span>
+        ) : (
+          <span key={index} className={badgeClass} style={style}>
+            {content}
+          </span>
+        );
+      })}
     </span>
   );
 }

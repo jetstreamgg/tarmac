@@ -7,8 +7,6 @@ export const easeInOutExpo = cubicBezier(0.87, 0, 0.13, 1);
 // The curves the interaction comps are drawn on (Figma 2238:62221 loader,
 // 2134:88604 menu, 1598:76582 number roll, 2233:61099 pie chart). They mirror
 // the `--ease-*` tokens in globals.css for motion-driven code.
-/** Even in/out — the house curve for anything that travels both ways. */
-export const easeInOutQuart = cubicBezier(0.77, 0, 0.175, 1);
 /** Springy overshoot for small things that pop or hop into place. */
 export const easeOutOvershoot = cubicBezier(0.45, 1.45, 0.8, 1);
 /** Plain settle for anything that resizes (textbook easeOutExpo). */

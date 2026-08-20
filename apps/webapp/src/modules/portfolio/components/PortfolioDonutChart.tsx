@@ -1,4 +1,4 @@
-import { ReactNode, useMemo } from 'react';
+import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Pie, PieChart, Sector } from 'recharts';
@@ -15,8 +15,6 @@ export type DonutSegment = {
 };
 
 type PortfolioDonutChartProps = {
-  /** Keep this array referentially stable across hover renders — a new
-   * identity restarts the fill sweep. */
   segments: DonutSegment[];
   /** Shared with the legend/token cluster so hover stays in sync. */
   activeId: string | null;
@@ -43,15 +41,18 @@ const END_ANGLE = -270; // full sweep, clockwise
 const FULL_CIRCLE_EPS = 359.9;
 
 // Motion (Figma 2233:61099). The arcs fill in clockwise from 12 o'clock once
-// the data is in — recharts' own sweep, timed to land with the rest of the
-// card's entrance; the hairline ring fades up underneath it. Hovering swaps
-// the hovered arc to its hover color and dims the others to 50%, both on a
-// 350ms ease-out; the centre label rises 6px into the hole on the same clock
-// and leaves upward when the hover ends.
+// the data is in, timed to land with the rest of the card's entrance, and the
+// hairline ring fades up underneath. The fill is a CSS conic-gradient mask on
+// the chart (`--animate-donut-sweep`), NOT recharts' own sweep: recharts 3
+// keys its animation on a fresh props object every render, so any re-render
+// during the sweep — a hover, a refetch — would restart it from zero.
+// Hovering swaps the hovered arc to its hover color and dims the others to
+// 50%, both on a 350ms ease-out; the centre label rises 6px into the hole on
+// the same clock and leaves upward when the hover ends.
 const FILL_BEGIN_MS = 300;
 const FILL_DURATION_MS = 900;
-const HOVER_MS = 350;
-const HOVER_EASE = 'ease-out';
+const DIM_MS = 350;
+const DIM_EASE = 'ease-out';
 const CENTER_IN = { y: 6, opacity: 0 };
 const CENTER_OUT = { y: -10, opacity: 0 };
 
@@ -106,10 +107,7 @@ export function PortfolioDonutChart({
   className
 }: PortfolioDonutChartProps) {
   const prefersReducedMotion = useReducedMotion();
-  // Keyed on `segments` identity: recharts re-runs the sweep whenever its
-  // `data` changes, so callers must hand in a stable array (memoised on their
-  // source data, not rebuilt per hover render).
-  const chartSegments = useMemo(() => segments.filter(s => s.value > 0), [segments]);
+  const chartSegments = segments.filter(s => s.value > 0);
   const sectors = computeSectors(chartSegments);
   const isEmpty = chartSegments.length === 0;
 
@@ -131,7 +129,7 @@ export function PortfolioDonutChart({
       data-testid="portfolio-donut"
     >
       {chartSegments.length > 0 && (
-        <div className="absolute inset-0">
+        <div className="motion-safe:animate-donut-sweep donut-sweep-mask absolute inset-0">
           <PieChart width={size} height={size} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
             <Pie
               data={chartSegments}
@@ -146,10 +144,7 @@ export function PortfolioDonutChart({
               paddingAngle={isSingle ? 0 : PADDING_ANGLE}
               cornerRadius={isSingle ? 0 : CORNER_RADIUS * scale}
               stroke="none"
-              isAnimationActive={!prefersReducedMotion}
-              animationBegin={FILL_BEGIN_MS}
-              animationDuration={FILL_DURATION_MS}
-              animationEasing="ease-out"
+              isAnimationActive={false}
               onMouseEnter={(_, index) => onActiveChange(chartSegments[index]?.id ?? null)}
               // `Cell` is deprecated (removed in recharts 4); per-sector fill +
               // hover dimming via the `shape` prop, rendering the same Sector.
@@ -165,7 +160,7 @@ export function PortfolioDonutChart({
                     fill={isActive ? (segment.hoverColor ?? segment.color) : segment.color}
                     fillOpacity={dim ? 0.5 : 1}
                     style={{
-                      transition: `fill-opacity ${HOVER_MS}ms ${HOVER_EASE}, fill ${HOVER_MS}ms ${HOVER_EASE}`,
+                      transition: `fill-opacity ${DIM_MS}ms ${DIM_EASE}, fill ${DIM_MS}ms ${DIM_EASE}`,
                       outline: 'none'
                     }}
                   />
@@ -242,7 +237,7 @@ export function PortfolioDonutChart({
                 initial={prefersReducedMotion ? false : CENTER_IN}
                 animate={{ y: 0, opacity: 1 }}
                 exit={prefersReducedMotion ? undefined : CENTER_OUT}
-                transition={{ duration: prefersReducedMotion ? 0 : HOVER_MS / 1000, ease: 'easeOut' }}
+                transition={{ duration: prefersReducedMotion ? 0 : DIM_MS / 1000, ease: 'easeOut' }}
               >
                 {renderCenter(activeId)}
               </motion.div>

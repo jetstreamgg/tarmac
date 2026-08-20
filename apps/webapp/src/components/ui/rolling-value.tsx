@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion, type Transition } from 'motion/react';
+import { motion, useMotionValue, useReducedMotion, type Transition } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { easeInRoll, easeOutSettle, springSettle } from '@/modules/ui/animation/timingFunctions';
 
@@ -14,31 +14,58 @@ import { easeInRoll, easeOutSettle, springSettle } from '@/modules/ui/animation/
  * Travel is in em so the same component serves a 40px hero figure and a 16px
  * stat: the comp moves the outgoing glyph one line up (-40 at 40px, -20/-15 at
  * 16px) and floats the incoming one in from a little over half a line below.
+ * `speed` picks the comp's clock for each: 600ms for a hero figure, 400ms for
+ * a stat.
  *
  * Not yet adopted beyond the portfolio earnings card — wire it where a figure
  * swaps discretely (hover focus, filter change), never where it ticks.
  */
+const SPEEDS = { hero: 0.6, stat: 0.4 } as const;
+const OUT_Y = '-1em';
+const IN_Y = '0.55em';
+const REST_Y = '0em';
+
+type RollState = {
+  current: string;
+  previous: string | null;
+  /** Where the outgoing glyph starts from — the resting line, or wherever the
+   * glyph it interrupts had got to. */
+  outFrom: { y: string; opacity: number };
+  gen: number;
+};
+
 export function RollingValue({
   value,
   className,
-  duration = 0.6
+  speed = 'hero'
 }: {
-  value: string;
+  value: string | number;
   className?: string;
-  /** Seconds for the glyph swap; the width settles on the same clock. */
-  duration?: number;
+  speed?: keyof typeof SPEEDS;
 }) {
+  const text = String(value);
   const prefersReducedMotion = useReducedMotion();
-  const [state, setState] = useState({ current: value, previous: null as string | null, gen: 0 });
+  // The incoming glyph animates these shared motion values, so a roll that
+  // interrupts another can read exactly where the half-risen glyph is and
+  // start the outgoing one from there instead of snapping it to the baseline.
+  const inY = useMotionValue(REST_Y);
+  const inOpacity = useMotionValue(1);
+  const [state, setState] = useState<RollState>({
+    current: text,
+    previous: null,
+    outFrom: { y: REST_Y, opacity: 1 },
+    gen: 0
+  });
 
-  if (state.current !== value) {
+  if (state.current !== text) {
     // Derived during render: the roll has to start on the commit that paints
     // the new value, which an effect would be a frame too late for.
     setState({
-      current: value,
+      current: text,
       // Nothing to roll out when motion is reduced — the outgoing glyph is only
       // ever visible while it animates away.
       previous: prefersReducedMotion ? null : state.current,
+      outFrom: { y: inY.get(), opacity: inOpacity.get() },
       gen: state.gen + 1
     });
   }
@@ -62,8 +89,8 @@ export function RollingValue({
   }, []);
   useEffect(() => () => observer.current?.disconnect(), []);
 
+  const duration = SPEEDS[speed];
   const animateWidth = box.settled && !prefersReducedMotion;
-
   const swap = prefersReducedMotion ? 0 : duration;
   const inTransition: Transition = {
     y: { duration: swap, ease: springSettle },
@@ -77,11 +104,16 @@ export function RollingValue({
   return (
     // `clip-path` rather than `overflow: hidden` so the inline-block keeps the
     // text baseline (a clipped inline-block takes its baseline from its bottom
-    // margin edge). Width is animated, not transitioned, because `auto` can't
-    // be transitioned in CSS; it's only ever numeric after the first measure.
+    // margin edge). The bottom edge is let out a little: at a tight line-height
+    // (the hero's `leading-none`) the box ends above the comma's tail. Width is
+    // animated, not transitioned, because `auto` can't be transitioned in CSS;
+    // it's only ever numeric after the first measure.
     <motion.span
       data-testid="rolling-value"
-      className={cn('relative inline-block align-baseline whitespace-nowrap [clip-path:inset(0)]', className)}
+      className={cn(
+        'relative inline-block align-baseline whitespace-nowrap [clip-path:inset(0_0_-0.15em)]',
+        className
+      )}
       initial={false}
       animate={box.width === null ? undefined : { width: box.width }}
       transition={{ width: { duration: animateWidth ? duration : 0, ease: easeOutSettle } }}
@@ -94,8 +126,8 @@ export function RollingValue({
           // Out of the accessibility tree and the selection, so neither a screen
           // reader nor a copy taken mid-roll picks up the stale figure.
           className="absolute top-0 left-0 select-none"
-          initial={{ y: '0em', opacity: 1 }}
-          animate={{ y: '-1em', opacity: 0 }}
+          initial={state.outFrom}
+          animate={{ y: OUT_Y, opacity: 0 }}
           transition={outTransition}
           onAnimationComplete={() => setState(current => ({ ...current, previous: null }))}
         >
@@ -110,8 +142,9 @@ export function RollingValue({
         ref={glyphRef}
         data-testid={state.gen > 0 ? 'rolling-value-in' : undefined}
         className="inline-block"
-        initial={state.gen > 0 && !prefersReducedMotion ? { y: '0.55em', opacity: 0 } : false}
-        animate={{ y: '0em', opacity: 1 }}
+        style={{ y: inY, opacity: inOpacity }}
+        initial={state.gen > 0 && !prefersReducedMotion ? { y: IN_Y, opacity: 0 } : false}
+        animate={{ y: REST_Y, opacity: 1 }}
         transition={inTransition}
       >
         {state.current}

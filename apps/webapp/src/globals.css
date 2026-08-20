@@ -321,9 +321,16 @@
      with the glyph. */
   --animate-loader-dot: loader-dot 1600ms infinite both;
 
+  /* Portfolio donut fill (Figma 2233:61099): the arcs are revealed clockwise
+     from 12 o'clock by a conic-gradient mask whose angle runs 0 → 360deg (the
+     `@property` by `.donut-sweep-mask` makes the angle interpolable). Starts
+     300ms after the data lands, with the rest of the card's entrance. */
+  --animate-donut-sweep: donut-sweep 900ms ease-out 300ms both;
+
   /* Menu panel (Figma 2134:88604): scales up from 0.9 out of its top-right
      anchor while sliding 14px left / 20px down into place, 300ms on quart;
-     the close runs the same track backwards. */
+     the close runs the same track backwards. Reduced motion swaps the tokens
+     for a plain crossfade (see the media query by the `.nav-menu-icon` rules). */
   --animate-menu-in: menu-in 300ms var(--ease-in-out-quart) both;
   --animate-menu-out: menu-out 300ms var(--ease-in-out-quart) both;
 
@@ -465,6 +472,30 @@
     to {
       opacity: 0;
       transform: translate(14px, -20px) scale(0.9);
+    }
+  }
+  @keyframes donut-sweep {
+    from {
+      --donut-sweep: 0deg;
+    }
+    to {
+      --donut-sweep: 360deg;
+    }
+  }
+  @keyframes menu-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes menu-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
     }
   }
   @keyframes digit-roll-in {
@@ -1008,6 +1039,20 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
 [data-state='open'] > .nav-menu-icon {
   stroke: url(#nav-icon-gradient);
 }
+/* Portfolio donut fill mask — see `--animate-donut-sweep`. Registered so the
+   angle interpolates; without `@property` a custom property animates
+   discretely and the fill would pop in at the halfway mark instead. The
+   initial value is the full circle, so a browser that skips the animation
+   (or the `motion-safe` gate) still shows the whole chart. */
+@property --donut-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 360deg;
+}
+.donut-sweep-mask {
+  mask-image: conic-gradient(#000 var(--donut-sweep), transparent 0);
+}
+
 /* Hamburger → X (Figma 2134:88604). Three steps of 150ms on quart, keyed off
    the trigger's data-state: opening, the outer strokes first travel 4px to the
    centre line, then rotate ±45°, and the middle stroke collapses the instant
@@ -1051,22 +1096,14 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
   .nav-menu-icon path {
     transition: none;
   }
-  /* The menu panel keeps its crossfade but drops the travel and scale. */
-  @keyframes menu-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  @keyframes menu-out {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
+  /* The menu panel keeps a crossfade but drops the travel and scale. The
+     `animate-menu-*` utilities resolve `var(--animate-menu-*)` at use, so
+     re-pointing the token here is enough; redefining the keyframes would not
+     be — Tailwind hoists `@theme` keyframes to the end of the stylesheet,
+     after this block, and the last same-named @keyframes wins. */
+  :root {
+    --animate-menu-in: menu-fade-in 300ms var(--ease-in-out-quart) both;
+    --animate-menu-out: menu-fade-out 300ms var(--ease-in-out-quart) both;
   }
 }
 

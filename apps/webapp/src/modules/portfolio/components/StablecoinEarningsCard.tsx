@@ -1,11 +1,11 @@
-import { Children, Fragment, ReactNode, useMemo, useState } from 'react';
+import { Children, Fragment, ReactNode, isValidElement, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { motion, useReducedMotion, type Transition } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Card } from '@/components/ui/card';
-import { GainValue, STAT_ROLL_SECONDS } from '@/components/ui/GainValue';
+import { GainValue } from '@/components/ui/GainValue';
 import { RollingValue } from '@/components/ui/rolling-value';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heading, Text } from '@/modules/layout/components/Typography';
@@ -112,12 +112,6 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
   const [activeId, setActiveId] = useState<string | null>(null);
   const donutSize = useDonutSize();
   const entrance = useEntrance();
-  // Stable across hover renders: a fresh array would restart the donut's fill.
-  const segments: DonutSegment[] = useMemo(
-    () =>
-      view.positions.map(p => ({ id: p.id, color: p.color, hoverColor: p.hoverColor, value: p.amountUsd })),
-    [view.positions]
-  );
 
   if (isLoading && view.positions.length === 0) return <EarningsSkeleton />;
 
@@ -131,6 +125,13 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
   // Positions settle before the rate APIs — hold the rate-derived stats rather
   // than quote 0.00% / $0.00 in the gap.
   const ratesPending = activePosition ? activePosition.rateLoading : view.ratesLoading;
+
+  const segments: DonutSegment[] = view.positions.map(p => ({
+    id: p.id,
+    color: p.color,
+    hoverColor: p.hoverColor,
+    value: p.amountUsd
+  }));
 
   return (
     <>
@@ -220,10 +221,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
             )
           }
         />
-        <Stat
-          label={<Trans>Active positions</Trans>}
-          value={<StatValue>{String(view.activePositions)}</StatValue>}
-        />
+        <Stat label={<Trans>Active positions</Trans>} value={<StatValue>{view.activePositions}</StatValue>} />
       </FooterStats>
     </>
   );
@@ -242,11 +240,6 @@ function IdleContent({
   const [activeId, setActiveId] = useState<string | null>(null);
   const donutSize = useDonutSize();
   const entrance = useEntrance();
-  const segments: DonutSegment[] = useMemo(
-    () =>
-      view.tokens.map(t => ({ id: t.symbol, color: t.color, hoverColor: t.hoverColor, value: t.amountUsd })),
-    [view.tokens]
-  );
 
   if (isLoading && view.tokens.length === 0) return <EarningsSkeleton />;
 
@@ -255,6 +248,13 @@ function IdleContent({
   const displayTotal = activeToken ? activeToken.amountUsd : view.walletBalance;
   const displayProjected =
     savingsRate !== undefined ? projectAnnualEarnings(displayTotal, savingsRate) : undefined;
+
+  const segments: DonutSegment[] = view.tokens.map(t => ({
+    id: t.symbol,
+    color: t.color,
+    hoverColor: t.hoverColor,
+    value: t.amountUsd
+  }));
 
   return (
     <>
@@ -315,19 +315,22 @@ function IdleContent({
       <FooterStats>
         {savingsRate !== undefined && (
           <Stat
+            key="rate"
             label={<Trans>Sky Savings Rate</Trans>}
             value={<StatValue>{formatDecimalPercentage(savingsRate)}</StatValue>}
           />
         )}
         {displayProjected !== undefined && (
           <Stat
+            key="projected"
             label={<Trans>Projected 1Y yield (at current rate)</Trans>}
             value={<GainValue value={displayProjected} className={LABEL_4} rolling />}
           />
         )}
         <Stat
+          key="count"
           label={<Trans>Idle stablecoins</Trans>}
-          value={<StatValue>{String(view.idleCount)}</StatValue>}
+          value={<StatValue>{view.idleCount}</StatValue>}
         />
       </FooterStats>
     </>
@@ -369,43 +372,25 @@ function EarningsHeadline({
             <RollingValue value={formatUsd(value)} />
           </motion.span>
         </Heading>
-        <IconStack size={iconSize} animateIn={{ delay: BADGES_START }}>
+        {/* Focusing a position dims the other badges (the stack keeps them
+            opaque under a scrim, so nothing shows through the overlap). */}
+        <IconStack
+          size={iconSize}
+          animateIn={{ delay: BADGES_START }}
+          activeIndex={activeSymbol ? tokenSymbols.indexOf(activeSymbol) : null}
+        >
           {tokenSymbols.map(symbol => (
-            <DimmableBadge key={symbol} dimmed={!!activeSymbol && activeSymbol !== symbol}>
-              <TokenIcon
-                token={{ symbol }}
-                width={iconSize}
-                showChainIcon={false}
-                className="h-full w-full"
-              />
-            </DimmableBadge>
+            <TokenIcon
+              key={symbol}
+              token={{ symbol }}
+              width={iconSize}
+              showChainIcon={false}
+              className="h-full w-full"
+            />
           ))}
         </IconStack>
       </div>
     </div>
-  );
-}
-
-/**
- * A badge that dims to 50% when another one is focused, without going
- * see-through: the icon stays opaque and a page-colored scrim fades in OVER
- * it. Lowering the icon's own opacity would let the badge behind bleed
- * through the overlap — the comp (2233:61121, "Badges / Set - Selected")
- * keeps the dimmed badge's backing solid for exactly this reason.
- */
-function DimmableBadge({ dimmed, children }: { dimmed: boolean; children: ReactNode }) {
-  return (
-    <span className="relative block h-full w-full">
-      {children}
-      <span
-        aria-hidden
-        data-testid="badge-scrim"
-        className={cn(
-          'bg-pageBackground pointer-events-none absolute inset-0 rounded-full transition-opacity duration-300 ease-out',
-          dimmed ? 'opacity-50' : 'opacity-0'
-        )}
-      />
-    </span>
   );
 }
 
@@ -470,8 +455,11 @@ function FooterStats({ children }: { children: ReactNode }) {
   const entrance = useEntrance();
   return (
     <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:flex lg:gap-8">
+      {/* Keyed by the Stat's own key where it has one: the Idle footer's first
+          two stats are conditional, and an index key would hand a slot (and
+          its already-played entrance) to whichever stat shifts into it. */}
       {stats.map((stat, index) => (
-        <Fragment key={index}>
+        <Fragment key={isValidElement(stat) && stat.key !== null ? stat.key : index}>
           {index > 0 && <span className="bg-borderPrimary hidden h-7 w-px shrink-0 self-center lg:block" />}
           {/* `lg:flex-1` + `min-w-0`: from lg the footer is a flex row of equal
               columns split by hairlines (APP-443 item 7), so each stat has to
@@ -513,10 +501,10 @@ function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
 }
 
 /** A footer figure; rolls over when it changes (hover focus). */
-function StatValue({ children }: { children: string }) {
+function StatValue({ children }: { children: string | number }) {
   return (
     <span className={cn(LABEL_4, 'text-text')}>
-      <RollingValue value={children} duration={STAT_ROLL_SECONDS} />
+      <RollingValue value={children} speed="stat" />
     </span>
   );
 }
