@@ -675,7 +675,7 @@ export function PositionDetailsModal({
                   )}
                 </StatCell>
                 <StatPairDivider />
-                <StatCell label={<Trans>Rewards earned</Trans>}>
+                <StatCell label={<Trans>Rewards received</Trans>}>
                   {detail.rewardsEarnedLoading ? (
                     // A still-loading history leg reads as $0.00 otherwise — hold
                     // the figure like the claimable cell above does.

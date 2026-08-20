@@ -35,7 +35,7 @@ describe('buildVaultEntryRows — Figma 859:38105 / 859:38297 vault entry grid',
   it('produces exactly the Figma grid pairing, in order', () => {
     expect(gridLabels(buildVaultEntryRows(ENTRY_INPUT))).toEqual([
       ['Rate', 'Network'],
-      ['Supply', 'Est. earnings (1Y)'],
+      ['Supply', 'Est. 1Y yield (at current rate)'],
       ['Network fee']
     ]);
   });
@@ -48,7 +48,7 @@ describe('buildVaultEntryRows — Figma 859:38105 / 859:38297 vault entry grid',
       after: '110,000.00',
       token: 'USDC'
     });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({
       kind: 'delta',
       before: '184.80',
       after: '192.40',
@@ -59,7 +59,7 @@ describe('buildVaultEntryRows — Figma 859:38105 / 859:38297 vault entry grid',
   it('collapses the delta cells to their current value with no amount (Figma empty state)', () => {
     const cells = byLabel(buildVaultEntryRows({ ...ENTRY_INPUT, hasAmount: false }));
     expect(cells['Supply']).toMatchObject({ kind: 'single', value: '100,000.00' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'single', value: '184.80' });
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({ kind: 'single', value: '184.80' });
   });
 
   it('accents the rate with the morpho stars only while boosted', () => {
@@ -85,7 +85,7 @@ describe('buildVaultEntryRows — Figma 859:38105 / 859:38297 vault entry grid',
 describe('buildVaultReviewRows — Figma 859:38553 review supply / 859:38234 review withdrawal', () => {
   it('produces exactly the Figma grid pairing, in order', () => {
     expect(gridLabels(buildVaultReviewRows('supply', REVIEW_INPUT))).toEqual([
-      ["You'll supply", 'Est. earnings (1Y)'],
+      ["You'll supply", 'Est. 1Y yield (at current rate)'],
       ['Product', 'Rate'],
       ['Withdrawal', 'Network'],
       ['Network fee']
@@ -95,7 +95,7 @@ describe('buildVaultReviewRows — Figma 859:38553 review supply / 859:38234 rev
   it("labels the amount cell per flow (You'll supply vs You'll receive)", () => {
     expect(gridLabels(buildVaultReviewRows('withdraw', REVIEW_INPUT))[0]).toEqual([
       "You'll receive",
-      'Est. earnings (1Y)'
+      'Est. 1Y yield (at current rate)'
     ]);
     expect(byLabel(buildVaultReviewRows('withdraw', REVIEW_INPUT))["You'll receive"]).toMatchObject({
       kind: 'single',
@@ -106,7 +106,7 @@ describe('buildVaultReviewRows — Figma 859:38553 review supply / 859:38234 rev
 
   it('threads the review presentation hints (trend + trailing asset icon, morpho ring, stars)', () => {
     const cells = byLabel(buildVaultReviewRows('supply', REVIEW_INPUT));
-    expect(cells['Est. earnings (1Y)']).toMatchObject({
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({
       kind: 'single',
       value: '192.40',
       trend: true,

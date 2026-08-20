@@ -145,7 +145,7 @@ describe('EarnFeaturedCards — desktop (APP-395)', () => {
     const onSelect = renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: false }));
 
     expect(screen.getByTestId('earn-featured-savings-wide')).toBeTruthy();
-    // The rate renders inside the "Supply … and earn {rate} APY" headline.
+    // The rate renders inside the "Supply … at {rate} APY" headline.
     expect(screen.getByText('3.75%')).toBeTruthy();
     expect(screen.getByText('TVL')).toBeTruthy();
 

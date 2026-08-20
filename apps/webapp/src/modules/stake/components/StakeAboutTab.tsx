@@ -80,7 +80,7 @@ export function StakeAboutTab() {
               card around it is gone. */}
           <ol className="border-borderPrimary flex flex-col rounded-3xl border">
             <HowItWorksRow n={1}>
-              <Trans>Stake SKY & earn rewards</Trans>
+              <Trans>Stake SKY & accrue rewards</Trans>
             </HowItWorksRow>
             <HowItWorksRow n={2} optional>
               <Trans>Borrow USDS</Trans>

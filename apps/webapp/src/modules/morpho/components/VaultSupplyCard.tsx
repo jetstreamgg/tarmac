@@ -108,7 +108,7 @@ export function VaultSupplyCard({
       }
       title={
         <Trans>
-          Supply {assetIcon} and earn {rate} APY
+          Supply {assetIcon} at {rate} APY
         </Trans>
       }
       description={<VaultDescription vaultName={vaultName} />}

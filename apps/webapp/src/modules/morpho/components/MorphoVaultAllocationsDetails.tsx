@@ -517,7 +517,7 @@ export function MorphoVaultAllocationsDetails({
                         {formatDecimalPercentage(parseFloat(overallSkyData.skySavingsRatecRate))}
                       </Text>
                       <InfoTooltip
-                        content={<Trans>Earns the full Sky Savings Rate. Distributed via Merkl.</Trans>}
+                        content={<Trans>Accrues the full Sky Savings Rate. Distributed via Merkl.</Trans>}
                       />
                     </div>
                   ) : (
