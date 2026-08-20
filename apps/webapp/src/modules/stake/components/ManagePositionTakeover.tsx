@@ -36,6 +36,7 @@ import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
+import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
@@ -170,26 +171,10 @@ export function ManagePositionTakeover({
   const stakeCardValid = !state.stakeEnabled || state.skyAmount === 0n || !stakeError;
 
   // ---- Card 2 validation ----------------------------------------------------
-  // Max borrow — legacy Borrow.tsx:359-375 verbatim (F4 parity).
-  const adjustedTotalDebt =
-    collateralData?.totalDaiDebt !== undefined ? (collateralData.totalDaiDebt * 100001n) / 100000n : 0n;
-  const availableBorrowFromDebtCeiling =
-    collateralData?.debtCeiling !== undefined && collateralData?.totalDaiDebt !== undefined
-      ? collateralData.debtCeiling - adjustedTotalDebt < 0n
-        ? 0n
-        : collateralData.debtCeiling - adjustedTotalDebt
-      : 0n;
-  const availableBorrowFromCollateral = simulatedVault?.maxSafeBorrowableIntAmount ?? 0n;
-  const availableBorrowBalance =
-    availableBorrowFromDebtCeiling > availableBorrowFromCollateral
-      ? availableBorrowFromCollateral
-      : availableBorrowFromDebtCeiling;
+  const { fromDebtCeiling: availableBorrowFromDebtCeiling, balance: availableBorrowBalance } =
+    calculateAvailableBorrow(collateralData, simulatedVault?.maxSafeBorrowableIntAmount);
 
-  const minCollateralNotMet =
-    state.borrowMode === 'borrow' &&
-    debouncedVault?.collateralAmount !== undefined &&
-    debouncedVault?.minCollateralForDust !== undefined &&
-    debouncedVault.collateralAmount <= debouncedVault.minCollateralForDust;
+  const minCollateralNotMet = state.borrowMode === 'borrow' && isMinCollateralNotMet(debouncedVault);
 
   const maxRepayable = calculateMaxRepayable({
     debtValue: existingDebt,
