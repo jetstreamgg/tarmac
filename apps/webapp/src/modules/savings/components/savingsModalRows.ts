@@ -67,7 +67,7 @@ export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalGr
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)', token: 'USDS' },
+        { label: 'Est. 1Y yield (at current rate)', token: 'USDS' },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
@@ -119,7 +119,7 @@ export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsMod
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)', token: 'USDS' },
+        { label: 'Est. 1Y yield (at current rate)', token: 'USDS' },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
@@ -158,7 +158,7 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: 'sUSDS' },
       {
         kind: 'single',
-        label: 'Est. earnings (1Y)',
+        label: 'Est. 1Y yield (at current rate)',
         value: input.estEarnings,
         trend: true,
         // The projection is USDS-denominated whatever you supplied — name it, as
@@ -209,7 +209,7 @@ export function buildWithdrawReviewRows(input: WithdrawReviewRowInput): SavingsM
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
       {
         kind: 'single',
-        label: 'Est. earnings (1Y)',
+        label: 'Est. 1Y yield (at current rate)',
         value: input.estEarnings,
         trend: true,
         trailingToken: 'USDS'

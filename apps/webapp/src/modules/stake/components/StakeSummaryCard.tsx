@@ -223,7 +223,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
               {claimableUnavailable ? NO_VALUE : formatUsd(claimableUsd)}
             </SummaryStat>
             <SummaryStat
-              label={<Trans>Total rewards earned</Trans>}
+              label={<Trans>Total rewards received</Trans>}
               isLoading={claimableLoading || historyLoading || pricesLoading}
               icon={rewardIcons}
             >

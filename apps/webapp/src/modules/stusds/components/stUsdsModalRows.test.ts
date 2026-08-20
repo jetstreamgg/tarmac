@@ -33,7 +33,7 @@ describe('buildStUsdsEntryRows — vault-template entry grid', () => {
   it('produces the vault entry pairing, in order', () => {
     expect(gridLabels(buildStUsdsEntryRows(ENTRY_INPUT))).toEqual([
       ['Rate', 'Network'],
-      ['Supply', 'Est. earnings (1Y)'],
+      ['Supply', 'Est. 1Y yield (at current rate)'],
       ['Network fee']
     ]);
   });
@@ -52,7 +52,7 @@ describe('buildStUsdsEntryRows — vault-template entry grid', () => {
       after: '110.00',
       token: 'USDS'
     });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({
       kind: 'delta',
       before: '6.50',
       after: '7.15',
@@ -63,7 +63,7 @@ describe('buildStUsdsEntryRows — vault-template entry grid', () => {
   it('collapses the delta cells to their current value with no amount', () => {
     const cells = byLabel(buildStUsdsEntryRows({ ...ENTRY_INPUT, hasAmount: false }));
     expect(cells['Supply']).toMatchObject({ kind: 'single', value: '100.00' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({ kind: 'single', value: '6.50' });
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({ kind: 'single', value: '6.50' });
   });
 
   it('threads the Network and Network fee hints', () => {
@@ -95,14 +95,14 @@ describe('buildStUsdsReviewRows — vault-template review grids', () => {
       withdrawal: 'Instant'
     });
     expect(gridLabels(rows)).toEqual([
-      ["You'll receive", 'Est. earnings (1Y)'],
+      ["You'll receive", 'Est. 1Y yield (at current rate)'],
       ['Product', 'Rate'],
       ['Withdrawal', 'Network'],
       ['Route', 'Network fee']
     ]);
     const cells = byLabel(rows);
     expect(cells["You'll receive"]).toMatchObject({ kind: 'single', value: '10.00', token: 'USDS' });
-    expect(cells['Est. earnings (1Y)']).toMatchObject({
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({
       kind: 'single',
       value: '7.15',
       trend: true,

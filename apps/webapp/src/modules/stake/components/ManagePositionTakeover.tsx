@@ -448,7 +448,7 @@ export function ManagePositionTakeover({
         <div className="flex flex-wrap items-start gap-4">
           <div className="flex flex-col gap-1">
             <span className="text-textSecondary text-xs leading-[18px]">
-              <Trans>Rewards earned</Trans>
+              <Trans>Rewards received</Trans>
             </span>
             <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
               {detail.rewardsEarnedLoading ? (
