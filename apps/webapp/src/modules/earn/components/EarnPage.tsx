@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
@@ -7,7 +7,11 @@ import { useEarnMarketplace, EarnProductKind, useUsdsDaiData, type EarnProductRo
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { usePendleUsdValue } from '@/widgets';
-import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import {
+  usePendleMaturedNetworkSwitch,
+  usePendleMaturedPositions
+} from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { PendleClaimLauncher } from '@/modules/pendle/components/PendleClaimLauncher';
 import { getChainIcon } from '@/utils';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
@@ -296,9 +300,23 @@ export function EarnPage() {
     [maturedPositions, valueUsd]
   );
 
-  // The claim surface lives on the Portfolio (the matured card in the Supplied
-  // carousel) — the same place the matured product route already redirects to.
-  const handleRequiresActionSelect = () => {
+  // A visible claim surface prompts the mainnet switch, same as the Portfolio
+  // cards — the claim signs there.
+  usePendleMaturedNetworkSwitch(maturedPositions.length > 0);
+
+  // Row click opens the market's claim modal in place (the launchers below
+  // register their openers). Falls back to the Portfolio — where the claim
+  // card also lives — only if the opener hasn't registered yet.
+  const claimOpeners = useRef<Record<string, () => void>>({});
+  const registerClaimOpener = useCallback((rowId: string, open: () => void) => {
+    claimOpeners.current[rowId] = open;
+  }, []);
+  const handleRequiresActionSelect = (id: string) => {
+    const open = claimOpeners.current[id];
+    if (open) {
+      open();
+      return;
+    }
     setPendingNavIntent('card', ROUTES.PORTFOLIO);
     void navigate({ to: ROUTES.PORTFOLIO, search: retainOnNavigate });
   };
@@ -420,6 +438,13 @@ export function EarnPage() {
             onRowSelect={handleRequiresActionSelect}
             testIdPrefix="earn-requires-action"
           />
+          {maturedPositions.map(({ market }) => (
+            <PendleClaimLauncher
+              key={market.marketAddress}
+              market={market}
+              onReady={open => registerClaimOpener(`matured-${market.marketAddress.toLowerCase()}`, open)}
+            />
+          ))}
         </section>
       )}
       {/* "Products unavailable in the US" (1036:201473) — same table, dimmed and
