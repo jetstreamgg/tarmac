@@ -22,7 +22,7 @@ import {
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
-import { HOVER_EASE, HOVER_TRACK_MS } from './chartMotion';
+import { HOVER_EASE, HOVER_TRACK_MS, TAIL_TRACK_MS } from './chartMotion';
 import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Select,
@@ -145,14 +145,17 @@ const trackTransition = (property: string, reduceMotion: boolean | null) =>
  * Travel below which the glide is dropped and the element simply follows the
  * pointer.
  *
- * The glide exists to smooth the *jump* between two far-apart data points: on
- * 1W the series plots ~8 points across ~780px, so the cursor snaps ~90px at a
- * time and easing that reads as tracking. Dense series invert the maths — 1Y
- * steps ~6px and All ~0.3px — and there the target moves every frame, so a
- * 120ms transition never completes: the dot, rule and lit window are
- * permanently mid-glide and trail the pointer by up to 120ms of travel. That
- * lag is what reads as "sharp"/laggy, and it is worst exactly where the user
- * noticed it (1Y and All).
+ * This governs the two elements that report *where the pointer is* — the ringed
+ * dot and the dashed rule. (The lit window is not one of them; it keeps the
+ * comp's full 500ms and is meant to trail. See `TAIL_TRACK_MS`.)
+ *
+ * A glide smooths the *jump* between two far-apart data points: on 1W the
+ * series plots ~8 points across ~780px, so the dot moves ~90px at a time and
+ * easing that reads as tracking. Dense series invert the maths — 1Y steps ~6px
+ * and All ~0.3px — and there the target moves every frame, so a 120ms
+ * transition never completes: the indicator sits permanently mid-glide and
+ * trails the pointer by up to 120ms of travel. An indicator that lags is just
+ * wrong about where you are, which is what read as laggy on 1Y and All.
  *
  * The reference the annotation points at (app.perena.org/transparency) runs its
  * hover indicators with no positional transition whatsoever — its smoothness is
@@ -323,7 +326,6 @@ export function HoverDimMask({ id }: { id: string }) {
   // Pre-layout the chart has no dimensions (and no hover); fall back to a
   // full-coverage white mask so the series never flashes hidden.
   const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
-  const litTransition = useTrackingTransition('transform', cursorX);
 
   return (
     <defs>
@@ -353,7 +355,9 @@ export function HoverDimMask({ id }: { id: string }) {
             fill="white"
             style={{
               transform: `translateX(${cursorX - HALF_WINDOW}px)`,
-              transition: litTransition
+              // The comp's own 500ms, unconditionally — this is the one piece
+              // of hover chrome meant to trail the pointer (see TAIL_TRACK_MS).
+              transition: reduceMotion ? undefined : `transform ${TAIL_TRACK_MS}ms ${HOVER_EASE}`
             }}
           />
         )}

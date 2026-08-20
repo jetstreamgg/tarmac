@@ -214,12 +214,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     ),
     icon: row => (
       <IconboxStatus size="l" className="size-14 md:size-16">
-        <TokenIcon
-          token={{ symbol: row.tokenSymbol }}
-          width={48}
-          showChainIcon={false}
-          className="h-11 w-11 md:h-12 md:w-12"
-        />
+        <TokenIcon token={{ symbol: row.tokenSymbol }} width={52} showChainIcon={false} />
       </IconboxStatus>
     ),
     title: () => <Trans>Sky Savings</Trans>,
@@ -259,12 +254,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     ),
     icon: row => (
       <IconboxStatus size="l" type="success" dot className="size-14 md:size-16">
-        <TokenIcon
-          token={{ symbol: row.tokenSymbol }}
-          width={48}
-          showChainIcon={false}
-          className="h-11 w-11 md:h-12 md:w-12"
-        />
+        <TokenIcon token={{ symbol: row.tokenSymbol }} width={52} showChainIcon={false} />
       </IconboxStatus>
     ),
     title: row => row.name,

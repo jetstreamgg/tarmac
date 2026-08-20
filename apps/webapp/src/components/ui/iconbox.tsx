@@ -126,6 +126,24 @@ const iconboxStatusVariants = cva('relative inline-flex shrink-0 items-center ju
   }
 });
 
+/**
+ * Gap between the ring and the logo inside it, per size.
+ *
+ * The box owns the logo's size rather than each caller repeating it: the ring
+ * diameter, the border and this gap fully determine it, so a caller that sets a
+ * responsive box (the product headers run 56px on the phone tier and 64 from
+ * md) gets the right logo at every tier for free. Figma measures the L box at
+ * 64 overall around a 52px logo — 2px of ring and 4px of gap each side — and
+ * the smaller sizes at the 28/18/10/8 the docblock lists.
+ */
+const iconboxStatusGap: Record<NonNullable<VariantProps<typeof iconboxStatusVariants>['size']>, string> = {
+  l: 'p-1',
+  m: 'p-0.5',
+  s: 'p-0.5',
+  xs: 'p-0.5',
+  '2xs': 'p-px'
+};
+
 const iconboxStatusDot = cva('ring-pageBackground absolute rounded-full ring-2', {
   variants: {
     type: {
@@ -152,8 +170,12 @@ const iconboxStatusDot = cva('ring-pageBackground absolute rounded-full ring-2',
 /**
  * Iconbox / Status: the ringed token container. `default` is the resting
  * borderTertiary ring; `success` / `info` tint the ring and (with `dot`)
- * pin a solid status dot to the top-right. Inner logo per size: 48@l,
- * 28@m, 18@s, 10@xs, 8@2xs.
+ * pin a solid status dot to the top-right.
+ *
+ * The logo is sized by the box (see `iconboxStatusGap`) — 52@l, 28@m, 18@s,
+ * 10@xs, 8@2xs at the default diameters — so children need only be the mark
+ * itself. Any width/height a child carries is overridden; pass `width` on a
+ * `TokenIcon` purely as the raster resolution hint it is.
  */
 export function IconboxStatus({
   type,
@@ -168,8 +190,11 @@ export function IconboxStatus({
   className?: string;
 }) {
   return (
-    <span className={cn(iconboxStatusVariants({ type, size }), className)}>
-      {children}
+    <span className={cn(iconboxStatusVariants({ type, size }), iconboxStatusGap[size ?? 'm'], className)}>
+      {/* The logo fills what the ring and gap leave. `[&>*]` outranks a plain
+          size utility on the child, so a caller's leftover h-/w- classes can't
+          reintroduce the old diameter. */}
+      <span className="flex size-full items-center justify-center [&>*]:size-full">{children}</span>
       {dot && (type === 'success' || type === 'info') && (
         <span className={iconboxStatusDot({ type, size })} />
       )}

@@ -1,8 +1,8 @@
 import { RefObject, useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useReducedMotion } from 'motion/react';
 import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
-import { HOVER_EASE, HOVER_FADE_MS, HOVER_TRACK_MS } from './chartMotion';
+import { HOVER_EASE, HOVER_TRACK_MS } from './chartMotion';
 
 /** Gap between the hover point and the panel — recharts' own default offset. */
 const CURSOR_OFFSET = 10;
@@ -67,9 +67,13 @@ function useTooltipPlacement(
   // Flip to the other side of the cursor when the panel would leave the plot,
   // which is what recharts does with the default allowEscapeViewBox.
   const flipX = coordinate.x + CURSOR_OFFSET + panelSize.width > anchor.width;
-  const flipY = coordinate.y + CURSOR_OFFSET + panelSize.height > anchor.height;
   const x = anchor.left + coordinate.x + (flipX ? -CURSOR_OFFSET - panelSize.width : CURSOR_OFFSET);
-  const y = anchor.top + coordinate.y + (flipY ? -CURSOR_OFFSET - panelSize.height : CURSOR_OFFSET);
+  // The panel rides the top of the plot instead of the point's own height. The
+  // comp animates the tooltip on x only (Figma 1598:76196 has no y track), and
+  // it is what the reference app does: a panel pinned to one line never covers
+  // the part of the series you are reading, and the eye stops having to chase
+  // it up and down while scrubbing.
+  const y = anchor.top + CURSOR_OFFSET;
 
   return {
     panelRef,
@@ -77,47 +81,25 @@ function useTooltipPlacement(
       position: 'absolute',
       left: 0,
       top: 0,
-      // Transform, not left/top, so the move is compositor-driven. The timing
-      // is shared with the cursor, dot and lit window (Chart.tsx) because the
-      // comp moves all four as one — they leave and land together, on quart.
-      // It replaces a 400ms ease-out inherited from recharts' own wrapper,
-      // which left the panel trailing the rest of the hover chrome.
+      // Transform, not left/top, so the move is compositor-driven. Timing
+      // matches the dot and rule (Chart.tsx): the panel names the point they
+      // mark, so it has to arrive with them rather than trail like the lit
+      // window. It replaces a 400ms ease-out inherited from recharts' own
+      // wrapper, which left the panel behind all of them.
       transform: `translate(${x}px, ${y}px)`,
       transition: placed && !reduceMotion ? `transform ${HOVER_TRACK_MS}ms ${HOVER_EASE}` : 'none'
     } as const
   };
 }
 
-/**
- * Trades one value for another on a ~100ms crossfade (the comp fades its date
- * and amount over ~96ms, out on quart and in on easeInOut).
- *
- * Both copies are stacked in one grid cell so they overlap while they trade —
- * a sequential fade would read as a flicker, and floating one copy out of flow
- * would collapse the panel's width mid-move.
+/*
+ * The panel's date and value used to trade places on a ~100ms crossfade (the
+ * comp fades them over ~96ms — Figma 1598:76197/76206). It is gone: while
+ * scrubbing, the figures are what the user is reading, and fading each swap
+ * leaves them mid-opacity most of the time, which is harder to read rather
+ * than smoother. The reference app the annotation names updates its tooltip
+ * text instantly. Deliberate deviation from the comp, on the user's call.
  */
-function Crossfade({ tokenKey, children }: { tokenKey: string; children: React.ReactNode }) {
-  const reduceMotion = useReducedMotion();
-  if (reduceMotion) return <>{children}</>;
-  return (
-    <span className="grid">
-      <AnimatePresence initial={false} mode="sync">
-        <motion.span
-          key={tokenKey}
-          className="col-start-1 row-start-1"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          // The comp fades the outgoing copy on quart and the incoming one on
-          // easeInOut, so the exit carries its own curve.
-          exit={{ opacity: 0, transition: { duration: HOVER_FADE_MS / 1000, ease: [0.77, 0, 0.175, 1] } }}
-          transition={{ duration: HOVER_FADE_MS / 1000, ease: [0.5, 0, 0.5, 1] }}
-        >
-          {children}
-        </motion.span>
-      </AnimatePresence>
-    </span>
-  );
-}
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -184,7 +166,7 @@ export function ChartTooltip({
       data-testid="chart-tooltip"
     >
       <p className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
-        <Crossfade tokenKey={labelFormatter(label)}>{labelFormatter(label)}</Crossfade>
+        {labelFormatter(label)}
       </p>
       {payload.map((entry, i) => (
         <div key={`tooltip-value-item-${i}`} className="flex items-center gap-4">
@@ -204,10 +186,8 @@ export function ChartTooltip({
           )}
           <span className="ml-auto flex items-center gap-1">
             <span className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
-              <Crossfade tokenKey={String(entry.value)}>
-                {prefix || ''}
-                {`${formatNumber(entry.value)}${symbol && !isPercentage && !hasTokenIcon ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
-              </Crossfade>
+              {prefix || ''}
+              {`${formatNumber(entry.value)}${symbol && !isPercentage && !hasTokenIcon ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
             </span>
             {tokenSymbols && tokenSymbols.length > 0 && (
               <TokenIconStack

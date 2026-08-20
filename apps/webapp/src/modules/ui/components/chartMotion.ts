@@ -17,8 +17,17 @@
  */
 export const HOVER_TRACK_MS = 120;
 
+/**
+ * The lit window — the "tail" of full-strength series around the hover point —
+ * is the one element that keeps the comp's own duration.
+ *
+ * In the timeline (node 1598:76193, the Mask) it travels between points over
+ * 497.5ms on quart, and unlike the dot and the rule it is not an indicator of
+ * where the pointer is: nothing is misread while it catches up, and the trail
+ * it leaves behind the cursor is the effect. So it glides unconditionally at
+ * the comp's figure while the dot and rule track the pointer.
+ */
+export const TAIL_TRACK_MS = 500;
+
 /** Quart, the easing every move in the comp carries. */
 export const HOVER_EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
-
-/** Tooltip label/value crossfade — ~96ms in the comp. */
-export const HOVER_FADE_MS = 100;
