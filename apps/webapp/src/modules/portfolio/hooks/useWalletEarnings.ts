@@ -13,7 +13,12 @@ import {
 } from '../../../hooks/pendle/pendleApiClient';
 import { pendlePnlQueryKey } from '../../../hooks/pendle/usePendleAllPnlTransactions';
 import { fetchBaLabsHistoricDailyPrices } from '../../../hooks/prices/baLabsHistoricPrices';
-import { EARNINGS_SAVINGS_ENABLED, SUSDS_VAULT_ID_MAINNET } from '../../../hooks/vaults/fyi/constants';
+import {
+  EARNINGS_SAVINGS_ENABLED,
+  EARNINGS_STUSDS_ENABLED,
+  STUSDS_VAULT_ID_MAINNET,
+  SUSDS_VAULT_ID_MAINNET
+} from '../../../hooks/vaults/fyi/constants';
 import {
   fetchVaultsFyiPartialReturns,
   fetchVaultsFyiTotalReturns
@@ -202,6 +207,31 @@ export function useWalletEarnings(): WalletEarnings {
     refetchOnWindowFocus: false
   });
 
+  // stUSDS rides the same vaults.fyi returns endpoints as savings, just with
+  // its own vaultId. Off until their holder indexing catches up with the
+  // 2026-08-20 listing (see EARNINGS_STUSDS_ENABLED).
+  const stusdsEnabled = EARNINGS_STUSDS_ENABLED;
+  const stusdsTotalQuery = useQuery({
+    queryKey: ['wallet-earnings', 'stusds-total', user],
+    queryFn: () => fetchVaultsFyiTotalReturns({ userAddress: address!, vaultId: STUSDS_VAULT_ID_MAINNET }),
+    enabled: connected && stusdsEnabled,
+    staleTime: VAULTS_FYI_STALE_MS,
+    refetchOnWindowFocus: false
+  });
+
+  const stusdsPartialQuery = useQuery({
+    queryKey: ['wallet-earnings', 'stusds-partial', user, startSec],
+    queryFn: () =>
+      fetchVaultsFyiPartialReturns({
+        userAddress: address!,
+        vaultId: STUSDS_VAULT_ID_MAINNET,
+        fromTimestamp: window.startSec
+      }),
+    enabled: connected && stusdsEnabled,
+    staleTime: VAULTS_FYI_STALE_MS,
+    refetchOnWindowFocus: false
+  });
+
   const protocols = useMemo<ProtocolEarnings[]>(() => {
     if (!connected) {
       const gone = notAvailable('disconnected');
@@ -306,13 +336,34 @@ export function useWalletEarnings(): WalletEarnings {
       };
     })();
 
-    const stusds: ProtocolEarnings = {
-      id: 'stusds',
-      rowIds: ['stusds'],
-      ...stUsdsPlaceholderEarnings(),
-      isLoading: false,
-      error: null
-    };
+    const stusds: ProtocolEarnings = (() => {
+      if (!stusdsEnabled) {
+        return {
+          id: 'stusds' as const,
+          rowIds: ['stusds'],
+          ...stUsdsPlaceholderEarnings(),
+          isLoading: false,
+          error: null
+        };
+      }
+      // Same per-figure independence as savings; stUSDS cut() can make earned
+      // negative, which computeSavingsEarnings passes through signed.
+      const computed = computeSavingsEarnings({
+        totalReturns: stusdsTotalQuery.data ?? {},
+        partialReturns: stusdsPartialQuery.data ?? {},
+        window
+      });
+      return {
+        id: 'stusds' as const,
+        rowIds: ['stusds'],
+        totalEarned: stusdsTotalQuery.data ? computed.totalEarned : gapFor(stusdsTotalQuery.error),
+        earnedThisMonth: stusdsPartialQuery.data
+          ? computed.earnedThisMonth
+          : gapFor(stusdsPartialQuery.error),
+        isLoading: stusdsTotalQuery.isLoading || stusdsPartialQuery.isLoading,
+        error: stusdsTotalQuery.error ?? stusdsPartialQuery.error ?? null
+      };
+    })();
 
     return [morpho, merkl, pendle, savings, stusds];
   }, [
@@ -320,6 +371,7 @@ export function useWalletEarnings(): WalletEarnings {
     window,
     attributedTokens,
     savingsEnabled,
+    stusdsEnabled,
     morphoQuery,
     merklRewardsQuery,
     merklClaimsQuery,
@@ -328,7 +380,9 @@ export function useWalletEarnings(): WalletEarnings {
     pendleGainedQuery,
     pendleDashboardQuery,
     savingsTotalQuery,
-    savingsPartialQuery
+    savingsPartialQuery,
+    stusdsTotalQuery,
+    stusdsPartialQuery
   ]);
 
   const combined = useMemo(() => combineWalletEarnings(protocols), [protocols]);
