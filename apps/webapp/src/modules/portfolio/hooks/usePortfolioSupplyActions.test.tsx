@@ -123,6 +123,7 @@ const position = (
   intent: KIND_INTENT[kind],
   amountUsd: 100,
   rate: 0.05,
+  rateLoading: false,
   color: '#000',
   hoverColor: '#000',
   share: 1,

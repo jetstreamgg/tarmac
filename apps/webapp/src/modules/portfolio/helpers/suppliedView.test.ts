@@ -173,9 +173,37 @@ describe('buildSuppliedView', () => {
       totalSupplied: 0,
       projected1Y: 0,
       avgRate: 0,
+      ratesLoading: false,
       activePositions: 0,
       suppliedTokens: [],
       networksWithPositions: []
     });
+  });
+
+  it('flags rates as loading while a position row is still fetching its rate', () => {
+    const view = buildSuppliedView(
+      [
+        rows[0],
+        makeRow({
+          id: 'vault-usds',
+          kind: 'vault',
+          rate: { formatted: '—' },
+          isLoading: true,
+          position: amount(80, { 1: 80 })
+        })
+      ],
+      'all'
+    );
+
+    expect(view.ratesLoading).toBe(true);
+    expect(view.positions.find(p => p.id === 'vault-usds')?.rateLoading).toBe(true);
+    expect(view.positions.find(p => p.id === 'savings')?.rateLoading).toBe(false);
+
+    // A rate-less product that has finished loading is absence, not loading.
+    const settled = buildSuppliedView(
+      [makeRow({ id: 'points', rate: { formatted: '—' }, position: amount(10, { 1: 10 }) })],
+      'all'
+    );
+    expect(settled.ratesLoading).toBe(false);
   });
 });

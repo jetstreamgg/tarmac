@@ -18,6 +18,7 @@ import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { setUpgradeModalOpen } from '@/modules/analytics/lib/destination';
@@ -76,12 +77,17 @@ export function UpgradeModalForm({
     chainId
   });
 
-  const { data: mkrSkyFee } = useMkrSkyFee();
+  const { data: mkrSkyFee, error: mkrSkyFeeError } = useMkrSkyFee();
+  // Unknown fee = unknown economics: the penalty/receive cells and the confirm
+  // both wait on it. A failed read settles the cells on "Unavailable" instead
+  // of an endless pulse — the confirm stays disabled either way.
+  const feeUnknown = isMkr && mkrSkyFee === undefined;
+  const feeFailed = feeUnknown && mkrSkyFeeError !== null;
   const fee = isMkr ? (mkrSkyFee ?? 0n) : 0n;
   const receiveAmount = math.calculateConversion({ symbol: token }, debouncedAmount, fee);
 
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
-  const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending;
+  const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
   const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
@@ -90,7 +96,11 @@ export function UpgradeModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
+  const {
+    data: networkFee,
+    isLoading: networkFeeLoading,
+    error: networkFeeError
+  } = useNetworkFee({
     calls,
     chainId,
     shouldUseBatch: isBatch,
@@ -104,12 +114,14 @@ export function UpgradeModalForm({
   // the provider on each of its re-renders (the update loop the modal forms guard
   // against). Same field-by-field list the convert launch hook keeps.
   const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
+    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
       networkFee?.batchSaving,
+      networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
+      bundleState.failed,
       bundleState.canBundle,
       bundleState.promoVisible
     ]
@@ -119,6 +131,7 @@ export function UpgradeModalForm({
   // see `confirmAction`), and reverts to the gated "Continue" once connected.
   const { openConnectModal } = useConnectModal();
   const disabled = isConnected && (!amountReady || !prepared);
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // The wallet balance is chain state the engine's success doesn't refetch —
   // sync it so the entry screen shows the post-upgrade balance if revisited.
@@ -194,6 +207,7 @@ export function UpgradeModalForm({
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
     confirmAction: isConnected ? undefined : connectAction,
+    errorMessage,
     steps,
     transactionScreenContent,
     toast,
@@ -213,14 +227,17 @@ export function UpgradeModalForm({
     targetRate: isMkr
       ? formatNumber(Number(math.MKR_TO_SKY_RATE), { minDecimals: 2, maxDecimals: 2 })
       : '1.00',
-    receiveAmount: formatAmount(receiveAmount),
+    receiveAmount: feeFailed ? t`Unavailable` : formatAmount(receiveAmount),
     penalty: isMkr
-      ? `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
+      ? feeFailed
+        ? t`Unavailable`
+        : `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
       : undefined,
     // 12px info glyph after the label (Figma 1343:79562).
     penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} height={12} /> : undefined,
     network: networkName,
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: networkFee?.formatted ?? NO_VALUE,
+    feeLoading: feeUnknown && !feeFailed
   });
 
   const body = (
@@ -266,11 +283,6 @@ export function UpgradeModalForm({
         <ModalSummaryGrid rows={toGridCells(rows, 'upgrade-modal-row', feeCell)} dividerClassName="h-6" />
 
         {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
-        {error && amountReady && (
-          <Text className="text-error text-sm" data-testid="upgrade-modal-error">
-            <Trans>Something went wrong preparing the transaction. Please try again.</Trans>
-          </Text>
-        )}
       </div>
     </div>
   );

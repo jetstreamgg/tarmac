@@ -104,6 +104,7 @@ const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   intent: over.kind === 'savings' ? Intent.SAVINGS_INTENT : Intent.VAULTS_INTENT,
   amountUsd: 100,
   rate: 0.05,
+  rateLoading: false,
   color: '#000',
   hoverColor: '#000',
   share: 0.5,
@@ -125,6 +126,7 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
   totalSupplied: 200,
   projected1Y: 0,
   avgRate: 0,
+  ratesLoading: false,
   activePositions: positions.length,
   suppliedTokens: [],
   networksWithPositions: [1]

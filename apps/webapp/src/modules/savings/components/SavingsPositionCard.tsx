@@ -6,7 +6,9 @@ import { Trans } from '@lingui/react/macro';
 import { useSavingsData, useTokenBalance, useOverallSkyData, TOKENS } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardError, PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   NO_VALUE,
   ProductActions,
@@ -40,13 +42,13 @@ const formatToken = (value?: bigint) =>
 export function SavingsPositionCard() {
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
-  const { data: savingsData, mutate: mutateSavings } = useSavingsData();
+  const { data: savingsData, error: savingsError, mutate: mutateSavings } = useSavingsData();
   const { data: susdsBalance, refetch: refetchSusds } = useTokenBalance({
     address,
     chainId,
     token: TOKENS.susds.address[chainId]
   });
-  const { data: overall } = useOverallSkyData();
+  const { data: overall, isLoading: rateLoading } = useOverallSkyData();
   // sUSDS appreciates every second; the hero figure shows it happening.
   const ratePerSecond = useSavingsAccrualRate();
   // Refresh position card + sUSDS balance after a successful supply/withdraw.
@@ -60,6 +62,17 @@ export function SavingsPositionCard() {
   // Supply/withdraw triggers for the editable modal (shared with any other surface
   // that opens this flow, e.g. Portfolio quick-deposit).
   const { openSupply, openWithdraw } = useSavingsModal({ onSuccess: refreshPosition });
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position. A failed
+  // read settles on the error card rather than pulsing forever.
+  if (isConnected && savingsData === undefined) {
+    return savingsError ? (
+      <PositionCardError testId="savings-position-card-error" />
+    ) : (
+      <PositionCardSkeleton testId="savings-position-card-skeleton" />
+    );
+  }
 
   const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;
   if (!hasPosition) {
@@ -95,14 +108,22 @@ export function SavingsPositionCard() {
               <span className="text-fgSecondary">{NO_VALUE}</span>
             </ProductStat>
             <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
-              <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
-              {formatNumber(projectedEarnings, { maxDecimals: 2 })}
-              <TokenIcon
-                token={{ symbol: 'USDS' }}
-                width={12}
-                showChainIcon={false}
-                className="h-3 w-3 shrink-0"
-              />
+              {rateValue === undefined && rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : rateValue === undefined ? (
+                NO_VALUE
+              ) : (
+                <>
+                  <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+                  {formatNumber(projectedEarnings, { maxDecimals: 2 })}
+                  <TokenIcon
+                    token={{ symbol: 'USDS' }}
+                    width={12}
+                    showChainIcon={false}
+                    className="h-3 w-3 shrink-0"
+                  />
+                </>
+              )}
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
@@ -118,7 +139,11 @@ export function SavingsPositionCard() {
               </ProductFigure>
             </ProductStat>
             <ProductStat label={<Trans>Current rate</Trans>}>
-              <ProductPercent value={currentRate} />
+              {rateValue === undefined && rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                <ProductPercent value={currentRate} />
+              )}
             </ProductStat>
           </ProductStatPair>
         </>

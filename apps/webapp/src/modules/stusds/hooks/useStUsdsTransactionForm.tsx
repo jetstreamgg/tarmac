@@ -41,6 +41,8 @@ export interface StUsdsTransactionForm {
   amount: bigint;
   /** Spendable balance for the flow: USDS wallet balance / effective max withdraw. */
   available: bigint;
+  /** The `available` read has resolved — display and validation wait on it. */
+  availableKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
   /** No route can take this amount (module cap / liquidity / both providers blocked). */
@@ -143,10 +145,15 @@ export function useStUsdsTransactionForm({
     : (providerSelection.nativeProvider?.state?.maxDeposit ?? capacityData?.remainingCapacityBuffered ?? 0n);
 
   const isZero = amount === 0n;
+  // Never validate against the unresolved balance's 0n fallback.
+  const availableKnown = isSupply
+    ? stUsdsData?.userUsdsBalance !== undefined
+    : stUsdsData !== undefined && !withdrawBalancesLoading;
   // A max withdraw bypasses the amount checks: the derived display can drift or
   // lag the debounce, but the flag — not the number — drives the redemption.
   const insufficient =
     !max &&
+    availableKnown &&
     amount > 0n &&
     (isSupply ? amount > available : amount > available || amount > (withdrawBalanceLimit ?? available));
 
@@ -209,7 +216,7 @@ export function useStUsdsTransactionForm({
     !blocked &&
     (max
       ? available > 0n && !withdrawBalancesLoading && debouncedAmount > 0n
-      : !isZero && !insufficient && !debouncePending);
+      : !isZero && availableKnown && !insufficient && !debouncePending);
 
   const rate = stUsdsData ? calculateApyFromStr(stUsdsData.moduleRate) / 100 : undefined;
 
@@ -284,6 +291,7 @@ export function useStUsdsTransactionForm({
     value: displayValue,
     amount: debouncedAmount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     blocked,

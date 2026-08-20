@@ -13,7 +13,11 @@ const h = vi.hoisted(() => ({
   update: vi.fn(),
   isBatch: false,
   isModalOpen: true,
-  isMinimized: false
+  isMinimized: false,
+  // MKR→SKY governance fee read: undefined = unresolved (in flight, or failed
+  // when the error is set).
+  mkrSkyFee: 0n as bigint | undefined,
+  mkrSkyFeeError: null as Error | null
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -34,7 +38,7 @@ vi.mock('@/hooks', async importOriginal => {
     // tests assert synchronously after typing.
     useDebounce: <T,>(value: T) => value,
     useTokenBalance: () => ({ data: { value: 100n * 10n ** 18n }, refetch: vi.fn() }),
-    useMkrSkyFee: () => ({ data: 0n }),
+    useMkrSkyFee: () => ({ data: h.mkrSkyFee, error: h.mkrSkyFeeError }),
     useNetworkFee: () => ({ data: undefined, isLoading: false, error: null }),
     useIsBatchSupported: () => ({ data: false })
   };
@@ -95,6 +99,56 @@ const lastAnalytics = () => {
   return withAnalytics.at(-1)?.[1].analytics;
 };
 
+// The last entry.confirmDisabled pushed to the modal.
+const lastDisabled = () => {
+  const withEntry = h.update.mock.calls.filter(([, patch]) => patch?.entry?.confirmDisabled !== undefined);
+  return withEntry.at(-1)?.[1].entry.confirmDisabled;
+};
+
+describe('UpgradeModalForm — MKR→SKY fee read states (APP-491)', () => {
+  beforeEach(() => {
+    h.isBatch = false;
+    h.execute.mockClear();
+    h.update.mockClear();
+    h.isModalOpen = true;
+    h.isMinimized = false;
+    h.mkrSkyFee = 0n;
+    h.mkrSkyFeeError = null;
+  });
+  afterEach(() => cleanup());
+
+  it('holds the Penalty and You’ll receive cells behind skeletons while the fee is in flight', () => {
+    h.mkrSkyFee = undefined;
+    renderForm('MKR');
+    fireEvent.change(screen.getByTestId('upgrade-modal-amount-input'), { target: { value: '2' } });
+
+    expect(screen.getAllByTestId('cell-loading').length).toBe(2);
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('settles a failed fee read on "Unavailable" cells and keeps the confirm disabled', () => {
+    h.mkrSkyFee = undefined;
+    h.mkrSkyFeeError = new Error('read failed');
+    renderForm('MKR');
+    fireEvent.change(screen.getByTestId('upgrade-modal-amount-input'), { target: { value: '2' } });
+
+    expect(screen.queryAllByTestId('cell-loading').length).toBe(0);
+    expect(screen.getByTestId('upgrade-modal-row-Penalty').textContent).toContain('Unavailable');
+    expect(screen.getByTestId("upgrade-modal-row-You'll receive").textContent).toContain('Unavailable');
+    expect(lastDisabled()).toBe(true);
+  });
+
+  it('never blocks a DAI upgrade on the MKR fee read', () => {
+    h.mkrSkyFee = undefined;
+    h.mkrSkyFeeError = new Error('read failed');
+    renderForm('DAI');
+    fireEvent.change(screen.getByTestId('upgrade-modal-amount-input'), { target: { value: '10' } });
+
+    expect(screen.queryAllByTestId('cell-loading').length).toBe(0);
+    expect(lastDisabled()).toBe(false);
+  });
+});
+
 describe('UpgradeModalForm — analytics parity blob (APP-444 B6)', () => {
   beforeEach(() => {
     h.isBatch = false;
@@ -102,6 +156,8 @@ describe('UpgradeModalForm — analytics parity blob (APP-444 B6)', () => {
     h.update.mockClear();
     h.isModalOpen = true;
     h.isMinimized = false;
+    h.mkrSkyFee = 0n;
+    h.mkrSkyFeeError = null;
   });
   afterEach(() => cleanup());
 

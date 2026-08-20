@@ -128,9 +128,9 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
     chainId,
     enabled: Boolean(urnAddress && rewardContracts?.length)
   });
-  const { data: prices } = usePrices();
+  const { data: prices, isLoading: pricesLoading } = usePrices();
 
-  if (isLoading || !urnAddress) return <Skeleton className="h-5 w-16" />;
+  if (isLoading || pricesLoading || !urnAddress) return <Skeleton className="h-5 w-16" />;
   if (error && !toClaim) {
     // A failed claimables read is "unknown", not $0.00.
     return (

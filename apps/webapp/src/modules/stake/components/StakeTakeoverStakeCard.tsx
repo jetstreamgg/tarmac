@@ -39,6 +39,7 @@ export function StakeTakeoverStakeCard({
   balance,
   balanceLoading,
   rewardsRate,
+  rateLoading,
   estAnnualRewards,
   rewardSymbol,
   minStakeToBorrow,
@@ -50,9 +51,12 @@ export function StakeTakeoverStakeCard({
   balanceLoading?: boolean;
   /** Formatted percentage (e.g. "1.50%") or null while loading/unavailable. */
   rewardsRate: string | null;
+  /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton. */
+  rateLoading?: boolean;
   /** In reward-token units; null renders the design's "–" empty marker. */
   estAnnualRewards: bigint | null;
-  rewardSymbol: string;
+  /** Undefined while the selected farm's reward token is unresolved — the icon waits. */
+  rewardSymbol?: string;
   /** Shown only when Borrow is enabled (minCollateralForDust). */
   minStakeToBorrow: bigint | undefined;
   error?: string;
@@ -124,19 +128,25 @@ export function StakeTakeoverStakeCard({
       </div>
 
       <div className="flex items-center gap-4 md:gap-6">
-        <StatItem label={<Trans>SKY Rewards rate</Trans>}>{rewardsRate ?? NO_VALUE}</StatItem>
+        <StatItem label={<Trans>SKY Rewards rate</Trans>}>
+          {rewardsRate ?? (rateLoading ? <Skeleton className="h-4 w-14" /> : NO_VALUE)}
+        </StatItem>
         <StatDivider />
         <StatItem label={<Trans>Est. annual rewards</Trans>}>
           <span data-testid="stake-takeover-est-rewards" className="flex items-center gap-1">
-            {estAnnualRewards !== null && estAnnualRewards > 0n ? (
+            {rateLoading && amount > 0n ? (
+              <Skeleton className="h-4 w-14" />
+            ) : estAnnualRewards !== null && estAnnualRewards > 0n ? (
               <>
                 {formatBigInt(estAnnualRewards)}
-                <TokenIcon
-                  token={{ symbol: rewardSymbol }}
-                  width={12}
-                  className="h-3 w-3"
-                  showChainIcon={false}
-                />
+                {rewardSymbol && (
+                  <TokenIcon
+                    token={{ symbol: rewardSymbol }}
+                    width={12}
+                    className="h-3 w-3"
+                    showChainIcon={false}
+                  />
+                )}
               </>
             ) : (
               NO_VALUE

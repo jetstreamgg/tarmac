@@ -26,14 +26,27 @@ const h = vi.hoisted(() => ({
   usdsBalance: 0n,
   existingCollateral: 0n,
   existingDebt: 0n,
+  // When true, the position-detail mock reports an in-flight vault read.
+  vaultLoading: false,
   dust: 0n,
   voteDelegate: undefined as `0x${string}` | undefined,
+  // The urn's current farm (defaults to the mainnet SKY farm in beforeEach).
+  rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc' as `0x${string}`,
+  rewardDeprecated: false,
+  // Indexer farm outside the generated address books, and the on-chain
+  // rewardsToken symbols backing the useRewardContractTokens mock.
+  extraFarm: undefined as `0x${string}` | undefined,
+  farmTokenSymbols: {} as Record<string, string>,
   // Simulation knobs.
   simLiqPrice: 432n * 10n ** 14n,
   simDelayedPrice: 608n * 10n ** 14n,
   simProximity: 36,
   minCollateralForDust: 0n,
-  debtCeiling: 0n
+  debtCeiling: 0n,
+  simulationError: null as Error | null,
+  // Launch-engine knobs (see the useStakeManageLaunch mock below).
+  launchError: null as Error | null,
+  launchLoading: false
 }));
 
 let mockSearchParams = new URLSearchParams();
@@ -111,7 +124,7 @@ vi.mock('@/hooks', async importOriginal => {
         delayedPrice: h.simDelayedPrice
       },
       isLoading: false,
-      error: null,
+      error: h.simulationError,
       mutate: () => undefined,
       dataSources: []
     }),
@@ -124,7 +137,29 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => undefined,
       dataSources: []
-    })
+    }),
+    useStakeRewardContracts: () => ({
+      data: [
+        { contractAddress: actual.lsSkySpkRewardAddress[1] },
+        { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
+        { contractAddress: actual.lsSkySkyRewardAddress[1] },
+        ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
+      ],
+      isLoading: false,
+      error: null,
+      mutate: () => undefined
+    }),
+    useRewardContractTokens: (address?: `0x${string}`) => ({
+      data:
+        address && h.farmTokenSymbols[address.toLowerCase()]
+          ? { rewardsToken: { symbol: h.farmTokenSymbols[address.toLowerCase()] } }
+          : undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => undefined,
+      dataSources: []
+    }),
+    useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null })
   };
 });
 
@@ -134,19 +169,22 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
   return {
     useStakePositionDetail: () => ({
       urnAddress: URN_ADDRESS,
-      vault: {
-        collateralType: 'LSEV2-SKY-A',
-        collateralAmount: h.existingCollateral,
-        debtValue: h.existingDebt,
-        dust: h.dust,
-        riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
-        liquidationProximityPercentage: h.existingDebt > 0n ? 30 : 0,
-        liquidationPrice: h.simLiqPrice,
-        delayedPrice: h.simDelayedPrice
-      },
-      vaultLoading: false,
+      vault: h.vaultLoading
+        ? undefined
+        : {
+            collateralType: 'LSEV2-SKY-A',
+            collateralAmount: h.existingCollateral,
+            debtValue: h.existingDebt,
+            dust: h.dust,
+            riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
+            liquidationProximityPercentage: h.existingDebt > 0n ? 30 : 0,
+            liquidationPrice: h.simLiqPrice,
+            delayedPrice: h.simDelayedPrice
+          },
+      vaultLoading: h.vaultLoading,
       hasDebt: h.existingDebt > 0n,
-      rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
+      rewardContract: h.rewardContract,
+      rewardDeprecated: h.rewardDeprecated,
       rewardSymbol: 'SKY',
       voteDelegate: h.voteDelegate,
       rewardsRate: 0.015,
@@ -179,8 +217,8 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
         urnSelectedVoteDelegate: h.voteDelegate,
         shouldUseBatch: false,
         prepared: h.prepared,
-        isLoading: false,
-        error: null
+        isLoading: h.launchLoading,
+        error: h.launchError
       };
     }
   };
@@ -189,6 +227,7 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks';
 import { ManagePositionTakeover } from './ManagePositionTakeover';
 
 const renderSheet = (init: StakeManageFlowInit = {}) => {
@@ -216,27 +255,37 @@ describe('ManagePositionTakeover', () => {
     h.usdsBalance = 100_000n * WAD;
     h.existingCollateral = 3_000_000n * WAD;
     h.existingDebt = 30_000n * WAD;
+    h.vaultLoading = false;
     h.dust = 30_000n * WAD;
     h.voteDelegate = CURRENT_DELEGATE;
+    h.rewardContract = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
+    h.rewardDeprecated = false;
+    h.extraFarm = undefined;
+    h.farmTokenSymbols = {};
     h.simLiqPrice = 432n * 10n ** 14n;
     h.simDelayedPrice = 608n * 10n ** 14n;
     h.simProximity = 36;
     h.minCollateralForDust = 1_440_000n * WAD;
     h.debtCeiling = parseUnits('1000000000', 18);
+    h.simulationError = null;
+    h.launchError = null;
+    h.launchLoading = false;
   });
   afterEach(() => {
     cleanup();
     document.documentElement.style.overflow = '';
   });
 
-  it('renders summary strip + three cards, all off by default, Confirm disabled', () => {
+  it('renders summary strip + four cards, all off by default, Confirm disabled', () => {
     renderSheet();
 
     expect(screen.getByTestId('stake-manage-position-summary')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-stake-card')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-borrow-card')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-reward-card')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-delegate-card')).toBeTruthy();
     expect(screen.queryByTestId('stake-manage-stake-amount')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
@@ -287,6 +336,18 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '4000000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toBe('Insufficient funds');
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('holds the withdraw insufficient check until the vault read resolves (APP-491)', () => {
+    h.vaultLoading = true;
+    renderSheet({ stakeCard: 'withdraw' });
+
+    // While the collateral read is in flight the staked amount is a premature
+    // 0n — any typed amount would flash a false error. No error, but Confirm
+    // stays gated until the read lands.
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '4000000' } });
+    expect(screen.queryByTestId('stake-manage-stake-amount-error')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
@@ -472,6 +533,86 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
+  it('reward: picking a different farm stages the change and enables Confirm (APP-516)', () => {
+    renderSheet({ rewardCard: true });
+    expect(confirmButton().disabled).toBe(true);
+
+    // SPK is deprecated and not the urn's farm → hidden; the current SKY farm
+    // renders pre-selected.
+    expect(screen.queryByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`)).toBeNull();
+    expect(
+      screen
+        .getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`)
+        .getAttribute('aria-pressed')
+    ).toBe('true');
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkyUsdsRewardAddress[1]);
+    expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('reward: re-selecting the current farm stages no change', () => {
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`));
+    // Back on the urn's own farm → effective reward is the current one → no
+    // change staged.
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('reward: an out-of-address-book farm previews with its on-chain token in the From → To block', () => {
+    // The indexer can list a farm before the webapp ships its generated
+    // addresses. The review body must still preview the change — hiding the
+    // block would confirm a reward-only multicall behind an empty summary.
+    const unknownFarm = '0x9999999999999999999999999999999999999999' as const;
+    h.extraFarm = unknownFarm;
+    h.farmTokenSymbols[unknownFarm] = 'FOO';
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${unknownFarm}`));
+    expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
+    expect(confirmButton().disabled).toBe(false);
+
+    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
+    const block = screen.getByTestId('stake-manage-summary-reward');
+    // From: the urn's current farm token; To: the staged farm's real token.
+    expect(block.textContent).toContain('SKY');
+    expect(block.textContent).toContain('FOO');
+  });
+
+  it('reward: a deprecated current farm renders pre-selected with its chip and warning (CTA deep-link)', () => {
+    // The details-modal banner CTA arrives with rewardCard: true — no
+    // auto-open in the sheet itself; the card opens via init.
+    h.rewardContract = lsSkySpkRewardAddress[1];
+    h.rewardDeprecated = true;
+    renderSheet({ rewardCard: true });
+
+    const spkRow = screen.getByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`);
+    expect(spkRow.getAttribute('aria-pressed')).toBe('true');
+    expect(spkRow.textContent).toContain('Deprecated');
+    expect(screen.getByTestId('stake-manage-reward-deprecated-warning')).toBeTruthy();
+  });
+
+  it('reward: the card stays collapsed by default, deprecated farm or not', () => {
+    h.rewardContract = lsSkySpkRewardAddress[1];
+    h.rewardDeprecated = true;
+    renderSheet();
+    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
+  });
+
+  it('reward: toggling the card off clears a staged change', () => {
+    renderSheet({ rewardCard: true });
+
+    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
+    expect(confirmButton().disabled).toBe(false);
+
+    fireEvent.click(screen.getByTestId('stake-manage-reward-card-toggle'));
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
+    expect(confirmButton().disabled).toBe(true);
+  });
+
   it('back and close route through the controller callbacks', () => {
     const { onBack, onClose } = renderSheet();
 
@@ -486,5 +627,62 @@ describe('ManagePositionTakeover', () => {
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
     fireEvent.click(confirmButton());
     expect(h.launchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows generic copy for a simulation failure at wipe = 0 — never the raw mislabeled string', () => {
+    // A vat/spot read failure surfaces as new Error('Insufficient collateral')
+    // (useSimulatedVault folds read errors into that string). With nothing
+    // staged to repay, that copy would be a lie next to an empty field.
+    h.simulationError = new Error('Insufficient collateral');
+    renderSheet({ borrowCard: 'repay' });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Unable to simulate the transaction. Please try again.'
+    );
+  });
+
+  it('shows generic copy for a simulation failure at borrow = 0', () => {
+    h.simulationError = new Error('Insufficient collateral');
+    renderSheet({ borrowCard: 'borrow' });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Unable to simulate the transaction. Please try again.'
+    );
+  });
+
+  it('keeps the simulation message verbatim once an amount is staged', () => {
+    h.simulationError = new Error('Insufficient collateral');
+    renderSheet({ borrowCard: 'borrow' });
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Insufficient collateral'
+    );
+  });
+
+  it('suppresses a stale engine error while the engine is re-simulating (no prepare-failure flash)', () => {
+    // After a failed tx the wagmi write/mining error persists in the
+    // page-mounted engine. Editing an amount dips `prepared` false while the
+    // new simulation is in flight — the stale error must not flash as a
+    // prepare failure in that window.
+    h.prepared = false;
+    h.launchError = new Error('execution reverted');
+    h.launchLoading = true;
+    renderSheet({ stakeCard: 'stake' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+
+    expect(screen.queryByTestId('stake-manage-error')).toBeNull();
+  });
+
+  it('surfaces the engine error once the simulation settles unprepared', () => {
+    h.prepared = false;
+    h.launchError = new Error('execution reverted');
+    h.launchLoading = false;
+    renderSheet({ stakeCard: 'stake' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+
+    expect(screen.getByTestId('stake-manage-error').textContent).toBe(
+      'Something went wrong preparing the transaction. Please try again.'
+    );
   });
 });

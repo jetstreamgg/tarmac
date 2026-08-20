@@ -27,9 +27,9 @@ import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalld
  * (2 txs may render 4 steps). Decisions recorded on APP-311:
  *  - A-Q3: the delegate selection IS shown as a step (the engine bundles
  *    `selectVoteDelegate` into the multicall; hiding it under-reports actions).
- *  - The automatic `selectFarm` call is folded into "Stake SKY" — it is a
- *    default the user never chose (A-Q2 pending product), and no confirm design
- *    shows it.
+ *  - The `selectFarm` call is folded into "Stake SKY" — no confirm design shows
+ *    it as its own step; the picked farm is surfaced by the summary's reward
+ *    row instead (APP-516).
  */
 export function buildStakeOpenSteps({
   needsSkyAllowance,
@@ -134,7 +134,10 @@ export function useStakeLaunch({
     skyAmount: lockAmount,
     usdsAmount,
     shouldUseBatch,
-    enabled: enabled && calldata.length > 0,
+    // The urn-index read must have resolved: calldata built on the 0n fallback
+    // targets urn 0 — an existing user's live position. The engine's open()
+    // index assertion would revert it in simulation, but don't rely on that.
+    enabled: enabled && currentUrnIndex !== undefined && calldata.length > 0,
     ...txCallbacks
   });
 

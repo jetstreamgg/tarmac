@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Trans } from '@lingui/react/macro';
 import { useIsBatchSupported } from '@/hooks';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { NetworkFeeData } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { BundleTogglePanel } from './BundleTogglePanel';
@@ -11,6 +13,8 @@ export type BundleFeeState = {
   ready: boolean;
   /** The estimate is in, or has failed — either way it will not change shape again. */
   settled: boolean;
+  /** The estimate failed with no figure to show. */
+  failed: boolean;
   canBundle: boolean;
   promoVisible: boolean;
 };
@@ -59,6 +63,9 @@ export function useBundleFeeState(
   return {
     ready,
     settled,
+    // Failed only counts when there is no figure to fall back on — a held previous
+    // estimate keeps rendering through a failed refetch.
+    failed: settled && !ready,
     canBundle,
     promoVisible: ready && canBundle && !enabledOnOpen && (fee?.batchSaving ?? 0) > 0
   };
@@ -76,22 +83,40 @@ export function useBundleFeeState(
  * Without bundling available this is just the fee, so the row is unchanged for wallets
  * that can't batch.
  */
-export function NetworkFeeValue({ fee, state }: { fee?: NetworkFeeData; state: BundleFeeState }) {
+export function NetworkFeeValue({
+  fee,
+  state,
+  loading
+}: {
+  fee?: NetworkFeeData;
+  state: BundleFeeState;
+  /** `useNetworkFee().isLoading` — the estimate is wanted and in flight. */
+  loading?: boolean;
+}) {
   const [batchEnabled] = useBatchToggle();
+
+  // The dash is reserved for "nothing to estimate".
+  const value = state.failed ? (
+    <span data-testid="network-fee-failed">
+      <Trans>Unavailable</Trans>
+    </span>
+  ) : loading && !state.ready ? (
+    <Skeleton className="h-4 w-10 rounded" data-testid="network-fee-loading" />
+  ) : (
+    <>{fee?.formatted ?? NO_VALUE}</>
+  );
 
   // The `Not bundled` badge exists to explain a higher fee to someone who just switched
   // bundling off. While the promo card is up it is already making that case, so the row
   // stays plain until bundling is actually on (Figma 1036:206739 vs 1036:207086).
   const showBadge = state.settled && state.canBundle && (batchEnabled || !state.promoVisible);
 
-  if (!showBadge) return <>{fee?.formatted ?? NO_VALUE}</>;
+  if (!showBadge) return value;
 
   return (
     <span className="flex items-center gap-2" data-testid="network-fee-value">
       <BundleTogglePanel />
-      <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
-        {fee?.formatted ?? NO_VALUE}
-      </span>
+      <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">{value}</span>
     </span>
   );
 }

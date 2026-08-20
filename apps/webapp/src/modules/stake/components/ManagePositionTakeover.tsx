@@ -20,17 +20,21 @@ import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
+import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import { StakeManageStakeCard } from './StakeManageStakeCard';
 import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
+import { StakeManageRewardCard } from './StakeManageRewardCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 
@@ -38,7 +42,7 @@ const NO_VALUE = '–';
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
- * strip and three independently-toggleable cards over one Confirm. All data
+ * strip and four independently-toggleable cards over one Confirm. All data
  * wiring lives here; the cards render props. Simulation composes the legacy
  * Free/Repay math verbatim (M9): collateral = existing + lock − free, debt =
  * existing + borrow − wipe, both floored at zero, simulated against the
@@ -93,7 +97,7 @@ export function ManagePositionTakeover({
   const liveUsdsToWipe = state.borrowEnabled && state.borrowMode === 'repay' ? state.usdsAmount : 0n;
   const liveCollateralAmount = existingCollateral + liveSkyToLock - liveSkyToFree;
   const liveDebtValue = existingDebt + liveUsdsToBorrow - liveUsdsToWipe;
-  const { data: simulatedVault } = useSimulatedVault(
+  const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
     liveCollateralAmount > 0n ? liveCollateralAmount : 0n,
     liveDebtValue > 0n ? liveDebtValue : 0n,
     existingDebt,
@@ -117,14 +121,14 @@ export function ManagePositionTakeover({
     existingDebt,
     ilkName
   );
-  const { data: collateralData } = useCollateralData(ilkName);
+  const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
 
   const { data: skyBalance, isLoading: skyBalanceLoading } = useTokenBalance({
     address,
     token: TOKENS.sky.address[chainId as keyof typeof TOKENS.sky.address],
     chainId
   });
-  const { data: usdsBalance } = useTokenBalance({
+  const { data: usdsBalance, isLoading: usdsBalanceLoading } = useTokenBalance({
     address,
     token: TOKENS.usds.address[chainId as keyof typeof TOKENS.usds.address],
     chainId
@@ -154,7 +158,8 @@ export function ManagePositionTakeover({
       ? skyBalance !== undefined && state.skyAmount > skyBalance.value && state.skyAmount !== 0n
         ? t`Insufficient funds`
         : undefined
-      : state.skyAmount > existingCollateral && state.skyAmount !== 0n
+      : // Never validate against the unresolved vault read's 0n fallback.
+        existingVault !== undefined && state.skyAmount > existingCollateral && state.skyAmount !== 0n
         ? t`Insufficient funds`
         : // The capped-OSM state implies max liquidation risk (the F8 proximity
           // short-circuit reports 100 whenever liquidation price ≥ delayed
@@ -200,24 +205,25 @@ export function ManagePositionTakeover({
   const hasEnoughUsds =
     !!usdsBalance?.value && usdsBalance.value > 0n && usdsBalance.value >= debouncedUsdsAmount;
 
+  // No amount gates on the simulation branches: a lock/free-only simulation
+  // failure must still say why Confirm is dead. minCollateralNotMet keeps its
+  // own warning card instead; at a staged amount of 0 the mapper swaps in
+  // generic copy (the amount can't be the problem — see
+  // formatSimulationErrorMessage).
   const borrowError =
     state.borrowMode === 'borrow'
       ? usdsToBorrow > availableBorrowFromDebtCeiling
         ? t`Requested borrow amount exceeds the debt ceiling`
         : minCollateralNotMet
           ? undefined
-          : usdsToBorrow > 0n
-            ? formatSimulationErrorMessage(simulationError?.message, existingVault?.dust)
-            : undefined
+          : formatSimulationErrorMessage(simulationError?.message, existingVault?.dust, usdsToBorrow)
       : minDebtNotMet
         ? t`Debt must be paid off entirely, or left with a minimum of ${formatBigInt(existingVault?.dust ?? 0n)}`
         : !hasEnoughUsds && usdsToWipe > 0n
           ? t`Not enough USDS in your wallet`
           : newDebtValue < 0n
             ? t`Amount exceeds debt`
-            : usdsToWipe > 0n
-              ? (simulationError?.message ?? undefined)
-              : undefined;
+            : formatSimulationErrorMessage(simulationError?.message, undefined, usdsToWipe);
 
   const borrowCardValid =
     !state.borrowEnabled ||
@@ -230,6 +236,20 @@ export function ManagePositionTakeover({
         !simulationLoading
       : (state.usdsAmount === 0n && !state.wipeAll) ||
         (!borrowError && !simulationError && !simulationLoading));
+
+  // ---- Reward change (APP-516) ----------------------------------------------
+  const currentRewardContract =
+    detail.rewardContract && detail.rewardContract !== ZERO_ADDRESS ? detail.rewardContract : undefined;
+  const rewardChanged =
+    state.rewardEnabled &&
+    !!state.selectedRewardContract &&
+    state.selectedRewardContract.toLowerCase() !== detail.rewardContract?.toLowerCase();
+  // Effective reward: staged change, else the urn's current one so the calldata
+  // gating sees "no change" — the delegate recipe (M12).
+  const effectiveRewardContract = rewardChanged ? state.selectedRewardContract : detail.rewardContract;
+  // The staged farm's reward token for the review screen — the picker offers
+  // every indexer farm, including ones the address books don't know yet.
+  const stagedRewardSymbol = useFarmRewardSymbol(rewardChanged ? state.selectedRewardContract : undefined);
 
   // ---- Delegate change ------------------------------------------------------
   const currentDelegate =
@@ -245,8 +265,16 @@ export function ManagePositionTakeover({
   // ---- Confirm gating (M20) -------------------------------------------------
   const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
   const hasChange =
-    skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll || delegateChanged;
-  const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid;
+    skyToLock > 0n ||
+    skyToFree > 0n ||
+    usdsToBorrow > 0n ||
+    usdsToWipe > 0n ||
+    wipeAll ||
+    rewardChanged ||
+    delegateChanged;
+  // Every staged change is relative to the existing position, so nothing may
+  // confirm against an unresolved vault read.
+  const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid && !detail.vaultLoading;
 
   const close = useCallback(() => {
     onClose();
@@ -276,6 +304,14 @@ export function ManagePositionTakeover({
         usdsToBorrow={usdsToBorrow}
         usdsToWipe={usdsToWipe}
         skyPriceUsd={detail.skyPriceUsd}
+        rewardFrom={
+          currentRewardContract ? { address: currentRewardContract, symbol: detail.rewardSymbol } : undefined
+        }
+        rewardTo={
+          rewardChanged && state.selectedRewardContract
+            ? { address: state.selectedRewardContract, symbol: stagedRewardSymbol }
+            : undefined
+        }
         delegateFrom={currentDelegate}
         delegateTo={delegateChanged ? state.selectedDelegate : undefined}
       />
@@ -286,6 +322,11 @@ export function ManagePositionTakeover({
       usdsToBorrow,
       usdsToWipe,
       detail.skyPriceUsd,
+      detail.rewardSymbol,
+      currentRewardContract,
+      rewardChanged,
+      state.selectedRewardContract,
+      stagedRewardSymbol,
       currentDelegate,
       delegateChanged,
       state.selectedDelegate
@@ -295,7 +336,8 @@ export function ManagePositionTakeover({
   const {
     launch,
     prepared,
-    isLoading: launchLoading
+    isLoading: launchLoading,
+    error: launchError
   } = useStakeManageLaunch({
     urnIndex: BigInt(urnIndex),
     urnAddress: detail.urnAddress,
@@ -304,6 +346,7 @@ export function ManagePositionTakeover({
     usdsToBorrow,
     usdsToWipe,
     wipeAll,
+    selectedRewardContract: effectiveRewardContract,
     selectedDelegate: effectiveDelegate,
     enabled: formValid,
     transactionContent: confirmSummary,
@@ -311,6 +354,15 @@ export function ManagePositionTakeover({
   });
 
   const confirmDisabled = !formValid || !prepared || launchLoading;
+  // This host outlives the transaction (page-mounted), so pass null while the
+  // form is invalid — a stale execution error must not masquerade as a prepare
+  // failure once the engine is disabled. Same while the engine is re-simulating
+  // (`prepared` dips false with the previous run's write/mining error still
+  // set): a genuine prepare failure survives the load and shows on settle.
+  const launchErrorMessage = enginePrepareErrorMessage(
+    prepared,
+    formValid && !launchLoading ? launchError : null
+  );
 
   // Est. annual rewards delta for card 1 (M22): rate × simulated collateral.
   const estNextSky =
@@ -334,9 +386,18 @@ export function ManagePositionTakeover({
       dataTestId="stake-manage-takeover"
       footer={
         <>
-          <p className="text-textSecondary max-w-xs text-sm">
-            <Trans>Review the changes to your position, and continue to confirm it in your wallet.</Trans>
-          </p>
+          {/* An engine prepare failure takes over the slot — the helper copy
+              would be a lie next to a dead Confirm. Two elements (not one
+              recolored <p>) so the alert mounts fresh for screen readers. */}
+          {launchErrorMessage ? (
+            <p className="text-error max-w-xs text-sm" data-testid="stake-manage-error" role="alert">
+              {launchErrorMessage}
+            </p>
+          ) : (
+            <p className="text-textSecondary max-w-xs text-sm">
+              <Trans>Review the changes to your position, and continue to confirm it in your wallet.</Trans>
+            </p>
+          )}
           <Button
             variant="primary"
             size="xl"
@@ -366,7 +427,11 @@ export function ManagePositionTakeover({
             </span>
             <span className="text-text font-circle flex items-center gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
               <TokenIcon token={{ symbol: 'SKY' }} width={40} className="h-10 w-10" showChainIcon={false} />
-              {formatBigInt(existingCollateral)}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-[35px] w-24" />
+              ) : (
+                formatBigInt(existingCollateral)
+              )}
             </span>
           </div>
           <span className="bg-borderPrimary h-12 w-px shrink-0 self-center" aria-hidden />
@@ -376,7 +441,7 @@ export function ManagePositionTakeover({
             </span>
             <span className="text-text font-circle flex items-center gap-3 text-[32px] leading-[35px] font-medium tracking-[-0.64px]">
               <TokenIcon token={{ symbol: 'USDS' }} width={40} className="h-10 w-10" showChainIcon={false} />
-              {formatBigInt(existingDebt)}
+              {detail.vaultLoading ? <Skeleton className="h-[35px] w-24" /> : formatBigInt(existingDebt)}
             </span>
           </div>
         </div>
@@ -386,7 +451,11 @@ export function ManagePositionTakeover({
               <Trans>Rewards earned</Trans>
             </span>
             <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
-              {`+${formatUsd(detail.rewardsEarnedUsd)}`}
+              {detail.rewardsEarnedLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                `+${formatUsd(detail.rewardsEarnedUsd)}`
+              )}
               {detail.rewardSymbol && (
                 <TokenIcon
                   token={{ symbol: detail.rewardSymbol }}
@@ -403,7 +472,9 @@ export function ManagePositionTakeover({
               <Trans>Liquidation risk</Trans>
             </span>
             <span className="text-text font-circle flex h-4 items-center text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingDebt > 0n && existingVault?.riskLevel ? (
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingDebt > 0n && existingVault?.riskLevel ? (
                 <RiskBadge riskLevel={existingVault.riskLevel} />
               ) : (
                 NO_VALUE
@@ -416,9 +487,13 @@ export function ManagePositionTakeover({
               <Trans>Liquidation price</Trans>
             </span>
             <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingDebt > 0n && existingVault?.liquidationPrice !== undefined
-                ? `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-                : NO_VALUE}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingDebt > 0n && existingVault?.liquidationPrice !== undefined ? (
+                `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+              ) : (
+                NO_VALUE
+              )}
             </span>
           </div>
           <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
@@ -428,9 +503,13 @@ export function ManagePositionTakeover({
               <Info className="h-3 w-3" aria-hidden />
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
-              {existingVault?.delayedPrice !== undefined
-                ? `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-                : NO_VALUE}
+              {detail.vaultLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : existingVault?.delayedPrice !== undefined ? (
+                `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+              ) : (
+                NO_VALUE
+              )}
               <UpdatedHourlyBadge />
             </span>
           </div>
@@ -447,10 +526,13 @@ export function ManagePositionTakeover({
         walletBalance={skyBalance?.value}
         walletBalanceLoading={skyBalanceLoading}
         stakedAmount={existingCollateral}
+        stakedAmountLoading={detail.vaultLoading}
         rewardsRate={detail.rewardsRate}
+        rateLoading={detail.rateLoading}
         estCurrentSky={detail.estAnnualRewardsSky}
         estNextSky={estNextSky}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
+        minStakeToBorrowLoading={liveSimLoading}
         error={stakeError}
       />
 
@@ -464,16 +546,28 @@ export function ManagePositionTakeover({
           dispatch({ type: 'setUsdsAmount', amount, wipeAll: stagedWipeAll })
         }
         existingVault={existingVault}
+        positionLoading={detail.vaultLoading}
         simulatedVault={simulatedVault}
+        simulationLoading={liveSimLoading}
         vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
+        collateralLoading={collateralLoading}
         maxBorrowable={availableBorrowBalance}
         maxRepayable={maxRepayable}
+        usdsBalanceLoading={usdsBalanceLoading}
         wipeAll={state.wipeAll}
         minCollateralNotMet={minCollateralNotMet}
         minCollateralForDust={simulatedVault?.minCollateralForDust}
         currentCollateral={newCollateralAmount > 0n ? newCollateralAmount : 0n}
         error={borrowError}
+      />
+
+      <StakeManageRewardCard
+        enabled={state.rewardEnabled}
+        onEnabledChange={enabled => dispatch({ type: 'setRewardEnabled', enabled })}
+        currentRewardContract={currentRewardContract}
+        stagedRewardContract={state.selectedRewardContract}
+        onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
       />
 
       <StakeManageDelegateCard

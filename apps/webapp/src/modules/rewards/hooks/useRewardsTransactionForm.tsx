@@ -22,8 +22,12 @@ export interface RewardsTransactionForm {
   amount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / staked balance (withdraw). */
   available: bigint;
+  /** The `available` read has resolved — display and validation wait on it. */
+  availableKnown: boolean;
   /** Current staked position in the farm (both flows) — feeds the Supply delta cells. */
   position: bigint;
+  /** The `position` read has resolved — the Supply/earnings cells hold a skeleton until it has. */
+  positionKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
   amountReady: boolean;
@@ -73,9 +77,12 @@ export function useRewardsTransactionForm({
 
   const position = suppliedBalance ?? 0n;
   const available = isSupply ? (walletBalance?.value ?? 0n) : position;
+  // Never validate against the unresolved balance's 0n fallback.
+  const availableKnown = isSupply ? walletBalance !== undefined : suppliedBalance !== undefined;
+  const positionKnown = suppliedBalance !== undefined;
   const isZero = amount === 0n;
-  const insufficient = amount > available;
-  const amountReady = isConnected && !isZero && !insufficient;
+  const insufficient = availableKnown && amount > available;
+  const amountReady = isConnected && !isZero && availableKnown && !insufficient;
 
   const onInput = setValue;
   const setMaxAmount = () => setValue(formatUnits(available, decimals));
@@ -126,7 +133,9 @@ export function useRewardsTransactionForm({
     value,
     amount,
     available,
+    availableKnown,
     position,
+    positionKnown,
     isZero,
     insufficient,
     amountReady,

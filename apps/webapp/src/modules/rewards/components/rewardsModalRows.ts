@@ -40,6 +40,8 @@ export type RewardsSupplyModalRowInput = {
   rewardsIn?: string;
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
   networkFee: string;
+  /** The staked-position read is unresolved — the Supply and Est. earnings cells render skeletons. */
+  positionLoading?: boolean;
 };
 
 /**
@@ -58,13 +60,13 @@ export function buildRewardsSupplyModalRows(input: RewardsSupplyModalRowInput): 
     ],
     [
       singleOrDelta(
-        { label: 'Supply', token: input.supplyToken },
+        { label: 'Supply', token: input.supplyToken, loading: input.positionLoading },
         input.supplyBefore,
         input.supplyAfter,
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)' },
+        { label: 'Est. earnings (1Y)', loading: input.positionLoading },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
@@ -92,13 +94,13 @@ export function buildRewardsWithdrawModalRows(input: RewardsWithdrawModalRowInpu
     ],
     [
       singleOrDelta(
-        { label: 'Supply', token: input.supplyToken },
+        { label: 'Supply', token: input.supplyToken, loading: input.positionLoading },
         input.supplyBefore,
         input.supplyAfter,
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)' },
+        { label: 'Est. earnings (1Y)', loading: input.positionLoading },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount

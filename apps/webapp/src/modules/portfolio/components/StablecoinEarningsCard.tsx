@@ -107,6 +107,9 @@ function SuppliedContent({
     ? projectAnnualEarnings(activePosition.amountUsd, activePosition.rate)
     : view.projected1Y;
   const displayAvgRate = activePosition ? (activePosition.rate ?? 0) : view.avgRate;
+  // Positions settle before the rate APIs — hold the rate-derived stats rather
+  // than quote 0.00% / $0.00 in the gap.
+  const ratesPending = activePosition ? activePosition.rateLoading : view.ratesLoading;
 
   const segments: DonutSegment[] = view.positions.map(p => ({
     id: p.id,
@@ -219,11 +222,23 @@ function SuppliedContent({
         />
         <Stat
           label={<Trans>1Y projected earnings</Trans>}
-          value={<GainValue value={displayProjected} className={LABEL_4} />}
+          value={
+            ratesPending ? (
+              <Skeleton className="h-4 w-14" />
+            ) : (
+              <GainValue value={displayProjected} className={LABEL_4} />
+            )
+          }
         />
         <Stat
           label={<Trans>Avg. Rate</Trans>}
-          value={<StatValue>{formatDecimalPercentage(displayAvgRate)}</StatValue>}
+          value={
+            ratesPending ? (
+              <Skeleton className="h-4 w-14" />
+            ) : (
+              <StatValue>{formatDecimalPercentage(displayAvgRate)}</StatValue>
+            )
+          }
         />
         <Stat label={<Trans>Active positions</Trans>} value={<StatValue>{view.activePositions}</StatValue>} />
       </FooterStats>
