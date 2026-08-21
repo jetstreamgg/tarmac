@@ -23,7 +23,10 @@ const MARKET: PendleMarketConfig = {
 // Mutable API stats — tests drive loading/loaded branches.
 const h = vi.hoisted(() => ({
   stats: undefined as
-    | Record<string, { impliedApy: number; underlyingApy?: number; tvl?: number; liquidity?: number }>
+    | Record<
+        string,
+        { impliedApy: number; underlyingApy?: number; tvl?: number; liquidity?: number; expirySec?: number }
+      >
     | undefined
 }));
 
