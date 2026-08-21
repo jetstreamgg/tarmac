@@ -45,7 +45,7 @@ export function TokenTransferHero({
     <div className="flex flex-col gap-4" data-testid={testId}>
       <HeroAmountRow {...from} />
       <span aria-hidden className="pl-2">
-        <MoveDown className="text-fgSecondary size-5" />
+        <MoveDown className="text-fgQuaternary size-5" />
       </span>
       <HeroAmountRow {...to} />
     </div>

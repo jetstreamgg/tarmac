@@ -7,7 +7,6 @@ import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
@@ -194,8 +193,6 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
       )}
 
       {rewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
-
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

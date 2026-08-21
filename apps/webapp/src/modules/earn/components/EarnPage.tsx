@@ -280,9 +280,10 @@ export function EarnPage() {
       className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:gap-5 md:py-10"
       data-testid="earn-opportunities"
     >
-      {/* Patterns/Headers, Earn hero type 5031:52345. */}
+      {/* Patterns/Headers, Earn hero type 5031:52345. Desktop comp measures
+          80px vertical padding on the hero itself (Figma Annotations R2 A1). */}
       <PageHeaderHero
-        className="py-8 md:py-10"
+        className="py-8 md:py-20"
         badges={
           <>
             {/* Pill-shaped placeholder at the badge's own height (28px, 32px

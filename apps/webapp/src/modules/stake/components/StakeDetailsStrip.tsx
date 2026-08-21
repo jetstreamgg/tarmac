@@ -13,9 +13,12 @@ const NO_VALUE = '–';
 // Body 5 labels and Label 5 values on borderPrimary hairlines; md restores
 // the desktop 2-column strip, where values grow to Label 4 (Circular 16/18,
 // -0.32 tracking, fg-primary — comp 1036:208698, APP-432 item 18).
+// A "row" is content + its own bottom divider (12px content→divider, pb-3);
+// the 24px row-to-row rhythm is the list container's gap-y, not row padding
+// (review item B5) — so this only carries the divider-side spacing.
 function DetailRow({ icon, label, children }: { icon: ReactNode; label: ReactNode; children: ReactNode }) {
   return (
-    <div className="border-borderPrimary flex items-center justify-between gap-4 border-b pt-4 pb-3 md:py-3">
+    <div className="border-borderPrimary flex items-center justify-between gap-4 border-b pb-3">
       <span className="text-fgSecondary flex items-center gap-1.5 text-sm leading-[22px] md:gap-2 md:leading-normal">
         <span
           className="text-fgSecondary flex h-3 w-3 items-center justify-center md:h-4 md:w-4 [&>svg]:h-full [&>svg]:w-full"
@@ -68,11 +71,14 @@ export function StakeDetailsStrip() {
 
   return (
     <div data-testid="stake-details-strip" className="flex flex-col">
-      <h3 className="text-fgPrimary font-circle mb-4 text-base leading-[18px] font-medium tracking-[-0.32px] md:mb-2 md:text-lg md:leading-normal md:tracking-normal">
+      {/* Heading→list gap is 32px (mb-8) specifically for the Details block
+          (review item B4) — About and Transactions use their own, different
+          values, so this isn't a shared spacing token. */}
+      <h3 className="text-fgPrimary font-circle mb-8 text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-normal md:tracking-normal">
         <Trans>Details</Trans>
       </h3>
 
-      <div className="grid grid-cols-1 gap-x-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-x-5 gap-y-6 md:grid-cols-2">
         <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Staking Reward Rate</Trans>}>
           <StatValue isLoading={rewardsLoading} error={rewardsError}>
             {currentRate !== null ? formatDecimalPercentage(currentRate) : NO_VALUE}

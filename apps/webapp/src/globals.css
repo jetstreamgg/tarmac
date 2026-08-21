@@ -189,6 +189,11 @@
   --color-iconboxPositionBg: rgba(2, 194, 161, 0.1);
   --color-iconboxPosition: rgba(2, 194, 161, 0.2);
   --color-statusWarning: #ffc044;
+  /* colors/fg/fg-system-warning-primary. A distinct DS variable from
+     components/status/fg-warning above (#ffc044) — this one tints the
+     info glyph on the borrow-requirement callout (Figma 2376:226246).
+     Theme-invariant in the DS — no light override below. */
+  --color-fgSystemWarning: #f98607;
   /* components/status/fg-error (APP-432 item 6 — the risk meters' Aggressive
      tier). Distinct from the legacy `--color-error` (--service-red #ff6d6d),
      which the pre-redesign widgets still read for validation copy. */

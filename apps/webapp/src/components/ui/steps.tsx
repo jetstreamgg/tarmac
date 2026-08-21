@@ -111,6 +111,14 @@ export type StepsItemProps = {
   tokenSymbol?: string;
   /** 14px icon node for the token chip — supplied by the caller (the primitive stays icon-source agnostic). */
   tokenIcon?: ReactNode;
+  /**
+   * Second token chip for a source→target step (e.g. Convert), drawn after a
+   * translated "to" — "◉ USDS to ◉ USDC" (Figma step-2 row). Ignored unless
+   * `tokenSymbol` is also set.
+   */
+  targetTokenSymbol?: string;
+  /** 14px icon node for the target token chip — same contract as `tokenIcon`. */
+  targetTokenIcon?: ReactNode;
   /** Grey helper paragraph under the label (Figma failure states, 1030:139111). */
   description?: ReactNode;
   /** Right-aligned node vertically centered on the row — e.g. the "Try again" pill. */
@@ -126,6 +134,8 @@ export function StepsItem({
   label,
   tokenSymbol,
   tokenIcon,
+  targetTokenSymbol,
+  targetTokenIcon,
   description,
   trailingAction,
   state = 'upcoming',
@@ -150,6 +160,17 @@ export function StepsItem({
                   {tokenIcon}
                   <span>{tokenSymbol}</span>
                 </span>
+              )}
+              {tokenSymbol && targetTokenSymbol && (
+                <>
+                  <span className="shrink-0">
+                    <Trans>to</Trans>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-[3px]">
+                    {targetTokenIcon}
+                    <span>{targetTokenSymbol}</span>
+                  </span>
+                </>
               )}
             </div>
             {/* Body 6 (12/18) per the Steps Item comp (859:36231 description). */}

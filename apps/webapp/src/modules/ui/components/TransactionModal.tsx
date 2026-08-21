@@ -112,8 +112,12 @@ const statusIcons: Partial<Record<TxStatus, ReactNode>> = {
   [TxStatus.CANCELLED]: <Cancel />
 };
 
+// Figma review: the INITIALIZED bottom sentence duplicated the top-right
+// "Confirm in the wallet" badge (Steps header) — one of three redundant
+// "confirm in your wallet" surfaces on that screen. The badge stays; this
+// status has no bottom message of its own now (other statuses still render
+// theirs, so the mechanism itself stays intact for them).
 const statusMessages: Partial<Record<TxStatus, ReactNode>> = {
-  [TxStatus.INITIALIZED]: <Trans>Confirm this transaction in your wallet.</Trans>,
   [TxStatus.LOADING]: <Trans>Transaction is being processed...</Trans>,
   [TxStatus.SUCCESS]: <Trans>Transaction completed successfully.</Trans>,
   [TxStatus.ERROR]: <Trans>Transaction failed. Please try again.</Trans>,
@@ -308,6 +312,13 @@ export function TransactionModal({
         // the document root, so Radix sees a pointer-down on them as outside the dialog
         // and closes it — which killed the transaction when the bundling switch was used.
         onPointerDownOutside={event => {
+          // Figma review: click-outside is disabled while a transaction is actually
+          // pending (wallet-signature + broadcast window) so an accidental outside
+          // click can't dismiss it mid-flight — entry/review stay dismissable.
+          if (isTransacting) {
+            event.preventDefault();
+            return;
+          }
           if ((event.target as HTMLElement | null)?.closest('[data-radix-popper-content-wrapper]')) {
             event.preventDefault();
           }
@@ -454,6 +465,16 @@ export function TransactionModal({
                           />
                         )
                       }
+                      targetTokenSymbol={item.targetTokenSymbol}
+                      targetTokenIcon={
+                        item.targetTokenSymbol && (
+                          <TokenIcon
+                            token={{ symbol: item.targetTokenSymbol }}
+                            className="h-3.5 w-3.5"
+                            showChainIcon={false}
+                          />
+                        )
+                      }
                       state={item.state}
                       description={item.description}
                       trailingAction={item.retry === 'trailing' ? tryAgain : undefined}
@@ -536,7 +557,11 @@ export function TransactionModal({
                   {statusIcons[txStatus] && statusIcons[txStatus]}
 
                   <div className="flex flex-col">
-                    <Text className="text-textSecondary">{statusMessages[txStatus]}</Text>
+                    {/* Guarded (not just empty children) so a status with no message —
+                        currently INITIALIZED — doesn't leave a blank line-height row. */}
+                    {statusMessages[txStatus] && (
+                      <Text className="text-textSecondary">{statusMessages[txStatus]}</Text>
+                    )}
                     {externalLink && (
                       <ExternalLink
                         href={externalLink}

@@ -166,6 +166,7 @@ export function ProductSupplyCard({
   stats,
   cta,
   className,
+  fillHeight,
   ...props
 }: {
   badges?: ReactNode;
@@ -175,10 +176,21 @@ export function ProductSupplyCard({
   stats: ReactNode;
   cta: ReactNode;
   className?: string;
+  /**
+   * Opt-in only — every other product's card sizes to its own content, which
+   * must not regress. Stake's Statistics-tab rail sits beside a taller
+   * stretched grid column (review item B7) and needs the card to actually
+   * fill it, since a plain block child ignores its parent's stretched height
+   * without `h-full`.
+   */
+  fillHeight?: boolean;
   // `title` here is the headline node, not the HTML string attribute.
 } & Omit<React.HTMLAttributes<HTMLDivElement>, 'title'>) {
   return (
-    <Card className={cn('flex flex-col gap-5 p-5 md:gap-6 md:p-8', className)} {...props}>
+    <Card
+      className={cn('flex flex-col gap-5 p-5 md:gap-6 md:p-8', fillHeight && 'h-full', className)}
+      {...props}
+    >
       <div className="flex flex-col gap-5 md:pb-6">
         {badges}
         <h3 className="text-fgPrimary font-circle text-[22px] leading-6 font-medium tracking-[-0.44px] md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]">

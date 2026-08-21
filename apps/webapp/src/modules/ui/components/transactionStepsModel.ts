@@ -6,13 +6,18 @@ import type { StepState } from '@/components/ui/steps';
  * One entry of a flow's step list. The plain-string form is a bare label; the
  * object form adds the token rendered as an icon+symbol chip after the label
  * (DS Steps pattern, Figma 5200:30561) — e.g. `{ label: "Approve", tokenSymbol:
- * "SKY" }` renders "Approve ◉ SKY".
+ * "SKY" }` renders "Approve ◉ SKY". A step that swaps one token for another
+ * (e.g. Convert) also sets `targetTokenSymbol`, rendering a second icon+symbol
+ * chip after a translated "to" — "Convert ◉ USDS to ◉ USDC" (Figma step-2 row,
+ * two token chips side by side, not stacked).
  */
 export type TransactionStep =
   | string
   | {
       label: string;
       tokenSymbol?: string;
+      /** Second token for a source→target step; ignored when `tokenSymbol` is unset. */
+      targetTokenSymbol?: string;
       /**
        * Flow-specific sentence appended after the generic rollback copy when
        * this step fails — e.g. "The USDS hasn't been approved." (Figma
@@ -25,6 +30,7 @@ export type TransactionStepItem = {
   stepNumber: number;
   label: string;
   tokenSymbol?: string;
+  targetTokenSymbol?: string;
   state: StepState;
   /** Grey helper paragraph under the label (failure copy). */
   description?: string;
@@ -71,8 +77,10 @@ export function deriveTransactionStepItems({
   }
 
   return steps.map((step, i) => {
-    const { label, tokenSymbol, failureDetail } =
-      typeof step === 'string' ? { label: step, tokenSymbol: undefined, failureDetail: undefined } : step;
+    const { label, tokenSymbol, targetTokenSymbol, failureDetail } =
+      typeof step === 'string'
+        ? { label: step, tokenSymbol: undefined, targetTokenSymbol: undefined, failureDetail: undefined }
+        : step;
 
     // Standard failure (Figma 1030:139111): the step the engine stopped on
     // retitles, moves its token into the description, and carries the inline
@@ -83,6 +91,7 @@ export function deriveTransactionStepItems({
         stepNumber: i + 1,
         label: t`${label} failed`,
         tokenSymbol: undefined,
+        targetTokenSymbol: undefined,
         state: 'failed' as const,
         description: failureDetail ? `${rolledBack} ${failureDetail}` : rolledBack,
         retry: 'trailing' as const
@@ -96,6 +105,6 @@ export function deriveTransactionStepItems({
           ? 'active'
           : 'upcoming';
 
-    return { stepNumber: i + 1, label, tokenSymbol, state };
+    return { stepNumber: i + 1, label, tokenSymbol, targetTokenSymbol, state };
   });
 }

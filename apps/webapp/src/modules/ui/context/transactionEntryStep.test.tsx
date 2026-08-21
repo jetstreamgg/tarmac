@@ -169,8 +169,10 @@ describe('TransactionModal — editable entry step', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Supply' }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    // We left the entry screen for the wallet/status screen...
-    expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+    // We left the entry screen for the wallet/status screen (the bottom status
+    // sentence is suppressed for INITIALIZED per the Figma review — the loading
+    // button label is the surviving marker of this screen/status)...
+    expect(screen.queryByText(/waiting for confirmation/i)).not.toBeNull();
     // ...but the entry body stays MOUNTED (just hidden) so the engine hook it owns
     // can observe the receipt and fire onSuccess. Unmounting it here would strand the
     // modal in LOADING — the has-position supply/withdraw stuck-modal bug.
@@ -250,7 +252,7 @@ describe('TransactionModal — editable entry step', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+    expect(screen.queryByText(/waiting for confirmation/i)).not.toBeNull();
     expect(connect).toHaveBeenCalledTimes(1);
   });
 
@@ -280,7 +282,7 @@ describe('TransactionModal — editable entry step', () => {
     // advances to the wallet/status screen like the primary would.
     expect(onSecondaryConfirm).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
-    expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+    expect(screen.queryByText(/waiting for confirmation/i)).not.toBeNull();
   });
 
   it('gates the secondary CTA on its own disabled flag, pushed live like the primary', () => {
@@ -325,7 +327,7 @@ describe('TransactionModal — editable entry step', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+    expect(screen.queryByText(/waiting for confirmation/i)).not.toBeNull();
   });
 });
 
