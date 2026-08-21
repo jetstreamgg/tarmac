@@ -138,7 +138,6 @@ export function StakeTakeoverBorrowCard({
               )
             }
           />
-          <span aria-hidden className="border-borderPrimary border-t" />
         </div>
 
         {!inputDisabled && (

@@ -82,9 +82,11 @@ describe('AsyncOrderModalHarness (A3 spike)', () => {
     });
 
     // Review → confirm signs + posts the order, then polling begins (pending).
+    // The CTA is gone on this screen now — the status chip (with its hopping
+    // dots) is the only in-flight indicator, so assert on its text instead.
     fireEvent.click(button(/confirm/i));
     await flush();
-    expect(button(/processing/i).disabled).toBe(true);
+    expect(screen.getByText(/processing/i)).toBeDefined();
 
     // Next poll resolves fulfilled → success terminal.
     await flush(1000);

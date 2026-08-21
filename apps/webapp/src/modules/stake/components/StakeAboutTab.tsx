@@ -60,7 +60,7 @@ export function StakeAboutTab() {
   ];
 
   return (
-    <div className="grid gap-10 lg:grid-cols-3 lg:gap-6">
+    <div className="grid items-start gap-10 lg:grid-cols-3 lg:gap-6">
       <div className="order-2 flex flex-col gap-10 md:gap-14 lg:order-none lg:col-span-2">
         <Section testId="stake-about-copy">
           {banner?.title && <h3 className={sectionHeading}>{banner.title}</h3>}

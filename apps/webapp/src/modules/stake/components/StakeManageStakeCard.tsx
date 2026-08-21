@@ -122,8 +122,6 @@ export function StakeManageStakeCard({
           }
         />
 
-        <div className="bg-borderPrimary h-px w-full" aria-hidden />
-
         <div className="flex flex-col gap-2">
           <Slider
             value={[sliderPercent]}

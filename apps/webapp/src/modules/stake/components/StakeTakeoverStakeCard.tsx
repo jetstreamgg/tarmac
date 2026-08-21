@@ -100,7 +100,6 @@ export function StakeTakeoverStakeCard({
               )
             }
           />
-          <span aria-hidden className="border-borderPrimary border-t" />
         </div>
 
         {/* Sliders / Standard (I1036:209724): the share of the wallet balance

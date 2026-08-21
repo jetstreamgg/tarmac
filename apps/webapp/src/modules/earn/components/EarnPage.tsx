@@ -280,10 +280,15 @@ export function EarnPage() {
       className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:gap-5 md:py-10"
       data-testid="earn-opportunities"
     >
-      {/* Patterns/Headers, Earn hero type 5031:52345. Desktop comp measures
-          80px vertical padding on the hero itself (Figma Annotations R2 A1). */}
+      {/* Patterns/Headers, Earn hero type 5031:52345. Correction: the Figma
+          80px is the gap ABOVE/BELOW the hero relative to its neighbours, not
+          the hero's own padding — the page wrapper's py/gap already
+          contributes spacing there, so it's subtracted out: 0 top, 60px
+          bottom at desktop (Figma Annotations R2 A1, corrected). No own
+          padding below desktop — same recipe as the Convert hero, which
+          relies entirely on this wrapper's py-4/gap-6 for its rhythm. */}
       <PageHeaderHero
-        className="py-8 md:py-20"
+        className="md:pb-15"
         badges={
           <>
             {/* Pill-shaped placeholder at the badge's own height (28px, 32px

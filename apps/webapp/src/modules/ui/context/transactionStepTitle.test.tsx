@@ -100,9 +100,12 @@ describe('TransactionModal — per-step title', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Supply' }));
 
-    // Wallet/status screen: the title swaps to the transaction-screen title.
+    // Wallet/status screen: the title swaps to the transaction-screen title. The
+    // INITIALIZED status chip echoes the same copy in its own pill (Figma
+    // review) — this single-step flow has no Steps header to hold it, so it
+    // renders inline, alongside the modal title.
     expect(screen.queryByText('Review supply')).toBeNull();
-    expect(screen.queryByText('Confirm in the wallet')).not.toBeNull();
+    expect(screen.getAllByText('Confirm in the wallet').length).toBeGreaterThan(0);
   });
 
   it('shows the entry title on an entry screen and the transaction-screen title after confirm', () => {
@@ -123,7 +126,8 @@ describe('TransactionModal — per-step title', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Supply' }));
 
     expect(screen.queryByText('Supply to Sky Savings')).toBeNull();
-    expect(screen.queryByText('Confirm in the wallet')).not.toBeNull();
+    // Title + the INITIALIZED status chip both read "Confirm in the wallet" here.
+    expect(screen.getAllByText('Confirm in the wallet').length).toBeGreaterThan(0);
   });
 
   it('keeps a single title across both screens when transactionTitle is omitted (existing consumers unchanged)', () => {

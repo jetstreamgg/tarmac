@@ -4,7 +4,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { sanitizeAmountInput } from '@/lib/amountInput';
 import { cn } from '@/lib/cn';
-import { amountFieldHairlineClasses } from './amountFieldHairline';
+import { AmountFieldHairline } from './amountFieldHairline';
 
 const PERCENT_PRESETS = [25, 50, 100] as const;
 export type PercentPreset = (typeof PERCENT_PRESETS)[number];
@@ -119,16 +119,17 @@ export function ModalAmountField({
           </div>
         </div>
       </div>
-      {error}
-      {/* Default/Filled sit on the 0.2-alpha hairline; focus brightens to the 0.3-alpha
-          token (DS Active variant — the field otherwise has no focus treatment at all);
-          a validation error overrides both with the DS error red, regardless of focus.
-          The amount, chips and token selector above stay in normal colours either way —
-          only the hairline (and the caller's error line) redden. */}
-      <div
-        className={cn('border-t', amountFieldHairlineClasses(hasError, 'group-focus-within'))}
-        aria-hidden
-      />
+      {/* DS Input / Amount hairline (5620:26710) — recipe owned by
+          AmountFieldHairline, shared with StakeTakeoverAmountField. 16px down
+          from the value row (this parent's gap-4); 4px down to the error
+          message when present, so both live in their own nested gap-1
+          column instead of inheriting the 16px sibling gap. The amount,
+          chips and token selector above stay in normal colours regardless of
+          state — only the hairline (and the error text itself) redden. */}
+      <div className="flex flex-col gap-1">
+        <AmountFieldHairline hasError={hasError} />
+        {error}
+      </div>
       {isMobile && percentChips}
     </div>
   );

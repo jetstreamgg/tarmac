@@ -128,11 +128,14 @@ export function StakeEngineCard() {
   return (
     <ProductSupplyCard
       data-testid="stake-engine-card"
-      // Opt-in only for this usage (review item B7): fills the stretched rail
-      // column instead of sizing to content, and the internal itemSpacing goes
-      // to the measured 32px (gap-8) uniformly, overriding the shared card's
+      // Opt-in only for this usage (review item B7): every product-detail
+      // chart is a fixed 405px tall on desktop, so the card targets that
+      // min-height directly instead of stretching to match a sibling's grid
+      // row — this keeps the card correctly sized on the About tab too,
+      // which has no chart at all. The internal itemSpacing goes to the
+      // measured 32px (gap-8) uniformly, overriding the shared card's
       // default gap-5/md:gap-6 via the className merge.
-      fillHeight
+      sizeToChart
       className="gap-8 md:gap-8"
       badges={
         <ProductBadge icon={<StakeSky className="h-3 w-3" />}>

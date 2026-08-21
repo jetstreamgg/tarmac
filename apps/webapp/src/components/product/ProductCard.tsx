@@ -166,7 +166,7 @@ export function ProductSupplyCard({
   stats,
   cta,
   className,
-  fillHeight,
+  sizeToChart,
   ...props
 }: {
   badges?: ReactNode;
@@ -178,17 +178,24 @@ export function ProductSupplyCard({
   className?: string;
   /**
    * Opt-in only — every other product's card sizes to its own content, which
-   * must not regress. Stake's Statistics-tab rail sits beside a taller
-   * stretched grid column (review item B7) and needs the card to actually
-   * fill it, since a plain block child ignores its parent's stretched height
-   * without `h-full`.
+   * must not regress. Every product-detail chart (`Chart` variant `detail`)
+   * renders at a fixed 405px on desktop — 32px card padding + 70px header +
+   * 263px plot + 32px padding — regardless of product family, so a card that
+   * wants to visually match a chart can target that constant directly rather
+   * than stretching to match a sibling's measured height (review item B7).
+   * Below `lg` charts drop to a 203px plot, so the min-height only applies at
+   * `lg` and up.
    */
-  fillHeight?: boolean;
+  sizeToChart?: boolean;
   // `title` here is the headline node, not the HTML string attribute.
 } & Omit<React.HTMLAttributes<HTMLDivElement>, 'title'>) {
   return (
     <Card
-      className={cn('flex flex-col gap-5 p-5 md:gap-6 md:p-8', fillHeight && 'h-full', className)}
+      className={cn(
+        'flex flex-col justify-between gap-5 p-5 md:gap-6 md:p-8',
+        sizeToChart && 'lg:min-h-[405px]',
+        className
+      )}
       {...props}
     >
       <div className="flex flex-col gap-5 md:pb-6">
@@ -198,8 +205,19 @@ export function ProductSupplyCard({
         </h3>
         {description && <p className="text-fgSecondary text-xs leading-[18px]">{description}</p>}
       </div>
-      {stats}
-      {cta}
+      {/* Anchored to the card's bottom edge via the parent's `justify-between`:
+          at natural height this is a no-op (no free space to distribute), so
+          the gap above stays the ordinary rhythm; when `sizeToChart` gives the
+          card extra height, the free space lands above this group instead of
+          growing whitespace beneath the CTA. `gap-[inherit]` (rather than
+          repeating the card's gap classes here) picks up whatever the card
+          resolved to — default or caller override — without assuming what
+          else `className` might carry, so an unrelated override (padding,
+          background, …) can never get duplicated onto this inner div. */}
+      <div className="flex flex-col gap-[inherit]">
+        {stats}
+        {cta}
+      </div>
     </Card>
   );
 }

@@ -264,8 +264,6 @@ export function StakeManageBorrowCard({
           }
         />
 
-        <div className="bg-borderPrimary h-px w-full" aria-hidden />
-
         {(isRepay ? shouldShowSlider && !minCollateralNotMet : !inputDisabled) && (
           <div className="flex flex-col gap-2">
             <Slider

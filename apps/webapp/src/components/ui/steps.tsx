@@ -185,22 +185,29 @@ export function StepsItem({
   );
 }
 
-/** Header pill (Figma Badge, h-24): `brand` is the Bundled treatment, `default` the neutral one. */
+/** Header pill (Figma Badge, h-24): `brand` is the Bundled treatment, `default` the neutral one.
+ * `brand` also dresses the transaction-status chip (Figma 2376:225580) — its
+ * fill/text are exactly `--color-statusBrandBg`/`--color-statusBrand`, so it
+ * rides those tokens rather than literal colors (they theme-swap in light
+ * mode; the Bundled chip picks that up too, which is correct — it was only
+ * ever drawn on the dark values before). No border in either variant. */
 export function StepsBadge({
   variant = 'default',
   children,
-  className
+  className,
+  dataTestId
 }: {
   variant?: 'brand' | 'default';
   children: ReactNode;
   className?: string;
+  dataTestId?: string;
 }) {
   return (
     <span
+      data-testid={dataTestId}
       className={cn(
         'font-circle flex h-6 items-center gap-1 rounded-full px-2 text-xs leading-3.5 font-medium tracking-[-0.24px]',
-        // Figma components/status/bg-brand + fg-brand — not theme tokens yet.
-        variant === 'brand' ? 'bg-[rgba(156,160,229,0.1)] text-[#9CA9FF]' : 'bg-glassBadge text-fgSecondary',
+        variant === 'brand' ? 'bg-statusBrandBg text-statusBrand' : 'bg-glassBadge text-fgSecondary',
         className
       )}
     >
@@ -237,13 +244,20 @@ export function Steps({ title, bundled = false, badge, children, className }: St
         <div className="flex items-center gap-2">
           <span className="text-fgSecondary text-sm leading-5.5">{title ?? <Trans>Actions</Trans>}</span>
           {bundled && (
-            <StepsBadge variant="brand">
+            <StepsBadge variant="brand" dataTestId="transaction-status-badge">
               <LightningIcon />
               <Trans>Bundled</Trans>
             </StepsBadge>
           )}
         </div>
-        {badge && <StepsBadge>{badge}</StepsBadge>}
+        {/* The only current caller of `badge` is the transaction-status chip
+            (Figma 2376:225580), always drawn in the brand treatment — see
+            `StepsBadge` above. */}
+        {badge && (
+          <StepsBadge variant="brand" dataTestId="transaction-status-badge">
+            {badge}
+          </StepsBadge>
+        )}
       </div>
       <ol className="flex flex-col gap-1">{children}</ol>
     </div>

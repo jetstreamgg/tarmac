@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { TxStatus, Clock, InProgress, SuccessCheck, FailedX, Cancel } from '@/widgets';
+import { TxStatus } from '@/widgets';
 import { ArrowLeft } from 'lucide-react';
 import {
   ResponsiveModal,
@@ -8,7 +8,8 @@ import {
   ResponsiveModalTitle
 } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
-import { Steps, StepsItem } from '@/components/ui/steps';
+import { Steps, StepsItem, StepsBadge } from '@/components/ui/steps';
+import { Loader } from '@/components/ui/loader';
 import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
@@ -104,24 +105,20 @@ export type TransactionModalProps = {
   currentStep?: number;
 };
 
-const statusIcons: Partial<Record<TxStatus, ReactNode>> = {
-  [TxStatus.INITIALIZED]: <Clock />,
-  [TxStatus.LOADING]: <InProgress />,
-  [TxStatus.SUCCESS]: <SuccessCheck />,
-  [TxStatus.ERROR]: <FailedX />,
-  [TxStatus.CANCELLED]: <Cancel />
-};
-
-// Figma review: the INITIALIZED bottom sentence duplicated the top-right
-// "Confirm in the wallet" badge (Steps header) — one of three redundant
-// "confirm in your wallet" surfaces on that screen. The badge stays; this
-// status has no bottom message of its own now (other statuses still render
-// theirs, so the mechanism itself stays intact for them).
-const statusMessages: Partial<Record<TxStatus, ReactNode>> = {
-  [TxStatus.LOADING]: <Trans>Transaction is being processed...</Trans>,
-  [TxStatus.SUCCESS]: <Trans>Transaction completed successfully.</Trans>,
-  [TxStatus.ERROR]: <Trans>Transaction failed. Please try again.</Trans>,
-  [TxStatus.CANCELLED]: <Trans>Transaction was cancelled.</Trans>
+// Figma review (badge restyle, "Confirm in the wallet" 2376:225580): the old
+// bottom icon + generic sentence + loading-indicator CTA are gone — the Steps
+// badge (multi-step flows) / an equivalent inline chip (single-step flows) is
+// now the ONLY place status is shown on this screen. This is the per-status
+// source of truth for its label; short chip copy, distinct from `subtitles`
+// (which stays the flow-specific sentence rendered above the hero). No IDLE
+// entry — the transaction screen isn't reached at that status outside of a
+// test harness, and the chip simply stays hidden (see `badgeContent` below).
+const statusBadgeLabel: Partial<Record<TxStatus, ReactNode>> = {
+  [TxStatus.INITIALIZED]: <Trans>Confirm in the wallet</Trans>,
+  [TxStatus.LOADING]: <Trans>Processing</Trans>,
+  [TxStatus.SUCCESS]: <Trans>Success</Trans>,
+  [TxStatus.ERROR]: <Trans>Failed</Trans>,
+  [TxStatus.CANCELLED]: <Trans>Cancelled</Trans>
 };
 
 export function TransactionModal({
@@ -187,6 +184,19 @@ export function TransactionModal({
   // the header back arrow still returns to the first screen. Single-step flows
   // have no list, so they keep the bottom treatment.
   const showInlineFailure = !!hasMultipleSteps && isTransaction && txStatus === TxStatus.ERROR;
+  // The status chip's content (Figma 2376:225580: leading dots + label). The
+  // dots only hop while a status is genuinely in-flight (awaiting signature or
+  // pending broadcast) — `isTransacting` already draws exactly that line for
+  // the rest of the component, so it's reused here rather than re-derived.
+  // `undefined` when the status has no chip copy (currently just IDLE, which
+  // the transaction screen only reaches inside a test harness) — both render
+  // sites below guard on it so the chip never mounts empty.
+  const badgeContent = statusBadgeLabel[txStatus] ? (
+    <>
+      {isTransacting && <Loader size="2xs" />}
+      {statusBadgeLabel[txStatus]}
+    </>
+  ) : undefined;
 
   // The entry screen sources its label/gating from the entry descriptor (kept
   // live by the in-modal body); the review screen uses the top-level config.
@@ -433,11 +443,7 @@ export function TransactionModal({
             <>
               {/* Figma 859:36229: the steps section splits from the hero on a border-primary hairline, 24px above the header. */}
               {transactionScreenBody && <div className="border-borderPrimary border-t" />}
-              <Steps
-                className="pt-2"
-                bundled={isBundled}
-                badge={txStatus === TxStatus.INITIALIZED ? <Trans>Confirm in the wallet</Trans> : undefined}
-              >
+              <Steps className="pt-2" bundled={isBundled} badge={badgeContent}>
                 {(() => {
                   const items = deriveTransactionStepItems({
                     steps,
@@ -553,14 +559,18 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
-                <div className="flex items-center gap-3 pt-4">
-                  {statusIcons[txStatus] && statusIcons[txStatus]}
-
-                  <div className="flex flex-col">
-                    {/* Guarded (not just empty children) so a status with no message —
-                        currently INITIALIZED — doesn't leave a blank line-height row. */}
-                    {statusMessages[txStatus] && (
-                      <Text className="text-textSecondary">{statusMessages[txStatus]}</Text>
+                {/* Status row: the icon + generic sentence are gone (Figma review) —
+                    multi-step flows already show the status chip in the Steps header
+                    above, so this row is just the explorer link there. Single-step
+                    flows have no Steps header, so the chip renders inline here, in
+                    the slot the old icon/message/loading-button treatment used to
+                    occupy (Figma 2376:225580). */}
+                {((!hasMultipleSteps && badgeContent) || externalLink) && (
+                  <div className="flex items-center gap-3 pt-4">
+                    {!hasMultipleSteps && badgeContent && (
+                      <StepsBadge variant="brand" dataTestId="transaction-status-badge">
+                        {badgeContent}
+                      </StepsBadge>
                     )}
                     {externalLink && (
                       <ExternalLink
@@ -572,38 +582,29 @@ export function TransactionModal({
                       </ExternalLink>
                     )}
                   </div>
-                </div>
+                )}
 
-                <div className="w-full">
-                  {txStatus === TxStatus.INITIALIZED && (
-                    <Button variant="primary" size="xl" className="w-full" loading>
-                      <Trans>Waiting for confirmation</Trans>
-                    </Button>
-                  )}
-
-                  {txStatus === TxStatus.LOADING && (
-                    <Button variant="primary" size="xl" className="w-full" loading>
-                      <Trans>Processing</Trans>
-                    </Button>
-                  )}
-
-                  {(txStatus === TxStatus.SUCCESS || txStatus === TxStatus.CANCELLED) && (
+                {/* Terminal-state actions only — the in-flight states (awaiting
+                    signature / processing) are pure loading indicators now
+                    represented solely by the chip's dots, not a button. */}
+                {(txStatus === TxStatus.SUCCESS || txStatus === TxStatus.CANCELLED) && (
+                  <div className="w-full">
                     <Button variant="primary" size="xl" className="w-full" onClick={handleClose}>
                       {successLabel ?? <Trans>Done</Trans>}
                     </Button>
-                  )}
+                  </div>
+                )}
 
-                  {txStatus === TxStatus.ERROR && (
-                    <div className="flex w-full gap-3">
-                      <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
-                        <Trans>Back</Trans>
-                      </Button>
-                      <Button variant="primary" size="xl" className="flex-1" onClick={handleRetry}>
-                        {errorLabel ?? <Trans>Retry</Trans>}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                {txStatus === TxStatus.ERROR && (
+                  <div className="flex w-full gap-3">
+                    <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
+                      <Trans>Back</Trans>
+                    </Button>
+                    <Button variant="primary" size="xl" className="flex-1" onClick={handleRetry}>
+                      {errorLabel ?? <Trans>Retry</Trans>}
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
