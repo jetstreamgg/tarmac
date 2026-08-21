@@ -18,7 +18,7 @@ describe('tailResponse', () => {
   });
 
   it('scales with the point spacing on sparse series', () => {
-    expect(tailResponse(100)).toBe(250);
+    expect(tailResponse(100)).toBe(200);
   });
 
   it('caps so the sparsest series do not crawl', () => {
