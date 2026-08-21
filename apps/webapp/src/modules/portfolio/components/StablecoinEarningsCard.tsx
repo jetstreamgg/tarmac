@@ -1,10 +1,12 @@
-import { Children, Fragment, ReactNode, useState } from 'react';
+import { Children, Fragment, ReactNode, isValidElement, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { motion, useReducedMotion, type Transition } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
+import { RollingValue } from '@/components/ui/rolling-value';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -34,6 +36,35 @@ import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
 const COLUMN = 'contents md:flex md:flex-col';
 const DONUT = 'order-2 md:order-none';
 const LEGEND = 'order-3 md:order-none';
+
+/**
+ * Entrance (Figma 2233:61099, t=0 is the data landing): the headline rises
+ * into place at 300ms, the legend rows and footer stats slide in from the
+ * right from 300ms — rows 100ms apart, stats 50ms apart — and the token
+ * badges pop in from 400ms, 100ms apart, while the donut sweeps its arcs
+ * (timed inside PortfolioDonutChart). Everything runs 300ms on ease-out.
+ * Replays whenever the tab content mounts, which is what the comp shows for
+ * "content arriving"; nothing re-runs on hover or data refresh.
+ */
+const ENTRANCE_START = 0.3;
+const ENTRANCE_SECONDS = 0.3;
+const LEGEND_STAGGER = 0.1;
+const STAT_STAGGER = 0.05;
+const BADGES_START = 0.4;
+const HEADLINE_RISE = 22;
+const LEGEND_TRAVEL = 20;
+const STAT_TRAVEL = 25;
+
+/** Slide-in from `x`, `delay` seconds after the data lands. Returns the
+ * motion props; reduced motion renders the resting state outright. */
+function useEntrance() {
+  const prefersReducedMotion = useReducedMotion();
+  return (offset: { x?: number; y?: number }, delay: number) => ({
+    initial: prefersReducedMotion ? false : { opacity: 0, x: offset.x ?? 0, y: offset.y ?? 0 },
+    animate: { opacity: 1, x: 0, y: 0 },
+    transition: { duration: ENTRANCE_SECONDS, ease: 'easeOut', delay } satisfies Transition
+  });
+}
 
 /** Donut box: 160 on phones per the comp (486:20138), the desktop 178 from md
  * per the Portfolio card comp (5034:39333 / 1036:189543). */
@@ -80,6 +111,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
   // footer stats collapse to that single position's values.
   const [activeId, setActiveId] = useState<string | null>(null);
   const donutSize = useDonutSize();
+  const entrance = useEntrance();
 
   if (isLoading && view.positions.length === 0) return <EarningsSkeleton />;
 
@@ -115,11 +147,14 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
           />
 
           <ul className={cn(LEGEND, 'flex flex-col gap-3')} onMouseLeave={() => setActiveId(null)}>
-            {view.positions.map(position => {
+            {view.positions.map((position, index) => {
               const pct = position.share * 100;
               const pctLabel = pct > 0 && pct < 1 ? '<1%' : `${Math.round(pct)}%`;
               return (
-                <li key={position.id}>
+                <motion.li
+                  key={position.id}
+                  {...entrance({ x: LEGEND_TRAVEL }, ENTRANCE_START + index * LEGEND_STAGGER)}
+                >
                   <LegendRow
                     color={position.color}
                     dimmed={!!activeId && activeId !== position.id}
@@ -133,7 +168,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
                       ({pctLabel})
                     </Text>
                   </LegendRow>
-                </li>
+                </motion.li>
               );
             })}
             {/* `ul` only admits `li` children, so the empty state gets one too. */}
@@ -172,7 +207,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
             ratesPending ? (
               <Skeleton className="h-4 w-14" />
             ) : (
-              <GainValue value={displayProjected} className={LABEL_4} />
+              <GainValue value={displayProjected} className={LABEL_4} rolling />
             )
           }
         />
@@ -204,6 +239,7 @@ function IdleContent({
   // Hovering a token focuses the card on it (mirrors the Supplied tab).
   const [activeId, setActiveId] = useState<string | null>(null);
   const donutSize = useDonutSize();
+  const entrance = useEntrance();
 
   if (isLoading && view.tokens.length === 0) return <EarningsSkeleton />;
 
@@ -233,8 +269,11 @@ function IdleContent({
           />
 
           <ul className={cn(LEGEND, 'flex flex-col gap-3')} onMouseLeave={() => setActiveId(null)}>
-            {view.tokens.map(token => (
-              <li key={token.symbol}>
+            {view.tokens.map((token, index) => (
+              <motion.li
+                key={token.symbol}
+                {...entrance({ x: LEGEND_TRAVEL }, ENTRANCE_START + index * LEGEND_STAGGER)}
+              >
                 <LegendRow
                   color={token.color}
                   dimmed={!!activeId && activeId !== token.symbol}
@@ -248,7 +287,7 @@ function IdleContent({
                     ({token.name})
                   </Text>
                 </LegendRow>
-              </li>
+              </motion.li>
             ))}
             {/* `ul` only admits `li` children, so the empty state gets one too. */}
             {view.tokens.length === 0 && (
@@ -276,17 +315,23 @@ function IdleContent({
       <FooterStats>
         {savingsRate !== undefined && (
           <Stat
+            key="rate"
             label={<Trans>Sky Savings Rate</Trans>}
             value={<StatValue>{formatDecimalPercentage(savingsRate)}</StatValue>}
           />
         )}
         {displayProjected !== undefined && (
           <Stat
+            key="projected"
             label={<Trans>Projected 1Y yield (at current rate)</Trans>}
-            value={<GainValue value={displayProjected} className={LABEL_4} />}
+            value={<GainValue value={displayProjected} className={LABEL_4} rolling />}
           />
         )}
-        <Stat label={<Trans>Idle stablecoins</Trans>} value={<StatValue>{view.idleCount}</StatValue>} />
+        <Stat
+          key="count"
+          label={<Trans>Idle stablecoins</Trans>}
+          value={<StatValue>{view.idleCount}</StatValue>}
+        />
       </FooterStats>
     </>
   );
@@ -305,6 +350,7 @@ function EarningsHeadline({
   activeSymbol: string | null;
 }) {
   const { bpi } = useBreakpointIndex();
+  const entrance = useEntrance();
   // Badge cluster: 24 on phones per the comp (486:20137), the desktop 28 from md.
   const iconSize = bpi < BP.md ? 24 : 28;
 
@@ -314,24 +360,32 @@ function EarningsHeadline({
         {label}
       </Text>
       <div className="flex items-center gap-3">
-        {/* 32/35 on phones per the comp (486:20136), the desktop 40 from md. */}
+        {/* 32/35 on phones per the comp (486:20136), the desktop 40 from md.
+            The figure rolls over on hover focus (Figma 1598:76582) and its box
+            re-sizes with it, so the badge cluster glides along to its next
+            spot rather than jumping. */}
         <Heading
           tag="h2"
           className="text-text font-circle text-[32px] leading-[35px] md:text-[40px] md:leading-none"
         >
-          {formatUsd(value)}
+          <motion.span className="inline-block" {...entrance({ y: HEADLINE_RISE }, ENTRANCE_START)}>
+            <RollingValue value={formatUsd(value)} />
+          </motion.span>
         </Heading>
-        <IconStack size={iconSize}>
+        {/* Focusing a position dims the other badges (the stack keeps them
+            opaque under a scrim, so nothing shows through the overlap). */}
+        <IconStack
+          size={iconSize}
+          animateIn={{ delay: BADGES_START }}
+          activeIndex={activeSymbol ? tokenSymbols.indexOf(activeSymbol) : null}
+        >
           {tokenSymbols.map(symbol => (
             <TokenIcon
               key={symbol}
               token={{ symbol }}
               width={iconSize}
               showChainIcon={false}
-              className={cn(
-                'h-full w-full transition-opacity',
-                activeSymbol && activeSymbol !== symbol && 'opacity-50'
-              )}
+              className="h-full w-full"
             />
           ))}
         </IconStack>
@@ -357,7 +411,11 @@ function LegendRow({
   return (
     <button
       type="button"
-      className={cn('flex items-center gap-3 text-left transition-opacity', dimmed && 'opacity-50')}
+      // Dim/undim on a 300ms ease-out (Figma 2233:61099 legend rows).
+      className={cn(
+        'flex items-center gap-3 text-left transition-opacity duration-300 ease-out',
+        dimmed && 'opacity-50'
+      )}
       onMouseEnter={onActivate}
       onFocus={onActivate}
       onBlur={onDeactivate}
@@ -394,12 +452,24 @@ function Divider() {
  */
 function FooterStats({ children }: { children: ReactNode }) {
   const stats = Children.toArray(children);
+  const entrance = useEntrance();
   return (
     <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:flex lg:gap-8">
+      {/* Keyed by the Stat's own key where it has one: the Idle footer's first
+          two stats are conditional, and an index key would hand a slot (and
+          its already-played entrance) to whichever stat shifts into it. */}
       {stats.map((stat, index) => (
-        <Fragment key={index}>
+        <Fragment key={isValidElement(stat) && stat.key !== null ? stat.key : index}>
           {index > 0 && <span className="bg-borderPrimary hidden h-7 w-px shrink-0 self-center lg:block" />}
-          {stat}
+          {/* `lg:flex-1` + `min-w-0`: from lg the footer is a flex row of equal
+              columns split by hairlines (APP-443 item 7), so each stat has to
+              claim its share rather than size to content. */}
+          <motion.div
+            className="min-w-0 lg:flex-1"
+            {...entrance({ x: STAT_TRAVEL }, ENTRANCE_START + index * STAT_STAGGER)}
+          >
+            {stat}
+          </motion.div>
         </Fragment>
       ))}
     </div>
@@ -417,10 +487,9 @@ const LABEL_4 = 'font-circle text-base leading-[18px] font-medium tracking-[-0.3
 
 function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
-    // `lg:flex-1` + `min-w-0`: from lg the footer is a flex row of equal
-    // columns split by hairlines (APP-443 item 7), so each stat has to claim
-    // its share rather than size to content.
-    <div className="flex min-w-0 flex-col gap-1.5 lg:flex-1">
+    // Sizing (lg:flex-1 / min-w-0) lives on the FooterStats wrapper that
+    // animates this in.
+    <div className="flex min-w-0 flex-col gap-1.5">
       {/* Body 6 — Graphik 12/18. `captionSm` is the 12px Graphik variant; the
           comp's 18px line height has no variant, so it rides in className. */}
       <Text variant="captionSm" className="text-textSecondary leading-[18px]">
@@ -431,8 +500,13 @@ function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
   );
 }
 
-function StatValue({ children }: { children: ReactNode }) {
-  return <span className={cn(LABEL_4, 'text-text')}>{children}</span>;
+/** A footer figure; rolls over when it changes (hover focus). */
+function StatValue({ children }: { children: string | number }) {
+  return (
+    <span className={cn(LABEL_4, 'text-text')}>
+      <RollingValue value={children} speed="stat" />
+    </span>
+  );
 }
 
 function TodoValue() {

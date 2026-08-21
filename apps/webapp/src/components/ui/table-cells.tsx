@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
+import { Loader } from '@/components/ui/loader';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { IconboxAction, IconboxPosition, IconboxStatus } from './iconbox';
 
@@ -49,17 +50,6 @@ export function CellBadge({
     >
       {children}
     </span>
-  );
-}
-
-// The Pending badge's three-dot glyph (Icons/Custom/dots).
-function DotsIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-      <circle cx="2" cy="6.5" r="1" fill="currentColor" />
-      <circle cx="6" cy="5" r="1" fill="currentColor" />
-      <circle cx="10" cy="6.5" r="1" fill="currentColor" />
-    </svg>
   );
 }
 
@@ -120,7 +110,10 @@ export type CellStatusValue = 'pending' | 'completed' | 'failed';
 const statusStyles: Record<CellStatusValue, { className: string; icon: ReactNode; label: ReactNode }> = {
   pending: {
     className: 'bg-statusBrandBg text-statusBrand',
-    icon: <DotsIcon />,
+    // The Pending badge's three-dot glyph is the Loader at 2XS — it hops like
+    // every other busy indicator (Figma 2238:62221, "badge" row) rather than
+    // freezing one frame of it as a static icon.
+    icon: <Loader size="2xs" />,
     label: <Trans>Pending</Trans>
   },
   completed: {
