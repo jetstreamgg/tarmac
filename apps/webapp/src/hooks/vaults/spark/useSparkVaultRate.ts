@@ -1,5 +1,5 @@
 import { useReadContract, useChainId } from 'wagmi';
-import { chainId, isTestnetId, formatStrAsApy } from '@/utils';
+import { familyMainnetId, formatStrAsApy } from '@/utils';
 import { sparkVaultAbi } from '@/hooks/abis/sparkVaultAbi';
 
 // `vsr` is the Vault Savings Rate: a per-second rate in RAY (1e27 = 0% APY), the same accumulator
@@ -14,7 +14,7 @@ import { sparkVaultAbi } from '@/hooks/abis/sparkVaultAbi';
  */
 export function useSparkVaultRate({ vaultAddress }: { vaultAddress?: `0x${string}` }) {
   const connectedChainId = useChainId();
-  const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
+  const chainIdToUse = familyMainnetId(connectedChainId);
 
   const { data: vsr, isLoading } = useReadContract({
     address: vaultAddress,

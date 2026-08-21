@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
@@ -22,6 +22,7 @@ import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterX, IllustrationStaked } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ROW_COLLAPSE_MS } from '@/modules/ui/animation/presets';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
@@ -41,8 +42,7 @@ import { useEarnTableState } from '../hooks/useEarnTableState';
 import { EarnFeaturedCards } from './EarnFeaturedCards';
 import { ProtocolLineageBadge } from './ProtocolLineageBadge';
 import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /** Stable identity so the geo split doesn't rebuild the tables every render. */
 const EMPTY_ROWS: EarnProductRow[] = [];
@@ -246,6 +246,28 @@ export function EarnPage() {
     () => visibleUnavailableRows.map(row => toTableRow(row, true)),
     [visibleUnavailableRows]
   );
+  // When a filter empties the section, unmounting it in the same tick would
+  // silently kill the rows' collapse — hold it until the table reports the
+  // exit finished (onRowsExitComplete). Completion-gated rather than a timer,
+  // so it's correct at any animation speed: a busy main thread stretches the
+  // hold with the animation, and prefers-reduced-motion's duration-0 exit
+  // releases it immediately instead of parking an empty section for 300ms.
+  const hasUnavailable = unavailableItems.length > 0;
+  const [unavailableExitHold, setUnavailableExitHold] = useState(false);
+  const [prevHasUnavailable, setPrevHasUnavailable] = useState(hasUnavailable);
+  if (prevHasUnavailable !== hasUnavailable) {
+    setPrevHasUnavailable(hasUnavailable);
+    setUnavailableExitHold(!hasUnavailable);
+  }
+  // Backstop: if the presence boundary unmounts mid-exit (a breakpoint swap
+  // replaces the table with the card list), onExitComplete never fires — don't
+  // hold a header over an empty section forever.
+  useEffect(() => {
+    if (!unavailableExitHold) return;
+    const timer = setTimeout(() => setUnavailableExitHold(false), ROW_COLLAPSE_MS * 2);
+    return () => clearTimeout(timer);
+  }, [unavailableExitHold]);
+  const showUnavailable = hasUnavailable || unavailableExitHold;
 
   const handleRowSelect = (id: string) => {
     const row = rows.find(r => r.id === id);
@@ -439,7 +461,7 @@ export function EarnPage() {
           the active filters) leaves nothing to list. When the geo lookup never
           resolved a country we fall back to the restrictive config, so the
           section names no region and says why instead (PR #1776 review). */}
-      {unavailableItems.length > 0 && (
+      {showUnavailable && (
         <section className="flex flex-col gap-6 md:gap-8" data-testid="earn-unavailable">
           <div className="flex flex-col gap-2">
             <h2 className={SECTION_HEADING}>
@@ -462,6 +484,7 @@ export function EarnPage() {
             rows={unavailableItems}
             sort={sort}
             onSortChange={toggleSort}
+            onRowsExitComplete={() => setUnavailableExitHold(false)}
             dimmed
             testIdPrefix="earn-unavailable"
           />

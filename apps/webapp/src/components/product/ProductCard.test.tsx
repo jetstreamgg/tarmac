@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { NO_VALUE, ProductFigure, ProductPercent, ProductStat, ProductStatPair } from './ProductCard';
+import { ProductFigure, ProductPercent, ProductStat, ProductStatPair } from './ProductCard';
+import { NO_VALUE } from '@/lib/constants';
 
 afterEach(cleanup);
 

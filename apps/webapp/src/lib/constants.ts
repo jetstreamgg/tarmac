@@ -3,6 +3,9 @@ import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
 
+/** The placeholder every product surface shows for a value it cannot source. */
+export const NO_VALUE = '–';
+
 // Navigation state (module, submodule, entity selection) lives in the path;
 // these are the params that remain query-driven.
 export enum QueryParams {
@@ -127,6 +130,8 @@ export const REFERRAL_CODE: number = Number(import.meta.env.VITE_REFERRAL_CODE) 
 // transactions docs page once it is published — until then this lands on the
 // Terms of Use, which is the document the notice itself cited.
 export const BATCH_TX_LEGAL_NOTICE_URL = 'https://docs.sky.money/legal-terms';
+/** The "Learn more in the User Risk Documentation." target shared by every product About section. */
+export const USER_RISKS_URL = 'https://docs.sky.money/user-risks';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // Deprecated Seal Engine (LockstakeEngine v1, MKR). The UI was removed; this address backs the

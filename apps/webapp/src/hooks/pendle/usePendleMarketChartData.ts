@@ -19,8 +19,12 @@ export type PendleMarketChartPoint = {
   impliedApy?: number;
   /** Underlying APY, decimal */
   underlyingApy?: number;
-  /** Market TVL in USD */
-  tvl?: number;
+  /**
+   * Pool liquidity in USD. Pendle serves this as `tvl` on /historical-data, but
+   * it is the AMM pool's liquidity (matches `details.liquidity` on /markets/all),
+   * not the market's total TVL (`details.totalTvl`) - APP-526 item 6.1.
+   */
+  liquidity?: number;
 };
 
 export type PendleMarketChartDataHook = ReadHook & {
@@ -40,7 +44,7 @@ type HistoricalDataResponseRaw = {
 /**
  * GET /v2/{chainId}/markets/{address}/historical-data?time_frame=day
  *
- * Daily Rate/TVL series for the detail chart. The endpoint returns the whole
+ * Daily Rate/Liquidity series for the detail chart. The endpoint returns the whole
  * market lifetime at the chosen bucket size — markets live for months, so the
  * daily series stays small and timeframe filtering happens client-side. Our
  * integration is mainnet-only (Pendle's API doesn't serve forks), matching
@@ -60,13 +64,13 @@ export async function fetchPendleMarketHistoricalData(
       timestampSec: Math.floor(Date.parse(row.timestamp) / 1000),
       impliedApy: row.impliedApy,
       underlyingApy: row.underlyingApy,
-      tvl: row.tvl
+      liquidity: row.tvl
     }))
     .filter(point => Number.isFinite(point.timestampSec))
     .sort((a, b) => a.timestampSec - b.timestampSec);
 }
 
-/** Daily Rate/TVL history for one market, for the detail chart. */
+/** Daily Rate/Liquidity history for one market, for the detail chart. */
 export function usePendleMarketChartData(
   marketAddress: `0x${string}` | undefined
 ): PendleMarketChartDataHook {

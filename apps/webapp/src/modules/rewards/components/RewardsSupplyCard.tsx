@@ -2,12 +2,9 @@ import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { getTokenDecimals, useTokenBalance, type RewardContract } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
-import { parseBannerContent } from '@/utils/bannerContentParser';
-import { getBannerById } from '@/data/banners/banners';
 import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
 import {
-  NO_VALUE,
   ProductBadge,
   ProductFigure,
   ProductStat,
@@ -15,6 +12,7 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * No-position rewards entry card (the rewards analogue of `SavingsSupplyCard`).
@@ -60,9 +58,19 @@ export function RewardsSupplyCard({
       )
     : NO_VALUE;
 
-  // Corpus-fed about blurb (sync pipeline) — the generic Sky Token Rewards
-  // explainer, shared by every farm this card fronts.
-  const aboutBanner = getBannerById('about-sky-token-rewards')?.description;
+  // Per-farm blurb (APP-526): token farms name their reward token, the points
+  // farm credits Chronicle with distribution.
+  const description = isPointsFarm ? (
+    <Trans>
+      Supply to Sky Protocol and earn Chronicle Points. Point distribution and related opportunities are
+      managed by Chronicle.
+    </Trans>
+  ) : (
+    <Trans>
+      Supply to Sky Protocol and earn {rewardSymbol} tokens. The reward rate is set by Sky Protocol governance
+      and distributed proportionally to the supplied USDS.
+    </Trans>
+  );
 
   // Built outside <Trans> so the icon+symbol cluster is a single message
   // placeholder, middle-aligned to the title's cap-height (savings convention).
@@ -110,7 +118,7 @@ export function RewardsSupplyCard({
           </Trans>
         )
       }
-      description={aboutBanner ? parseBannerContent(aboutBanner) : undefined}
+      description={description}
       stats={
         <ProductStatPair>
           <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>

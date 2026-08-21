@@ -14,34 +14,12 @@
 
 import type { ReactNode } from 'react';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL } from '@/components/product/ModalGridCells';
+import { networkCell, networkFeeCell, productCell } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type PendleModalGridRow = ModalGridCell[];
 
 // --- Shared cell shapes — every builder draws these identically. ---
-
-const networkCell = (network: string, networkChainId?: number): ModalGridCell => ({
-  kind: 'single',
-  label: 'Network',
-  value: network,
-  network: true,
-  networkChainId
-});
-
-const networkFeeCell = (value: string): ModalGridCell => ({
-  kind: 'single',
-  label: NETWORK_FEE_LABEL,
-  value
-});
-
-const productCell = (product: string, productSymbol: string): ModalGridCell => ({
-  kind: 'single',
-  label: 'Product',
-  value: product,
-  token: productSymbol,
-  productIcon: 'pendle'
-});
 
 const minReceivedCell = (value: string, token: string): ModalGridCell => ({
   kind: 'single',
@@ -245,7 +223,7 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
   };
   return [
     [
-      productCell(input.product, input.productSymbol),
+      productCell(input.product, input.productSymbol, 'pendle'),
       { kind: 'single', label: 'Claim amount', value: input.claimAmount, token: input.ptSymbol }
     ],
     [
@@ -343,7 +321,7 @@ export function buildPendleReviewRows(
     label: 'Price impact',
     value: input.priceImpact
   };
-  const product = productCell(input.product, input.productSymbol);
+  const product = productCell(input.product, input.productSymbol, 'pendle');
   const network = networkCell(input.network, input.networkChainId);
   const feeCell = networkFeeCell(input.networkFee);
 

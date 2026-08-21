@@ -37,6 +37,7 @@ import { StakeTakeoverRewardCard } from './StakeTakeoverRewardCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
+import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 
 const FOOTER_NOTE_CLASSES =
   'flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left';
@@ -167,26 +168,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       ? (state.skyToLock * BigInt(Math.round(rewardsRate * 1_000_000_000))) / 1_000_000_000n
       : null;
 
-  // Max borrow — legacy Borrow.tsx:359-375 verbatim: debt-ceiling headroom
-  // (total debt padded 0.001% for rate drift) capped by the collateral's safe max.
-  const adjustedTotalDebt =
-    collateralData?.totalDaiDebt !== undefined ? (collateralData.totalDaiDebt * 100001n) / 100000n : 0n;
-  const availableBorrowFromDebtCeiling =
-    collateralData?.debtCeiling !== undefined && collateralData?.totalDaiDebt !== undefined
-      ? collateralData.debtCeiling - adjustedTotalDebt < 0n
-        ? 0n
-        : collateralData.debtCeiling - adjustedTotalDebt
-      : 0n;
-  const availableBorrowFromCollateral = simulatedVault?.maxSafeBorrowableIntAmount ?? 0n;
-  const availableBorrowBalance =
-    availableBorrowFromDebtCeiling > availableBorrowFromCollateral
-      ? availableBorrowFromCollateral
-      : availableBorrowFromDebtCeiling;
+  const { fromDebtCeiling: availableBorrowFromDebtCeiling, balance: availableBorrowBalance } =
+    calculateAvailableBorrow(collateralData, simulatedVault?.maxSafeBorrowableIntAmount);
 
-  const minCollateralNotMet =
-    debouncedVault?.collateralAmount !== undefined &&
-    debouncedVault?.minCollateralForDust !== undefined &&
-    debouncedVault.collateralAmount <= debouncedVault.minCollateralForDust;
+  const minCollateralNotMet = isMinCollateralNotMet(debouncedVault);
 
   // Validity — legacy Lock.tsx / Borrow.tsx effects, computed during render.
   const hasSufficientBalance = !!skyBalance && state.skyToLock <= skyBalance.value;
