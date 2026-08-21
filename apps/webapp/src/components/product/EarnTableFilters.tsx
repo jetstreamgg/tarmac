@@ -89,7 +89,9 @@ export function EarnTableFilters({
               onClick={() => onRiskTierToggle(tier.value)}
               className={cn(
                 tabsTriggerVariants({ variant: 'pill' }),
-                'text-xs leading-3.5 tracking-[-0.24px] md:text-sm md:leading-4 md:tracking-[-0.28px]'
+                // The filter comp (1598:77060) switches the active state in
+                // ~100ms, faster than the pill recipe's 250ms default.
+                'text-xs leading-3.5 tracking-[-0.24px] duration-100 md:text-sm md:leading-4 md:tracking-[-0.28px]'
               )}
             >
               {tier.label}

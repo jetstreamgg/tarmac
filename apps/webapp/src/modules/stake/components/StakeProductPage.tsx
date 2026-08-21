@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
@@ -11,6 +11,7 @@ import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useExitHold } from '@/modules/ui/hooks/useExitHold';
 import { StakeUserPosition, useStakeUserPositions } from '../hooks/useStakeUserPositions';
 import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
 import { StakePositionsTab } from './StakePositionsTab';
@@ -21,29 +22,6 @@ import { PositionManageFlow, manageActionInit } from './PositionManageFlow';
 
 /** Matches the takeover dismissal in `components/product/TakeoverShell.tsx`. */
 const TAKEOVER_EXIT_MS = 300;
-
-/**
- * Keeps a route-driven overlay mounted for the length of its exit animation
- * after its flag clears, so the overlay's own AnimatePresence has something to
- * animate. Without it the flag and the overlay's data (the urn index) clear in
- * the same tick and the whole subtree is gone before any exit can run.
- */
-function useExitHold(active: boolean, ms: number) {
-  const [held, setHeld] = useState(active);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Opening is immediate; only the release is deferred.
-  if (active && !held) setHeld(true);
-
-  useEffect(() => {
-    if (active || !held) return;
-    timer.current = setTimeout(() => setHeld(false), ms);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [active, held, ms]);
-
-  return held;
-}
 
 // URL tab contract for the Stake destination page: `?tab=` selects the visible
 // tab and always wins; without it (or with an unknown value) the default is

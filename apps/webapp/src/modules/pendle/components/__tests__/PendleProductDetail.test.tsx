@@ -134,8 +134,13 @@ describe('PendleProductDetail', () => {
     const about = screen.getByTestId('product-detail-about');
     expect(about.textContent).toContain('Lock in a fixed yield on your USDG');
     // Worked example: 100 USDG compounded at 4.86% over the remaining term.
-    expect(about.textContent).toMatch(/Supply 100 USDG and withdraw [\d.]+ USDG in \d+ days \(4\.86%/);
-    expect(screen.getByRole('link', { name: 'Click here' })).toBeTruthy();
+    expect(about.textContent).toMatch(/e\.g\. supply 100 USDG and withdraw [\d.]+ USDG in \d+ days \(4\.86%/);
+    expect(screen.getByRole('link', { name: 'Pendle site' }).getAttribute('href')).toBe(
+      'https://pendle.finance/'
+    );
+    expect(
+      screen.getByRole('link', { name: 'Learn more in the User Risk Documentation.' }).getAttribute('href')
+    ).toBe('https://docs.sky.money/user-risks');
   });
 
   it('omits the worked example until the markets API loads', () => {
