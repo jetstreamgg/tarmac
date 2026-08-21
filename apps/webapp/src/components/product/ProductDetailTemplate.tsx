@@ -140,7 +140,10 @@ const majorHeadingClasses =
 
 function DetailsSection({ title, details }: { title?: ReactNode; details: ProductDetailRow[] }) {
   return (
-    <section className="flex flex-col gap-4" data-testid="product-detail-details">
+    // Figma Annotations R2 (measured): the Details block's heading→list gap is
+    // 32px, matching the Stake Statistics Details strip. Specific to Details —
+    // About stays 16px and Transactions 24px.
+    <section className="flex flex-col gap-8" data-testid="product-detail-details">
       <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>Details</Trans>}</SectionHeading>
       {/* Figma Annotations R2 F1 (measured, 1512px frame): 20px between the two
           columns, 24px row-to-row (owned by the grid's gap-y, not per-row
