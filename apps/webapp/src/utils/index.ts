@@ -4,7 +4,7 @@ export { getSafeTransactionLink } from './getSafeTransactionLink';
 export { getTransactionLink } from './getTransactionLink';
 export { getExplorerName, ExplorerName } from './getExplorerName';
 export { getChainSpecificText } from './getChainSpecificText';
-export { isTestnetId } from './isTestnetId';
+export { isTestnetId, familyMainnetId } from './isTestnetId';
 export { isMainnetId } from './isMainnetId';
 export {
   isBaseChainId,

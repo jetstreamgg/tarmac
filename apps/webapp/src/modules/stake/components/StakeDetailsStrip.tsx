@@ -6,8 +6,7 @@ import { formatNumber, formatDecimalPercentage } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useStakeRewardsRate } from '../hooks/useStakeRewardsRate';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 // Phone tier (comp 1222:17089): single-column rows with 12px leading icons,
 // Body 5 labels and Label 5 values on borderPrimary hairlines; md restores

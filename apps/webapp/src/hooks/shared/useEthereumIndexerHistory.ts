@@ -12,7 +12,7 @@ import { RewardContract } from '../rewards/rewards';
 import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQueryHelpers';
 import { useHistoryPagination } from './useHistoryPagination';
 import { CombinedHistoryItem } from './shared';
-import { isTestnetId, chainId as chainIdMap } from '@/utils';
+import { familyMainnetId } from '@/utils';
 
 async function fetchEthereumIndexerHistoryPage(
   urlIndexer: string,
@@ -58,7 +58,7 @@ async function fetchEthereumIndexerHistoryPage(
 export function useEthereumIndexerHistory({ enabled = true }: { enabled?: boolean } = {}) {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const chainIdToUse = familyMainnetId(currentChainId);
   // Resolved from the mainnet-or-tenderly chain (not the wallet chain) so dev
   // mode keeps hitting the Tenderly indexer.
   const urlIndexer = getIndexerUrl(chainIdToUse) || '';

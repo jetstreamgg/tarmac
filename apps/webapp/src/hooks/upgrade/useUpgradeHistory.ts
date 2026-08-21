@@ -11,7 +11,7 @@ import {
 import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
 import { DaiUsdsRow, MkrSkyRow, UpgradeHistory, UpgradeResponse, UpgradeResponses } from './upgrade';
 import { useConnection, useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@/utils';
+import { familyMainnetId } from '@/utils';
 
 export function upgradeHistoryFragments({
   usr,
@@ -153,7 +153,7 @@ export function useUpgradeHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
-  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const chainIdToUse = familyMainnetId(currentChainId);
 
   const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useHistoryPagination({

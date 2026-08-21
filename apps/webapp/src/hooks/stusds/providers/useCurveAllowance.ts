@@ -2,8 +2,8 @@ import { useAccount, useChainId } from 'wagmi';
 import { usdsAddress, stUsdsAddress, curveStUsdsUsdsPoolAddress } from '../../generated';
 import { ReadHook } from '../../hooks';
 import { useTokenAllowance } from '../../tokens/useTokenAllowance';
-import { ZERO_ADDRESS, TENDERLY_CHAIN_ID } from '../../constants';
-import { isTestnetId } from '@/utils';
+import { ZERO_ADDRESS } from '../../constants';
+import { familyMainnetId } from '@/utils';
 
 export type CurveAllowanceHookResponse = ReadHook & {
   data?: bigint;
@@ -33,7 +33,7 @@ export function useCurveAllowance(params: CurveAllowanceParams): CurveAllowanceH
   const { address: connectedAddress } = useAccount();
   const acct = address || connectedAddress || ZERO_ADDRESS;
   const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? TENDERLY_CHAIN_ID : 1;
+  const chainId = familyMainnetId(connectedChainId);
 
   // Determine which token contract to check
   const tokenAddress =

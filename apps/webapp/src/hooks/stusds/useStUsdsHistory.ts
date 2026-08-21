@@ -13,8 +13,7 @@ import {
 } from '../shared/historyQueryHelpers';
 import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { isTestnetId } from '@/utils';
-import { chainId as chainIdMap } from '@/utils';
+import { familyMainnetId } from '@/utils';
 import { CURVE_POOL_TOKEN_INDICES } from './providers/constants';
 import { StUsdsProviderType } from './providers/types';
 
@@ -140,7 +139,7 @@ export function useStUsdsHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
-  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const chainIdToUse = familyMainnetId(currentChainId);
 
   const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useHistoryPagination({

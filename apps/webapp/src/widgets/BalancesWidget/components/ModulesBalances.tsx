@@ -15,7 +15,7 @@ import { StakeBalanceCard } from './StakeBalanceCard';
 import { ExpertBalanceCard } from './ExpertBalanceCard';
 import { FixedYieldBalanceCard } from './FixedYieldBalanceCard';
 import { VaultsBalanceCard } from './VaultsBalanceCard';
-import { chainId, isMainnetId, isTestnetId } from '@/utils';
+import { isMainnetId, familyMainnetId } from '@/utils';
 import { useChainId, useConnection } from 'wagmi';
 import { useEffect, useMemo } from 'react';
 import { SuppliedFundsEmptyState } from './SuppliedFundsEmptyState';
@@ -67,7 +67,7 @@ export const ModulesBalances = ({
 }: ModulesBalancesProps): React.ReactElement => {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const mainnetChainId = isTestnetId(currentChainId) ? chainId.tenderly : chainId.mainnet;
+  const mainnetChainId = familyMainnetId(currentChainId);
   const rewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
 
   const usdsSkyRewardContract = rewardContracts.find(

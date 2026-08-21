@@ -15,7 +15,7 @@ import {
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isL2ChainId, math } from '@/utils';
 import { parseAmountInput } from '@/lib/amountInput';
-import { REFERRAL_CODE } from '@/lib/constants';
+import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { SavingsAmountSummary } from '../components/SavingsAmountSummary';
 import {
   ORIGIN_TOKENS,
@@ -27,8 +27,6 @@ import {
 import { useSavingsSupplyMinAmountOut } from './useSavingsSupplyMinAmountOut';
 import { useUsdcSupplyGate, type UsdcSupplyBlockedReason } from './useUsdcSupplyGate';
 import { type SavingsLaunchFlow, type UseSavingsLaunchParams } from './useSavingsLaunch';
-
-const NO_VALUE = '–';
 
 /** Seeds the form's initial amount/token (e.g. a Portfolio quick-deposit shortcut). */
 export type SavingsModalPreset = {

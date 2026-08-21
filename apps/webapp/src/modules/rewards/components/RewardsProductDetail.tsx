@@ -1,18 +1,17 @@
 import { useMemo } from 'react';
-import { useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, UsersRound, Coins } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import {
-  TOKENS,
-  productNetworks,
   rewardsRiskProfile,
-  useRewardContractInfo,
-  useRewardsChartInfo,
+  TOKENS,
   trailingAverageRate,
-  type RewardContract
+  type RewardContract,
+  useProductNetworks,
+  useRewardContractInfo,
+  useRewardsChartInfo
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -29,9 +28,7 @@ import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName'
 import { RewardsDetailChart } from './RewardsDetailChart';
 import { RewardsPositionCard } from './RewardsPositionCard';
 import { RewardsTransactionsTable } from './RewardsTransactionsTable';
-import { USER_RISKS_URL } from '@/lib/constants';
-
-const NO_VALUE = '–';
+import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
 
 /**
  * About-slot content per farm. SPK, GROVE and the (deprecated) SKY farm read
@@ -82,15 +79,7 @@ function aboutForContract(contract: RewardContract): { body: React.ReactNode; le
 export function RewardsProductDetail({ contract }: { contract: RewardContract }) {
   // The networks Rewards is live on among the configured chains (mainnet family
   // only today) — scopes the header's network switcher.
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.REWARDS_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.REWARDS_INTENT);
 
   const isPointsFarm = contract.rewardToken.symbol === TOKENS.cle.symbol;
   const rewardSymbol = contract.rewardToken.symbol;
