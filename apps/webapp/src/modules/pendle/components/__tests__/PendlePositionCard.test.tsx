@@ -229,13 +229,37 @@ describe('PendlePositionCard', () => {
       expect(card.textContent).not.toContain('in yield');
     });
 
-    it('keeps the supply pitch for a matured market the user holds nothing in', () => {
+    it('shows the closed-market state — never the supply pitch — when nothing is held', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 0n;
       renderCard();
 
+      const card = screen.getByTestId('pendle-matured-closed-card');
+      expect(card.textContent).toContain('This market has matured');
+      expect(card.textContent).toContain('no longer accepts deposits');
+      // The page is reachable without a wallet now; a Supply CTA here would
+      // open a modal that cannot quote against a matured market.
+      expect(screen.queryByTestId('pendle-supply-card')).toBeNull();
+      expect(screen.queryByTestId('pendle-supply-cta')).toBeNull();
       expect(screen.queryByTestId('pendle-matured-position-card')).toBeNull();
-      expect(screen.getByTestId('pendle-supply-card')).toBeTruthy();
+    });
+
+    it('offers a way back to Earn from the closed-market state', () => {
+      h.expirySec = MATURED_SEC;
+      h.ptBalance = 0n;
+      renderCard();
+
+      expect(screen.getByTestId('pendle-matured-browse-cta')).toBeTruthy();
+    });
+
+    it('shows the closed state while disconnected too', () => {
+      h.expirySec = MATURED_SEC;
+      h.connected = false;
+      h.ptBalance = 0n;
+      renderCard();
+
+      expect(screen.getByTestId('pendle-matured-closed-card')).toBeTruthy();
+      expect(screen.queryByTestId('pendle-supply-cta')).toBeNull();
     });
   });
 });

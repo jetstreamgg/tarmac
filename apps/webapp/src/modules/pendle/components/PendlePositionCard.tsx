@@ -32,6 +32,9 @@ import {
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
+import { useNavigate } from '@tanstack/react-router';
+import { retainOnNavigate } from '@/lib/navigation';
+import { ROUTES } from '@/lib/routes';
 import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
@@ -174,6 +177,62 @@ function PendleSupplyCard({
  * flow the Portfolio and Earn "Requires action" surfaces also open.
  */
 /**
+ * Matured market, nothing held (incl. disconnected, and the moment after a
+ * claim empties the position). The page stays readable — chart, details and
+ * about are still worth reading — but the slot must not pitch a supply the
+ * market can no longer accept, so it states the closure and points at Earn.
+ *
+ * No comp: the section only draws the matured page for a holder (2193:73881).
+ */
+function PendleMaturedClosedCard({
+  market,
+  maturityLabel
+}: {
+  market: PendleMarketConfig;
+  maturityLabel: string;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <ProductSupplyCard
+      data-testid="pendle-matured-closed-card"
+      badges={
+        <div className="flex flex-wrap items-center gap-2">
+          <HeaderBadge size="s" className="pl-2">
+            <Trans>Fixed yield</Trans>
+          </HeaderBadge>
+          <HeaderBadge size="s" icon={<Pendle className="size-4" />}>
+            <Trans>Powered by Pendle</Trans>
+          </HeaderBadge>
+        </div>
+      }
+      title={<Trans>This market has matured</Trans>}
+      description={<Trans>Pendle {market.underlyingSymbol} no longer accepts deposits.</Trans>}
+      stats={
+        // Just the date: the market's rate is no longer on offer, and the
+        // API's implied APY after expiry isn't a figure we can label honestly.
+        <ProductStatPair>
+          <ProductStat size="lg" label={<Trans>Matured</Trans>}>
+            <ProductFigure value={maturityLabel}>{maturityLabel}</ProductFigure>
+          </ProductStat>
+        </ProductStatPair>
+      }
+      cta={
+        <Button
+          variant="secondary"
+          size="l"
+          className="w-full"
+          onClick={() => void navigate({ to: ROUTES.EARN, search: retainOnNavigate })}
+          data-testid="pendle-matured-browse-cta"
+        >
+          <Trans>Browse Earn products</Trans>
+        </Button>
+      }
+    />
+  );
+}
+
+/**
  * Matured-position card for the detail page (Figma 2193:73881): the claimable
  * figure over Accrued / Mature date, the ready-to-withdraw line, and a single
  * Claim CTA opening the redeem modal. Same content the Portfolio's
@@ -301,10 +360,15 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   }
 
   // A matured market keeps its detail page (2193:73881): holders get the claim
-  // card, everyone else the supply pitch — which the market's own gating keeps
-  // inert, since matured markets are filtered out of every supply entry point.
-  if (isMarketMatured(expirySec) && ptBalance > 0n) {
-    return <PendleMaturedCard market={market} ptBalance={ptBalance} maturityLabel={claimDateLabel} />;
+  // card, everyone else the closed-market state. Never the supply pitch — the
+  // market cannot accept deposits, and this page is now reachable without a
+  // wallet, so an enabled Supply CTA here would open a modal that can't quote.
+  if (isMarketMatured(expirySec)) {
+    return ptBalance > 0n ? (
+      <PendleMaturedCard market={market} ptBalance={ptBalance} maturityLabel={claimDateLabel} />
+    ) : (
+      <PendleMaturedClosedCard market={market} maturityLabel={claimDateLabel} />
+    );
   }
 
   if (ptBalance === 0n) {
