@@ -7,9 +7,6 @@ import { useFollow } from './chartMotion';
  *  so the panel stands clear of the series instead of crowding it. */
 const CURSOR_OFFSET = 18;
 
-/** Extra clearance under the panel's band before it flips to the plot floor. */
-const FLIP_CLEARANCE = 24;
-
 type Box = { left: number; top: number; width: number; height: number };
 type Size = { width: number; height: number };
 
@@ -45,17 +42,19 @@ function useTooltipPlacement(
   const x = ready
     ? anchor.left + coordinate.x + (flipX ? -CURSOR_OFFSET - panelSize.width : CURSOR_OFFSET)
     : null;
-  // The panel rides the top of the plot instead of the point's own height. The
-  // comp animates the tooltip on x only (Figma 1598:76196 has no y track), and
-  // it is what the reference app does: a panel pinned to one line never covers
-  // the part of the series you are reading, and the eye stops having to chase
-  // it up and down while scrubbing. The one exception: when the series itself
-  // climbs into the panel's band at the cursor, the panel drops to the plot
-  // floor rather than sit on the line — the follower glides it between lanes.
-  const flipY = ready && coordinate.y < CURSOR_OFFSET + panelSize.height + FLIP_CLEARANCE;
-  const y = ready
-    ? anchor.top + (flipY ? anchor.height - CURSOR_OFFSET - panelSize.height : CURSOR_OFFSET)
-    : null;
+  // The panel rides the top of the plot, always — the comp animates the
+  // tooltip on x only (Figma 1598:76196 has no y track), and it is what the
+  // reference app does: a panel pinned to one line never covers the part of
+  // the series you are reading, and the eye stops having to chase it up and
+  // down while scrubbing.
+  //
+  // There used to be an exception here that dropped the panel to the plot
+  // floor when the series climbed into its band. It keyed off `coordinate.y`,
+  // which recharts fills with the POINTER's y, not the point's — so the panel
+  // swapped lanes whenever the pointer wandered into the top ~100px of the
+  // plot, whatever the series was doing. A rule that cannot see the series
+  // cannot stand clear of it; the pin is the behaviour to keep.
+  const y = ready ? anchor.top + CURSOR_OFFSET : null;
 
   // The panel names the point the dot and rule mark, so it shares their time
   // constant and arrives with them rather than trailing like the lit window.
@@ -76,10 +75,14 @@ function useTooltipPlacement(
     }
   });
 
-  if (!coordinate || !anchorRef) return { panelRef, style: undefined };
+  // No anchor means the panel is rendered in place (unit tests, previews), so
+  // it keeps the document flow and places nothing.
+  if (!anchorRef) return { panelRef, style: undefined };
 
-  // First paint after activation has no measurements yet — keep the panel out
-  // of sight for that frame instead of flashing it at the layer's origin.
+  // Anything short of a full placement — the first paint after activation, or
+  // a render recharts hands over without a coordinate — stays out of sight.
+  // Left visible it would paint unplaced at the portal layer's origin, i.e.
+  // the top-left corner of the viewport.
   if (!ready) return { panelRef, style: { position: 'absolute', visibility: 'hidden' } as const };
 
   return { panelRef, style: { position: 'absolute', left: 0, top: 0 } as const };

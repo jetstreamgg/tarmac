@@ -266,6 +266,35 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
     frame.current = requestAnimationFrame(step);
   }, [x, y, time, mode, reduceMotion, write]);
 
+  // A follower whose element unmounts and comes back — the tooltip panel does
+  // it on every hover, since it renders nothing while inactive — gets a fresh
+  // node with none of the styles written above. The effect does not cover
+  // that: it only runs when the TARGET moves, and recharts hands back the same
+  // snapped coordinate when the pointer re-enters at the point it left from,
+  // which is exactly what happens at the plot's edges. The node would then sit
+  // unplaced at the origin of its coordinate space — the top-left corner of
+  // the viewport for the body-level tooltip layer.
+  //
+  // So every node change places directly: a new element is a new instance of
+  // the motion, with nothing to glide from.
+  const placed = useRef<T | null>(null);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (node === placed.current) return;
+    placed.current = node;
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    velocity.current = { x: 0, y: 0 };
+    if (!node || x == null || y == null) {
+      target.current = null;
+      current.current = null;
+      return;
+    }
+    target.current = { x, y };
+    current.current = { x, y };
+    write(node, x, y);
+  });
+
   useLayoutEffect(
     () => () => {
       if (frame.current !== null) cancelAnimationFrame(frame.current);
