@@ -9,7 +9,14 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Text } from '@/modules/layout/components/Typography';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
-import { addressScreeningQueryKey, fetchAddressScreening, type AddressScreeningResult } from '@/hooks';
+import {
+  addressScreeningQueryKey,
+  fetchAddressScreening,
+  enhancedAddressScreeningQueryKey,
+  fetchEnhancedAddressScreening,
+  requiresEnhancedScreening,
+  type AddressScreeningResult
+} from '@/hooks';
 import { useConnectedContext, type SignTermsResult } from '@/modules/ui/context/ConnectedContext';
 import { TermsLink } from '@/modules/ui/components/TermsModal';
 import type {
@@ -26,7 +33,7 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
  * so the async re-screen only runs when that polling has been failing or
  * paused for four hours straight.
  */
-const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
+export const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 
 /** Built per call: lingui's `t` must run after locale activation, not at module load. */
 const termsSignatureStep = (): TransactionStep => ({
@@ -63,8 +70,15 @@ const termsSignatureStep = (): TransactionStep => ({
  *     signature (or the worker's already-signed no-op) lets the transaction
  *     proceed.
  *
- * A future $250k+ transaction check (board note, TBD) slots into step 1 — it
- * would need the transaction's USD value threaded into the gate context.
+ * Step 1 is tiered by the transaction's USD value (APP-517): at/above the
+ * enhanced-screening threshold — or when the value is unknown — the address
+ * is screened via the enhanced endpoint (stricter provider settings, its own
+ * cache key) instead of the standard one. A denial returns the modal to its
+ * FIRST screen, where the modal-side preflight
+ * (`useEnhancedScreeningPreflight`) — reading the very query this gate just
+ * settled — renders the blocked/unavailable message above the disabled CTAs;
+ * it never closes into the app-level blocked dialog. The preflight also warms
+ * the query on the way in, so this usually passes synchronously.
  */
 export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDialog: ReactNode } {
   const queryClient = useQueryClient();
@@ -206,19 +220,42 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
       })();
     };
 
-    return ({ controls }) => {
+    return ({ controls, usdValue }) => {
       if (shouldSkipAuthChecks()) return { allow: true };
       const s = live.current;
       // No connected address: nothing to screen and nothing to sign for. The
       // config's confirm path can't start a write without a wallet anyway.
       if (!s.address) return { allow: true };
 
-      const cached = s.queryClient.getQueryState<AddressScreeningResult>(addressScreeningQueryKey(s.address));
+      // Screening tier (APP-517): at/above the USD threshold — or when the
+      // value is unknown — the enhanced endpoint replaces the standard one.
+      // Separate query key by construction, so a standard "clean" verdict can
+      // never satisfy the enhanced path (nor the reverse). Below the
+      // threshold this whole path is byte-identical to the C6 behavior.
+      const enhanced = requiresEnhancedScreening(usdValue);
+      const screeningKey = enhanced
+        ? enhancedAddressScreeningQueryKey(s.address)
+        : addressScreeningQueryKey(s.address);
+
+      const cached = s.queryClient.getQueryState<AddressScreeningResult>(screeningKey);
       const hasFreshVerdict =
         cached?.data !== undefined && Date.now() - cached.dataUpdatedAt < SCREENING_MAX_AGE_MS;
 
       if (hasFreshVerdict) {
         if (!cached!.data!.addressAllowed) {
+          if (enhanced) {
+            // The denial's surface is the modal's FIRST screen: the preflight
+            // reads this same cached verdict and renders the blocked message
+            // above the disabled CTAs. Driving a transaction-screen 'error'
+            // instead would misreport it on multi-step flows — the step list's
+            // failure rendering replaces the status row, so the compliance
+            // copy never shows and the denial reads as an on-chain failure
+            // with a retry that can only re-fail. No app-level surface: a
+            // wallet blocked for high-value transactions can still browse and
+            // transact below the threshold (APP-517).
+            controls.returnToFirstScreen();
+            return { allow: false };
+          }
           // Risky: the transaction must not start, and the app-level blocked
           // dialog (reading this same query through ConnectedContext) is the
           // surface that replaces the modal. Status is still IDLE on this
@@ -238,8 +275,9 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
         let screening: AddressScreeningResult;
         try {
           screening = await s.queryClient.fetchQuery({
-            queryKey: addressScreeningQueryKey(gatedAddress),
-            queryFn: () => fetchAddressScreening(gatedAddress, getAuthUrl()),
+            queryKey: screeningKey,
+            queryFn: () =>
+              (enhanced ? fetchEnhancedAddressScreening : fetchAddressScreening)(gatedAddress, getAuthUrl()),
             staleTime: SCREENING_MAX_AGE_MS,
             retry: 1
           });
@@ -247,6 +285,13 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
           // Fail closed — screening being down never falls through to the
           // transaction (APP-501 AC). No dialog if the session already ended.
           if (controls.isStale()) return { allow: false };
+          if (enhanced) {
+            // Back to the first screen: the preflight observes this query's
+            // error state and renders the unavailable message there — and its
+            // retry cadence self-recovers without the user relaunching.
+            controls.returnToFirstScreen();
+            return { allow: false };
+          }
           if (hadStaleVerdict && live.current.address === gatedAddress) {
             setScreeningUnavailableFor(gatedAddress);
           }
@@ -258,6 +303,12 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
           return { allow: false };
         }
         if (!screening.addressAllowed) {
+          if (enhanced) {
+            // Same surface as the sync-cached denial above: first screen,
+            // preflight message, disabled CTAs.
+            controls.returnToFirstScreen();
+            return { allow: false };
+          }
           return denyAndClose(controls);
         }
         return proceedPastScreening(controls, true, gatedAddress);

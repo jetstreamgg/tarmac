@@ -17,6 +17,7 @@ import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersConte
 import { ChainModalProvider } from '@/modules/ui/context/ChainModalContext';
 import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { useTermsSignatureGate } from '@/modules/ui/hooks/useTermsSignatureGate';
+import { useEnhancedScreeningPreflight } from '@/modules/ui/hooks/useEnhancedScreeningPreflight';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider } from '@/modules/ui/context/ConnectThenActContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
@@ -48,10 +49,12 @@ const config = useMock ? mockWagmiConfig : useTestnetConfig ? wagmiConfigDev : w
 // TransactionProvider with the real pre-transaction gate (APP-501) mounted:
 // screening + the conditional terms signature run on every Confirm. Its own
 // dialog (the screening-unavailable state) rides alongside the children.
+// The enhanced-screening preflight (APP-517) gates the modal's CTAs for
+// $250k+ transactions through the same provider seam.
 const GatedTransactionProvider = ({ children }: { children: React.ReactNode }) => {
   const { gate, screeningDialog } = useTermsSignatureGate();
   return (
-    <TransactionProvider gate={gate}>
+    <TransactionProvider gate={gate} usePreflight={useEnhancedScreeningPreflight}>
       {children}
       {screeningDialog}
     </TransactionProvider>

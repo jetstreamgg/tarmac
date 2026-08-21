@@ -3,7 +3,14 @@ import { formatUnits } from 'viem';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { TOKENS, useMkrSkyFee, useDebounce, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
+import {
+  TOKENS,
+  useMkrSkyFee,
+  useDebounce,
+  useSkyPrice,
+  useTokenBalance,
+  type UpgradeSourceToken
+} from '@/hooks';
 import { formatNumber, math } from '@/utils';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
@@ -164,6 +171,20 @@ export function UpgradeModalForm({
     [token, target, debouncedAmount, receiveAmount]
   );
 
+  // USD notional for the enhanced-screening threshold (APP-517): DAI upgrades
+  // 1:1 into $1-pegged USDS; an MKR upgrade is valued through its SKY output
+  // (fixed rate net of fee — economically the same leg, and SKY has a proven
+  // price feed where MKR doesn't). An unpriced non-zero MKR amount stays
+  // `undefined` (unknown → treated as above-threshold).
+  const { priceString: skyPriceString } = useSkyPrice();
+  const usdValue = !isMkr
+    ? parseFloat(formatUnits(debouncedAmount, DECIMALS))
+    : debouncedAmount === 0n
+      ? 0
+      : skyPriceString !== undefined
+        ? parseFloat(formatUnits(receiveAmount, DECIMALS)) * parseFloat(skyPriceString)
+        : undefined;
+
   // Legacy UpgradeWidget payload shape (APP-444 B6): widget_name 'convert', the
   // redesign modal only upgrades (no revert direction), so the amount is always
   // positive.
@@ -197,6 +218,7 @@ export function UpgradeModalForm({
     steps,
     transactionScreenContent,
     toast,
+    usdValue,
     analytics
   });
 

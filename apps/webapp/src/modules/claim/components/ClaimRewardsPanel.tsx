@@ -200,6 +200,11 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     execute: flow.execute,
     confirmDisabled: disabled,
     transactionScreenContent,
+    // USD notional of the whole claim set for the enhanced-screening
+    // threshold (APP-517). Unknown (undefined) while the sources are still
+    // resolving — the launch config carries no value either, so the check
+    // stays conservative until the amounts land.
+    usdValue: isLoading ? undefined : allRewards.reduce((sum, reward) => sum + reward.amountUsd, 0),
     analytics
   });
 

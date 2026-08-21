@@ -83,7 +83,7 @@ function Harness({
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    launch({ title: 'Supply USDS', steps, onConfirm });
+    launch({ title: 'Supply USDS', usdValue: 0, steps, onConfirm });
   }, [launch, steps, onConfirm]);
   return null;
 }

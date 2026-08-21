@@ -144,7 +144,11 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
       onConfirm: restakeAvailable ? handleRestake : handlePlain,
       onSecondaryConfirm: restakeAvailable ? handlePlain : undefined,
       onRetry: retry,
-      transactionScreenContent
+      transactionScreenContent,
+      // USD notional of the claim set (enhanced screening, APP-517) — the
+      // restake variant moves the same claimed value, so one number covers
+      // both CTAs. Unknown (undefined) while the claimables are resolving.
+      usdValue: isLoading ? undefined : rewards.reduce((sum, reward) => sum + reward.amountUsd, 0)
     });
   }, [
     updateModalContent,
@@ -156,7 +160,9 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
     handlePlain,
     handleRestake,
     retry,
-    transactionScreenContent
+    transactionScreenContent,
+    isLoading,
+    rewards
   ]);
 
   const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
@@ -233,6 +239,10 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
     launchedRef.current = true;
     launch({
       title: t`Claim rewards`,
+      // UNKNOWN until the urn claimables resolve (the panel pushes the real
+      // sum) — treated as above-threshold, so the enhanced check runs rather
+      // than being skipped (APP-517).
+      usdValue: undefined,
       // Figma 1036:214007 titles the wallet screen "Confirm claim".
       transactionTitle: t`Confirm claim`,
       subtitles: {

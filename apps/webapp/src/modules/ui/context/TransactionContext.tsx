@@ -31,10 +31,12 @@ import type {
 } from './transactionContract';
 import {
   allowAllGate,
+  allowAllPreflight,
   type GateControls,
   type GatePhase,
   type GateStatusCopy,
   type GateTrigger,
+  type PreflightHook,
   type PreTransactionGate
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
@@ -127,10 +129,15 @@ export function TransactionProvider({
   // The pre-transaction gate (see ./preTransactionGate). Injectable so tests
   // can exercise the deny/async paths; the app mounts the allow-all stub until
   // the signature verdict lands (APP-501).
-  gate = allowAllGate
+  gate = allowAllGate,
+  // The enhanced-screening preflight (APP-517), a HOOK called unconditionally
+  // every render — its identity must be stable for the life of the provider
+  // (the app passes a module-level hook; tests pass stable fakes).
+  usePreflight = allowAllPreflight
 }: {
   children: ReactNode;
   gate?: PreTransactionGate;
+  usePreflight?: PreflightHook;
 }) {
   // Warm the EIP-5792 capability probe from the provider, which is mounted for the whole
   // session, so it runs on connect rather than the first time a flow needs the answer.
@@ -240,6 +247,32 @@ export function TransactionProvider({
   const chainId = useChainId();
   const { address } = useConnection();
   const isSafeWallet = useIsSafeWallet();
+
+  // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
+  // the live USD value crosses the threshold WHILE the flow's own gating
+  // would let the user proceed, so the verdict is usually in by the time
+  // they reach the screen whose Confirm fires the transaction — but a user
+  // merely playing with the input (over balance, quote pending, claim set
+  // unresolved) never triggers a call. The modal renders the blocked message
+  // above the CTAs and gates the transaction-firing buttons on the result;
+  // the gate enforces the same verdict at Confirm through the shared query
+  // cache. `active` stays true while minimized — the session is alive, just
+  // hidden.
+  //
+  // `actionable` reads the flow's OWN confirm gating from the live config —
+  // never the preflight's hold (that lives in the modal's props, not the
+  // config), so there is no feedback loop. An entry flow may expose a second
+  // CTA; either being enabled means the user can proceed.
+  const preflightEntry = activeConfig?.entry;
+  const actionable = preflightEntry
+    ? !preflightEntry.confirmDisabled ||
+      (!!activeConfig?.onSecondaryConfirm && !preflightEntry.secondaryConfirmDisabled)
+    : !activeConfig?.confirmDisabled;
+  const preflight = usePreflight({
+    usdValue: activeConfig?.usdValue,
+    active: open && !!activeConfig,
+    actionable
+  });
   const {
     trackWidgetReviewViewed,
     trackTransactionStarted,
@@ -472,6 +505,15 @@ export function TransactionProvider({
     handleCloseRef.current = handleClose;
   });
 
+  // The modal's back-to-first-screen action, registered while it is mounted
+  // (the screen is modal-internal state the provider can't reach otherwise).
+  // Driven by the gate's returnToFirstScreen control on an enhanced-screening
+  // denial (APP-517).
+  const returnToFirstScreenRef = useRef<(() => void) | null>(null);
+  const registerReturnToFirstScreen = useCallback((fn: (() => void) | null) => {
+    returnToFirstScreenRef.current = fn;
+  }, []);
+
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
   // has nothing left to animate.
   useEffect(() => () => (exitTimerRef.current ? clearTimeout(exitTimerRef.current) : undefined), []);
@@ -570,6 +612,19 @@ export function TransactionProvider({
           if (!live()) return;
           handleCloseRef.current();
         },
+        returnToFirstScreen: () => {
+          if (!live()) return;
+          // IDLE first, and synchronously: the first screen must be fully live
+          // again — the entry body's pushes freeze while txStatus !== IDLE, and
+          // close/dismiss semantics key off the status. Phase and copy clear
+          // with it, exactly like setGateStatus('idle').
+          setTxStatus(TxStatus.IDLE);
+          txStatusRef.current = TxStatus.IDLE;
+          gatePhaseRef.current = null;
+          gateCopyRef.current = null;
+          setGateCopy(null);
+          returnToFirstScreenRef.current?.();
+        },
         reportSignatureRejected: () => {
           if (!live()) return;
           emitTermsSignatureDeclined('wallet_rejected');
@@ -585,7 +640,13 @@ export function TransactionProvider({
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
       if (gateInFlightRef.current === sessionGenRef.current) return;
       const gen = sessionGenRef.current;
-      const verdict = gate({ trigger, controls: makeGateControls(gen) });
+      const verdict = gate({
+        trigger,
+        // Read at fire time (like the config callbacks): editable flows keep
+        // this live via updateModalContent until the engine starts.
+        usdValue: configRef.current?.usdValue,
+        controls: makeGateControls(gen)
+      });
       if (verdict instanceof Promise) {
         gateInFlightRef.current = gen;
         verdict
@@ -887,6 +948,7 @@ export function TransactionProvider({
             // what tells Radix to play the exit rather than the enter.
             open={open && !minimized && !!activeConfig}
             registerEntrySlot={setEntrySlotEl}
+            registerReturnToFirstScreen={registerReturnToFirstScreen}
             onClose={handleClose}
             onMinimize={minimize}
             title={modalView.config.title}
@@ -914,6 +976,7 @@ export function TransactionProvider({
             steps={modalSteps}
             currentStep={modalView.currentStep}
             gateCopy={modalView.gateCopy}
+            preflight={preflight}
           />
         )}
       </EntrySlotContext.Provider>

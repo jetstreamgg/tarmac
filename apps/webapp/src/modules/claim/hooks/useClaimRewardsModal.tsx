@@ -44,6 +44,10 @@ export function useClaimRewardsModal({ onSuccess }: UseClaimRewardsModalOptions 
           error: t`An error occurred while claiming your rewards.`
         },
         sessionId,
+        // UNKNOWN until the claim set resolves (the panel pushes the real
+        // sum) — treated as above-threshold, so the enhanced check runs
+        // rather than being skipped (APP-517).
+        usdValue: undefined,
         entry: { confirmLabel: t`Claim`, confirmDisabled: true },
         backgroundContent: <ClaimRewardsPanel sessionId={sessionId} scope={scope} />,
         onConfirm: () => {},

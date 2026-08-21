@@ -8,6 +8,7 @@ import {
   useCurrentUrnIndex,
   useIsBatchSupported,
   useRewardContractTokens,
+  useSkyPrice,
   useStakeSkyAllowance,
   ZERO_ADDRESS
 } from '@/hooks';
@@ -88,6 +89,7 @@ export function useStakeLaunch({
 }: UseStakeLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
   const { address } = useConnection();
+  const { priceString: skyPriceString } = useSkyPrice();
 
   // The urn index a brand-new position will take.
   const { data: currentUrnIndex } = useCurrentUrnIndex();
@@ -172,7 +174,19 @@ export function useStakeLaunch({
       ...(hasBorrow && { borrowAmount: Number(formatUnits(usdsToBorrow, 18)), borrowAction: 'borrow' })
     };
 
+    // USD notional for the enhanced-screening threshold (APP-517): locked SKY
+    // at spot plus borrowed USDS at $1. A non-zero SKY lock with no price
+    // available stays `undefined` — unknown, treated as above-threshold.
+    const usdsFloat = Number(formatUnits(usdsToBorrow, 18));
+    const usdValue =
+      skyToLock === 0n
+        ? usdsFloat
+        : skyPriceString
+          ? Number(formatUnits(skyToLock, 18)) * parseFloat(skyPriceString) + usdsFloat
+          : undefined;
+
     launchModal({
+      usdValue,
       // Hi-fi 486:33412: the review screen is titled plain "Confirm".
       title: t`Confirm`,
       transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, StakeFlow.OPEN)),
@@ -217,6 +231,7 @@ export function useStakeLaunch({
     hasBorrow,
     hasDelegate,
     shouldUseBatch,
+    skyPriceString,
     transactionContent,
     steps,
     onSuccess

@@ -38,6 +38,8 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
         // advances to the review; the review's Confirm fires the engine. The body
         // pushes the review breakdown (`transactionContent`) live.
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
+        usdValue: 0,
         confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
@@ -62,6 +64,8 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
         },
         sessionId: withdrawSessionId,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
+        usdValue: 0,
         confirmLabel: t`Confirm`,
         backgroundContent: <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" preset={preset} />,
         onConfirm: () => {},

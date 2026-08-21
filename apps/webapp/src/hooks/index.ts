@@ -245,6 +245,12 @@ export {
   fetchAddressScreening,
   type AddressScreeningResult
 } from './authentication/useRestrictedAddressCheck';
+export {
+  ENHANCED_SCREENING_THRESHOLD_USD,
+  requiresEnhancedScreening,
+  enhancedAddressScreeningQueryKey,
+  fetchEnhancedAddressScreening
+} from './authentication/enhancedAddressScreening';
 export { useVpnCheck } from './authentication/useVpnCheck';
 
 // Tokens
