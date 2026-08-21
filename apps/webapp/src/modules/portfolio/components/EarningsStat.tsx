@@ -307,7 +307,11 @@ export function EarningsFigureValue({
               <Trans>Realized: {formatUsd(pendleSplit.realizedUsd)}</Trans>
             </span>
             <span>
-              <Trans>Unrealized (mark to market): {formatUsd(pendleSplit.markToMarketUsd)}</Trans>
+              {/* markToMarketUsd is the MTM total; the unrealized slice is what's left after realized. */}
+              <Trans>
+                Unrealized (mark to market):{' '}
+                {formatUsd(pendleSplit.markToMarketUsd - pendleSplit.realizedUsd)}
+              </Trans>
             </span>
           </div>
         </EarningsTooltip>

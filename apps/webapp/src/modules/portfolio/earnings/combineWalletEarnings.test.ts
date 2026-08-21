@@ -26,7 +26,7 @@ const pendle = protocol({
   id: 'pendle',
   totalEarned: ok({ usd: 916.82 }),
   earnedThisMonth: ok({ usd: 635.39 }),
-  pendleSplit: { realizedUsd: 895.05, markToMarketUsd: 21.77 }
+  pendleSplit: { realizedUsd: 895.05, markToMarketUsd: 916.82 }
 });
 
 describe('combineWalletEarnings', () => {

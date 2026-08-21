@@ -90,9 +90,11 @@ const renderCard = () =>
 describe('PendlePositionCard — accrued to date (APP-450)', () => {
   beforeEach(() => {
     h.ptBalance = 100n * 10n ** 18n;
+    // markToMarketUsd is the MTM total (equals totalEarned); realized is the
+    // locked-in slice, so the tooltip's unrealized line shows the 21.77 rest.
     earningsHolder.value = pendleEarnings(ok({ usd: 916.82 }), {
       realizedUsd: 895.05,
-      markToMarketUsd: 21.77
+      markToMarketUsd: 916.82
     });
   });
   afterEach(() => cleanup());

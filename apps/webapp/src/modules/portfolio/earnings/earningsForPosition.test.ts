@@ -38,7 +38,7 @@ const pendle = protocol({
   rowIds: [PENDLE_ROW],
   totalEarned: ok({ usd: 916.82 }),
   earnedThisMonth: ok({ usd: 635.39 }),
-  pendleSplit: { realizedUsd: 895.05, markToMarketUsd: 21.77 }
+  pendleSplit: { realizedUsd: 895.05, markToMarketUsd: 916.82 }
 });
 const savings = protocol({
   id: 'savings',
@@ -114,7 +114,7 @@ describe('earningsForPosition', () => {
     const position = earningsForPosition(earnings, PENDLE_ROW);
     expect(position?.totalEarned).toEqual(ok({ usd: 916.82 }));
     expect(position?.earnedThisMonth).toEqual(ok({ usd: 635.39 }));
-    expect(position?.pendleSplit).toEqual({ realizedUsd: 895.05, markToMarketUsd: 21.77 });
+    expect(position?.pendleSplit).toEqual({ realizedUsd: 895.05, markToMarketUsd: 916.82 });
   });
 
   it('maps the savings row to the vaults.fyi figures', () => {
