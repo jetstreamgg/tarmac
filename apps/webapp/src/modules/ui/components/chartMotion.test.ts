@@ -1,11 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
-import { arcLengthAtX, buildArcLut, MeasurablePath } from './chartMotion';
+import { arcLengthAtX, buildArcLut, MeasurablePath, tailResponse } from './chartMotion';
 
 /** A fake path whose x-at-arc-length is `xAt`. */
 const fakePath = (total: number, xAt: (length: number) => number): MeasurablePath => ({
   getTotalLength: () => total,
   getPointAtLength: length => ({ x: xAt(length) })
+});
+
+// Pacing by distance: a fixed time constant plays every hop in the same
+// duration, so a sparse series' 100px hop moves ten times as fast as a dense
+// series' 10px one — the weekly ranges read as jumpy for exactly that reason.
+describe('tailResponse', () => {
+  it('never drops below the reference-derived constant on dense series', () => {
+    expect(tailResponse(5)).toBe(150);
+    expect(tailResponse(0)).toBe(150);
+  });
+
+  it('scales with the point spacing on sparse series', () => {
+    expect(tailResponse(100)).toBe(250);
+  });
+
+  it('caps so the sparsest series do not crawl', () => {
+    expect(tailResponse(500)).toBe(300);
+  });
 });
 
 describe('buildArcLut / arcLengthAtX', () => {

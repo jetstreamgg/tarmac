@@ -63,6 +63,24 @@ export const TRACK_TAU_MS = 16;
  */
 export const TAIL_RESPONSE_MS = 150;
 
+/**
+ * A time constant alone paces every hop to the same DURATION, so a sparse
+ * series' 100px hop travels at ten times the speed of a dense series' 10px
+ * one — which is why only the weekly ranges read as jumpy. `tailResponse`
+ * paces by DISTANCE instead: ~2.5ms of lag constant per px of point spacing
+ * holds the perceived speed roughly level across ranges. The floor is the
+ * reference-derived constant above (dense series never get twitchier than the
+ * reference); the cap keeps the sparsest series (portfolio statistics, 7-8
+ * points) from crawling and trailing the cursor by half the plot.
+ */
+export const TAIL_PACE_MS_PER_PX = 2.5;
+export const TAIL_RESPONSE_MAX_MS = 300;
+
+/** Spring lag constant for a series whose points sit `spacingArc` px apart. */
+export function tailResponse(spacingArc: number): number {
+  return Math.min(Math.max(spacingArc * TAIL_PACE_MS_PER_PX, TAIL_RESPONSE_MS), TAIL_RESPONSE_MAX_MS);
+}
+
 /** Quart, the easing the comp carries. Still right for discrete fades. */
 export const HOVER_EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
 

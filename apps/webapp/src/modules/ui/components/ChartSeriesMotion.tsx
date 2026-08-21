@@ -14,7 +14,7 @@ import {
   buildArcLut,
   HOVER_CROSSFADE_EASE,
   HOVER_CROSSFADE_MS,
-  TAIL_RESPONSE_MS,
+  tailResponse,
   useDashoffsetFollow
 } from './chartMotion';
 
@@ -39,12 +39,21 @@ const REVEAL_EASING = 'cubic-bezier(0.77,0,0.175,1)';
 const DIMMED_ALPHA = 0.4;
 
 /**
- * Length of the lit segment, in px of arc length — the DS mock's window
- * measures ~45px across (Figma 5391:44830). A flat length: a
- * neighbour-relative span was tried and read as an overgrown slab on the
- * sparse series.
+ * Shortest the lit segment gets, in px of arc length — the DS mock's window
+ * measures ~45px across (Figma 5391:44830), and dense series stay there.
+ * On sparse series the piece grows gently with the point spacing (half a
+ * point interval on top of the base), so a longer hop moves a longer piece —
+ * capped well short of the full neighbour-to-neighbour span, which was tried
+ * and read as an overgrown slab.
  */
 const SEGMENT_WINDOW = 44;
+const SEGMENT_WINDOW_MAX = 96;
+const WINDOW_PER_SPACING = 0.5;
+
+/** Lit-segment length for a series whose points sit `spacingArc` px apart. */
+export function segmentLength(spacingArc: number): number {
+  return Math.min(SEGMENT_WINDOW + spacingArc * WINDOW_PER_SPACING, SEGMENT_WINDOW_MAX);
+}
 
 /** Bounded retries for reading a path that hasn't laid out yet (length 0). */
 const MAX_MEASURE_TRIES = 30;
@@ -198,11 +207,17 @@ export function SeriesMotionLayer({
     layer.style.opacity = isHovering ? `${DIMMED_ALPHA}` : '';
   }, [isHovering, reduceMotion, seriesKey]);
 
+  // Both the piece's length and the pace of its hop scale with the point
+  // spacing, so the weekly ranges (a handful of points, ~100px hops) move a
+  // longer piece more slowly instead of flicking a sliver across the gap.
+  const spacingArc = geom && data.length > 1 ? geom.lut.total / (data.length - 1) : 0;
+  const windowLength = segmentLength(spacingArc);
+
   // The bright segment: dash window centred on the magnet point's arc length.
   const centerLength = hoverX != null && geom ? arcLengthAtX(geom.lut, hoverX) : null;
-  const dashoffset = centerLength != null ? SEGMENT_WINDOW / 2 - centerLength : null;
+  const dashoffset = centerLength != null ? windowLength / 2 - centerLength : null;
   // `useDashoffsetFollow` owns `stroke-dashoffset`; it stays out of the style prop.
-  const segmentRef = useDashoffsetFollow<SVGPathElement>(dashoffset, TAIL_RESPONSE_MS);
+  const segmentRef = useDashoffsetFollow<SVGPathElement>(dashoffset, tailResponse(spacingArc));
 
   return (
     <>
@@ -224,7 +239,7 @@ export function SeriesMotionLayer({
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             pointerEvents="none"
-            strokeDasharray={`${SEGMENT_WINDOW} ${geom.lut.total}`}
+            strokeDasharray={`${windowLength} ${geom.lut.total}`}
             style={{
               opacity: isHovering ? 1 : 0,
               transition: reduceMotion ? undefined : `opacity ${HOVER_CROSSFADE_MS}ms ${HOVER_CROSSFADE_EASE}`

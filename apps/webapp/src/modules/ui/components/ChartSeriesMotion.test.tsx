@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SeriesMotionLayer } from './ChartSeriesMotion';
+import { segmentLength, SeriesMotionLayer } from './ChartSeriesMotion';
 
 const h = vi.hoisted(() => ({
   isActive: false,
@@ -58,6 +58,18 @@ const renderLayer = () =>
   );
 
 const finishReveal = () => act(() => vi.advanceTimersByTime(1000));
+
+describe('segmentLength', () => {
+  it('holds the DS length on dense series', () => {
+    expect(segmentLength(0)).toBe(44);
+    expect(segmentLength(5)).toBe(46.5);
+  });
+
+  it('grows by half the point spacing on sparse series, up to a cap', () => {
+    expect(segmentLength(100)).toBe(94);
+    expect(segmentLength(400)).toBe(96);
+  });
+});
 
 describe('entrance draw', () => {
   it('draws the stroke tip-first (dash trick) while the fill grows behind a clip', () => {
