@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-import { useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';

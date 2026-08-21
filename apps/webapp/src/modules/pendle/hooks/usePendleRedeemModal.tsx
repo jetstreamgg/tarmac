@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import {
   getTokenDecimals,
   isMarketMatured,
@@ -12,8 +12,9 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import { chainId as chainIdMap, isTestnetId } from '@/utils';
+import { familyMainnetId } from '@/utils';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { PendleRedeem } from '../components/PendleRedeem';
@@ -111,9 +112,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   // The Network cell describes where the trade executes — the engine chain,
   // which the connected chain only matches while Pendle stays mainnet-gated.
   const chainId = useChainId();
-  const chains = useChains();
-  const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
-  const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
+  const engineChainId = familyMainnetId(chainId);
+  const networkName = useNetworkName(engineChainId);
 
   // Simulate on the engine chain (the calldata is mainnet's even when the
   // wallet sits elsewhere), and only while the modal is up — this hook mounts

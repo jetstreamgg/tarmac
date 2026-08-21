@@ -13,10 +13,9 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells, type ModalGridFee } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
+import { NO_VALUE } from '@/lib/constants';
 import { formatPriceImpact } from '../utils/priceImpact';
 import { buildPendleRedeemRows } from './pendleModalRows';
-
-const NO_VALUE = '–';
 
 type PendleRedeemProps = {
   market: PendleMarketConfig;
