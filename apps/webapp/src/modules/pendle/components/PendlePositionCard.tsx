@@ -195,7 +195,11 @@ function PendleMaturedCard({
   // switch the same way the Portfolio's matured cards do.
   usePendleMaturedNetworkSwitch(true);
 
-  const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
+  // DEMO BRANCH — DO NOT MERGE: the on-chain preview can't resolve for a
+  // not-actually-matured market, so bypass it (PT balance ≈ receive amount).
+  usePendleRedeemPreview(market, ptBalance);
+  const previewAmount: bigint | undefined = ptBalance;
+  const previewLoading = false;
   const { earnings, currency } = usePendleMaturedPositionEarnings(market, ptBalance);
   // The receive amount (post SY-rate conversion); the PT balance stands in
   // until the on-chain preview resolves — same decimals, transient gap.
