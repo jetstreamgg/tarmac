@@ -127,6 +127,11 @@ export const REFERRAL_CODE: number = Number(import.meta.env.VITE_REFERRAL_CODE) 
 // transactions docs page once it is published — until then this lands on the
 // Terms of Use, which is the document the notice itself cited.
 export const BATCH_TX_LEGAL_NOTICE_URL = 'https://docs.sky.money/legal-terms';
+
+// The current legal documents (APP-500). The T&C modal and the transaction
+// signature step both link them.
+export const TERMS_OF_USE_URL = 'https://docs.sky.money/legal/skybase-international/terms-of-use';
+export const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal/skybase-international/privacy-policy';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // Deprecated Seal Engine (LockstakeEngine v1, MKR). The UI was removed; this address backs the

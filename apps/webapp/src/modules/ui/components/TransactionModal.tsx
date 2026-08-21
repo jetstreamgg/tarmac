@@ -22,6 +22,7 @@ import { useChainId } from 'wagmi';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
+import type { GateStatusCopy } from '@/modules/ui/context/preTransactionGate';
 import { cn } from '@/lib/cn';
 
 // The step-list shape lives with its derivation; re-exported so the contract and
@@ -96,6 +97,13 @@ export type TransactionModalProps = {
   errorLabel?: string;
   steps?: TransactionStep[];
   currentStep?: number;
+  /**
+   * Gate-owned status copy (APP-501): while set, replaces the status row's
+   * message and the status-keyed subtitle — the flow's copy narrates on-chain
+   * writes, which is wrong while the gate is screening or collecting the
+   * terms signature.
+   */
+  gateCopy?: GateStatusCopy | null;
 };
 
 const statusIcons: Partial<Record<TxStatus, ReactNode>> = {
@@ -140,7 +148,8 @@ export function TransactionModal({
   successLabel,
   errorLabel,
   steps,
-  currentStep = 0
+  currentStep = 0,
+  gateCopy
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
   // read-only review. Initialised per mount (the provider remounts the modal on
@@ -166,6 +175,11 @@ export function TransactionModal({
   const isFirstScreen = isEntry || isReview;
   const isTransaction = step === 'transaction';
   const hasMultipleSteps = steps && steps.length > 1;
+  // A gate-mounted signature prelude must be visible even when it is the ONLY
+  // step (flows like the claim panel launch without a steps array): the step
+  // row is where its explanatory copy, links, and inline retry live (APP-501).
+  const hasSignatureStep = !!steps?.some(step => typeof step === 'object' && step.kind === 'signature');
+  const showStepList = !!hasMultipleSteps || hasSignatureStep;
   // Same expression the launch hooks use for `shouldUseBatch` — when true the
   // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
   // steps active together, "Bundled" header badge).
@@ -175,7 +189,7 @@ export function TransactionModal({
   // "Try again", Figma 1030:139111) and drop the bottom status row/buttons —
   // the header back arrow still returns to the first screen. Single-step flows
   // have no list, so they keep the bottom treatment.
-  const showInlineFailure = !!hasMultipleSteps && isTransaction && txStatus === TxStatus.ERROR;
+  const showInlineFailure = showStepList && isTransaction && txStatus === TxStatus.ERROR;
 
   // The entry screen sources its label/gating from the entry descriptor (kept
   // live by the in-modal body); the review screen uses the top-level config.
@@ -192,7 +206,7 @@ export function TransactionModal({
     [TxStatus.SUCCESS]: subtitles?.success,
     [TxStatus.ERROR]: subtitles?.error
   };
-  const subtitle = isFirstScreen ? subtitles?.review : subtitleByStatus[txStatus];
+  const subtitle = isFirstScreen ? subtitles?.review : (gateCopy?.subtitle ?? subtitleByStatus[txStatus]);
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
   // and the three-screen review stage its own (e.g. "Review supply"); both fall back
@@ -407,7 +421,7 @@ export function TransactionModal({
               the hero behind a hairline divider (Figma confirm comps, 1310:130531).
               The per-row states (including the failure treatment with its inline
               "Try again") come from the derivation in ./transactionStepsModel. */}
-          {hasMultipleSteps && isTransaction && (
+          {showStepList && isTransaction && (
             <>
               {/* Figma 859:36229: the steps section splits from the hero on a border-primary hairline, 24px above the header. */}
               {transactionScreenBody && <div className="border-borderPrimary border-t" />}
@@ -418,7 +432,7 @@ export function TransactionModal({
               >
                 {(() => {
                   const items = deriveTransactionStepItems({
-                    steps,
+                    steps: steps ?? [],
                     currentStep,
                     txStatus,
                     bundled: isBundled
@@ -517,7 +531,9 @@ export function TransactionModal({
                   {statusIcons[txStatus] && statusIcons[txStatus]}
 
                   <div className="flex flex-col">
-                    <Text className="text-textSecondary">{statusMessages[txStatus]}</Text>
+                    <Text className="text-textSecondary">
+                      {gateCopy?.message ?? statusMessages[txStatus]}
+                    </Text>
                     {externalLink && (
                       <ExternalLink
                         href={externalLink}

@@ -1,4 +1,13 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  ReactNode
+} from 'react';
 import { TxStatus, InProgress, Cancel } from '@/widgets';
 import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
@@ -20,7 +29,15 @@ import type {
   TxCallbacks,
   TransactionContextValue
 } from './transactionContract';
-import { allowAllGate, type GateTrigger, type PreTransactionGate } from './preTransactionGate';
+import {
+  allowAllGate,
+  type GateControls,
+  type GatePhase,
+  type GateStatusCopy,
+  type GateTrigger,
+  type PreTransactionGate
+} from './preTransactionGate';
+import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
@@ -36,6 +53,22 @@ function notifyRequestAbandoned() {
       <TransactionNoticeToast
         icon={<Cancel />}
         title={<Trans>Transaction request discarded</Trans>}
+        description={<Trans>If your wallet still shows the request, reject it there.</Trans>}
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
+// The signature-phase counterpart: what may still be sitting in the wallet is
+// the terms sign request, not a transaction — say so, or the copy reads as if
+// a transaction was about to move funds.
+function notifySignatureRequestAbandoned() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Signature request discarded</Trans>}
         description={<Trans>If your wallet still shows the request, reject it there.</Trans>}
       />
     ),
@@ -76,6 +109,10 @@ type TransactionModalView = {
   txStatus: TxStatus;
   externalLink: string | undefined;
   currentStep: number;
+  /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
+  preludeSteps: TransactionStep[] | null;
+  /** Gate-owned status copy override active when the session ended (APP-501). */
+  gateCopy: GateStatusCopy | null;
 };
 
 /**
@@ -117,6 +154,17 @@ export function TransactionProvider({
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
   const [externalLink, setExternalLink] = useState<string | undefined>();
   const [currentStep, setCurrentStep] = useState(0);
+  // Off-chain prelude steps the gate mounted for this session (the terms
+  // signature step, APP-501). State for rendering, ref for synchronous reads
+  // in the close snapshot. Reset on every launch and close — a prelude belongs
+  // to the session (and the attempt) that inserted it.
+  const [preludeSteps, setPreludeSteps] = useState<TransactionStep[] | null>(null);
+  const preludeStepsRef = useRef<TransactionStep[] | null>(null);
+  // Gate-owned status copy (see GateStatusCopy): replaces the flow's status
+  // message/subtitle while a gate status is driving the modal. Replaced on
+  // every setGateStatus call, cleared on launch/close.
+  const [gateCopy, setGateCopy] = useState<GateStatusCopy | null>(null);
+  const gateCopyRef = useRef<GateStatusCopy | null>(null);
   // Config is state so updateModalContent re-renders the modal; ref mirrors it for callback reads.
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
@@ -167,6 +215,22 @@ export function TransactionProvider({
   const writeHashRef = useRef<string | undefined>(undefined);
   // Mirrors txStatus for reads inside callbacks (avoids setState-inside-updater impurity).
   const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
+  // In-flight gate latch: the generation whose verdict is currently pending,
+  // null when idle. While set (for the live session), further gated calls are
+  // ignored — nothing else stops a second click from starting a parallel gate
+  // run, and two allows would mean two onConfirms. Practically shadowed by the
+  // Confirm button unmounting on the first click, but this is legal gating, so
+  // the invariant doesn't ride on the UI.
+  const gateInFlightRef = useRef<number | null>(null);
+  // Which gate phase currently owns an INITIALIZED status (null = the engine
+  // does, via onMutate). handleClose and launch read it to tell an abandoned
+  // WALLET TRANSACTION (cancelled analytics + the discarded-request toast)
+  // from an abandoned gate phase, where no transaction ever started: the
+  // screening phase tears down silently, the signature phase emits the
+  // terms-signature-declined event and its own toast. Cleared by onMutate
+  // (the engine taking over), by the gate driving 'error'/'idle', and on
+  // launch/close.
+  const gatePhaseRef = useRef<GatePhase | null>(null);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
   const txHashRef = useRef<string | undefined>(undefined);
   // flow_id latched at launch so this session's review/started/completed events
@@ -176,8 +240,64 @@ export function TransactionProvider({
   const chainId = useChainId();
   const { address } = useConnection();
   const isSafeWallet = useIsSafeWallet();
-  const { trackWidgetReviewViewed, trackTransactionStarted, trackTransactionCompleted } = useAppAnalytics();
+  const {
+    trackWidgetReviewViewed,
+    trackTransactionStarted,
+    trackTransactionCompleted,
+    trackTermsSignatureDeclined
+  } = useAppAnalytics();
   const { startNewFlow, getFlowId } = useAnalyticsFlow();
+
+  // One decline event per occurrence, attributed to the gated config (which
+  // the gate itself never sees). Both decline paths funnel here: the wallet
+  // rejection (via the gate's reportSignatureRejected control) and the
+  // abandonment (handleClose / launch below).
+  const emitTermsSignatureDeclined = useCallback(
+    (method: 'wallet_rejected' | 'abandoned') => {
+      const analytics = configRef.current?.analytics;
+      trackTermsSignatureDeclined({
+        method,
+        chainId,
+        widgetName: analytics?.widgetName,
+        flow: analytics?.flow,
+        action: analytics?.action,
+        flowId: flowIdRef.current
+      });
+    },
+    [chainId, trackTermsSignatureDeclined]
+  );
+
+  // A user-initiated close (or relaunch) found the modal at INITIALIZED. What
+  // that abandons depends on who owns the status (see gatePhaseRef): the
+  // engine's wallet transaction, the gate's pending sign request, or the
+  // gate's screening call — which has nothing in the wallet and nothing in
+  // the funnel, so it tears down silently. Only the engine case is a
+  // cancelled TRANSACTION: the gate phases run before onMutate, so no
+  // app_widget_flow_started has fired and a cancelled completion here would
+  // pair with nothing.
+  const handleInitializedAbandon = useCallback(() => {
+    if (gatePhaseRef.current === 'screening') return;
+    if (gatePhaseRef.current === 'signature') {
+      emitTermsSignatureDeclined('abandoned');
+      startNewFlow();
+      notifySignatureRequestAbandoned();
+      return;
+    }
+    const analytics = configRef.current?.analytics;
+    if (analytics) {
+      trackTransactionCompleted({
+        widgetName: analytics.widgetName,
+        chainId,
+        txStatus: 'cancelled',
+        action: analytics.action,
+        flow: analytics.flow,
+        data: analytics.data,
+        flowId: flowIdRef.current
+      });
+      startNewFlow();
+    }
+    notifyRequestAbandoned();
+  }, [chainId, trackTransactionCompleted, startNewFlow, emitTermsSignatureDeclined]);
 
   const launch = useCallback(
     (config: TransactionConfig) => {
@@ -202,25 +322,12 @@ export function TransactionProvider({
         return;
       }
 
-      // A session still awaiting the wallet signature (INITIALIZED) has nothing
-      // on-chain — starting a new flow abandons it: track the cancellation, warn
-      // about the orphaned wallet prompt, and fall through to a fresh launch
-      // (which resets all session state and remounts the hosts).
+      // A session still at INITIALIZED has nothing on-chain — starting a new
+      // flow abandons it (what exactly it abandons depends on who owns the
+      // status; see handleInitializedAbandon) and falls through to a fresh
+      // launch, which resets all session state and remounts the hosts.
       if (txStatusRef.current === TxStatus.INITIALIZED) {
-        const abandoned = configRef.current?.analytics;
-        if (abandoned) {
-          trackTransactionCompleted({
-            widgetName: abandoned.widgetName,
-            chainId,
-            txStatus: 'cancelled',
-            action: abandoned.action,
-            flow: abandoned.flow,
-            data: abandoned.data,
-            flowId: flowIdRef.current
-          });
-          startNewFlow();
-        }
-        notifyRequestAbandoned();
+        handleInitializedAbandon();
       }
 
       sessionGenRef.current += 1;
@@ -235,6 +342,12 @@ export function TransactionProvider({
       setExternalLink(undefined);
       txHashRef.current = undefined;
       setCurrentStep(0);
+      preludeStepsRef.current = null;
+      setPreludeSteps(null);
+      gateCopyRef.current = null;
+      setGateCopy(null);
+      gateInFlightRef.current = null;
+      gatePhaseRef.current = null;
       setMinimized(false);
       setLaunchCount(c => c + 1);
       setOpen(true);
@@ -255,7 +368,7 @@ export function TransactionProvider({
         });
       }
     },
-    [chainId, trackWidgetReviewViewed, trackTransactionCompleted, startNewFlow, getFlowId]
+    [chainId, trackWidgetReviewViewed, handleInitializedAbandon, getFlowId]
   );
 
   // Entry→review transition of a three-screen flow. Read off the config ref:
@@ -305,25 +418,14 @@ export function TransactionProvider({
   }, []);
 
   const handleClose = useCallback(() => {
-    // Closing during INITIALIZED abandons an un-signed session: track the
-    // cancellation and warn about the wallet prompt we can't dismiss. Read the
-    // status from the ref — a click queued in the same tick as the transition
-    // would otherwise see the closure's stale state and skip the event.
-    const analytics = configRef.current?.analytics;
+    // Closing at INITIALIZED abandons the pending request — whose semantics
+    // depend on who owns the status (see handleInitializedAbandon). Read the
+    // status from the ref, not the render's closure: a click queued in the
+    // same tick as the transition would otherwise see stale state, and the
+    // gate hands the status back to IDLE synchronously right before a
+    // deny-and-close, which must be visible here.
     if (txStatusRef.current === TxStatus.INITIALIZED) {
-      if (analytics) {
-        trackTransactionCompleted({
-          widgetName: analytics.widgetName,
-          chainId,
-          txStatus: 'cancelled',
-          action: analytics.action,
-          flow: analytics.flow,
-          data: analytics.data,
-          flowId: flowIdRef.current
-        });
-        startNewFlow();
-      }
-      notifyRequestAbandoned();
+      handleInitializedAbandon();
     }
 
     // Snapshot what is on screen before tearing it down, so the modal can
@@ -334,7 +436,9 @@ export function TransactionProvider({
         config: configRef.current,
         txStatus: txStatusRef.current,
         externalLink,
-        currentStep
+        currentStep,
+        preludeSteps: preludeStepsRef.current,
+        gateCopy: gateCopyRef.current
       });
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
       exitTimerRef.current = setTimeout(() => setExitingView(null), MODAL_EXIT_MS);
@@ -351,10 +455,22 @@ export function TransactionProvider({
     txStatusRef.current = TxStatus.IDLE;
     setExternalLink(undefined);
     setCurrentStep(0);
+    preludeStepsRef.current = null;
+    setPreludeSteps(null);
+    gateCopyRef.current = null;
+    setGateCopy(null);
+    gateInFlightRef.current = null;
+    gatePhaseRef.current = null;
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [chainId, trackTransactionCompleted, startNewFlow, externalLink, currentStep]);
+  }, [handleInitializedAbandon, externalLink, currentStep]);
+
+  // The gate calls these from user events, so the ref is always current by then.
+  const handleCloseRef = useRef(handleClose);
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  });
 
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
   // has nothing left to animate.
@@ -414,23 +530,82 @@ export function TransactionProvider({
   // fire into a torn-down or newer session. Note minimize does NOT advance the
   // generation, so a verdict resolving while minimized still applies — the
   // session is alive, just hidden. A rejected verdict counts as a denial.
+  // The surface an async gate drives while it holds the floor (APP-501): the
+  // signature prelude step, the modal's status (+ optional copy override),
+  // and — when the gate replaces the modal with its own surface — teardown.
+  // Built PER GATE CALL, bound to that click's session generation: once the
+  // session closes or is replaced, every control is a no-op, so a stale
+  // continuation (a wallet prompt answered after close, a re-screen resolving
+  // late) cannot flip the new session's status, mount a ghost prelude, or
+  // leave txStatusRef=INITIALIZED on a closed provider (which would fire the
+  // abandoned-request toast on the next launch). `isStale` lets the gate also
+  // stop early — before prompting the wallet, the one side effect no-op
+  // controls can't absorb.
+  const makeGateControls = useCallback(
+    (gen: number): GateControls => {
+      const live = () => gen === sessionGenRef.current;
+      return {
+        setGateStatus: (status, copy) => {
+          if (!live()) return;
+          const isGatePhase = status === 'screening' || status === 'signature';
+          const mapped = isGatePhase
+            ? TxStatus.INITIALIZED
+            : status === 'error'
+              ? TxStatus.ERROR
+              : TxStatus.IDLE;
+          setTxStatus(mapped);
+          txStatusRef.current = mapped;
+          // Both phases render as INITIALIZED; the phase itself decides what a
+          // close during it means (see gatePhaseRef / handleInitializedAbandon).
+          gatePhaseRef.current = isGatePhase ? status : null;
+          gateCopyRef.current = copy ?? null;
+          setGateCopy(copy ?? null);
+        },
+        setPreludeSteps: steps => {
+          if (!live()) return;
+          preludeStepsRef.current = steps;
+          setPreludeSteps(steps);
+        },
+        closeModal: () => {
+          if (!live()) return;
+          handleCloseRef.current();
+        },
+        reportSignatureRejected: () => {
+          if (!live()) return;
+          emitTermsSignatureDeclined('wallet_rejected');
+        },
+        isStale: () => !live()
+      };
+    },
+    [emitTermsSignatureDeclined]
+  );
+
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
-      const verdict = gate({ trigger });
+      // A verdict already pending for this session holds the floor — see gateInFlightRef.
+      if (gateInFlightRef.current === sessionGenRef.current) return;
+      const gen = sessionGenRef.current;
+      const verdict = gate({ trigger, controls: makeGateControls(gen) });
       if (verdict instanceof Promise) {
-        const gen = sessionGenRef.current;
-        verdict.then(
-          v => {
-            if (gen !== sessionGenRef.current) return;
-            if (v.allow) action();
-          },
-          () => {}
-        );
+        gateInFlightRef.current = gen;
+        verdict
+          .then(
+            v => {
+              if (gen !== sessionGenRef.current) return;
+              if (v.allow) action();
+            },
+            () => {}
+          )
+          .finally(() => {
+            // Only release a latch we still own: launch/close reset it, and a
+            // NEW session may have latched its own verdict by now.
+            if (gateInFlightRef.current === gen) gateInFlightRef.current = null;
+          });
         return;
       }
       if (verdict.allow) action();
     },
-    [gate]
+    [gate, makeGateControls]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's
@@ -488,178 +663,206 @@ export function TransactionProvider({
   // Each callback closes over the `sessionGen` of the render that created it
   // and drops itself when the generation has moved on — the caller is an
   // engine from a session that was closed or abandoned.
-  const txCallbacks: TxCallbacks = {
-    onMutate: useCallback(
-      (variables?: TxMutateVariables) => {
-        if (sessionGen !== sessionGenRef.current) return;
-        // Latch the write to this session; the settle callbacks check it. Fires
-        // synchronously from the user's confirm, so it can trust its closure.
-        writeGenRef.current = sessionGenRef.current;
-        writeHashRef.current = undefined;
-        // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
-        if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
-          setCurrentStep(s => s + 1);
-        }
-        setTxStatus(TxStatus.INITIALIZED);
-        txStatusRef.current = TxStatus.INITIALIZED;
-        setExternalLink(undefined);
-        txHashRef.current = undefined;
+  const onMutate = useCallback(
+    (variables?: TxMutateVariables) => {
+      if (sessionGen !== sessionGenRef.current) return;
+      // Latch the write to this session; the settle callbacks check it. Fires
+      // synchronously from the user's confirm, so it can trust its closure.
+      writeGenRef.current = sessionGenRef.current;
+      writeHashRef.current = undefined;
+      // The engine taking over ends the gate's turn at the copy and the
+      // status: from here the flow's own narration applies (otherwise "sign
+      // in your wallet" would hang over the whole transaction), and an
+      // INITIALIZED abandoned from here on is a real wallet transaction.
+      gateCopyRef.current = null;
+      setGateCopy(null);
+      gatePhaseRef.current = null;
+      // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
+      if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
+        setCurrentStep(s => s + 1);
+      }
+      setTxStatus(TxStatus.INITIALIZED);
+      txStatusRef.current = TxStatus.INITIALIZED;
+      setExternalLink(undefined);
+      txHashRef.current = undefined;
 
-        // Track transaction started; approve legs report action 'approve' (dev parity)
-        const analytics = configRef.current?.analytics;
-        if (analytics) {
-          trackTransactionStarted({
-            widgetName: analytics.widgetName,
+      // Track transaction started; approve legs report action 'approve' (dev parity)
+      const analytics = configRef.current?.analytics;
+      if (analytics) {
+        trackTransactionStarted({
+          widgetName: analytics.widgetName,
+          chainId,
+          action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
+          flow: analytics.flow,
+          data: analytics.data,
+          flowId: flowIdRef.current
+        });
+      }
+    },
+    [sessionGen, chainId, trackTransactionStarted]
+  );
+
+  const onStart = useCallback(
+    (hash?: string) => {
+      if (isStaleWrite(sessionGen)) return;
+      writeHashRef.current = hash;
+      setTxStatus(TxStatus.LOADING);
+      txStatusRef.current = TxStatus.LOADING;
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+        txHashRef.current = hash;
+      }
+    },
+    [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
+  );
+
+  const onSuccess = useCallback(
+    (hash?: string) => {
+      if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
+      setTxStatus(TxStatus.SUCCESS);
+      txStatusRef.current = TxStatus.SUCCESS;
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+        txHashRef.current = hash;
+      }
+
+      // Track transaction completed (success)
+      const analytics = configRef.current?.analytics;
+      if (analytics) {
+        trackTransactionCompleted({
+          widgetName: analytics.widgetName,
+          chainId,
+          txStatus: 'success',
+          txHash: hash,
+          action: analytics.action,
+          flow: analytics.flow,
+          data: analytics.data,
+          flowId: flowIdRef.current
+        });
+      }
+
+      configRef.current?.onSuccess?.();
+      // Rotate AFTER the consumer callback so anything it emits joins this flow
+      if (analytics) {
+        startNewFlow();
+      }
+    },
+    [
+      sessionGen,
+      chainId,
+      address,
+      isSafeWallet,
+      trackTransactionCompleted,
+      startNewFlow,
+      isStaleWrite,
+      isForeignHash
+    ]
+  );
+
+  const onError = useCallback(
+    (error: Error, hash?: string) => {
+      if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
+      setTxStatus(TxStatus.ERROR);
+      txStatusRef.current = TxStatus.ERROR;
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+        txHashRef.current = hash;
+      }
+
+      // Track transaction completed (error). Bounded classification props only —
+      // never the raw message, which can embed addresses and calldata. A wallet
+      // rejection is the user backing out, not a failure (APP-444 D1).
+      const analytics = configRef.current?.analytics;
+      if (analytics) {
+        const classification = classifyTransactionError(error, !!hash);
+        trackTransactionCompleted({
+          widgetName: analytics.widgetName,
+          chainId,
+          txStatus: classification.is_user_rejection ? 'cancelled' : 'error',
+          txHash: hash,
+          action: analytics.action,
+          flow: analytics.flow,
+          data: { ...analytics.data, ...classification },
+          flowId: flowIdRef.current
+        });
+      }
+
+      const normalizedError = toError(error);
+
+      if (shouldCaptureTransactionError(normalizedError)) {
+        reportError(normalizedError, {
+          module: 'transactions',
+          flow: analytics?.flow ?? 'unknown',
+          action: analytics?.action ?? 'unknown',
+          type: 'transaction_error',
+          extra: {
             chainId,
-            action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
-            flow: analytics.flow,
-            data: analytics.data,
-            flowId: flowIdRef.current
-          });
-        }
-      },
-      [sessionGen, chainId, trackTransactionStarted]
-    ),
-
-    onStart: useCallback(
-      (hash?: string) => {
-        if (isStaleWrite(sessionGen)) return;
-        writeHashRef.current = hash;
-        setTxStatus(TxStatus.LOADING);
-        txStatusRef.current = TxStatus.LOADING;
-        if (hash) {
-          setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-          txHashRef.current = hash;
-        }
-      },
-      [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
-    ),
-
-    onSuccess: useCallback(
-      (hash?: string) => {
-        if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
-        setTxStatus(TxStatus.SUCCESS);
-        txStatusRef.current = TxStatus.SUCCESS;
-        if (hash) {
-          setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-          txHashRef.current = hash;
-        }
-
-        // Track transaction completed (success)
-        const analytics = configRef.current?.analytics;
-        if (analytics) {
-          trackTransactionCompleted({
-            widgetName: analytics.widgetName,
-            chainId,
-            txStatus: 'success',
             txHash: hash,
-            action: analytics.action,
-            flow: analytics.flow,
-            data: analytics.data,
-            flowId: flowIdRef.current
-          });
-        }
+            isSafeWallet,
+            widget: analytics?.widgetName ?? 'unknown',
+            analyticsData: analytics?.data ?? null
+          }
+        });
+      }
 
-        configRef.current?.onSuccess?.();
-        // Rotate AFTER the consumer callback so anything it emits joins this flow
-        if (analytics) {
-          startNewFlow();
-        }
-      },
-      [
-        sessionGen,
-        chainId,
-        address,
-        isSafeWallet,
-        trackTransactionCompleted,
-        startNewFlow,
-        isStaleWrite,
-        isForeignHash
-      ]
-    ),
+      configRef.current?.onError?.();
+      // Rotate AFTER the consumer callback so anything it emits joins this flow
+      if (analytics) {
+        startNewFlow();
+      }
+    },
+    [
+      sessionGen,
+      chainId,
+      address,
+      isSafeWallet,
+      trackTransactionCompleted,
+      startNewFlow,
+      isStaleWrite,
+      isForeignHash
+    ]
+  );
 
-    onError: useCallback(
-      (error: Error, hash?: string) => {
-        if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
-        setTxStatus(TxStatus.ERROR);
-        txStatusRef.current = TxStatus.ERROR;
-        if (hash) {
-          setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-          txHashRef.current = hash;
-        }
-
-        // Track transaction completed (error). Bounded classification props only —
-        // never the raw message, which can embed addresses and calldata. A wallet
-        // rejection is the user backing out, not a failure (APP-444 D1).
-        const analytics = configRef.current?.analytics;
-        if (analytics) {
-          const classification = classifyTransactionError(error, !!hash);
-          trackTransactionCompleted({
-            widgetName: analytics.widgetName,
-            chainId,
-            txStatus: classification.is_user_rejection ? 'cancelled' : 'error',
-            txHash: hash,
-            action: analytics.action,
-            flow: analytics.flow,
-            data: { ...analytics.data, ...classification },
-            flowId: flowIdRef.current
-          });
-        }
-
-        const normalizedError = toError(error);
-
-        if (shouldCaptureTransactionError(normalizedError)) {
-          reportError(normalizedError, {
-            module: 'transactions',
-            flow: analytics?.flow ?? 'unknown',
-            action: analytics?.action ?? 'unknown',
-            type: 'transaction_error',
-            extra: {
-              chainId,
-              txHash: hash,
-              isSafeWallet,
-              widget: analytics?.widgetName ?? 'unknown',
-              analyticsData: analytics?.data ?? null
-            }
-          });
-        }
-
-        configRef.current?.onError?.();
-        // Rotate AFTER the consumer callback so anything it emits joins this flow
-        if (analytics) {
-          startNewFlow();
-        }
-      },
-      [
-        sessionGen,
-        chainId,
-        address,
-        isSafeWallet,
-        trackTransactionCompleted,
-        startNewFlow,
-        isStaleWrite,
-        isForeignHash
-      ]
-    )
-  };
+  // Stable while its members are (LOW-churn): the provider value below is
+  // memoized, and an unmemoized wrapper object here would defeat it.
+  const txCallbacks: TxCallbacks = useMemo(
+    () => ({ onMutate, onStart, onSuccess, onError }),
+    [onMutate, onStart, onSuccess, onError]
+  );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, externalLink, currentStep }
+    ? { config: activeConfig, txStatus, externalLink, currentStep, preludeSteps, gateCopy }
     : exitingView;
 
+  // The gate's prelude steps render ahead of the flow's own list. Composed at
+  // render (not written into the config) so a retry that no longer needs the
+  // prelude — the signature landed on a previous attempt — restarts with the
+  // config's steps alone and step 0 meaning the first real step again.
+  const modalSteps = modalView
+    ? modalView.preludeSteps
+      ? [...modalView.preludeSteps, ...(modalView.config.steps ?? [])]
+      : modalView.config.steps
+    : undefined;
+
+  // Memoized: TransactionProvider is composed under ConnectedProvider (the
+  // gate reads terms/auth state), so without this every terms or auth state
+  // change would hand a fresh context value to every useTransaction consumer.
+  const contextValue = useMemo<TransactionContextValue>(
+    () => ({
+      launch,
+      updateModalContent,
+      isModalOpen: open,
+      minimize,
+      restore,
+      isMinimized: minimized,
+      txCallbacks,
+      txStatus
+    }),
+    [launch, updateModalContent, open, minimize, restore, minimized, txCallbacks, txStatus]
+  );
+
   return (
-    <TransactionContext.Provider
-      value={{
-        launch,
-        updateModalContent,
-        isModalOpen: open,
-        minimize,
-        restore,
-        isMinimized: minimized,
-        txCallbacks,
-        txStatus
-      }}
-    >
+    <TransactionContext.Provider value={contextValue}>
       <EntrySlotContext.Provider value={entrySlotEl}>
         {children}
         {/* In-flight hook host: kept mounted (hidden) for the modal's whole lifetime,
@@ -708,8 +911,9 @@ export function TransactionProvider({
             confirmDisabled={modalView.config.confirmDisabled}
             successLabel={modalView.config.successLabel}
             errorLabel={modalView.config.errorLabel}
-            steps={modalView.config.steps}
+            steps={modalSteps}
             currentStep={modalView.currentStep}
+            gateCopy={modalView.gateCopy}
           />
         )}
       </EntrySlotContext.Provider>

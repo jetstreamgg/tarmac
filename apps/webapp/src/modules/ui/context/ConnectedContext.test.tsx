@@ -19,6 +19,8 @@ const VERSION = '2026-01-15';
 const mocks = vi.hoisted(() => ({
   checkTermsWithRetry: vi.fn(),
   addTermsAcceptance: vi.fn(),
+  signTermsAcceptance: vi.fn(),
+  signMessageAsync: vi.fn(),
   trackVpnCheckCompleted: vi.fn(),
   reportError: vi.fn(),
   isPrivateDeployment: vi.fn(() => false),
@@ -48,13 +50,15 @@ vi.mock('wagmi', async importOriginal => {
       address: mocks.address,
       chainId: 1,
       connector: { name: 'mock' }
-    })
+    }),
+    useSignMessage: () => ({ signMessageAsync: mocks.signMessageAsync })
   };
 });
 
 vi.mock('@/hooks', () => ({
   useRestrictedAddressCheck: () => ({ ...mocks.authCheck, refetch: mocks.refetchAddressCheck }),
-  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck })
+  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck }),
+  toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error)))
 }));
 
 vi.mock('@/lib/isPrivateDeployment', () => ({
@@ -77,6 +81,10 @@ vi.mock('@/modules/ui/lib/addTermsAcceptance', () => ({
   addTermsAcceptance: mocks.addTermsAcceptance
 }));
 
+vi.mock('@/modules/ui/lib/signTermsAcceptance', () => ({
+  signTermsAcceptance: mocks.signTermsAcceptance
+}));
+
 import { ConnectedProvider, useConnectedContext } from './ConnectedContext';
 
 function Consumer() {
@@ -91,6 +99,7 @@ function Consumer() {
     termsMessageToSign,
     termsCheckDenied,
     acceptTerms,
+    signTerms,
     retryAccessChecks
   } = useConnectedContext();
   return (
@@ -106,6 +115,9 @@ function Consumer() {
       <span data-testid="denied">{String(termsCheckDenied)}</span>
       <button data-testid="accept" onClick={() => void acceptTerms()}>
         accept
+      </button>
+      <button data-testid="sign" onClick={() => void signTerms()}>
+        sign
       </button>
       <button data-testid="retry-access" onClick={retryAccessChecks}>
         retry
@@ -141,6 +153,8 @@ describe('ConnectedContext — the terms AND gate', () => {
     mocks.isPrivateDeployment.mockReturnValue(false);
     mocks.checkTermsWithRetry.mockResolvedValue(checkResult());
     mocks.addTermsAcceptance.mockResolvedValue({ ok: true });
+    mocks.signTermsAcceptance.mockResolvedValue({ ok: true });
+    mocks.signMessageAsync.mockResolvedValue('0xsignature');
     mocks.authCheck = { data: { addressAllowed: true }, isLoading: false, error: undefined };
     mocks.vpnCheck = {
       data: { isConnectedToVpn: false, isRestrictedRegion: false, countryCode: 'US' },
@@ -588,6 +602,132 @@ describe('ConnectedContext — the terms AND gate', () => {
 
       expect(accepted()).toBe('false');
       expect(localStorage.getItem(termsAcceptanceKey(ADDRESS_A, VERSION))).toBeNull();
+    });
+  });
+
+  describe('signTerms (Phase B, APP-501)', () => {
+    const signed = () => screen.getByTestId('signed').textContent;
+
+    it('signs the message from /check, posts it, then flips hasSignedCurrentTerms', async () => {
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+      expect(signed()).toBe('false');
+
+      fireEvent.click(screen.getByTestId('sign'));
+
+      await waitFor(() => expect(signed()).toBe('true'));
+      expect(mocks.signMessageAsync).toHaveBeenCalledWith({ message: 'By signing this message...' });
+      expect(mocks.signTermsAcceptance).toHaveBeenCalledWith(ADDRESS_A, 1, '0xsignature');
+    });
+
+    it('a wallet rejection resolves false without posting — and without telemetry', async () => {
+      mocks.signMessageAsync.mockRejectedValue(new Error('User rejected the request'));
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+
+      fireEvent.click(screen.getByTestId('sign'));
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(mocks.signTermsAcceptance).not.toHaveBeenCalled();
+      expect(signed()).toBe('false');
+      expect(mocks.reportError).not.toHaveBeenCalled();
+    });
+
+    it('a non-rejection wallet failure resolves false AND reports — the user is blocked from transacting', async () => {
+      mocks.signMessageAsync.mockRejectedValue(new Error('Method eth_sign is not supported'));
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+
+      fireEvent.click(screen.getByTestId('sign'));
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(mocks.signTermsAcceptance).not.toHaveBeenCalled();
+      expect(signed()).toBe('false');
+      expect(mocks.reportError).toHaveBeenCalledTimes(1);
+    });
+
+    it('under the mock wallet: an address switch mid-sign is discarded like the real path', async () => {
+      vi.stubEnv('VITE_USE_MOCK_WALLET', 'true');
+      let resolveSign: (value: string) => void = () => {};
+      mocks.signMessageAsync.mockReturnValue(new Promise(resolve => (resolveSign = resolve)));
+
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+
+      fireEvent.click(screen.getByTestId('sign'));
+
+      mocks.address = ADDRESS_B;
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+
+      resolveSign('0xsignature');
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(signed()).toBe('false');
+    });
+
+    it('a failed POST leaves the flag down and reports', async () => {
+      mocks.signTermsAcceptance.mockResolvedValue({ ok: false, status: 500 });
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+
+      fireEvent.click(screen.getByTestId('sign'));
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(signed()).toBe('false');
+      expect(mocks.reportError).toHaveBeenCalled();
+    });
+
+    it('refuses to sign when /check carried no message', async () => {
+      mocks.checkTermsWithRetry.mockResolvedValue(checkResult({ messageToSign: undefined }));
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      fireEvent.click(screen.getByTestId('sign'));
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      expect(mocks.signMessageAsync).not.toHaveBeenCalled();
+      expect(mocks.signTermsAcceptance).not.toHaveBeenCalled();
+    });
+
+    it('under the mock wallet: signs but skips the POST, and flips the flag', async () => {
+      vi.stubEnv('VITE_USE_MOCK_WALLET', 'true');
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+
+      fireEvent.click(screen.getByTestId('sign'));
+
+      await waitFor(() => expect(signed()).toBe('true'));
+      expect(mocks.signMessageAsync).toHaveBeenCalled();
+      expect(mocks.signTermsAcceptance).not.toHaveBeenCalled();
+    });
+
+    it('discards a signature whose POST lands after an address switch', async () => {
+      let resolveSign: (value: { ok: boolean }) => void = () => {};
+      mocks.signTermsAcceptance.mockReturnValue(new Promise(resolve => (resolveSign = resolve)));
+
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(screen.getByTestId('message').textContent).not.toBe('none'));
+
+      fireEvent.click(screen.getByTestId('sign'));
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      mocks.address = ADDRESS_B;
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+
+      resolveSign({ ok: true });
+      await act(() => new Promise(resolve => setTimeout(resolve, 0)));
+
+      // Address B's own check is in flight/fresh — A's signature must not
+      // have stamped `signedForCurrentVersion` onto B's state.
+      expect(signed()).toBe('false');
     });
   });
 });

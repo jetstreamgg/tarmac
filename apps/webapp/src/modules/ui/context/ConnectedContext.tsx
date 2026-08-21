@@ -1,12 +1,14 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
-import { useConnection } from 'wagmi';
+import { useConnection, useSignMessage } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
-import { IS_PRODUCTION_ENV } from '@/lib/constants';
-import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
+import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { setVpnSuperProperties } from '@/modules/analytics/superProperties';
 import { reportError } from '@/modules/sentry/reportError';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { toError } from '@/hooks';
 import { addTermsAcceptance } from '@/modules/ui/lib/addTermsAcceptance';
+import { signTermsAcceptance } from '@/modules/ui/lib/signTermsAcceptance';
 import { checkTermsWithRetry, type TermsCheckData } from '@/modules/ui/lib/checkTermsWithRetry';
 import { useTermsAcceptance } from '@/modules/ui/hooks/useTermsAcceptance';
 
@@ -18,6 +20,13 @@ import { useTermsAcceptance } from '@/modules/ui/hooks/useTermsAcceptance';
  */
 export type AccessBlockReason =
   'region-restricted' | 'ip-check-unavailable' | 'wallet-blocked' | 'screening-unavailable';
+
+/**
+ * How a `signTerms` attempt ended. 'rejected' is specifically the user
+ * declining the sign request in their wallet; every technical failure
+ * (missing message, signing fault, failed POST, address switch) is 'failed'.
+ */
+export type SignTermsResult = 'signed' | 'rejected' | 'failed';
 
 interface ConnectedContextType {
   isConnectedAndAcceptedTerms: boolean;
@@ -68,6 +77,17 @@ interface ConnectedContextType {
    * the user re-prompted rather than browsing unrecorded.
    */
   acceptTerms: () => Promise<boolean>;
+  /**
+   * Phase B (APP-501): prompts the wallet to sign `termsMessageToSign`, posts
+   * the signature to `/terms-acceptance/sign`, and — only once the worker
+   * recorded it — flips `hasSignedCurrentTerms`. Anything but 'signed' denies:
+   * the caller (the pre-transaction gate) renders the failed signature step
+   * and retries by calling again. 'rejected' vs 'failed' only tells the
+   * caller whether the user declined the prompt (an analytics-worthy choice)
+   * or something technical went wrong (no message, signing fault, failed
+   * POST, address switch mid-flight).
+   */
+  signTerms: () => Promise<SignTermsResult>;
   authData: {
     addressAllowed?: boolean;
     authIsLoading: boolean;
@@ -94,6 +114,7 @@ export const ConnectedContext = createContext<ConnectedContextType>({
   hasAcceptedTerms: false,
   hasSignedCurrentTerms: false,
   acceptTerms: async () => false,
+  signTerms: async () => 'failed',
   authData: {
     authIsLoading: false
   },
@@ -104,6 +125,7 @@ export const ConnectedContext = createContext<ConnectedContextType>({
 
 export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, address, chainId, connector } = useConnection();
+  const { signMessageAsync } = useSignMessage();
   const [termsCheck, setTermsCheck] = useState<TermsCheckData | undefined>(undefined);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
@@ -113,10 +135,9 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // even started — long enough for the terms modal to latch open (APP-497 QA).
   const enabled = !!address;
 
-  const skipAuthCheck =
-    (!IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true') || isPrivateDeployment();
+  const skipAuthCheck = shouldSkipAuthChecks();
 
-  const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.sky.money';
+  const authUrl = getAuthUrl();
   const {
     data: authData,
     isLoading: authIsLoading,
@@ -302,6 +323,70 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return reportUnlessRecorded();
   }, [address, chainId, connector?.name, reportUnlessRecorded, termsCheck?.latestVersion]);
 
+  const termsMessageToSign = termsCheck?.messageToSign;
+
+  const signTerms = useCallback(async (): Promise<SignTermsResult> => {
+    // No message means nothing verifiable can be signed: the worker holds the
+    // only copy of the text (APP-508), so without `messageToSign` from /check
+    // there is no string whose signature it would accept. Refuse rather than
+    // sign a guess.
+    if (!address || !chainId || !termsMessageToSign) return 'failed';
+
+    let signature: string;
+    try {
+      signature = await signMessageAsync({ message: termsMessageToSign });
+    } catch (error) {
+      // A rejection is a user action to retry, not an error. Anything else —
+      // a wallet that can't sign, a connector fault — is worth telemetry:
+      // for the affected user every transaction is now blocked.
+      const normalized = toError(error);
+      if (isUserRejectedRequestError(normalized)) return 'rejected';
+      reportError(normalized, {
+        module: 'auth',
+        flow: 'terms-signature',
+        action: 'sign',
+        type: 'terms_signature_error',
+        extra: { chainId, connector: connector?.name }
+      });
+      return 'failed';
+    }
+
+    // Mirror acceptTerms: the mock wallet's signature can't verify against
+    // the worker, and local dev points at the shared staging endpoint — so
+    // skip the POST and flip the flag locally. The address guard still
+    // applies: a switch while the prompt was up must not stamp the flag onto
+    // the new address's check.
+    if (import.meta.env.VITE_USE_MOCK_WALLET === 'true') {
+      if (activeAddressRef.current !== address) return 'failed';
+      setTermsCheck(prev => (prev ? { ...prev, signedForCurrentVersion: true } : prev));
+      return 'signed';
+    }
+
+    const result = await signTermsAcceptance(address, chainId, signature);
+
+    // Discard the continuation if the address changed (or disconnected) while
+    // the POST was in flight — the signature belongs to the previous address,
+    // and flipping the new one's flag would skip its own signature step.
+    if (activeAddressRef.current !== address) return 'failed';
+
+    if (!result.ok) {
+      reportError(result.lastError ?? new Error('Terms signature submission failed'), {
+        module: 'auth',
+        flow: 'terms-signature',
+        action: 'submit',
+        type: 'terms_signature_error',
+        statusCode: result.status,
+        extra: { chainId, connector: connector?.name }
+      });
+      return 'failed';
+    }
+
+    // 201 recorded it; 200 means the worker already had one for this address
+    // and version — an idempotent no-op, equally a success.
+    setTermsCheck(prev => (prev ? { ...prev, signedForCurrentVersion: true } : prev));
+    return 'signed';
+  }, [address, chainId, connector?.name, signMessageAsync, termsMessageToSign]);
+
   // A VPN is deliberately absent here (APP-497): VPN users browse and transact
   // normally, and the safeguard is the per-transaction terms signature (C6),
   // not a wall. Genuinely restricted jurisdictions still block.
@@ -375,41 +460,71 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, [skipAuthCheck, vpnIsLoading, vpnData, vpnError, isAllowed, trackVpnCheckCompleted]);
 
-  return (
-    <ConnectedContext.Provider
-      value={{
-        isConnectedAndAcceptedTerms,
-        isAuthorized,
-        accessBlockReason,
-        isUsUser,
-        retryAccessChecks,
-        isCheckingTerms,
-        termsCheckError,
-        termsCheckDenied,
-        retryTermsCheck,
-        hasAcceptedTerms,
-        hasSignedCurrentTerms,
-        latestTermsVersion: termsCheck?.latestVersion,
-        termsMessageToSign: termsCheck?.messageToSign,
-        acceptTerms,
-        authData: {
-          addressAllowed: authData?.addressAllowed,
-          authIsLoading,
-          address,
-          authError
-        },
-        vpnData: {
-          isConnectedToVpn: vpnData?.isConnectedToVpn,
-          isRestrictedRegion: vpnData?.isRestrictedRegion,
-          vpnIsLoading,
-          vpnError,
-          countryCode: vpnData?.countryCode ?? null
-        }
-      }}
-    >
-      {children}
-    </ConnectedContext.Provider>
+  // Memoized: several always-mounted providers (the transaction gate among
+  // them) consume this context, and its inputs — auth polling, terms checks —
+  // change often. Without the memo every poll tick hands a fresh object to
+  // every consumer.
+  const latestTermsVersion = termsCheck?.latestVersion;
+  const contextValue = useMemo<ConnectedContextType>(
+    () => ({
+      isConnectedAndAcceptedTerms,
+      isAuthorized,
+      accessBlockReason,
+      isUsUser,
+      retryAccessChecks,
+      isCheckingTerms,
+      termsCheckError,
+      termsCheckDenied,
+      retryTermsCheck,
+      hasAcceptedTerms,
+      hasSignedCurrentTerms,
+      latestTermsVersion,
+      termsMessageToSign,
+      acceptTerms,
+      signTerms,
+      authData: {
+        addressAllowed: authData?.addressAllowed,
+        authIsLoading,
+        address,
+        authError
+      },
+      vpnData: {
+        isConnectedToVpn: vpnData?.isConnectedToVpn,
+        isRestrictedRegion: vpnData?.isRestrictedRegion,
+        vpnIsLoading,
+        vpnError,
+        countryCode: vpnData?.countryCode ?? null
+      }
+    }),
+    [
+      isConnectedAndAcceptedTerms,
+      isAuthorized,
+      accessBlockReason,
+      isUsUser,
+      retryAccessChecks,
+      isCheckingTerms,
+      termsCheckError,
+      termsCheckDenied,
+      retryTermsCheck,
+      hasAcceptedTerms,
+      hasSignedCurrentTerms,
+      latestTermsVersion,
+      termsMessageToSign,
+      acceptTerms,
+      signTerms,
+      authData?.addressAllowed,
+      authIsLoading,
+      address,
+      authError,
+      vpnData?.isConnectedToVpn,
+      vpnData?.isRestrictedRegion,
+      vpnIsLoading,
+      vpnError,
+      vpnData?.countryCode
+    ]
   );
+
+  return <ConnectedContext.Provider value={contextValue}>{children}</ConnectedContext.Provider>;
 };
 
 export const useConnectedContext = () => useContext(ConnectedContext);
