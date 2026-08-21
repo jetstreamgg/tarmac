@@ -39,6 +39,8 @@ const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-[20px] py-1 pr-
 type PendleMaturedPositionCardProps = {
   market: PendleMarketConfig;
   ptBalance: bigint;
+  /** Routes to the market's detail page — the siblings' "Manage" slot. */
+  onViewDetails: () => void;
 };
 
 /**
@@ -47,7 +49,11 @@ type PendleMaturedPositionCardProps = {
  * ready-to-withdraw summary, My position / Mature date stats and a single
  * Claim CTA opening the redeem modal.
  */
-export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPositionCardProps) => {
+export const PendleMaturedPositionCard = ({
+  market,
+  ptBalance,
+  onViewDetails
+}: PendleMaturedPositionCardProps) => {
   const maturityLabel = formatMaturity(market.expiry);
 
   const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
@@ -145,16 +151,30 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
       </div>
 
       <div className="mt-auto flex flex-col gap-2">
-        <Button
-          variant="primary"
-          size="l"
-          className="w-full"
-          onClick={openRedeemModal}
-          disabled={!onPendleChain || !isRedeemable || !isPrepared || previewLoading}
-          data-testid="pendle-matured-redeem-button"
-        >
-          <Trans>Claim</Trans>
-        </Button>
+        {/* The comp draws Claim alone (2306:72334), from before the matured
+            market had a detail page to link to. The secondary restores the
+            siblings' shape — every other card on this page offers a route to
+            its product page — and reads "View details" rather than "Manage":
+            a matured position has nothing left to manage. */}
+        <div className="flex gap-3 [&>button]:flex-1">
+          <Button
+            variant="primary"
+            size="l"
+            onClick={openRedeemModal}
+            disabled={!onPendleChain || !isRedeemable || !isPrepared || previewLoading}
+            data-testid="pendle-matured-redeem-button"
+          >
+            <Trans>Claim</Trans>
+          </Button>
+          <Button
+            variant="secondary"
+            size="l"
+            onClick={onViewDetails}
+            data-testid="pendle-matured-view-details"
+          >
+            <Trans>View details</Trans>
+          </Button>
+        </div>
         {!onPendleChain && (
           <Text variant="small" className="text-fgSecondary" data-testid="pendle-redeem-network-hint">
             <Trans>Redemption happens on Ethereum mainnet. Switch networks to claim.</Trans>
