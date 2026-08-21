@@ -29,8 +29,7 @@ const NO_VALUE = '–';
 
 /**
  * About copy per vault (APP-526), keyed by the config name - the one stable,
- * chain-independent identifier a VaultConfig carries. Ticket copy verbatim,
- * except the USDT Risk Capital body which dropped a dangling sentence fragment.
+ * chain-independent identifier a VaultConfig carries. Ticket copy verbatim.
  */
 const VAULT_ABOUT: Record<string, ReactNode> = {
   'USDT Savings': (
@@ -51,9 +50,9 @@ const VAULT_ABOUT: Record<string, ReactNode> = {
   'USDT Risk Capital': (
     <Trans>
       USDT Risk Capital vault accepts USDT deposits and deploys them exclusively into an stUSDS-USDT Morpho
-      market. Vault performance is driven by the underlying markets&apos; borrowing demand and is not
-      controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts. Note
-      stUSDS risks, including SKY price volatility and potential bad debt.
+      market. stUSDS is a SKY-backed Vault performance is driven by the underlying markets&apos; borrowing
+      demand and is not controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart
+      contracts. Note stUSDS risks, including SKY price volatility and potential bad debt.
     </Trans>
   ),
   'USDS Risk Capital': (
