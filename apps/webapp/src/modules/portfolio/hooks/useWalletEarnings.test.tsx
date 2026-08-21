@@ -2,7 +2,7 @@
 /**
  * Aggregator wiring tests: every transport is vi.mocked and each test gets a
  * fresh QueryClient, so these verify the hook's row discipline (one failing
- * source never sinks the rest), the disconnected and flag gates, the fetch
+ * source never sinks the rest), the disconnected gate, the fetch
  * arguments (mainnet scope, window bounds), and the shared Pendle raw-rows
  * cache key. Per-source MATH is covered by the compute suites — payloads here
  * are minimal, with hand-visible arithmetic in the comments.
@@ -14,7 +14,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
   address: undefined as string | undefined,
-  stusdsEnabled: false,
   fetchUserVaultV2Pnl: vi.fn(),
   fetchVaultV2TransactionsSince: vi.fn(),
   fetchMerklUserRewards: vi.fn(),
@@ -52,10 +51,7 @@ vi.mock('../../../hooks/vaults/fyi/vaultsFyiClient', () => ({
 }));
 vi.mock('../../../hooks/vaults/fyi/constants', () => ({
   SUSDS_VAULT_ID_MAINNET: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
-  STUSDS_VAULT_ID_MAINNET: '0x99CD4Ec3f88A45940936F469E4bB72A2A701EEB9',
-  get EARNINGS_STUSDS_ENABLED() {
-    return h.stusdsEnabled;
-  }
+  STUSDS_VAULT_ID_MAINNET: '0x99CD4Ec3f88A45940936F469E4bB72A2A701EEB9'
 }));
 
 import { MORPHO_VAULTS, MorphoTransactionType } from '../../../hooks/morpho/constants';
@@ -176,7 +172,7 @@ const savingsPartial = {
   toTimestamp: AUG_1 + 18 * DAY
 };
 
-// --- stUSDS (flag on): total 30 @ $1; monthly -2 (cut() can make earned negative) ---
+// --- stUSDS: total 30 @ $1; monthly -2 (cut() can make earned negative) ---
 const STUSDS_VAULT_ID = '0x99CD4Ec3f88A45940936F469E4bB72A2A701EEB9';
 const stusdsAsset = { ...savingsAsset, name: 'Staked USDS', symbol: 'USDS' };
 const stusdsTotal = { ...stusdsAsset, returnsNative: '30000000' };
@@ -205,7 +201,6 @@ describe('useWalletEarnings', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW_MS);
     h.address = USER;
-    h.stusdsEnabled = false;
     h.fetchUserVaultV2Pnl.mockResolvedValue(morphoPositions);
     h.fetchVaultV2TransactionsSince.mockResolvedValue(morphoTransactions);
     h.fetchMerklUserRewards.mockResolvedValue(merklRewards);
@@ -214,8 +209,13 @@ describe('useWalletEarnings', () => {
     h.fetchPendlePnlTransactionsForUser.mockResolvedValue(pendleRawRows);
     h.fetchPendlePnlGainedPositions.mockResolvedValue(pendleGained);
     h.fetchPendleDashboardPositions.mockResolvedValue(pendleDashboard);
-    h.fetchVaultsFyiTotalReturns.mockResolvedValue(savingsTotal);
-    h.fetchVaultsFyiPartialReturns.mockResolvedValue(savingsPartial);
+    // The savings and stUSDS sources share the transport fns — route by vaultId.
+    h.fetchVaultsFyiTotalReturns.mockImplementation(async ({ vaultId }: { vaultId: string }) =>
+      vaultId === STUSDS_VAULT_ID ? stusdsTotal : savingsTotal
+    );
+    h.fetchVaultsFyiPartialReturns.mockImplementation(async ({ vaultId }: { vaultId: string }) =>
+      vaultId === STUSDS_VAULT_ID ? stusdsPartial : savingsPartial
+    );
   });
 
   afterEach(() => {
@@ -315,14 +315,20 @@ describe('useWalletEarnings', () => {
 
     const stusds = protocolById(result.current, 'stusds');
     expect(stusds.rowIds).toEqual(['stusds']);
-    expect(stusds.totalEarned).toEqual({ status: 'notAvailable', reason: 'stusds-not-listed' });
-    expect(stusds.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'stusds-not-listed' });
+    expect(stusds.totalEarned).toEqual({
+      status: 'ok',
+      value: { usd: 30, native: { amount: 30, symbol: 'USDS' } }
+    });
+    expect(stusds.earnedThisMonth).toEqual({
+      status: 'ok',
+      value: { usd: -2, native: { amount: -2, symbol: 'USDS' } }
+    });
 
-    // Combined: 20 + 4 + 70 + 46.4 = 140.4 total; 10 + 7 + 5 = 22 monthly.
-    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(140.4, 10);
-    expect(result.current.combined.earnedThisMonthUsd).toBeCloseTo(22, 10);
-    expect(result.current.combined.missingFromTotal).toEqual(['stusds']);
-    expect(result.current.combined.missingFromMonth).toEqual(['merkl', 'stusds']);
+    // Combined: 20 + 4 + 70 + 46.4 + 30 = 170.4 total; 10 + 7 + 5 − 2 = 20 monthly.
+    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(170.4, 10);
+    expect(result.current.combined.earnedThisMonthUsd).toBeCloseTo(20, 10);
+    expect(result.current.combined.missingFromTotal).toEqual([]);
+    expect(result.current.combined.missingFromMonth).toEqual(['merkl']);
 
     // Fetch args: mainnet scope everywhere, window bounds where relevant.
     expect(h.fetchUserVaultV2Pnl).toHaveBeenCalledWith({
@@ -378,8 +384,8 @@ describe('useWalletEarnings', () => {
 
     // Combined still sums the healthy sources and names what is missing —
     // the single Morpho query feeds every vault source, so all degrade.
-    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(4 + 70 + 46.4, 10);
-    expect(result.current.combined.missingFromTotal).toEqual([...MORPHO_VAULT_IDS, 'stusds']);
+    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(4 + 70 + 46.4 + 30, 10);
+    expect(result.current.combined.missingFromTotal).toEqual([...MORPHO_VAULT_IDS]);
   });
 
   it('keeps the savings figures independent: a failing partial-returns call never sinks the total', async () => {
@@ -397,15 +403,7 @@ describe('useWalletEarnings', () => {
     expect(savings.error).toBeInstanceOf(Error);
   });
 
-  it('stUSDS flag on: fetches with the stUSDS vaultId and passes the negative month through signed', async () => {
-    h.stusdsEnabled = true;
-    // The savings and stUSDS sources share the transport fns — route by vaultId.
-    h.fetchVaultsFyiTotalReturns.mockImplementation(async ({ vaultId }: { vaultId: string }) =>
-      vaultId === STUSDS_VAULT_ID ? stusdsTotal : savingsTotal
-    );
-    h.fetchVaultsFyiPartialReturns.mockImplementation(async ({ vaultId }: { vaultId: string }) =>
-      vaultId === STUSDS_VAULT_ID ? stusdsPartial : savingsPartial
-    );
+  it('fetches stUSDS with its own vaultId and passes the negative month through signed', async () => {
     const { result } = renderEarnings();
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -436,10 +434,7 @@ describe('useWalletEarnings', () => {
     expect(result.current.combined.missingFromTotal).toEqual([]);
   });
 
-  it('stUSDS flag on: a failing fetch degrades to source-error without sinking the other sources', async () => {
-    h.stusdsEnabled = true;
-    // Both endpoints answer 404 "Vault indexed data not yet supported" while
-    // vaults.fyi's holder indexing lags the listing — the live state 2026-08-20.
+  it('degrades a failing stUSDS fetch to source-error without sinking the other sources', async () => {
     h.fetchVaultsFyiTotalReturns.mockImplementation(async ({ vaultId }: { vaultId: string }) => {
       if (vaultId === STUSDS_VAULT_ID) throw new Error('vaults.fyi /total-returns 404');
       return savingsTotal;
@@ -458,22 +453,6 @@ describe('useWalletEarnings', () => {
     expect(stusds.error).toBeInstanceOf(Error);
     expect(protocolById(result.current, 'savings').totalEarned.status).toBe('ok');
     expect(result.current.combined.missingFromTotal).toEqual(['stusds']);
-  });
-
-  it('stUSDS flag off (default): announced gap, no fetches with the stUSDS vaultId', async () => {
-    const { result } = renderEarnings();
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    const stusds = protocolById(result.current, 'stusds');
-    expect(stusds.totalEarned).toEqual({ status: 'notAvailable', reason: 'stusds-not-listed' });
-    expect(stusds.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'stusds-not-listed' });
-    expect(h.fetchVaultsFyiTotalReturns).not.toHaveBeenCalledWith(
-      expect.objectContaining({ vaultId: STUSDS_VAULT_ID })
-    );
-    expect(h.fetchVaultsFyiPartialReturns).not.toHaveBeenCalledWith(
-      expect.objectContaining({ vaultId: STUSDS_VAULT_ID })
-    );
   });
 
   it('skips the historic-price fetch entirely for a wallet with no attributed Merkl rewards', async () => {

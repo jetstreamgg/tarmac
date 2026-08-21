@@ -32,12 +32,7 @@ export type EarningsFigure = {
 };
 
 export type NotAvailableReason =
-  | 'merkl-monthly-unsupported'
-  | 'stusds-not-listed'
-  | 'source-error'
-  | 'reconciliation-failed'
-  | 'disconnected'
-  | 'loading';
+  'merkl-monthly-unsupported' | 'source-error' | 'reconciliation-failed' | 'disconnected' | 'loading';
 
 export type Maybe<T> = { status: 'ok'; value: T } | { status: 'notAvailable'; reason: NotAvailableReason };
 
@@ -53,7 +48,6 @@ export const notAvailable = (reason: NotAvailableReason): Maybe<never> => ({
  */
 const ANNOUNCED_GAP_REASONS: ReadonlySet<NotAvailableReason> = new Set([
   'merkl-monthly-unsupported',
-  'stusds-not-listed',
   'disconnected',
   // Transient: skeletons cover it, but if it ever renders it must not warn.
   'loading'

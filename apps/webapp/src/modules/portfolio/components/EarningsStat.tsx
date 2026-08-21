@@ -48,7 +48,6 @@ const sourceLabel = ({ id, label }: MissingSourceDetail): ReactNode =>
 
 const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
   'merkl-monthly-unsupported': <Trans>Merkl doesn&apos;t break rewards down by month.</Trans>,
-  'stusds-not-listed': <Trans>Not yet available.</Trans>,
   'source-error': <Trans>Temporarily unavailable.</Trans>,
   'reconciliation-failed': <Trans>We couldn&apos;t verify this figure, so it&apos;s hidden.</Trans>,
   disconnected: <Trans>Connect your wallet to see earnings.</Trans>,

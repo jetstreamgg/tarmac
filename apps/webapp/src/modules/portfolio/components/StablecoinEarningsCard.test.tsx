@@ -102,14 +102,14 @@ const walletEarnings = (protocols: ProtocolEarnings[], isLoading = false): Walle
   window: { startSec: 0, endSec: 0 }
 });
 
-// Steady state: total 20 + 4 + 70 + 46.4 = 140.4; month 10 + 7 + 5 = 22;
-// announced gaps only (Merkl monthly, stUSDS unlisted).
+// Steady state: total 20 + 4 + 70 + 46.4 + 30 = 170.4; month 10 + 7 + 5 + 3 = 25;
+// announced gap only (Merkl monthly).
 const EARNINGS = walletEarnings([
   proto('morpho-vault-0xflagship', ['vault-morpho-0xflagship'], ok({ usd: 20 }), ok({ usd: 10 })),
   proto('merkl', ['vault-morpho-0xflagship'], ok({ usd: 4 }), notAvailable('merkl-monthly-unsupported')),
   proto('pendle', ['fixed-0xmkt'], ok({ usd: 70 }), ok({ usd: 7 })),
   proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 })),
-  proto('stusds', ['stusds'], notAvailable('stusds-not-listed'), notAvailable('stusds-not-listed'))
+  proto('stusds', ['stusds'], ok({ usd: 30 }), ok({ usd: 3 }))
 ]);
 
 const renderCard = (over: Partial<Parameters<typeof StablecoinEarningsCard>[0]> = {}) =>
@@ -246,8 +246,8 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
 
   it('renders the combined Total earned and Earned this month', () => {
     renderCard();
-    expect(totalText()).toBe('+$140.40');
-    expect(monthText()).toBe('+$22.00');
+    expect(totalText()).toBe('+$170.40');
+    expect(monthText()).toBe('+$25.00');
   });
 
   it('shows a skeleton per stat while the earnings hook loads', () => {
@@ -266,8 +266,8 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
 
   it('marks announced gaps with the info glyph, never the partial-data indicator', () => {
     renderCard();
-    // Total misses stUSDS, month misses Merkl + stUSDS — both announced.
-    expect(screen.getAllByTestId('earnings-info')).toHaveLength(2);
+    // Month misses Merkl (announced); the total is complete, so no glyph there.
+    expect(screen.getAllByTestId('earnings-info')).toHaveLength(1);
     expect(screen.queryByTestId('earnings-partial')).toBeNull();
   });
 
@@ -282,9 +282,9 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
       ...EARNINGS.protocols.slice(1)
     ]);
     renderCard({ earnings: morphoDown });
-    // 4 + 70 + 46.4 = 120.4; month 7 + 5 = 12.
-    expect(totalText()).toContain('+$120.40');
-    expect(monthText()).toContain('+$12.00');
+    // 4 + 70 + 46.4 + 30 = 150.4; month 7 + 5 + 3 = 15.
+    expect(totalText()).toContain('+$150.40');
+    expect(monthText()).toContain('+$15.00');
     expect(screen.getAllByTestId('earnings-partial')).toHaveLength(2);
   });
 
@@ -303,10 +303,10 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
 
   it('renders a negative combined total signed with a minus', () => {
     const pendleUnderwater = walletEarnings(
-      EARNINGS.protocols.map(p => (p.id === 'pendle' ? { ...p, totalEarned: ok({ usd: -100 }) } : p))
+      EARNINGS.protocols.map(p => (p.id === 'pendle' ? { ...p, totalEarned: ok({ usd: -130 }) } : p))
     );
     renderCard({ earnings: pendleUnderwater });
-    // 20 + 4 - 100 + 46.4 = -29.6.
+    // 20 + 4 - 130 + 46.4 + 30 = -29.6.
     expect(totalText()).toBe('-$29.60');
   });
 
@@ -369,9 +369,9 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
   it('opens the gap explanation as a tap popover on touch devices', () => {
     touch.isTouch = true;
     renderCard();
-    // Total's glyph: stUSDS is excluded ('Not yet available.').
+    // Month's glyph: Merkl rewards have no monthly breakdown.
     fireEvent.click(screen.getAllByTestId('earnings-info')[0]);
-    expect(screen.getByText(/Not yet available/)).toBeTruthy();
+    expect(screen.getByText(/break rewards down by month/)).toBeTruthy();
   });
 
   // Review finding #1: hover-focused figures flag their own missing contributors.

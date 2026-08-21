@@ -55,8 +55,8 @@ describe('combineWalletEarnings', () => {
   it('reports zero sums with every source missing when nothing is ok', () => {
     const stusds = protocol({
       id: 'stusds',
-      totalEarned: notAvailable('stusds-not-listed'),
-      earnedThisMonth: notAvailable('stusds-not-listed')
+      totalEarned: notAvailable('source-error'),
+      earnedThisMonth: notAvailable('source-error')
     });
     const combined = combineWalletEarnings([stusds, protocol({ id: 'savings' })]);
     expect(combined.totalEarnedUsd).toBe(0);

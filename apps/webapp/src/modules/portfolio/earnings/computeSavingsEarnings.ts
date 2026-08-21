@@ -91,17 +91,3 @@ export function computeSavingsEarnings({
 
   return { totalEarned, earnedThisMonth };
 }
-
-/**
- * The stUSDS entry while EARNINGS_STUSDS_ENABLED is off: always present with
- * both figures as the announced gap, so the UI explains rather than errs.
- * vaults.fyi listed stUSDS on 2026-08-20 but its returns endpoints don't
- * serve it yet; with the flag on, the aggregator runs the real fetch through
- * computeSavingsEarnings instead of this placeholder.
- */
-export function stUsdsPlaceholderEarnings(): SavingsEarnings {
-  return {
-    totalEarned: notAvailable('stusds-not-listed'),
-    earnedThisMonth: notAvailable('stusds-not-listed')
-  };
-}

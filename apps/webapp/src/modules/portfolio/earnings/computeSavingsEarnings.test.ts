@@ -3,7 +3,7 @@ import type {
   VaultsFyiPartialReturnsRaw,
   VaultsFyiReturnsRaw
 } from '../../../hooks/vaults/fyi/vaultsFyiClient';
-import { computeSavingsEarnings, stUsdsPlaceholderEarnings } from './computeSavingsEarnings';
+import { computeSavingsEarnings } from './computeSavingsEarnings';
 import type { EarningsWindow } from './types';
 import goldenFixture from './vaultsFyiReturns.golden.fixtures.json';
 
@@ -246,15 +246,6 @@ describe('golden fixtures (live API bodies, captured 2026-08-20 via the proxy ro
     expect(earnedThisMonth).toEqual({
       status: 'ok',
       value: { usd: 0, native: { amount: 0, symbol: 'USDS' } }
-    });
-  });
-});
-
-describe('stUsdsPlaceholderEarnings', () => {
-  it('reports both figures as the announced stusds-not-listed gap', () => {
-    expect(stUsdsPlaceholderEarnings()).toEqual({
-      totalEarned: { status: 'notAvailable', reason: 'stusds-not-listed' },
-      earnedThisMonth: { status: 'notAvailable', reason: 'stusds-not-listed' }
     });
   });
 });

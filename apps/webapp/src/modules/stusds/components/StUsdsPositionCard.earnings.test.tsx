@@ -79,21 +79,20 @@ const renderCard = () =>
 describe('StUsdsPositionCard — accrued to date (APP-450)', () => {
   beforeEach(() => {
     h.suppliedUsds = 100n * 10n ** 18n;
-    // Live default until vaults.fyi indexes stUSDS holders: the announced gap.
-    earningsHolder.value = stusdsEarnings(notAvailable('stusds-not-listed'));
+    earningsHolder.value = stusdsEarnings(ok({ usd: 30 }));
   });
   afterEach(() => cleanup());
 
-  it('renders a self-explaining dash while stUSDS earnings are unlisted', () => {
-    renderCard();
-
-    expect(screen.getByTestId('stusds-accrued-to-date').textContent).toBe('—');
-  });
-
-  it('renders the accrued-to-date figure once the source lists stUSDS', () => {
-    earningsHolder.value = stusdsEarnings(ok({ usd: 30 }));
+  it('renders the accrued-to-date figure', () => {
     renderCard();
 
     expect(screen.getByTestId('stusds-accrued-to-date').textContent).toContain('$30.00');
+  });
+
+  it('renders a self-explaining dash when the stUSDS figure is unavailable', () => {
+    earningsHolder.value = stusdsEarnings(notAvailable('source-error'));
+    renderCard();
+
+    expect(screen.getByTestId('stusds-accrued-to-date').textContent).toBe('—');
   });
 });

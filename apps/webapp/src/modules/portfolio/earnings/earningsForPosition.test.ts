@@ -49,8 +49,8 @@ const savings = protocol({
 const stusds = protocol({
   id: 'stusds',
   rowIds: ['stusds'],
-  totalEarned: notAvailable('stusds-not-listed'),
-  earnedThisMonth: notAvailable('stusds-not-listed')
+  totalEarned: notAvailable('source-error'),
+  earnedThisMonth: notAvailable('source-error')
 });
 
 const earnings = wallet([morpho, merkl, pendle, savings, stusds]);
@@ -137,9 +137,9 @@ describe('earningsForPosition', () => {
 
   it('returns notAvailable with the contributor reason when nothing is ok', () => {
     const position = earningsForPosition(earnings, 'stusds');
-    expect(position?.totalEarned).toEqual(notAvailable('stusds-not-listed'));
-    expect(position?.earnedThisMonth).toEqual(notAvailable('stusds-not-listed'));
-    expect(position?.missingFromTotal).toEqual([{ id: 'stusds', reason: 'stusds-not-listed' }]);
+    expect(position?.totalEarned).toEqual(notAvailable('source-error'));
+    expect(position?.earnedThisMonth).toEqual(notAvailable('source-error'));
+    expect(position?.missingFromTotal).toEqual([{ id: 'stusds', reason: 'source-error' }]);
   });
 
   it('returns null for rows outside APP-450 scope', () => {

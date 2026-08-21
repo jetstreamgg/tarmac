@@ -14,11 +14,7 @@ import {
 } from '../../../hooks/pendle/pendleApiClient';
 import { pendlePnlQueryKey } from '../../../hooks/pendle/usePendleAllPnlTransactions';
 import { fetchBaLabsHistoricDailyPrices } from '../../../hooks/prices/baLabsHistoricPrices';
-import {
-  EARNINGS_STUSDS_ENABLED,
-  STUSDS_VAULT_ID_MAINNET,
-  SUSDS_VAULT_ID_MAINNET
-} from '../../../hooks/vaults/fyi/constants';
+import { STUSDS_VAULT_ID_MAINNET, SUSDS_VAULT_ID_MAINNET } from '../../../hooks/vaults/fyi/constants';
 import {
   fetchVaultsFyiPartialReturns,
   fetchVaultsFyiTotalReturns
@@ -27,7 +23,7 @@ import { combineWalletEarnings } from '../earnings/combineWalletEarnings';
 import { attributedRewardTokenAddresses, computeMerklEarnings } from '../earnings/computeMerklEarnings';
 import { computeMorphoEarnings } from '../earnings/computeMorphoEarnings';
 import { computePendleEarnings } from '../earnings/computePendleEarnings';
-import { computeSavingsEarnings, stUsdsPlaceholderEarnings } from '../earnings/computeSavingsEarnings';
+import { computeSavingsEarnings } from '../earnings/computeSavingsEarnings';
 import { monthToDateWindow } from '../earnings/monthWindow';
 import {
   morphoVaultSourceId,
@@ -223,13 +219,11 @@ export function useWalletEarnings(): WalletEarnings {
   });
 
   // stUSDS rides the same vaults.fyi returns endpoints as savings, just with
-  // its own vaultId. Off until their holder indexing catches up with the
-  // 2026-08-20 listing (see EARNINGS_STUSDS_ENABLED).
-  const stusdsEnabled = EARNINGS_STUSDS_ENABLED;
+  // its own vaultId (their holder indexing went live 2026-08-21).
   const stusdsTotalQuery = useQuery({
     queryKey: ['wallet-earnings', 'stusds-total', user],
     queryFn: () => fetchVaultsFyiTotalReturns({ userAddress: address!, vaultId: STUSDS_VAULT_ID_MAINNET }),
-    enabled: connected && stusdsEnabled,
+    enabled: connected,
     staleTime: VAULTS_FYI_STALE_MS,
     refetchOnWindowFocus: false
   });
@@ -242,7 +236,7 @@ export function useWalletEarnings(): WalletEarnings {
         vaultId: STUSDS_VAULT_ID_MAINNET,
         fromTimestamp: window.startSec
       }),
-    enabled: connected && stusdsEnabled,
+    enabled: connected,
     staleTime: VAULTS_FYI_STALE_MS,
     refetchOnWindowFocus: false
   });
@@ -355,15 +349,6 @@ export function useWalletEarnings(): WalletEarnings {
     })();
 
     const stusds: ProtocolEarnings = (() => {
-      if (!stusdsEnabled) {
-        return {
-          id: 'stusds' as const,
-          rowIds: ['stusds'],
-          ...stUsdsPlaceholderEarnings(),
-          isLoading: false,
-          error: null
-        };
-      }
       // Same per-figure independence as savings; stUSDS cut() can make earned
       // negative, which computeSavingsEarnings passes through signed.
       const computed = computeSavingsEarnings({
@@ -388,7 +373,6 @@ export function useWalletEarnings(): WalletEarnings {
     connected,
     window,
     attributedTokens,
-    stusdsEnabled,
     morphoQuery,
     merklRewardsQuery,
     merklClaimsQuery,

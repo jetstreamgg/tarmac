@@ -163,7 +163,7 @@ const EARNINGS = walletEarnings([
   proto('pendle', ['fixed-0xmkt'], ok({ usd: 916.82 }), ok({ usd: 635.39 }), {
     pendleSplit: { realizedUsd: 895.05, markToMarketUsd: 916.82 }
   }),
-  proto('stusds', ['stusds'], notAvailable('stusds-not-listed'), notAvailable('stusds-not-listed'))
+  proto('stusds', ['stusds'], ok({ usd: 30 }), ok({ usd: 3 }))
 ]);
 
 function renderSection(positions: SuppliedPosition[], earnings: WalletEarnings = EARNINGS) {
@@ -329,9 +329,9 @@ describe('PositionCard — Already earned (APP-450)', () => {
     expect(dash.getAttribute('tabindex')).toBe('0');
   });
 
-  it('renders a dash for the unlisted stUSDS row', () => {
+  it('renders the stUSDS figure from its earnings source', () => {
     renderSection([position({ id: 'stusds', name: 'stUSDS' })]);
-    expect(alreadyEarned(screen.getAllByTestId('position-card')[0]).textContent).toBe('—');
+    expect(alreadyEarned(screen.getAllByTestId('position-card')[0]).textContent).toBe('$30.00');
   });
 
   it('exposes the realized/mark-to-market split on the Pendle figure', () => {
