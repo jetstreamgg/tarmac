@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useId } from 'react';
+import { useLayoutEffect, useRef, useState, useId } from 'react';
 import {
   DefaultZIndexes,
   ZIndexLayer,
@@ -40,12 +40,9 @@ const DIMMED_ALPHA = 0.4;
 
 /**
  * Length of the lit segment, in px of arc length — the DS mock's window
- * measures ~45px across (Figma 5391:44830).
- *
- * A flat length, and deliberately NOT snapped to data: the window rides the
- * raw cursor (see the native listener below), so it doesn't need to relate to
- * point spacing — a neighbour-relative span was tried and read as an
- * overgrown slab on the sparse series.
+ * measures ~45px across (Figma 5391:44830). A flat length: a
+ * neighbour-relative span was tried and read as an overgrown slab on the
+ * sparse series.
  */
 const SEGMENT_WINDOW = 44;
 
@@ -183,28 +180,13 @@ export function SeriesMotionLayer({
   }, [geom, seriesKey, reduceMotion, clipId]);
   useLayoutEffect(() => () => clearTimeout(revealTimer.current), []);
 
-  // The lit piece rides the RAW cursor, not recharts' tooltip coordinate: the
-  // dot and tooltip snap to the nearest data point, which is right for them,
-  // but a window that hops point-to-point read as jumping on sparse series.
-  // Tracked with a native listener so the position is continuous; the snapped
-  // coordinate stands in for the frames before the first mousemove lands.
-  const [cursorX, setCursorX] = useState<number | null>(null);
-  useEffect(() => {
-    const svg = probeRef.current?.ownerSVGElement;
-    if (!svg) return;
-    const move = (event: MouseEvent) => {
-      setCursorX(event.clientX - svg.getBoundingClientRect().left);
-    };
-    const leave = () => setCursorX(null);
-    svg.addEventListener('mousemove', move);
-    svg.addEventListener('mouseleave', leave);
-    return () => {
-      svg.removeEventListener('mousemove', move);
-      svg.removeEventListener('mouseleave', leave);
-    };
-  }, []);
-
-  const hoverX = revealDone && isActive && geom ? (cursorX ?? coordinate?.x ?? null) : null;
+  // The data points act as magnets: the window's TARGET is recharts' snapped
+  // tooltip coordinate (the nearest point), so it always comes to rest centred
+  // on a data point — with the dot and tooltip. The slow spring is what makes
+  // the pull visible: crossing the midpoint to the next point plays the whole
+  // travel along the line (~420ms from a standing start), while a far jump
+  // covers its distance in the same time, sweeping rather than crawling.
+  const hoverX = revealDone && isActive && coordinate && geom ? coordinate.x : null;
   const isHovering = hoverX != null;
 
   // Dim the whole series layer (stroke + gradient fill) while hovering. The
@@ -216,7 +198,7 @@ export function SeriesMotionLayer({
     layer.style.opacity = isHovering ? `${DIMMED_ALPHA}` : '';
   }, [isHovering, reduceMotion, seriesKey]);
 
-  // The bright segment: dash window centred on the cursor's arc length.
+  // The bright segment: dash window centred on the magnet point's arc length.
   const centerLength = hoverX != null && geom ? arcLengthAtX(geom.lut, hoverX) : null;
   const dashoffset = centerLength != null ? SEGMENT_WINDOW / 2 - centerLength : null;
   // `useDashoffsetFollow` owns `stroke-dashoffset`; it stays out of the style prop.

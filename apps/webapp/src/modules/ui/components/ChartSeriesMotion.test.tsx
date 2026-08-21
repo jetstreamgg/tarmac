@@ -128,18 +128,14 @@ describe('hover segment', () => {
     expect(screen.getByTestId('chart-hover-segment').style.strokeDashoffset).toBe('22');
   });
 
-  it('rides the raw cursor between data points, not the snapped coordinate', () => {
+  it('targets the snapped data point (the magnet), never a raw cursor position', () => {
     h.isActive = true;
-    h.coordinate = undefined; // no snapped point needed once the mouse moves
+    h.coordinate = undefined; // no snapped point -> no target, however the mouse moves
     renderLayer();
     finishReveal();
 
-    // A native mousemove between data points (happy-dom rects sit at 0, so
-    // clientX is chart-space x). The window centres there: offset = 22 - 55.
     fireEvent.mouseMove(screen.getByTestId('curve'), { clientX: 55 });
-    const segment = screen.getByTestId('chart-hover-segment');
-    expect(segment.style.strokeDashoffset).toBe('-33');
-    expect(segment.style.opacity).toBe('1');
+    expect(screen.getByTestId('chart-hover-segment').style.opacity).toBe('0');
   });
 
   it('snaps to a new hover after leaving, instead of gliding from the stale spot', () => {
