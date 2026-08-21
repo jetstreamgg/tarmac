@@ -309,11 +309,18 @@ function PendleMaturedSlot({
   isConnected: boolean;
 }) {
   const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
-  const onClaimOrConnect = useConnectThenAct(openRedeemModal, 'pendle_claim');
+  // Connect only — deliberately NOT continuing into the redeem modal. A
+  // disconnected balance is unknown, so continuing would launch the claim
+  // modal at whoever turns out to hold nothing: dashes, zeros and a disabled
+  // Claim with nothing to explain why. Connecting resolves the balance and
+  // this slot re-renders into the claim card (holder) or the closed state
+  // (not), so the user always sees a real position before a money-moving
+  // modal opens.
+  const connectThenSettle = useConnectThenAct(() => undefined, 'pendle_claim');
 
   if (!isConnected) {
     return (
-      <PendleMaturedConnectCard market={market} maturityLabel={maturityLabel} onClaim={onClaimOrConnect} />
+      <PendleMaturedConnectCard market={market} maturityLabel={maturityLabel} onClaim={connectThenSettle} />
     );
   }
   if (ptBalance > 0n) {
