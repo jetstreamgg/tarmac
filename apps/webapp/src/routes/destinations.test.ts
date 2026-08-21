@@ -231,12 +231,12 @@ describe('fixed (Pendle) market detail routes', () => {
     expect(router.state.location.pathname).toBe(ROUTES.EARN);
   });
 
-  it('redirects a matured market detail to the Portfolio (where redemption lives)', async () => {
+  it('keeps a matured market on its detail page — the claim card lives there now', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date((market.expiry + 60) * 1000));
     try {
       const router = await routerAt(`${ROUTES.EARN_FIXED}/${market.slug}`);
-      expect(router.state.location.pathname).toBe(ROUTES.PORTFOLIO);
+      expect(router.state.location.pathname).toBe(`${ROUTES.EARN_FIXED}/${market.slug}`);
     } finally {
       vi.useRealTimers();
     }

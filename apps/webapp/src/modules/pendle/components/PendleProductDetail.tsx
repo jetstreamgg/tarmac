@@ -95,7 +95,9 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         <span>
           {maturityDateLabel}{' '}
           <span className="text-textSecondary">
-            <Trans>({remainingDays} days)</Trans>
+            {/* A matured market reads "(Matured)" — the elapsed-days figure is 0
+                there, which reads as "matures today". */}
+            {remainingSeconds > 0 ? <Trans>({remainingDays} days)</Trans> : <Trans>(Matured)</Trans>}
           </span>
         </span>
       )
