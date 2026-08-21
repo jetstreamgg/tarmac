@@ -101,6 +101,11 @@ function SuppliedContent({
   // Hover-focus for the two earnings stats: the hovered position's own slice
   // (null when the row is outside APP-450 scope → dash, like its siblings).
   const activeEarnings = activePosition ? earningsForPosition(earnings, activePosition.id) : null;
+  // Positions with no earnings source at all: the combined stats exclude them,
+  // so the footer names them instead of posing as complete (review finding #2).
+  const untrackedNames = view.positions
+    .filter(p => earningsForPosition(earnings, p.id) === null)
+    .map(p => p.name);
   const activeSymbol = activePosition?.tokenSymbol ?? null;
   const displayTotal = activePosition ? activePosition.amountUsd : view.totalSupplied;
   const displayProjected = activePosition
@@ -196,6 +201,7 @@ function SuppliedContent({
                 field="total"
                 className={LABEL_4}
                 testId="earnings-total-value"
+                untrackedNames={untrackedNames}
               />
             )
           }
@@ -216,6 +222,7 @@ function SuppliedContent({
                 field="month"
                 className={LABEL_4}
                 testId="earnings-month-value"
+                untrackedNames={untrackedNames}
               />
             )
           }

@@ -323,6 +323,12 @@ describe('PositionCard — Already earned (APP-450)', () => {
     expect(alreadyEarned(screen.getAllByTestId('position-card')[0]).textContent).toBe('—');
   });
 
+  it("explains the out-of-scope dash with a tooltip (review finding #2, it can't be silent)", () => {
+    renderSection([VAULT]);
+    const dash = within(alreadyEarned(screen.getAllByTestId('position-card')[0])).getByText('—');
+    expect(dash.getAttribute('tabindex')).toBe('0');
+  });
+
   it('renders a dash for the unlisted stUSDS row', () => {
     renderSection([position({ id: 'stusds', name: 'stUSDS' })]);
     expect(alreadyEarned(screen.getAllByTestId('position-card')[0]).textContent).toBe('—');

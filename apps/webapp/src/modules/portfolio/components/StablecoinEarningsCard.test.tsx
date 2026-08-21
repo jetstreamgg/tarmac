@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import type { SuppliedView } from '../helpers/suppliedView';
@@ -318,5 +318,49 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     fireEvent.mouseEnter(screen.getByRole('button', { name: /Other Vault/ }));
     expect(totalText()).toBe('—');
     expect(monthText()).toBe('—');
+  });
+
+  // Review finding #2 (2026-08-21): untracked positions must not be silent.
+
+  it("explains an untracked hovered position's dash with a tooltip", () => {
+    const outOfScope = {
+      ...SUPPLIED,
+      positions: [{ ...SUPPLIED.positions[0], id: 'vault-other-0xdead', name: 'Other Vault' }]
+    };
+    renderCard({ suppliedView: outOfScope });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /Other Vault/ }));
+    const dash = within(screen.getByTestId('earnings-total-value')).getByText('—');
+    // The dash is a tooltip trigger (focusable) rather than inert text.
+    expect(dash.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('shows the info glyph when a supplied position has no earnings source, even with every source ok', () => {
+    const allOk = walletEarnings([proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 }))]);
+    const withUntracked = {
+      ...SUPPLIED,
+      positions: [
+        SUPPLIED.positions[0],
+        { ...SUPPLIED.positions[0], id: 'vault-other-0xdead', name: 'Other Vault' }
+      ]
+    };
+    renderCard({ suppliedView: withUntracked, earnings: allOk });
+    // Both footer stats carry the announced-gap glyph naming the untracked position.
+    expect(screen.getAllByTestId('earnings-info')).toHaveLength(2);
+    expect(screen.queryByTestId('earnings-partial')).toBeNull();
+  });
+
+  it('shows no glyph when every source is ok and every position is tracked', () => {
+    const allOk = walletEarnings([proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 }))]);
+    renderCard({ earnings: allOk });
+    expect(screen.queryByTestId('earnings-info')).toBeNull();
+    expect(screen.queryByTestId('earnings-partial')).toBeNull();
+  });
+
+  // Review finding #8 companion: sub-cent combined earnings say so, not $0.00.
+  it('renders sub-cent combined earnings as <$0.01', () => {
+    const tiny = walletEarnings([proto('savings', ['savings'], ok({ usd: 0.0002 }), ok({ usd: 0.0001 }))]);
+    renderCard({ earnings: tiny });
+    expect(totalText()).toBe('+<$0.01');
+    expect(monthText()).toBe('+<$0.01');
   });
 });

@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatUsd } from '@/utils';
-import { GainValue } from '@/components/ui/GainValue';
+import { formatGainMagnitude, GainValue, isGainNegative } from '@/components/ui/GainValue';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
@@ -72,7 +72,14 @@ export function missingSourceDetails(
   });
 }
 
-function MissingList({ missing }: { missing: MissingSourceDetail[] }) {
+function MissingList({
+  missing,
+  untrackedNames = []
+}: {
+  missing: MissingSourceDetail[];
+  /** Supplied positions with no earnings source at all (review finding #2). */
+  untrackedNames?: string[];
+}) {
   return (
     <div className="flex flex-col gap-1">
       <span>
@@ -81,6 +88,11 @@ function MissingList({ missing }: { missing: MissingSourceDetail[] }) {
       {missing.map(({ id, reason }) => (
         <span key={id}>
           {SOURCE_LABELS[id]}: {REASON_COPY[reason]}
+        </span>
+      ))}
+      {untrackedNames.map(name => (
+        <span key={name}>
+          {name}: <Trans>Earnings not tracked yet.</Trans>
         </span>
       ))}
     </div>
@@ -97,12 +109,16 @@ export function CombinedEarningsStat({
   earnings,
   field,
   className,
-  testId
+  testId,
+  untrackedNames = []
 }: {
   earnings: WalletEarnings;
   field: 'total' | 'month';
   className?: string;
   testId: string;
+  /** Supplied positions with no earnings source — the combined figure excludes
+   * them, so it must say so (review finding #2). An announced gap, never an error. */
+  untrackedNames?: string[];
 }) {
   if (earnings.isLoading) {
     return <Skeleton data-testid="earnings-stat-skeleton" className="h-[18px] w-24 rounded" />;
@@ -119,7 +135,7 @@ export function CombinedEarningsStat({
             </span>
           }
         >
-          <MissingList missing={missing} />
+          <MissingList missing={missing} untrackedNames={untrackedNames} />
         </EarningsTooltip>
       </span>
     );
@@ -130,7 +146,7 @@ export function CombinedEarningsStat({
   return (
     <span data-testid={testId} className="flex items-center gap-1.5">
       <GainValue value={usd} signed className={className} />
-      {missing.length > 0 && (
+      {(missing.length > 0 || untrackedNames.length > 0) && (
         <EarningsTooltip
           trigger={
             <span
@@ -142,7 +158,7 @@ export function CombinedEarningsStat({
             </span>
           }
         >
-          <MissingList missing={missing} />
+          <MissingList missing={missing} untrackedNames={untrackedNames} />
         </EarningsTooltip>
       )}
     </span>
@@ -176,14 +192,18 @@ export function EarningsFigureValue({
   }
 
   if (!figure || figure.status === 'notAvailable') {
+    // `null` = no earnings source for this row; the dash still explains itself
+    // (review finding #2: an untracked position must not be silent).
     const dash = (
-      <span tabIndex={figure ? 0 : undefined} className={className}>
+      <span tabIndex={0} className={className}>
         —
       </span>
     );
     return (
       <span data-testid={testId}>
-        {figure ? <EarningsTooltip trigger={dash}>{REASON_COPY[figure.reason]}</EarningsTooltip> : dash}
+        <EarningsTooltip trigger={dash}>
+          {figure ? REASON_COPY[figure.reason] : <Trans>Earnings not tracked yet.</Trans>}
+        </EarningsTooltip>
       </span>
     );
   }
@@ -192,7 +212,10 @@ export function EarningsFigureValue({
     variant === 'gain' ? (
       <GainValue value={figure.value.usd} signed className={className} />
     ) : (
-      <span className={className}>{formatUsd(figure.value.usd)}</span>
+      <span className={className}>
+        {isGainNegative(figure.value.usd) ? '-' : ''}
+        {formatGainMagnitude(figure.value.usd)}
+      </span>
     );
 
   if (pendleSplit) {
