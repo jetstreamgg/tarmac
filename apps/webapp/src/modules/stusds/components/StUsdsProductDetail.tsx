@@ -27,7 +27,7 @@ import {
 import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
 
 const formatUsd = (value: bigint | undefined): string =>
   value !== undefined ? `$${formatNumber(parseFloat(formatUnits(value, 18)))}` : NO_VALUE;
@@ -175,7 +175,7 @@ export function StUsdsProductDetail() {
       details={details}
       about={{
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
-        learnMoreHref: 'https://docs.sky.money/user-risks'
+        learnMoreHref: USER_RISKS_URL
       }}
       transactions={<StUsdsTransactionsTable />}
       transactionsTitle={<Trans>All transactions</Trans>}

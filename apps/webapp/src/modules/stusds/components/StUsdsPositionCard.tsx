@@ -75,9 +75,8 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
       }
       description={
         <Trans>
-          stUSDS gives you a variable reward rate on USDS by participating in SKY-backed borrowing. It is an
-          expert module intended for experienced users — withdrawals may be delayed during periods of high
-          utilization.
+          stUSDS gives you a variable reward rate on USDS by participating in SKY-backed borrowing.
+          Withdrawals may be delayed during periods of high utilization.
         </Trans>
       }
       stats={

@@ -5,6 +5,7 @@ import { usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { IconboxAction } from '@/components/ui/iconbox';
+import { USER_RISKS_URL } from '@/lib/constants';
 
 const SECONDS_PER_DAY = 86_400;
 const EXAMPLE_SUPPLY = 100;
@@ -76,29 +77,25 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
   return (
     <div className="flex flex-col gap-6" data-testid="pendle-detail-about">
       <p>
+        {apy !== undefined && exampleOut !== undefined ? (
+          <Trans>
+            Lock in a fixed yield on your {symbol}, e.g. supply {EXAMPLE_SUPPLY} {symbol} and withdraw{' '}
+            {formatNumber(exampleOut, { maxDecimals: 2 })} {symbol} in {remainingDays} days (
+            {formatDecimalPercentage(apy)} fixed APY).
+          </Trans>
+        ) : (
+          <Trans>Lock in a fixed yield on your {symbol}.</Trans>
+        )}{' '}
         <Trans>
-          Lock in a fixed yield on your {symbol}. Supply {symbol} today, withdraw a guaranteed amount on a
-          future date. The yield is locked in the moment you supply — no surprises from changing rates.
+          Check out the{' '}
+          <a href="https://pendle.finance/" target="_blank" rel="noreferrer" className="text-fgBrand">
+            Pendle site
+          </a>{' '}
+          for more details.
         </Trans>{' '}
-        {apy !== undefined && exampleOut !== undefined && (
-          <>
-            <Trans>
-              Supply {EXAMPLE_SUPPLY} {symbol} and withdraw {formatNumber(exampleOut, { maxDecimals: 2 })}{' '}
-              {symbol} in {remainingDays} days ({formatDecimalPercentage(apy)} fixed APY).
-            </Trans>{' '}
-          </>
-        )}
-        <Trans>
-          Do you want to learn more about Pendle tokens?{' '}
-          <a
-            href="https://pendle.finance/"
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-500 hover:underline"
-          >
-            Click here
-          </a>
-        </Trans>
+        <a href={USER_RISKS_URL} target="_blank" rel="noreferrer" className="text-fgBrand">
+          <Trans>Learn more in the User Risk Documentation.</Trans>
+        </a>
       </p>
       <Accordion type="multiple" data-testid="pendle-detail-faq">
         {items.map(item => (

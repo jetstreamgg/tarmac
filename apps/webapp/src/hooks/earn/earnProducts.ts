@@ -6,6 +6,7 @@ import { TOKENS } from '../tokens/tokens.constants';
 import { VAULTS } from '../vaults/constants';
 import { PENDLE_MARKETS } from '../pendle/constants';
 import type { RewardContract } from '../rewards/rewards';
+import { rewardContractDisplayName } from '../rewards/rewardContractDisplayName';
 import type { EarnProductDescriptor, EarnRiskProfileId, EarnRiskTier } from './types';
 
 /**
@@ -104,7 +105,9 @@ export function buildEarnProducts(
       id: `rewards-${contract.rewardToken.symbol.toLowerCase()}`,
       kind: 'rewards',
       intent: Intent.REWARDS_INTENT,
-      name: contract.name,
+      // Marketplace rows read "<TOKEN> Rewards" (APP-526); the registry name stays
+      // "Earn <TOKEN>" for analytics parity.
+      name: rewardContractDisplayName(contract),
       tokenSymbol: contract.supplyToken.symbol,
       supplyTokens: [contract.supplyToken.symbol],
       risk: RISK_TIER_BY_PROFILE[riskProfile],

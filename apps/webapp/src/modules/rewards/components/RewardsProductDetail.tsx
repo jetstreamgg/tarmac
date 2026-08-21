@@ -28,15 +28,16 @@ import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName'
 import { RewardsDetailChart } from './RewardsDetailChart';
 import { RewardsPositionCard } from './RewardsPositionCard';
 import { RewardsTransactionsTable } from './RewardsTransactionsTable';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
 
 /**
- * About-slot content per farm. SPK and the (deprecated) SKY farm read the
- * corpus-fed banners (sync pipeline); Chronicle has no corpus entry yet, so its
- * body carries the same third-party disclaimer `AboutCle` shows elsewhere.
+ * About-slot content per farm. SPK, GROVE and the (deprecated) SKY farm read
+ * the corpus-fed banners (sync pipeline); Chronicle has no corpus entry yet, so
+ * its body carries the same third-party disclaimer `AboutCle` shows elsewhere.
+ * Every farm's "Learn more" points at the User Risk Documentation (APP-526).
  * TODO(corpus): move the Chronicle copy into the banners pipeline.
  */
-function aboutForContract(contract: RewardContract): { body: React.ReactNode; learnMoreHref?: string } {
+function aboutForContract(contract: RewardContract): { body: React.ReactNode; learnMoreHref: string } {
   const symbol = contract.rewardToken.symbol;
   if (symbol === TOKENS.cle.symbol) {
     return {
@@ -50,19 +51,21 @@ function aboutForContract(contract: RewardContract): { body: React.ReactNode; le
           with it.
         </Trans>
       ),
-      learnMoreHref: 'https://chroniclelabs.org/'
+      learnMoreHref: USER_RISKS_URL
     };
   }
   const bannerId =
     symbol === TOKENS.spk.symbol
       ? 'about-the-spk-token'
-      : symbol === TOKENS.sky.symbol
-        ? 'sky'
-        : 'about-sky-token-rewards';
+      : symbol === TOKENS.grove.symbol
+        ? 'about-the-grove-token'
+        : symbol === TOKENS.sky.symbol
+          ? 'sky'
+          : 'about-sky-token-rewards';
   const banner = getBannerById(bannerId)?.description;
   return {
     body: banner ? parseBannerContent(banner) : NO_VALUE,
-    learnMoreHref: contract.externalLink
+    learnMoreHref: USER_RISKS_URL
   };
 }
 

@@ -251,6 +251,7 @@ export { useTokenBalance, useTokenBalances, type TokenItem } from './tokens/useT
 export { useTokenChartInfo } from './tokens/useTokenChartInfo';
 
 // Rewards
+export { rewardContractDisplayName } from './rewards/rewardContractDisplayName';
 export { useAvailableTokenRewardContracts } from './rewards/useAvailableTokenRewardContracts';
 export { useAvailableTokenRewardContractsForChains } from './rewards/useAvailableTokenRewardContracts';
 export { useRewardContractInfo } from './rewards/useRewardContractInfo';
