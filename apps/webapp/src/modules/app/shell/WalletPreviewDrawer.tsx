@@ -120,8 +120,15 @@ export function WalletPreviewDrawer({
             onDisconnect={onDisconnect}
           />
           {/* pr matches pl now that the panels no longer reserve a 10px
-              scrollbar gutter, keeping left/right content insets equal. */}
-          <div className="bg-containerDark flex min-h-0 flex-1 flex-col pt-7 pr-3 pb-3 pl-3">
+              scrollbar gutter, keeping left/right content insets equal.
+
+              Surface per Figma 2376:225815 ("update background color"): the
+              comp stacks colors/bg/bg-primary under a colors/bg/bg-secondary
+              wash. It read as the neutral 85%-black containerDark, which is a
+              different colour from the brand near-navy the rest of the app
+              sits on. The wash rides as a background-image so one element
+              carries both paints, exactly as the comp layers them. */}
+          <div className="bg-pageBackground flex min-h-0 flex-1 flex-col bg-[image:linear-gradient(var(--color-bgSecondary),var(--color-bgSecondary))] pt-7 pr-3 pb-3 pl-3">
             <WalletDrawerTabs />
           </div>
         </div>
