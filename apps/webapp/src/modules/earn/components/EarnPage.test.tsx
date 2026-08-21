@@ -39,15 +39,7 @@ vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
   usePendleMaturedPositions: () => matured.current,
   usePendleMaturedNetworkSwitch: () => undefined
 }));
-// The launcher mounts the whole redeem-modal stack — out of scope here; the
-// stub registers a spy opener the row-click spec asserts against.
-const claimOpen = vi.hoisted(() => ({ spy: vi.fn() }));
-vi.mock('@/modules/pendle/components/PendleClaimLauncher', () => ({
-  PendleClaimLauncher: ({ onReady }: { onReady: (open: () => void) => void }) => {
-    onReady(claimOpen.spy);
-    return null;
-  }
-}));
+
 vi.mock('@/widgets', async importOriginal => {
   const actual = await importOriginal<typeof import('@/widgets')>();
   return { ...actual, usePendleUsdValue: () => (_symbol: string, amount: number) => amount };
@@ -278,7 +270,6 @@ describe('EarnPage requires-action section', () => {
 
   beforeEach(() => {
     matured.current = { maturedPositions: [] };
-    claimOpen.spy.mockClear();
   });
 
   it('stays hidden while the user holds nothing matured', async () => {
@@ -301,13 +292,12 @@ describe('EarnPage requires-action section', () => {
     expect(row.textContent).not.toContain('%');
   });
 
-  it('opens the claim modal in place on row click — no navigation', async () => {
+  it('routes a row click to the matured market detail page, where the claim card lives', async () => {
     matured.current = MATURED as typeof matured.current;
     const router = renderPage();
     await screen.findByText('Requires action');
 
     fireEvent.click(screen.getByTestId('earn-requires-action-row-matured-0x9c56'));
-    await waitFor(() => expect(claimOpen.spy).toHaveBeenCalledTimes(1));
-    expect(router.state.location.pathname).toBe('/earn');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/earn/fixed/pt-susds'));
   });
 });
