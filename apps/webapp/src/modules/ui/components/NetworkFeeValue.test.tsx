@@ -50,12 +50,12 @@ beforeEach(() => {
 
 describe('useBundleFeeState', () => {
   it('holds everything back until the fee has landed', () => {
-    expect(stateOf(2, undefined)).toMatchObject({ ready: false, settled: false, promoVisible: false });
+    expect(stateOf(2, undefined)).toMatchObject({ ready: false, settled: false });
   });
 
   it('holds everything back while wallet capabilities are still loading', () => {
     mocks.isSupportLoading = true;
-    expect(stateOf(2, fee())).toMatchObject({ ready: false, settled: false, promoVisible: false });
+    expect(stateOf(2, fee())).toMatchObject({ ready: false, settled: false });
   });
 
   it('is ready and settled once the fee is formatted', () => {
@@ -68,8 +68,7 @@ describe('useBundleFeeState', () => {
     expect(stateOf(2, undefined, true)).toMatchObject({
       ready: false,
       settled: true,
-      canBundle: true,
-      promoVisible: false
+      canBundle: true
     });
   });
 
@@ -77,27 +76,6 @@ describe('useBundleFeeState', () => {
     expect(stateOf(1, fee()).canBundle).toBe(false);
     mocks.batchSupported = false;
     expect(stateOf(2, fee()).canBundle).toBe(false);
-  });
-
-  it('pitches the saving only to someone who had bundling off', () => {
-    expect(stateOf(2, fee()).promoVisible).toBe(true);
-    mocks.batchEnabled = true;
-    expect(stateOf(2, fee()).promoVisible).toBe(false);
-  });
-
-  it('does not pitch a saving it cannot quote', () => {
-    expect(stateOf(2, fee({ batchSaving: 0 })).promoVisible).toBe(false);
-    expect(stateOf(2, fee({ batchSaving: undefined })).promoVisible).toBe(false);
-  });
-
-  it('keeps the card up after the switch is flipped mid-modal', () => {
-    const { result, rerender } = renderHook(() => useBundleFeeState(2, fee()));
-    expect(result.current.promoVisible).toBe(true);
-    mocks.batchEnabled = true;
-    rerender();
-    // `enabledOnOpen` is a snapshot: flipping the switch must not yank the card out from
-    // under the click that just landed on it.
-    expect(result.current.promoVisible).toBe(true);
   });
 });
 
@@ -123,14 +101,14 @@ describe('NetworkFeeValue', () => {
     expect(screen.queryByTestId('bundle-toggle-badge')).toBeNull();
   });
 
-  it('keeps the row plain while the promo card is making the same case', async () => {
-    // Bundling off + a saving to pitch → the card is up, so no `Not bundled` badge.
+  it('shows the badge whenever bundling is available, on or off — it is the sole in-modal control now (figma-annotations r2, item G2)', async () => {
+    // Bundling off, with a real saving to report: the promo card that used to make this
+    // pitch (and hide the badge behind it) is gone, so the badge must show regardless.
     const data = fee({ isBatch: false });
-    const state = stateOf(2, data);
-    expect(state.promoVisible).toBe(true);
-    renderValue(data, state);
-    expect(await screen.findByText('$0.11')).toBeTruthy();
-    expect(screen.queryByTestId('bundle-toggle-badge')).toBeNull();
+    renderValue(data, stateOf(2, data));
+    expect(await screen.findByTestId('bundle-toggle-badge')).toBeTruthy();
+    expect(screen.getByText('Not bundled')).toBeTruthy();
+    expect(screen.getByText('$0.11')).toBeTruthy();
   });
 
   it('shows the badge and the bundled fee when bundling is on', async () => {
@@ -146,8 +124,8 @@ describe('NetworkFeeValue', () => {
     expect(screen.queryByText('$0.13')).toBeNull();
   });
 
-  it('shows a `Not bundled` badge once the pitch is gone', async () => {
-    // Bundling off and nothing to pitch (no saving) → the badge explains the higher fee.
+  it('shows a `Not bundled` badge with bundling off and no saving to report', async () => {
+    // No saving quoted → the badge still explains the higher fee.
     const data = fee({ isBatch: false, batchSaving: 0 });
     renderValue(data, stateOf(2, data));
     expect(await screen.findByText('Not bundled')).toBeTruthy();

@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { Info, TriangleAlert } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
+import { BorrowRequirementNotice } from './BorrowRequirementNotice';
 import {
   StakeManageCard,
   StakeManageStatCell,
@@ -309,30 +310,21 @@ export function StakeManageBorrowCard({
         )}
 
         {!isRepay && minCollateralNotMet && (
-          <div
-            data-testid="stake-manage-min-collateral-warning"
-            className="flex items-start gap-3 rounded-xl border border-orange-400/40 bg-orange-400/10 p-4"
+          <BorrowRequirementNotice
+            dataTestId="stake-manage-min-collateral-warning"
+            title={<Trans>More SKY needed to borrow</Trans>}
           >
-            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" aria-hidden />
-            <div className="flex flex-col gap-1 text-sm">
-              <span className="text-text font-circle font-medium">
-                <Trans>More SKY needed to borrow</Trans>
-              </span>
-              <span className="text-textSecondary">
-                <Trans>
-                  The minimum borrow is{' '}
-                  {simulatedVault?.dust !== undefined
-                    ? formatBigInt(simulatedVault.dust, { compact: true })
-                    : NO_VALUE}{' '}
-                  USDS, which requires at least{' '}
-                  {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY as
-                  collateral. You currently have {formatBigInt(currentCollateral)}/
-                  {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY
-                  staked.
-                </Trans>
-              </span>
-            </div>
-          </div>
+            <Trans>
+              The minimum borrow is{' '}
+              {simulatedVault?.dust !== undefined
+                ? formatBigInt(simulatedVault.dust, { compact: true })
+                : NO_VALUE}{' '}
+              USDS, which requires at least{' '}
+              {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY as
+              collateral. You currently have {formatBigInt(currentCollateral)}/
+              {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY staked.
+            </Trans>
+          </BorrowRequirementNotice>
         )}
 
         {!isRepay && debtCeilingReached && (

@@ -6,7 +6,6 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { getVaultByAddress, type Token, type VaultProvider, useVaultMarketData } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
@@ -118,13 +117,11 @@ export function VaultModalForm({
     () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
-      networkFee?.batchSaving,
       networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
       bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
+      bundleState.canBundle
     ]
   );
   const disabled = !amountReady || !prepared;
@@ -346,8 +343,6 @@ export function VaultModalForm({
       </div>
 
       <ModalSummaryGrid rows={toGridCells(rows, 'vault-modal-row', feeCell)} dividerClassName="h-8" />
-
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

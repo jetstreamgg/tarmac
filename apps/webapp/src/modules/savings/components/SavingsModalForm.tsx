@@ -15,7 +15,6 @@ import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMe
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useNetworkFee } from '@/hooks';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
@@ -124,13 +123,11 @@ export function SavingsModalForm({
     () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
-      networkFee?.batchSaving,
       networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
       bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
+      bundleState.canBundle
     ]
   );
 
@@ -304,7 +301,7 @@ export function SavingsModalForm({
         }
         error={
           insufficient ? (
-            <Text className="text-error text-sm" data-testid="savings-modal-amount-error">
+            <Text className="text-statusError text-sm" data-testid="savings-modal-amount-error">
               <Trans>Insufficient balance</Trans>
             </Text>
           ) : usdcBlockedReason ? (
@@ -313,7 +310,7 @@ export function SavingsModalForm({
             // Review inert with no explanation. One message for all three reasons —
             // "unavailable" is true of each, and the distinction between them is the
             // Protocol's business, not something the depositor can act on differently.
-            <Text className="text-error text-sm" data-testid="savings-modal-usdc-blocked">
+            <Text className="text-statusError text-sm" data-testid="savings-modal-usdc-blocked">
               <Trans>USDC conversion is unavailable right now. Supply USDS or DAI instead.</Trans>
             </Text>
           ) : undefined
@@ -324,8 +321,6 @@ export function SavingsModalForm({
       />
 
       <ModalSummaryGrid rows={toGridCells(rows, 'savings-modal-row', feeCell)} dividerClassName="h-8" />
-
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

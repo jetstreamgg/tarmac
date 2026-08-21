@@ -38,7 +38,6 @@ import {
   formatNumber,
   isTestnetId
 } from '@/utils';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
@@ -340,13 +339,11 @@ export function PendleModalForm({
     () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
-      networkFee?.batchSaving,
       networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
       bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
+      bundleState.canBundle
     ]
   );
 
@@ -564,8 +561,6 @@ export function PendleModalForm({
       />
 
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
-
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

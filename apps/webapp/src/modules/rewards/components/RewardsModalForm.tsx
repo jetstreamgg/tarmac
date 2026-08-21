@@ -12,7 +12,6 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
@@ -126,13 +125,11 @@ export function RewardsModalForm({
     () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
-      networkFee?.batchSaving,
       networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
       bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
+      bundleState.canBundle
     ]
   );
 
@@ -282,8 +279,6 @@ export function RewardsModalForm({
       />
 
       <ModalSummaryGrid rows={toGridCells(rows, 'rewards-modal-row', feeCell)} dividerClassName="h-8" />
-
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

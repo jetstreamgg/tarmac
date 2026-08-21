@@ -67,7 +67,16 @@ export function StakeTakeoverAmountField({
         <span className="text-fgSecondary text-xs leading-[18px]">{label ?? <Trans>Amount</Trans>}</span>
         {topRight && <span className="text-fgSecondary text-right text-xs leading-[18px]">{topRight}</span>}
       </div>
-      <div className="flex items-center justify-between gap-4">
+      <div
+        className={cn(
+          // DS Input/Amount underline (5620:26710): Default/Filled sits on
+          // border-secondary, Active/focus brightens to border-tertiary,
+          // Validation goes red — on the hairline only, the value/chips/
+          // selector stay their normal colours per spec.
+          'flex items-center justify-between gap-4 border-b pb-2 transition-colors',
+          error ? 'border-statusError' : 'border-glassBorder focus-within:border-borderTertiary'
+        )}
+      >
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <TokenIcon token={{ symbol: tokenSymbol }} width={24} className="h-6 w-6" showChainIcon={false} />
           <input
@@ -80,11 +89,7 @@ export function StakeTakeoverAmountField({
             data-testid={dataTestId}
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
-            className={cn(
-              // Heading 5 on phones, Heading 4 (28/30, −0.56) from md up.
-              'text-text placeholder:text-fgSecondary font-circle w-full min-w-0 bg-transparent text-[22px] leading-6 font-medium tracking-[-0.44px] outline-none disabled:opacity-50 md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]',
-              error && 'text-error'
-            )}
+            className="text-text placeholder:text-fgSecondary font-circle w-full min-w-0 bg-transparent text-[22px] leading-6 font-medium tracking-[-0.44px] outline-none disabled:opacity-50 md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]"
           />
         </div>
         {onPercentClick && (

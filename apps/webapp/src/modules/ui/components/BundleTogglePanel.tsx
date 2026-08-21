@@ -8,6 +8,18 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { BundleExplainer } from './BundleExplainer';
 
 /**
+ * Hover affordance for the trigger button, scoped here rather than added to `Badge`
+ * itself: `Badge` also renders as a plain, non-interactive label elsewhere in the app, so
+ * a hover treatment on the primitive would be wrong there. Same recipe as
+ * `ProtocolLineageBadge`'s `TRIGGER_CLASSES` — a ring in the glass-border token rather
+ * than a fill change, since neither badge fill (`brand` / `neutral`) has a hover value of
+ * its own in either theme (D3: this pill is now the badge's clickable trigger, so it
+ * needs to read as one).
+ */
+const TRIGGER_CLASSES =
+  'rounded-full transition-shadow hover:ring-1 hover:ring-inset hover:ring-glassBorder focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden';
+
+/**
  * The `Bundled` / `Not bundled` badge that sits beside the network fee, and the panel it
  * opens (Figma 1036:206945 / 1036:207016).
  *
@@ -34,6 +46,7 @@ export function BundleTogglePanel() {
           onClick={e => e.stopPropagation()}
           data-testid="bundle-toggle-badge"
           aria-label={t`Bundled transactions`}
+          className={TRIGGER_CLASSES}
         >
           <Badge variant={batchEnabled ? 'brand' : 'neutral'}>
             {batchEnabled ? <Zap width={12} height={12} /> : <Layers width={12} height={12} />}

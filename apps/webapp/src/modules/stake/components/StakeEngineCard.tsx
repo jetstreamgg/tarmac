@@ -40,7 +40,12 @@ function InlineTokenIcon({
       token={{ symbol }}
       width={isHeadline ? 24 : 16}
       // Headline chips step down to 20px on the phone tier (comp 1222:17089).
-      className={isHeadline ? 'mx-1 inline-block h-5 w-5 align-middle md:h-6 md:w-6' : 'h-4 w-4'}
+      // align-middle centers to the line's x-height; nudge up so the icon
+      // centers on the text's cap-height instead of sitting low — the same
+      // tuning SavingsSupplyCard's inline chip already carries (review item B8).
+      className={
+        isHeadline ? 'mx-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6' : 'h-4 w-4'
+      }
       showChainIcon={false}
     />
   );
@@ -123,6 +128,12 @@ export function StakeEngineCard() {
   return (
     <ProductSupplyCard
       data-testid="stake-engine-card"
+      // Opt-in only for this usage (review item B7): fills the stretched rail
+      // column instead of sizing to content, and the internal itemSpacing goes
+      // to the measured 32px (gap-8) uniformly, overriding the shared card's
+      // default gap-5/md:gap-6 via the className merge.
+      fillHeight
+      className="gap-8 md:gap-8"
       badges={
         <ProductBadge icon={<StakeSky className="h-3 w-3" />}>
           <Trans>Sky Staking Engine</Trans>
@@ -130,10 +141,16 @@ export function StakeEngineCard() {
       }
       title={
         <span data-testid="stake-engine-headline">
+          {/* The trailing phrase is grouped in a non-breaking span so it wraps
+              as a unit (review item B8, comp: "and" opens the final line) —
+              robust across widths/locales, unlike a hardcoded <br>. */}
           <Trans>
             Stake <InlineTokenIcon symbol="SKY" />
-            SKY to accrue rewards, delegate votes and borrow <InlineTokenIcon symbol="USDS" />
-            USDS
+            SKY to accrue rewards, delegate votes{' '}
+            <span className="whitespace-nowrap">
+              and borrow <InlineTokenIcon symbol="USDS" />
+              USDS
+            </span>
           </Trans>
         </span>
       }

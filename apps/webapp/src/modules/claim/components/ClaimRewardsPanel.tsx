@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { useChains, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useAvailableTokenRewardContracts, useNetworkFee, useTransactionFlow } from '@/hooks';
 import { formatUsd } from '@/utils';
@@ -248,8 +247,6 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
       )}
 
       {allRewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
-
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
     </div>
   );
 

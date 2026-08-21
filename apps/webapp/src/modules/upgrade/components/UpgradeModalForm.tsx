@@ -5,7 +5,6 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { TOKENS, useMkrSkyFee, useDebounce, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, math } from '@/utils';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
 import { TxStatus, PopoverRateInfo } from '@/widgets';
@@ -117,13 +116,11 @@ export function UpgradeModalForm({
     () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
-      networkFee?.batchSaving,
       networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
       bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
+      bundleState.canBundle
     ]
   );
   // Disconnected (APP-446): the modal still opens — the CTA becomes an enabled
@@ -281,8 +278,6 @@ export function UpgradeModalForm({
 
       <div className="flex flex-col gap-4">
         <ModalSummaryGrid rows={toGridCells(rows, 'upgrade-modal-row', feeCell)} dividerClassName="h-6" />
-
-        {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
       </div>
     </div>
   );

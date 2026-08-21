@@ -142,11 +142,14 @@ function DetailsSection({ title, details }: { title?: ReactNode; details: Produc
   return (
     <section className="flex flex-col gap-4" data-testid="product-detail-details">
       <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>Details</Trans>}</SectionHeading>
-      <div className="grid grid-cols-1 gap-x-12 sm:grid-cols-2">
+      {/* Figma Annotations R2 F1 (measured, 1512px frame): 20px between the two
+          columns, 24px row-to-row (owned by the grid's gap-y, not per-row
+          padding), 12px content→divider inside each row. */}
+      <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2">
         {details.map(row => (
           <div
             key={row.id}
-            className="border-borderPrimary flex items-center justify-between gap-4 border-b py-4"
+            className="border-borderPrimary flex items-center justify-between gap-4 border-b pb-3"
           >
             {/* Desktop comp (859:35723): label Body 5 (Graphik 14/22), value
                 Label 4 (Circular Medium 16/18, -0.32px). Mobile keeps the M6.3
@@ -234,7 +237,10 @@ export function ProductDetailTemplate({
   const [backTo] = useState(() => backToMarketplace(backHref));
 
   return (
-    <div className="flex w-full flex-col gap-8 py-4 md:py-10" data-testid={dataTestId}>
+    // Figma Annotations R2 F2: 120px page-bottom padding below the last
+    // section, measured on the 1512px frame (matches the `md:pb-30` recipe
+    // ConnectedPortfolio already uses for the same spec); top inset unchanged.
+    <div className="flex w-full flex-col gap-8 py-4 md:pt-10 md:pb-30" data-testid={dataTestId}>
       {/* Header (Patterns/Headers, Savings type 5039:35173): Label 5 back-link
           over the ringed-icon + Heading 3 title row, network pill right. The
           DS 17px icon-title gap is normalized to 16. M6.3 mobile (486:20720):
@@ -281,7 +287,11 @@ export function ProductDetailTemplate({
           data-testid="product-detail-left-pane"
         >
           <div className="order-2 col-span-full">{chart}</div>
-          <div className="order-3 col-span-full flex flex-col gap-12 md:gap-10">
+          {/* Figma Annotations R2 F2: 80px between major sections (Details →
+              About → Transactions) at desktop, measured on the 1512px frame —
+              gap-20 on the same `desktop:` tier the body grid above switches
+              on; gap-12 (48px) covers every stacked tier below it. */}
+          <div className="desktop:gap-20 order-3 col-span-full flex flex-col gap-12">
             <DetailsSection title={detailsTitle} details={details} />
             {afterDetails && (
               <section className="flex flex-col gap-4" data-testid="product-detail-after-details">

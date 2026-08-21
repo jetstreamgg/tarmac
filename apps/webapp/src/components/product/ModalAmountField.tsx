@@ -59,6 +59,10 @@ export function ModalAmountField({
   // maxTestId in the DOM).
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
+  // The only error signal the field gets: whatever the caller renders below the hairline.
+  // A validation state doesn't need its own boolean prop — the presence of `error` already
+  // says everything the hairline needs to know.
+  const hasError = error != null;
 
   const percentChips = (
     <div className={cn('flex items-center gap-1', isMobile && 'mt-1 w-full')}>
@@ -80,7 +84,10 @@ export function ModalAmountField({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    // `group` carries the input's focus state down to the hairline below (DS Input /
+    // Amount 5620:26710, Active variant) without a local focus-tracking state hook — the
+    // hairline is a sibling, not a border on the input itself.
+    <div className="group flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="flex min-w-40 flex-1 flex-col gap-2">
           <span className="font-graphik text-fgSecondary text-xs leading-[18px]">{label}</span>
@@ -112,7 +119,18 @@ export function ModalAmountField({
         </div>
       </div>
       {error}
-      <div className="border-borderPrimary border-t" aria-hidden />
+      {/* Default/Filled sit on the 0.2-alpha hairline; focus brightens to the 0.3-alpha
+          token (DS Active variant — the field otherwise has no focus treatment at all);
+          a validation error overrides both with the DS error red, regardless of focus.
+          The amount, chips and token selector above stay in normal colours either way —
+          only the hairline (and the caller's error line) redden. */}
+      <div
+        className={cn(
+          'border-t',
+          hasError ? 'border-statusError' : 'border-glassBorder group-focus-within:border-borderTertiary'
+        )}
+        aria-hidden
+      />
       {isMobile && percentChips}
     </div>
   );

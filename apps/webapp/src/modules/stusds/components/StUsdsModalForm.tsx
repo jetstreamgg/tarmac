@@ -6,7 +6,6 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { StUsdsProviderType, TOKENS, stUsdsAddress } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useNetworkFee } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
@@ -118,13 +117,11 @@ export function StUsdsModalForm({
     () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
     [
       networkFee?.formatted,
-      networkFee?.batchSaving,
       networkFeeLoading,
       bundleState.ready,
       bundleState.settled,
       bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
+      bundleState.canBundle
     ]
   );
 
@@ -316,8 +313,6 @@ export function StUsdsModalForm({
         <StUsdsProviderNotice providerSelection={providerSelection} flow={flow} />
 
         <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row', feeCell)} dividerClassName="h-8" />
-
-        {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
 
         {needsImpactAcknowledgement && (
           <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">
