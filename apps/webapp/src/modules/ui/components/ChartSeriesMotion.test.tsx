@@ -1,7 +1,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SeriesMotionLayer } from './ChartSeriesMotion';
+import { segmentWindow, SeriesMotionLayer } from './ChartSeriesMotion';
 
 const h = vi.hoisted(() => ({
   isActive: false,
@@ -59,6 +59,25 @@ const renderLayer = () =>
 
 const finishReveal = () => act(() => vi.advanceTimersByTime(1000));
 
+// The reference lights the span between the hovered point's neighbours; the
+// DS's 44px is the floor for series too dense for that span to be visible.
+describe('segmentWindow', () => {
+  it('keeps the DS floor on dense series, where neighbours sit a few px apart', () => {
+    // 170 points over 780px of flat plot: neighbour span ≈ 9px — floor wins.
+    expect(segmentWindow(170, 780, 780)).toBe(44);
+  });
+
+  it('spans neighbour-to-neighbour on sparse series, in arc length', () => {
+    // 9 points over 800px: two 100px intervals; the path is 1600 arc over
+    // 800px of x, so the span doubles on the way into arc length.
+    expect(segmentWindow(9, 800, 1600)).toBe(400);
+  });
+
+  it('never lights more than half the stroke on degenerate series', () => {
+    expect(segmentWindow(2, 800, 900)).toBe(450);
+  });
+});
+
 describe('entrance draw', () => {
   it('draws the stroke tip-first (dash trick) while the fill grows behind a clip', () => {
     renderLayer();
@@ -107,7 +126,7 @@ describe('hover segment', () => {
     // exposed, the rest of the pattern longer than the stroke so only one
     // window ever shows.
     expect(segment.getAttribute('stroke-dasharray')).toBe(`44 ${TOTAL}`);
-    // Centred on the hover point's arc length: offset = HALF_WINDOW - 30.
+    // Centred on the hover point's arc length: offset = window/2 - 30.
     expect(segment.style.strokeDashoffset).toBe('-8');
     expect(segment.style.opacity).toBe('1');
     expect(segment.style.transition).toContain('opacity 400ms');
