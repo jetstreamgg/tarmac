@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ActiveDot, Chart, HoverCursor, HoverDimMask, resolveTooltipLabel } from './Chart';
+import { ActiveDot, Chart, HoverCursor, resolveTooltipLabel } from './Chart';
 
 const h = vi.hoisted(() => ({
   isActive: false,
@@ -19,8 +19,8 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
   };
 });
 
-// The mask reads the hover state through recharts' chart-context hooks; feed
-// it directly so the test doesn't need a live chart interaction.
+// The series motion layer reads the hover state through recharts' chart-context
+// hooks; feed it directly so the test doesn't need a live chart interaction.
 vi.mock('recharts', async importOriginal => {
   const actual = await importOriginal<typeof import('recharts')>();
   return {
@@ -108,61 +108,6 @@ describe('hover tracking', () => {
     );
     expect(screen.queryByTestId('chart-active-dot')).toBeNull();
     expect(screen.queryByTestId('chart-hover-cursor')).toBeNull();
-  });
-});
-
-// APP-443 item 19.4: hovering dims the whole series and relights only the DS
-// mock's 44px window around the hover point.
-describe('HoverDimMask', () => {
-  const renderMask = () =>
-    render(
-      <svg>
-        <HoverDimMask id="dim" />
-      </svg>
-    );
-
-  it('dims the plot and lights a 44px window around the hover point', () => {
-    h.isActive = true;
-    h.coordinate = { x: 300, y: 100 };
-    renderMask();
-
-    expect(Number(screen.getByTestId('chart-dim-mask-base').getAttribute('opacity'))).toBeLessThan(1);
-
-    // The window holds its geometry and travels on `transform` so the boundary
-    // can be animated — an SVG rect's `x` is not reliably animatable.
-    const lit = screen.getByTestId('chart-dim-mask-lit');
-    expect(lit.getAttribute('width')).toBe('44');
-    expect(lit.style.transform).toBe('translate(278px, 0px)');
-    expect(lit.getAttribute('fill')).toBe('white');
-  });
-
-  it('overhangs the edge rather than narrowing, and lets the mask region clip it', () => {
-    h.isActive = true;
-    h.coordinate = { x: 0, y: 100 };
-    renderMask();
-
-    // Half the window now sits at a negative x instead of being clamped to a
-    // 22px sliver. The mask region is the plot box, so what stays *visible* is
-    // the same 22px — but the rect's width never changes, which is what lets
-    // the boundary glide instead of resizing as it nears an edge.
-    const lit = screen.getByTestId('chart-dim-mask-lit');
-    expect(lit.getAttribute('width')).toBe('44');
-    expect(lit.style.transform).toBe('translate(-22px, 0px)');
-
-    const mask = lit.closest('mask');
-    expect(mask?.getAttribute('x')).toBe('0');
-    expect(mask?.getAttribute('width')).toBe('800');
-  });
-
-  it('shows the whole plot at full strength when nothing is hovered', () => {
-    h.isActive = false;
-    h.coordinate = undefined;
-    renderMask();
-
-    const base = screen.getByTestId('chart-dim-mask-base');
-    expect(base.getAttribute('width')).toBe('800');
-    expect(Number(base.getAttribute('opacity'))).toBe(1);
-    expect(screen.queryByTestId('chart-dim-mask-lit')).toBeNull();
   });
 });
 
