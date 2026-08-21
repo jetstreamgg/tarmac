@@ -3,8 +3,12 @@ import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
 import { TRACK_TAU_MS, useFollow } from './chartMotion';
 
-/** Gap between the hover point and the panel — recharts' own default offset. */
-const CURSOR_OFFSET = 10;
+/** Gap between the hover point and the panel. Wider than recharts' default 10
+ *  so the panel stands clear of the series instead of crowding it. */
+const CURSOR_OFFSET = 18;
+
+/** Extra clearance under the panel's band before it flips to the plot floor. */
+const FLIP_CLEARANCE = 24;
 
 type Box = { left: number; top: number; width: number; height: number };
 type Size = { width: number; height: number };
@@ -45,8 +49,13 @@ function useTooltipPlacement(
   // comp animates the tooltip on x only (Figma 1598:76196 has no y track), and
   // it is what the reference app does: a panel pinned to one line never covers
   // the part of the series you are reading, and the eye stops having to chase
-  // it up and down while scrubbing.
-  const y = ready ? anchor.top + CURSOR_OFFSET : null;
+  // it up and down while scrubbing. The one exception: when the series itself
+  // climbs into the panel's band at the cursor, the panel drops to the plot
+  // floor rather than sit on the line — the follower glides it between lanes.
+  const flipY = ready && coordinate.y < CURSOR_OFFSET + panelSize.height + FLIP_CLEARANCE;
+  const y = ready
+    ? anchor.top + (flipY ? anchor.height - CURSOR_OFFSET - panelSize.height : CURSOR_OFFSET)
+    : null;
 
   // The panel names the point the dot and rule mark, so it shares their time
   // constant and arrives with them rather than trailing like the lit window.
