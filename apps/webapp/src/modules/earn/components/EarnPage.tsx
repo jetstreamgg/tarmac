@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
@@ -11,7 +11,6 @@ import {
   usePendleMaturedNetworkSwitch,
   usePendleMaturedPositions
 } from '@/modules/pendle/hooks/usePendleMaturedPositions';
-import { PendleClaimLauncher } from '@/modules/pendle/components/PendleClaimLauncher';
 import { getChainIcon } from '@/utils';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
@@ -304,21 +303,16 @@ export function EarnPage() {
   // cards — the claim signs there.
   usePendleMaturedNetworkSwitch(maturedPositions.length > 0);
 
-  // Row click opens the market's claim modal in place (the launchers below
-  // register their openers). Falls back to the Portfolio — where the claim
-  // card also lives — only if the opener hasn't registered yet.
-  const claimOpeners = useRef<Record<string, () => void>>({});
-  const registerClaimOpener = useCallback((rowId: string, open: () => void) => {
-    claimOpeners.current[rowId] = open;
-  }, []);
+  // Rows route to the market's detail page, like every other row in this table
+  // — a matured market keeps its page, and the claim card is its position slot.
   const handleRequiresActionSelect = (id: string) => {
-    const open = claimOpeners.current[id];
-    if (open) {
-      open();
-      return;
-    }
-    setPendingNavIntent('card', ROUTES.PORTFOLIO);
-    void navigate({ to: ROUTES.PORTFOLIO, search: retainOnNavigate });
+    const position = maturedPositions.find(
+      ({ market }) => `matured-${market.marketAddress.toLowerCase()}` === id
+    );
+    if (!position) return;
+    const detailPath = `${ROUTES.EARN_FIXED}/${position.market.slug}`;
+    setPendingNavIntent('card', detailPath);
+    void navigate({ to: detailPath as '/', search: retainOnNavigate });
   };
 
   // The desktop px-calc insets the page to the middle 10 columns of the design
@@ -438,13 +432,6 @@ export function EarnPage() {
             onRowSelect={handleRequiresActionSelect}
             testIdPrefix="earn-requires-action"
           />
-          {maturedPositions.map(({ market }) => (
-            <PendleClaimLauncher
-              key={market.marketAddress}
-              market={market}
-              onReady={open => registerClaimOpener(`matured-${market.marketAddress.toLowerCase()}`, open)}
-            />
-          ))}
         </section>
       )}
       {/* "Products unavailable in the US" (1036:201473) — same table, dimmed and
