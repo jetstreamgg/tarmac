@@ -14,7 +14,7 @@ import {
   buildArcLut,
   HOVER_CROSSFADE_EASE,
   HOVER_CROSSFADE_MS,
-  TAIL_TAU_MS,
+  TAIL_RESPONSE_MS,
   useDashoffsetFollow
 } from './chartMotion';
 
@@ -72,8 +72,8 @@ const findSeriesPaths = (probe: SVGGElement | null) => {
  * window is measured in ARC LENGTH along the stroke — a dash on a copy of the
  * live path — so the lit segment hugs the curve exactly; the x-space mask this
  * replaces cut a vertical band through fill and stroke alike. The window then
- * slides between points on the same critically-damped follower as the rest of
- * the hover chrome (chartMotion.ts), in dash-offset space.
+ * slides between points in dash-offset space on the spring follower
+ * (chartMotion.ts) — an S-curve hop, like the tween the reference runs.
  *
  * Renders inside the AreaChart so recharts' chart-context hooks resolve; the
  * bright segment sits on the `line` z-layer — above the Area (100), below the
@@ -201,7 +201,7 @@ export function SeriesMotionLayer({
   const centerLength = hoverX != null && geom ? arcLengthAtX(geom.lut, hoverX) : null;
   const dashoffset = centerLength != null ? HALF_WINDOW - centerLength : null;
   // `useDashoffsetFollow` owns `stroke-dashoffset`; it stays out of the style prop.
-  const segmentRef = useDashoffsetFollow<SVGPathElement>(dashoffset, TAIL_TAU_MS);
+  const segmentRef = useDashoffsetFollow<SVGPathElement>(dashoffset, TAIL_RESPONSE_MS);
 
   return (
     <>

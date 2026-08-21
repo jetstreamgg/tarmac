@@ -47,19 +47,24 @@ import { useReducedMotion } from 'motion/react';
 export const TRACK_TAU_MS = 16;
 
 /**
- * Time constant for the lit window — the "tail" of full-strength series around
+ * Response time for the lit window — the "tail" of full-strength series around
  * the hover point. This is the piece that is *meant* to be seen animating, so
- * it lags several times the indicators.
+ * it is slower than the indicators AND runs on the spring integrator rather
+ * than the exponential one: an exponential jumps at full speed the instant the
+ * target moves and only its slow settle is ever visible, which between sparse
+ * data points read as "teleport, then a little ease at the point". The spring
+ * starts from zero velocity, so the hop between points plays as the S-curve
+ * the reference chart tweens (0.4s easeInOut).
  *
- * The comp's Mask (node 1598:76193) takes ~500ms between points, but that is a
- * discrete jump between two fixed positions, not continuous tracking: matching
- * it literally (tau 165) leaves the window ~150px behind during a brisk drag,
- * and since the window is only 44px wide it would then be lighting a stretch of
- * series nowhere near the point being hovered — actively misleading rather than
- * decorative. At 70 it trails visibly (~90px at a brisk drag, settling in
- * ~210ms) while still overlapping the point at ordinary pointer speeds.
+ * The value is the spring's lag time constant (2/ω): a moving target trails by
+ * `velocity x response`, and a hop settles in about 3x this. 90 makes a hop
+ * play out over ~260ms while a brisk drag (~1300px/s, measured) trails ~120px —
+ * more than the old exponential, but the 400ms crossfade keeps the window from
+ * ever reading as lighting the wrong stretch. The comp's Mask (1598:76193)
+ * takes ~500ms between points; matching that literally would double the drag
+ * lag on a 44px window, which is actively misleading rather than decorative.
  */
-export const TAIL_TAU_MS = 70;
+export const TAIL_RESPONSE_MS = 90;
 
 /** Quart, the easing the comp carries. Still right for discrete fades. */
 export const HOVER_EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
@@ -81,14 +86,26 @@ const SETTLED_PX = 0.05;
 const MAX_FRAME_MS = 64;
 
 /**
- * Follows a moving target with exponential smoothing, handing `write` the
- * smoothed position each frame.
+ * Follows a moving target, handing `write` the smoothed position each frame.
  *
- * Velocity is proportional to the distance remaining, so there is no start-up
- * cost: a large jump moves fast immediately and a small step settles at once.
- * That is what makes it track a per-frame-moving target where a transition
- * cannot. It is also frame-rate independent — `dt` drives the step, so the
- * motion looks the same at 60Hz and 120Hz.
+ * Two integrators, chosen by `mode`:
+ *
+ * - `'exp'` (first-order): velocity is proportional to the distance remaining,
+ *   so there is no start-up cost — a large jump moves fast immediately and a
+ *   small step settles at once. Right for indicators that must feel ATTACHED
+ *   to the cursor (dot, rule, tooltip): the motion is over before the eye
+ *   waits for it.
+ * - `'spring'` (critically damped second-order): starts from zero velocity,
+ *   accelerates, and eases into arrival — the S-curve of an easeInOut tween,
+ *   but restartable mid-flight, so it also tracks a per-frame-moving target.
+ *   Right for the piece that is meant to be SEEN travelling (the lit window):
+ *   an exponential hop between two data points spends its speed instantly and
+ *   shows only the settle, which reads as a jump.
+ *
+ * `time` is the lag constant in ms: a target moving at `v` px/ms trails by
+ * `v x time` in steady state for both modes (for the spring it is 2/ω).
+ * Both are frame-rate independent — `dt` drives the step, so the motion looks
+ * the same at 60Hz and 120Hz.
  *
  * Whatever style property `write` touches is written imperatively and must NOT
  * also appear in the element's `style` prop: React only clears properties it
@@ -98,12 +115,14 @@ const MAX_FRAME_MS = 64;
 function useFollowWith<T extends SVGElement | HTMLElement>(
   x: number | null | undefined,
   y: number | null | undefined,
-  tau: number,
+  time: number,
+  mode: 'exp' | 'spring',
   write: (node: T, x: number, y: number) => void
 ) {
   const ref = useRef<T | null>(null);
   const target = useRef<{ x: number; y: number } | null>(null);
   const current = useRef<{ x: number; y: number } | null>(null);
+  const velocity = useRef({ x: 0, y: 0 });
   const frame = useRef<number | null>(null);
   const lastFrameAt = useRef(0);
   const reduceMotion = useReducedMotion();
@@ -127,6 +146,7 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
     // from the origin of its coordinate space.
     if (current.current === null || reduceMotion) {
       current.current = { x, y };
+      velocity.current = { x: 0, y: 0 };
       write(node, x, y);
       return;
     }
@@ -145,14 +165,32 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
       }
       const dt = Math.min(now - lastFrameAt.current, MAX_FRAME_MS);
       lastFrameAt.current = now;
+      const vel = velocity.current;
 
-      const k = 1 - Math.exp(-dt / tau);
-      cur.x += (tgt.x - cur.x) * k;
-      cur.y += (tgt.y - cur.y) * k;
+      if (mode === 'spring') {
+        // Critically damped: ω = 2 / time; semi-implicit Euler keeps it stable
+        // even at the MAX_FRAME_MS step.
+        const omega = 2 / time;
+        vel.x += (omega * omega * (tgt.x - cur.x) - 2 * omega * vel.x) * dt;
+        vel.y += (omega * omega * (tgt.y - cur.y) - 2 * omega * vel.y) * dt;
+        cur.x += vel.x * dt;
+        cur.y += vel.y * dt;
+      } else {
+        const k = 1 - Math.exp(-dt / time);
+        cur.x += (tgt.x - cur.x) * k;
+        cur.y += (tgt.y - cur.y) * k;
+      }
 
-      if (Math.abs(tgt.x - cur.x) < SETTLED_PX && Math.abs(tgt.y - cur.y) < SETTLED_PX) {
+      const still =
+        Math.abs(tgt.x - cur.x) < SETTLED_PX &&
+        Math.abs(tgt.y - cur.y) < SETTLED_PX &&
+        // A spring can cross the target carrying speed; arrival needs both.
+        Math.abs(vel.x) * time < SETTLED_PX &&
+        Math.abs(vel.y) * time < SETTLED_PX;
+      if (still) {
         cur.x = tgt.x;
         cur.y = tgt.y;
+        velocity.current = { x: 0, y: 0 };
         write(node, cur.x, cur.y);
         frame.current = null;
         return;
@@ -161,7 +199,7 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
       frame.current = requestAnimationFrame(step);
     };
     frame.current = requestAnimationFrame(step);
-  }, [x, y, tau, reduceMotion, write]);
+  }, [x, y, time, mode, reduceMotion, write]);
 
   useLayoutEffect(
     () => () => {
@@ -177,13 +215,13 @@ const writeTransform = (node: SVGElement | HTMLElement, x: number, y: number) =>
   node.style.transform = `translate(${x}px, ${y}px)`;
 };
 
-/** The position follower: writes `transform` straight to the node each frame. */
+/** The attached-indicator follower: exponential, writing `transform` each frame. */
 export function useFollow<T extends SVGElement | HTMLElement>(
   x: number | null | undefined,
   y: number | null | undefined,
   tau: number
 ) {
-  return useFollowWith<T>(x, y, tau, writeTransform);
+  return useFollowWith<T>(x, y, tau, 'exp', writeTransform);
 }
 
 const writeDashoffset = (node: SVGElement, x: number) => {
@@ -191,16 +229,17 @@ const writeDashoffset = (node: SVGElement, x: number) => {
 };
 
 /**
- * The same follower in arc-length space: smooths `stroke-dashoffset` on a path
+ * The follower in arc-length space: smooths `stroke-dashoffset` on a path
  * whose dash window is what the viewer sees moving. Sliding the dash offset is
  * what keeps the lit window ON the curve — a translate would drag the whole
- * path sideways.
+ * path sideways. Spring dynamics, because this hop is the visible animation —
+ * see the mode notes on `useFollowWith` and `TAIL_RESPONSE_MS`.
  */
 export function useDashoffsetFollow<T extends SVGPathElement>(
   offset: number | null | undefined,
-  tau: number
+  response: number
 ) {
-  return useFollowWith<T>(offset, offset == null ? null : 0, tau, writeDashoffset);
+  return useFollowWith<T>(offset, offset == null ? null : 0, response, 'spring', writeDashoffset);
 }
 
 /** The slice of SVGPathElement the sampler reads — narrow so tests can fake it. */
