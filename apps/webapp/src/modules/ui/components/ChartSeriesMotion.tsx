@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, useId } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useId } from 'react';
 import {
   DefaultZIndexes,
   ZIndexLayer,
@@ -39,30 +39,15 @@ const REVEAL_EASING = 'cubic-bezier(0.77,0,0.175,1)';
 const DIMMED_ALPHA = 0.4;
 
 /**
- * Shortest the lit segment gets, in px of arc length — the DS mock's window
+ * Length of the lit segment, in px of arc length — the DS mock's window
  * measures ~45px across (Figma 5391:44830).
  *
- * This is a floor, not the length: the reference lights the span between the
- * hovered point's NEIGHBOURS (`[index-1, index+1]`), so on sparse series the
- * lit piece is long and successive hops overlap heavily — which is most of
- * what makes the slide read as graceful there. `segmentWindow` reproduces
- * that, and this floor covers the dense series (the Morpho rate chart plots
- * 170 hourly points over 779px at 1W, so neighbours sit 1–5px apart and the
- * neighbour span would light little more than the hover dot).
+ * A flat length, and deliberately NOT snapped to data: the window rides the
+ * raw cursor (see the native listener below), so it doesn't need to relate to
+ * point spacing — a neighbour-relative span was tried and read as an
+ * overgrown slab on the sparse series.
  */
-const MIN_WINDOW = 44;
-
-/**
- * Arc length of the lit segment for a series of `count` points: the
- * neighbour-to-neighbour span (two point intervals), scaled from x-space into
- * arc length by the series' average arc-per-x — with the DS floor under it,
- * and a cap so a 2–3 point series doesn't light half the plot.
- */
-export function segmentWindow(count: number, plotWidth: number, totalArc: number): number {
-  const spacing = count > 1 && plotWidth > 0 ? plotWidth / (count - 1) : 0;
-  const neighbourSpan = 2 * spacing * (plotWidth > 0 ? totalArc / plotWidth : 1);
-  return Math.min(Math.max(MIN_WINDOW, neighbourSpan), totalArc / 2);
-}
+const SEGMENT_WINDOW = 44;
 
 /** Bounded retries for reading a path that hasn't laid out yet (length 0). */
 const MAX_MEASURE_TRIES = 30;
@@ -198,7 +183,28 @@ export function SeriesMotionLayer({
   }, [geom, seriesKey, reduceMotion, clipId]);
   useLayoutEffect(() => () => clearTimeout(revealTimer.current), []);
 
-  const hoverX = revealDone && isActive && coordinate && geom ? coordinate.x : null;
+  // The lit piece rides the RAW cursor, not recharts' tooltip coordinate: the
+  // dot and tooltip snap to the nearest data point, which is right for them,
+  // but a window that hops point-to-point read as jumping on sparse series.
+  // Tracked with a native listener so the position is continuous; the snapped
+  // coordinate stands in for the frames before the first mousemove lands.
+  const [cursorX, setCursorX] = useState<number | null>(null);
+  useEffect(() => {
+    const svg = probeRef.current?.ownerSVGElement;
+    if (!svg) return;
+    const move = (event: MouseEvent) => {
+      setCursorX(event.clientX - svg.getBoundingClientRect().left);
+    };
+    const leave = () => setCursorX(null);
+    svg.addEventListener('mousemove', move);
+    svg.addEventListener('mouseleave', leave);
+    return () => {
+      svg.removeEventListener('mousemove', move);
+      svg.removeEventListener('mouseleave', leave);
+    };
+  }, []);
+
+  const hoverX = revealDone && isActive && geom ? (cursorX ?? coordinate?.x ?? null) : null;
   const isHovering = hoverX != null;
 
   // Dim the whole series layer (stroke + gradient fill) while hovering. The
@@ -210,11 +216,9 @@ export function SeriesMotionLayer({
     layer.style.opacity = isHovering ? `${DIMMED_ALPHA}` : '';
   }, [isHovering, reduceMotion, seriesKey]);
 
-  // The bright segment: dash window centred on the hover point's arc length,
-  // spanning the hovered point's neighbours (see segmentWindow).
-  const windowLength = geom ? segmentWindow(data.length, width ?? 0, geom.lut.total) : MIN_WINDOW;
+  // The bright segment: dash window centred on the cursor's arc length.
   const centerLength = hoverX != null && geom ? arcLengthAtX(geom.lut, hoverX) : null;
-  const dashoffset = centerLength != null ? windowLength / 2 - centerLength : null;
+  const dashoffset = centerLength != null ? SEGMENT_WINDOW / 2 - centerLength : null;
   // `useDashoffsetFollow` owns `stroke-dashoffset`; it stays out of the style prop.
   const segmentRef = useDashoffsetFollow<SVGPathElement>(dashoffset, TAIL_RESPONSE_MS);
 
@@ -238,7 +242,7 @@ export function SeriesMotionLayer({
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             pointerEvents="none"
-            strokeDasharray={`${windowLength} ${geom.lut.total}`}
+            strokeDasharray={`${SEGMENT_WINDOW} ${geom.lut.total}`}
             style={{
               opacity: isHovering ? 1 : 0,
               transition: reduceMotion ? undefined : `opacity ${HOVER_CROSSFADE_MS}ms ${HOVER_CROSSFADE_EASE}`

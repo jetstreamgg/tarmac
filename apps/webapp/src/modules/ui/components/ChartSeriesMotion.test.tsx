@@ -1,7 +1,7 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { segmentWindow, SeriesMotionLayer } from './ChartSeriesMotion';
+import { SeriesMotionLayer } from './ChartSeriesMotion';
 
 const h = vi.hoisted(() => ({
   isActive: false,
@@ -58,25 +58,6 @@ const renderLayer = () =>
   );
 
 const finishReveal = () => act(() => vi.advanceTimersByTime(1000));
-
-// The reference lights the span between the hovered point's neighbours; the
-// DS's 44px is the floor for series too dense for that span to be visible.
-describe('segmentWindow', () => {
-  it('keeps the DS floor on dense series, where neighbours sit a few px apart', () => {
-    // 170 points over 780px of flat plot: neighbour span ≈ 9px — floor wins.
-    expect(segmentWindow(170, 780, 780)).toBe(44);
-  });
-
-  it('spans neighbour-to-neighbour on sparse series, in arc length', () => {
-    // 9 points over 800px: two 100px intervals; the path is 1600 arc over
-    // 800px of x, so the span doubles on the way into arc length.
-    expect(segmentWindow(9, 800, 1600)).toBe(400);
-  });
-
-  it('never lights more than half the stroke on degenerate series', () => {
-    expect(segmentWindow(2, 800, 900)).toBe(450);
-  });
-});
 
 describe('entrance draw', () => {
   it('draws the stroke tip-first (dash trick) while the fill grows behind a clip', () => {
@@ -145,6 +126,20 @@ describe('hover segment', () => {
     // Window start sits at -22 along the stroke; the path simply has nothing
     // to show there, so the visible half is the 22px from the first point on.
     expect(screen.getByTestId('chart-hover-segment').style.strokeDashoffset).toBe('22');
+  });
+
+  it('rides the raw cursor between data points, not the snapped coordinate', () => {
+    h.isActive = true;
+    h.coordinate = undefined; // no snapped point needed once the mouse moves
+    renderLayer();
+    finishReveal();
+
+    // A native mousemove between data points (happy-dom rects sit at 0, so
+    // clientX is chart-space x). The window centres there: offset = 22 - 55.
+    fireEvent.mouseMove(screen.getByTestId('curve'), { clientX: 55 });
+    const segment = screen.getByTestId('chart-hover-segment');
+    expect(segment.style.strokeDashoffset).toBe('-33');
+    expect(segment.style.opacity).toBe('1');
   });
 
   it('snaps to a new hover after leaving, instead of gliding from the stale spot', () => {

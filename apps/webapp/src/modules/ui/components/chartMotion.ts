@@ -47,24 +47,21 @@ import { useReducedMotion } from 'motion/react';
 export const TRACK_TAU_MS = 16;
 
 /**
- * Response time for the lit window — the "tail" of full-strength series around
- * the hover point. This is the piece that is *meant* to be seen animating, so
- * it is slower than the indicators AND runs on the spring integrator rather
- * than the exponential one: an exponential jumps at full speed the instant the
- * target moves and only its slow settle is ever visible, which between sparse
- * data points read as "teleport, then a little ease at the point". The spring
- * starts from zero velocity, so the hop between points plays as the S-curve
- * the reference chart tweens (0.4s easeInOut).
+ * Response time for the lit window — the "tail" of full-strength series that
+ * trails the cursor along the curve. This is the piece that is *meant* to be
+ * seen animating, so it is slower than the indicators AND runs on the spring
+ * integrator rather than the exponential one: an exponential spends its speed
+ * the instant the target moves and only its slow settle is ever visible,
+ * which read as a jump. The spring starts each move from zero velocity — a
+ * beat of hesitation before it follows — accelerates, and eases in.
  *
- * The value is the spring's lag time constant (2/ω): a moving target trails by
- * `velocity x response`, and a hop settles in about 3x this. 90 makes a hop
- * play out over ~260ms while a brisk drag (~1300px/s, measured) trails ~120px —
- * more than the old exponential, but the 400ms crossfade keeps the window from
- * ever reading as lighting the wrong stretch. The comp's Mask (1598:76193)
- * takes ~500ms between points; matching that literally would double the drag
- * lag on a 44px window, which is actively misleading rather than decorative.
+ * The value is the spring's lag time constant (2/ω): a moving target trails
+ * by `velocity x response`, a standing start settles in about 3x this. 140
+ * gives the window a clearly visible trailing glide (~65px behind an ordinary
+ * ~450px/s sweep, catching up ~400ms after the cursor rests) without falling
+ * so far back on a fast drag that it lights series nowhere near the cursor.
  */
-export const TAIL_RESPONSE_MS = 90;
+export const TAIL_RESPONSE_MS = 140;
 
 /** Quart, the easing the comp carries. Still right for discrete fades. */
 export const HOVER_EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
