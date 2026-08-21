@@ -114,6 +114,13 @@ export type TransactionModalProps = {
 // entry — the transaction screen isn't reached at that status outside of a
 // test harness, and the chip simply stays hidden (see `badgeContent` below).
 const statusBadgeLabel: Partial<Record<TxStatus, ReactNode>> = {
+  // IDLE is normally a blink — it ends the moment `execute()` fires — but the
+  // bottom section swaps through `AnimatePresence mode="wait"`, so a throttled
+  // rAF (a backgrounded tab while the user is in their wallet) can hold this
+  // frame for seconds. The chip is now the ONLY status surface, so without an
+  // entry here that stall paints an empty status area with no icon, text or
+  // button. Give it honest in-flight copy rather than a dead screen.
+  [TxStatus.IDLE]: <Trans>Preparing</Trans>,
   [TxStatus.INITIALIZED]: <Trans>Confirm in the wallet</Trans>,
   [TxStatus.LOADING]: <Trans>Processing</Trans>,
   [TxStatus.SUCCESS]: <Trans>Success</Trans>,
@@ -188,12 +195,13 @@ export function TransactionModal({
   // dots only hop while a status is genuinely in-flight (awaiting signature or
   // pending broadcast) — `isTransacting` already draws exactly that line for
   // the rest of the component, so it's reused here rather than re-derived.
-  // `undefined` when the status has no chip copy (currently just IDLE, which
-  // the transaction screen only reaches inside a test harness) — both render
-  // sites below guard on it so the chip never mounts empty.
+  // Every status the transaction screen can reach now has copy, so the chip
+  // always mounts with something; the guard stays as a belt-and-braces against
+  // a future status arriving without a label. Dots ride along while the
+  // transaction is genuinely in flight, including the IDLE prepare window.
   const badgeContent = statusBadgeLabel[txStatus] ? (
     <>
-      {isTransacting && <Loader size="2xs" />}
+      {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
       {statusBadgeLabel[txStatus]}
     </>
   ) : undefined;
