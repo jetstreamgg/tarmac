@@ -409,7 +409,11 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
       '0xdC035D45d973E3EC169d2276DDab16f1e407384F',
       '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD'
     ],
-    expiry: 1795651200, // Thu Nov 26 2026 00:00:00 UTC
+    // DEMO BRANCH — DO NOT MERGE: a real past expiry (18 Jun 2026, the comp's
+    // date) so maturity derives from the timestamp everywhere — progress 100%
+    // "Matured", no day counts in the header/details, route + card gating all
+    // via the real isMarketMatured. Production value: 1795651200 (26 Nov 2026).
+    expiry: 1781740800, // Thu Jun 18 2026 00:00:00 UTC
     usdsEquivalence: 'pegged'
   }
 ];
