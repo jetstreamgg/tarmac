@@ -194,6 +194,49 @@ describe('computeMorphoEarnings', () => {
       expect(earnedThisMonth.value.native?.amount).toBeCloseTo(1002 - 1000, 10);
     });
 
+    // Review finding #9: a position opened today has flows but no history
+    // sample yet — the empty series is expected, not a data failure, whenever
+    // the window's flows explain the end balance.
+    it('accepts baseline 0 for an empty series when flows explain the balance (opened today)', () => {
+      const result = computeMorphoEarnings({
+        positions: [position({ assets: u(1000.5), assetsUsd: 1000.5, history: { assets: [] } })],
+        transactions: [tx(MorphoTransactionType.Deposit, AUG_1 + 5 * DAY, 1000)],
+        flagshipVaultAddress: FLAGSHIP,
+        window
+      });
+      if (result.earnedThisMonth.status !== 'ok') throw new Error('expected ok');
+      // earned = 1000.5 − 0 − 1000
+      expect(result.earnedThisMonth.value.native?.amount).toBeCloseTo(0.5, 10);
+      expect(result.earnedThisMonth.value.usd).toBeCloseTo(0.5, 10);
+    });
+
+    it('accepts an empty series for a same-window round trip (opened and exited today)', () => {
+      const result = computeMorphoEarnings({
+        // Exited → the USD rate comes from the pnl pair, so pnl must be real.
+        positions: [position({ pnl: u(0.4), pnlUsd: 0.4, history: { assets: [] } })],
+        transactions: [
+          tx(MorphoTransactionType.Deposit, AUG_1 + 5 * DAY, 1000),
+          tx(MorphoTransactionType.Withdraw, AUG_1 + 5 * DAY, 1000.4)
+        ],
+        flagshipVaultAddress: FLAGSHIP,
+        window
+      });
+      if (result.earnedThisMonth.status !== 'ok') throw new Error('expected ok');
+      // earned = 0 − 0 − 1000 + 1000.4
+      expect(result.earnedThisMonth.value.native?.amount).toBeCloseTo(0.4, 10);
+    });
+
+    it('still degrades an empty series when flows leave the balance unexplained', () => {
+      const result = computeMorphoEarnings({
+        positions: [position({ assets: u(1200), assetsUsd: 1200, history: { assets: [] } })],
+        transactions: [tx(MorphoTransactionType.Deposit, AUG_1 + 5 * DAY, 1000)],
+        flagshipVaultAddress: FLAGSHIP,
+        window
+      });
+      // A 20% gap is not same-day yield — the history is genuinely missing.
+      expect(result.earnedThisMonth).toEqual(notAvailable('reconciliation-failed'));
+    });
+
     it('degrades to reconciliation-failed when the series is empty but the position is live', () => {
       const result = computeMorphoEarnings({
         positions: [

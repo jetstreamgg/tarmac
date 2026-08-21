@@ -23,7 +23,9 @@ describe('fetchBaLabsHistoricDailyPrices', () => {
   });
 
   it('GETs the token historic endpoint with a full-history row budget', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ count: 0, next: null, results: [] }));
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ count: 1, next: null, results: [{ date: '2026-08-15', price: '1.0' }] })
+    );
 
     await fetchBaLabsHistoricDailyPrices({ tokenAddress: USDS });
 
@@ -73,11 +75,26 @@ describe('fetchBaLabsHistoricDailyPrices', () => {
     expect([...prices.keys()]).toEqual(['2026-08-14']);
   });
 
-  it('returns an empty map on a non-ok response (caller degrades, never guesses)', async () => {
+  // An empty series must throw, not resolve: react-query would cache an empty
+  // map as a 24h success and every Merkl figure would read as a permanent
+  // 'reconciliation-failed' instead of a retried 'source-error' (finding #5).
+  it('throws on a non-ok response so react-query retries instead of caching', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({}, { status: 500 }));
 
-    const prices = await fetchBaLabsHistoricDailyPrices({ tokenAddress: USDS });
+    await expect(fetchBaLabsHistoricDailyPrices({ tokenAddress: USDS })).rejects.toThrow(/price history/i);
+  });
 
-    expect(prices.size).toBe(0);
+  it('throws when the series comes back empty', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ count: 0, next: null, results: [] }));
+
+    await expect(fetchBaLabsHistoricDailyPrices({ tokenAddress: USDS })).rejects.toThrow(/price history/i);
+  });
+
+  it('throws when no row parses to a finite price', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ count: 1, next: null, results: [{ date: '2026-08-15', price: 'not-a-number' }] })
+    );
+
+    await expect(fetchBaLabsHistoricDailyPrices({ tokenAddress: USDS })).rejects.toThrow(/price history/i);
   });
 });

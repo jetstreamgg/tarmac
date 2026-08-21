@@ -341,6 +341,39 @@ describe('PositionCard — Already earned (APP-450)', () => {
     expect(within(card).getByTestId('earnings-pendle-split')).toBeTruthy();
   });
 
+  // Review finding #1: a partial per-position figure must flag its missing
+  // contributor, exactly like the combined footer stat does.
+  it("flags a partial 'Accrued to date' figure with the error-gap indicator", () => {
+    const merklDown = walletEarnings([
+      proto('morpho-flagship', ['vault-sky-1'], ok({ usd: 20 }), ok({ usd: 10 })),
+      proto('merkl', ['vault-sky-1'], notAvailable('source-error'), notAvailable('source-error'))
+    ]);
+    renderSection([VAULT], merklDown);
+    const stat = alreadyEarned(screen.getAllByTestId('position-card')[0]);
+    expect(stat.textContent).toContain('$20.00');
+    expect(within(stat).getByTestId('earnings-partial')).toBeTruthy();
+  });
+
+  // Review finding #3: the savings balance spans chains, its earnings don't.
+  it("announces the savings figure's mainnet-only coverage with the info glyph", () => {
+    const withCoverage = walletEarnings([
+      proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 }), { coverage: 'mainnet-only' })
+    ]);
+    renderSection([SAVINGS], withCoverage);
+    const stat = alreadyEarned(screen.getAllByTestId('position-card')[0]);
+    expect(stat.textContent).toContain('$46.40');
+    // Announced-class glyph — a coverage caveat is not an error.
+    expect(within(stat).getByTestId('earnings-info')).toBeTruthy();
+    expect(within(stat).queryByTestId('earnings-partial')).toBeNull();
+  });
+
+  it('keeps a complete per-position figure free of gap indicators', () => {
+    renderSection([SAVINGS]);
+    const stat = alreadyEarned(screen.getAllByTestId('position-card')[0]);
+    expect(within(stat).queryByTestId('earnings-partial')).toBeNull();
+    expect(within(stat).queryByTestId('earnings-info')).toBeNull();
+  });
+
   it('shows a skeleton while the earnings hook loads', () => {
     const loading = walletEarnings(
       EARNINGS.protocols.map(p => ({

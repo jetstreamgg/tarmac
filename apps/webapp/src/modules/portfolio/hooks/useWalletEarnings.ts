@@ -318,6 +318,10 @@ export function useWalletEarnings(): WalletEarnings {
         earnedThisMonth: savingsPartialQuery.data
           ? computed.earnedThisMonth
           : gapFor(savingsPartialQuery.error),
+        // The savings row balance aggregates every supported chain; vaults.fyi
+        // only indexes mainnet sUSDS. Announce it, don't silently under-count
+        // (review finding #3).
+        coverage: 'mainnet-only' as const,
         isLoading: savingsTotalQuery.isLoading || savingsPartialQuery.isLoading,
         error: savingsTotalQuery.error ?? savingsPartialQuery.error ?? null
       };

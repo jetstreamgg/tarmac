@@ -291,6 +291,9 @@ describe('useWalletEarnings', () => {
       status: 'ok',
       value: { usd: 5, native: { amount: 5, symbol: 'sUSDS' } }
     });
+    // Review finding #3: the savings row balance spans chains but vaults.fyi
+    // only indexes mainnet sUSDS — the figure must announce its coverage.
+    expect(savings.coverage).toBe('mainnet-only');
 
     const stusds = protocolById(result.current, 'stusds');
     expect(stusds.rowIds).toEqual(['stusds']);

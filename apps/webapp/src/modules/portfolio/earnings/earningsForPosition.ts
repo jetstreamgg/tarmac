@@ -1,7 +1,9 @@
 import type {
+  EarningsCoverage,
   EarningsFigure,
   EarningsSourceId,
   Maybe,
+  MissingSourceDetail,
   PendleSplit,
   ProtocolEarnings,
   TokenAmount,
@@ -12,9 +14,11 @@ import type {
 export type PositionEarnings = {
   totalEarned: Maybe<EarningsFigure>;
   earnedThisMonth: Maybe<EarningsFigure>;
-  missingFromTotal: EarningsSourceId[];
-  missingFromMonth: EarningsSourceId[];
+  missingFromTotal: MissingSourceDetail[];
+  missingFromMonth: MissingSourceDetail[];
   pendleSplit?: PendleSplit;
+  /** A contributor's coverage caveat (savings is mainnet-only — finding #3). */
+  coverage?: EarningsCoverage;
 };
 
 const tokensOf = (figure: EarningsFigure): TokenAmount[] =>
@@ -23,9 +27,11 @@ const tokensOf = (figure: EarningsFigure): TokenAmount[] =>
 /** Sums ok contributor figures; merges token amounts by symbol (first-seen order). */
 function mergeFigures(contributors: { id: EarningsSourceId; figure: Maybe<EarningsFigure> }[]): {
   figure: Maybe<EarningsFigure>;
-  missing: EarningsSourceId[];
+  missing: MissingSourceDetail[];
 } {
-  const missing = contributors.filter(c => c.figure.status === 'notAvailable').map(c => c.id);
+  const missing = contributors.flatMap(c =>
+    c.figure.status === 'notAvailable' ? [{ id: c.id, reason: c.figure.reason }] : []
+  );
   const okFigures = contributors.flatMap(c => (c.figure.status === 'ok' ? [c.figure.value] : []));
 
   if (okFigures.length === 0) {
@@ -67,12 +73,14 @@ export function earningsForPosition(earnings: WalletEarnings, rowId: string): Po
   const total = pick(p => p.totalEarned);
   const month = pick(p => p.earnedThisMonth);
   const pendleSplit = contributors.find(p => p.pendleSplit)?.pendleSplit;
+  const coverage = contributors.find(p => p.coverage)?.coverage;
 
   return {
     totalEarned: total.figure,
     earnedThisMonth: month.figure,
     missingFromTotal: total.missing,
     missingFromMonth: month.missing,
-    ...(pendleSplit ? { pendleSplit } : {})
+    ...(pendleSplit ? { pendleSplit } : {}),
+    ...(coverage ? { coverage } : {})
   };
 }

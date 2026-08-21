@@ -1,4 +1,5 @@
 import type { MerklClaimRaw, MerklUserRewardRaw } from '../../../hooks/morpho/merklEarnedClient';
+import { reasonContainsVaultAddress } from '../../../hooks/morpho/merklReason';
 import { notAvailable, ok, type EarningsFigure, type Maybe, type TokenAmount } from './types';
 
 /** Named Merkl campaigns attributed to the Flagship product without a vault address in `reason`. */
@@ -6,7 +7,7 @@ export const MERKL_AIRDROP_REASONS: readonly string[] = ['usds-flagship-ssr'];
 
 /** A breakdown `reason` counts as Flagship-attributed when it carries the vault address or a known campaign name. */
 export const isFlagshipAttributedReason = (reason: string, flagshipVaultAddress: string): boolean =>
-  reason.toLowerCase().includes(flagshipVaultAddress.toLowerCase()) || MERKL_AIRDROP_REASONS.includes(reason);
+  reasonContainsVaultAddress(reason, flagshipVaultAddress) || MERKL_AIRDROP_REASONS.includes(reason);
 
 /**
  * Lowercased addresses of the reward tokens with at least one attributed

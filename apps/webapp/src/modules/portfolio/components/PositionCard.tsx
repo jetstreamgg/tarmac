@@ -116,6 +116,8 @@ export function PositionCard({
             value={
               <EarningsFigureValue
                 figure={alreadyEarned?.totalEarned ?? null}
+                missing={alreadyEarned?.missingFromTotal}
+                coverage={alreadyEarned?.coverage}
                 variant="plain"
                 className={cn(
                   statValue,

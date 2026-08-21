@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Info } from 'lucide-react';
+import { useIsTouchDevice } from '@/hooks';
 import { cn } from '@/lib/cn';
 import { formatUsd } from '@/utils';
 import { formatGainMagnitude, GainValue, isGainNegative } from '@/components/ui/GainValue';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
@@ -14,13 +16,17 @@ import {
 } from '@/components/ui/tooltip';
 import {
   isAnnouncedGap,
+  type EarningsCoverage,
   type EarningsFigure,
   type EarningsSourceId,
   type Maybe,
+  type MissingSourceDetail,
   type NotAvailableReason,
   type PendleSplit,
   type WalletEarnings
 } from '../earnings/types';
+
+export type { MissingSourceDetail };
 
 // APP-450 stat rendering, shared by the earnings-card footer and the position
 // cards. Guiding rule carried from the data layer: a wrong number is worse
@@ -44,7 +50,33 @@ const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
   loading: <Trans>Loading…</Trans>
 };
 
+const COVERAGE_COPY: Record<EarningsCoverage, ReactNode> = {
+  'mainnet-only': <Trans>Earnings cover Ethereum Mainnet only.</Trans>
+};
+
 function EarningsTooltip({ trigger, children }: { trigger: ReactNode; children: ReactNode }) {
+  // The app Tooltip force-closes on touch devices, so the explanations would
+  // be unreachable there — fall back to a tap popover styled like the DS
+  // tooltip, the InfoTooltip precedent (review finding #7).
+  const isTouchDevice = useIsTouchDevice();
+
+  if (isTouchDevice) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild onClick={e => e.stopPropagation()}>
+          {trigger}
+        </PopoverTrigger>
+        <PopoverContent
+          align="center"
+          side="top"
+          className="bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]"
+        >
+          {children}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <Tooltip>
@@ -56,8 +88,6 @@ function EarningsTooltip({ trigger, children }: { trigger: ReactNode; children: 
     </TooltipProvider>
   );
 }
-
-export type MissingSourceDetail = { id: EarningsSourceId; reason: NotAvailableReason };
 
 /** Resolves the combined stat's missing-source ids to their reasons. */
 export function missingSourceDetails(
@@ -96,6 +126,44 @@ function MissingList({
         </span>
       ))}
     </div>
+  );
+}
+
+/**
+ * The info glyph beside a partial figure: names the excluded sources in its
+ * tooltip, red ('earnings-partial') when any gap is an error rather than an
+ * announced product limitation.
+ */
+function GapGlyph({
+  missing,
+  untrackedNames = [],
+  coverage
+}: {
+  missing: MissingSourceDetail[];
+  untrackedNames?: string[];
+  /** Coverage caveat line — announced-class, never flips the glyph to error. */
+  coverage?: EarningsCoverage;
+}) {
+  const hasErrorGap = missing.some(m => !isAnnouncedGap(m.reason));
+  return (
+    <EarningsTooltip
+      trigger={
+        <span
+          tabIndex={0}
+          data-testid={hasErrorGap ? 'earnings-partial' : 'earnings-info'}
+          className={cn('flex shrink-0', hasErrorGap ? 'text-error' : 'text-textSecondary')}
+        >
+          <Info className="h-3 w-3" />
+        </span>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        {(missing.length > 0 || untrackedNames.length > 0) && (
+          <MissingList missing={missing} untrackedNames={untrackedNames} />
+        )}
+        {coverage && <span>{COVERAGE_COPY[coverage]}</span>}
+      </div>
+    </EarningsTooltip>
   );
 }
 
@@ -142,24 +210,11 @@ export function CombinedEarningsStat({
   }
 
   const usd = field === 'total' ? earnings.combined.totalEarnedUsd : earnings.combined.earnedThisMonthUsd;
-  const hasErrorGap = missing.some(m => !isAnnouncedGap(m.reason));
   return (
     <span data-testid={testId} className="flex items-center gap-1.5">
       <GainValue value={usd} signed className={className} />
       {(missing.length > 0 || untrackedNames.length > 0) && (
-        <EarningsTooltip
-          trigger={
-            <span
-              tabIndex={0}
-              data-testid={hasErrorGap ? 'earnings-partial' : 'earnings-info'}
-              className={cn('flex shrink-0', hasErrorGap ? 'text-error' : 'text-textSecondary')}
-            >
-              <Info className="h-3 w-3" />
-            </span>
-          }
-        >
-          <MissingList missing={missing} untrackedNames={untrackedNames} />
-        </EarningsTooltip>
+        <GapGlyph missing={missing} untrackedNames={untrackedNames} />
       )}
     </span>
   );
@@ -169,13 +224,16 @@ export function CombinedEarningsStat({
  * A single position's figure: `null` marks a row outside APP-450 scope (plain
  * dash), a notAvailable figure explains itself in a tooltip ('loading' shows
  * the skeleton instead), and an ok Pendle figure carries the realized vs
- * mark-to-market split in its tooltip.
+ * mark-to-market split in its tooltip. A partial sum flags its missing
+ * contributors with the same glyph as the combined stat (review finding #1).
  */
 export function EarningsFigureValue({
   figure,
   variant,
   className,
   testId,
+  missing = [],
+  coverage,
   pendleSplit,
   skeletonClassName = 'h-[18px] w-16 rounded'
 }: {
@@ -184,6 +242,10 @@ export function EarningsFigureValue({
   variant: 'gain' | 'plain';
   className?: string;
   testId?: string;
+  /** Contributors excluded from a partial figure (per-position missing list). */
+  missing?: MissingSourceDetail[];
+  /** Coverage caveat for an otherwise-complete figure (review finding #3). */
+  coverage?: EarningsCoverage;
   pendleSplit?: PendleSplit;
   skeletonClassName?: string;
 }) {
@@ -218,9 +280,11 @@ export function EarningsFigureValue({
       </span>
     );
 
+  const gapGlyph = missing.length > 0 || coverage ? <GapGlyph missing={missing} coverage={coverage} /> : null;
+
   if (pendleSplit) {
     return (
-      <span data-testid={testId}>
+      <span data-testid={testId} className={gapGlyph ? 'flex items-center gap-1.5' : undefined}>
         <EarningsTooltip
           trigger={
             <span tabIndex={0} data-testid="earnings-pendle-split">
@@ -237,9 +301,15 @@ export function EarningsFigureValue({
             </span>
           </div>
         </EarningsTooltip>
+        {gapGlyph}
       </span>
     );
   }
 
-  return <span data-testid={testId}>{value}</span>;
+  return (
+    <span data-testid={testId} className={gapGlyph ? 'flex items-center gap-1.5' : undefined}>
+      {value}
+      {gapGlyph}
+    </span>
+  );
 }

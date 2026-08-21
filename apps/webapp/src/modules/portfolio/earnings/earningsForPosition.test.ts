@@ -70,7 +70,8 @@ describe('earningsForPosition', () => {
   it('keeps the Morpho monthly figure and flags the Merkl announced gap', () => {
     const position = earningsForPosition(earnings, FLAGSHIP_ROW);
     expect(position?.earnedThisMonth).toEqual(ok({ usd: 75.11, native: { amount: 75.11, symbol: 'USDS' } }));
-    expect(position?.missingFromMonth).toEqual(['merkl']);
+    // Reasons ride along so the UI can explain the gap (review finding #1).
+    expect(position?.missingFromMonth).toEqual([{ id: 'merkl', reason: 'merkl-monthly-unsupported' }]);
   });
 
   it('drops native and reports byToken when contributors pay different tokens', () => {
@@ -107,11 +108,24 @@ describe('earningsForPosition', () => {
     expect(position?.totalEarned).toEqual(ok({ usd: 120.5, native: { amount: 118.2, symbol: 'sUSDS' } }));
   });
 
+  it("passes a contributor's coverage caveat through (review finding #3)", () => {
+    const mainnetOnly = protocol({
+      id: 'savings',
+      rowIds: ['savings'],
+      totalEarned: ok({ usd: 120.5 }),
+      earnedThisMonth: ok({ usd: 46.4 }),
+      coverage: 'mainnet-only'
+    });
+    expect(earningsForPosition(wallet([mainnetOnly]), 'savings')?.coverage).toBe('mainnet-only');
+    // Contributors without a caveat leave it unset.
+    expect(earningsForPosition(earnings, FLAGSHIP_ROW)?.coverage).toBeUndefined();
+  });
+
   it('returns notAvailable with the contributor reason when nothing is ok', () => {
     const position = earningsForPosition(earnings, 'stusds');
     expect(position?.totalEarned).toEqual(notAvailable('stusds-not-listed'));
     expect(position?.earnedThisMonth).toEqual(notAvailable('stusds-not-listed'));
-    expect(position?.missingFromTotal).toEqual(['stusds']);
+    expect(position?.missingFromTotal).toEqual([{ id: 'stusds', reason: 'stusds-not-listed' }]);
   });
 
   it('returns null for rows outside APP-450 scope', () => {

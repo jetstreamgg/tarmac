@@ -191,6 +191,8 @@ function SuppliedContent({
             activePosition ? (
               <EarningsFigureValue
                 figure={activeEarnings?.totalEarned ?? null}
+                missing={activeEarnings?.missingFromTotal}
+                coverage={activeEarnings?.coverage}
                 variant="gain"
                 className={figureClass(activeEarnings?.totalEarned)}
                 testId="earnings-total-value"
@@ -212,6 +214,8 @@ function SuppliedContent({
             activePosition ? (
               <EarningsFigureValue
                 figure={activeEarnings?.earnedThisMonth ?? null}
+                missing={activeEarnings?.missingFromMonth}
+                coverage={activeEarnings?.coverage}
                 variant="gain"
                 className={figureClass(activeEarnings?.earnedThisMonth)}
                 testId="earnings-month-value"

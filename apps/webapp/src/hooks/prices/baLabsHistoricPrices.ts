@@ -8,8 +8,12 @@ type BaLabsHistoricRow = {
 
 /**
  * Full daily USD price history of a token as a 'YYYY-MM-DD' → price map, for
- * valuing past events (Merkl claims) at the price of their day. Failures
- * surface as an empty map — callers degrade to notAvailable, never guess.
+ * valuing past events (Merkl claims) at the price of their day. An empty
+ * series THROWS instead of resolving: this is only ever called for attributed
+ * reward tokens, which always have a history, so empty means the source
+ * failed — and a resolved empty map would be cached by react-query as a 24h
+ * success, turning a transient outage into a sticky 'reconciliation-failed'
+ * instead of a retried 'source-error'.
  */
 export async function fetchBaLabsHistoricDailyPrices({
   tokenAddress
@@ -25,6 +29,9 @@ export async function fetchBaLabsHistoricDailyPrices({
   for (const { date, price } of rows) {
     const parsed = Number(price);
     if (Number.isFinite(parsed)) prices.set(date, parsed);
+  }
+  if (prices.size === 0) {
+    throw new Error(`Empty BA Labs price history for ${tokenAddress}`);
   }
   return prices;
 }

@@ -47,7 +47,17 @@ const ANNOUNCED_GAP_REASONS: ReadonlySet<NotAvailableReason> = new Set([
 
 export const isAnnouncedGap = (reason: NotAvailableReason): boolean => ANNOUNCED_GAP_REASONS.has(reason);
 
+/** A missing contributor plus why, so the UI can explain the gap it flags. */
+export type MissingSourceDetail = { id: EarningsSourceId; reason: NotAvailableReason };
+
 export type PendleSplit = { realizedUsd: number; markToMarketUsd: number };
+
+/**
+ * Coverage caveat: the figure is correct but spans less than the row's balance
+ * does (the savings row balance aggregates every supported chain, while
+ * vaults.fyi only indexes mainnet sUSDS — review finding #3).
+ */
+export type EarningsCoverage = 'mainnet-only';
 
 export type ProtocolEarnings = {
   id: EarningsSourceId;
@@ -57,6 +67,8 @@ export type ProtocolEarnings = {
   earnedThisMonth: Maybe<EarningsFigure>;
   /** Acceptance criterion: realized vs mark-to-market stay separable. */
   pendleSplit?: PendleSplit;
+  /** Set when the source covers less than the row's balance spans. */
+  coverage?: EarningsCoverage;
   isLoading: boolean;
   error: Error | null;
 };

@@ -9,6 +9,13 @@ import type { IdleView } from '../helpers/idleView';
 import { combineWalletEarnings } from '../earnings/combineWalletEarnings';
 import { notAvailable, ok, type ProtocolEarnings, type WalletEarnings } from '../earnings/types';
 
+// Pin touch detection per test (finding #7: tooltips fall back to popovers on touch).
+const touch = vi.hoisted(() => ({ isTouch: false }));
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return { ...actual, useIsTouchDevice: () => touch.isTouch };
+});
+
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).
 const breakpoint = vi.hoisted(() => ({ isMobile: false }));
 vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
@@ -127,6 +134,7 @@ const donutBox = () => screen.getByTestId('portfolio-donut').style.width;
 
 afterEach(() => {
   breakpoint.isMobile = false;
+  touch.isTouch = false;
   cleanup();
 });
 
@@ -354,6 +362,50 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     renderCard({ earnings: allOk });
     expect(screen.queryByTestId('earnings-info')).toBeNull();
     expect(screen.queryByTestId('earnings-partial')).toBeNull();
+  });
+
+  // Review finding #7: the app Tooltip is forced closed on touch devices, so
+  // the gap explanations must open as a tap popover there instead.
+  it('opens the gap explanation as a tap popover on touch devices', () => {
+    touch.isTouch = true;
+    renderCard();
+    // Total's glyph: stUSDS is excluded ('Not yet available.').
+    fireEvent.click(screen.getAllByTestId('earnings-info')[0]);
+    expect(screen.getByText(/Not yet available/)).toBeTruthy();
+  });
+
+  // Review finding #1: hover-focused figures flag their own missing contributors.
+
+  it("flags the hovered position's announced gap with the info glyph", () => {
+    const flagship = {
+      ...SUPPLIED,
+      positions: [{ ...SUPPLIED.positions[0], id: 'vault-morpho-0xflagship', name: 'USDS Flagship' }]
+    };
+    renderCard({ suppliedView: flagship });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /USDS Flagship/ }));
+    // Total: Morpho + Merkl both ok → clean figure, no glyph.
+    expect(within(screen.getByTestId('earnings-total-value')).queryByTestId('earnings-info')).toBeNull();
+    // Month: Morpho's figure shows with the Merkl announced gap flagged beside it.
+    expect(monthText()).toContain('+$10.00');
+    const month = screen.getByTestId('earnings-month-value');
+    expect(within(month).getByTestId('earnings-info')).toBeTruthy();
+    expect(within(month).queryByTestId('earnings-partial')).toBeNull();
+  });
+
+  it("flags the hovered position's error gap with the partial-data indicator", () => {
+    const flagship = {
+      ...SUPPLIED,
+      positions: [{ ...SUPPLIED.positions[0], id: 'vault-morpho-0xflagship', name: 'USDS Flagship' }]
+    };
+    const merklDown = walletEarnings(
+      EARNINGS.protocols.map(p =>
+        p.id === 'merkl' ? { ...p, totalEarned: notAvailable('source-error') } : p
+      )
+    );
+    renderCard({ suppliedView: flagship, earnings: merklDown });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /USDS Flagship/ }));
+    expect(totalText()).toContain('+$20.00');
+    expect(within(screen.getByTestId('earnings-total-value')).getByTestId('earnings-partial')).toBeTruthy();
   });
 
   // Review finding #8 companion: sub-cent combined earnings say so, not $0.00.
