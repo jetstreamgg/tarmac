@@ -1043,18 +1043,27 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
      paint a bbox-relative gradient on — the lines simply vanish. */
   stroke: var(--nav-menu-icon-active-stroke);
 }
-/* recharts marks its root <svg> `tabindex=0` / `role="application"` whenever
-   the accessibility layer is on (its v3 default), so clicking anywhere in a
-   plot focuses it and Chrome paints its own outline — a hard rectangle around
-   the whole plot, which is what the ring around the chart card was. Chrome
-   draws that one on plain `:focus` here, not `:focus-visible` (SVG is not one
-   of the elements it applies the click heuristic to), so the reset has to be
-   `:focus`. The keyboard route keeps a ring — the layer is what lets arrow
-   keys walk the series, and a focus you can't see is worse than an ugly one —
-   restyled to the app's own focusRing token.
+/* A recharts chart holds two kinds of focusable node, and clicking either one
+   makes Chrome paint its own outline:
+     - one `g.recharts-zIndex-layer_*` per z-index the chart uses, each
+       `tabindex=-1`. The series lives in one of these, so a click on the plot
+       focuses it, and the outline of its bbox reads as a hairline above and
+       below the data. `tabindex=-1` means focusable but NOT tabbable — a mouse
+       is the only way to reach these at all — so they never warrant a ring and
+       the reset is unconditional.
+     - the root <svg>, which carries `tabindex=0` / `role="application"`
+       whenever the accessibility layer is on (its v3 default). Its box is the
+       whole plot — the rectangle around the chart. This one IS tabbable, and
+       the layer is what lets arrow keys walk the series, so the keyboard route
+       keeps a ring, restyled to the app's own focusRing token. Chrome draws
+       its own on a plain mouse `:focus` for an SVG (not one of the elements it
+       applies the click heuristic to), which is why the reset below is `:focus`
+       and not `:focus-visible`; the rule after it wins back the keyboard case
+       on source order.
 
-   This is global rather than per-chart: every recharts surface in the app
-   behaves the same way, and each one is nested somewhere different. */
+   Global rather than per-chart: every recharts surface in the app behaves the
+   same way, and each one is nested somewhere different. */
+.recharts-wrapper [tabindex='-1']:focus,
 .recharts-surface:focus {
   outline: none;
 }
