@@ -266,5 +266,21 @@ describe('PendlePositionCard', () => {
       expect(screen.queryByTestId('pendle-matured-closed-card')).toBeNull();
       expect(screen.queryByTestId('pendle-supply-cta')).toBeNull();
     });
+
+    it('connects without launching the claim modal — the balance is unknown until it resolves', () => {
+      vi.useFakeTimers();
+      h.expirySec = MATURED_SEC;
+      h.connected = false;
+      h.ptBalance = 0n;
+      renderCard();
+
+      fireEvent.click(screen.getByTestId('pendle-matured-connect-cta'));
+      act(() => vi.advanceTimersByTime(CONTINUATION_DELAY_MS * 2));
+
+      // Continuing straight into the modal would launch it at a user who turns
+      // out to hold nothing: dashes and a disabled Claim with no explanation.
+      expect(openRedeemModal).not.toHaveBeenCalled();
+      expect(screen.getByTestId('connect-modal-stub')).toBeTruthy();
+    });
   });
 });
