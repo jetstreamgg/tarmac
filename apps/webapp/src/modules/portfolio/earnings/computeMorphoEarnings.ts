@@ -9,7 +9,7 @@ import { notAvailable, ok, type EarningsFigure, type EarningsWindow, type Maybe 
 export type MorphoEarningsInput = {
   positions: MorphoUserVaultV2Position[];
   transactions: MorphoVaultV2Transaction[];
-  flagshipVaultAddress: string;
+  vaultAddress: string;
   window: EarningsWindow;
 };
 
@@ -21,9 +21,10 @@ export type MorphoEarnings = {
 const units = (value: MorphoNumberish, decimals: number): number => Number(value) / 10 ** decimals;
 
 /**
- * Flagship-vault earnings from the Morpho API. Total comes straight from the
- * position's pnl/pnlUsd (kept even after a full exit, so closed positions still
- * count — the combined figure may exceed the sum of visible position cards).
+ * Single-vault earnings from the Morpho API; the aggregator calls this once
+ * per supported vault. Total comes straight from the position's pnl/pnlUsd
+ * (kept even after a full exit, so closed positions still count — the combined
+ * figure may exceed the sum of visible position cards).
  * Monthly is the flows method: endAssets − baseline − Σdeposits + Σwithdrawals,
  * where baseline is the newest history sample at or before startSec (0 when the
  * position opened mid-window). An empty series is fine when the window's flows
@@ -35,10 +36,10 @@ const units = (value: MorphoNumberish, decimals: number): number => Number(value
 export function computeMorphoEarnings({
   positions,
   transactions,
-  flagshipVaultAddress,
+  vaultAddress,
   window
 }: MorphoEarningsInput): MorphoEarnings {
-  const wanted = flagshipVaultAddress.toLowerCase();
+  const wanted = vaultAddress.toLowerCase();
   const position = positions.find(p => p.vault.address.toLowerCase() === wanted);
   // Never touched the vault → genuinely earned nothing (asset symbol unknown, USD-only zero).
   if (!position) return { totalEarned: ok({ usd: 0 }), earnedThisMonth: ok({ usd: 0 }) };

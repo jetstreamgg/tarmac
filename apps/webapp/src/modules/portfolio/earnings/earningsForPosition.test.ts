@@ -22,7 +22,7 @@ const wallet = (protocols: ProtocolEarnings[]): WalletEarnings => ({
 });
 
 const morpho = protocol({
-  id: 'morpho-flagship',
+  id: 'morpho-vault-0xflagship',
   rowIds: [FLAGSHIP_ROW],
   totalEarned: ok({ usd: 875.06, native: { amount: 875.06, symbol: 'USDS' } }),
   earnedThisMonth: ok({ usd: 75.11, native: { amount: 75.11, symbol: 'USDS' } })
@@ -72,6 +72,20 @@ describe('earningsForPosition', () => {
     expect(position?.earnedThisMonth).toEqual(ok({ usd: 75.11, native: { amount: 75.11, symbol: 'USDS' } }));
     // Reasons ride along so the UI can explain the gap (review finding #1).
     expect(position?.missingFromMonth).toEqual([{ id: 'merkl', reason: 'merkl-monthly-unsupported' }]);
+  });
+
+  it('carries a per-vault label into the missing details so tooltips can name the vault', () => {
+    const vault = protocol({
+      id: 'morpho-vault-0xother',
+      label: 'USDT Savings',
+      rowIds: ['vault-morpho-0xother'],
+      totalEarned: notAvailable('source-error'),
+      earnedThisMonth: ok({ usd: 3 })
+    });
+    const position = earningsForPosition(wallet([vault]), 'vault-morpho-0xother');
+    expect(position?.missingFromTotal).toEqual([
+      { id: 'morpho-vault-0xother', reason: 'source-error', label: 'USDT Savings' }
+    ]);
   });
 
   it('drops native and reports byToken when contributors pay different tokens', () => {

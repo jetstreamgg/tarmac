@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useConnection } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { usdsFlagshipVaultAddress } from '../../../hooks/generated';
+import { MORPHO_VAULTS } from '../../../hooks/morpho/constants';
 import { fetchMerklClaims, fetchMerklUserRewards } from '../../../hooks/morpho/merklEarnedClient';
 import { fetchUserVaultV2Pnl, fetchVaultV2TransactionsSince } from '../../../hooks/morpho/morphoPnlClient';
 import { PENDLE_MARKETS } from '../../../hooks/pendle/constants';
@@ -28,11 +29,27 @@ import { computeMorphoEarnings } from '../earnings/computeMorphoEarnings';
 import { computePendleEarnings } from '../earnings/computePendleEarnings';
 import { computeSavingsEarnings, stUsdsPlaceholderEarnings } from '../earnings/computeSavingsEarnings';
 import { monthToDateWindow } from '../earnings/monthWindow';
-import { notAvailable, type ProtocolEarnings, type WalletEarnings } from '../earnings/types';
+import {
+  morphoVaultSourceId,
+  notAvailable,
+  type ProtocolEarnings,
+  type WalletEarnings
+} from '../earnings/types';
 
 const FLAGSHIP = usdsFlagshipVaultAddress[mainnet.id];
 const FLAGSHIP_ROW_ID = `vault-morpho-${FLAGSHIP.toLowerCase()}`;
 const PENDLE_ROW_IDS = PENDLE_MARKETS.map(m => `fixed-${m.marketAddress.toLowerCase()}`);
+
+/**
+ * Every supported Morpho vault gets its own earnings source (Kuba 2026-08-21:
+ * ship per-vault PnL; Merkl attribution stays Flagship-only, which the
+ * non-Flagship entries announce via the 'rewards-not-included' coverage note).
+ */
+const MORPHO_MAINNET_VAULTS = MORPHO_VAULTS.flatMap(v => {
+  const address = v.vaultAddress[mainnet.id];
+  return address ? [{ address, name: v.name }] : [];
+});
+const MORPHO_VAULT_ADDRESSES = MORPHO_MAINNET_VAULTS.map(v => v.address);
 
 const MORPHO_STALE_MS = 10 * 60_000;
 const MERKL_REWARDS_STALE_MS = 10 * 60_000;
@@ -75,8 +92,8 @@ const monthStartSecSnapshot = (): number => monthToDateWindow(Date.now()).startS
 
 /**
  * APP-450 aggregator: per-wallet "Total earned" / "Earned this month" across
- * Morpho Flagship, Merkl rewards, Pendle PT-sUSDS, sUSDS savings and the
- * stUSDS placeholder. Each source runs its own queries with its own
+ * every supported Morpho vault, Merkl rewards, Pendle PT-sUSDS, sUSDS savings
+ * and the stUSDS placeholder. Each source runs its own queries with its own
  * isLoading/error (marketplace row discipline) so one failing API never sinks
  * the rest; failures degrade that source to `notAvailable('source-error')`.
  *
@@ -114,7 +131,7 @@ export function useWalletEarnings(): WalletEarnings {
         fetchVaultV2TransactionsSince({
           userAddress: address!,
           chainId,
-          vaultAddresses: [FLAGSHIP],
+          vaultAddresses: MORPHO_VAULT_ADDRESSES,
           sinceTimestamp: window.startSec
         })
       ]);
@@ -242,7 +259,10 @@ export function useWalletEarnings(): WalletEarnings {
         error: null
       });
       return [
-        entry('morpho-flagship', [FLAGSHIP_ROW_ID]),
+        ...MORPHO_MAINNET_VAULTS.map(v => ({
+          ...entry(morphoVaultSourceId(v.address), [`vault-morpho-${v.address.toLowerCase()}`]),
+          label: v.name
+        })),
         entry('merkl', [FLAGSHIP_ROW_ID]),
         entry('pendle', PENDLE_ROW_IDS),
         entry('savings', ['savings']),
@@ -250,15 +270,22 @@ export function useWalletEarnings(): WalletEarnings {
       ];
     }
 
-    const morpho: ProtocolEarnings = {
-      id: 'morpho-flagship',
-      rowIds: [FLAGSHIP_ROW_ID],
-      ...(morphoQuery.data
-        ? computeMorphoEarnings({ ...morphoQuery.data, flagshipVaultAddress: FLAGSHIP, window })
-        : { totalEarned: gapFor(morphoQuery.error), earnedThisMonth: gapFor(morphoQuery.error) }),
-      isLoading: morphoQuery.isLoading,
-      error: morphoQuery.error ?? null
-    };
+    const morphoVaults: ProtocolEarnings[] = MORPHO_MAINNET_VAULTS.map(v => {
+      const isFlagship = v.address.toLowerCase() === FLAGSHIP.toLowerCase();
+      return {
+        id: morphoVaultSourceId(v.address),
+        label: v.name,
+        rowIds: [`vault-morpho-${v.address.toLowerCase()}`],
+        ...(morphoQuery.data
+          ? computeMorphoEarnings({ ...morphoQuery.data, vaultAddress: v.address, window })
+          : { totalEarned: gapFor(morphoQuery.error), earnedThisMonth: gapFor(morphoQuery.error) }),
+        // Non-Flagship vaults ship PnL without their Merkl rewards for now —
+        // announce the gap on the row instead of silently under-counting.
+        ...(isFlagship ? {} : { coverage: 'rewards-not-included' as const }),
+        isLoading: morphoQuery.isLoading,
+        error: morphoQuery.error ?? null
+      };
+    });
 
     const merkl: ProtocolEarnings = (() => {
       const pricesNeeded = attributedTokens.length > 0;
@@ -356,7 +383,7 @@ export function useWalletEarnings(): WalletEarnings {
       };
     })();
 
-    return [morpho, merkl, pendle, savings, stusds];
+    return [...morphoVaults, merkl, pendle, savings, stusds];
   }, [
     connected,
     window,

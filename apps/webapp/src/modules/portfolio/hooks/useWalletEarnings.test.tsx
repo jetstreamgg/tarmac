@@ -58,7 +58,7 @@ vi.mock('../../../hooks/vaults/fyi/constants', () => ({
   }
 }));
 
-import { MorphoTransactionType } from '../../../hooks/morpho/constants';
+import { MORPHO_VAULTS, MorphoTransactionType } from '../../../hooks/morpho/constants';
 import type { MorphoUserVaultV2Position, MorphoVaultV2Transaction } from '../../../hooks/morpho/morpho';
 import type { MerklClaimRaw, MerklUserRewardRaw } from '../../../hooks/morpho/merklEarnedClient';
 import type { PendlePnlTransactionRaw } from '../../../hooks/pendle/pendle';
@@ -67,6 +67,11 @@ import { useWalletEarnings } from './useWalletEarnings';
 
 const USER = '0x1111111111111111111111111111111111111111';
 const FLAGSHIP = '0xE15fcC81118895b67b6647BBd393182dF44E11E0';
+// One earnings source per supported vault (config order), Flagship included.
+const MORPHO_VAULT_ADDRESSES = MORPHO_VAULTS.map(v => v.vaultAddress[1]);
+const MORPHO_VAULT_IDS = MORPHO_VAULT_ADDRESSES.map(a => `morpho-vault-${a.toLowerCase()}`);
+const MORPHO_FLAGSHIP_ID = `morpho-vault-${FLAGSHIP.toLowerCase()}`;
+const SOURCE_COUNT = MORPHO_VAULT_IDS.length + 4; // + merkl, pendle, savings, stusds
 const PENDLE_MARKET = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc';
 const USDS_TOKEN = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
 
@@ -223,14 +228,14 @@ describe('useWalletEarnings', () => {
     const { result } = renderEarnings();
 
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.protocols).toHaveLength(5);
+    expect(result.current.protocols).toHaveLength(SOURCE_COUNT);
     for (const protocol of result.current.protocols) {
       expect(protocol.totalEarned).toEqual({ status: 'notAvailable', reason: 'disconnected' });
       expect(protocol.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'disconnected' });
       expect(protocol.isLoading).toBe(false);
     }
-    expect(result.current.combined.missingFromTotal).toHaveLength(5);
-    expect(result.current.combined.missingFromMonth).toHaveLength(5);
+    expect(result.current.combined.missingFromTotal).toHaveLength(SOURCE_COUNT);
+    expect(result.current.combined.missingFromMonth).toHaveLength(SOURCE_COUNT);
 
     expect(h.fetchUserVaultV2Pnl).not.toHaveBeenCalled();
     expect(h.fetchMerklUserRewards).not.toHaveBeenCalled();
@@ -243,7 +248,7 @@ describe('useWalletEarnings', () => {
 
     // Loading state first: figures are the transient 'loading' gap, never $0.
     expect(result.current.isLoading).toBe(true);
-    expect(protocolById(result.current, 'morpho-flagship').totalEarned).toEqual({
+    expect(protocolById(result.current, MORPHO_FLAGSHIP_ID).totalEarned).toEqual({
       status: 'notAvailable',
       reason: 'loading'
     });
@@ -252,8 +257,9 @@ describe('useWalletEarnings', () => {
 
     expect(result.current.window).toEqual({ startSec: AUG_1, endSec: SEP_1 - 1 });
 
-    const morpho = protocolById(result.current, 'morpho-flagship');
+    const morpho = protocolById(result.current, MORPHO_FLAGSHIP_ID);
     expect(morpho.rowIds).toEqual([FLAGSHIP_ROW_ID]);
+    expect(morpho.label).toBe('USDS Flagship');
     expect(morpho.totalEarned).toEqual({
       status: 'ok',
       value: { usd: 20, native: { amount: 20, symbol: 'USDS' } }
@@ -262,6 +268,18 @@ describe('useWalletEarnings', () => {
       status: 'ok',
       value: { usd: 10, native: { amount: 10, symbol: 'USDS' } }
     });
+    // The Flagship row also carries Merkl rewards, so no coverage caveat.
+    expect(morpho.coverage).toBeUndefined();
+
+    // Non-Flagship vaults: own source per vault, untouched → genuinely $0,
+    // and the announced note that Merkl rewards aren't attributed to them yet.
+    for (const id of MORPHO_VAULT_IDS.filter(v => v !== MORPHO_FLAGSHIP_ID)) {
+      const vault = protocolById(result.current, id);
+      expect(vault.totalEarned).toEqual({ status: 'ok', value: { usd: 0 } });
+      expect(vault.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 0 } });
+      expect(vault.coverage).toBe('rewards-not-included');
+      expect(vault.label).toBeTruthy();
+    }
 
     const merkl = protocolById(result.current, 'merkl');
     expect(merkl.rowIds).toEqual([FLAGSHIP_ROW_ID]);
@@ -317,7 +335,7 @@ describe('useWalletEarnings', () => {
     expect(h.fetchVaultV2TransactionsSince).toHaveBeenCalledWith({
       userAddress: USER,
       chainId: 1,
-      vaultAddresses: [FLAGSHIP],
+      vaultAddresses: MORPHO_VAULT_ADDRESSES,
       sinceTimestamp: AUG_1
     });
     expect(h.fetchMerklUserRewards).toHaveBeenCalledWith({ userAddress: USER, chainId: 1 });
@@ -349,7 +367,7 @@ describe('useWalletEarnings', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const morpho = protocolById(result.current, 'morpho-flagship');
+    const morpho = protocolById(result.current, MORPHO_FLAGSHIP_ID);
     expect(morpho.totalEarned).toEqual({ status: 'notAvailable', reason: 'source-error' });
     expect(morpho.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'source-error' });
     expect(morpho.error).toBeInstanceOf(Error);
@@ -358,9 +376,10 @@ describe('useWalletEarnings', () => {
     expect(protocolById(result.current, 'pendle').totalEarned.status).toBe('ok');
     expect(protocolById(result.current, 'savings').totalEarned.status).toBe('ok');
 
-    // Combined still sums the healthy sources and names what is missing.
+    // Combined still sums the healthy sources and names what is missing —
+    // the single Morpho query feeds every vault source, so all degrade.
     expect(result.current.combined.totalEarnedUsd).toBeCloseTo(4 + 70 + 46.4, 10);
-    expect(result.current.combined.missingFromTotal).toEqual(['morpho-flagship', 'stusds']);
+    expect(result.current.combined.missingFromTotal).toEqual([...MORPHO_VAULT_IDS, 'stusds']);
   });
 
   it('keeps the savings figures independent: a failing partial-returns call never sinks the total', async () => {

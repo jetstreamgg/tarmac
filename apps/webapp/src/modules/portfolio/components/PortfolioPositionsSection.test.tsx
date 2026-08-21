@@ -345,13 +345,29 @@ describe('PositionCard — Already earned (APP-450)', () => {
   // contributor, exactly like the combined footer stat does.
   it("flags a partial 'Accrued to date' figure with the error-gap indicator", () => {
     const merklDown = walletEarnings([
-      proto('morpho-flagship', ['vault-sky-1'], ok({ usd: 20 }), ok({ usd: 10 })),
+      proto('morpho-vault-0xflagship', ['vault-sky-1'], ok({ usd: 20 }), ok({ usd: 10 })),
       proto('merkl', ['vault-sky-1'], notAvailable('source-error'), notAvailable('source-error'))
     ]);
     renderSection([VAULT], merklDown);
     const stat = alreadyEarned(screen.getAllByTestId('position-card')[0]);
     expect(stat.textContent).toContain('$20.00');
     expect(within(stat).getByTestId('earnings-partial')).toBeTruthy();
+  });
+
+  // Kuba 2026-08-21: non-Flagship vaults show PnL without their Merkl rewards;
+  // the note is announced-class, never an error indicator.
+  it("announces 'rewards not included' on a non-Flagship vault figure with the info glyph", () => {
+    const withNote = walletEarnings([
+      proto('morpho-vault-0xother', ['vault-sky-1'], ok({ usd: 12 }), ok({ usd: 3 }), {
+        label: 'USDT Savings',
+        coverage: 'rewards-not-included'
+      })
+    ]);
+    renderSection([VAULT], withNote);
+    const stat = alreadyEarned(screen.getAllByTestId('position-card')[0]);
+    expect(stat.textContent).toContain('$12.00');
+    expect(within(stat).getByTestId('earnings-info')).toBeTruthy();
+    expect(within(stat).queryByTestId('earnings-partial')).toBeNull();
   });
 
   // Review finding #3: the savings balance spans chains, its earnings don't.

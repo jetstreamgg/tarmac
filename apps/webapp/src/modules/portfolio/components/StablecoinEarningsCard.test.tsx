@@ -105,7 +105,7 @@ const walletEarnings = (protocols: ProtocolEarnings[], isLoading = false): Walle
 // Steady state: total 20 + 4 + 70 + 46.4 = 140.4; month 10 + 7 + 5 = 22;
 // announced gaps only (Merkl monthly, stUSDS unlisted).
 const EARNINGS = walletEarnings([
-  proto('morpho-flagship', ['vault-morpho-0xflagship'], ok({ usd: 20 }), ok({ usd: 10 })),
+  proto('morpho-vault-0xflagship', ['vault-morpho-0xflagship'], ok({ usd: 20 }), ok({ usd: 10 })),
   proto('merkl', ['vault-morpho-0xflagship'], ok({ usd: 4 }), notAvailable('merkl-monthly-unsupported')),
   proto('pendle', ['fixed-0xmkt'], ok({ usd: 70 }), ok({ usd: 7 })),
   proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 })),
@@ -274,7 +274,7 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
   it('flips to the partial-data indicator when a source errors, excluding it from the sum', () => {
     const morphoDown = walletEarnings([
       proto(
-        'morpho-flagship',
+        'morpho-vault-0xflagship',
         ['vault-morpho-0xflagship'],
         notAvailable('source-error'),
         notAvailable('source-error')

@@ -16,11 +16,13 @@ import {
 } from '@/components/ui/tooltip';
 import {
   isAnnouncedGap,
+  isMorphoVaultSourceId,
   type EarningsCoverage,
   type EarningsFigure,
   type EarningsSourceId,
   type Maybe,
   type MissingSourceDetail,
+  type MorphoVaultSourceId,
   type NotAvailableReason,
   type PendleSplit,
   type WalletEarnings
@@ -33,13 +35,16 @@ export type { MissingSourceDetail };
 // than no number — anything notAvailable renders a dash with an explanation,
 // and a combined figure missing sources says so instead of posing as complete.
 
-const SOURCE_LABELS: Record<EarningsSourceId, ReactNode> = {
-  'morpho-flagship': <Trans>Morpho vault</Trans>,
+const SOURCE_LABELS: Record<Exclude<EarningsSourceId, MorphoVaultSourceId>, ReactNode> = {
   merkl: <Trans>Merkl rewards</Trans>,
   pendle: <Trans>Pendle</Trans>,
   savings: <Trans>Sky Savings Rate</Trans>,
   stusds: <Trans>stUSDS</Trans>
 };
+
+/** Per-vault Morpho sources carry their vault name; fixed sources use the map. */
+const sourceLabel = ({ id, label }: MissingSourceDetail): ReactNode =>
+  label ?? (isMorphoVaultSourceId(id) ? <Trans>Morpho vault</Trans> : SOURCE_LABELS[id]);
 
 const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
   'merkl-monthly-unsupported': <Trans>Merkl doesn&apos;t break rewards down by month.</Trans>,
@@ -51,7 +56,8 @@ const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
 };
 
 const COVERAGE_COPY: Record<EarningsCoverage, ReactNode> = {
-  'mainnet-only': <Trans>Earnings cover Ethereum Mainnet only.</Trans>
+  'mainnet-only': <Trans>Earnings cover Ethereum Mainnet only.</Trans>,
+  'rewards-not-included': <Trans>Rewards not included yet.</Trans>
 };
 
 function EarningsTooltip({ trigger, children }: { trigger: ReactNode; children: ReactNode }) {
@@ -98,7 +104,11 @@ export function missingSourceDetails(
   return ids.map(id => {
     const protocol = earnings.protocols.find(p => p.id === id);
     const figure = field === 'total' ? protocol?.totalEarned : protocol?.earnedThisMonth;
-    return { id, reason: figure?.status === 'notAvailable' ? figure.reason : 'source-error' };
+    return {
+      id,
+      reason: figure?.status === 'notAvailable' ? figure.reason : 'source-error',
+      ...(protocol?.label ? { label: protocol.label } : {})
+    };
   });
 }
 
@@ -115,9 +125,9 @@ function MissingList({
       <span>
         <Trans>Not included:</Trans>
       </span>
-      {missing.map(({ id, reason }) => (
-        <span key={id}>
-          {SOURCE_LABELS[id]}: {REASON_COPY[reason]}
+      {missing.map(detail => (
+        <span key={detail.id}>
+          {sourceLabel(detail)}: {REASON_COPY[detail.reason]}
         </span>
       ))}
       {untrackedNames.map(name => (

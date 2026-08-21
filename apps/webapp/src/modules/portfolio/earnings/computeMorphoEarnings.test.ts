@@ -13,6 +13,7 @@ import pnlFixture from './morphoUserVaultV2Pnl.golden.fixtures.json';
 import txFixture from './morphoVaultV2Transactions.golden.fixtures.json';
 
 const FLAGSHIP = '0xE15fcC81118895b67b6647BBd393182dF44E11E0';
+const USDC_VAULT = '0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf';
 const AUG_1 = 1785542400; // externally anchored Aug 1 2026 00:00 UTC
 const DAY = 86400;
 // Same window the section-2 tests use; any endSec after the wallet's Aug 14 exit works.
@@ -55,7 +56,7 @@ const goldenInput: MorphoEarningsInput = {
   positions: goldenPositions,
   transactions: goldenTransactions,
   // Lowercased on purpose: the fixture address is checksummed, matching must be case-insensitive.
-  flagshipVaultAddress: FLAGSHIP.toLowerCase(),
+  vaultAddress: FLAGSHIP.toLowerCase(),
   window: GOLDEN_WINDOW
 };
 
@@ -101,7 +102,7 @@ const scenarioInput = (s: FlowScenario): MorphoEarningsInput => ({
     ...s.deposits.map(([t, assets]) => tx(MorphoTransactionType.Deposit, t, assets)),
     ...s.withdrawals.map(([t, assets]) => tx(MorphoTransactionType.Withdraw, t, assets))
   ],
-  flagshipVaultAddress: FLAGSHIP,
+  vaultAddress: FLAGSHIP,
   window: s.window
 });
 
@@ -131,6 +132,25 @@ describe('computeMorphoEarnings', () => {
       const result = computeMorphoEarnings({ ...goldenInput, positions: usdcOnly });
       expect(result.totalEarned).toEqual(ok({ usd: 0 }));
       expect(result.earnedThisMonth).toEqual(ok({ usd: 0 }));
+    });
+
+    // Scope extension (Kuba 2026-08-21): every supported vault gets its own
+    // per-vault figures — the USDC position graduates from "must not leak"
+    // to its own expectations.
+    it('reports the USDC vault total from its own pnl pair when asked for that vault', () => {
+      const { totalEarned } = computeMorphoEarnings({ ...goldenInput, vaultAddress: USDC_VAULT });
+      expect(totalEarned.status).toBe('ok');
+      if (totalEarned.status !== 'ok') return;
+      expect(totalEarned.value.usd).toBeCloseTo(1045.4605704344526, 8);
+      expect(totalEarned.value.native?.symbol).toBe('USDC');
+      // pnl is serialized as a plain number for this position (6 decimals).
+      expect(totalEarned.value.native?.amount).toBeCloseTo(1045789960 / 1e6, 8);
+    });
+
+    it('reports an exact zero August for the USDC vault (exited before the window)', () => {
+      const { earnedThisMonth } = computeMorphoEarnings({ ...goldenInput, vaultAddress: USDC_VAULT });
+      // Baseline 0 at Aug 1, no flows, end balance 0 → earned exactly 0.
+      expect(earnedThisMonth).toEqual(ok({ usd: 0, native: { amount: 0, symbol: 'USDC' } }));
     });
   });
 
@@ -165,7 +185,7 @@ describe('computeMorphoEarnings', () => {
       const input = (series: { x: number; y: string }[]): MorphoEarningsInput => ({
         positions: [position({ assets: u(300), assetsUsd: 300, history: { assets: series } })],
         transactions: [],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       // earned = 300 − 110 (the x = startSec sample wins over the older one)
@@ -186,7 +206,7 @@ describe('computeMorphoEarnings', () => {
           })
         ],
         transactions: [tx(MorphoTransactionType.Deposit, AUG_1 + 5 * DAY, 1000)],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       if (earnedThisMonth.status !== 'ok') throw new Error('expected ok');
@@ -201,7 +221,7 @@ describe('computeMorphoEarnings', () => {
       const result = computeMorphoEarnings({
         positions: [position({ assets: u(1000.5), assetsUsd: 1000.5, history: { assets: [] } })],
         transactions: [tx(MorphoTransactionType.Deposit, AUG_1 + 5 * DAY, 1000)],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       if (result.earnedThisMonth.status !== 'ok') throw new Error('expected ok');
@@ -218,7 +238,7 @@ describe('computeMorphoEarnings', () => {
           tx(MorphoTransactionType.Deposit, AUG_1 + 5 * DAY, 1000),
           tx(MorphoTransactionType.Withdraw, AUG_1 + 5 * DAY, 1000.4)
         ],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       if (result.earnedThisMonth.status !== 'ok') throw new Error('expected ok');
@@ -230,7 +250,7 @@ describe('computeMorphoEarnings', () => {
       const result = computeMorphoEarnings({
         positions: [position({ assets: u(1200), assetsUsd: 1200, history: { assets: [] } })],
         transactions: [tx(MorphoTransactionType.Deposit, AUG_1 + 5 * DAY, 1000)],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       // A 20% gap is not same-day yield — the history is genuinely missing.
@@ -243,7 +263,7 @@ describe('computeMorphoEarnings', () => {
           position({ assets: u(10), assetsUsd: 10, pnl: u(0.5), pnlUsd: 0.5, history: { assets: [] } })
         ],
         transactions: [],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       expect(result.earnedThisMonth).toEqual(notAvailable('reconciliation-failed'));
@@ -255,7 +275,7 @@ describe('computeMorphoEarnings', () => {
       const result = computeMorphoEarnings({
         positions: [position({ history: null })],
         transactions: [tx(MorphoTransactionType.Withdraw, AUG_1 + DAY, 500)],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       expect(result.earnedThisMonth).toEqual(notAvailable('reconciliation-failed'));
@@ -265,7 +285,7 @@ describe('computeMorphoEarnings', () => {
       const result = computeMorphoEarnings({
         positions: [position({ history: null })],
         transactions: [],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       expect(result.earnedThisMonth).toEqual(ok({ usd: 0, native: { amount: 0, symbol: 'USDS' } }));
@@ -287,7 +307,7 @@ describe('computeMorphoEarnings', () => {
           }
         ],
         transactions: [],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window: GOLDEN_WINDOW
       });
       if (result.totalEarned.status !== 'ok') throw new Error('expected ok');
@@ -311,7 +331,7 @@ describe('computeMorphoEarnings', () => {
           tx(MorphoTransactionType.Deposit, AUG_1, 5000), // t ≥ startSec → counted
           tx(MorphoTransactionType.Withdraw, AUG_1 + 10 * DAY + 1, 100) // after endSec → ignored
         ],
-        flagshipVaultAddress: FLAGSHIP,
+        vaultAddress: FLAGSHIP,
         window
       });
       if (earnedThisMonth.status !== 'ok') throw new Error('expected ok');

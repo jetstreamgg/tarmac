@@ -25,12 +25,16 @@ const tokensOf = (figure: EarningsFigure): TokenAmount[] =>
   figure.byToken ?? (figure.native ? [figure.native] : []);
 
 /** Sums ok contributor figures; merges token amounts by symbol (first-seen order). */
-function mergeFigures(contributors: { id: EarningsSourceId; figure: Maybe<EarningsFigure> }[]): {
+function mergeFigures(
+  contributors: { id: EarningsSourceId; label?: string; figure: Maybe<EarningsFigure> }[]
+): {
   figure: Maybe<EarningsFigure>;
   missing: MissingSourceDetail[];
 } {
   const missing = contributors.flatMap(c =>
-    c.figure.status === 'notAvailable' ? [{ id: c.id, reason: c.figure.reason }] : []
+    c.figure.status === 'notAvailable'
+      ? [{ id: c.id, reason: c.figure.reason, ...(c.label ? { label: c.label } : {}) }]
+      : []
   );
   const okFigures = contributors.flatMap(c => (c.figure.status === 'ok' ? [c.figure.value] : []));
 
@@ -60,15 +64,15 @@ function mergeFigures(contributors: { id: EarningsSourceId; figure: Maybe<Earnin
 /**
  * Maps a marketplace row to its earnings slice: the Flagship vault row sums
  * Morpho pnl + vault-attributed Merkl rewards; other rows have one source.
- * Rows outside APP-450 scope (other vaults, rewards, L2-only) return null →
- * the UI renders a dash.
+ * Rows with no earnings source (reward/staking rows) return null → the UI
+ * renders a dash.
  */
 export function earningsForPosition(earnings: WalletEarnings, rowId: string): PositionEarnings | null {
   const contributors = earnings.protocols.filter(p => p.rowIds.includes(rowId));
   if (contributors.length === 0) return null;
 
   const pick = (select: (p: ProtocolEarnings) => Maybe<EarningsFigure>) =>
-    mergeFigures(contributors.map(p => ({ id: p.id, figure: select(p) })));
+    mergeFigures(contributors.map(p => ({ id: p.id, label: p.label, figure: select(p) })));
 
   const total = pick(p => p.totalEarned);
   const month = pick(p => p.earnedThisMonth);

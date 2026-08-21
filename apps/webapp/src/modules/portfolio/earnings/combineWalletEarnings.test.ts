@@ -13,7 +13,7 @@ const protocol = (overrides: Partial<ProtocolEarnings> & Pick<ProtocolEarnings, 
 
 // Hand-picked figures; expected sums written as visible arithmetic.
 const morpho = protocol({
-  id: 'morpho-flagship',
+  id: 'morpho-vault-0xflagship',
   totalEarned: ok({ usd: 875.06, native: { amount: 875.06, symbol: 'USDS' } }),
   earnedThisMonth: ok({ usd: 75.11, native: { amount: 75.11, symbol: 'USDS' } })
 });
