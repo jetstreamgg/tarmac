@@ -27,6 +27,7 @@ import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
 import { SavingsTransactionsTable } from './SavingsTransactionsTable';
 import { SavingsTransactionsFilter, SavingsTxFilter } from './SavingsTransactionsFilter';
+import { USER_RISKS_URL } from '@/lib/constants';
 
 const NO_VALUE = '–';
 
@@ -177,7 +178,7 @@ export function SavingsProductDetail() {
       details={details}
       about={{
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
-        learnMoreHref: 'https://docs.sky.money'
+        learnMoreHref: USER_RISKS_URL
       }}
       transactions={<SavingsTransactionsTable filter={showTxFilter ? txFilter : 'all'} />}
       transactionsAction={
