@@ -6,23 +6,13 @@ import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@/utils';
-import { useMemo, useState, useRef, useEffect, useId, useCallback } from 'react';
-import {
-  Area,
-  AreaChart,
-  XAxis,
-  ResponsiveContainer,
-  Tooltip,
-  YAxis,
-  useActiveTooltipCoordinate,
-  useChartHeight,
-  useChartWidth,
-  useIsTooltipActive
-} from 'recharts';
+import { useMemo, useState, useRef, useEffect, useId } from 'react';
+import { Area, AreaChart, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
-import { HOVER_EASE, HOVER_FADE_MS, TAIL_TAU_MS, TRACK_TAU_MS, useFollow } from './chartMotion';
+import { SeriesMotionLayer } from './ChartSeriesMotion';
+import { TRACK_TAU_MS, useFollow } from './chartMotion';
 import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Select,
@@ -132,14 +122,6 @@ const SERIES_STROKE_WIDTH = 1.5;
 const ACTIVE_DOT_RADIUS = 5.25;
 
 /**
- * The dim mask's on/off fade — a discrete state change, not a follow, so a
- * transition is still the right tool for it. Everything that *moves* with the
- * pointer uses `useFollow` instead; see `chartMotion.ts` for why.
- */
-const fadeTransition = (reduceMotion: boolean | null) =>
-  reduceMotion ? undefined : `opacity ${HOVER_FADE_MS}ms ${HOVER_EASE}`;
-
-/**
  * The ringed dot under the hover cursor (Figma 5273:12162).
  *
  * Its core is drawn twice: an opaque page-background disc under the
@@ -203,107 +185,8 @@ export function HoverCursor({
   );
 }
 
-/** How much of the series' alpha survives outside the hover window (DS Line hover). */
-const POST_CURSOR_ALPHA = 0.4;
-
-/**
- * The series' entrance reveal (Figma: Sky App: UI 1598:77307, where the plot
- * grows from 1px to its full 760px width). recharts draws exactly that by
- * default — `AreaRevealShape` wipes the curve in left-to-right behind an
- * animated clip-path — so this only re-times it from recharts' 1500ms/`ease`
- * to the comp's figures.
- *
- * The easing has to be spelled out rather than read from `--ease-in-out-quart`:
- * recharts parses the string itself to build an easing function, so it never
- * reaches CSS where a custom property would resolve.
- *
- * No delay is paired with this. The reveal is gated by data, not by the clock —
- * `LoadingErrorWrapper` holds the skeleton until a series exists, so the Area
- * mounts (and wipes in) only once there is something to draw, which in practice
- * lands after any page transition has finished.
- */
-const REVEAL_DURATION_MS = 900;
-/**
- * The same wipe, replayed when the series is swapped for another one — the
- * Rate|TVL switch in the tabs comp (Figma: Sky App: UI 1598:76322), where the
- * outgoing series fades over ~230ms and the incoming one draws itself in over
- * ~600ms. recharts carries a single animationDuration for both the first
- * reveal and every replay, so the component steps it down once the opening
- * wipe has finished.
- */
-const RE_REVEAL_DURATION_MS = 600;
-const REVEAL_EASING = 'cubic-bezier(0.77,0,0.175,1)';
-
 /** The active pill's slide between segments (tabs comp): 151ms, easeInOut. */
 const PILL_SLIDE = { duration: 0.15, ease: [0.42, 0, 0.58, 1] } as const;
-
-/**
- * Half-width of the lit window, in px — the DS mock's mask measures 45px across
- * (Figma 5391:44830).
- *
- * It is a flat number rather than the distance to the neighbouring data points
- * the ticket describes, because the series are far denser than they look: the
- * Morpho rate chart plots 170 hourly points over 779px at 1W and 722 at 1M, so
- * neighbours sit 1–5px apart and a point-relative window would light little
- * more than the hover dot. Charts sparse enough for it to matter (the portfolio
- * protocol statistics, 7–8 points) would swing the other way and light a third
- * of the plot. One width keeps every chart reading alike.
- */
-const HALF_WINDOW = 22;
-
-/**
- * DS Line hover (Figma 5273:12162): the plotted series dims and only a window
- * around the hover point stays at full strength. Implemented as a luminance
- * mask on the Area — white keeps the series, gray fades stroke+fill together —
- * so the dimming can't veil the glass card background the way an overlay rect
- * would. Rendered inside the AreaChart, where recharts' chart-context hooks
- * resolve.
- */
-export function HoverDimMask({ id }: { id: string }) {
-  const isActive = useIsTooltipActive();
-  const coordinate = useActiveTooltipCoordinate();
-  const width = useChartWidth();
-  const height = useChartHeight();
-  const reduceMotion = useReducedMotion();
-  // Pre-layout the chart has no dimensions (and no hover); fall back to a
-  // full-coverage white mask so the series never flashes hidden.
-  const cursorX = isActive && coordinate && width != null ? coordinate.x : null;
-  // The tail lags on purpose — a longer time constant than the dot and rule.
-  const litRef = useFollow<SVGRectElement>(cursorX == null ? null : cursorX - HALF_WINDOW, 0, TAIL_TAU_MS);
-
-  return (
-    <defs>
-      <mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={width ?? '100%'} height={height ?? '100%'}>
-        <rect
-          data-testid="chart-dim-mask-base"
-          x={0}
-          y={0}
-          width={width ?? '100%'}
-          height={height ?? '100%'}
-          fill="white"
-          opacity={cursorX != null ? POST_CURSOR_ALPHA : 1}
-          style={{ transition: fadeTransition(reduceMotion) }}
-        />
-        {cursorX != null && (
-          /* Full-width window translated into place rather than clamped by
-             recomputing x/width: the mask region is the plot box, so a window
-             that overhangs an edge is clipped to exactly what clamping used to
-             leave visible — and holding the geometry still is what lets the
-             boundary travel with the cursor on `transform`. */
-          <rect
-            ref={litRef}
-            data-testid="chart-dim-mask-lit"
-            x={0}
-            y={0}
-            width={HALF_WINDOW * 2}
-            height={height ?? '100%'}
-            fill="white"
-          />
-        )}
-      </mask>
-    </defs>
-  );
-}
 
 /** Id of the body-level layer every chart tooltip renders into. */
 const TOOLTIP_PORTAL_ID = 'chart-tooltip-portal';
@@ -719,10 +602,10 @@ function ChartContent({
   color?: string;
   /**
    * Identifies which series is plotted (metric + timeframe). Changing it
-   * remounts the Area so the new series wipes in from the left, rather than
-   * recharts interpolating the old curve into the new one — handed a new
-   * dataset for the same Area, it morphs the path, which is not what the tabs
-   * comp draws.
+   * remounts the Area so the new series draws itself in (SeriesMotionLayer
+   * replays the entrance), rather than recharts interpolating the old curve
+   * into the new one — handed a new dataset for the same Area, it morphs the
+   * path, which is not what the tabs comp draws.
    */
   seriesKey?: string;
   /** detail variant: no date axis under the plot, so it runs to the card floor. */
@@ -730,19 +613,6 @@ function ChartContent({
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
-  const dimMaskId = useId();
-  // The opening wipe is the slower one; every replay after it — a metric or
-  // timeframe switch, which recharts treats as a fresh entrance — runs at the
-  // tabs comp's shorter figure. Stepped down when the first wipe reports done,
-  // since recharts reads one duration for both.
-  const [revealDuration, setRevealDuration] = useState(REVEAL_DURATION_MS);
-  // Stable identity is load-bearing, not tidiness: recharts rebuilds the
-  // running animation from zero whenever this handler's identity changes
-  // (JavascriptAnimate lists onAnimationEnd in the deps of the effect that
-  // constructs it). Inline, the wipe restarted on every re-render that landed
-  // mid-reveal — on a cold load the series stuttered through two or three
-  // false starts before the real one.
-  const handleRevealEnd = useCallback(() => setRevealDuration(RE_REVEAL_DURATION_MS), []);
   const tooltipPortal = useChartTooltipPortal();
   // The plot box, so the portalled tooltip can turn recharts' chart-space
   // coordinate into viewport pixels.
@@ -794,7 +664,6 @@ function ChartContent({
                 <stop offset="100%" stopColor={seriesColor} stopOpacity="0" />
               </linearGradient>
             </defs>
-            <HoverDimMask id={dimMaskId} />
             <YAxis
               domain={['dataMin', 'dataMax']}
               padding={{ top: 20, bottom: bpi > BP.md ? 20 : 40 }}
@@ -832,20 +701,20 @@ function ChartContent({
               strokeLinecap="round"
               type="monotone"
               fill={`url(#${gradientId})`}
-              // Dim everything outside the hover window (mask above); the active
-              // dot renders outside the masked layer, so it stays lit.
-              mask={`url(#${dimMaskId})`}
               // No resting points — the DS plots the bare line.
               dot={false}
               // Ringed hover dot at the cursor point (Figma 5273:12162).
               activeDot={<ActiveDot color={seriesColor} />}
-              // Entrance wipe — see REVEAL_DURATION_MS. Leaving isAnimationActive
-              // at its 'auto' default is deliberate: it resolves to off under
-              // prefers-reduced-motion (and under SSR), so the reveal needs no
-              // reduced-motion handling of its own.
-              animationDuration={revealDuration}
-              animationEasing={REVEAL_EASING}
-              onAnimationEnd={handleRevealEnd}
+              // SeriesMotionLayer owns the entrance draw (tip-first along the
+              // curve, which recharts' clip-rect wipe can't express) and the
+              // hover dim/highlight — including their reduced-motion handling.
+              isAnimationActive={false}
+            />
+            <SeriesMotionLayer
+              color={seriesColor}
+              strokeWidth={SERIES_STROKE_WIDTH}
+              seriesKey={seriesKey}
+              data={data}
             />
           </AreaChart>
         </ResponsiveContainer>
