@@ -5,8 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { NetworkFeeData } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { BundleTogglePanel } from './BundleTogglePanel';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 export type BundleFeeState = {
   /** Every input the row and the card depend on has landed. */

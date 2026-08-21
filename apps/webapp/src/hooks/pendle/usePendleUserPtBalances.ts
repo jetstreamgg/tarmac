@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useReadContracts, useChainId, useConnection } from 'wagmi';
 import { erc20Abi } from 'viem';
-import { chainId, isTestnetId } from '@/utils';
+import { familyMainnetId } from '@/utils';
 import { ZERO_ADDRESS } from '../constants';
 import { PENDLE_MARKETS } from './constants';
 import { PendleUserPtBalances, PendleUserPtBalancesHook } from './pendle';
@@ -20,7 +20,7 @@ import { PendleUserPtBalances, PendleUserPtBalancesHook } from './pendle';
 export function usePendleUserPtBalances(): PendleUserPtBalancesHook {
   const { address: userAddress } = useConnection();
   const connectedChainId = useChainId();
-  const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
+  const chainIdToUse = familyMainnetId(connectedChainId);
 
   const { data, isLoading, error, refetch } = useReadContracts({
     contracts: PENDLE_MARKETS.map(market => ({

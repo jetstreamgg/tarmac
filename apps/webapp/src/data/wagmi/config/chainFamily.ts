@@ -8,7 +8,7 @@ import { chainId } from '@/utils/chainId';
  * than config.default, which re-exports it) so the engine layer can import it
  * without dragging the wallet connectors instantiated there at module scope.
  */
-export const getSupportedChainIds = (connectedChainId: number) => {
+export const getSupportedChainIds = (connectedChainId: number): number[] => {
   if (isTestnetId(connectedChainId)) {
     return [chainId.tenderly];
   }

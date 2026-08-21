@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import type { Call } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   StUsdsDirection,
@@ -7,13 +6,12 @@ import {
   useBatchCurveSwap,
   useBatchStUsdsDeposit,
   useCurveAllowance,
-  useIsBatchSupported,
   useStUsdsAllowance,
   useStUsdsWithdraw
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 
 export type StUsdsLaunchFlow = 'supply' | 'withdraw';
 
@@ -32,20 +30,7 @@ export interface StUsdsEngineParams {
   stUsdsAmount?: bigint;
 }
 
-export interface UseStUsdsLaunchResult {
-  /** Fires the routed engine call directly (txCallbacks already spread in). */
-  execute: () => void;
-  /** Step labels for the configured route, matching the engine's call count. */
-  steps: string[];
-  /** Whether the routed engine hook is ready to execute. */
-  prepared: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  /** The routed engine's calls, for estimating the flow's network fee. */
-  calls: Call[];
-  /** Whether those calls go out bundled — the batch costs less than the sequence. */
-  isBatch: boolean;
-}
+export type UseStUsdsLaunchResult = EngineLaunchResult;
 
 /**
  * The seam between the redesigned stUSDS modal and the (unmodified) engine
@@ -71,13 +56,7 @@ export function useStUsdsLaunch({
 }: StUsdsEngineParams): UseStUsdsLaunchResult {
   const { txCallbacks } = useTransaction();
 
-  // Honour the user's batch toggle: bundle approve+deposit/swap into one
-  // EIP-5792 call only when opted in AND supported. useTransactionFlow
-  // additionally gates on calls.length > 1, so a no-approval action stays a
-  // single signature (the native withdraw is a plain write and unaffected).
-  const [batchEnabled] = useBatchToggle();
-  const { data: batchSupported } = useIsBatchSupported();
-  const shouldUseBatch = !!batchEnabled && !!batchSupported;
+  const shouldUseBatch = useShouldUseBatch();
 
   const isSupply = flow === 'supply';
   const isCurve = selectedProvider === StUsdsProviderType.CURVE;
@@ -149,17 +128,5 @@ export function useStUsdsLaunch({
     return needsAllowance ? [t`Approve stUSDS`, t`Withdraw USDS`] : [t`Withdraw USDS`];
   }, [isSupply, needsAllowance]);
 
-  // The native withdraw is a plain write hook whose prepare simulation can fail
-  // (e.g. constrained module liquidity) — surface that like an engine error.
-  const prepareError = 'prepareError' in activeHook ? (activeHook.prepareError as Error | null) : null;
-
-  return {
-    execute: activeHook.execute,
-    steps,
-    prepared: activeHook.prepared,
-    isLoading: activeHook.isLoading,
-    error: activeHook.error ?? prepareError,
-    calls: activeHook.calls ?? [],
-    isBatch: !!activeHook.isBatch
-  };
+  return toLaunchResult(activeHook, steps);
 }
