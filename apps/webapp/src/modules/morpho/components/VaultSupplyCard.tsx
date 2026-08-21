@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
@@ -24,21 +25,32 @@ import { Morpho } from '@/widgets';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 
 /**
- * Per-vault blurb. Only the USDC Risk Capital vault has approved copy so far
- * (Figma 859:37947); the rest keep the TODO placeholder until design delivers
- * theirs (APP-432 item 16).
+ * Per-vault blurb (APP-526 item 7): the same one-liner the risk card shows,
+ * keyed by the config name - the one stable, chain-independent vault id.
  */
+const VAULT_DESCRIPTIONS: Record<string, ReactNode> = {
+  'USDT Savings': (
+    <Trans>Vault deployed on Morpho with a single exposure to sUSDS collateralized debt.</Trans>
+  ),
+  'USDS Flagship': (
+    <Trans>
+      Vault deployed on Morpho, with a conservative allocation and around 80% of liquidity available for
+      instant withdrawal.
+    </Trans>
+  ),
+  'USDT Risk Capital': (
+    <Trans>Vault deployed on Morpho, with a single exposure to stUSDS collateralized debt.</Trans>
+  ),
+  'USDS Risk Capital': (
+    <Trans>Vault deployed on Morpho, with a single exposure to stUSDS collateralized debt.</Trans>
+  ),
+  'USDC Risk Capital': (
+    <Trans>Vault deployed on Morpho, with a single exposure to stUSDS collateralized debt.</Trans>
+  )
+};
+
 function VaultDescription({ vaultName }: { vaultName: string }) {
-  if (vaultName === 'USDC Risk Capital') {
-    return (
-      <Trans>
-        sky.money USDC Risk Capital vault accepts USDC deposits and deploys them exclusively into an
-        stUSDS-USDC Morpho market.
-      </Trans>
-    );
-  }
-  // TODO: product description copy for the remaining vaults.
-  return <>TODO</>;
+  return <>{VAULT_DESCRIPTIONS[vaultName] ?? null}</>;
 }
 
 /**

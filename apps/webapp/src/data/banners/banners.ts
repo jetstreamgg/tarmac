@@ -267,7 +267,7 @@ export const banners: Banner[] = [
     title: 'About the Grove Token',
     module: 'rewards-banners',
     description:
-      'GROVE is the native token of the Sky Agent Grove, a credit infrastructure protocol bridging traditional capital with DeFi through credit and tokenized real-world assets. GROVE is expected to support Grove’s governance and community participation, with staking and voting mechanics being rolled out progressively. It is an ERC-20 token on the Ethereum blockchain. The GROVE token’s functionality may change and will be released subject to Grove and Sky Governance.',
+      'GROVE is the native governance and staking token of [Grove.finance](https://grove.finance/). Designed with a long-term vision for sustainability, decentralization and ecosystem alignment, GROVE enables protocol governance, protocol security via staking, and reward distribution to participants.',
     display: ['connected', 'disconnected']
   },
   {
