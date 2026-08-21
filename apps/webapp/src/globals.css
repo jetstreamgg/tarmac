@@ -1043,6 +1043,27 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
      paint a bbox-relative gradient on — the lines simply vanish. */
   stroke: var(--nav-menu-icon-active-stroke);
 }
+/* recharts marks its root <svg> `tabindex=0` / `role="application"` whenever
+   the accessibility layer is on (its v3 default), so clicking anywhere in a
+   plot focuses it and Chrome paints its own outline — a hard rectangle around
+   the whole plot, which is what the ring around the chart card was. Chrome
+   draws that one on plain `:focus` here, not `:focus-visible` (SVG is not one
+   of the elements it applies the click heuristic to), so the reset has to be
+   `:focus`. The keyboard route keeps a ring — the layer is what lets arrow
+   keys walk the series, and a focus you can't see is worse than an ugly one —
+   restyled to the app's own focusRing token.
+
+   This is global rather than per-chart: every recharts surface in the app
+   behaves the same way, and each one is nested somewhere different. */
+.recharts-surface:focus {
+  outline: none;
+}
+.recharts-surface:focus-visible {
+  outline: 2px solid var(--color-focusRing);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Portfolio donut fill mask — see `--animate-donut-sweep`. Registered so the
    angle interpolates; without `@property` a custom property animates
    discretely and the fill would pop in at the halfway mark instead. The
