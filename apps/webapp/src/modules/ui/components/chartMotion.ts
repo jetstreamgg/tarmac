@@ -56,12 +56,12 @@ export const TRACK_TAU_MS = 16;
  * beat of hesitation before it follows — accelerates, and eases in.
  *
  * The value is the spring's lag time constant (2/ω): a moving target trails
- * by `velocity x response`, a standing start settles in about 3x this. 140
- * gives the window a clearly visible trailing glide (~65px behind an ordinary
- * ~450px/s sweep, catching up ~400ms after the cursor rests) without falling
- * so far back on a fast drag that it lights series nowhere near the cursor.
+ * by `velocity x response`, and a standing-start hop settles in about 3x
+ * this. 150 is derived from the reference chart, whose overlay tweens between
+ * points with `{duration: 0.4, ease: 'easeInOut'}` — a 400ms zero-velocity
+ * hop, which is what a ~150ms spring plays.
  */
-export const TAIL_RESPONSE_MS = 140;
+export const TAIL_RESPONSE_MS = 150;
 
 /** Quart, the easing the comp carries. Still right for discrete fades. */
 export const HOVER_EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
