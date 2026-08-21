@@ -23,7 +23,10 @@ const MARKET: PendleMarketConfig = {
 // Mutable API stats — tests drive loading/loaded branches.
 const h = vi.hoisted(() => ({
   stats: undefined as
-    | Record<string, { impliedApy: number; underlyingApy?: number; tvl?: number; liquidity?: number }>
+    | Record<
+        string,
+        { impliedApy: number; underlyingApy?: number; tvl?: number; liquidity?: number; expirySec?: number }
+      >
     | undefined
 }));
 
@@ -134,8 +137,34 @@ describe('PendleProductDetail', () => {
     const about = screen.getByTestId('product-detail-about');
     expect(about.textContent).toContain('Lock in a fixed yield on your USDG');
     // Worked example: 100 USDG compounded at 4.86% over the remaining term.
-    expect(about.textContent).toMatch(/Supply 100 USDG and withdraw [\d.]+ USDG in \d+ days \(4\.86%/);
-    expect(screen.getByRole('link', { name: 'Click here' })).toBeTruthy();
+    expect(about.textContent).toMatch(/e\.g\. supply 100 USDG and withdraw [\d.]+ USDG in \d+ days \(4\.86%/);
+    expect(screen.getByRole('link', { name: 'Pendle site' }).getAttribute('href')).toBe(
+      'https://pendle.finance/'
+    );
+    expect(
+      screen.getByRole('link', { name: 'Learn more in the User Risk Documentation.' }).getAttribute('href')
+    ).toBe('https://docs.sky.money/user-risks');
+  });
+
+  it('says "one day" rather than "1 days" on the last full day', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    h.stats = { [MARKET.marketAddress]: { impliedApy: 0.0486, expirySec: nowSec + 1.5 * 86_400 } };
+    renderDetail();
+
+    const about = screen.getByTestId('product-detail-about');
+    expect(about.textContent).toMatch(/e\.g\. supply 100 USDG and withdraw [\d.]+ USDG in one day \(4\.86%/);
+    expect(about.textContent).not.toContain('1 days');
+  });
+
+  it('drops the worked example inside the last day, where it would claim no yield', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    h.stats = { [MARKET.marketAddress]: { impliedApy: 0.0486, expirySec: nowSec + 0.5 * 86_400 } };
+    renderDetail();
+
+    const about = screen.getByTestId('product-detail-about');
+    expect(about.textContent).toContain('Lock in a fixed yield on your USDG');
+    expect(about.textContent).not.toContain('e.g. supply 100 USDG');
+    expect(about.textContent).not.toContain('0 days');
   });
 
   it('omits the worked example until the markets API loads', () => {

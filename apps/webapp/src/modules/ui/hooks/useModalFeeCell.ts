@@ -13,8 +13,8 @@ import type { ModalGridFee } from '@/components/product/ModalGridCells';
  * against).
  *
  * Read-only: the cell shows a skeleton until the estimate resolves; confirm
- * gating never waits on it. The savings/vault/rewards/stusds/upgrade/convert
- * forms carry the same block inline and can migrate here.
+ * gating never waits on it. Every transaction modal routes through here — the
+ * savings, vault, rewards, stUSDS, upgrade, convert, claim and stake bodies.
  */
 export function useModalFeeCell(params: UseNetworkFeeParameters): ModalGridFee {
   const { data: fee, isLoading, error } = useNetworkFee(params);

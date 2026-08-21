@@ -9,7 +9,16 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { NETWORK_FEE_LABEL, singleOrDelta } from '@/components/product/ModalGridCells';
+import {
+  EST_EARNINGS_LABEL,
+  estEarningsTrendCell,
+  networkCell,
+  networkFeeCell,
+  productCell,
+  rateCell,
+  singleOrDelta,
+  withdrawalCell
+} from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type VaultModalGridRow = ModalGridCell[];
@@ -46,15 +55,7 @@ export type VaultEntryRowInput = {
  */
 export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRow[] {
   return [
-    [
-      {
-        kind: 'single',
-        label: 'Rate',
-        value: input.rate,
-        rateAccent: input.boostedRate ? 'morpho' : undefined
-      },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
+    [rateCell('Rate', input.rate, input.boostedRate ? 'morpho' : undefined), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: input.assetSymbol },
@@ -63,13 +64,13 @@ export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRo
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. 1Y yield (at current rate)', token: input.assetSymbol },
+        { label: EST_EARNINGS_LABEL, token: input.assetSymbol },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
       )
     ],
-    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
+    [networkFeeCell(input.networkFee)]
   ];
 }
 
@@ -113,33 +114,13 @@ export function buildVaultReviewRows(
         value: input.amount,
         token: input.assetSymbol
       },
-      {
-        kind: 'single',
-        label: 'Est. 1Y yield (at current rate)',
-        value: input.estEarnings,
-        trend: true,
-        trailingToken: input.assetSymbol
-      }
+      estEarningsTrendCell(input.estEarnings, input.assetSymbol)
     ],
     [
-      {
-        kind: 'single',
-        label: 'Product',
-        value: input.product,
-        token: input.assetSymbol,
-        productIcon: 'morpho'
-      },
-      {
-        kind: 'single',
-        label: 'Rate',
-        value: input.rate,
-        rateAccent: input.boostedRate ? 'morpho' : undefined
-      }
+      productCell(input.product, input.assetSymbol, 'morpho'),
+      rateCell('Rate', input.rate, input.boostedRate ? 'morpho' : undefined)
     ],
-    [
-      { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
-    [{ kind: 'single', label: NETWORK_FEE_LABEL, value: input.networkFee }]
+    [withdrawalCell(input.withdrawal), networkCell(input.network)],
+    [networkFeeCell(input.networkFee)]
   ];
 }

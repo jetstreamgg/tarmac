@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useChainId, useChains, useConnection } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
@@ -31,14 +31,10 @@ import {
   usePendleUsdValue,
   type PendleAnalyticsSide
 } from '@/widgets';
-import {
-  chainId as chainIdMap,
-  formatBigInt,
-  formatDecimalPercentage,
-  formatNumber,
-  isTestnetId
-} from '@/utils';
+import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
@@ -50,11 +46,12 @@ import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { usePendleSlippageCell } from '../hooks/usePendleSlippageCell';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { parseAmountInput } from '@/lib/amountInput';
+import { NO_VALUE } from '@/lib/constants';
+import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { formatPriceImpact } from '../utils/priceImpact';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
@@ -65,9 +62,6 @@ import {
 } from './pendleModalRows';
 
 export type PendleModalFlow = 'supply' | 'withdraw';
-
-const NO_VALUE = '–';
-const SECONDS_PER_DAY = 86_400;
 
 /**
  * Editable body for the Pendle "Supply to {market}" / "Early withdrawal"
@@ -100,7 +94,6 @@ export function PendleModalForm({
   market: PendleMarketConfig;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { i18n } = useLingui();
   const { isConnected, address } = useConnection();
   const isSupply = flow === 'supply';
@@ -151,7 +144,7 @@ export function PendleModalForm({
   // READ ONLY — labels the approve step only; the approve/convert calls live in
   // useBatchPendleConvert. Same inputs as the engine's own allowance read (input
   // token → Pendle router on the engine's chain) so TanStack dedupes the two.
-  const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const engineChainId = familyMainnetId(chainId);
   const inputTokenAddress = isSupply ? selectedAddress : market.ptToken;
   const { data: allowance } = useTokenAllowance({
     chainId: engineChainId,
@@ -342,10 +335,7 @@ export function PendleModalForm({
   const impliedApy = stats?.impliedApy;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const daysToMaturity = Math.max(
-    0,
-    Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
-  );
+  const daysToMaturity = remainingDaysToMaturity(expirySec, Date.now());
   const claimDate = formatMaturity(expirySec);
 
   // Pegged markets (1 PT → 1 USDS at expiry) display position values as USDS.
@@ -392,7 +382,7 @@ export function PendleModalForm({
 
   // The Network cells describe where the trade executes — the engine chain,
   // which the connected chain only matches while Pendle stays mainnet-gated.
-  const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(engineChainId);
 
   const lostTooltip = getTooltipById('early-withdrawal-impact');
   const entryRows = isSupply

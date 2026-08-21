@@ -314,6 +314,28 @@
   --animate-digit-roll-in: digit-roll-in 200ms cubic-bezier(0, 0, 0.58, 1);
   --animate-digit-roll-out: digit-roll-out 200ms cubic-bezier(0, 0, 0.58, 1) forwards;
 
+  /* Loader dots (Figma 2238:62221): each dot hops up 1.5 diameters on the
+     overshoot curve, holds a beat, drops back, then rests for the remainder
+     of a 1.6s loop; the three dots run the same track 100ms apart. The 4px
+     travel is in the Loader's 16-unit viewBox (dot = 16/6), so it scales
+     with the glyph. */
+  --animate-loader-dot: loader-dot 1600ms infinite both;
+
+  /* Portfolio donut fill (Figma 2233:61099): the arcs are revealed clockwise
+     from 12 o'clock by a conic-gradient mask whose angle runs 0 → 360deg (the
+     `@property` by `.donut-sweep-mask` makes the angle interpolable). Starts
+     300ms after the data lands, with the rest of the card's entrance. */
+  --animate-donut-sweep: donut-sweep 900ms ease-out 300ms both;
+
+  /* Menu panel (Figma 2134:88604): scales up from 0.9 out of its top-right
+     anchor, 300ms on quart; the close runs the same track backwards. The
+     comp's x/y tracks (14, -20) are just the offset of a centre-scaled frame
+     pinned to its top-right corner — `transform-origin: top right` already
+     accounts for them, so there is no translate here. Reduced motion swaps the tokens
+     for a plain crossfade (see the media query by the `.nav-menu-icon` rules). */
+  --animate-menu-in: menu-in 300ms var(--ease-in-out-quart) both;
+  --animate-menu-out: menu-out 300ms var(--ease-in-out-quart) both;
+
   /* First-visit AppLoader reveal (Figma 1875:6834): after the logomark
      timeline, the page content fades in rising 30px and the chrome (navbars)
      just fades, both on quint-out. Durations are the Figma timeline segments
@@ -346,6 +368,14 @@
      travels in both directions uses quart alone. */
   --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Two more curves the interaction comps (Figma 2238:62221 loader,
+     2233:61099 pie chart, 1598:76582 number roll) are drawn on: a springy
+     overshoot for small things that pop or hop into place (loader dots, badge
+     scale-in, badge slide), and a plain settle for anything that resizes
+     (the rolling number's width). The settle is the textbook easeOutExpo;
+     `--ease-out-expo` above is the steeper house variant. */
+  --ease-out-overshoot: cubic-bezier(0.45, 1.45, 0.8, 1);
+  --ease-out-settle: cubic-bezier(0.16, 1, 0.3, 1);
 
   --transition-duration-250: 250ms;
   --transition-duration-350: 350ms;
@@ -406,6 +436,52 @@
     }
     to {
       opacity: 1;
+    }
+  }
+  @keyframes loader-dot {
+    0% {
+      transform: translateY(0);
+      animation-timing-function: var(--ease-out-overshoot);
+    }
+    18.75% {
+      transform: translateY(-4px);
+      animation-timing-function: linear;
+    }
+    25% {
+      transform: translateY(-4px);
+      animation-timing-function: var(--ease-out-overshoot);
+    }
+    43.75%,
+    100% {
+      transform: translateY(0);
+    }
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes menu-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+  @keyframes donut-sweep {
+    from {
+      --donut-sweep: 0deg;
+    }
+    to {
+      --donut-sweep: 360deg;
     }
   }
   @keyframes digit-roll-in {
@@ -949,7 +1025,99 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
    theme-invariant like the nav-icon active fill; rest/hover stay fg-primary
    via currentColor. */
 [data-state='open'] > .nav-menu-icon {
-  stroke: url(#nav-icon-gradient);
+  /* The icon's own userSpaceOnUse gradient (set inline by MenuToggleIcon), not
+     the shared #nav-icon-gradient: that one is objectBoundingBox, and a
+     horizontal stroke has a zero-height bounding box, which SVG refuses to
+     paint a bbox-relative gradient on — the lines simply vanish. */
+  stroke: var(--nav-menu-icon-active-stroke);
+}
+/* Portfolio donut fill mask — see `--animate-donut-sweep`. Registered so the
+   angle interpolates; without `@property` a custom property animates
+   discretely and the fill would pop in at the halfway mark instead. The
+   initial value is the full circle, so a browser that skips the animation
+   (or the `motion-safe` gate) still shows the whole chart. */
+@property --donut-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 360deg;
+}
+.donut-sweep-mask {
+  mask-image: conic-gradient(#000 var(--donut-sweep), transparent 0);
+}
+
+/* Hamburger → X (Figma 2134:88604). Three steps of 150ms on quart, keyed off
+   the trigger's data-state: opening, the outer strokes first travel 4px to the
+   centre line, then rotate ±45°, and the middle stroke collapses the instant
+   they meet; closing runs rotate → uncollapse → travel. The order is carried
+   by the per-state transition-delay, listed in the same property order as the
+   transition shorthand (translate, rotate, scale). */
+.nav-menu-icon path {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    translate 150ms var(--ease-in-out-quart),
+    rotate 150ms var(--ease-in-out-quart),
+    scale 10ms linear;
+}
+/* Closing: rotate first, travel once it lands. */
+.nav-menu-icon path[data-line='top'],
+.nav-menu-icon path[data-line='bottom'] {
+  transition-delay: 150ms, 0ms, 0ms;
+}
+.nav-menu-icon path[data-line='middle'] {
+  transition-delay: 0ms, 0ms, 140ms;
+}
+/* Opening: travel first, rotate once the strokes meet. */
+[data-state='open'] > .nav-menu-icon path[data-line='top'],
+[data-state='open'] > .nav-menu-icon path[data-line='bottom'] {
+  transition-delay: 0ms, 150ms, 0ms;
+}
+[data-state='open'] > .nav-menu-icon path[data-line='top'] {
+  translate: 0 4px;
+  rotate: 45deg;
+}
+[data-state='open'] > .nav-menu-icon path[data-line='bottom'] {
+  translate: 0 -4px;
+  rotate: -45deg;
+}
+[data-state='open'] > .nav-menu-icon path[data-line='middle'] {
+  scale: 0 1;
+  transition-delay: 0ms, 0ms, 150ms;
+}
+/* The reduced-motion crossfade below. These live at top level, not in
+   `@theme`: Tailwind only emits a themed `@keyframes` when a *used*
+   `--animate-*` utility names it, and nothing names these — the only
+   references are the token re-points inside the media query, which the theme
+   pass never sees. Declared there, both blocks get tree-shaken and the close
+   animation runs with no keyframes at all (opacity pinned at 1 for the full
+   300ms, then the panel vanishes in one frame once Radix unmounts it). */
+@keyframes menu-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes menu-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-menu-icon path {
+    transition: none;
+  }
+  /* The menu panel keeps a crossfade but drops the travel and scale. The
+     `animate-menu-*` utilities resolve `var(--animate-menu-*)` at use, so
+     re-pointing the token here is enough. */
+  :root {
+    --animate-menu-in: menu-fade-in 300ms var(--ease-in-out-quart) both;
+    --animate-menu-out: menu-fade-out 300ms var(--ease-in-out-quart) both;
+  }
 }
 
 /* Page transitions (Figma: Sky App: UI 1598:75512, view=motion) -------------

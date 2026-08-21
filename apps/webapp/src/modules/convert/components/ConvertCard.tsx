@@ -1,15 +1,15 @@
-import { useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ChevronDown } from 'lucide-react';
-import { productNetworks } from '@/hooks';
+import { useProductNetworks } from '@/hooks';
 import { getChainIcon } from '@/utils';
 import { Intent } from '@/lib/enums';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { ConvertAmountInput } from './ConvertAmountInput';
 import type { useConvertForm } from '../hooks/useConvertForm';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 export type ConvertFormModel = ReturnType<typeof useConvertForm>;
 
@@ -26,20 +26,12 @@ export type ConvertFormModel = ReturnType<typeof useConvertForm>;
  */
 export function ConvertCard({ form }: { form: ConvertFormModel }) {
   const chainId = useChainId();
-  const chains = useChains();
 
   // The networks Convert is live on among the configured chains (includes the
   // Tenderly fork in dev mode) — scopes the network selector like the product
   // pages do. PSM addresses exist on every supported chain, so no address map.
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.CONVERT_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
+  const networks = useProductNetworks(Intent.CONVERT_INTENT);
+  const networkName = useNetworkName(chainId);
 
   return (
     // Phone tier (comp 1295:25285, M6.9): 16px radius + 16px row padding; the

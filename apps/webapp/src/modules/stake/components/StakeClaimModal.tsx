@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -8,9 +8,8 @@ import { i18n } from '@lingui/core';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee } from '@/hooks';
-import { QueryParams } from '@/lib/constants';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';
@@ -24,8 +23,7 @@ import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 // Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
 import { claimSubtitle } from '../lib/constants';
-
-const NO_VALUE = '–';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 /** SKY first (legacy dropdown sort), stable otherwise — the claim-execution order. */
 function sortSkyFirst(rewards: ClaimableReward[]): ClaimableReward[] {
@@ -66,7 +64,6 @@ function heroFor(reward: ClaimableReward, testIdPrefix: string, label?: boolean)
  */
 function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId: string }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
 
@@ -94,17 +91,7 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
   });
 
   // Read-only: the cell shows a dash until this resolves, and neither CTA waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
-    calls,
-    chainId,
-    shouldUseBatch: isBatch
-  });
-
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch });
 
   const claimDisabled = rewards.length === 0 || !plainPrepared || plainLoading;
   const restakeDisabled = rewards.length === 0 || !restakePrepared || restakeLoading;
@@ -163,7 +150,7 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
     transactionScreenContent
   ]);
 
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
+  const networkName = useNetworkName(chainId, NO_VALUE);
 
   // [Network fee | Network] (Figma 1036:213990). The fee cell draws the live
   // estimate — the plain claim's, per `useStakeClaimLaunch`'s note on the
@@ -171,12 +158,12 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
   const gridRows = toGridCells(
     [
       [
-        { label: NETWORK_FEE_LABEL, kind: 'single', value: networkFee?.formatted ?? NO_VALUE },
+        { label: NETWORK_FEE_LABEL, kind: 'single', value: feeCell.fee?.formatted ?? NO_VALUE },
         { label: t`Network`, kind: 'single', value: networkName, network: true }
       ]
     ],
     'stake-claim-row',
-    { fee: networkFee, state: bundleState, loading: networkFeeLoading }
+    feeCell
   );
 
   const body = (
@@ -195,7 +182,7 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
 
       {rewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
 
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

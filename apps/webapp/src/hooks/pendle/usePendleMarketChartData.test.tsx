@@ -50,7 +50,7 @@ describe('usePendleMarketChartData', () => {
 
     const points = result.current.data!;
     expect(points.map(p => p.impliedApy)).toEqual([0.035, 0.04, 0.045]);
-    expect(points.map(p => p.tvl)).toEqual([1_000_000, 2_000_000, 3_000_000]);
+    expect(points.map(p => p.liquidity)).toEqual([1_000_000, 2_000_000, 3_000_000]);
     expect(points[0].timestampSec).toBe(Math.floor(Date.parse('2026-05-15T00:00:00.000Z') / 1000));
   });
 
@@ -60,7 +60,7 @@ describe('usePendleMarketChartData', () => {
       json: async () => ({
         total: 2,
         results: [
-          // TVL but no rate — consumers average impliedApy, so a filled 0 here
+          // Liquidity but no rate — consumers average impliedApy, so a filled 0 here
           // would silently deflate the 30D figure.
           { timestamp: '2026-05-15T00:00:00.000Z', tvl: 1_000_000 },
           { timestamp: '2026-05-16T00:00:00.000Z', impliedApy: 0.04, tvl: 2_000_000 }
@@ -74,8 +74,8 @@ describe('usePendleMarketChartData', () => {
 
     const points = result.current.data!;
     expect(points.map(p => p.impliedApy)).toEqual([undefined, 0.04]);
-    // The bucket survives — it still carries TVL.
-    expect(points.map(p => p.tvl)).toEqual([1_000_000, 2_000_000]);
+    // The bucket survives — it still carries liquidity.
+    expect(points.map(p => p.liquidity)).toEqual([1_000_000, 2_000_000]);
   });
 
   it('does not fetch when no market is given', async () => {

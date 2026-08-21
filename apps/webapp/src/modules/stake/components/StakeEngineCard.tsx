@@ -15,14 +15,12 @@ import {
   getIlkName
 } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, math } from '@/utils';
-import { QueryParams } from '@/lib/constants';
+import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const NO_VALUE = '–';
 
 // Inline token chip (hi-fi 486:31955). `headline` variant is 24px and flows in
 // the heading text (vertically centered, with breathing room); `stat` variant is

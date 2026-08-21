@@ -1,8 +1,6 @@
 import { Trans } from '@lingui/react/macro';
-import { formatBigInt } from '@/utils';
+import { formatAddress, formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-
-const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
 function AmountBlock({ label, amount, symbol }: { label: React.ReactNode; amount: bigint; symbol: string }) {
   return (
@@ -62,7 +60,7 @@ export function StakeTakeoverConfirmSummary({
                 showChainIcon={false}
               />
             )}
-            {rewardSymbol ?? shortenAddress(rewardContract!)}
+            {rewardSymbol ?? formatAddress(rewardContract!, 6, 4)}
           </span>
         </div>
       )}

@@ -46,7 +46,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(screen.getByText('Instant')).toBeTruthy();
 
     const learnMore = screen.getByRole('link', { name: /Learn more about risk/ });
-    expect(learnMore.getAttribute('href')).toBe('https://docs.sky.money');
+    expect(learnMore.getAttribute('href')).toBe('https://docs.sky.money/user-risks');
     expect(learnMore.getAttribute('target')).toBe('_blank');
   });
 
@@ -95,12 +95,12 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
 
   it('names the reward per farm: SPK farm promises SPK tokens, Chronicle promises points', () => {
     renderCard('low', 'rewards-spk');
-    expect(screen.getByText(/receive SPK tokens/)).toBeTruthy();
+    expect(screen.getByText(/earn SPK tokens/)).toBeTruthy();
     expect(screen.getByText('Instant')).toBeTruthy();
     cleanup();
 
     renderCard('low', 'rewards-cle');
-    expect(screen.getByText(/receive Chronicle Points/)).toBeTruthy();
+    expect(screen.getByText(/earn Chronicle Points/)).toBeTruthy();
     expect(screen.queryByText(/tokens/)).toBeNull();
   });
 
@@ -142,7 +142,7 @@ describe('RiskTierDetailsTrigger — mobile bottom panel (486:21797)', () => {
     expect(screen.getByText('Conservative')).toBeTruthy();
     expect(screen.getByText('Withdrawals')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Learn more about risk/ }).getAttribute('href')).toBe(
-      'https://docs.sky.money'
+      'https://docs.sky.money/user-risks'
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Close/ }));

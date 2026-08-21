@@ -29,12 +29,7 @@ import {
   isMarketMatured,
   usePendleMarketsApiData
 } from '@/hooks';
-import {
-  formatDecimalPercentage,
-  calculateApyFromStr,
-  isTestnetId,
-  chainId as chainIdConstants
-} from '@/utils';
+import { formatDecimalPercentage, calculateApyFromStr, familyMainnetId } from '@/utils';
 import {
   Savings,
   Upgrade,
@@ -237,7 +232,7 @@ function useActionRates(
   }, [actions]);
 
   const hasRates = rateKeys.size > 0;
-  const mainnetChainId = isTestnetId(chainId) ? chainIdConstants.tenderly : chainIdConstants.mainnet;
+  const mainnetChainId = familyMainnetId(chainId);
 
   const { data: overallSkyData, isLoading: savingsLoading } = useOverallSkyData();
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();

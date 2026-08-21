@@ -2,11 +2,10 @@ import { formatUnits } from 'viem';
 import { formatNumber } from '@/utils';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
+import { NO_VALUE } from '@/lib/constants';
 
 const format = (units: bigint) =>
   formatNumber(parseFloat(formatUnits(units, 18)), { minDecimals: 2, maxDecimals: 2 });
-
-const NO_VALUE = '–';
 
 /**
  * The from → to hero on the stUSDS modal's review and wallet screens — the

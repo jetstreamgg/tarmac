@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
-import { useChains } from 'wagmi';
+
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, Gauge, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import {
-  productNetworks,
+  trailingAverageRate,
   useOverallSkyData,
+  useProductNetworks,
   useStUsdsCapacityData,
   useStUsdsChartInfo,
-  useStUsdsData,
-  trailingAverageRate
+  useStUsdsData
 } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -27,8 +27,7 @@ import {
 import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
-
-const NO_VALUE = '–';
+import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
 
 const formatUsd = (value: bigint | undefined): string =>
   value !== undefined ? `$${formatNumber(parseFloat(formatUnits(value, 18)))}` : NO_VALUE;
@@ -41,15 +40,7 @@ const formatUsd = (value: bigint | undefined): string =>
  * route-bounce gate.
  */
 export function StUsdsProductDetail() {
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.EXPERT_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.EXPERT_INTENT);
 
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
   const { data: capacityData, isLoading: capacityLoading } = useStUsdsCapacityData();
@@ -184,7 +175,7 @@ export function StUsdsProductDetail() {
       details={details}
       about={{
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
-        learnMoreHref: 'https://docs.sky.money/user-risks'
+        learnMoreHref: USER_RISKS_URL
       }}
       transactions={<StUsdsTransactionsTable />}
       transactionsTitle={<Trans>All transactions</Trans>}
