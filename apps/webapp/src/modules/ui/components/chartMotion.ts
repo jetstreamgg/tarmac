@@ -32,19 +32,45 @@ import { useReducedMotion } from 'motion/react';
  */
 
 /**
- * Time constant for the elements that report where the pointer is — the ringed
- * dot, the dashed rule and the tooltip.
+ * Lag constant for the elements that report where the pointer is — the ringed
+ * dot, the dashed rule and the tooltip — when the hover is scrubbing WITHIN a
+ * segment, i.e. when the snapped point barely moves between frames.
  *
- * A first-order follower trails a *moving* target by `velocity x tau`, so this
- * number is what decides whether the dot feels attached to the cursor. At a
- * brisk drag (~1300px/s, measured) 45ms trails ~60px — five dot widths, and
- * plainly late. 16ms trails ~20px, which reads as attached while still taking
- * ~50ms to settle: enough to smooth the jump between two data points on the
- * sparse ranges (1W steps ~90px) without ever being what the eye waits for.
- *
- * The visible animation in the hover chrome is the tail, below — not this.
+ * A follower trails a *moving* target by `velocity x lag`, so this number is
+ * what decides whether the indicators feel attached to the cursor. At a brisk
+ * drag (~1300px/s, measured) 45ms trails ~60px — five dot widths, and plainly
+ * late. 16ms trails ~20px, which reads as attached while still taking ~40ms to
+ * settle. It is the FLOOR of the paced band below, not a fixed setting.
  */
-export const TRACK_TAU_MS = 16;
+export const TRACK_RESPONSE_MIN_MS = 16;
+
+/**
+ * ...and its ceiling, plus the pace that fills the band between them.
+ *
+ * recharts snaps the hover to a data point, so on a sparse range the
+ * indicators do not follow the pointer at all — they sit still and then step
+ * a whole point interval at once. A single lag constant cannot serve both
+ * cases: small enough to feel attached while scrubbing is small enough to make
+ * that step read as a jump, and large enough to animate the step is large
+ * enough to trail the pointer half a plot on the dense ranges.
+ *
+ * So the step itself is the pace signal. Each time the target actually moves,
+ * the response is set from how far it moved: a per-frame scrub of a couple of
+ * px stays at the floor (attached, as before), while a point-to-point hop of
+ * ~130px on the weekly range gets the full 100ms — a critically damped hop,
+ * whose S-curve is the easeInOut the comp carries, settling in ~215ms.
+ *
+ * This is the same distance-paced idea as `tailResponse`, keyed off the
+ * observed step rather than the measured point spacing, because the cursor is
+ * a recharts-owned element that never sees the series geometry.
+ */
+export const TRACK_RESPONSE_MAX_MS = 100;
+export const TRACK_PACE_MS_PER_PX = 0.8;
+
+/** Spring lag constant for an indicator whose target just moved `step` px. */
+export function trackResponse(step: number): number {
+  return Math.min(Math.max(step * TRACK_PACE_MS_PER_PX, TRACK_RESPONSE_MIN_MS), TRACK_RESPONSE_MAX_MS);
+}
 
 /**
  * Response time for the lit window — the "tail" of full-strength series that
@@ -99,6 +125,8 @@ export const HOVER_CROSSFADE_EASE = 'cubic-bezier(0.42, 0, 0.58, 1)';
 const SETTLED_PX = 0.05;
 /** Longest frame the integrator will honour, so a stalled tab cannot teleport. */
 const MAX_FRAME_MS = 64;
+/** The two axes, so the spring step can be written once instead of twice. */
+const AXES = ['x', 'y'] as const;
 
 /**
  * Follows a moving target, handing `write` the smoothed position each frame.
@@ -130,7 +158,7 @@ const MAX_FRAME_MS = 64;
 function useFollowWith<T extends SVGElement | HTMLElement>(
   x: number | null | undefined,
   y: number | null | undefined,
-  time: number,
+  time: number | ((step: number) => number),
   mode: 'exp' | 'spring',
   write: (node: T, x: number, y: number) => void
 ) {
@@ -140,6 +168,10 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
   const velocity = useRef({ x: 0, y: 0 });
   const frame = useRef<number | null>(null);
   const lastFrameAt = useRef(0);
+  // The lag constant in force for the move in flight. Held in a ref because a
+  // paced follower re-derives it from each step the target takes, and the loop
+  // must keep using it for frames where the target does not move.
+  const response = useRef(typeof time === 'number' ? time : time(0));
   const reduceMotion = useReducedMotion();
 
   useLayoutEffect(() => {
@@ -154,7 +186,17 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
       return;
     }
 
+    const previous = target.current;
     target.current = { x, y };
+    if (typeof time === 'number') {
+      response.current = time;
+    } else if (previous) {
+      // Pace this move by how far the snapped target jumped. Only genuine
+      // moves land here: identical x/y do not re-run the effect at all, so an
+      // in-flight hop is never re-paced (and cut short) by the mousemoves that
+      // keep reporting the same point.
+      response.current = time(Math.hypot(x - previous.x, y - previous.y));
+    }
 
     // First placement of this instance — and every placement under reduced
     // motion — lands directly. Animating the first one would fly the element in
@@ -181,17 +223,25 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
       const dt = Math.min(now - lastFrameAt.current, MAX_FRAME_MS);
       lastFrameAt.current = now;
       const vel = velocity.current;
+      const tau = response.current;
 
       if (mode === 'spring') {
-        // Critically damped: ω = 2 / time; semi-implicit Euler keeps it stable
-        // even at the MAX_FRAME_MS step.
-        const omega = 2 / time;
-        vel.x += (omega * omega * (tgt.x - cur.x) - 2 * omega * vel.x) * dt;
-        vel.y += (omega * omega * (tgt.y - cur.y) - 2 * omega * vel.y) * dt;
-        cur.x += vel.x * dt;
-        cur.y += vel.y * dt;
+        // Critically damped, integrated in closed form rather than stepped:
+        // with e = position - target, e(t) = (e0 + (v0 + ω e0) t) e^-ωt. That is
+        // exact for a target that holds still over the frame and stable at any
+        // ω, which a stepped integrator is not — at the 16ms floor an explicit
+        // step's 2ω·dt term exceeds 1 and the follower blows up.
+        const omega = 2 / tau;
+        const decay = Math.exp(-omega * dt);
+        for (const axis of AXES) {
+          const error = cur[axis] - tgt[axis];
+          const slope = vel[axis] + omega * error;
+          const settled = (error + slope * dt) * decay;
+          vel[axis] = (slope - omega * (error + slope * dt)) * decay;
+          cur[axis] = tgt[axis] + settled;
+        }
       } else {
-        const k = 1 - Math.exp(-dt / time);
+        const k = 1 - Math.exp(-dt / tau);
         cur.x += (tgt.x - cur.x) * k;
         cur.y += (tgt.y - cur.y) * k;
       }
@@ -200,8 +250,8 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
         Math.abs(tgt.x - cur.x) < SETTLED_PX &&
         Math.abs(tgt.y - cur.y) < SETTLED_PX &&
         // A spring can cross the target carrying speed; arrival needs both.
-        Math.abs(vel.x) * time < SETTLED_PX &&
-        Math.abs(vel.y) * time < SETTLED_PX;
+        Math.abs(vel.x) * tau < SETTLED_PX &&
+        Math.abs(vel.y) * tau < SETTLED_PX;
       if (still) {
         cur.x = tgt.x;
         cur.y = tgt.y;
@@ -230,13 +280,19 @@ const writeTransform = (node: SVGElement | HTMLElement, x: number, y: number) =>
   node.style.transform = `translate(${x}px, ${y}px)`;
 };
 
-/** The attached-indicator follower: exponential, writing `transform` each frame. */
+/**
+ * The hover-indicator follower — the dot, the dashed rule and the tooltip.
+ *
+ * Spring dynamics on a step-paced lag constant (`trackResponse`): a scrub
+ * inside one segment stays at the 16ms floor and reads as attached, while the
+ * step onto the next data point plays as a zero-velocity, ease-into-arrival
+ * hop instead of a teleport. Writes `transform` each frame.
+ */
 export function useFollow<T extends SVGElement | HTMLElement>(
   x: number | null | undefined,
-  y: number | null | undefined,
-  tau: number
+  y: number | null | undefined
 ) {
-  return useFollowWith<T>(x, y, tau, 'exp', writeTransform);
+  return useFollowWith<T>(x, y, trackResponse, 'spring', writeTransform);
 }
 
 const writeDashoffset = (node: SVGElement, x: number) => {

@@ -1,7 +1,7 @@
 import { RefObject, useLayoutEffect, useState } from 'react';
 import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
-import { TRACK_TAU_MS, useFollow } from './chartMotion';
+import { useFollow } from './chartMotion';
 
 /** Gap between the hover point and the panel. Wider than recharts' default 10
  *  so the panel stands clear of the series instead of crowding it. */
@@ -60,7 +60,7 @@ function useTooltipPlacement(
   // The panel names the point the dot and rule mark, so it shares their time
   // constant and arrives with them rather than trailing like the lit window.
   // `useFollow` owns `transform`; it must stay out of the style prop below.
-  const panelRef = useFollow<HTMLDivElement>(x, y, TRACK_TAU_MS);
+  const panelRef = useFollow<HTMLDivElement>(x, y);
 
   useLayoutEffect(() => {
     const panel = panelRef.current;

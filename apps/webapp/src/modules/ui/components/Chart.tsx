@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
 import { SeriesMotionLayer } from './ChartSeriesMotion';
-import { TRACK_TAU_MS, useFollow } from './chartMotion';
+import { useFollow } from './chartMotion';
 import { BP, useBreakpointIndex } from '@/hooks';
 import {
   Select,
@@ -134,7 +134,7 @@ const ACTIVE_DOT_RADIUS = 5.25;
  * rides the series (the comp moves it 13px in y over the same keyframes).
  */
 export function ActiveDot({ cx, cy, color }: { cx?: number; cy?: number; color?: string }) {
-  const ref = useFollow<SVGGElement>(cx, cy, TRACK_TAU_MS);
+  const ref = useFollow<SVGGElement>(cx, cy);
   if (cx == null || cy == null) return null;
   // No `transform` in the style prop — `useFollow` owns it (chartMotion.ts).
   return (
@@ -166,7 +166,7 @@ export function HoverCursor({
 }) {
   const start = points?.[0];
   const end = points?.[1];
-  const ref = useFollow<SVGLineElement>(start?.x, 0, TRACK_TAU_MS);
+  const ref = useFollow<SVGLineElement>(start?.x, 0);
   if (!start) return null;
   return (
     <line
