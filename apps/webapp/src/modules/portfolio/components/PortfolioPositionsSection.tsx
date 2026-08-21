@@ -141,7 +141,11 @@ export function PortfolioPositionsSection({
               surface (G6). */}
           {maturedPositions.map(({ market, ptBalance }) => (
             <CarouselItem key={market.marketAddress} className={ITEM_BASIS}>
-              <PendleMaturedPositionCard market={market} ptBalance={ptBalance} />
+              <PendleMaturedPositionCard
+                market={market}
+                ptBalance={ptBalance}
+                onViewDetails={() => goToProduct(`${ROUTES.EARN_FIXED}/${market.slug}`)}
+              />
             </CarouselItem>
           ))}
           {suppliedView.positions.map(position => (
