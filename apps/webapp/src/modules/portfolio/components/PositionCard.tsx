@@ -17,7 +17,9 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { productStatusType } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
+import type { PositionEarnings } from '../earnings/earningsForPosition';
 import { ProductGlyph } from './ProductGlyph';
+import { EarningsFigureValue } from './EarningsStat';
 
 // DS type tokens, resolved per the comps (mobile 486:20195 → desktop 486:20044).
 // Every one is responsive, so the card is NOT tier-agnostic. Color comes from the
@@ -45,10 +47,13 @@ const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-[20px] py-1 pr-
  */
 export function PositionCard({
   position,
+  alreadyEarned,
   onSupply,
   onManage
 }: {
   position: SuppliedPosition;
+  /** APP-450 earnings slice for this row; null → outside scope, renders a dash. */
+  alreadyEarned: PositionEarnings | null;
   onSupply: () => void;
   onManage: () => void;
 }) {
@@ -105,11 +110,24 @@ export function PositionCard({
           />
         </div>
         <div className="flex">
-          {/* TODO(D1): Already earned needs a cost-basis source (no hook yet). */}
           <Stat
             className="w-[112px]"
             label={<Trans>Accrued to date</Trans>}
-            value={<span className={cn(statValue, 'text-fgSecondary')}>TODO</span>}
+            value={
+              <EarningsFigureValue
+                figure={alreadyEarned?.totalEarned ?? null}
+                missing={alreadyEarned?.missingFromTotal}
+                coverage={alreadyEarned?.coverage}
+                variant="plain"
+                className={cn(
+                  statValue,
+                  alreadyEarned?.totalEarned?.status === 'ok' ? 'text-fgPrimary' : 'text-fgSecondary'
+                )}
+                testId="position-already-earned"
+                pendleSplit={alreadyEarned?.pendleSplit}
+                skeletonClassName="h-3.5 w-14 rounded"
+              />
+            }
           />
           <StatDivider />
           <Stat

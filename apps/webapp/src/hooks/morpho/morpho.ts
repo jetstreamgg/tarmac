@@ -162,6 +162,39 @@ export type MorphoVaultV2TransactionsApiResponse = {
   };
 };
 
+/** The Morpho API serializes big-int scalars as strings above 2^53 and plain numbers below. */
+export type MorphoNumberish = number | string;
+
+export type MorphoTimeseriesPoint = { x: number; y: MorphoNumberish };
+
+/**
+ * One entry of `userByAddress.vaultV2Positions` from the UserVaultV2Pnl query.
+ * `pnl`/`assets` are base units; `history.assets` comes back newest-first.
+ */
+export type MorphoUserVaultV2Position = {
+  vault: {
+    address: string;
+    asset: {
+      symbol: string;
+      decimals: number;
+    };
+  };
+  assets: MorphoNumberish;
+  assetsUsd: number;
+  pnl: MorphoNumberish;
+  pnlUsd: number;
+  roe: number | null;
+  history: { assets: MorphoTimeseriesPoint[] } | null;
+};
+
+export type MorphoUserVaultV2PnlApiResponse = {
+  data: {
+    userByAddress: {
+      vaultV2Positions: MorphoUserVaultV2Position[];
+    } | null;
+  };
+};
+
 export interface MorphoVaultHistoryItem {
   type: TransactionTypeEnum;
   assets: bigint;

@@ -74,7 +74,41 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({
   TokenIcon: () => null
 }));
 
+// The card reads "Accrued to date" from the APP-450 aggregator; the aggregator
+// itself is covered by its own suite, so hand it a literal slice here.
+const earningsHolder = vi.hoisted(() => ({ value: undefined as unknown }));
+vi.mock('@/modules/portfolio/hooks/useWalletEarnings', () => ({
+  useWalletEarnings: () => earningsHolder.value
+}));
+
 import { SavingsPositionCard } from './SavingsPositionCard';
+import { combineWalletEarnings } from '@/modules/portfolio/earnings/combineWalletEarnings';
+import {
+  notAvailable,
+  ok,
+  type ProtocolEarnings,
+  type WalletEarnings
+} from '@/modules/portfolio/earnings/types';
+
+const savingsEarnings = (totalEarned: ProtocolEarnings['totalEarned']): WalletEarnings => {
+  const protocols: ProtocolEarnings[] = [
+    {
+      id: 'savings',
+      rowIds: ['savings'],
+      totalEarned,
+      earnedThisMonth: totalEarned,
+      coverage: 'mainnet-only',
+      isLoading: false,
+      error: null
+    }
+  ];
+  return {
+    protocols,
+    combined: combineWalletEarnings(protocols),
+    isLoading: false,
+    window: { startSec: 0, endSec: 0 }
+  };
+};
 
 const renderCard = () =>
   render(
@@ -89,6 +123,7 @@ describe('SavingsPositionCard — position routing', () => {
     h.savingsUnresolved = false;
     h.savingsError = null;
     h.launch.mockClear();
+    earningsHolder.value = savingsEarnings(ok({ usd: 46.4 }));
   });
   afterEach(() => cleanup());
 
@@ -127,6 +162,27 @@ describe('SavingsPositionCard — position routing', () => {
     expect(screen.queryByTestId('savings-supply-card')).toBeNull();
     expect(screen.queryByTestId('savings-position-supply')).not.toBeNull();
     expect(screen.queryByTestId('savings-position-withdraw')).not.toBeNull();
+  });
+
+  // APP-450 scope extension: "Accrued to date" renders the Portfolio's savings
+  // slice instead of the placeholder dash.
+  it('renders the accrued-to-date figure from the wallet earnings slice', () => {
+    h.savingsBalance = 100n * 10n ** 18n;
+    renderCard();
+
+    const stat = screen.getByTestId('savings-accrued-to-date');
+    expect(stat.textContent).toContain('$46.40');
+    // The mainnet-only coverage note is announced-class, never an error mark.
+    expect(screen.queryByTestId('earnings-info')).not.toBeNull();
+    expect(screen.queryByTestId('earnings-partial')).toBeNull();
+  });
+
+  it('renders a self-explaining dash when the savings figure is unavailable', () => {
+    h.savingsBalance = 100n * 10n ** 18n;
+    earningsHolder.value = savingsEarnings(notAvailable('source-error'));
+    renderCard();
+
+    expect(screen.getByTestId('savings-accrued-to-date').textContent).toBe('—');
   });
 
   it('hands the hero the SSR, so the position accrues on screen', () => {

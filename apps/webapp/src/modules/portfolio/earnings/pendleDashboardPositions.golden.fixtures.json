@@ -1,0 +1,188 @@
+{
+  "positions": [
+    {
+      "chainId": 1,
+      "totalOpen": 0,
+      "totalClosed": 12,
+      "totalSy": 0,
+      "openPositions": [],
+      "closedPositions": [
+        {
+          "marketId": "1-0xafdc922d0059147486cc1f0f32e3a2354b0d35cc",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0x64506968e80c9ed07bff60c8d9d57474effff2c9",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0x22a72b0c504cbb7f8245208f84d8f035c311adec",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0x81f3a11db1de16f4f9ba8bf46b71d2b168c64899",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0xa83174f1dd8475378abca9d676dad3ce97409e0a",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0xafb7d6d1e9bca5b675adc9b4f52f0cdfddec9654",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0", "claimTokenAmounts": [] },
+          "lp": {
+            "valuation": 0,
+            "balance": "0",
+            "activeBalance": "0",
+            "claimTokenAmounts": [
+              { "token": "1-0x808507121b80c02388fad14726482e061b8da827", "amount": "1456630678533544" }
+            ]
+          },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0xc5b32dba5f29f8395fb9591e1a15f23a75214f33",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0x3c53fae231ad3c0408a8b6d33138bbff1caec330",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0xfc82267a9e065aaf407f64dadd49bfbdc9511fb1",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0x9c560ebaf78e596cbcc27411d633a74d628dd7dc",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0xc5f938a8ef5f3bf9e72f5aa094baf5e03f4727d3",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "1-0x66ec657c59cdcaf171ab43b83da3942758bf8a97",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        }
+      ],
+      "syPositions": [],
+      "updatedAt": "2026-08-15T16:18:07.417Z"
+    },
+    {
+      "chainId": 143,
+      "totalOpen": 0,
+      "totalClosed": 1,
+      "totalSy": 0,
+      "openPositions": [],
+      "closedPositions": [
+        {
+          "marketId": "143-0x475b98c83aedbfdd0a0abaa930ec8cb501ac93b1",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        }
+      ],
+      "syPositions": [],
+      "updatedAt": "2026-08-15T16:18:07.417Z"
+    },
+    {
+      "chainId": 9745,
+      "totalOpen": 0,
+      "totalClosed": 2,
+      "totalSy": 0,
+      "openPositions": [],
+      "closedPositions": [
+        {
+          "marketId": "9745-0x0d7d9abee602c7f0a242ea7e200e47c372acba84",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "9745-0x9d0676ec013cb50b7bf9b291c22b618e9fe86832",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        }
+      ],
+      "syPositions": [],
+      "updatedAt": "2026-08-15T16:18:07.417Z"
+    },
+    {
+      "chainId": 42161,
+      "totalOpen": 0,
+      "totalClosed": 4,
+      "totalSy": 0,
+      "openPositions": [],
+      "closedPositions": [
+        {
+          "marketId": "42161-0x8e101c690390de722163d4dc3f76043bebbbcadd",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "42161-0x43023675c804a759cbf900da83dbcc97ee2afbe7",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "42161-0x2092fa5d02276b3136a50f3c2c3a6ed45413183e",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        },
+        {
+          "marketId": "42161-0xcbf629c8d396b1261f81f55175afa010e94787d8",
+          "pt": { "valuation": 0, "balance": "0" },
+          "yt": { "valuation": 0, "balance": "0" },
+          "lp": { "valuation": 0, "balance": "0", "activeBalance": "0" },
+          "crossPtPositions": []
+        }
+      ],
+      "syPositions": [],
+      "updatedAt": "2026-08-15T16:18:07.417Z"
+    }
+  ]
+}
