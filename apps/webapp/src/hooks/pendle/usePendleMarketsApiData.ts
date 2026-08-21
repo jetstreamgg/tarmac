@@ -46,7 +46,12 @@ export function usePendleMarketsApiData(): PendleMarketsStatsHook {
           tvl,
           formattedTvl:
             tvl !== undefined ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined,
-          expirySec: parseIsoToSec(summary.expiry),
+          // DEMO BRANCH — DO NOT MERGE: the live API reports the market's real
+          // expiry (26 Nov 2026), which wins over the config's faked past date
+          // on every `stats?.expirySec ?? market.expiry` surface — leaving the
+          // maturity progress, header and Details row reading a live market
+          // next to the matured cards. Pin it to the config instead.
+          expirySec: market.expiry,
           startTimestampSec: parseIsoToSec(summary.timestamp)
         };
       });
