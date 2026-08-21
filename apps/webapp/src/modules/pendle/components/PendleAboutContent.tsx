@@ -6,8 +6,8 @@ import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { IconboxAction } from '@/components/ui/iconbox';
 import { USER_RISKS_URL } from '@/lib/constants';
+import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 
-const SECONDS_PER_DAY = 86_400;
 const EXAMPLE_SUPPLY = 100;
 
 /**
@@ -28,14 +28,17 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
   const ptSymbol = `PT-${market.underlyingSymbol}`;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const remainingDays = Math.max(
-    0,
-    Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
-  );
+  const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
   const apy = stats?.impliedApy;
   // Worked example: what 100 underlying redeems for at maturity, compounding
-  // the current implied APY over the remaining term.
-  const exampleOut = apy !== undefined ? EXAMPLE_SUPPLY * Math.pow(1 + apy, remainingDays / 365) : undefined;
+  // the current implied APY over the remaining term. The floored day count
+  // hits 0 in the last stretch before expiry, where the example would claim a
+  // withdrawal of exactly what was supplied - drop it and keep the plain
+  // sentence, matching how `FixedYieldTerm` handles the same boundary.
+  const exampleOut =
+    apy !== undefined && remainingDays > 0
+      ? EXAMPLE_SUPPLY * Math.pow(1 + apy, remainingDays / 365)
+      : undefined;
 
   const items: { id: string; icon: ReactNode; title: ReactNode; body: ReactNode }[] = [
     {
@@ -77,14 +80,20 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
   return (
     <div className="flex flex-col gap-6" data-testid="pendle-detail-about">
       <p>
-        {apy !== undefined && exampleOut !== undefined ? (
+        {apy === undefined || exampleOut === undefined ? (
+          <Trans>Lock in a fixed yield on your {symbol}.</Trans>
+        ) : remainingDays === 1 ? (
+          <Trans>
+            Lock in a fixed yield on your {symbol}, e.g. supply {EXAMPLE_SUPPLY} {symbol} and withdraw{' '}
+            {formatNumber(exampleOut, { maxDecimals: 2 })} {symbol} in one day ({formatDecimalPercentage(apy)}{' '}
+            fixed APY).
+          </Trans>
+        ) : (
           <Trans>
             Lock in a fixed yield on your {symbol}, e.g. supply {EXAMPLE_SUPPLY} {symbol} and withdraw{' '}
             {formatNumber(exampleOut, { maxDecimals: 2 })} {symbol} in {remainingDays} days (
             {formatDecimalPercentage(apy)} fixed APY).
           </Trans>
-        ) : (
-          <Trans>Lock in a fixed yield on your {symbol}.</Trans>
         )}{' '}
         <Trans>
           Check out the{' '}
