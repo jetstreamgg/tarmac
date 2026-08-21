@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMemoryHistory,
@@ -30,6 +30,20 @@ vi.mock('@/hooks', async importOriginal => {
 vi.mock('@/modules/geo-config', () => ({
   useGeoConfig: () => ({ isModuleEnabled: () => true, isLoading: false, isRegionVerified: true })
 }));
+
+// Matured PT drives the "Requires action" section; swappable per test.
+const matured = vi.hoisted(() => ({
+  current: { maturedPositions: [] as { market: Record<string, unknown>; ptBalance: bigint }[] }
+}));
+vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
+  usePendleMaturedPositions: () => matured.current,
+  usePendleMaturedNetworkSwitch: () => undefined
+}));
+
+vi.mock('@/widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/widgets')>();
+  return { ...actual, usePendleUsdValue: () => (_symbol: string, amount: number) => amount };
+});
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
@@ -233,5 +247,57 @@ describe('EarnPage deep-link anchor scroll', () => {
     );
 
     await vi.waitFor(() => expect(scrollSpy.mock.calls.length).toBeGreaterThan(arrivalScrolls));
+  });
+});
+
+describe('EarnPage requires-action section', () => {
+  const MATURED = {
+    maturedPositions: [
+      {
+        market: {
+          name: 'Fixed Yield',
+          slug: 'pt-susds',
+          marketAddress: '0x9C56' as `0x${string}`,
+          underlyingSymbol: 'sUSDS',
+          underlyingDecimals: 18,
+          expiry: 1700000000,
+          usdsEquivalence: 'pegged'
+        },
+        ptBalance: 1200n * 10n ** 18n
+      }
+    ]
+  };
+
+  beforeEach(() => {
+    matured.current = { maturedPositions: [] };
+  });
+
+  it('stays hidden while the user holds nothing matured', async () => {
+    renderPage();
+    await screen.findByText('Earn Opportunities');
+    expect(screen.queryByTestId('earn-requires-action')).toBeNull();
+  });
+
+  it('lists a matured position with dashed market cells and the held value', async () => {
+    matured.current = MATURED as typeof matured.current;
+    renderPage();
+    await screen.findByText('Requires action');
+
+    const row = screen.getByTestId('earn-requires-action-row-matured-0x9c56');
+    expect(row.textContent).toContain('Pendle sUSDS');
+    expect(row.textContent).toContain('Matured');
+    // 1,200 PT at par → $1.2k compact, like the opportunities table's positions.
+    expect(row.textContent).toContain('$1.2k');
+    // No live market data: rate/30d/tvl and the risk cell are dashes.
+    expect(row.textContent).not.toContain('%');
+  });
+
+  it('routes a row click to the matured market detail page, where the claim card lives', async () => {
+    matured.current = MATURED as typeof matured.current;
+    const router = renderPage();
+    await screen.findByText('Requires action');
+
+    fireEvent.click(screen.getByTestId('earn-requires-action-row-matured-0x9c56'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/earn/fixed/pt-susds'));
   });
 });

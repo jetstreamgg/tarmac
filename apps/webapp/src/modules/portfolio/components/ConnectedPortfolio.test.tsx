@@ -37,7 +37,10 @@ const h = vi.hoisted(() => {
       isError: false
     },
     skyData: { data: undefined as Record<string, string> | undefined, isLoading: true },
-    geo: { savingsEnabled: true, isLoading: false }
+    geo: { savingsEnabled: true, isLoading: false },
+    matured: undefined as
+      | { maturedPositions: { market: { marketAddress: string }; ptBalance: bigint }[]; isLoading: boolean }
+      | undefined
   };
 });
 
@@ -52,7 +55,11 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 vi.mock('@/hooks', () => ({
   useEarnMarketplace: () => h.marketplace,
-  useOverallSkyData: () => ({ data: h.skyData.data, isLoading: h.skyData.isLoading })
+  useOverallSkyData: () => ({ data: h.skyData.data, isLoading: h.skyData.isLoading }),
+  isPendleChain: (id: number) => id === 1
+}));
+vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
+  usePendleMaturedPositions: () => h.matured ?? { maturedPositions: [], isLoading: false }
 }));
 vi.mock('../hooks/useStablecoinBalances', () => ({
   useStablecoinBalances: () => h.balances
@@ -99,7 +106,9 @@ vi.mock('./StablecoinEarningsCard', () => ({
   )
 }));
 vi.mock('./PortfolioPositionsSection', () => ({
-  PortfolioPositionsSection: () => <div data-testid="positions-section" />
+  PortfolioPositionsSection: ({ tab }: { tab: string }) => (
+    <div data-testid="positions-section" data-tab={tab} />
+  )
 }));
 vi.mock('./PortfolioRewardsSections', () => ({
   PortfolioRewardsSections: () => null
@@ -109,9 +118,6 @@ vi.mock('./PortfolioTransactionsSection', () => ({
 }));
 vi.mock('./PortfolioStatistics', () => ({
   PortfolioStatistics: () => <div data-testid="portfolio-statistics" />
-}));
-vi.mock('@/modules/pendle/components/PendleReadyToRedeemList', () => ({
-  PendleReadyToRedeemList: () => null
 }));
 
 i18n.load('en', {});
@@ -149,11 +155,37 @@ const renderPage = () =>
 beforeEach(() => {
   localStorage.clear();
   h.address = ADDRESS_A;
+  h.matured = undefined;
   setLoading();
 });
 
 afterEach(() => {
   cleanup();
+});
+
+describe('ConnectedPortfolio matured-position tab default', () => {
+  it('defaults to Supplied when the only holding is matured PT (zero deposited USD)', () => {
+    // Matured markets are filtered out of the marketplace rows, so this wallet
+    // computes depositedUsd = 0 — but its Claim card renders only on Supplied.
+    setSettled({ depositedUsd: 0, idleUsd: 0 });
+    h.matured = {
+      maturedPositions: [{ market: { marketAddress: '0x9c56' }, ptBalance: 1n }],
+      isLoading: false
+    };
+    renderPage();
+    expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('supplied');
+    expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ tab: 'supplied' });
+  });
+
+  it('matured PT overrides a cached idle decision from before maturity', () => {
+    writePortfolioDecision(ADDRESS_A, { outcome: 'none', tab: 'idle' });
+    h.matured = {
+      maturedPositions: [{ market: { marketAddress: '0x9c56' }, ptBalance: 1n }],
+      isLoading: false
+    };
+    renderPage();
+    expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('supplied');
+  });
 });
 
 describe('ConnectedPortfolio decision cache', () => {

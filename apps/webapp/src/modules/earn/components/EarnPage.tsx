@@ -4,11 +4,18 @@ import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho, Pendle } from '@/widgets';
 import { useEarnMarketplace, EarnProductKind, useUsdsDaiData, type EarnProductRow } from '@/hooks';
+import { formatUnits } from 'viem';
+import { mainnet } from 'viem/chains';
+import { usePendleUsdValue } from '@/widgets';
+import {
+  usePendleMaturedNetworkSwitch,
+  usePendleMaturedPositions
+} from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { getChainIcon } from '@/utils';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { retainOnNavigate } from '@/lib/navigation';
-import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
+import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
@@ -269,6 +276,67 @@ export function EarnPage() {
     void navigate({ to: row.detailPath as '/', search: retainOnNavigate });
   };
 
+  // "Requires action" (2251:50832): matured markets the user still holds PT
+  // for — the marketplace filters them out of the opportunities rows, so this
+  // is their only Earn surface. Geo is enforced inside the hook (restricted
+  // positions hide app-wide, APP-484); the table filters are skipped — hiding
+  // a row that needs action behind a filter would defeat it.
+  const { maturedPositions } = usePendleMaturedPositions();
+  const valueUsd = usePendleUsdValue();
+  const requiresActionItems = useMemo<EarnTableRowItem[]>(
+    () =>
+      maturedPositions.map(({ market, ptBalance }) => {
+        // 1 PT redeems 1 underlying (1 USDS on pegged markets) at expiry.
+        const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
+        const usd = valueUsd(displaySymbol, parseFloat(formatUnits(ptBalance, market.underlyingDecimals)));
+        return {
+          id: `matured-${market.marketAddress.toLowerCase()}`,
+          name: `Pendle ${market.underlyingSymbol}`,
+          riskProfile: undefined,
+          icon: (
+            <TokenIcon
+              token={{ symbol: market.underlyingSymbol }}
+              width={28}
+              className="h-7 w-7"
+              showChainIcon={false}
+            />
+          ),
+          status: 'success' as const,
+          nameSuffix: <Pendle className="h-4 w-4" />,
+          // What the market accepted while live (the registry's fixed entry).
+          supply: <TokenIconStack symbols={['USDS', 'USDC', market.underlyingSymbol]} size={12} />,
+          statusLabel: (
+            <span className="text-statusWarning">
+              <Trans>Matured</Trans>
+            </span>
+          ),
+          network: <CellNetworks>{[getChainIcon(mainnet.id, 'h-full w-full')]}</CellNetworks>,
+          rate: NO_VALUE,
+          rate30d: NO_VALUE,
+          tvl: NO_VALUE,
+          position: formatUsd(usd),
+          ctaLabel: <Trans>Claim</Trans>
+        };
+      }),
+    [maturedPositions, valueUsd]
+  );
+
+  // A visible claim surface prompts the mainnet switch, same as the Portfolio
+  // cards — the claim signs there.
+  usePendleMaturedNetworkSwitch(maturedPositions.length > 0);
+
+  // Rows route to the market's detail page, like every other row in this table
+  // — a matured market keeps its page, and the claim card is its position slot.
+  const handleRequiresActionSelect = (id: string) => {
+    const position = maturedPositions.find(
+      ({ market }) => `matured-${market.marketAddress.toLowerCase()}` === id
+    );
+    if (!position) return;
+    const detailPath = `${ROUTES.EARN_FIXED}/${position.market.slug}`;
+    setPendingNavIntent('card', detailPath);
+    void navigate({ to: detailPath as '/', search: retainOnNavigate });
+  };
+
   // The desktop px-calc insets the page to the middle 10 columns of the design
   // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
   return (
@@ -370,6 +438,23 @@ export function EarnPage() {
             <Trans>Clear filters</Trans> <span className="text-fgSecondary">({hiddenRowCount})</span>
           </span>
         </Button>
+      )}
+      {/* "Requires action" (2251:50832) — matured positions that need a claim.
+          Sits between the opportunities and the geo-restricted section; hidden
+          entirely while the user holds nothing matured. */}
+      {requiresActionItems.length > 0 && (
+        <section className="flex flex-col gap-6 md:gap-8" data-testid="earn-requires-action">
+          <h2 className={SECTION_HEADING}>
+            <Trans>Requires action</Trans>
+          </h2>
+          <EarnTable
+            rows={requiresActionItems}
+            sort={sort}
+            onSortChange={toggleSort}
+            onRowSelect={handleRequiresActionSelect}
+            testIdPrefix="earn-requires-action"
+          />
+        </section>
       )}
       {/* "Products unavailable in the US" (1036:201473) — same table, dimmed and
           inert, always last on the page. Hidden entirely when the region (or

@@ -24,11 +24,16 @@ const MARKET: PendleMarketConfig = {
 const h = vi.hoisted(() => ({
   connected: true,
   ptBalance: 0n as bigint,
-  walletBalance: 0n as bigint
+  walletBalance: 0n as bigint,
+  // Overrides the market's own expiry (the card prefers the API's) — a past
+  // value is how these specs reach the matured state.
+  expirySec: undefined as number | undefined,
+  earnings: { earnings: 184.8 as number | undefined, currency: 'USDS' as string | undefined }
 }));
 
 const openSupply = vi.fn();
 const openWithdraw = vi.fn();
+const openRedeemModal = vi.fn();
 
 vi.mock('posthog-js/react', async () => {
   const posthog = (await import('posthog-js')).default;
@@ -60,15 +65,27 @@ vi.mock('@/hooks', async importOriginal => {
       dataSources: []
     }),
     usePendleMarketsApiData: () => ({
-      data: { [MARKET.marketAddress]: { impliedApy: 0.0486 } },
+      data: { [MARKET.marketAddress]: { impliedApy: 0.0486, expirySec: h.expirySec } },
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
       dataSources: []
     }),
-    useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false })
+    useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false }),
+    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false }),
+    usePendleMaturedPositionEarnings: () => h.earnings
   };
 });
+
+vi.mock('../../hooks/usePendleRedeemModal', () => ({
+  usePendleRedeemModal: () => ({ openRedeemModal, isRedeemable: true, isPrepared: true, ptBalance: 0n })
+}));
+
+// The mainnet auto-switch pulls navigation/network-switch contexts — covered
+// by usePendleMaturedPositions.test.
+vi.mock('../../hooks/usePendleMaturedPositions', () => ({
+  usePendleMaturedNetworkSwitch: () => undefined
+}));
 
 vi.mock('../../hooks/usePendleModal', () => ({
   usePendleModal: () => ({ openSupply, openWithdraw })
@@ -115,6 +132,8 @@ describe('PendlePositionCard', () => {
     h.connected = true;
     h.ptBalance = 0n;
     h.walletBalance = 0n;
+    h.expirySec = undefined;
+    h.earnings = { earnings: 184.8, currency: 'USDS' };
   });
 
   it('shows the supply CTA card with the current rate when the user has no position', () => {
@@ -170,5 +189,53 @@ describe('PendlePositionCard', () => {
 
     fireEvent.click(screen.getByTestId('pendle-position-withdraw'));
     expect(openWithdraw).toHaveBeenCalledTimes(1);
+  });
+
+  describe('matured market', () => {
+    const MATURED_SEC = 1_700_000_000; // 2023
+
+    it('shows the claim card with the accrued figure and ready-to-withdraw copy', () => {
+      h.expirySec = MATURED_SEC;
+      h.ptBalance = 100_184n * 10n ** 18n;
+      renderCard();
+
+      const card = screen.getByTestId('pendle-matured-position-card');
+      expect(card.textContent).toContain('100,184');
+      expect(card.textContent).toContain('Accrued');
+      expect(card.textContent).toContain('184.8');
+      expect(card.textContent).toContain('ready to withdraw');
+      // The active-position actions are gone — claiming is the only move.
+      expect(screen.queryByTestId('pendle-position-supply')).toBeNull();
+      expect(screen.queryByTestId('pendle-position-withdraw')).toBeNull();
+    });
+
+    it('opens the redeem modal from the Claim CTA', () => {
+      h.expirySec = MATURED_SEC;
+      h.ptBalance = 100_184n * 10n ** 18n;
+      renderCard();
+
+      fireEvent.click(screen.getByTestId('pendle-matured-redeem-button'));
+      expect(openRedeemModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to the deposit-only line when earnings are unavailable', () => {
+      h.expirySec = MATURED_SEC;
+      h.ptBalance = 100_184n * 10n ** 18n;
+      h.earnings = { earnings: undefined, currency: undefined };
+      renderCard();
+
+      const card = screen.getByTestId('pendle-matured-position-card');
+      expect(card.textContent).toContain('Your deposit is ready to withdraw');
+      expect(card.textContent).not.toContain('in yield');
+    });
+
+    it('keeps the supply pitch for a matured market the user holds nothing in', () => {
+      h.expirySec = MATURED_SEC;
+      h.ptBalance = 0n;
+      renderCard();
+
+      expect(screen.queryByTestId('pendle-matured-position-card')).toBeNull();
+      expect(screen.getByTestId('pendle-supply-card')).toBeTruthy();
+    });
   });
 });

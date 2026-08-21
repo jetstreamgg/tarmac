@@ -2,12 +2,15 @@ import { useCallback } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
-import { format } from 'date-fns';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
+  isMarketMatured,
+  isPendleChain,
   TOKENS,
   usePendleMarketsApiData,
+  usePendleMaturedPositionEarnings,
+  usePendleRedeemPreview,
   usePendleUserPtBalances,
   useTokenBalance,
   type PendleMarketConfig
@@ -29,8 +32,12 @@ import {
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
+import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
+import { usePendleRedeemModal } from '../hooks/usePendleRedeemModal';
+import { usePendleMaturedNetworkSwitch } from '../hooks/usePendleMaturedPositions';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import { NO_VALUE } from '@/lib/constants';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 import { FixedYieldTerm } from '@/modules/earn/components/FixedYieldTerm';
@@ -162,9 +169,108 @@ function PendleSupplyCard({
  *  - holds PT → the "My position" summary with Supply / Withdraw buttons that
  *    open the shared modal.
  *
- * Matured markets never reach this card — the route + PendlePanes bounce them
- * to the overview, where redemption lives (maturity gating unchanged).
+ * Matured markets now reach this card too: holders see the claim layout
+ * (`PendleMaturedCard`), which is the detail page's half of the redemption
+ * flow the Portfolio and Earn "Requires action" surfaces also open.
  */
+/**
+ * Matured-position card for the detail page (Figma 2193:73881): the claimable
+ * figure over Accrued / Mature date, the ready-to-withdraw line, and a single
+ * Claim CTA opening the redeem modal. Same content the Portfolio's
+ * `PendleMaturedPositionCard` carries in the carousel's chrome — this one
+ * wears the detail page's ProductPositionCard.
+ *
+ * The comp labels the accrued figure "Earned"; the app's copy standard renames
+ * that family ("Already earned" → "Accrued to date"), so the label follows the
+ * standard, as the active card's does.
+ */
+function PendleMaturedCard({
+  market,
+  ptBalance,
+  maturityLabel
+}: {
+  market: PendleMarketConfig;
+  ptBalance: bigint;
+  maturityLabel: string;
+}) {
+  const onPendleChain = isPendleChain(useChainId());
+  // The claim signs on mainnet; this card is a claim surface, so it prompts the
+  // switch the same way the Portfolio's matured cards do.
+  usePendleMaturedNetworkSwitch(true);
+
+  const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
+  const { earnings, currency } = usePendleMaturedPositionEarnings(market, ptBalance);
+  // The receive amount (post SY-rate conversion); the PT balance stands in
+  // until the on-chain preview resolves — same decimals, transient gap.
+  const claimAmount = parseFloat(
+    formatUnits((previewAmount as bigint | undefined) ?? ptBalance, market.underlyingDecimals)
+  );
+  // Pegged markets (1 PT → 1 USDS at expiry) present the claim as USDS.
+  const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
+
+  const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
+
+  return (
+    <ProductPositionCard
+      data-testid="pendle-matured-position-card"
+      hero={<PositionHero pillSymbol={displaySymbol} balanceSymbol={displaySymbol} amount={claimAmount} />}
+      stats={
+        <>
+          <ProductStatPair grow>
+            <ProductStat label={<Trans>Accrued</Trans>}>
+              {earnings !== undefined && currency ? (
+                <>
+                  <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+                  {formatNumber(earnings, { maxDecimals: 2 })}
+                  <TokenIcon
+                    token={{ symbol: currency }}
+                    width={12}
+                    showChainIcon={false}
+                    className="h-3 w-3 shrink-0"
+                  />
+                </>
+              ) : (
+                <span className="text-fgSecondary">{NO_VALUE}</span>
+              )}
+            </ProductStat>
+            <ProductStat label={<Trans>Mature date</Trans>}>{maturityLabel}</ProductStat>
+          </ProductStatPair>
+          <Text variant="small" className="text-fgSecondary">
+            {earnings !== undefined && earnings > 0 && currency ? (
+              <Trans>
+                Matured on {maturityLabel}. Your deposit and {formatNumber(earnings, { maxDecimals: 2 })}{' '}
+                {currency} in yield are ready to withdraw.
+              </Trans>
+            ) : (
+              <Trans>Matured on {maturityLabel}. Your deposit is ready to withdraw.</Trans>
+            )}
+          </Text>
+        </>
+      }
+      actions={
+        <div className="flex flex-col gap-2">
+          <ProductActions>
+            <Button
+              variant="primary"
+              size="l"
+              onClick={openRedeemModal}
+              disabled={!onPendleChain || !isRedeemable || !isPrepared || previewLoading}
+              data-testid="pendle-matured-redeem-button"
+            >
+              <Trans>Claim</Trans>
+            </Button>
+          </ProductActions>
+          {!onPendleChain && (
+            <Text variant="small" className="text-fgSecondary" data-testid="pendle-redeem-network-hint">
+              <Trans>Redemption happens on Ethereum mainnet. Switch networks to claim.</Trans>
+            </Text>
+          )}
+        </div>
+      }
+    />
+  );
+}
+
 export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   const { isConnected } = useConnection();
 
@@ -176,7 +282,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
 
   const expirySec = stats?.expirySec ?? market.expiry;
   const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
-  const claimDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const claimDateLabel = formatMaturity(expirySec);
 
   const refresh = useCallback(() => {
     mutateBalances();
@@ -188,6 +294,13 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   // fallback flashes the supply pitch at users who hold a position.
   if (isConnected && ptBalances === undefined) {
     return <PositionCardSkeleton testId="pendle-position-card-skeleton" />;
+  }
+
+  // A matured market keeps its detail page (2193:73881): holders get the claim
+  // card, everyone else the supply pitch — which the market's own gating keeps
+  // inert, since matured markets are filtered out of every supply entry point.
+  if (isMarketMatured(expirySec) && ptBalance > 0n) {
+    return <PendleMaturedCard market={market} ptBalance={ptBalance} maturityLabel={claimDateLabel} />;
   }
 
   if (ptBalance === 0n) {

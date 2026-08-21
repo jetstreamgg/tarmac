@@ -15,6 +15,11 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SuppliedEmpty } from '@/modules/icons';
 import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
+import {
+  usePendleMaturedNetworkSwitch,
+  type PendleMaturedPosition
+} from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { PendleMaturedPositionCard } from '@/modules/pendle/components/PendleMaturedPositionCard';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
 import { PositionCard } from './PositionCard';
@@ -38,6 +43,8 @@ const INLINE_ARROW = 'static left-auto right-auto top-auto translate-y-0';
 export function PortfolioPositionsSection({
   suppliedView,
   suppliedLoading,
+  maturedPositions,
+  maturedLoading,
   idleView,
   idleSupplyInfo,
   idleLoading,
@@ -46,6 +53,9 @@ export function PortfolioPositionsSection({
 }: {
   suppliedView: SuppliedView;
   suppliedLoading: boolean;
+  /** Matured PT held (network-scoped by the caller) — leads the Supplied carousel. */
+  maturedPositions: PendleMaturedPosition[];
+  maturedLoading: boolean;
   idleView: IdleView;
   idleSupplyInfo: Map<string, IdleSupplyInfo>;
   idleLoading: boolean;
@@ -57,6 +67,9 @@ export function PortfolioPositionsSection({
   // switching the wallet to the position's chain first when needed; products
   // without one — and all Manage buttons — route to the product page.
   const resolveSupplyAction = usePortfolioSupplyActions();
+  // Redemption signs on mainnet — prompt the switch only while a claim card
+  // is actually visible (Supplied tab, matured PT held).
+  usePendleMaturedNetworkSwitch(tab === 'supplied' && maturedPositions.length > 0);
   const goToProduct = (detailPath: string) => {
     setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
@@ -92,11 +105,11 @@ export function PortfolioPositionsSection({
     );
   }
 
-  if (suppliedView.positions.length === 0) {
+  if (suppliedView.positions.length === 0 && maturedPositions.length === 0) {
     return (
       <section data-testid="portfolio-positions">
         <PortfolioTabs tab={tab} onTabChange={onTabChange} />
-        {suppliedLoading ? (
+        {suppliedLoading || maturedLoading ? (
           <CarouselSkeleton />
         ) : (
           <EmptyState className="mt-8" illustration={<SuppliedEmpty aria-hidden />}>
@@ -122,6 +135,15 @@ export function PortfolioPositionsSection({
           </div>
         </div>
         <CarouselContent className="-ml-2">
+          {/* Matured PT leads the row (Figma 2306:72334): it needs action (Claim)
+              while the live positions merely accrue. The marketplace filters
+              matured markets out of suppliedView, so these cards are their only
+              surface (G6). */}
+          {maturedPositions.map(({ market, ptBalance }) => (
+            <CarouselItem key={market.marketAddress} className={ITEM_BASIS}>
+              <PendleMaturedPositionCard market={market} ptBalance={ptBalance} />
+            </CarouselItem>
+          ))}
           {suppliedView.positions.map(position => (
             <CarouselItem key={position.id} className={ITEM_BASIS}>
               <PositionCard
