@@ -266,7 +266,7 @@ export function UpgradeModalForm({
         }
         error={
           insufficient ? (
-            <Text className="text-error text-sm" data-testid="upgrade-modal-amount-error">
+            <Text className="text-statusError text-sm" data-testid="upgrade-modal-amount-error">
               <Trans>Insufficient balance</Trans>
             </Text>
           ) : undefined

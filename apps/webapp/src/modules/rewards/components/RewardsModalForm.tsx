@@ -268,7 +268,7 @@ export function RewardsModalForm({
         }
         error={
           insufficient ? (
-            <Text className="text-error text-sm" data-testid="rewards-modal-amount-error">
+            <Text className="text-statusError text-sm" data-testid="rewards-modal-amount-error">
               {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
             </Text>
           ) : undefined

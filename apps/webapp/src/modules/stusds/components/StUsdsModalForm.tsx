@@ -274,11 +274,11 @@ export function StUsdsModalForm({
         : 'text-fgSecondary';
 
   const amountError = insufficient ? (
-    <Text className="text-error text-sm" data-testid="stusds-modal-amount-error">
+    <Text className="text-statusError text-sm" data-testid="stusds-modal-amount-error">
       {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
     </Text>
   ) : blocked && !providerSelection.allProvidersBlocked ? (
-    <Text className="text-error text-sm" data-testid="stusds-modal-capacity-error">
+    <Text className="text-statusError text-sm" data-testid="stusds-modal-capacity-error">
       <Trans>Amount exceeds the module&apos;s remaining supply capacity</Trans>
     </Text>
   ) : undefined;

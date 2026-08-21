@@ -3,6 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
+import { amountFieldHairlineClasses } from '@/components/product/amountFieldHairline';
 import { parseAmountInput, sanitizeAmountInput } from '@/lib/amountInput';
 import { formatAmountForInput } from '../lib/amountInput';
 
@@ -69,12 +70,10 @@ export function StakeTakeoverAmountField({
       </div>
       <div
         className={cn(
-          // DS Input/Amount underline (5620:26710): Default/Filled sits on
-          // border-secondary, Active/focus brightens to border-tertiary,
-          // Validation goes red — on the hairline only, the value/chips/
-          // selector stay their normal colours per spec.
+          // DS Input/Amount underline (5620:26710) — recipe shared with
+          // ModalAmountField via amountFieldHairlineClasses.
           'flex items-center justify-between gap-4 border-b pb-2 transition-colors',
-          error ? 'border-statusError' : 'border-glassBorder focus-within:border-borderTertiary'
+          amountFieldHairlineClasses(!!error)
         )}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -119,7 +118,7 @@ export function StakeTakeoverAmountField({
         )}
       </div>
       {error && (
-        <span id={errorId} data-testid={errorId} className="text-error text-sm">
+        <span id={errorId} data-testid={errorId} className="text-statusError text-sm">
           {error}
         </span>
       )}

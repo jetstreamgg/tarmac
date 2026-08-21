@@ -305,7 +305,7 @@ export function VaultModalForm({
           }
           error={
             insufficient && !zeroLiquidity ? (
-              <Text className="text-error text-sm" data-testid="vault-modal-amount-error">
+              <Text className="text-statusError text-sm" data-testid="vault-modal-amount-error">
                 {isSupply ? (
                   <Trans>Insufficient balance</Trans>
                 ) : isLiquidityConstrained ? (

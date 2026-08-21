@@ -4,6 +4,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { sanitizeAmountInput } from '@/lib/amountInput';
 import { cn } from '@/lib/cn';
+import { amountFieldHairlineClasses } from './amountFieldHairline';
 
 const PERCENT_PRESETS = [25, 50, 100] as const;
 export type PercentPreset = (typeof PERCENT_PRESETS)[number];
@@ -62,7 +63,7 @@ export function ModalAmountField({
   // The only error signal the field gets: whatever the caller renders below the hairline.
   // A validation state doesn't need its own boolean prop — the presence of `error` already
   // says everything the hairline needs to know.
-  const hasError = error != null;
+  const hasError = Boolean(error);
 
   const percentChips = (
     <div className={cn('flex items-center gap-1', isMobile && 'mt-1 w-full')}>
@@ -125,10 +126,7 @@ export function ModalAmountField({
           The amount, chips and token selector above stay in normal colours either way —
           only the hairline (and the caller's error line) redden. */}
       <div
-        className={cn(
-          'border-t',
-          hasError ? 'border-statusError' : 'border-glassBorder group-focus-within:border-borderTertiary'
-        )}
+        className={cn('border-t', amountFieldHairlineClasses(hasError, 'group-focus-within'))}
         aria-hidden
       />
       {isMobile && percentChips}

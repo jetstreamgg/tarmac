@@ -550,7 +550,7 @@ export function PendleModalForm({
         }
         error={
           insufficient ? (
-            <Text className="text-error text-sm" data-testid="pendle-modal-insufficient">
+            <Text className="text-statusError text-sm" data-testid="pendle-modal-insufficient">
               <Trans>Insufficient funds</Trans>
             </Text>
           ) : undefined
