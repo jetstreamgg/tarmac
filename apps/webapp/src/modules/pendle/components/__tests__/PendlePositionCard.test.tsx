@@ -229,7 +229,7 @@ describe('PendlePositionCard', () => {
       expect(card.textContent).not.toContain('in yield');
     });
 
-    it('shows the closed-market state — never the supply pitch — when nothing is held', () => {
+    it('shows the closed-market state — never the supply pitch — when a connected user holds nothing', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 0n;
       renderCard();
@@ -252,13 +252,18 @@ describe('PendlePositionCard', () => {
       expect(screen.getByTestId('pendle-matured-browse-cta')).toBeTruthy();
     });
 
-    it('shows the closed state while disconnected too', () => {
+    it('leads with Claim while disconnected — a zero balance there means unknown, not empty', () => {
       h.expirySec = MATURED_SEC;
       h.connected = false;
       h.ptBalance = 0n;
       renderCard();
 
-      expect(screen.getByTestId('pendle-matured-closed-card')).toBeTruthy();
+      // Every in-app route here requires holding matured PT, so a disconnected
+      // visitor is most likely a returning holder.
+      const card = screen.getByTestId('pendle-matured-connect-card');
+      expect(card.textContent).toContain('connect your wallet to claim');
+      expect(screen.getByTestId('pendle-matured-connect-cta').textContent).toContain('Claim');
+      expect(screen.queryByTestId('pendle-matured-closed-card')).toBeNull();
       expect(screen.queryByTestId('pendle-supply-cta')).toBeNull();
     });
   });
