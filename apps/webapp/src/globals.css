@@ -484,22 +484,6 @@
       --donut-sweep: 360deg;
     }
   }
-  @keyframes menu-fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  @keyframes menu-fade-out {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
-  }
   @keyframes digit-roll-in {
     from {
       transform: translateY(100%);
@@ -1100,15 +1084,36 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
   scale: 0 1;
   transition-delay: 0ms, 0ms, 150ms;
 }
+/* The reduced-motion crossfade below. These live at top level, not in
+   `@theme`: Tailwind only emits a themed `@keyframes` when a *used*
+   `--animate-*` utility names it, and nothing names these — the only
+   references are the token re-points inside the media query, which the theme
+   pass never sees. Declared there, both blocks get tree-shaken and the close
+   animation runs with no keyframes at all (opacity pinned at 1 for the full
+   300ms, then the panel vanishes in one frame once Radix unmounts it). */
+@keyframes menu-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes menu-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .nav-menu-icon path {
     transition: none;
   }
   /* The menu panel keeps a crossfade but drops the travel and scale. The
      `animate-menu-*` utilities resolve `var(--animate-menu-*)` at use, so
-     re-pointing the token here is enough; redefining the keyframes would not
-     be — Tailwind hoists `@theme` keyframes to the end of the stylesheet,
-     after this block, and the last same-named @keyframes wins. */
+     re-pointing the token here is enough. */
   :root {
     --animate-menu-in: menu-fade-in 300ms var(--ease-in-out-quart) both;
     --animate-menu-out: menu-fade-out 300ms var(--ease-in-out-quart) both;
