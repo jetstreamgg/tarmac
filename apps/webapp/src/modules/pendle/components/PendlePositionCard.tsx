@@ -177,78 +177,23 @@ function PendleSupplyCard({
  * flow the Portfolio and Earn "Requires action" surfaces also open.
  */
 /**
- * Matured market, wallet not connected. Every in-app route to this page
- * requires holding matured PT — the Earn "Requires action" row and the
- * Portfolio card both need a connection to appear, and the marketplace filters
- * matured markets out — so a disconnected visitor arrived by URL, most likely
- * a returning holder coming back to claim. Lead with Claim (connect-then-act,
- * the house pattern) rather than telling a probable holder to browse Earn.
+ * Matured market with nothing to claim — no wallet connected, or connected and
+ * holding none. Both read the same: the market is closed, here is when it
+ * matured, and here is somewhere else to go. The disconnected case adds one
+ * line, since a zero balance there means unknown rather than empty and every
+ * in-app route to this page requires holding matured PT.
  *
  * No comp: the section only draws the matured page for a connected holder
  * (2193:73881); this state could not exist while the route redirected.
  */
-function PendleMaturedConnectCard({
+function PendleMaturedNoPositionCard({
   market,
   maturityLabel,
-  onClaim
+  isConnected
 }: {
   market: PendleMarketConfig;
   maturityLabel: string;
-  onClaim: () => void;
-}) {
-  return (
-    <ProductSupplyCard
-      data-testid="pendle-matured-connect-card"
-      badges={
-        <div className="flex flex-wrap items-center gap-2">
-          <HeaderBadge size="s" className="pl-2">
-            <Trans>Fixed yield</Trans>
-          </HeaderBadge>
-          <HeaderBadge size="s" icon={<Pendle className="size-4" />}>
-            <Trans>Powered by Pendle</Trans>
-          </HeaderBadge>
-        </div>
-      }
-      title={<Trans>This market has matured</Trans>}
-      description={
-        <Trans>
-          Pendle {market.underlyingSymbol} no longer accepts deposits. If you hold a position, connect your
-          wallet to claim your deposit and yield.
-        </Trans>
-      }
-      stats={
-        <ProductStatPair>
-          <ProductStat size="lg" label={<Trans>Matured</Trans>}>
-            <ProductFigure value={maturityLabel}>{maturityLabel}</ProductFigure>
-          </ProductStat>
-        </ProductStatPair>
-      }
-      cta={
-        <Button
-          variant="primary"
-          size="l"
-          className="w-full"
-          onClick={onClaim}
-          data-testid="pendle-matured-connect-cta"
-        >
-          <Trans>Claim</Trans>
-        </Button>
-      }
-    />
-  );
-}
-
-/**
- * Matured market, connected, nothing held — including the moment after a claim
- * empties the position. The only state that can honestly say the market is
- * closed to this user, so it is the only one that points at Earn.
- */
-function PendleMaturedClosedCard({
-  market,
-  maturityLabel
-}: {
-  market: PendleMarketConfig;
-  maturityLabel: string;
+  isConnected: boolean;
 }) {
   const navigate = useNavigate();
 
@@ -266,7 +211,16 @@ function PendleMaturedClosedCard({
         </div>
       }
       title={<Trans>This market has matured</Trans>}
-      description={<Trans>Pendle {market.underlyingSymbol} no longer accepts deposits.</Trans>}
+      description={
+        isConnected ? (
+          <Trans>Pendle {market.underlyingSymbol} no longer accepts deposits.</Trans>
+        ) : (
+          <Trans>
+            Pendle {market.underlyingSymbol} no longer accepts deposits. Connect your wallet to check for a
+            claimable position.
+          </Trans>
+        )
+      }
       stats={
         // Just the date: the market's rate is no longer on offer, and the
         // API's implied APY after expiry isn't a figure we can label honestly.
@@ -292,53 +246,6 @@ function PendleMaturedClosedCard({
 }
 
 /**
- * The matured market's position slot. Owns the redeem hook for all three of
- * its states, so the connect-then-act continuation fires against a live opener
- * rather than one captured by a card that unmounts the moment the balance
- * arrives.
- */
-function PendleMaturedSlot({
-  market,
-  ptBalance,
-  maturityLabel,
-  isConnected
-}: {
-  market: PendleMarketConfig;
-  ptBalance: bigint;
-  maturityLabel: string;
-  isConnected: boolean;
-}) {
-  const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
-  // Connect only — deliberately NOT continuing into the redeem modal. A
-  // disconnected balance is unknown, so continuing would launch the claim
-  // modal at whoever turns out to hold nothing: dashes, zeros and a disabled
-  // Claim with nothing to explain why. Connecting resolves the balance and
-  // this slot re-renders into the claim card (holder) or the closed state
-  // (not), so the user always sees a real position before a money-moving
-  // modal opens.
-  const connectThenSettle = useConnectThenAct(() => undefined, 'pendle_claim');
-
-  if (!isConnected) {
-    return (
-      <PendleMaturedConnectCard market={market} maturityLabel={maturityLabel} onClaim={connectThenSettle} />
-    );
-  }
-  if (ptBalance > 0n) {
-    return (
-      <PendleMaturedCard
-        market={market}
-        ptBalance={ptBalance}
-        maturityLabel={maturityLabel}
-        openRedeemModal={openRedeemModal}
-        isRedeemable={isRedeemable}
-        isPrepared={isPrepared}
-      />
-    );
-  }
-  return <PendleMaturedClosedCard market={market} maturityLabel={maturityLabel} />;
-}
-
-/**
  * Matured-position card for the detail page (Figma 2193:73881): the claimable
  * figure over Accrued / Mature date, the ready-to-withdraw line, and a single
  * Claim CTA opening the redeem modal. Same content the Portfolio's
@@ -352,17 +259,11 @@ function PendleMaturedSlot({
 function PendleMaturedCard({
   market,
   ptBalance,
-  maturityLabel,
-  openRedeemModal,
-  isRedeemable,
-  isPrepared
+  maturityLabel
 }: {
   market: PendleMarketConfig;
   ptBalance: bigint;
   maturityLabel: string;
-  openRedeemModal: () => void;
-  isRedeemable: boolean;
-  isPrepared: boolean;
 }) {
   const onPendleChain = isPendleChain(useChainId());
   // The claim signs on mainnet; this card is a claim surface, so it prompts the
@@ -378,6 +279,8 @@ function PendleMaturedCard({
   );
   // Pegged markets (1 PT → 1 USDS at expiry) present the claim as USDS.
   const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
+
+  const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
 
   return (
     <ProductPositionCard
@@ -470,13 +373,10 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   // market cannot accept deposits, and this page is now reachable without a
   // wallet, so an enabled Supply CTA here would open a modal that can't quote.
   if (isMarketMatured(expirySec)) {
-    return (
-      <PendleMaturedSlot
-        market={market}
-        ptBalance={ptBalance}
-        maturityLabel={claimDateLabel}
-        isConnected={isConnected}
-      />
+    return ptBalance > 0n ? (
+      <PendleMaturedCard market={market} ptBalance={ptBalance} maturityLabel={claimDateLabel} />
+    ) : (
+      <PendleMaturedNoPositionCard market={market} maturityLabel={claimDateLabel} isConnected={isConnected} />
     );
   }
 

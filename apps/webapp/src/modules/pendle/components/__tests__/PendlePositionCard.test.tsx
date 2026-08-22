@@ -237,6 +237,7 @@ describe('PendlePositionCard', () => {
       const card = screen.getByTestId('pendle-matured-closed-card');
       expect(card.textContent).toContain('This market has matured');
       expect(card.textContent).toContain('no longer accepts deposits');
+      expect(card.textContent).not.toContain('Connect your wallet');
       // The page is reachable without a wallet now; a Supply CTA here would
       // open a modal that cannot quote against a matured market.
       expect(screen.queryByTestId('pendle-supply-card')).toBeNull();
@@ -252,35 +253,18 @@ describe('PendlePositionCard', () => {
       expect(screen.getByTestId('pendle-matured-browse-cta')).toBeTruthy();
     });
 
-    it('leads with Claim while disconnected — a zero balance there means unknown, not empty', () => {
+    it('shows the same closed state while disconnected, plus a nudge to connect', () => {
       h.expirySec = MATURED_SEC;
       h.connected = false;
       h.ptBalance = 0n;
       renderCard();
 
-      // Every in-app route here requires holding matured PT, so a disconnected
-      // visitor is most likely a returning holder.
-      const card = screen.getByTestId('pendle-matured-connect-card');
-      expect(card.textContent).toContain('connect your wallet to claim');
-      expect(screen.getByTestId('pendle-matured-connect-cta').textContent).toContain('Claim');
-      expect(screen.queryByTestId('pendle-matured-closed-card')).toBeNull();
+      // A zero balance with no wallet means unknown, not empty — and every
+      // in-app route to this page requires holding matured PT.
+      const card = screen.getByTestId('pendle-matured-closed-card');
+      expect(card.textContent).toContain('no longer accepts deposits');
+      expect(card.textContent).toContain('Connect your wallet to check');
       expect(screen.queryByTestId('pendle-supply-cta')).toBeNull();
-    });
-
-    it('connects without launching the claim modal — the balance is unknown until it resolves', () => {
-      vi.useFakeTimers();
-      h.expirySec = MATURED_SEC;
-      h.connected = false;
-      h.ptBalance = 0n;
-      renderCard();
-
-      fireEvent.click(screen.getByTestId('pendle-matured-connect-cta'));
-      act(() => vi.advanceTimersByTime(CONTINUATION_DELAY_MS * 2));
-
-      // Continuing straight into the modal would launch it at a user who turns
-      // out to hold nothing: dashes and a disabled Claim with no explanation.
-      expect(openRedeemModal).not.toHaveBeenCalled();
-      expect(screen.getByTestId('connect-modal-stub')).toBeTruthy();
     });
   });
 });

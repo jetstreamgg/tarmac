@@ -55,7 +55,6 @@ export type ConnectReason =
   | 'vault_supply'
   | 'stusds_supply'
   | 'pendle_supply'
-  | 'pendle_claim'
   | 'convert';
 export type ConnectMethod = 'connect' | 'switch';
 export type GatedActionOutcome = 'completed' | 'abandoned';
