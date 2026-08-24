@@ -131,6 +131,31 @@ describe('ChartTooltip — dismissal', () => {
     expect(screen.getByTestId('chart-tooltip').style.transform).toBe(before);
   });
 
+  // The diagonal-drag repro (real iPhone; also mouse scrub + arrow-key scroll
+  // on desktop): a dismissal landing in the same commit as a coordinate change
+  // used to wipe the follower's target while the panel was unmounted, so the
+  // remount on the next commit had nothing to place at — top-left card again.
+  it('re-places a remounted panel whose coordinate moved while it was hidden', () => {
+    const anchorRef = { current: document.createElement('div') };
+    const props = { ...base, anchorRef };
+    const { rerender } = render(<ChartTooltip {...props} coordinate={{ x: 100, y: 50 }} />);
+    expect(screen.getByTestId('chart-tooltip').style.transform).toMatch(/translate/);
+    rerender(<ChartTooltip {...props} active={false} coordinate={{ x: 140, y: 60 }} />);
+    rerender(<ChartTooltip {...props} coordinate={{ x: 140, y: 60 }} />);
+    expect(screen.getByTestId('chart-tooltip').style.transform).toMatch(/translate/);
+  });
+
+  it('holds the dismissal while a press that started inside the plot scrubs', () => {
+    const onLeave = vi.fn();
+    render(<Harness onLeave={onLeave} />);
+    fireEvent.pointerDown(screen.getByTestId('plot'));
+    fireEvent.scroll(window);
+    expect(onLeave).not.toHaveBeenCalled();
+    fireEvent.pointerUp(window);
+    fireEvent.scroll(window);
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
   it('detaches its listeners once inactive', () => {
     const onLeave = vi.fn();
     const { rerender } = render(<Harness onLeave={onLeave} />);

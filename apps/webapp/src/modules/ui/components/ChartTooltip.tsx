@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useLayoutEffect, useState } from 'react';
+import { RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
 import { useFollow } from './chartMotion';
@@ -103,6 +103,34 @@ function useDismissHoverAway(
   active: boolean | undefined,
   anchorRef: RefObject<HTMLElement | null> | undefined
 ) {
+  // Whether a press that STARTED inside the plot is still down. While it is,
+  // the finger is scrubbing — a drag with any vertical drift also scrolls the
+  // page, and dismissing on those scrolls fought recharts' touchmove
+  // reactivation frame by frame (the card flashed). Scrubbing wins while the
+  // finger is down; the lift hands the next scroll (momentum included) back to
+  // the dismissal. Tracked outside the active-gated effect below so a
+  // mid-gesture flicker of `active` cannot reset it.
+  const pressedInside = useRef(false);
+
+  useEffect(() => {
+    const host = anchorRef?.current;
+    if (!host) return;
+    const onPointerDown = (event: PointerEvent) => {
+      pressedInside.current = event.target instanceof Node && host.contains(event.target);
+    };
+    const endPress = () => {
+      pressedInside.current = false;
+    };
+    window.addEventListener('pointerdown', onPointerDown, { capture: true });
+    window.addEventListener('pointerup', endPress, { capture: true });
+    window.addEventListener('pointercancel', endPress, { capture: true });
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, { capture: true });
+      window.removeEventListener('pointerup', endPress, { capture: true });
+      window.removeEventListener('pointercancel', endPress, { capture: true });
+    };
+  }, [anchorRef]);
+
   useEffect(() => {
     if (!active) return;
     const host = anchorRef?.current;
@@ -113,14 +141,17 @@ function useDismissHoverAway(
       wrapper.dispatchEvent(
         new MouseEvent('mouseout', { bubbles: true, relatedTarget: wrapper.parentElement ?? undefined })
       );
+    const onScroll = () => {
+      if (!pressedInside.current) dismiss();
+    };
     const onPointerDown = (event: PointerEvent) => {
       if (!(event.target instanceof Node) || !host.contains(event.target)) dismiss();
     };
 
-    window.addEventListener('scroll', dismiss, { capture: true, passive: true });
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
     window.addEventListener('pointerdown', onPointerDown, { capture: true });
     return () => {
-      window.removeEventListener('scroll', dismiss, { capture: true });
+      window.removeEventListener('scroll', onScroll, { capture: true });
       window.removeEventListener('pointerdown', onPointerDown, { capture: true });
     };
   }, [active, anchorRef]);

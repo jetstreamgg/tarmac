@@ -176,7 +176,7 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
 
   useLayoutEffect(() => {
     const node = ref.current;
-    if (!node || x == null || y == null) {
+    if (x == null || y == null) {
       // Target lost (hover ended). Forget the position too, so a later
       // reacquisition places directly instead of gliding in from wherever the
       // last hover left off — which matters for followers that stay mounted
@@ -188,6 +188,16 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
 
     const previous = target.current;
     target.current = { x, y };
+    if (!node) {
+      // The element is unmounted but the target is live — keep tracking it, so
+      // the node-identity effect below can place a remounted element. Clearing
+      // the target here is what used to strand the tooltip at the layer origin:
+      // a dismissal that landed in the same commit as a coordinate change wiped
+      // it, and the remount (same coordinate, so no re-run here) had nothing to
+      // place at.
+      current.current = null;
+      return;
+    }
     if (typeof time === 'number') {
       response.current = time;
     } else if (previous) {
