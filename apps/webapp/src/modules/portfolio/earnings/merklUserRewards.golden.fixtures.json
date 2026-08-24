@@ -1,0 +1,1533 @@
+[
+  {
+    "chain": {
+      "id": 1,
+      "name": "Ethereum",
+      "icon": "https://storage.googleapis.com/merkl-static-assets/chains/1.svg",
+      "liveCampaigns": 194,
+      "endOfDisputePeriod": 1787133600,
+      "explorers": [
+        { "id": "13265570907942326370", "type": "ETHERSCAN", "url": "https://etherscan.io", "chainId": 1 }
+      ],
+      "lastClaimsOnchainFetchTimestamp": "1787136023"
+    },
+    "rewards": [
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "9801981899707050274",
+        "claimed": "9801981899707050274",
+        "pending": "0",
+        "proofs": [
+          "0x72c8faf5e4af1fec16e49b66d60f89e72d81e9d217f5e2a02130bdbf3fdae180",
+          "0xb91a42d7a0c02dc5f4379f10b26999388c2754bb6eae59ab7ac86e55fc36f35b",
+          "0x45c314a61d6b7003f73b7bcafe97849f03ef24f4b7f14383265bbff99fde3ec8",
+          "0x095c50e6091f8f2b2df651ed2dc94dbfff334ff240b804ebe7f5f7b245344ae8",
+          "0xb41824cf5fa79c489069821351b54cb0bfdc8768a5da39b3f0a51751c36a0764",
+          "0x9e6ae27b8686bd3962ea51400ff878cccfffc19b6061c8880309e59d7bf15466",
+          "0xbd3d47bb5b10a79f97587e20c559df179b8538d474652f4baeb3cf98f9d69f80",
+          "0x66b2a5d272dc224737671a02f71401e93098fa2c7fff916d4ffb100fa141d21b",
+          "0x0719bce371a8a4af026f40d9990559ccf62f342c6486d0adaa9d5c60d25376f2",
+          "0xb3ccf2e4317d5854365df0163bb738a6c5a93ab2a613d4ddf1d08baf55449b0b",
+          "0xff7ffa923162a75ec93cfb6ae2d2efdc29d9a158a1edc6f8d107ecd1168276fa",
+          "0xf508e384794471602fd01cbd698f98b184cf6cd356e6abf4ac9d687c0378c384",
+          "0x5f3822305dc8c8136a545e63c0e9b20dea527e969996126ce0bbae03ad784945",
+          "0x34fa0f33e87f62323af95e2e67fc8b34d942d1e49463b0a1d48eb64f168450c1",
+          "0xf0124c44a8e3432c8cdd3bb35fd1545d4b358b1f532c8f4d84202b22a1d0dc45",
+          "0xaff88a3637472f9f8a380f5bc361394446a1bb8e28df969e3dce7600d1c92d92",
+          "0x064d1c56ecab457846bd12052de73f8e061cedd873ce518595bc0eb23775e662",
+          "0x0ea72e3952272177f78ffe411a89a2cf23b29d8d5ff611a1225b4b6177d5d680",
+          "0xce542f9e0b7988325d32dff0cfd247b931afe69f62bca1000b6a857c2ca40033"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+          "decimals": 18,
+          "symbol": "aEthRLUSD",
+          "price": 1.0000438642793819
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "9657753127768423492",
+            "claimed": "9657753127768423492",
+            "pending": "0",
+            "campaignId": "0x2600b397eaa95736a8787a7c1fb66d5edac0a85728790fb1d7d3c46a2d599de4",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "8867691117702497",
+            "claimed": "8867691117702497",
+            "pending": "0",
+            "campaignId": "0x3e2211cd22fc60d2a6fe24e3f800bc65209399bcd96f3541f0fa2b0de44c8a73",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "6518244470302815",
+            "claimed": "6518244470302815",
+            "pending": "0",
+            "campaignId": "0x5158e7c253f0107e5c0883e5b1e5020dd2b2a13066798fcf5b03e35eab559941",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "6333978232587199",
+            "claimed": "6333978232587199",
+            "pending": "0",
+            "campaignId": "0x22b0779cd6a8062decc766bf7f568be4f03aac25e5f9a292f58d31fef0d98580",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "6212177450820803",
+            "claimed": "6212177450820803",
+            "pending": "0",
+            "campaignId": "0x758761b74ebd168be3a6de5453bc3e9129fd4364348b617b5c05dc89f5679cbb",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "5955336127955304",
+            "claimed": "5955336127955304",
+            "pending": "0",
+            "campaignId": "0xd6e76079c9c8cb4c2d4bddf4b22aedb64f5c151b9599d9b18793ee529d0579d2",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "5900829302742787",
+            "claimed": "5900829302742787",
+            "pending": "0",
+            "campaignId": "0x9e9fb62370d5ff1c44a9bb569ff9e704c7607faba3e6d070860018def584ea51",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "5796470585676204",
+            "claimed": "5796470585676204",
+            "pending": "0",
+            "campaignId": "0xd6a725f4f385c30c640ed9a68c50c3dd789baf3af8884de47055487708902124",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "5793255144843916",
+            "claimed": "5793255144843916",
+            "pending": "0",
+            "campaignId": "0x05685817a6cde5f9a3cbdd16555926debf9b0490d5be20e215663f6266a5a911",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "5792095450076843",
+            "claimed": "5792095450076843",
+            "pending": "0",
+            "campaignId": "0xd9fb37adc23b4f0606a9333af816234958d47993e955638150899aba513f594b",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "27832125452893549",
+            "claimed": "27832125452893549",
+            "pending": "0",
+            "campaignId": "0x528d15c6a24687d3c1829f7555d61c76cf3fa7c71509e8c9ec18f3fafee9b7c3",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "18634146813377399",
+            "claimed": "18634146813377399",
+            "pending": "0",
+            "campaignId": "0x9767bd25e671dab0a1371cc4045b7ca41f5907da8742309e568b5fd00eefe621",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "15680798856952353",
+            "claimed": "15680798856952353",
+            "pending": "0",
+            "campaignId": "0x89c12dceeadab92f86c90648f16874cf0651305a5136e4b4d97c1e6d7ca86eee",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "14009609762396773",
+            "claimed": "14009609762396773",
+            "pending": "0",
+            "campaignId": "0x59d3e93903d9a0b781a6f27b9ec2229da648b130b6f2769637b1ee8b15999e80",
+            "opportunityId": "9585122153395693161"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13605534647313957749",
+            "amount": "10902013170298340",
+            "claimed": "10902013170298340",
+            "pending": "0",
+            "campaignId": "0x940261556e0d16b34a879ec53bf5aaa83d7ed544dc12d33ab1a7762ed441028f",
+            "opportunityId": "9585122153395693161"
+          }
+        ]
+      },
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "8456476888702806112973",
+        "claimed": "8446886856555209102563",
+        "pending": "0",
+        "proofs": [
+          "0xc88d4cee5dbdaf939ad4f6fa42c24f41e77a4cbf1490c7d537ef1b47b46c1836",
+          "0x158dec95b7006cb110921e326496131e2a91a40d8093acddb05d8220ab892c3c",
+          "0xbbd0a579dfaec6a0ce14c240a332e09db9345c32e81329c54b3c17d387f00392",
+          "0xa2f9efee0a6e6e5f41033a16fd3881d61c27e6dbc591a69d13d745fc5a2caf5b",
+          "0xc866519adc1417e0ae8f12e61498c50458d7a181702d7d96c29db290390989f5",
+          "0x61e18d07a6cf0cb70cf5b3cfeae6be71a2620cb9583565e79eb1955d9cd27144",
+          "0xdcd7a6b1cacfe52e03fbb434c0783e7b7f317784ba56caffc5cfa4e5bd4b43aa",
+          "0x46bce14d3ed957c3ea1a37bdee3df9d71c0951c0251792c426ea2c02cdf7848d",
+          "0xb8368c6f8b07f3f046e31467245dafc75826d4095c76c87d3411aebb949a713b",
+          "0xb1c9a625f73cd04560f18c0af6daa8bf5802d9c36711c67444c36118a8011389",
+          "0x9225bbbac965e89cd304fc396239c83678a57cba4f0259fd8f5db7a5d5f84dd0",
+          "0xf0fd4caa62edbd211a6022178a654ec2e350c685859598205f48fda00fcd81f5",
+          "0x28638791b80dec0a25af3372ff8b38ffb1e74d940127fb7db3e2d010bf74e38d",
+          "0x34860b09637d1d475e7df498fcc3d5efda1b2d61eb6cb34c2f52c82ce3c857b4",
+          "0xd129f28691e98a4716f403a7341bbc14df22087a9fb1d6f4ea3f06141daa451c",
+          "0xb5ed8671a22ba778fdf19853aa3f96f5ba5263f9bd01cc0c436b47326f675061",
+          "0xb7d43eefc7a9b15ae87cea71de9c66f34c363212dfa9a3a8ea02cf4df5e417c9",
+          "0xd6ddff4643cd29ecc718cc90e73588c0a669e0a562052c1a6b018db64aefa53c",
+          "0xdffed536b402c437f52b8c12d14e002d66aff58f6bb110cbfa8b39458a94492d"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+          "decimals": 18,
+          "symbol": "USDS",
+          "price": 0.9999585494238978
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "87830670856111562276",
+            "claimed": "87830670856111562276",
+            "pending": "0",
+            "campaignId": "0x0e09c154fbd9512dbb29ad0dd8aeb3fb6d81282444ce2d8b1ee7ebaee1208f00",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~2708600238064470051_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "82716438516562372863",
+            "claimed": "82716438516562372863",
+            "pending": "0",
+            "campaignId": "0xe122485b6903353d1ec8bada5a2cc4dcda18a22179b1f13c09af6de0de80a8fb",
+            "subCampaignId": "2708600238064470051",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "82655917290921622917",
+            "claimed": "82655917290921622917",
+            "pending": "0",
+            "campaignId": "0x08183abdcd13877f02f30032fa2bc648fe86f6317f2451885be119a384b1bfbd",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "79385421566143855356",
+            "claimed": "79385421566143855356",
+            "pending": "0",
+            "campaignId": "0xa818bf5038ac1662c85a4ad5e8e6cacec163a69fccd559a12499d81354257505",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "74898117154224684977",
+            "claimed": "74898117154224684977",
+            "pending": "0",
+            "campaignId": "0x95e335bd83b0cd2a4deca6eb3ffb24c53ecb98ceae64ac962f8e5e8d43111092",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "69996729388669927047",
+            "claimed": "69996729388669927047",
+            "pending": "0",
+            "campaignId": "0x9d4a0f8ef6315f9732655e60042d6e9a20d2d9ffebc058e8a5399e7aa4548d14",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~5278278303001856202_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "63901421541357370215",
+            "claimed": "63901421541357370215",
+            "pending": "0",
+            "campaignId": "0xf9632f1b2438092bb64c5d7d1aae4ca8b762e5a3b533009ca6d0eb9e25ae72d8",
+            "subCampaignId": "5278278303001856202",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~12056777558565777758_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "554004957472095867909",
+            "claimed": "554004957472095867909",
+            "pending": "0",
+            "campaignId": "0xd94061206350e00653ec80d6f7146012d498854ac625afc4aedce07fab21b513",
+            "subCampaignId": "12056777558565777758",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~17200272563617390731_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "464936853185547645251",
+            "claimed": "464936853185547645251",
+            "pending": "0",
+            "campaignId": "0xa2fba9d961b9531f9281eb5a8ebe39d6188dbf3993aeb7026eede3a845982f7f",
+            "subCampaignId": "17200272563617390731",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~4336002260826753022_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "453205552689800851629",
+            "claimed": "453205552689800851629",
+            "pending": "0",
+            "campaignId": "0xd4a6e1430bb5d14df6891d632def70a27874dbdf93268a6affb84675db72be1c",
+            "subCampaignId": "4336002260826753022",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~2065952585144993369_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "44269445193950708607",
+            "claimed": "37976329016940806456",
+            "pending": "0",
+            "campaignId": "0x3e862fd9707f4f82797e8fc2010b2340a5ef16d5986f9a593fb1e2321f314ecd",
+            "subCampaignId": "2065952585144993369",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~14365988515133128099_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "442485800870178529864",
+            "claimed": "442485800870178529864",
+            "pending": "0",
+            "campaignId": "0x9f117b4bae60bc96c2bf9ab73eb6b80653b804db6b0cf41236cad9bf00e887a3",
+            "subCampaignId": "14365988515133128099",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~16100700954866286562_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "395436664139676138016",
+            "claimed": "395436664139676138016",
+            "pending": "0",
+            "campaignId": "0xd60c3dfd8dc11bf4f1f866e87e80de75dc0843cd655e838479b6d8ef27b2e503",
+            "subCampaignId": "16100700954866286562",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "349271847797328532062",
+            "claimed": "349271847797328532062",
+            "pending": "0",
+            "campaignId": "0x0dcda557298c23af7e5107d199d117718927e8f8be792a20e67eb7939dbe1559",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "333016297695384944312",
+            "claimed": "333016297695384944312",
+            "pending": "0",
+            "campaignId": "0x1beb48986326700b33649ae471e463f01d394fe7d7460d612b4001e763171894",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~1282563235865272582_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "331450903597539825502",
+            "claimed": "331450903597539825502",
+            "pending": "0",
+            "campaignId": "0x4f10e00b1d7c3d7355ea4e478e5379f598519bc55397bffeefbbdd72993cf715",
+            "subCampaignId": "1282563235865272582",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~18394111865451951071_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "329624972356396492605",
+            "claimed": "329624972356396492605",
+            "pending": "0",
+            "campaignId": "0xa302d13dec848bd604fbeb7bb9d7e201a5ef46f7f5ce7dd11a7c76b403a4e969",
+            "subCampaignId": "18394111865451951071",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~7412178497497895694_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "327538613705242484371",
+            "claimed": "327538613705242484371",
+            "pending": "0",
+            "campaignId": "0x4311b737759233fd384f1b92d4c6aec86e4e9134351ffa6adffc85b79bca0419",
+            "subCampaignId": "7412178497497895694",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~1399691905466647888_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "326823815130650770625",
+            "claimed": "326823815130650770625",
+            "pending": "0",
+            "campaignId": "0x58f5898e811ac2984b5784c1e26aea7e67179849e1b325435a5cf1a1897da437",
+            "subCampaignId": "1399691905466647888",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~1831273900475329531_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "302672642604909926600",
+            "claimed": "302672642604909926600",
+            "pending": "0",
+            "campaignId": "0x9581b08647e7e83c20d1a11494bc0a42138f17c97608b0fdcebef4e8bcca956f",
+            "subCampaignId": "1831273900475329531",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "30031960537068243930",
+            "claimed": "30031960537068243930",
+            "pending": "0",
+            "campaignId": "0x65c492ca9e8dc2570609e6901d8f3c722c8b0eb01b5cc79ebb6bc14c8f654619",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "290418386429425399826",
+            "claimed": "290418386429425399826",
+            "pending": "0",
+            "campaignId": "0x9adaebc1fb982e540d7b634c67f17c5c4ad1447e0024ed80c328be9985b2096e",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~5079407019756537681_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "277091881162667179578",
+            "claimed": "277091881162667179578",
+            "pending": "0",
+            "campaignId": "0x4687adf181597232f7e07f34da39d05a1684276a2f01d024f2c7719cebcce87b",
+            "subCampaignId": "5079407019756537681",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~6642166784457639607_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "265540830303987655081",
+            "claimed": "265540830303987655081",
+            "pending": "0",
+            "campaignId": "0xca73333d4a7fdc41e4067dd0e068bc972b15bfa12d7d6f0f6aaed48e0218ffd0",
+            "subCampaignId": "6642166784457639607",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "22672771441689824200",
+            "claimed": "19375855471102715941",
+            "pending": "0",
+            "campaignId": "0xce353d7616ca917ea18f7504bf68079e4aae9db18455b0bc580d17d4917d1053",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~15193260006690908247_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "191031051329911459981",
+            "claimed": "191031051329911459981",
+            "pending": "0",
+            "campaignId": "0x8e34a7e5545b2ddb34a880255a109d428a5711e3ac0541e96a6437295c5a1afe",
+            "subCampaignId": "15193260006690908247",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "185809831252692240862",
+            "claimed": "185809831252692240862",
+            "pending": "0",
+            "campaignId": "0x4fc178b3d69c3db2b6947d5021a8a0c32516f8c67a1f69b7f8a715e4c67a4883",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~8299513547853120444_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "183196851066645199695",
+            "claimed": "183196851066645199695",
+            "pending": "0",
+            "campaignId": "0x1dc3050c7cb2221c88acd33d00811ce63623c20cc75988b92e9c5a62ee7f24ce",
+            "subCampaignId": "8299513547853120444",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "174456544704170244350",
+            "claimed": "174456544704170244350",
+            "pending": "0",
+            "campaignId": "0x373a124a43279b9996d9ca0ff980bee60a4b784d75df224c05ab1c72825bb48e",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "172278917400018477296",
+            "claimed": "172278917400018477296",
+            "pending": "0",
+            "campaignId": "0x2eb342954a3909d11ca0efeac3208be28f46e8fe745268b48ffa02fc22db27aa",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "170290249368321580852",
+            "claimed": "170290249368321580852",
+            "pending": "0",
+            "campaignId": "0x1cc864a65ed7ba4c992353cb011d08b19aefc1b61a0f97a316e6989ffca40437",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~10698939995949821128_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "161578569306078201539",
+            "claimed": "161578569306078201539",
+            "pending": "0",
+            "campaignId": "0x48e2b4ceb28e817a8d60140e4e0d7d889fa82084cebeb840a1708da0389843b4",
+            "subCampaignId": "10698939995949821128",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~14865586649273179662_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "160204884573039259310",
+            "claimed": "160204884573039259310",
+            "pending": "0",
+            "campaignId": "0x05c053e66c68fd6ae6c2fcd140ed04f71c9d98fd14c9dec79041b48642be53b5",
+            "subCampaignId": "14865586649273179662",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "158063028207099514920",
+            "claimed": "158063028207099514920",
+            "pending": "0",
+            "campaignId": "0x94420eebffc952a51d11488fb2c8c0d0fa13c5427af6990effa4a82bd9e29a1c",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "153861030049902864724",
+            "claimed": "153861030049902864724",
+            "pending": "0",
+            "campaignId": "0xd49d11d80cc23a4e3e45f2b2d85ef0e4320e1166ce2c2fa944eafeaadde8c98c",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "151016358141316322614",
+            "claimed": "151016358141316322614",
+            "pending": "0",
+            "campaignId": "0x171ed56397ee6b433f921a18ac57af01bfcb058b1fe217687351d4fd8e41d6a8",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "143736035626645229271",
+            "claimed": "143736035626645229271",
+            "pending": "0",
+            "campaignId": "0xf6e4c9f829eff64ba708755f3befcabb9678ce4f309972deb25bce377dff9343",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "134304285385549165326",
+            "claimed": "134304285385549165326",
+            "pending": "0",
+            "campaignId": "0x1d8fab9bca83540fcdb027cf402887dc741fd794e4df724f839a1a125dd85c64",
+            "opportunityId": "16088678467640585746"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "usds-flagship-ssr",
+            "amount": "125425076526671647967",
+            "claimed": "125425076526671647967",
+            "pending": "0",
+            "campaignId": "0xa9edfbfcb11b80465965efad0d34a08940ebe2a170ae80735cc53456a00e5344",
+            "opportunityId": "11834621840190871297"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+            "amount": "109345263137212288647",
+            "claimed": "109345263137212288647",
+            "pending": "0",
+            "campaignId": "0xa742351dcaa6529460c7a22414e65459b9043cc27cb1c4fe64ac7c8b26ac26bf",
+            "opportunityId": "16088678467640585746"
+          }
+        ]
+      },
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "606221956428625",
+        "claimed": "606221956428625",
+        "pending": "0",
+        "proofs": [
+          "0x529cc92d4eef2d806bbf1a20f9a1e2bc2400c5da598e8ff26626cedbc98784c4",
+          "0xa31ded353e37df3ca3107c2f3f36724154862f14bc8011f5b9ababd8e457677f",
+          "0x5ed39417d4e259d568c9dc85b72ae03563096403de6c193dd308857aab98e9f7",
+          "0x6b3ca8729c57df0403de48d99768c080166ab748f089b9d5151184ed670a33d2",
+          "0x6be69fae3e568ad86a093752dc27f0b6bc02e1b276f82dd327ff85e6d72956b8",
+          "0xe9b19f32b7914941e652837f52e737256c1bebf538a088e53b179fa12e520223",
+          "0x28cf5673a3ff658675a7f5a5ad669cb0ce050ac9523f2cf41d555a2eb6d38ba8",
+          "0xa05137259d5a0c9cc66e6f9225c020d25558d88dc27a51a679f6a782c75ec418",
+          "0xc8aaf5a176e631d4522c0349fc666e93f84018ec5ac0e223c008a10f2c549e2f",
+          "0xf382822656651934fbe4fb5a112793d705e2be876d664f9b17d192a44c011af9",
+          "0xc47734428893ee9bfa4a2142444966ec74b0362f7f447112313213eb3c58414f",
+          "0x226e6d6a3ffc55eb2d3661ef2651e19aa393f032105e34f45a76bf39866547d3",
+          "0xf9121503882b8e92f6a54a380aad6a7fbbe909c8710d4fb468c89a784258f95c",
+          "0x7bc5c23355629c117cba39ba10a6dffd53d643f4b023f916f8ded7d68b1feaae",
+          "0xc9b6a7d8534487c86ee40b27f5224de35abad49dd6aa0d31eaf7b2f3f4b8ab9b",
+          "0x3e51200791727c098f5e48c5629e8e5f4db85378c04733e62288a22fdea08afb",
+          "0x064d1c56ecab457846bd12052de73f8e061cedd873ce518595bc0eb23775e662",
+          "0x0ea72e3952272177f78ffe411a89a2cf23b29d8d5ff611a1225b4b6177d5d680",
+          "0xce542f9e0b7988325d32dff0cfd247b931afe69f62bca1000b6a857c2ca40033"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0xFe0c30065B384F05761f15d0CC899D4F9F9Cc0eB",
+          "decimals": 18,
+          "symbol": "ETHFI",
+          "price": 0.48764955625526973
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_12217475128686903035",
+            "amount": "606221956428625",
+            "claimed": "606221956428625",
+            "pending": "0",
+            "campaignId": "0x63303fd13b4ac4833e8764057733906c8ee7d34d7d5a22f44cbc7ddc748decb4",
+            "opportunityId": "12102526591740948527"
+          }
+        ]
+      },
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "409501257506138675",
+        "claimed": "409282200303627811",
+        "pending": "3986974210584",
+        "proofs": [
+          "0x17e966bb22373ebcf0bea4a4bf0d5109c54d5dc8a944f132aac09751c9edf20e",
+          "0xf88ecf862fc9b8bc48fb6d26be546c308fa562556f7d5487ff01e47bd7b33ae1",
+          "0xef39c1a46b2ac9a72fd3bc58d5c1a00702e6f9b2e16a33687450fa62ca8be41b",
+          "0x9471a33c9cb1dfdace37a0d8316dd910acee4ece15cd157ed371fae9545c76d3",
+          "0xebecfd4d3066ab18f219c702e0f234bdafdd39ffedb597e74175b6c19c839be8",
+          "0xed1a9a60d6d1222c770a1e173003891bafef962f9b48d658c35ffbe55f9ff577",
+          "0x122eeb7b52a14a0c86d75dee0953d20eff34e74b3d85f37fcb8511b6a137dea7",
+          "0x60c6d4dbc66400dc98235c1a47316eca9466854dd8514f80bad1d96b1a5cee04",
+          "0xe5a72e6603bca64cb14c1ab4330684e72c5043f2ff347938a2b148c4546cb122",
+          "0x48f091de9549ab6ee5707cde000a15bd21c368f7819477f2c409b0ecfea88971",
+          "0x20c1acf1290f0809f58c3e118edae7736bc590c419f483cf109625c4c007cb8c",
+          "0xeeb7164a2168a2a6aca3a4bd94bf20eb624adf3f863120547db0c8812ccbe43a",
+          "0x3a162c8b9bd2b1aeac96d211de885d194a95de1aaf75cd6e030606b05b392780",
+          "0xd67cc5ee5249833c2f297dce80e1c1a900a0d83942016ad3bb293da3cc571dbe",
+          "0xb87d561ff5152e6957bf06e40db4202e64977e6ac83f7d793494a1934053dda8",
+          "0x3f57d2c6595a15a620f7d67b2e9ed6081ba0b5a2f89eb7b696ab30a131d9e62b",
+          "0x945106259abfc272c2ce827650ce6a69a112a9bd6a4311b01db965ea94485312",
+          "0x4aff50ada27dc1c30357fec9bc816b68151b0af731059ed91437a08bebcf23f3",
+          "0xce542f9e0b7988325d32dff0cfd247b931afe69f62bca1000b6a857c2ca40033"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+          "decimals": 18,
+          "symbol": "aUSDtb",
+          "price": 1
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "539104099869139",
+            "claimed": "539104099869139",
+            "pending": "0",
+            "campaignId": "0xe7f8aa228012a4038d3be991d784c8b893ba4ff1e1d2088541134caf81501941",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "538299920466714",
+            "claimed": "538299920466714",
+            "pending": "0",
+            "campaignId": "0xe5d23d88f16cab4ffcb86a565adea41c58b640358605f6ca40fdb2ffe34354c8",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "535579970504419",
+            "claimed": "535579970504419",
+            "pending": "0",
+            "campaignId": "0xb6ce25a9e0d4e7ead6b2bccf2ea69c4bbe2465f422bf42b3f6fc92642614bff7",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "534205793133872",
+            "claimed": "534205793133872",
+            "pending": "0",
+            "campaignId": "0x3dccb3ac450bfc6ebb54b96a627e992b9617e055051d6714cb3456b42cccba40",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xC139190F447e929f090Edeb554D95AbB8b18aC1C~10768955319320541400_Aave_Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "53293462955649",
+            "claimed": "53293462955649",
+            "pending": "0",
+            "campaignId": "0xf9584acf78a11107ef29dffb4beacb5890f7dbd57a792457a9312a5e25b112bf",
+            "subCampaignId": "10768955319320541400",
+            "opportunityId": "15649174011676343090"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "532399284441960",
+            "claimed": "532399284441960",
+            "pending": "0",
+            "campaignId": "0xc0bb6d103846b1d92e1eeb94480d8663d40d0667baa68fc15a926e6b3d6d77d5",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "530703228862558",
+            "claimed": "530703228862558",
+            "pending": "0",
+            "campaignId": "0xfc12cf51b7f89a8fc52d371df59b8ec8d5eb35009d72cd72f5aacdb74ce65826",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "528795927091689",
+            "claimed": "528795927091689",
+            "pending": "0",
+            "campaignId": "0x5eb398171e9a3f141871977beffe0da3e9825b2a10967ef3389d2843d1345b25",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "528002881323882",
+            "claimed": "528002881323882",
+            "pending": "0",
+            "campaignId": "0x19da264e2fbf1b74f3b239bb1a7d3844fc2da4496daa335380f2447acd2f6ea8",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "523163833216951",
+            "claimed": "523163833216951",
+            "pending": "0",
+            "campaignId": "0xebdf1e3d3a78e3690860ac683bc74e9bf98ebba6fe13e6db80ac7ae4ceb45bc4",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "520006720435194",
+            "claimed": "520006720435194",
+            "pending": "0",
+            "campaignId": "0x93845a2dc755427d29fb77219ade9179992969108ea737d0f33b946f5b12f4eb",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "504974010589467",
+            "claimed": "504974010589467",
+            "pending": "0",
+            "campaignId": "0x6f2b2264f36c64b63098aa4e32e70e15b040084ea2119a1eac51c58ef331199e",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xC139190F447e929f090Edeb554D95AbB8b18aC1C~13649385870921300761_Aave_MultiLogProcessor_9225982115762840490",
+            "amount": "50083209897543",
+            "claimed": "50083209897543",
+            "pending": "0",
+            "campaignId": "0xf9584acf78a11107ef29dffb4beacb5890f7dbd57a792457a9312a5e25b112bf",
+            "opportunityId": "1525301160830512539"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "476614801049137",
+            "claimed": "257557598538273",
+            "pending": "3986974210584",
+            "campaignId": "0xf8b83633ff35e5f112247a8fdd905d7c87f547422e89b1cd1f7af5931c0d8311",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "415240525721354",
+            "claimed": "415240525721354",
+            "pending": "0",
+            "campaignId": "0x0529f772130b8ca69e3300f8bc585a6c2fed53e6e6bd23a4e57b542fabaab5c5",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "402469901255038826",
+            "claimed": "402469901255038826",
+            "pending": "0",
+            "campaignId": "0x44ca33f82212560efc971dc46afd17fe2bba1e260f2bdea8d61dd8f275cece09",
+            "opportunityId": "9623615825108171573"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+            "amount": "220888581540321",
+            "claimed": "220888581540321",
+            "pending": "0",
+            "campaignId": "0xa8f86d520bce4cf17bdced82b300052d27edb9d23081d52a8e196e43a2e2334e",
+            "opportunityId": "9623615825108171573"
+          }
+        ]
+      },
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "20398890711062531270",
+        "claimed": "20398890711062531270",
+        "pending": "0",
+        "proofs": [
+          "0xd9604df9ff0435d1d0ff8df75f73075b721f1a3ac0caf8dd324cb84ddb720407",
+          "0xac9552566ac92e8dc8c568031974f0e731c22a3e8ff3817253d85a863d421ac3",
+          "0x342ed3c3d19830a1a7803c1730de8dbe1613b2f64103877efc7a5d30cfabc13d",
+          "0xb721e8052321ec639601a24ccb85bbdf3f47fe5f5e2b04525717fb1c3d23ac8b",
+          "0xb39a7875f5311fd518797296e89af7f7c0c7ed51a55dbbcc843c3ba38e9bbe5c",
+          "0x60a6485536a1bcfa225f2fac0a95be5100a188f4ad94de6acb80e6bda6de97bd",
+          "0x7df860738fb59bd05f2212ae195624a34a206475e4dbd4cb4055b47eee526c8c",
+          "0x26b7fb88c04ab1100722d58e453d59a6c60236574864d7e8940d8283dfe5a7fa",
+          "0xfb2311f6286dc9696218c45d70a45366f1c21f9f20196fd09cf3579daec65086",
+          "0x5ab1d606fc4c9825328ec646de1840c006435aebca3e8f48f2481aa243747f28",
+          "0x591f794d6cbc8a335d53e388f2998248c9fb4f56e4be6a17807549804facdfd2",
+          "0xbae1d20ce5644e0b469aafbadf88fa588e7732036a3f9f61128c370846990374",
+          "0x0044436f6829aaa19388c3ca552514b429d7faa49b9bb7a1183d2137a8e59678",
+          "0x5a511560829fd7e6c1eb22fb0980a85dd481821deb978492f14c7a4d636e5e5e",
+          "0xf4e6385b6f26f74aef154a5bb41b5c40875dfa3e640fc16f517acb7c4a5f6819",
+          "0x634812733747715b98c289ef31258ed7eb89d5546ca3d64427619ca5fff4745e",
+          "0xb7d43eefc7a9b15ae87cea71de9c66f34c363212dfa9a3a8ea02cf4df5e417c9",
+          "0xd6ddff4643cd29ecc718cc90e73588c0a669e0a562052c1a6b018db64aefa53c",
+          "0xdffed536b402c437f52b8c12d14e002d66aff58f6bb110cbfa8b39458a94492d"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+          "decimals": 18,
+          "symbol": "MORPHO",
+          "price": 2.0183478187735253
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_2769936865541551087~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "709562438980891107",
+            "claimed": "709562438980891107",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_10884481578584070202~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "639225683801934776",
+            "claimed": "639225683801934776",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_17868638645149552556~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "5534701439478242734",
+            "claimed": "5534701439478242734",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_458729400308109355~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "478263852449934118",
+            "claimed": "478263852449934118",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_16717576751688491132~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "3700003842108118939",
+            "claimed": "3700003842108118939",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_16826279796938149349~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "357068714026128067",
+            "claimed": "357068714026128067",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_14953812854227576149~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "355072873727828890",
+            "claimed": "355072873727828890",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_18119162419359975129~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "2874501261249725524",
+            "claimed": "2874501261249725524",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_8213690950496418119~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "275212455054215820",
+            "claimed": "275212455054215820",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_13795241309264205178~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "2346295192011125517",
+            "claimed": "2346295192011125517",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_3752372392775985319~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "1829333276746037079",
+            "claimed": "1829333276746037079",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_2649583438695103981~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "1299649681428348699",
+            "claimed": "1299649681428348699",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_6547519778847169931~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+            "amount": "0",
+            "claimed": "0",
+            "pending": "0",
+            "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+            "subCampaignId": "16302314840604574134",
+            "opportunityId": "5690103024451523530"
+          }
+        ]
+      },
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "1819305344670560935936",
+        "claimed": "1819305344670560935936",
+        "pending": "0",
+        "proofs": [
+          "0x62624856b2306358c900f19667f45e95c173cc5b27e6f73693312f9bee834498",
+          "0xfe088affe55b2552abae1385026a2dce49e6813dc53fb11009257946f923ccd6",
+          "0x837ee6841460ffcc068eecaaa751e0212439e1b82bc8419d25a03800ab246e1b",
+          "0xfcddfbf1915110617001b0a15f6585fb024300773e42febfc71aff9cfc824fbb",
+          "0x1bbc58084a7ac39508eb3366b66b0dea1266c5f74045424be06e49a2f1e19ce6",
+          "0x3fe7892018e414194cfa26077e9221061bb07a2e57d3ae1e937684a7c12d3696",
+          "0x06c75d202e5019b6cdda9a123afe509e0009bf78965b63c7524b08b4e721406b",
+          "0x2aca5a512c9c021cb2a156d2646018247a59cace9822f9cf53e00d4cb5c2f25a",
+          "0x84e622ba4ce2f4f04ca2dd2b535f48641e088ac837e3ce23404464dbd252b94a",
+          "0x3156dc9b5b04572d6fd4fef5318a932911940a2c41e061323f91813c34868832",
+          "0x5ee66201318845549a0ab42ca59fcb7919be3248f10cd35e2e001f708f16e3f1",
+          "0x926f7a4ef4c9e1042efce624d8d3a077ffcb3b7ee47f41552f2116eb057e02e9",
+          "0x99e3fbec2ebbcb1430ba3b937c8b37b68e8553db59c201e55d8da0e082e66d39",
+          "0xeeef7e28de83505021b72850cd31f19f23ff03ded0aff7d31d844dce8729fd1b",
+          "0xc83cb5b4d21954a35b1da420b1a2e750bbe3233cd3d05b72daf38a39728ebae6",
+          "0x3e51200791727c098f5e48c5629e8e5f4db85378c04733e62288a22fdea08afb",
+          "0x064d1c56ecab457846bd12052de73f8e061cedd873ce518595bc0eb23775e662",
+          "0x0ea72e3952272177f78ffe411a89a2cf23b29d8d5ff611a1225b4b6177d5d680",
+          "0xce542f9e0b7988325d32dff0cfd247b931afe69f62bca1000b6a857c2ca40033"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+          "decimals": 18,
+          "symbol": "GHO",
+          "price": 0.9983023786002282
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "staker",
+            "amount": "71512807254735708160",
+            "claimed": "71512807254735708160",
+            "pending": "0",
+            "campaignId": "0xa5b1ff1fd12a97f766aa45528f443f59a158d55fa2d9d989123fbeff5be9e49a",
+            "opportunityId": "6053192071826434478"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "stakoor",
+            "amount": "71512807254735708160",
+            "claimed": "71512807254735708160",
+            "pending": "0",
+            "campaignId": "0xa5b1ff1fd12a97f766aa45528f443f59a158d55fa2d9d989123fbeff5be9e49a",
+            "opportunityId": "6053192071826434478"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "base",
+            "amount": "223657804605795631104",
+            "claimed": "223657804605795631104",
+            "pending": "0",
+            "campaignId": "0xf9f30e2125f579215729eee4614148ece724a012631e633f3ddc1b874f8bff04",
+            "opportunityId": "6053192071826434478"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "base",
+            "amount": "1430256145094714327040",
+            "claimed": "1430256145094714327040",
+            "pending": "0",
+            "campaignId": "0xa5b1ff1fd12a97f766aa45528f443f59a158d55fa2d9d989123fbeff5be9e49a",
+            "opportunityId": "6053192071826434478"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "stakoor",
+            "amount": "11182890230289780736",
+            "claimed": "11182890230289780736",
+            "pending": "0",
+            "campaignId": "0xf9f30e2125f579215729eee4614148ece724a012631e633f3ddc1b874f8bff04",
+            "opportunityId": "6053192071826434478"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "staker",
+            "amount": "11182890230289780736",
+            "claimed": "11182890230289780736",
+            "pending": "0",
+            "campaignId": "0xf9f30e2125f579215729eee4614148ece724a012631e633f3ddc1b874f8bff04",
+            "opportunityId": "6053192071826434478"
+          }
+        ]
+      },
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "16577237312315679600",
+        "claimed": "16577237312315679600",
+        "pending": "0",
+        "proofs": [
+          "0x3b99fe59cf860fb91d7076a6e658757db63809981660f25c78b1b16a6b19c15e",
+          "0x2907bc5727759da374ac7c62c9da1cf16988493b2c52bcf4445c3617ea8c9886",
+          "0xcfd8b3dbe532b1b0993ac344aae629daffeee9a8a3af99f2e69868666a83b4c1",
+          "0x017191d6d67de91b6fcc186ef265c0f11bbd56da0a1a78c82e5788c444312743",
+          "0xc61a5df0c6feef5b2ba96d83f6eb6310ae415c28817bd3dd709c35c6eb3c4e5a",
+          "0x0f76688efd95648a6aac341dc9be2fed036fe1750543672b6b88d55ae8545f46",
+          "0xb82b1bcf4ea734013a862a6dbf91e940f658cd5fa1c6b2637b25b1125d3f77e3",
+          "0x1ba8d266dfa7a7818fcf85c2fac6193d0a75ed4efb1aaa9d67608796d4169476",
+          "0x9275d51cdb8c5778ef8cf1f5a2d46e9570b5961a7e0ceef30fad0fc861d7ab5c",
+          "0x17e2e1c9db16431f1c2e244c37ed02fd6dbf3c5e16038be6aa1fc7457af910b8",
+          "0x4b5e5e3d84bd3ba8def5568f426d62a670ef1d97c6c5da9638b6437c18e730be",
+          "0xa1b35fdf90308cd2c7fcf4e1b21799101bf1c92d5b32378128a6e1e8b9b4b5bf",
+          "0x787fee2ebb384a43fdac28e99c7cb5e67b0aebba2ac46471cb048f44e93f2610",
+          "0xa248ab5d6d8fdc417af6be8d88f77abbfdd28221c4ef70c04b95a34858cd5195",
+          "0x993c69867ead290ff4cdd220341430c962b3df15dd248414e5d5f0e07ddf58d5",
+          "0xa74bfa28a4156b8cf4d6d266aebbbfa0b7eef75262f71eebf18d090c49dbb3df",
+          "0x4f10ee0641c85570662aba75bf0a9c92b9d4063bb1bdb5a5c64a67af01086f43",
+          "0x4aff50ada27dc1c30357fec9bc816b68151b0af731059ed91437a08bebcf23f3",
+          "0xce542f9e0b7988325d32dff0cfd247b931afe69f62bca1000b6a857c2ca40033"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0x04ACaF8D2865c0714F79da09645C13FD2888977f",
+          "decimals": 18,
+          "symbol": "WFRAX",
+          "price": 0.27900682706040264
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29~8987962350132523940_FraxLend_ERC20_0xaB3cb84c310186B2Fa4B4503624A5D90b5DcB22D",
+            "amount": "408570423983591",
+            "claimed": "408570423983591",
+            "pending": "0",
+            "campaignId": "0x5731f1bc59df32b11140ffe67c1c3b9c793065034e4743650f865ac151033bdb",
+            "subCampaignId": "8987962350132523940",
+            "opportunityId": "16899645864893011019"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29~9982484856995129966_FraxLend_ERC20_0xaB3cb84c310186B2Fa4B4503624A5D90b5DcB22D",
+            "amount": "16576828741891696009",
+            "claimed": "16576828741891696009",
+            "pending": "0",
+            "campaignId": "0xa6a6e629559e3bd237f1fc37ce47d962e876b38b5a3c1447dfa85fce4d458f6c",
+            "subCampaignId": "9982484856995129966",
+            "opportunityId": "16899645864893011019"
+          }
+        ]
+      },
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "12385687125736626732033",
+        "claimed": "12385687125736626732033",
+        "pending": "0",
+        "proofs": [
+          "0xfa051e95e7217098645498c6fbcd06eebc84558ab3476d4869440359fb04c387",
+          "0x6379548062b6c535b1862be2bfcf7a837f5200d7854d564d9c8f66ef50d17aeb",
+          "0xcd7bddebf3bfbd76f483605eb622ed63a8d87ccbcd612a7b24db31ab2d824276",
+          "0x282d70af46cd88de74fe4f47ca65b088690d6265b73f09fa02f08f9d6c4a326b",
+          "0x6578eacfc962fa027ff14af81d26bf1d167f5328ef0b6db8601662065bc29fd2",
+          "0x2fcfa43b5247ac2b6bceb3114b235cff0779679edcaca7df935a286d477c8376",
+          "0x3510fe1817f0aba60416e4d29f03d1671deeba4083b68006316ac5e16565f1d8",
+          "0x98d9b48c50797aca299a1c02645251279497e342ce723ee8abad4c3104231449",
+          "0xfe76129b93b9a1a90db97b8b3a575162f0a6537d626558f0e4e5d958ddd7be4e",
+          "0x68d0d9668875e6da461c7fd422d1d29502cbf722dafc509124e226a12c9b6e65",
+          "0x45d3c3fb91998327cc436b52de6f54da69a949add9c98011ab48cd193a8a274d",
+          "0x8c3c27cb74090c3564796ed789557c014dcff190e46a3ba051e31ee71a9e59b7",
+          "0xeadd0b3428e8d0af6dba7ad32017b4f209a72abb6dbf92713b5f0ce1f0592eee",
+          "0xe12b97926ecb993049bf257f7d4e1393359c466fd16d00d98bd8613de69c23aa",
+          "0xd8a6f8aab0c8dfb9eb7ba88d82e577b912758a7fbf340afdd89ad74c674aea25",
+          "0xde59133aa59ad3aa6f8a910be84d8e18bd807b416bdfe24389196e0757a4169a",
+          "0xa7fb94e17b3e608a560a3e49f9c66cdd8d3864cf6c99c43f26b3e4788ea5db16",
+          "0xdffed536b402c437f52b8c12d14e002d66aff58f6bb110cbfa8b39458a94492d"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0x8A5A5DE9db5770123Ff2145F59e9F20047f0A8EC",
+          "decimals": 18,
+          "symbol": "mtwCARROT",
+          "price": 0.0052391884712154595
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0x82c40e07277eBb92935f79cE92268F80dDc7caB4",
+            "amount": "9805871094248169532456",
+            "claimed": "9805871094248169532456",
+            "pending": "0",
+            "campaignId": "0xfffe0080834438dbd08b04c387831acd21ceefe28d9dda608529dcf9a825d429",
+            "opportunityId": "1267963459171983836"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MorphoBorrow_0x85ab69d50add7daa0934b5224889af0a882f2e3b4572d82c771dd0875f4eaa9b",
+            "amount": "665068039795820438389",
+            "claimed": "665068039795820438389",
+            "pending": "0",
+            "campaignId": "0x53f536ad8d41e05dff2e2cd62f52b4e9d11389a676244ee3105552a837260208",
+            "opportunityId": "7068595689395932424"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "ERC20_0x82c40e07277eBb92935f79cE92268F80dDc7caB4",
+            "amount": "1914747991692636761188",
+            "claimed": "1914747991692636761188",
+            "pending": "0",
+            "campaignId": "0x5ae0f1ba74e67460aadebe496f5228fd6629063ba6b375342a8693e483cb9740",
+            "opportunityId": "1267963459171983836"
+          }
+        ]
+      },
+      {
+        "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+        "distributionChainId": 1,
+        "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "amount": "10839627716",
+        "claimed": "10839627716",
+        "pending": "0",
+        "proofs": [
+          "0x8a6bdfcdc257fae4f3dcd3ae671535f825cd14005d934f251a78a2f50de514ee",
+          "0xcde83cc96291103493a63f6511abdf78a86a0088959b5d2ff0748942ef0efad9",
+          "0x486b6a4b81a64927ad2d8e3e62a9928a224574ba6bb93a6ae32331098f440d34",
+          "0xbb93e0ec8ffc4dda37173639c8462ebd087a5b287134c30aab98f11153f8e9c0",
+          "0xc297cad6a453b7c96ab21345afe0a75f394456e78590a593956e438a5230e063",
+          "0x1a52b361e9eeef8f0bdc59768725f17be5583e68844e23f439963622cc2ea2e1",
+          "0xe4eea43dddb5b7cdde58449f81bae33b439f0343d9b9067a5aa61e41ef29921d",
+          "0x290df4e34aa53d3d6a579518c82ab46fe4f6c62b8a3a02130148806d8affaf4c",
+          "0x520903d1047ccdbf1400ca3d6887c234a9d3c999c440cef60f4e8f1898e6044f",
+          "0x2cc12306206f160724dc4c62d6b542b9e68f8f7e1d8c50ee86249682b39033dd",
+          "0x3a41f678a57a75fce766582bbdc152644e3c2d6397d56dd7c89d97077c60aa6a",
+          "0xc9d619805225b610187bbcf0774d92e5a749be3b3ea39c79f8f917130e7d1df4",
+          "0x865af8617c16a5b632f8eb77eb9a37eba084b889e101dbb5c49a7c64f8b0889a",
+          "0x82350fb901e0a0efbb0fffcd3c1b88b0c87a6d9ef40f344bf2fdd40fcfa63e03",
+          "0xa8fdd3bd547cf1981ea8840ca60eeff4c02d6e23526b3bfc28f6aa819999eea0",
+          "0x9bd9ab4dbfa1c2baaa589dbbbbca7cde85dd2eaf7ea07e4d61e4bb41caae7536",
+          "0x1f986032bfa9ef2ead8ca44a6735f5a3836d5550f540b3c7cfa70745be0271be",
+          "0x0ea72e3952272177f78ffe411a89a2cf23b29d8d5ff611a1225b4b6177d5d680",
+          "0xce542f9e0b7988325d32dff0cfd247b931afe69f62bca1000b6a857c2ca40033"
+        ],
+        "token": {
+          "chainId": 1,
+          "address": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+          "decimals": 6,
+          "symbol": "aEthPYUSD",
+          "price": 1
+        },
+        "breakdowns": [
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "879281926",
+            "claimed": "879281926",
+            "pending": "0",
+            "campaignId": "0x756bbf10bffad0de46df06de8cfc54470ef8052721bc463f5fb05ae7afafa46b",
+            "opportunityId": "15656226846119298153"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_9863193320017997295",
+            "amount": "742",
+            "claimed": "742",
+            "pending": "0",
+            "campaignId": "0x1f755d8fdb46651b57866e4fd0b31cf68de9f20181a762f3c0140fd0a52fab94",
+            "opportunityId": "138473983048637"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "569500808",
+            "claimed": "569500808",
+            "pending": "0",
+            "campaignId": "0x0ef739720955a1d79d78a763213c569b48122ec85dc704b786ddc3ad81a24d62",
+            "opportunityId": "15656226846119298153"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "326397529",
+            "claimed": "326397529",
+            "pending": "0",
+            "campaignId": "0x5764c86d0a95315c4349e230bbbfd5bd0a15f381540eb07f15ff4d28b2b4f230",
+            "opportunityId": "15656226846119298153"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "319240270",
+            "claimed": "319240270",
+            "pending": "0",
+            "campaignId": "0x0fc73f6d9bd4db546d08e4fad67e50b141c7e8c67312c2a83c2beb55482b2d04",
+            "opportunityId": "15656226846119298153"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_9863193320017997295",
+            "amount": "2679",
+            "claimed": "2679",
+            "pending": "0",
+            "campaignId": "0x850d68c4383f8035377e064240ade801b407bac656fcc09b2feda673eb1016e1",
+            "opportunityId": "138473983048637"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "2545222958",
+            "claimed": "2545222958",
+            "pending": "0",
+            "campaignId": "0xcfea657ce5af73fec1dfc0f1e1477043a3c79cfe07680bf7593f1beae14bb952",
+            "opportunityId": "15656226846119298153"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_9863193320017997295",
+            "amount": "2190",
+            "claimed": "2190",
+            "pending": "0",
+            "campaignId": "0xaa8d6d0ccbeccffbef6f465919e36918a9fd6345c4c47d6f1b17bfddad7ca01b",
+            "opportunityId": "138473983048637"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_9863193320017997295",
+            "amount": "2181",
+            "claimed": "2181",
+            "pending": "0",
+            "campaignId": "0xa584f69ae882f5e0afd425074f34405525d5ac6eaa90f36ff01890551db538a5",
+            "opportunityId": "138473983048637"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "2076532553",
+            "claimed": "2076532553",
+            "pending": "0",
+            "campaignId": "0xc5ac9d22530a0bc3d46550a14fa7f439ab968d0f9141f7523712d774453e1fd6",
+            "opportunityId": "15656226846119298153"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_9863193320017997295",
+            "amount": "206651103",
+            "claimed": "206651103",
+            "pending": "0",
+            "campaignId": "0xf1160c8eff07510bdc2513b305aa4de275f1f7aa20342523c3a119a6770ed28b",
+            "opportunityId": "138473983048637"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_9863193320017997295",
+            "amount": "1747",
+            "claimed": "1747",
+            "pending": "0",
+            "campaignId": "0xc6e8aea32c952785d4b62cba0e5172a5e59c18b384cf1779b7c947ca0dcd0f3f",
+            "opportunityId": "138473983048637"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "173852698",
+            "claimed": "173852698",
+            "pending": "0",
+            "campaignId": "0x3fb92af6d1771489cb236c19742cb6b88722c9b360ee09ab90c7ac2e93e4b9ad",
+            "opportunityId": "4377015652044862776"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "1275373177",
+            "claimed": "1275373177",
+            "pending": "0",
+            "campaignId": "0x92c993636cbb5cf93d5d3109a9fcf05fe4cb7c61debaeb08fb706fd267c14f85",
+            "opportunityId": "15656226846119298153"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "1207313225",
+            "claimed": "1207313225",
+            "pending": "0",
+            "campaignId": "0x83ba7a3dd2c7e618c6e8a7af7126639c4315378461528449709e8a0958a4eaee",
+            "opportunityId": "4377015652044862776"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_641626595063325333",
+            "amount": "1157731579",
+            "claimed": "1157731579",
+            "pending": "0",
+            "campaignId": "0x38d7b9fcd7a5f85e79423924804c085e3879dcd93b62d2c1d30879d1ab1d00b2",
+            "opportunityId": "15656226846119298153"
+          },
+          {
+            "root": "0xd22f0a0bd31b5c9bdcceed677f1925f1825dffa50c311da66b49b54d586a4663",
+            "distributionChainId": 1,
+            "reason": "MultiLogProcessor_9863193320017997295",
+            "amount": "102520351",
+            "claimed": "102520351",
+            "pending": "0",
+            "campaignId": "0x6c0e1ad5f300fccb58145ca99dd01fab8efa182ab0ba3cd5a44345ee4f2d86cf",
+            "opportunityId": "138473983048637"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -77,8 +77,12 @@ export function normalizePendlePnlRows(rows: PendlePnlTransactionRaw[]): PendleC
  * Builds the shared TanStack query key. User-only (no chainId/limit/etc.) so
  * the cache stays stable across ephemeral request params and consumers can
  * target it cleanly when they need to invalidate or pre-populate it.
+ *
+ * Exported for the portfolio earnings hook, which shares this cache but reads
+ * the RAW rows (no select) — the monthly profit lives on LP/reward actions
+ * that normalizePendlePnlRows drops.
  */
-function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
+export function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
   return ['pendle-pnl-transactions', user?.toLowerCase()];
 }
 
@@ -92,6 +96,11 @@ function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
  *
  * NOT exported from hooks/index.ts — the public API stays the per-market and
  * all-markets hooks, both of which read this same cache.
+ *
+ * The cache holds RAW wire rows; history consumers get normalized rows via
+ * `select` (memoized per cached data reference). This lets the portfolio
+ * earnings hook read the same single API call unfiltered — its monthly profit
+ * figure needs the LP/reward rows the normalizer drops.
  *
  * Pendle's API doesn't serve Tenderly fork chain IDs; the transport layer
  * rewrites the request to mainnet (Tenderly mirrors mainnet state). The
@@ -110,10 +119,9 @@ export function usePendleAllPnlTransactions(): UseQueryResult<PendleCombinedHist
 
   return useQuery({
     queryKey: pendlePnlQueryKey(userAddress),
-    queryFn: async (): Promise<PendleCombinedHistoryRow[]> => {
-      const raw = await fetchPendlePnlTransactionsForUser(userAddress!, { chainId: mainnet.id });
-      return normalizePendlePnlRows(raw);
-    },
+    queryFn: (): Promise<PendlePnlTransactionRaw[]> =>
+      fetchPendlePnlTransactionsForUser(userAddress!, { chainId: mainnet.id }),
+    select: normalizePendlePnlRows,
     enabled: !!userAddress
   });
 }
