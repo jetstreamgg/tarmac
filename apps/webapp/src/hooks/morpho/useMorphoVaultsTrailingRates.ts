@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { mainnet } from 'viem/chains';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { trailingAverageRate, type DailyRatePoint } from '../shared/trailingRate';
-import { MORPHO_API_URL, buildVaultV2ApyWindowQuery } from './constants';
+import { MORPHO_API_CHAIN_ID, MORPHO_API_URL, buildVaultV2ApyWindowQuery } from './constants';
 
 const DAY_IN_SECONDS = 86400;
 
@@ -80,7 +79,7 @@ export function useMorphoVaultsTrailingRates({
   vaultAddresses: `0x${string}`[];
   days?: number;
 }): MorphoVaultsTrailingRatesHook {
-  const chainId = mainnet.id;
+  const chainId = MORPHO_API_CHAIN_ID;
 
   const {
     data,

@@ -1,3 +1,4 @@
+import { mainnet } from 'viem/chains';
 import {
   usdcRiskCapitalVaultAddress,
   usdsFlagshipVaultAddress,
@@ -9,6 +10,8 @@ import { TOKENS } from '../tokens/tokens.constants';
 import { MorphoVaultConfig } from './morpho';
 
 export const MORPHO_API_URL = 'https://api.morpho.org/graphql';
+/** Morpho vaults (and their Merkl campaigns) are mainnet-only — always query the APIs with this chainId. */
+export const MORPHO_API_CHAIN_ID = mainnet.id;
 export const MERKL_API_URL = `${import.meta.env?.VITE_PROXY_ORIGIN || 'https://staging-proxy.sky.money'}/merkl/v4`;
 
 export enum MorphoAdapterType {
