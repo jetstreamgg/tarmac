@@ -119,7 +119,9 @@ export function StakeProductPage() {
           Iconbox / Status beside a Heading 2 title; the DS 17px icon-title gap
           is normalized to 16. The brand glow was dropped from product icons in
           the latest design iterations (APP-416). */}
-      <div className="flex items-center justify-between gap-4">
+      {/* From md up the title row carries 72px of its own padding-bottom on
+          top of the column's 24px gap — 96px of clearance to the tab strip. */}
+      <div className="flex items-center justify-between gap-4 md:pb-18">
         <div className="flex items-center gap-3 md:gap-4">
           <div className="shrink-0" data-testid="stake-header-icon">
             <IconboxStatus size="l" className="size-14 border-[1.75px] md:size-16 md:border-2">
