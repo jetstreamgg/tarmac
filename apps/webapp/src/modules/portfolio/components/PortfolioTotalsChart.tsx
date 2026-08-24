@@ -86,6 +86,10 @@ export function PortfolioTotalsChart() {
         // The comp (1036:189291) leads the headline figure with the series'
         // 32px token mark (APP-443 item 2.1).
         icons={<TokenIconStack symbols={tokenSymbols} size={32} className="shrink-0" />}
+        // …and tags the figure with the period's change (Figma 2376:225249,
+        // "missing trend badge"). The mark now stands in for the symbol, which
+        // no longer trails the figure.
+        showTrend
         // …and plots the series in the brand indigo, not the default teal (2.3).
         color="var(--color-chart1)"
         label={isUsds ? <Trans>Total USDS and DAI</Trans> : <Trans>Total Sky Savings Supply</Trans>}

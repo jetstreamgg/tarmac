@@ -1,3 +1,4 @@
+import { cn } from '@/lib/cn';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/widgets/components/ui/tooltip';
 import { useClipboard } from '@/widgets/shared/hooks/useClipboard';
 import { Text } from './Typography';
@@ -6,7 +7,7 @@ import { motion } from 'motion/react';
 import { iconAnimations } from '@/widgets/shared/animation/presets';
 import { AnimationLabels } from '@/widgets/shared/animation/constants';
 
-export function CopyToClipboard({ text }: { text: string }) {
+export function CopyToClipboard({ text, iconClassName }: { text: string; iconClassName?: string }) {
   const { hasCopied, onCopy } = useClipboard(text);
 
   return (
@@ -20,7 +21,10 @@ export function CopyToClipboard({ text }: { text: string }) {
           exit={AnimationLabels.exit}
           variants={iconAnimations}
         >
-          <Copy onClick={onCopy} className="hover:text-textEmphasis cursor-pointer transition-colors" />
+          <Copy
+            onClick={onCopy}
+            className={cn('hover:text-textEmphasis cursor-pointer transition-colors', iconClassName)}
+          />
         </motion.div>
       </TooltipTrigger>
       <TooltipPortal>

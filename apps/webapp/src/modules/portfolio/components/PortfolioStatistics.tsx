@@ -39,10 +39,19 @@ export function PortfolioStatistics() {
         <Trans>Sky Protocol Statistics</Trans>
       </Heading>
 
-      <Card className="p-6">
-        {/* The detail Chart ships its own Card surface; flatten it so the
-            chart blends into this statistics card. */}
-        <div className="[&_[data-testid=portfolio-totals-chart]]:border-0! [&_[data-testid=portfolio-totals-chart]]:bg-transparent! [&_[data-testid=portfolio-totals-chart]]:backdrop-blur-none">
+      {/* 32px, not 24 (Figma 2376:225244, "Update inner padding - should be 32px"). */}
+      <Card className="p-8">
+        {/* The detail Chart ships its own Card surface; flatten it so the chart
+            blends into this statistics card. Its padding goes too — otherwise
+            the chart's own 32px stacks on this card's and the header sits 64px
+            in while the footer stats sit at 32.
+
+            The corner radius has to go with it. The Card pairs `rounded-[28px]`
+            with `overflow-hidden`, and at p-0 the content starts right at the
+            corner — so the arc clipped the first glyph of the label and the
+            tail of the plotted line. Squaring the (now invisible) box keeps the
+            overflow clip without eating content. */}
+        <div className="[&_[data-testid=portfolio-totals-chart]]:rounded-none! [&_[data-testid=portfolio-totals-chart]]:border-0! [&_[data-testid=portfolio-totals-chart]]:bg-transparent! [&_[data-testid=portfolio-totals-chart]]:p-0! [&_[data-testid=portfolio-totals-chart]]:backdrop-blur-none">
           <PortfolioTotalsChart />
         </div>
 

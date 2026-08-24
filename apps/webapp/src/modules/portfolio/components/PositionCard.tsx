@@ -64,15 +64,10 @@ export function PositionCard({
     // (486:20195); from md the desktop comp (1030:58714, APP-443 item 8) takes
     // over with a 32/28 inset and 40px between blocks.
     <Card className="flex flex-col gap-7 p-5 md:gap-10 md:px-8 md:py-7" data-testid="position-card">
-      {/* DS Iconbox/Status: 64px box, borderTertiary ring, 48px token inside. */}
+      {/* DS Iconbox/Status: 64px box, borderTertiary ring, 52px token inside. */}
       <div className="flex items-start justify-between">
         <IconboxStatus size="l" type={productStatusType(position)} dot={!!productStatusType(position)}>
-          <TokenIcon
-            token={{ symbol: position.tokenSymbol }}
-            width={48}
-            showChainIcon={false}
-            className="h-12 w-12"
-          />
+          <TokenIcon token={{ symbol: position.tokenSymbol }} width={52} showChainIcon={false} />
         </IconboxStatus>
         <NetworkBadge chainIds={position.chainIds} />
       </div>
