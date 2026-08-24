@@ -32,9 +32,6 @@ import {
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
-import { useNavigate } from '@tanstack/react-router';
-import { retainOnNavigate } from '@/lib/navigation';
-import { ROUTES } from '@/lib/routes';
 import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
@@ -195,8 +192,6 @@ function PendleMaturedNoPositionCard({
   maturityLabel: string;
   isConnected: boolean;
 }) {
-  const navigate = useNavigate();
-
   return (
     <ProductSupplyCard
       data-testid="pendle-matured-closed-card"
@@ -229,17 +224,6 @@ function PendleMaturedNoPositionCard({
             <ProductFigure value={maturityLabel}>{maturityLabel}</ProductFigure>
           </ProductStat>
         </ProductStatPair>
-      }
-      cta={
-        <Button
-          variant="secondary"
-          size="l"
-          className="w-full"
-          onClick={() => void navigate({ to: ROUTES.EARN, search: retainOnNavigate })}
-          data-testid="pendle-matured-browse-cta"
-        >
-          <Trans>Browse Earn products</Trans>
-        </Button>
       }
     />
   );
