@@ -215,14 +215,14 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
   it('shows the savings rate and projection stats on the idle tab when savings is available', () => {
     renderCard({ tab: 'idle' });
     expect(screen.getByText('Sky Savings Rate')).toBeTruthy();
-    expect(screen.getByText('Projected 1Y yield (at current rate)')).toBeTruthy();
+    expect(screen.getByText('Projected 1Y yield')).toBeTruthy();
     expect(screen.getByText('Idle stablecoins')).toBeTruthy();
   });
 
   it('drops the savings rate and projection stats when savings is geo-restricted (no rate)', () => {
     renderCard({ tab: 'idle', savingsRate: undefined });
     expect(screen.queryByText('Sky Savings Rate')).toBeNull();
-    expect(screen.queryByText('Projected 1Y yield (at current rate)')).toBeNull();
+    expect(screen.queryByText('Projected 1Y yield')).toBeNull();
     expect(screen.getByText('Idle stablecoins')).toBeTruthy();
   });
 

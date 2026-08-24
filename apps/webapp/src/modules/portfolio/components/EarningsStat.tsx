@@ -62,7 +62,7 @@ const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
  * vertically as the glyph appears/disappears across hover-focused products
  * (QA finding, 2026-08-24).
  */
-const STAT_ROW = 'flex items-center gap-1.5';
+export const STAT_ROW = 'flex items-center gap-1.5';
 
 const COVERAGE_COPY: Record<EarningsCoverage, ReactNode> = {
   'mainnet-only': <Trans>Earnings cover Ethereum Mainnet only.</Trans>,
@@ -182,6 +182,24 @@ function GapGlyph({
         )}
         {coverage && <span>{COVERAGE_COPY[coverage]}</span>}
       </div>
+    </EarningsTooltip>
+  );
+}
+
+/**
+ * The plain info glyph beside a stat that just needs a note — same treatment as
+ * the gap glyph, minus the missing-source machinery and the error colouring.
+ */
+export function StatInfoGlyph({ children, testId }: { children: ReactNode; testId?: string }) {
+  return (
+    <EarningsTooltip
+      trigger={
+        <span tabIndex={0} data-testid={testId} className="text-textSecondary flex shrink-0">
+          <Info className="h-3 w-3" />
+        </span>
+      }
+    >
+      {children}
     </EarningsTooltip>
   );
 }

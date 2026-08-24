@@ -19,7 +19,7 @@ import { productStatusType } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 import type { PositionEarnings } from '../earnings/earningsForPosition';
 import { ProductGlyph } from './ProductGlyph';
-import { EarningsFigureValue } from './EarningsStat';
+import { EarningsFigureValue, StatInfoGlyph } from './EarningsStat';
 
 // DS type tokens, resolved per the comps (mobile 486:20195 → desktop 486:20044).
 // Every one is responsive, so the card is NOT tier-agnostic. Color comes from the
@@ -132,7 +132,7 @@ export function PositionCard({
           <StatDivider />
           <Stat
             className="flex-1"
-            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
+            label={<Trans>Projected 1Y yield</Trans>}
             value={
               position.rateLoading ? (
                 <Skeleton className="h-4 w-14" />
@@ -141,6 +141,9 @@ export function PositionCard({
                   {/* 12px at every tier — both comps draw it that size. */}
                   <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
                   {formatUsd(projected)}
+                  <StatInfoGlyph testId="projected-yield-info">
+                    <Trans>Using your current rate as a reference</Trans>
+                  </StatInfoGlyph>
                 </span>
               )
             }
