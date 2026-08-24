@@ -1,3 +1,4 @@
+import type * as React from 'react';
 import { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -13,9 +14,14 @@ import { cn } from '@/lib/cn';
  * Type is Label 6 (Circular Medium 12/14, -0.24) from md, one step down on the
  * phone tier where every comp that draws it is tighter.
  */
-export function RateBadge({ children, className }: { children: ReactNode; className?: string }) {
+export function RateBadge({
+  children,
+  className,
+  ...props
+}: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
+      {...props}
       className={cn(
         'border-success-gradient-start from-success-gradient-start/10 to-success-gradient-end/10 inline-flex shrink-0 items-center rounded-full border-[0.5px] bg-linear-to-b px-1.5 py-[3px]',
         className

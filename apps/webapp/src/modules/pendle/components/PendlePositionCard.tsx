@@ -28,6 +28,9 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
+import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
@@ -184,6 +187,11 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
 
   const { openSupply, openWithdraw } = usePendleModal({ onSuccess: refresh });
 
+  // "Accrued to date" is the same per-row slice the Portfolio renders for this
+  // market's row (APP-450); react-query shares the underlying fetches.
+  const walletEarnings = useWalletEarnings();
+  const accrued = earningsForPosition(walletEarnings, `fixed-${market.marketAddress.toLowerCase()}`);
+
   // Hold the card slot until the position read resolves — deciding on the 0n
   // fallback flashes the supply pitch at users who hold a position.
   if (isConnected && ptBalances === undefined) {
@@ -224,10 +232,17 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
       stats={
         <>
           <ProductStatPair grow>
-            {/* No cost-basis source for active positions yet — placeholder per
-                the redesign (matches the vault card's already-earned gap). */}
             <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <span className="text-fgSecondary">{NO_VALUE}</span>
+              <EarningsFigureValue
+                figure={accrued?.totalEarned ?? null}
+                missing={accrued?.missingFromTotal}
+                coverage={accrued?.coverage}
+                pendleSplit={accrued?.pendleSplit}
+                variant="plain"
+                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
+                skeletonClassName="h-4 w-14"
+                testId="pendle-accrued-to-date"
+              />
             </ProductStat>
             <ProductStat label={<Trans>You&apos;ll claim</Trans>}>
               <TrendingUp className="text-bullish h-3 w-3 shrink-0" />

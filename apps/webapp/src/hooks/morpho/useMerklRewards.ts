@@ -6,6 +6,7 @@ import { ReadHook } from '../hooks';
 import { familyMainnetId, formatBigInt } from '@/utils';
 import { formatUnits } from 'viem';
 import { MERKL_API_URL, MORPHO_API_CHAIN_ID, MORPHO_VAULTS, getMorphoVaultByAddress } from './constants';
+import { reasonContainsVaultAddress } from './merklReason';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '../generated';
 
 /**
@@ -123,10 +124,9 @@ export type MerklRewardsHook = ReadHook & {
  * Returns the vault address if found, undefined otherwise.
  */
 function findVaultAddressInReason(reason: string, chainId: number): `0x${string}` | undefined {
-  const lowerReason = reason.toLowerCase();
   for (const vault of MORPHO_VAULTS) {
     const addr = vault.vaultAddress[chainId];
-    if (addr && lowerReason.includes(addr.toLowerCase())) {
+    if (addr && reasonContainsVaultAddress(reason, addr)) {
       return addr;
     }
   }

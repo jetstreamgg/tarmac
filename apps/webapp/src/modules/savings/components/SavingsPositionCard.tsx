@@ -18,6 +18,9 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
+import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useSavingsModal } from '../hooks/useSavingsModal';
 import { useSavingsAccrualRate } from '../hooks/useSavingsAccrualRate';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
@@ -51,6 +54,11 @@ export function SavingsPositionCard() {
   const { data: overall, isLoading: rateLoading } = useOverallSkyData();
   // sUSDS appreciates every second; the hero figure shows it happening.
   const ratePerSecond = useSavingsAccrualRate();
+  // "Accrued to date" is the same per-row slice the Portfolio renders for the
+  // savings row (APP-450); queries are shared through react-query, so a
+  // Portfolio visit and this card cost one set of fetches between them.
+  const walletEarnings = useWalletEarnings();
+  const accrued = earningsForPosition(walletEarnings, 'savings');
   // Refresh position card + sUSDS balance after a successful supply/withdraw.
   // A no-position supply also flips this card to "My position" once the savings
   // balance refetches above zero.
@@ -103,9 +111,16 @@ export function SavingsPositionCard() {
       stats={
         <>
           <ProductStatPair grow>
-            {/* No cost-basis source yet → dash (PRD: unavailable values read "–"). */}
             <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <span className="text-fgSecondary">{NO_VALUE}</span>
+              <EarningsFigureValue
+                figure={accrued?.totalEarned ?? null}
+                missing={accrued?.missingFromTotal}
+                coverage={accrued?.coverage}
+                variant="plain"
+                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
+                skeletonClassName="h-4 w-14"
+                testId="savings-accrued-to-date"
+              />
             </ProductStat>
             <ProductStat label={<Trans>Est. 1Y yield (at current rate)</Trans>}>
               {rateValue === undefined && rateLoading ? (

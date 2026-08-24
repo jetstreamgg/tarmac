@@ -22,19 +22,11 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
   return (
     <Card className="flex h-full flex-col gap-8 p-5" data-testid="earn-marketplace-card">
       {/* DS Iconbox / Status keeps the family tint (ring + dot) in sync with
-          the detail headers; 48px box holding the 40px token. */}
-      <IconboxStatus
-        size="l"
-        type={productStatusType(row)}
-        dot={!!productStatusType(row)}
-        className="size-12"
-      >
-        <TokenIcon
-          token={{ symbol: productIconSymbol(row) }}
-          width={40}
-          showChainIcon={false}
-          className="h-10 w-10"
-        />
+          the detail headers, and sizes the logo itself — 64px overall around a
+          52px mark at `l` (Figma 2376:225234 → I…;5320:41748, "update icon
+          size"). This had been shrunk to a 48px box around a 40px mark. */}
+      <IconboxStatus size="l" type={productStatusType(row)} dot={!!productStatusType(row)}>
+        <TokenIcon token={{ symbol: productIconSymbol(row) }} width={52} showChainIcon={false} />
       </IconboxStatus>
 
       <div className="flex flex-col gap-2">

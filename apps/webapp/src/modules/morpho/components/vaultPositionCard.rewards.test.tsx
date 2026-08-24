@@ -97,8 +97,47 @@ vi.mock('@/modules/claim', async importOriginal => {
   return { ...actual, useClaimRewardsModal: () => ({ openClaim: () => {} }) };
 });
 
+// The card reads "Accrued to date" from the APP-450 aggregator; hand it a
+// literal per-vault slice so this suite never fires the aggregator's queries.
+const earningsHolder = vi.hoisted(() => ({ value: undefined as unknown }));
+vi.mock('@/modules/portfolio/hooks/useWalletEarnings', () => ({
+  useWalletEarnings: () => earningsHolder.value
+}));
+
 import { merklAdapter } from '@/modules/claim';
 import { VaultPositionCard } from './VaultPositionCard';
+import { combineWalletEarnings } from '@/modules/portfolio/earnings/combineWalletEarnings';
+import {
+  morphoVaultSourceId,
+  notAvailable,
+  ok,
+  type ProtocolEarnings,
+  type WalletEarnings
+} from '@/modules/portfolio/earnings/types';
+
+const vaultEarnings = (
+  totalEarned: ProtocolEarnings['totalEarned'],
+  coverage?: ProtocolEarnings['coverage']
+): WalletEarnings => {
+  const protocols: ProtocolEarnings[] = [
+    {
+      id: morphoVaultSourceId(VAULT),
+      label: 'USDS Flagship',
+      rowIds: [`vault-morpho-${VAULT.toLowerCase()}`],
+      totalEarned,
+      earnedThisMonth: totalEarned,
+      ...(coverage ? { coverage } : {}),
+      isLoading: false,
+      error: null
+    }
+  ];
+  return {
+    protocols,
+    combined: combineWalletEarnings(protocols),
+    isLoading: false,
+    window: { startSec: 0, endSec: 0 }
+  };
+};
 
 const usds = { symbol: 'USDS', name: 'USDS', address: { 1: USDS } } as unknown as Token;
 
@@ -147,6 +186,7 @@ describe('VaultPositionCard held slot (APP-491)', () => {
     stubMerkl();
     h.vaultUnresolved = false;
     h.vaultError = null;
+    earningsHolder.value = vaultEarnings(ok({ usd: 875.1 }));
   });
 
   afterEach(() => {
@@ -177,6 +217,7 @@ describe('VaultPositionCard claimable rewards (APP-442)', () => {
     stubMerkl();
     h.vaultUnresolved = false;
     h.vaultError = null;
+    earningsHolder.value = vaultEarnings(ok({ usd: 875.1 }));
   });
 
   afterEach(() => {
@@ -225,5 +266,29 @@ describe('VaultPositionCard claimable rewards (APP-442)', () => {
     expect(screen.getByTestId('vault-position-withdraw')).toBeTruthy();
     expect(screen.queryByTestId('vault-position-claim')).toBeNull();
     expect(screen.queryByText('0.04')).toBeNull();
+  });
+
+  // APP-450 scope extension: "Accrued to date" renders this vault's slice.
+  it('renders the accrued-to-date figure from the wallet earnings slice', () => {
+    renderCard();
+
+    expect(screen.getByTestId('vault-accrued-to-date').textContent).toContain('$875.10');
+  });
+
+  it("announces a non-Flagship vault's missing rewards without error styling", () => {
+    earningsHolder.value = vaultEarnings(ok({ usd: 12 }), 'rewards-not-included');
+    renderCard();
+
+    const stat = screen.getByTestId('vault-accrued-to-date');
+    expect(stat.textContent).toContain('$12.00');
+    expect(screen.queryByTestId('earnings-info')).not.toBeNull();
+    expect(screen.queryByTestId('earnings-partial')).toBeNull();
+  });
+
+  it('renders a self-explaining dash when the vault figure is unavailable', () => {
+    earningsHolder.value = vaultEarnings(notAvailable('reconciliation-failed'));
+    renderCard();
+
+    expect(screen.getByTestId('vault-accrued-to-date').textContent).toBe('—');
   });
 });

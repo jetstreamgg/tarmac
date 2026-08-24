@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { useParseTokenChartData } from './useParseTokenChartData';
 
 const DAY = 86400;
-const WEEK = 604800;
 
 /** `days` daily points ending now, oldest first, at 1e18 per unit. */
 const dailySeries = (days: number) => {
@@ -25,14 +24,14 @@ const spacing = (points: { date: Date }[]) => {
 };
 
 describe('useParseTokenChartData', () => {
-  // APP-456 #5: 1Y and All were flattened to seven equidistant points, so the
-  // Total USDS and DAI chart drew a six-segment polyline while every other chart
-  // plotted the real daily shape.
-  it('samples 1Y weekly rather than collapsing it to seven points', () => {
+  // APP-456 #5 rescued 1Y and All from seven equidistant points; Figma
+  // 2376:225261 then tightened 1Y again, from weekly to 3-daily, so it plots
+  // ~120 of the ~365 rows it has instead of ~52.
+  it('samples 1Y every three days', () => {
     const points = parse('y', dailySeries(400));
 
-    expect(points.length).toBeGreaterThan(50);
-    expect(spacing(points)).toBe(WEEK);
+    expect(points.length).toBeGreaterThan(100);
+    expect(spacing(points)).toBe(3 * DAY);
   });
 
   it('samples All daily across the whole series', () => {
@@ -42,9 +41,27 @@ describe('useParseTokenChartData', () => {
     expect(spacing(points)).toBe(DAY);
   });
 
-  it('keeps the short ranges on their existing daily cadence', () => {
-    expect(spacing(parse('w', dailySeries(30)))).toBe(DAY);
+  it('samples 1M daily', () => {
     expect(spacing(parse('m', dailySeries(60)))).toBe(DAY);
+  });
+
+  // 1W stays daily. Every chart feed publishes one row per day and the sampler
+  // step-holds, so a sub-daily interval would repeat each value rather than add
+  // detail — it drew the week as a six-tread staircase.
+  it('samples 1W daily', () => {
+    expect(spacing(parse('w', dailySeries(30)))).toBe(DAY);
+  });
+
+  // A series whose only records sit outside (or barely inside) the window still
+  // has to plot a line, not a lone point.
+  it('does not collapse a sparse series to a single point', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const sparse = [
+      { blockTimestamp: now - 180 * DAY, amount: 1n * 10n ** 18n, holders: 0 },
+      { blockTimestamp: now - 3 * DAY, amount: 2n * 10n ** 18n, holders: 0 }
+    ];
+
+    expect(parse('w', sparse).length).toBeGreaterThanOrEqual(6);
   });
 
   it('still marks a min and a max on the long ranges', () => {

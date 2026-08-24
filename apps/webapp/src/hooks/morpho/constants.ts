@@ -183,6 +183,85 @@ export const VAULT_V2_TRANSACTIONS_QUERY = `
   }
 `;
 
+/**
+ * Per-user V2 position PnL plus a daily balance series for the earnings window.
+ * `pnl`/`assets`/series `y` serialize as string above 2^53 and number below;
+ * the series comes back newest-first. Exited positions keep their PnL.
+ */
+export const USER_VAULT_V2_PNL_QUERY = `
+  query UserVaultV2Pnl($userAddress: String!, $chainId: Int!, $startTimestamp: Int!, $endTimestamp: Int!) {
+    userByAddress(address: $userAddress, chainId: $chainId) {
+      vaultV2Positions {
+        vault {
+          address
+          asset {
+            symbol
+            decimals
+          }
+        }
+        assets
+        assetsUsd
+        pnl
+        pnlUsd
+        roe
+        history {
+          assets(options: { startTimestamp: $startTimestamp, endTimestamp: $endTimestamp, interval: DAY }) {
+            x
+            y
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * VAULT_V2_TRANSACTIONS_QUERY variant scoped to a window start via
+ * `timestamp_gte` (an Int, not a BigInt) — the monthly flows method only needs
+ * in-window deposits and withdrawals, not the wallet's whole history.
+ */
+export const VAULT_V2_TRANSACTIONS_SINCE_QUERY = `
+  query VaultV2TransactionsSince(
+    $chainId: Int!
+    $userAddress: String!
+    $vaultAddresses: [String!]!
+    $sinceTimestamp: Int!
+  ) {
+    vaultV2transactions(
+      orderBy: Time
+      orderDirection: Desc
+      where: {
+        chainId_in: [$chainId]
+        userAddress_in: [$userAddress]
+        vaultAddress_in: $vaultAddresses
+        type_in: [Deposit, Withdraw]
+        timestamp_gte: $sinceTimestamp
+      }
+    ) {
+      items {
+        vault {
+          address
+          asset {
+            symbol
+            decimals
+          }
+        }
+        type
+        timestamp
+        txHash
+        data {
+          ... on VaultV2DepositData {
+            assets
+          }
+          ... on VaultV2WithdrawData {
+            assets
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const VAULT_V2_HISTORICAL_QUERY = `
   query VaultV2History($address: String!, $chainId: Int!, $endTimestamp: Int!) {
     vaultV2ByAddress(address: $address, chainId: $chainId) {
