@@ -53,6 +53,9 @@ export function ConnectedPortfolio() {
   // filter names the geo-HIDDEN rows (rows minus visibleRows) so sources whose
   // rows are absent for other reasons — a matured Pendle market is delisted
   // from the marketplace while its closed position still earned — survive.
+  // The network filter is deliberately NOT applied here: the accrued stats are
+  // wallet-level, "total earnings this wallet made" (Kuba, 2026-08-24), while
+  // the positions and supplied totals below do follow the selected network.
   const earnings = useMemo(() => {
     const visible = new Set(visibleRows.map(row => row.id));
     const hidden = new Set(rows.filter(row => !visible.has(row.id)).map(row => row.id));
