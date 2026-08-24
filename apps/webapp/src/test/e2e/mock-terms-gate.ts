@@ -63,7 +63,8 @@ export const mockTermsCheck = async (
       body: JSON.stringify({
         accepted,
         signedForCurrentVersion: signed,
-        latestVersion: '2026-08-01',
+        latestVersion: '1.0',
+        effectiveDate: '2026-08-01',
         messageToSign:
           'By signing this message I confirm that I have read and agree to the sky.money Terms of Use and Privacy Policy.'
       })

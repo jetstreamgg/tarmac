@@ -3,11 +3,12 @@ import { checkTermsWithRetry } from './checkTermsWithRetry';
 
 const TEST_ADDRESS = '0x1234567890123456789012345678901234567890';
 
-/** A full, current-contract `/check` body (APP-498 + APP-508). */
+/** A full, current-contract `/check` body (APP-498 + APP-508 + APP-424 versions). */
 const checkBody = (overrides: Record<string, unknown> = {}) => ({
   accepted: true,
   signedForCurrentVersion: false,
-  latestVersion: '2026-01-15',
+  latestVersion: '1.0',
+  effectiveDate: '2026-01-15',
   messageToSign: 'By signing this message, you acknowledge...',
   ...overrides
 });
@@ -35,7 +36,7 @@ describe('checkTermsWithRetry', () => {
     vi.unstubAllEnvs();
   });
 
-  it('returns all four facts on a successful response', async () => {
+  it('returns all five facts on a successful response', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce(okResponse());
 
     const result = await checkTermsWithRetry(TEST_ADDRESS);
@@ -44,10 +45,22 @@ describe('checkTermsWithRetry', () => {
       status: 'ok',
       accepted: true,
       signedForCurrentVersion: false,
-      latestVersion: '2026-01-15',
+      latestVersion: '1.0',
+      effectiveDate: '2026-01-15',
       messageToSign: 'By signing this message, you acknowledge...'
     });
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  // The date is display copy: the modal reads it, but the local flag is keyed
+  // by the version alone. A worker that predates the split sends no
+  // `effectiveDate`, and that must not stop anyone browsing.
+  it('still resolves ok when the response carries no effectiveDate', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce(okResponse(checkBody({ effectiveDate: undefined })));
+
+    const result = await checkTermsWithRetry(TEST_ADDRESS);
+
+    expect(result).toMatchObject({ status: 'ok', latestVersion: '1.0', effectiveDate: undefined });
   });
 
   // The two booleans are uncorrelated: a version bump between the phases leaves

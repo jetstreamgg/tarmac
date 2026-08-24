@@ -63,8 +63,18 @@ interface ConnectedContextType {
    * normally, which is the whole point of the two-phase split.
    */
   hasSignedCurrentTerms: boolean;
-  /** Current terms version: keys the local flag, and renders in the modal footer (C4). */
+  /**
+   * Current terms version — a numeric identity (`'1.0'`) since APP-424's
+   * version rework. Keys the local flag, and renders in the modal header (C4).
+   * Exact-match only: every bump re-prompts, minor ones included.
+   */
   latestTermsVersion?: string;
+  /**
+   * Effective date of that version, for display beside it. Never keys
+   * anything — two revisions may share one, which is exactly why identity
+   * moved off the date.
+   */
+  termsEffectiveDate?: string;
   /**
    * The exact text C6 passes to `signMessage`. Served by the worker on
    * `/check` (APP-508) — the webapp holds no copy of it, so the string the
@@ -469,6 +479,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // change often. Without the memo every poll tick hands a fresh object to
   // every consumer.
   const latestTermsVersion = termsCheck?.latestVersion;
+  const termsEffectiveDate = termsCheck?.effectiveDate;
   const contextValue = useMemo<ConnectedContextType>(
     () => ({
       isConnectedAndAcceptedTerms,
@@ -483,6 +494,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       hasAcceptedTerms,
       hasSignedCurrentTerms,
       latestTermsVersion,
+      termsEffectiveDate,
       termsMessageToSign,
       acceptTerms,
       signTerms,
@@ -513,6 +525,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       hasAcceptedTerms,
       hasSignedCurrentTerms,
       latestTermsVersion,
+      termsEffectiveDate,
       termsMessageToSign,
       acceptTerms,
       signTerms,
