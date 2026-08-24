@@ -128,12 +128,21 @@ export function ProductTransactionsTable<T>({
               <div
                 key={index}
                 className={cn(
-                  'bg-bgSecondary p-5',
+                  'bg-bgSecondary flex flex-col gap-6 p-5',
                   index === 0 && 'rounded-t-[20px]',
                   index === 3 && 'rounded-b-[20px]'
                 )}
               >
+                {/* Mirrors the TransactionCard layout: header line + 2×2 field grid. */}
                 <Skeleton className="h-5 w-1/3" />
+                <div className="flex flex-col gap-3">
+                  {Array.from({ length: 2 }).map((_, rowIndex) => (
+                    <div key={rowIndex} className="flex items-center gap-5">
+                      <Skeleton className="h-4 w-28 shrink-0" />
+                      <Skeleton className="h-4 flex-1" />
+                    </div>
+                  ))}
+                </div>
               </div>
             ))
           ) : error ? (
@@ -205,9 +214,11 @@ export function ProductTransactionsTable<T>({
           {isLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
               <TableRow key={index} className="pointer-events-none">
-                <TableCell colSpan={columns.length}>
-                  <Skeleton className="h-5 w-1/3" />
-                </TableCell>
+                {columns.map(column => (
+                  <TableCell key={column.id}>
+                    <Skeleton className="h-5 w-2/3" />
+                  </TableCell>
+                ))}
               </TableRow>
             ))
           ) : error ? (

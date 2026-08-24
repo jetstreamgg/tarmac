@@ -1,7 +1,6 @@
-import { useChainId, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { MorphoVaultHistoryItem, MorphoVaultV2TransactionsApiResponse } from './morpho';
-import { isTestnetId } from '@/utils';
 import { mainnet } from 'viem/chains';
 import { useQuery } from '@tanstack/react-query';
 import { ModuleEnum, TransactionTypeEnum, TRUST_LEVELS, TrustLevelEnum } from '../constants';
@@ -20,7 +19,7 @@ async function fetchMorphoDepositWithdrawHistory(
 ): Promise<MorphoVaultHistoryItem[]> {
   const vaults = vaultAddress
     ? [vaultAddress]
-    : MORPHO_VAULTS.map(({ vaultAddress }) => vaultAddress[chainId]);
+    : MORPHO_VAULTS.map(({ vaultAddress }) => vaultAddress[chainId]).filter(Boolean);
 
   const response = await fetch(MORPHO_API_URL, {
     method: 'POST',
@@ -74,8 +73,8 @@ export function useMorphoVaultHistory({
   enabled?: boolean;
 } = {}): MorphoVaultHistoryHook {
   const { address } = useConnection();
-  const currentChainId = useChainId();
-  const chainIdToUse = isTestnetId(currentChainId) ? mainnet.id : currentChainId;
+  // Always use mainnet chainId since Morpho vaults are only on mainnet
+  const chainIdToUse = mainnet.id;
 
   const {
     data,
