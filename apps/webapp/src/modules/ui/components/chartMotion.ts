@@ -266,6 +266,25 @@ function useFollowWith<T extends SVGElement | HTMLElement>(
     frame.current = requestAnimationFrame(step);
   }, [x, y, time, mode, reduceMotion, write]);
 
+  // A remounted element with an UNCHANGED target slips past the effect above —
+  // its deps are the coordinates — and would render unwritten at its
+  // container's origin. The tooltip panel does exactly this: recharts keeps
+  // the content component mounted (and the last coordinate) while inactive, so
+  // ending the hover and resuming it on the same snapped point remounts the
+  // panel with identical x/y — and the card sat visible at the screen's
+  // top-left. Runs every render; acts only when the node is a new element.
+  const placedNode = useRef<T | null>(null);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node || placedNode.current === node) return;
+    placedNode.current = node;
+    const tgt = target.current;
+    if (!tgt) return;
+    current.current = { ...tgt };
+    velocity.current = { x: 0, y: 0 };
+    write(node, tgt.x, tgt.y);
+  });
+
   useLayoutEffect(
     () => () => {
       if (frame.current !== null) cancelAnimationFrame(frame.current);

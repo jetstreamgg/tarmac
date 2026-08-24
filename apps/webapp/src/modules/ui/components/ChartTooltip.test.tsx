@@ -115,6 +115,22 @@ describe('ChartTooltip — dismissal', () => {
     expect(onLeave).not.toHaveBeenCalled();
   });
 
+  // Recharts keeps the content component mounted (and the last coordinate)
+  // while inactive, so resuming a hover on the same snapped point remounts the
+  // panel with identical x/y — which used to skip the follower's coordinate-
+  // keyed placement and leave the card visible at the screen's top-left.
+  it('re-places a remounted panel whose coordinate has not changed', () => {
+    const anchorRef = { current: document.createElement('div') };
+    const props = { ...base, coordinate: { x: 100, y: 50 }, anchorRef };
+    const { rerender } = render(<ChartTooltip {...props} />);
+    const before = screen.getByTestId('chart-tooltip').style.transform;
+    expect(before).toMatch(/translate/);
+    rerender(<ChartTooltip {...props} active={false} />);
+    expect(screen.queryByTestId('chart-tooltip')).toBeNull();
+    rerender(<ChartTooltip {...props} />);
+    expect(screen.getByTestId('chart-tooltip').style.transform).toBe(before);
+  });
+
   it('detaches its listeners once inactive', () => {
     const onLeave = vi.fn();
     const { rerender } = render(<Harness onLeave={onLeave} />);
