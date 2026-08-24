@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { useChainId } from 'wagmi';
-import { isTestnetId } from '@/utils';
-import { mainnet } from 'viem/chains';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { MORPHO_API_URL, VAULT_V2_HISTORICAL_QUERY, VAULT_V2_HISTORICAL_HOURLY_QUERY } from './constants';
+import {
+  MORPHO_API_CHAIN_ID,
+  MORPHO_API_URL,
+  VAULT_V2_HISTORICAL_QUERY,
+  VAULT_V2_HISTORICAL_HOURLY_QUERY
+} from './constants';
 
 const HOUR_IN_SECONDS = 3600;
 const WEEK_IN_SECONDS = 604800;
@@ -146,9 +148,6 @@ export function useMorphoVaultChartInfo({
   /** Skip the fetch when false — e.g. for non-Morpho vaults that must not hit the Morpho API. */
   enabled?: boolean;
 }): MorphoVaultChartInfoHook {
-  const currentChainId = useChainId();
-  const chainId = isTestnetId(currentChainId) ? mainnet.id : currentChainId;
-
   const {
     data,
     error,
@@ -156,8 +155,9 @@ export function useMorphoVaultChartInfo({
     isLoading
   } = useQuery({
     enabled,
-    queryKey: ['morpho-vault-chart', vaultAddress, chainId, useHourlyInterval, hourlyWindow],
-    queryFn: () => fetchMorphoVaultChartInfo(vaultAddress, chainId, useHourlyInterval, hourlyWindow),
+    queryKey: ['morpho-vault-chart', vaultAddress, useHourlyInterval, hourlyWindow],
+    queryFn: () =>
+      fetchMorphoVaultChartInfo(vaultAddress, MORPHO_API_CHAIN_ID, useHourlyInterval, hourlyWindow),
     staleTime: 30_000, // 30 seconds
     gcTime: 60_000 // 1 minute
   });
