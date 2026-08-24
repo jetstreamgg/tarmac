@@ -17,7 +17,7 @@ import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
 import { earningsForPosition } from '../earnings/earningsForPosition';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
-import { CombinedEarningsStat, EarningsFigureValue } from './EarningsStat';
+import { CombinedEarningsStat, EarningsFigureValue, STAT_ROW, StatInfoGlyph } from './EarningsStat';
 
 /**
  * M6.1 (486:20132): the mobile comp stacks the chart block headline → donut →
@@ -267,12 +267,17 @@ function SuppliedContent({
           }
         />
         <Stat
-          label={<Trans>Projected 1Y yield (at current rate)</Trans>}
+          label={<Trans>Projected 1Y yield</Trans>}
           value={
             ratesPending ? (
               <Skeleton className="h-4 w-14" />
             ) : (
-              <GainValue value={displayProjected} className={LABEL_4} rolling />
+              <span className={STAT_ROW}>
+                <GainValue value={displayProjected} className={LABEL_4} rolling />
+                <StatInfoGlyph testId="projected-yield-info">
+                  <Trans>Using your current rate as a reference</Trans>
+                </StatInfoGlyph>
+              </span>
             )
           }
         />
@@ -388,8 +393,15 @@ function IdleContent({
         {displayProjected !== undefined && (
           <Stat
             key="projected"
-            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
-            value={<GainValue value={displayProjected} className={LABEL_4} rolling />}
+            label={<Trans>Projected 1Y yield</Trans>}
+            value={
+              <span className={STAT_ROW}>
+                <GainValue value={displayProjected} className={LABEL_4} rolling />
+                <StatInfoGlyph testId="projected-yield-info">
+                  <Trans>Using your current rate as a reference</Trans>
+                </StatInfoGlyph>
+              </span>
+            }
           />
         )}
         <Stat
@@ -526,11 +538,14 @@ function FooterStats({ children }: { children: ReactNode }) {
       {stats.map((stat, index) => (
         <Fragment key={isValidElement(stat) && stat.key !== null ? stat.key : index}>
           {index > 0 && <span className="bg-borderPrimary hidden h-7 w-px shrink-0 self-center lg:block" />}
-          {/* `lg:flex-1` + `min-w-0`: from lg the footer is a flex row of equal
-              columns split by hairlines (APP-443 item 7), so each stat has to
-              claim its share rather than size to content. */}
+          {/* From lg the footer packs left — content-width stats 32px apart,
+              split by hairlines (Figma 2376:225116 → I…;5034:39291, "Align
+              stats to the left side"). This supersedes APP-443 item 7, which
+              had each stat claim an equal share of the row (`lg:flex-1`) and
+              so pushed the last one out to the card's right edge. `min-w-0`
+              stays so a long figure truncates instead of overflowing. */}
           <motion.div
-            className="min-w-0 lg:flex-1"
+            className="min-w-0"
             {...entrance({ x: STAT_TRAVEL }, ENTRANCE_START + index * STAT_STAGGER)}
           >
             {stat}

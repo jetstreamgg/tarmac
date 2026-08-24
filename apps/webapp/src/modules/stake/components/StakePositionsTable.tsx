@@ -30,7 +30,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
-import { TransactionCard } from '@/components/product/TransactionCard';
+import { TransactionCard, TransactionCardSkeleton } from '@/components/product/TransactionCard';
 import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
 import { CellAmount, CellAmountWithToken, CellChevron, CellPosition } from '@/components/ui/table-cells';
 import {
@@ -210,6 +210,7 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     id: 'chevron',
     header: null,
     width: '64px',
+    skeleton: false,
     cell: () => (
       <span className="flex justify-center">
         <CellChevron />
@@ -362,6 +363,7 @@ export function StakePositionsTable({
         emptyIllustration={<SuppliedEmpty aria-hidden />}
         minWidth={720}
         renderCard={renderCard}
+        cardSkeleton={<TransactionCardSkeleton fieldRows={2} fieldRowGapClassName="gap-6" />}
         renderBelowRow={position => (
           <StakePositionRowBanner
             position={position}

@@ -113,12 +113,7 @@ export function StakeProductPage() {
         <div className="flex items-center gap-3 md:gap-4">
           <div className="shrink-0" data-testid="stake-header-icon">
             <IconboxStatus size="l" className="size-14 border-[1.75px] md:size-16 md:border-2">
-              <TokenIcon
-                token={{ symbol: 'SKY' }}
-                width={48}
-                className="h-11 w-11 md:h-12 md:w-12"
-                showChainIcon={false}
-              />
+              <TokenIcon token={{ symbol: 'SKY' }} width={52} showChainIcon={false} />
             </IconboxStatus>
           </div>
           <PageHeading

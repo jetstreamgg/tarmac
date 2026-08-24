@@ -26,7 +26,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
-import { TransactionCard } from '@/components/product/TransactionCard';
+import { TransactionCard, TransactionCardSkeleton } from '@/components/product/TransactionCard';
 import {
   CellAction,
   CellAmount,
@@ -113,7 +113,7 @@ const hashCell = (row: PortfolioTxRow) => (
 
 const COLUMNS: ProductTransactionColumn<PortfolioTxRow>[] = [
   { id: 'action', header: <Trans>Action</Trans>, width: '1.6fr', cell: actionCell },
-  { id: 'network', header: <Trans>Network</Trans>, width: '0.8fr', cell: networkCell },
+  { id: 'network', header: <Trans>Network</Trans>, width: '0.8fr', skeleton: false, cell: networkCell },
   { id: 'status', header: <Trans>Status</Trans>, width: '1fr', cell: statusCell },
   { id: 'product', header: <Trans>Product</Trans>, width: '1fr', cell: productCell },
   { id: 'supplied', header: <Trans>Amounts</Trans>, width: '1.2fr', cell: suppliedCell },
@@ -284,6 +284,7 @@ export function PortfolioTransactionsView({
         isLoading={isLoading}
         error={error}
         renderCard={renderCard}
+        cardSkeleton={<TransactionCardSkeleton fieldRows={2} />}
         onPageChange={(page, totalPages) => {
           // Last loaded page reached while older history exists server-side.
           if (hasNextPage && page >= totalPages) fetchNextPage?.();

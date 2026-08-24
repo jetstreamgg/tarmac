@@ -19,7 +19,7 @@ import { productStatusType } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 import type { PositionEarnings } from '../earnings/earningsForPosition';
 import { ProductGlyph } from './ProductGlyph';
-import { EarningsFigureValue } from './EarningsStat';
+import { EarningsFigureValue, StatInfoGlyph } from './EarningsStat';
 
 // DS type tokens, resolved per the comps (mobile 486:20195 → desktop 486:20044).
 // Every one is responsive, so the card is NOT tier-agnostic. Color comes from the
@@ -64,15 +64,10 @@ export function PositionCard({
     // (486:20195); from md the desktop comp (1030:58714, APP-443 item 8) takes
     // over with a 32/28 inset and 40px between blocks.
     <Card className="flex flex-col gap-7 p-5 md:gap-10 md:px-8 md:py-7" data-testid="position-card">
-      {/* DS Iconbox/Status: 64px box, borderTertiary ring, 48px token inside. */}
+      {/* DS Iconbox/Status: 64px box, borderTertiary ring, 52px token inside. */}
       <div className="flex items-start justify-between">
         <IconboxStatus size="l" type={productStatusType(position)} dot={!!productStatusType(position)}>
-          <TokenIcon
-            token={{ symbol: position.tokenSymbol }}
-            width={48}
-            showChainIcon={false}
-            className="h-12 w-12"
-          />
+          <TokenIcon token={{ symbol: position.tokenSymbol }} width={52} showChainIcon={false} />
         </IconboxStatus>
         <NetworkBadge chainIds={position.chainIds} />
       </div>
@@ -132,7 +127,7 @@ export function PositionCard({
           <StatDivider />
           <Stat
             className="flex-1"
-            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
+            label={<Trans>Projected 1Y yield</Trans>}
             value={
               position.rateLoading ? (
                 <Skeleton className="h-4 w-14" />
@@ -141,6 +136,9 @@ export function PositionCard({
                   {/* 12px at every tier — both comps draw it that size. */}
                   <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
                   {formatUsd(projected)}
+                  <StatInfoGlyph testId="projected-yield-info">
+                    <Trans>Using your current rate as a reference</Trans>
+                  </StatInfoGlyph>
                 </span>
               )
             }

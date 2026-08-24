@@ -1,12 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useChainId, useConnection, useReadContracts } from 'wagmi';
+import { useChainId, useChains, useConnection, useReadContracts } from 'wagmi';
 import { useCallback, useMemo } from 'react';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { isTestnetId, formatBigInt } from '@/utils';
+import { familyMainnetId, formatBigInt } from '@/utils';
 import { formatUnits } from 'viem';
-import { mainnet } from 'viem/chains';
-import { MERKL_API_URL, MORPHO_VAULTS, getMorphoVaultByAddress } from './constants';
+import { MERKL_API_URL, MORPHO_API_CHAIN_ID, MORPHO_VAULTS, getMorphoVaultByAddress } from './constants';
 import { reasonContainsVaultAddress } from './merklReason';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '../generated';
 
@@ -259,11 +258,22 @@ const RECENT_CLAIM_THRESHOLD_MS = 5 * 60 * 1000;
  * returns all rewards and their full source breakdown. The claim contract
  * claims the full amount per token, so this gives users transparency about
  * what they're claiming.
+ *
+ * `enabled: false` skips both the API request and the `claimed()` reads —
+ * every consumer reads Merkl through the claim adapter, which offers nothing
+ * off the family's Ethereum chain, so on an L2 the work would be discarded.
+ * A disabled query still hands back whatever the cache holds from an earlier
+ * chain, so callers must gate their own reads too.
  */
-export function useMerklRewards(): MerklRewardsHook {
+export function useMerklRewards({ enabled = true }: { enabled?: boolean } = {}): MerklRewardsHook {
   const { address: userAddress } = useConnection();
-  const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
+  // Merkl campaigns are mainnet-only, so the API is pinned there; the `claimed`
+  // reads run on the family's Ethereum chain (the Tenderly fork in dev).
+  const chainId = MORPHO_API_CHAIN_ID;
+  const readChainId = familyMainnetId(useChainId());
+  // The claimed() freshness filter is best-effort: skip it when the read chain
+  // isn't configured (e.g. the e2e config forks L2s but carries no chain 1).
+  const readChainConfigured = useChains().some(chain => chain.id === readChainId);
 
   const queryClient = useQueryClient();
   // Memoized because `mutate` closes over it: a fresh array literal per render gives
@@ -271,7 +281,7 @@ export function useMerklRewards(): MerklRewardsHook {
   // `rewards` array churns even when empty) and, through ClaimRewardsPanel's
   // transactionScreenContent → useModalEntryBody effect → updateModalContent, spins
   // any open claim modal in an unbounded re-render loop.
-  const queryKey = useMemo(() => ['merkl-rewards-all', userAddress, chainId], [userAddress, chainId]);
+  const queryKey = useMemo(() => ['merkl-rewards-all', userAddress], [userAddress]);
 
   const {
     data: apiData,
@@ -285,7 +295,7 @@ export function useMerklRewards(): MerklRewardsHook {
       }
       return fetchMerklRewards(userAddress, chainId);
     },
-    enabled: !!userAddress,
+    enabled: enabled && !!userAddress,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000
   });
@@ -294,12 +304,13 @@ export function useMerklRewards(): MerklRewardsHook {
   const claimedContracts = useMemo(
     () =>
       (apiData?.rewards ?? []).map(reward => ({
-        address: morphoMerklDistributorAddress[chainId as keyof typeof morphoMerklDistributorAddress],
+        address: morphoMerklDistributorAddress[readChainId as keyof typeof morphoMerklDistributorAddress],
         abi: morphoMerklDistributorImplementationAbi,
         functionName: 'claimed' as const,
-        args: [userAddress!, reward.tokenAddress] as const
+        args: [userAddress!, reward.tokenAddress] as const,
+        chainId: readChainId
       })),
-    [apiData?.rewards, chainId, userAddress]
+    [apiData?.rewards, readChainId, userAddress]
   );
 
   const {
@@ -310,7 +321,7 @@ export function useMerklRewards(): MerklRewardsHook {
   } = useReadContracts({
     contracts: claimedContracts,
     query: {
-      enabled: !!userAddress && (apiData?.rewards ?? []).length > 0
+      enabled: enabled && !!userAddress && readChainConfigured && (apiData?.rewards ?? []).length > 0
     }
   });
 
