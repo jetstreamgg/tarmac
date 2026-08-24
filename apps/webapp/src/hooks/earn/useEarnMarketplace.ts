@@ -301,7 +301,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               );
               tvlUsd = sparkMarket.data?.totalAssetsUsd;
               if (tvlUsd === undefined && sparkMarket.data?.totalAssets !== undefined && vault) {
-                const decimals = math.resolveDecimals(vault.assetToken.decimals, MORPHO_API_CHAIN_ID);
+                const decimals = math.resolveDecimals(vault.assetToken.decimals, familyMainnetId);
                 tvlUsd = bigintToUsd(
                   math.scaleToBaseDecimals(sparkMarket.data.totalAssets, decimals),
                   priceFor(vault.assetToken.symbol)

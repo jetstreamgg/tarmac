@@ -258,8 +258,14 @@ const RECENT_CLAIM_THRESHOLD_MS = 5 * 60 * 1000;
  * returns all rewards and their full source breakdown. The claim contract
  * claims the full amount per token, so this gives users transparency about
  * what they're claiming.
+ *
+ * `enabled: false` skips both the API request and the `claimed()` reads —
+ * every consumer reads Merkl through the claim adapter, which offers nothing
+ * off the family's Ethereum chain, so on an L2 the work would be discarded.
+ * A disabled query still hands back whatever the cache holds from an earlier
+ * chain, so callers must gate their own reads too.
  */
-export function useMerklRewards(): MerklRewardsHook {
+export function useMerklRewards({ enabled = true }: { enabled?: boolean } = {}): MerklRewardsHook {
   const { address: userAddress } = useConnection();
   // Merkl campaigns are mainnet-only, so the API is pinned there; the `claimed`
   // reads run on the family's Ethereum chain (the Tenderly fork in dev).
@@ -289,7 +295,7 @@ export function useMerklRewards(): MerklRewardsHook {
       }
       return fetchMerklRewards(userAddress, chainId);
     },
-    enabled: !!userAddress,
+    enabled: enabled && !!userAddress,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000
   });
@@ -315,7 +321,7 @@ export function useMerklRewards(): MerklRewardsHook {
   } = useReadContracts({
     contracts: claimedContracts,
     query: {
-      enabled: !!userAddress && readChainConfigured && (apiData?.rewards ?? []).length > 0
+      enabled: enabled && !!userAddress && readChainConfigured && (apiData?.rewards ?? []).length > 0
     }
   });
 

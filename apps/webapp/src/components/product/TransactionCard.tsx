@@ -74,10 +74,18 @@ export function TransactionCardFieldGrid({
 /** Loading stand-in with the card's real geometry, so the list doesn't reflow when data lands. */
 export function TransactionCardSkeleton({
   fieldRows = 1,
+  fieldRowGapClassName = 'gap-3',
   hasButton = true
 }: {
   /** Rows of the 2-per-row field grid the loaded card will render. */
   fieldRows?: number;
+  /**
+   * Vertical gap between field rows. The default matches
+   * TransactionCardFieldGrid; cards that lay their own rows out (the stake
+   * positions card stacks CardFieldRows with `gap-6`) must pass theirs, or the
+   * list reflows by the difference on every row when data lands.
+   */
+  fieldRowGapClassName?: string;
   /** Whether the loaded card ends in a full-width footer button. */
   hasButton?: boolean;
 }) {
@@ -85,7 +93,7 @@ export function TransactionCardSkeleton({
     <div className="bg-bgSecondary flex w-full flex-col gap-6 p-5 backdrop-blur-[20px]">
       <Skeleton className="h-9 w-1/2" />
       {fieldRows > 0 && (
-        <div className="flex w-full flex-col gap-3">
+        <div className={cn('flex w-full flex-col', fieldRowGapClassName)}>
           {Array.from({ length: fieldRows }).map((_, index) => (
             <div key={index} className="flex items-center gap-5">
               <Skeleton className="h-[38px] w-28 shrink-0" />

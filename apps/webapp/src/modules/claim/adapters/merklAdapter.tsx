@@ -60,13 +60,24 @@ function toClaimableReward(reward: MerklTokenReward): ClaimableReward {
   };
 }
 
-function useMerklClaimable(scope: ClaimScope): ClaimableResult {
-  const { data, isLoading, mutate } = useMerklRewards();
+/**
+ * Is the connected chain the one the distributor lives on? The distributor only
+ * exists on the family's Ethereum chain and the claim flow executes on the
+ * connected chain, so on L2s nothing is offered — otherwise the modal renders
+ * mainnet rewards it can never claim. Both adapter hooks gate on this, which is
+ * also what keeps `useMerklRewards` from fetching: the query is disabled only
+ * when every observer disables it.
+ */
+function useClaimableHere(): boolean {
   const chainId = useChainId();
-  // The distributor only exists on the family's Ethereum chain and the claim
-  // flow executes on the connected chain, so on L2s nothing is offered —
-  // otherwise the modal renders mainnet rewards it can never claim.
-  const claimableHere = chainId === familyMainnetId(chainId);
+  return chainId === familyMainnetId(chainId);
+}
+
+function useMerklClaimable(scope: ClaimScope): ClaimableResult {
+  const claimableHere = useClaimableHere();
+  const { data, isLoading, mutate } = useMerklRewards({ enabled: claimableHere });
+  // A disabled query still returns what the cache holds from the chain the user
+  // came from, so the gate has to be applied to the data as well as the fetch.
   const rewards = claimableHere ? data?.rewards : undefined;
   return useMemo(
     () => ({
@@ -80,9 +91,10 @@ function useMerklClaimable(scope: ClaimScope): ClaimableResult {
 
 function useMerklClaimCalls(selected: ClaimableReward[]): ClaimCallsResult {
   const chainId = useChainId();
+  const claimableHere = useClaimableHere();
   const { address } = useConnection();
-  const { data } = useMerklRewards();
-  const rewards = data?.rewards;
+  const { data } = useMerklRewards({ enabled: claimableHere });
+  const rewards = claimableHere ? data?.rewards : undefined;
 
   const selectedIds = useMemo(() => new Set(selected.map(reward => reward.id)), [selected]);
   const distributor = morphoMerklDistributorAddress[familyMainnetId(chainId)];

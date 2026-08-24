@@ -363,7 +363,7 @@ export function StakePositionsTable({
         emptyIllustration={<SuppliedEmpty aria-hidden />}
         minWidth={720}
         renderCard={renderCard}
-        cardSkeleton={<TransactionCardSkeleton fieldRows={2} />}
+        cardSkeleton={<TransactionCardSkeleton fieldRows={2} fieldRowGapClassName="gap-6" />}
         renderBelowRow={position => (
           <StakePositionRowBanner
             position={position}
