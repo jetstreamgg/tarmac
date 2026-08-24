@@ -60,6 +60,17 @@ const gapFor = (error: unknown) => notAvailable(error ? 'source-error' : 'loadin
 const MAX_TIMEOUT_MS = 2 ** 31 - 1; // setTimeout clamps beyond this (~24.8 days)
 
 /**
+ * The Morpho history fetch starts one DAY-interval bucket before the window so
+ * a position that predates the month always yields a baseline sample at or
+ * before startSec, even if the API ever stops emitting a bucket exactly on the
+ * requested start (today it does — verified live 2026-08-24). Without one, the
+ * compute layer would have to choose between baseline 0 (the whole balance
+ * masquerading as monthly earnings — post-merge review finding #1) and a dash.
+ * The transactions fetch stays at startSec: flows must be strictly in-window.
+ */
+const MORPHO_BASELINE_HEADROOM_SEC = 86400;
+
+/**
  * The clock is an external system: expose the month start via
  * useSyncExternalStore with a timer chained to the next month boundary, so a
  * session crossing midnight UTC on the 1st rolls its window (and query keys)
@@ -121,7 +132,7 @@ export function useWalletEarnings(): WalletEarnings {
         fetchUserVaultV2Pnl({
           userAddress: address!,
           chainId,
-          startTimestamp: window.startSec,
+          startTimestamp: window.startSec - MORPHO_BASELINE_HEADROOM_SEC,
           endTimestamp
         }),
         fetchVaultV2TransactionsSince({

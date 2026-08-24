@@ -214,6 +214,27 @@ describe('computeMorphoEarnings', () => {
       expect(earnedThisMonth.value.native?.amount).toBeCloseTo(1002 - 1000, 10);
     });
 
+    // Post-merge review finding #1: a series that starts AFTER startSec is no
+    // better than an empty one — a long-standing position with a truncated
+    // series must degrade, not render its whole balance as monthly earnings.
+    it('degrades when the series starts after startSec and flows leave the balance unexplained', () => {
+      const result = computeMorphoEarnings({
+        positions: [
+          position({
+            assets: u(50000),
+            assetsUsd: 50000,
+            // First sample lands after the month start (e.g. the API skipped
+            // the boundary bucket) — 50k of pre-existing balance, no flows.
+            history: { assets: [{ x: AUG_1 + 2 * DAY, y: u(49990) }] }
+          })
+        ],
+        transactions: [],
+        vaultAddress: FLAGSHIP,
+        window
+      });
+      expect(result.earnedThisMonth).toEqual(notAvailable('reconciliation-failed'));
+    });
+
     // Review finding #9: a position opened today has flows but no history
     // sample yet — the empty series is expected, not a data failure, whenever
     // the window's flows explain the end balance.

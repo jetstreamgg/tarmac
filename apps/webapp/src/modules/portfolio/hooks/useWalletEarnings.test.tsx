@@ -334,7 +334,9 @@ describe('useWalletEarnings', () => {
     expect(h.fetchUserVaultV2Pnl).toHaveBeenCalledWith({
       userAddress: USER,
       chainId: 1,
-      startTimestamp: AUG_1,
+      // One DAY bucket of headroom so a pre-existing position always has a
+      // baseline sample at or before the month start.
+      startTimestamp: AUG_1 - DAY,
       // Clamped to "now" at fetch time — the verified call shape ends at the clock.
       endTimestamp: NOW_MS / 1000
     });

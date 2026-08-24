@@ -27,11 +27,13 @@ const units = (value: MorphoNumberish, decimals: number): number => Number(value
  * figure may exceed the sum of visible position cards).
  * Monthly is the flows method: endAssets − baseline − Σdeposits + Σwithdrawals,
  * where baseline is the newest history sample at or before startSec (0 when the
- * position opened mid-window). An empty series is fine when the window's flows
- * explain the end balance within tolerance — a position opened today has flows
- * before its first hourly history sample lands (review finding #9). Beyond
- * that, no baseline while balance or flows exist →
- * notAvailable('reconciliation-failed'), never a guessed number.
+ * position opened mid-window). No such sample — series empty (a position opened
+ * today has flows before its first history sample lands, review finding #9) or
+ * starting after startSec — is fine only when the window's flows explain the
+ * end balance within tolerance. Beyond that, no baseline while balance or flows
+ * exist → notAvailable('reconciliation-failed'), never a guessed number: a
+ * long-standing position with a truncated series must not render its whole
+ * balance as this month's earnings (post-merge review finding #1).
  */
 export function computeMorphoEarnings({
   positions,
@@ -64,22 +66,23 @@ export function computeMorphoEarnings({
 
   const endAssets = units(position.assets, decimals);
   const series = position.history?.assets ?? [];
+  const atOrBefore = series.filter(pt => pt.x <= window.startSec);
 
   let baseline = 0;
-  if (series.length === 0) {
-    // Baseline 0 is trustworthy without a series only if the flows account for
-    // the end balance: the residual is then same-window yield, which even at an
-    // extreme APR stays far under 1% of the window's activity. A larger
-    // residual means the history is genuinely missing, not merely young.
+  if (atOrBefore.length > 0) {
+    baseline = units(atOrBefore.reduce((a, b) => (b.x > a.x ? b : a)).y, decimals);
+  } else {
+    // No baseline sample — whether the series is empty or starts after
+    // startSec makes no difference. Baseline 0 is trustworthy only if the
+    // flows account for the end balance: the residual is then same-window
+    // yield, which even at an extreme APR stays far under 1% of the window's
+    // activity. A larger residual means the position predates the window and
+    // its history is missing, not merely young — rendering the whole balance
+    // as this month's earnings would be the worst possible wrong number.
     const residual = Math.abs(endAssets - deposits + withdrawals);
     const explainedByFlows = flows.length > 0 && residual <= 0.01 * (endAssets + deposits + withdrawals);
     if ((endAssets > 0 || flows.length > 0) && !explainedByFlows) {
       return { totalEarned, earnedThisMonth: notAvailable('reconciliation-failed') };
-    }
-  } else {
-    const atOrBefore = series.filter(pt => pt.x <= window.startSec);
-    if (atOrBefore.length > 0) {
-      baseline = units(atOrBefore.reduce((a, b) => (b.x > a.x ? b : a)).y, decimals);
     }
   }
 
