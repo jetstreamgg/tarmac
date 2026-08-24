@@ -384,7 +384,7 @@ export function PendleModalForm({
   // which the connected chain only matches while Pendle stays mainnet-gated.
   const networkName = useNetworkName(engineChainId);
 
-  const lostTooltip = getTooltipById('early-withdrawal-impact');
+  const lostTooltip = getTooltipById('early-withdrawal-loss');
   const entryRows = isSupply
     ? buildPendleSupplyEntryRows({
         rate,
