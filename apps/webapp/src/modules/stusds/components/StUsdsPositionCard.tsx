@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
-  NO_VALUE,
   ProductActions,
   ProductBadge,
   ProductFigure,
@@ -20,8 +19,12 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
+import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useStUsdsModal } from '../hooks/useStUsdsModal';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * No-position stUSDS entry card: "Supply USDS and earn X%" headline, the
@@ -140,6 +143,12 @@ export function StUsdsPositionCard() {
 
   const { openSupply, openWithdraw } = useStUsdsModal({ onSuccess: refresh });
 
+  // "Accrued to date" is the same per-row slice the Portfolio renders for the
+  // stUSDS row (APP-450) — the announced "Not yet available." gap until
+  // vaults.fyi indexes stUSDS holders; react-query shares the fetches.
+  const walletEarnings = useWalletEarnings();
+  const accrued = earningsForPosition(walletEarnings, 'stusds');
+
   // Hold the card slot until the position read resolves — deciding on the 0n
   // fallback flashes the supply pitch at users who hold a position.
   if (isConnected && stUsdsData === undefined) {
@@ -175,10 +184,16 @@ export function StUsdsPositionCard() {
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
-            {/* No cost-basis source for active positions yet — placeholder per
-                the redesign (matches the vault card's already-earned gap). */}
             <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <span className="text-fgSecondary">{NO_VALUE}</span>
+              <EarningsFigureValue
+                figure={accrued?.totalEarned ?? null}
+                missing={accrued?.missingFromTotal}
+                coverage={accrued?.coverage}
+                variant="plain"
+                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
+                skeletonClassName="h-4 w-14"
+                testId="stusds-accrued-to-date"
+              />
             </ProductStat>
             <ProductStat label={<Trans>Current rate</Trans>}>
               <ProductPercent value={currentRate} />

@@ -17,6 +17,8 @@ import { SuppliedEmpty } from '@/modules/icons';
 import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
+import type { WalletEarnings } from '../earnings/types';
+import { earningsForPosition } from '../earnings/earningsForPosition';
 import { PositionCard } from './PositionCard';
 import { IdleStablecoinsTable } from './IdleStablecoinsTable';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
@@ -41,6 +43,7 @@ export function PortfolioPositionsSection({
   idleView,
   idleSupplyInfo,
   idleLoading,
+  earnings,
   tab,
   onTabChange
 }: {
@@ -49,6 +52,8 @@ export function PortfolioPositionsSection({
   idleView: IdleView;
   idleSupplyInfo: Map<string, IdleSupplyInfo>;
   idleLoading: boolean;
+  /** APP-450 wallet earnings feeding each card's "Already earned" stat. */
+  earnings: WalletEarnings;
   tab: PortfolioTab;
   onTabChange: (tab: PortfolioTab) => void;
 }) {
@@ -126,6 +131,7 @@ export function PortfolioPositionsSection({
             <CarouselItem key={position.id} className={ITEM_BASIS}>
               <PositionCard
                 position={position}
+                alreadyEarned={earningsForPosition(earnings, position.id)}
                 onSupply={resolveSupplyAction(position) ?? (() => goToProduct(position.detailPath))}
                 onManage={() => goToProduct(position.detailPath)}
               />

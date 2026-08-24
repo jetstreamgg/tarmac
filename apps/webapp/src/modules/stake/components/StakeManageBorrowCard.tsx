@@ -1,9 +1,8 @@
-import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
-import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
+import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider, SliderTicks } from '@/components/ui/slider';
@@ -17,8 +16,9 @@ import {
   UpdatedHourlyBadge
 } from './StakeManageCard';
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
+import { NO_VALUE } from '@/lib/constants';
+import { formatOraclePrice } from '../lib/formatStakeAmount';
 
-const NO_VALUE = '–';
 const WAD = 10n ** 18n;
 
 // Badges/Risk dash mapping (comp 1036:213853) — the F3 table-meter levels on
@@ -190,9 +190,6 @@ export function StakeManageBorrowCard({
 
   const currentRisk = existingVault?.riskLevel;
   const nextRisk = isFullRepay ? null : simulatedVault?.riskLevel;
-
-  const formatPrice = (value: bigint | undefined): ReactNode =>
-    value !== undefined ? `$${formatBigInt(value, { unit: WAD_PRECISION, maxDecimals: 4 })}` : NO_VALUE;
 
   return (
     <StakeManageCard
@@ -383,7 +380,7 @@ export function StakeManageBorrowCard({
               positionLoading && existingVault?.liquidationPrice === undefined ? (
                 <Skeleton className="h-4 w-14" />
               ) : (
-                formatPrice(existingVault?.liquidationPrice)
+                formatOraclePrice(existingVault?.liquidationPrice)
               )
             }
             next={
@@ -392,7 +389,7 @@ export function StakeManageBorrowCard({
                   ? '$0.0'
                   : simulatedVault?.liquidationPrice !== undefined &&
                       simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
-                    ? formatPrice(simulatedVault.liquidationPrice)
+                    ? formatOraclePrice(simulatedVault.liquidationPrice)
                     : undefined
                 : undefined
             }
@@ -413,7 +410,7 @@ export function StakeManageBorrowCard({
                 (simulatedVault?.delayedPrice ?? existingVault?.delayedPrice) === undefined ? (
                   <Skeleton className="h-4 w-14" />
                 ) : (
-                  formatPrice(simulatedVault?.delayedPrice ?? existingVault?.delayedPrice)
+                  formatOraclePrice(simulatedVault?.delayedPrice ?? existingVault?.delayedPrice)
                 )}
                 <UpdatedHourlyBadge />
               </>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useChainId, useChains, useConnection } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
 import { format } from 'date-fns';
@@ -31,15 +31,9 @@ import {
   usePendleUsdValue,
   type PendleAnalyticsSide
 } from '@/widgets';
-import {
-  chainId as chainIdMap,
-  formatBigInt,
-  formatDecimalPercentage,
-  formatNumber,
-  isTestnetId
-} from '@/utils';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee } from '@/hooks';
+import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
@@ -55,14 +49,13 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { parseAmountInput } from '@/lib/amountInput';
+import { NO_VALUE } from '@/lib/constants';
+import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { formatPriceImpact } from '../utils/priceImpact';
 import { buildPendleEntryRows, buildPendleReviewRows } from './pendleModalRows';
 
 export type PendleModalFlow = 'supply' | 'withdraw';
-
-const NO_VALUE = '–';
-const SECONDS_PER_DAY = 86_400;
 
 /**
  * Editable body for the Pendle "Supply to / Withdraw from {market}" modals
@@ -91,7 +84,6 @@ export function PendleModalForm({
   market: PendleMarketConfig;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { i18n } = useLingui();
   const { isConnected, address } = useConnection();
   const isSupply = flow === 'supply';
@@ -142,7 +134,7 @@ export function PendleModalForm({
   // READ ONLY — labels the approve step only; the approve/convert calls live in
   // useBatchPendleConvert. Same inputs as the engine's own allowance read (input
   // token → Pendle router on the engine's chain) so TanStack dedupes the two.
-  const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const engineChainId = familyMainnetId(chainId);
   const inputTokenAddress = isSupply ? selectedAddress : market.ptToken;
   const { data: allowance } = useTokenAllowance({
     chainId: engineChainId,
@@ -316,36 +308,12 @@ export function PendleModalForm({
   );
   const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
 
-  // Read-only: the row shows a dash until this resolves, and the confirm button never
-  // waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
+  const feeCell = useModalFeeCell({
     calls: writeHook.calls ?? [],
     chainId,
     shouldUseBatch: !!writeHook.isBatch,
     enabled: amountReady
   });
-
-  const bundleState = useBundleFeeState((writeHook.calls ?? []).length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
-  // every render, so depending on its identity would give the review breakdown a
-  // new identity every render — and the live push that carries it would re-enter
-  // the provider on each of its re-renders (the update loop the modal forms guard
-  // against). Same field-by-field list the convert launch hook keeps.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
-    [
-      networkFee?.formatted,
-      networkFeeLoading,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.failed,
-      bundleState.canBundle
-    ]
-  );
 
   const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
 
@@ -355,10 +323,7 @@ export function PendleModalForm({
   const impliedApy = stats?.impliedApy;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const daysToMaturity = Math.max(
-    0,
-    Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
-  );
+  const daysToMaturity = remainingDaysToMaturity(expirySec, Date.now());
   const claimDate = format(new Date(expirySec * 1000), 'd MMM yyyy');
 
   // Pegged markets (1 PT → 1 USDS at expiry) display position values as USDS.
@@ -384,7 +349,7 @@ export function PendleModalForm({
 
   // The Network cells describe where the trade executes — the engine chain,
   // which the connected chain only matches while Pendle stays mainnet-gated.
-  const networkName = chains.find(c => c.id === engineChainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(engineChainId);
 
   const entryRows = buildPendleEntryRows({
     rateBefore,
@@ -401,7 +366,7 @@ export function PendleModalForm({
     daysToMaturity,
     claimDate,
     hasAmount,
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: feeCell.fee?.formatted ?? NO_VALUE
   });
 
   const setMaxAmount = () => setValue(formatUnits(available, inputDecimals));
@@ -478,7 +443,7 @@ export function PendleModalForm({
               ),
               network: networkName,
               networkChainId: engineChainId,
-              networkFee: networkFee?.formatted ?? NO_VALUE
+              networkFee: feeCell.fee?.formatted ?? NO_VALUE
             }),
             'pendle-modal-row',
             feeCell
@@ -508,8 +473,7 @@ export function PendleModalForm({
       priceImpactDisplay,
       networkName,
       engineChainId,
-      feeCell,
-      networkFee
+      feeCell
     ]
   );
 

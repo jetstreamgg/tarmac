@@ -9,8 +9,8 @@ import { StakeCardMode } from '../hooks/useStakeManageFlowState';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { StakeManageCard, StakeManageStatCell, StakeManageStatDivider } from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
+import { NO_VALUE } from '@/lib/constants';
 
-const NO_VALUE = '–';
 const WAD = 10n ** 18n;
 
 /**

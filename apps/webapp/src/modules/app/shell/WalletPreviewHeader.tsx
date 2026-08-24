@@ -15,8 +15,7 @@ import { SheetClose } from '@/components/ui/sheet';
 import { NetworkSelector } from './NetworkSelector';
 import { useWalletDrawerAssets } from './useWalletDrawerAssets';
 import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
-
-const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+import { formatAddress } from '@/utils';
 
 const iconButtonClasses =
   'flex size-8 items-center justify-center rounded-full border border-[#bcb6ef]/10 bg-gradient-to-b from-white/0 to-white/8 bg-origin-border text-[#f2f3f7] transition-colors hover:bg-white/10';
@@ -47,7 +46,7 @@ export function WalletPreviewHeader({
   const isSafeWallet = useIsSafeWallet();
   const { totalUsd, isLoading: totalLoading } = useWalletDrawerAssets();
 
-  const truncatedAddress = address ? formatAddress(address) : '';
+  const truncatedAddress = address ? formatAddress(address, 6, 4) : '';
   const walletIconUrl = connector?.icon || WALLET_ICONS[connector?.id as keyof typeof WALLET_ICONS];
 
   return (

@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { useNetworkFee } from '@/hooks';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
-import { REFERRAL_CODE } from '@/lib/constants';
+import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
@@ -15,8 +14,7 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
 import { usePsmConversion, type UsePsmConversionResult } from './usePsmConversion';
 import { getPsmDecimalsForDirection, type PsmConversionDirection } from './usePsmConversion.helpers';
 import { ConvertReviewContent } from '../components/ConvertReviewContent';
-
-const NO_VALUE = '–';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 export interface UseConvertLaunchParams {
   direction: PsmConversionDirection;
@@ -57,7 +55,6 @@ export function useConvertLaunch({
   // Per-instance id so the provider ignores live updates from stale launches.
   const sessionId = useId();
   const chainId = useChainId();
-  const chains = useChains();
 
   // Honour the user's batch toggle; the engine additionally gates on wallet
   // support + needsAllowance (a no-approval flow stays a single signature).
@@ -77,7 +74,7 @@ export function useConvertLaunch({
   const targetDecimals = getPsmDecimalsForDirection(
     direction === 'USDC_TO_USDS' ? 'USDS_TO_USDC' : 'USDC_TO_USDS'
   );
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
 
   // Step 1 renders "Approve ◉ USDS" via the steps model's tokenSymbol chip;
   // step 2 renders "Convert ◉ USDS to ◉ USDC" via the source→target pair chip
@@ -103,18 +100,12 @@ export function useConvertLaunch({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
+  const feeCell = useModalFeeCell({
     calls: conversion.calls,
     chainId,
     shouldUseBatch: conversion.isBatch,
     enabled: amount > 0n
   });
-
-  const bundleState = useBundleFeeState(conversion.calls.length, networkFee, !!networkFeeError);
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
@@ -143,8 +134,8 @@ export function useConvertLaunch({
         originDecimals={originDecimals}
         targetDecimals={targetDecimals}
         networkName={networkName}
-        networkFee={networkFee?.formatted ?? NO_VALUE}
-        feeCell={{ fee: networkFee, state: bundleState, loading: networkFeeLoading }}
+        networkFee={feeCell.fee?.formatted ?? NO_VALUE}
+        feeCell={feeCell}
       />
     ),
     [
@@ -155,18 +146,10 @@ export function useConvertLaunch({
       originDecimals,
       targetDecimals,
       networkName,
-      networkFee?.formatted,
-      networkFeeLoading,
-      // Every field the fee row reads, listed one by one: the memoised element is what
-      // `updateModalContent` pushes, so anything missing here is a value the open modal
-      // can never pick up — `NetworkFeeValue` can't re-render itself out of a stale
-      // `state` prop. (The objects themselves are new identities each render; depending
-      // on them would defeat the memo and re-open the update loop this guards against.)
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.failed,
-      bundleState.canBundle,
-      conversion.calls.length
+      // useModalFeeCell memoizes on the scalar fee fields, so its identity moves
+      // exactly when a value the fee row reads changes — the one dep the open
+      // modal needs to pick up fee updates without re-opening the update loop.
+      feeCell
     ]
   );
 

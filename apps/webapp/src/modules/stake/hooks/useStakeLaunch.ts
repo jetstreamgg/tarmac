@@ -6,7 +6,6 @@ import { i18n } from '@lingui/core';
 import {
   useBatchStakeMulticall,
   useCurrentUrnIndex,
-  useIsBatchSupported,
   useRewardContractTokens,
   useStakeSkyAllowance,
   ZERO_ADDRESS
@@ -14,13 +13,13 @@ import {
 import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 
 /**
  * Confirm-modal step labels, derived from the calldata set — not from tx count
@@ -125,9 +124,7 @@ export function useStakeLaunch({
   const { data: skyAllowance } = useStakeSkyAllowance();
   const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
 
-  const [batchEnabled] = useBatchToggle();
-  const { data: batchSupported } = useIsBatchSupported();
-  const shouldUseBatch = !!batchEnabled && !!batchSupported && (needsSkyAllowance || calldata.length > 1);
+  const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);
 
   const engine = useBatchStakeMulticall({
     calldata,

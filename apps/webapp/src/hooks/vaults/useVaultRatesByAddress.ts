@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useChainId, useReadContracts } from 'wagmi';
-import { chainId, isTestnetId } from '@/utils';
+import { familyMainnetId } from '@/utils';
 import { buildVaultRatesByAddress, type VaultRateSource } from '@/lib/vaults/vaultRates';
 import { sparkVaultAbi } from '@/hooks/abis/sparkVaultAbi';
 import { useMorphoVaultMultipleRateApiData } from '../morpho/useMorphoVaultRateApiData';
@@ -22,7 +22,7 @@ export type VaultRatesByAddressHook = {
  */
 export function useVaultRatesByAddress(): VaultRatesByAddressHook {
   const connectedChainId = useChainId();
-  const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
+  const chainIdToUse = familyMainnetId(connectedChainId);
 
   const byProvider = useMemo(() => {
     const partition: Record<VaultProvider, { address: `0x${string}` }[]> = { morpho: [], sky: [] };

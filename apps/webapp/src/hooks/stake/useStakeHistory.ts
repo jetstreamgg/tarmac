@@ -22,7 +22,7 @@ import {
   StakeHistoryKick
 } from './stakeModule';
 import { useConnection, useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@/utils';
+import { familyMainnetId } from '@/utils';
 
 export function stakeHistoryFragments({
   owner,
@@ -257,7 +257,7 @@ export function useStakeHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
-  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const chainIdToUse = familyMainnetId(currentChainId);
 
   const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useHistoryPagination({

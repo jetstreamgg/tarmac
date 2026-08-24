@@ -15,8 +15,8 @@ import {
   useTokenBalance,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt, formatUsd, WAD_PRECISION } from '@/utils';
-import { QueryParams } from '@/lib/constants';
+import { formatBigInt, formatUsd } from '@/utils';
+import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
@@ -37,8 +37,8 @@ import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageRewardCard } from './StakeManageRewardCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
-
-const NO_VALUE = '–';
+import { formatOraclePrice } from '../lib/formatStakeAmount';
+import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
@@ -173,26 +173,10 @@ export function ManagePositionTakeover({
   const stakeCardValid = !state.stakeEnabled || state.skyAmount === 0n || !stakeError;
 
   // ---- Card 2 validation ----------------------------------------------------
-  // Max borrow — legacy Borrow.tsx:359-375 verbatim (F4 parity).
-  const adjustedTotalDebt =
-    collateralData?.totalDaiDebt !== undefined ? (collateralData.totalDaiDebt * 100001n) / 100000n : 0n;
-  const availableBorrowFromDebtCeiling =
-    collateralData?.debtCeiling !== undefined && collateralData?.totalDaiDebt !== undefined
-      ? collateralData.debtCeiling - adjustedTotalDebt < 0n
-        ? 0n
-        : collateralData.debtCeiling - adjustedTotalDebt
-      : 0n;
-  const availableBorrowFromCollateral = simulatedVault?.maxSafeBorrowableIntAmount ?? 0n;
-  const availableBorrowBalance =
-    availableBorrowFromDebtCeiling > availableBorrowFromCollateral
-      ? availableBorrowFromCollateral
-      : availableBorrowFromDebtCeiling;
+  const { fromDebtCeiling: availableBorrowFromDebtCeiling, balance: availableBorrowBalance } =
+    calculateAvailableBorrow(collateralData, simulatedVault?.maxSafeBorrowableIntAmount);
 
-  const minCollateralNotMet =
-    state.borrowMode === 'borrow' &&
-    debouncedVault?.collateralAmount !== undefined &&
-    debouncedVault?.minCollateralForDust !== undefined &&
-    debouncedVault.collateralAmount <= debouncedVault.minCollateralForDust;
+  const minCollateralNotMet = state.borrowMode === 'borrow' && isMinCollateralNotMet(debouncedVault);
 
   const maxRepayable = calculateMaxRepayable({
     debtValue: existingDebt,
@@ -490,7 +474,7 @@ export function ManagePositionTakeover({
               {detail.vaultLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : existingDebt > 0n && existingVault?.liquidationPrice !== undefined ? (
-                `$${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+                formatOraclePrice(existingVault.liquidationPrice)
               ) : (
                 NO_VALUE
               )}
@@ -506,7 +490,7 @@ export function ManagePositionTakeover({
               {detail.vaultLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : existingVault?.delayedPrice !== undefined ? (
-                `$${formatBigInt(existingVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+                formatOraclePrice(existingVault.delayedPrice)
               ) : (
                 NO_VALUE
               )}

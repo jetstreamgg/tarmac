@@ -23,9 +23,10 @@ vi.mock('./useCurvePoolData', () => ({
   useCurvePoolData: vi.fn()
 }));
 
-// Mock isTestnetId
+// Mock the chain-resolution helpers: not a testnet, so the family mainnet is 1.
 vi.mock('@/utils', () => ({
-  isTestnetId: vi.fn(() => false)
+  isTestnetId: vi.fn(() => false),
+  familyMainnetId: vi.fn(() => 1)
 }));
 
 import { useReadCurveStUsdsUsdsPoolGetDy, useReadCurveStUsdsUsdsPoolGetDx } from '../../generated';
