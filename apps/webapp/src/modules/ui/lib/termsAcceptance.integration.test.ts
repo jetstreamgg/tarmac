@@ -69,7 +69,7 @@ describe.runIf(ENABLED)('terms acceptance against a local worker', () => {
     vi.stubEnv('VITE_TERMS_ENDPOINT', WORKER);
   });
 
-  it('serves the four-field check response', async () => {
+  it('serves the five-field check response', async () => {
     const { address } = newWallet();
 
     const result = await checkTermsWithRetry(address);
@@ -78,8 +78,24 @@ describe.runIf(ENABLED)('terms acceptance against a local worker', () => {
       status: 'ok',
       accepted: false,
       signedForCurrentVersion: false,
-      latestVersion: expect.any(String)
+      // `expect.any(String)` is load-bearing, not decoration. The client keys
+      // its localStorage flag by this value and refuses the whole check if it
+      // is not a string, so a worker that ever serves the version as a JSON
+      // number locks every user out. This is the only gate that runs the real
+      // worker against a real database, so it is where that contract is
+      // pinned — the column is `text` with a format CHECK precisely so this
+      // holds. Numbers are not merely rejected, they are lossy: `1.0` would
+      // serialize as `1` and key a flag the worker's own row disagrees with.
+      latestVersion: expect.any(String),
+      // Display only, but it must survive the round trip as a string too.
+      effectiveDate: expect.any(String)
     });
+    // Both halves of the identity name the same revision in the signed text.
+    if (result.status === 'ok') {
+      expect(result.latestVersion).toMatch(/^\d+\.\d+$/);
+      expect(result.messageToSign).toContain(result.latestVersion);
+      expect(result.messageToSign).toContain(result.effectiveDate!);
+    }
     // The message the webapp must never hold a copy of.
     expect(result.status === 'ok' && result.messageToSign).toEqual(expect.stringContaining('By signing'));
   });

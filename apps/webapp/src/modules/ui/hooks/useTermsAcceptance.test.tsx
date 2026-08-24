@@ -5,7 +5,9 @@ import { termsAcceptanceKey } from '@/modules/ui/lib/termsAcceptanceStorage';
 
 const ADDRESS_A = '0x1234567890123456789012345678901234567890';
 const ADDRESS_B = '0x0987654321098765432109876543210987654321';
-const VERSION = '2026-01-15';
+// The numeric identity the flag is keyed by. Opaque to the hook — it never
+// parses or compares parts of it, which is what lets a minor bump re-prompt.
+const VERSION = '1.0';
 
 describe('useTermsAcceptance', () => {
   beforeEach(() => {

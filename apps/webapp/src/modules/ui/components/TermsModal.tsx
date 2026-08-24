@@ -245,9 +245,12 @@ export function TermsModal() {
   // "date only" decision on APP-513. The worker serves the two separately —
   // `latestTermsVersion` is the identity, `termsEffectiveDate` is display.
   //
-  // Both are rendered only when both arrived. A worker that predates the split
-  // sends no `effectiveDate`, and half a sentence ("Version 1.0, effective
-  // undefined") is worse than the plain fallback.
+  // Three cases, because the version and the date arrive independently. The
+  // version is what the user is actually agreeing to — the acceptance is
+  // recorded against it — so it stays on screen even when the date does not
+  // arrive (a worker predating the split sends no `effectiveDate`). Only the
+  // date is dropped in that case; rendering "effective undefined" would be
+  // worse than saying nothing, but so would naming no version at all.
   const readTheFullTerms = (
     <Trans>
       Please read the full <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
@@ -274,6 +277,10 @@ export function TermsModal() {
                   Version {latestTermsVersion}, effective {termsEffectiveDate}.
                 </Trans>{' '}
                 {readTheFullTerms}
+              </>
+            ) : latestTermsVersion ? (
+              <>
+                <Trans>Version {latestTermsVersion}.</Trans> {readTheFullTerms}
               </>
             ) : (
               readTheFullTerms

@@ -190,14 +190,27 @@ describe('TermsModal', () => {
     expect(screen.getByText(/Version 1\.0, effective 2026-01-15/)).toBeTruthy();
   });
 
-  // Half a sentence is worse than none: a worker that predates the split sends
-  // no effectiveDate, and "Version 1.0, effective undefined" must not render.
-  it('falls back to the plain sentence when the effective date is missing', () => {
+  // A worker predating the split sends no effectiveDate. "Version 1.0,
+  // effective undefined" must not render — but the version must survive, since
+  // that is what the acceptance is recorded against.
+  it('keeps the version and drops only the date when the effective date is missing', () => {
     mocks.connected.termsEffectiveDate = undefined;
 
     renderModal();
 
+    expect(screen.getByText(/Version 1\.0\./)).toBeTruthy();
     expect(screen.queryByText(/effective/i)).toBeNull();
+    expect(screen.getByText(/Please read the full/)).toBeTruthy();
+  });
+
+  // Nothing to name at all: before the check resolves there is no version yet.
+  it('renders only the plain sentence before the check resolves', () => {
+    mocks.connected.latestTermsVersion = undefined;
+    mocks.connected.termsEffectiveDate = undefined;
+
+    renderModal();
+
+    expect(screen.queryByText(/Version/)).toBeNull();
     expect(screen.getByText(/Please read the full/)).toBeTruthy();
   });
 });
