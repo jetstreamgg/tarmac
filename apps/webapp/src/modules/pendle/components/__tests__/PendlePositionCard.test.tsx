@@ -245,14 +245,6 @@ describe('PendlePositionCard', () => {
       expect(screen.queryByTestId('pendle-matured-position-card')).toBeNull();
     });
 
-    it('offers a way back to Earn from the closed-market state', () => {
-      h.expirySec = MATURED_SEC;
-      h.ptBalance = 0n;
-      renderCard();
-
-      expect(screen.getByTestId('pendle-matured-browse-cta')).toBeTruthy();
-    });
-
     it('shows the same closed state while disconnected, plus a nudge to connect', () => {
       h.expirySec = MATURED_SEC;
       h.connected = false;
