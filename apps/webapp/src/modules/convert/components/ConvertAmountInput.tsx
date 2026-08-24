@@ -7,8 +7,8 @@ import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { ConvertTokenSelect, type ConvertTokenSymbol } from './ConvertTokenSelect';
+import { NO_VALUE } from '@/lib/constants';
 
-const NO_VALUE = '–';
 const PERCENT_OPTIONS = [25, 50, 100] as const;
 
 const formatBalance = (balance: bigint | undefined, decimals: number) =>

@@ -10,7 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardError, PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
-  NO_VALUE,
   ProductActions,
   ProductFigure,
   ProductPercent,
@@ -25,6 +24,7 @@ import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useSavingsModal } from '../hooks/useSavingsModal';
 import { useSavingsAccrualRate } from '../hooks/useSavingsAccrualRate';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
+import { NO_VALUE } from '@/lib/constants';
 
 const formatToken = (value?: bigint) =>
   value === undefined ? NO_VALUE : formatNumber(parseFloat(formatUnits(value, 18)), { maxDecimals: 2 });

@@ -7,8 +7,7 @@ import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 // Hi-fi 486:31955 binds the utilized fill (and the Borrowed legend dot) to
 // fg-brand-primary — the `fgBrand` token (#757dff), which is also the DS

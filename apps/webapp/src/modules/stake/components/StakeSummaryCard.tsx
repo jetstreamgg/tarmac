@@ -16,7 +16,7 @@ import {
 import { formatUsd, formatDecimalPercentage } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { calculateClaimedRewardsUsd } from '../lib/positionDetail';
-import { QueryParams } from '@/lib/constants';
+import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { StakeSky } from '@/modules/icons';
@@ -33,8 +33,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { useStakeTotalDebt } from '../hooks/useStakeTotalDebt';
-
-const NO_VALUE = '–';
 
 /**
  * Net APY per BL-13: staking-reward APY netted against the borrow-cost APY on

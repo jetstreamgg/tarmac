@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatUnits } from 'viem';
-import { useChainId, useChains, useConnection } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { TOKENS, useMkrSkyFee, useDebounce, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, math } from '@/utils';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee } from '@/hooks';
 import { TxStatus, PopoverRateInfo } from '@/widgets';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
@@ -25,8 +23,10 @@ import { setUpgradeModalOpen } from '@/modules/analytics/lib/destination';
 import { parseAmountInput } from '@/lib/amountInput';
 import { UPGRADE_TARGET, useUpgradeLaunch } from '../hooks/useUpgradeLaunch';
 import { buildUpgradeModalRows } from './upgradeModalRows';
+import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
-const NO_VALUE = '–';
 const UPGRADE_SOURCE_TOKENS = [TOKENS.dai, TOKENS.mkr];
 
 // DAI, MKR, USDS and SKY are all 18-decimal on mainnet.
@@ -58,7 +58,6 @@ export function UpgradeModalForm({
 }) {
   const { address, isConnected } = useConnection();
   const chainId = useChainId();
-  const chains = useChains();
 
   const [token, setToken] = useState<UpgradeSourceToken>(initialToken);
   const [value, setValue] = useState('');
@@ -96,36 +95,7 @@ export function UpgradeModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const {
-    data: networkFee,
-    isLoading: networkFeeLoading,
-    error: networkFeeError
-  } = useNetworkFee({
-    calls,
-    chainId,
-    shouldUseBatch: isBatch,
-    enabled: amountReady
-  });
-
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
-  // every render, so depending on its identity would give the review breakdown a
-  // new identity every render — and the live push that carries it would re-enter
-  // the provider on each of its re-renders (the update loop the modal forms guard
-  // against). Same field-by-field list the convert launch hook keeps.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState, loading: networkFeeLoading }),
-    [
-      networkFee?.formatted,
-      networkFee?.batchSaving,
-      networkFeeLoading,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.failed,
-      bundleState.canBundle,
-      bundleState.promoVisible
-    ]
-  );
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
   // Disconnected (APP-446): the modal still opens — the CTA becomes an enabled
   // "Connect wallet" that opens the connect modal in place (no screen advance,
   // see `confirmAction`), and reverts to the gated "Continue" once connected.
@@ -214,7 +184,7 @@ export function UpgradeModalForm({
     analytics
   });
 
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
 
   const setPercent = (percent: PercentPreset) => {
     if (balance === undefined) return;
@@ -236,7 +206,7 @@ export function UpgradeModalForm({
     // 12px info glyph after the label (Figma 1343:79562).
     penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} height={12} /> : undefined,
     network: networkName,
-    networkFee: networkFee?.formatted ?? NO_VALUE,
+    networkFee: feeCell.fee?.formatted ?? NO_VALUE,
     feeLoading: feeUnknown && !feeFailed
   });
 
@@ -282,7 +252,7 @@ export function UpgradeModalForm({
       <div className="flex flex-col gap-4">
         <ModalSummaryGrid rows={toGridCells(rows, 'upgrade-modal-row', feeCell)} dividerClassName="h-6" />
 
-        {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+        {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
       </div>
     </div>
   );

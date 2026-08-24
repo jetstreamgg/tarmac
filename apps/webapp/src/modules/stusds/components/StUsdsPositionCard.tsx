@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
-  NO_VALUE,
   ProductActions,
   ProductBadge,
   ProductFigure,
@@ -25,6 +24,7 @@ import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPos
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useStUsdsModal } from '../hooks/useStUsdsModal';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * No-position stUSDS entry card: "Supply USDS and earn X%" headline, the
@@ -78,9 +78,8 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
       }
       description={
         <Trans>
-          stUSDS gives you a variable reward rate on USDS by participating in SKY-backed borrowing. It is an
-          expert module intended for experienced users — withdrawals may be delayed during periods of high
-          utilization.
+          stUSDS gives you a variable reward rate on USDS by participating in SKY-backed borrowing.
+          Withdrawals may be delayed during periods of high utilization.
         </Trans>
       }
       stats={

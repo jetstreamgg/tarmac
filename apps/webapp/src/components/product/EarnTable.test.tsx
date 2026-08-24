@@ -100,14 +100,45 @@ describe('EarnTable — mobile accordion cards (M5)', () => {
   it('applies the M6.2 comp scale: 24px list corners, Label 5 title, Label 6 rate value', () => {
     renderEarn();
 
-    expect(screen.getByTestId('earn-row-savings').className).toContain('rounded-t-3xl');
-    expect(screen.getByTestId('earn-row-spk').className).toContain('rounded-b-3xl');
+    // The row testid sits on the collapse wrapper; the radii live on the card
+    // surface inside it.
+    expect(screen.getByTestId('earn-row-savings').firstElementChild?.className).toContain('rounded-t-3xl');
+    expect(screen.getByTestId('earn-row-spk').firstElementChild?.className).toContain('rounded-b-3xl');
 
     const title = screen.getByText('Sky Savings');
     expect(title.className).toContain('text-sm');
     expect(title.className).toContain('md:text-base');
 
     expect(screen.getByTestId('earn-card-rate-savings').className).toContain('text-xs');
+  });
+
+  it('drops the expanded state when the expanded card is filtered out', () => {
+    const { rerender } = render(
+      <I18nProvider i18n={i18n}>
+        <EarnTable rows={ROWS} sort={{ column: 'rate', direction: 'desc' }} onSortChange={vi.fn()} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByTestId('earn-card-toggle-savings'));
+    expect(screen.getByText('TVL')).toBeTruthy();
+
+    // Filter the expanded card out, then back in: it must return collapsed
+    // (the buttons of a phantom expanded card were finding 5 on the review).
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <EarnTable rows={ROWS.slice(1)} sort={{ column: 'rate', direction: 'desc' }} onSortChange={vi.fn()} />
+      </I18nProvider>
+    );
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <EarnTable rows={ROWS} sort={{ column: 'rate', direction: 'desc' }} onSortChange={vi.fn()} />
+      </I18nProvider>
+    );
+
+    // The exiting twin may still be mid-collapse in the DOM; the re-entered
+    // card is the last toggle in document order and must be collapsed.
+    const toggles = screen.getAllByTestId('earn-card-toggle-savings');
+    expect(toggles[toggles.length - 1].getAttribute('aria-expanded')).toBe('false');
   });
 
   it('reports the row through onRowSelect from both expanded buttons', () => {
@@ -131,6 +162,20 @@ describe('EarnTable — desktop table unchanged', () => {
 
     expect(screen.getByRole('table')).toBeTruthy();
     expect(screen.getByTestId('earn-sort-rate')).toBeTruthy();
+  });
+
+  it('declares the edge rows and keeps the collapsible cell markup TableRow styles against', () => {
+    renderEarn();
+
+    const first = screen.getByTestId('earn-row-savings');
+    const last = screen.getByTestId('earn-row-spk');
+    expect(first.getAttribute('data-first')).toBe('true');
+    expect(first.getAttribute('data-last')).toBeNull();
+    expect(last.getAttribute('data-last')).toBe('true');
+    // TableRow's radius/hover selectors in ui/table.tsx target
+    // td > wrapper > surface — if TableCell's internal markup changes, this
+    // must fail with it.
+    expect(first.querySelector('td > div > div')).not.toBeNull();
   });
 });
 

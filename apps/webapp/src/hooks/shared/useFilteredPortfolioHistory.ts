@@ -11,7 +11,7 @@ import { useMorphoVaultHistory } from '../morpho';
 import { usePendleCombinedHistory } from '../pendle/usePendleCombinedHistory';
 import { clampHistoryPage } from './historyQueryHelpers';
 import { CombinedHistoryItem } from './shared';
-import { isTestnetId, chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
+import { familyMainnetId, chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
 
 const FAMILY_BY_MODULE: Partial<Record<ModuleEnum, HistoryFamily>> = {
   [ModuleEnum.SAVINGS]: 'savings',
@@ -61,7 +61,7 @@ export function useFilteredPortfolioHistory({
   network?: number;
 }): FilteredPortfolioHistory {
   const currentChainId = useChainId();
-  const mainnetChainId = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const mainnetChainId = familyMainnetId(currentChainId);
   const isMainnetNetwork = network === mainnetChainId;
   const isL2Network = network !== undefined && L2_HISTORY_CHAIN_IDS.includes(network);
   const isFiltered = products !== undefined && products.length > 0;
