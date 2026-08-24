@@ -54,6 +54,16 @@ const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
   loading: <Trans>Loading…</Trans>
 };
 
+/**
+ * Every stat-value state renders through this same flex wrapper. A plain inline
+ * span would size its line box from the inherited strut (1.5 × 16 = 24px) while
+ * the flex row sizes to the value's own `leading-[18px]` box — so states with
+ * and without the info glyph would differ in height and the stat would shift
+ * vertically as the glyph appears/disappears across hover-focused products
+ * (QA finding, 2026-08-24).
+ */
+const STAT_ROW = 'flex items-center gap-1.5';
+
 const COVERAGE_COPY: Record<EarningsCoverage, ReactNode> = {
   'mainnet-only': <Trans>Earnings cover Ethereum Mainnet only.</Trans>,
   'rewards-not-included': <Trans>Rewards not included yet.</Trans>
@@ -204,7 +214,7 @@ export function CombinedEarningsStat({
   const missing = missingSourceDetails(earnings, field);
   if (missing.length === earnings.protocols.length && missing.length > 0) {
     return (
-      <span data-testid={testId}>
+      <span data-testid={testId} className={STAT_ROW}>
         <EarningsTooltip
           trigger={
             <span tabIndex={0} className={cn(className, 'text-textSecondary')}>
@@ -220,7 +230,7 @@ export function CombinedEarningsStat({
 
   const usd = field === 'total' ? earnings.combined.totalEarnedUsd : earnings.combined.earnedThisMonthUsd;
   return (
-    <span data-testid={testId} className="flex items-center gap-1.5">
+    <span data-testid={testId} className={STAT_ROW}>
       <GainValue value={usd} signed className={className} />
       {(missing.length > 0 || untrackedNames.length > 0) && (
         <GapGlyph missing={missing} untrackedNames={untrackedNames} />
@@ -271,7 +281,7 @@ export function EarningsFigureValue({
       </span>
     );
     return (
-      <span data-testid={testId}>
+      <span data-testid={testId} className={STAT_ROW}>
         <EarningsTooltip trigger={dash}>
           {figure ? REASON_COPY[figure.reason] : <Trans>Earnings not tracked yet.</Trans>}
         </EarningsTooltip>
@@ -293,10 +303,12 @@ export function EarningsFigureValue({
 
   if (pendleSplit) {
     return (
-      <span data-testid={testId} className={gapGlyph ? 'flex items-center gap-1.5' : undefined}>
+      <span data-testid={testId} className={STAT_ROW}>
         <EarningsTooltip
           trigger={
-            <span tabIndex={0} data-testid="earnings-pendle-split">
+            // Also a flex row: as a block it would take the inherited strut's
+            // taller line box and undo the wrapper's height normalization.
+            <span tabIndex={0} data-testid="earnings-pendle-split" className="flex items-center">
               {value}
             </span>
           }
@@ -320,7 +332,7 @@ export function EarningsFigureValue({
   }
 
   return (
-    <span data-testid={testId} className={gapGlyph ? 'flex items-center gap-1.5' : undefined}>
+    <span data-testid={testId} className={STAT_ROW}>
       {value}
       {gapGlyph}
     </span>
