@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useChainId, useConnection, useReadContracts } from 'wagmi';
+import { useChainId, useChains, useConnection, useReadContracts } from 'wagmi';
 import { useCallback, useMemo } from 'react';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
@@ -265,6 +265,9 @@ export function useMerklRewards(): MerklRewardsHook {
   // reads run on the family's Ethereum chain (the Tenderly fork in dev).
   const chainId = MORPHO_API_CHAIN_ID;
   const readChainId = familyMainnetId(useChainId());
+  // The claimed() freshness filter is best-effort: skip it when the read chain
+  // isn't configured (e.g. the e2e config forks L2s but carries no chain 1).
+  const readChainConfigured = useChains().some(chain => chain.id === readChainId);
 
   const queryClient = useQueryClient();
   // Memoized because `mutate` closes over it: a fresh array literal per render gives
@@ -312,7 +315,7 @@ export function useMerklRewards(): MerklRewardsHook {
   } = useReadContracts({
     contracts: claimedContracts,
     query: {
-      enabled: !!userAddress && (apiData?.rewards ?? []).length > 0
+      enabled: !!userAddress && readChainConfigured && (apiData?.rewards ?? []).length > 0
     }
   });
 

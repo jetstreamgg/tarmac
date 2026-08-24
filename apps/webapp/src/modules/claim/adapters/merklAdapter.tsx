@@ -3,6 +3,7 @@ import { useChainId, useConnection } from 'wagmi';
 import { formatUnits, type Call } from 'viem';
 import { useMerklRewards, getWriteContractCall, type MerklTokenReward } from '@/hooks';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '@/hooks/generated';
+import { familyMainnetId } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { rewardTokenName } from '../tokenNames';
 import type { ClaimAdapter, ClaimableResult, ClaimCallsResult, ClaimableReward, ClaimScope } from '../types';
@@ -61,7 +62,12 @@ function toClaimableReward(reward: MerklTokenReward): ClaimableReward {
 
 function useMerklClaimable(scope: ClaimScope): ClaimableResult {
   const { data, isLoading, mutate } = useMerklRewards();
-  const rewards = data?.rewards;
+  const chainId = useChainId();
+  // The distributor only exists on the family's Ethereum chain and the claim
+  // flow executes on the connected chain, so on L2s nothing is offered —
+  // otherwise the modal renders mainnet rewards it can never claim.
+  const claimableHere = chainId === familyMainnetId(chainId);
+  const rewards = claimableHere ? data?.rewards : undefined;
   return useMemo(
     () => ({
       rewards: rewardsInScope(rewards ?? [], scope).map(toClaimableReward),
@@ -79,7 +85,7 @@ function useMerklClaimCalls(selected: ClaimableReward[]): ClaimCallsResult {
   const rewards = data?.rewards;
 
   const selectedIds = useMemo(() => new Set(selected.map(reward => reward.id)), [selected]);
-  const distributor = morphoMerklDistributorAddress[chainId as keyof typeof morphoMerklDistributorAddress];
+  const distributor = morphoMerklDistributorAddress[familyMainnetId(chainId)];
 
   return useMemo(() => {
     // Merkl always claims the full cumulative amount per token (see useMerklClaimRewards):

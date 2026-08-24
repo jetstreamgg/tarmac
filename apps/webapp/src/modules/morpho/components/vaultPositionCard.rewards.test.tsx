@@ -65,6 +65,7 @@ vi.mock('wagmi', async importOriginal => {
   return {
     ...actual,
     useChainId: () => 1,
+    useChains: () => [{ id: 1 }],
     useConnection: () => ({ address: USER, isConnected: true, isConnecting: false }),
     // The claim adapter's recently-claimed filter; an empty result leaves the
     // reward in place.

@@ -21,7 +21,7 @@ import { useAvailableTokenRewardContracts } from '../rewards/useAvailableTokenRe
 import { filterDeprecatedRewardContracts } from '../rewards/deprecatedRewards';
 import { useMultipleRewardsChartInfo } from '../rewards/useMultipleRewardsChartInfo';
 import type { RewardsChartInfoParsed } from '../rewards/useRewardsChartInfo';
-import { MORPHO_VAULTS } from '../morpho/constants';
+import { MORPHO_API_CHAIN_ID, MORPHO_VAULTS } from '../morpho/constants';
 import { useMorphoVaultMultipleRateApiData } from '../morpho/useMorphoVaultRateApiData';
 import { useMorphoVaultsTrailingRates } from '../morpho/useMorphoVaultsTrailingRates';
 import { fetchMorphoVaultMarketData } from '../morpho/useMorphoVaultMarketApiData';
@@ -138,8 +138,8 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   // the existing widgets and mounting both costs no extra requests.
   const morphoMarketResults = useQueries({
     queries: MORPHO_VAULTS.map(vault => ({
-      queryKey: ['morpho-vault-market-data', vault.vaultAddress[mainnet.id], mainnet.id],
-      queryFn: () => fetchMorphoVaultMarketData(vault.vaultAddress[mainnet.id], mainnet.id),
+      queryKey: ['morpho-vault-market-data', vault.vaultAddress[MORPHO_API_CHAIN_ID], MORPHO_API_CHAIN_ID],
+      queryFn: () => fetchMorphoVaultMarketData(vault.vaultAddress[MORPHO_API_CHAIN_ID], MORPHO_API_CHAIN_ID),
       staleTime: 30_000,
       gcTime: 60_000
     }))
@@ -301,7 +301,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               );
               tvlUsd = sparkMarket.data?.totalAssetsUsd;
               if (tvlUsd === undefined && sparkMarket.data?.totalAssets !== undefined && vault) {
-                const decimals = math.resolveDecimals(vault.assetToken.decimals, mainnet.id);
+                const decimals = math.resolveDecimals(vault.assetToken.decimals, MORPHO_API_CHAIN_ID);
                 tvlUsd = bigintToUsd(
                   math.scaleToBaseDecimals(sparkMarket.data.totalAssets, decimals),
                   priceFor(vault.assetToken.symbol)
