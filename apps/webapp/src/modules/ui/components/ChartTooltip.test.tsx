@@ -145,6 +145,22 @@ describe('ChartTooltip — dismissal', () => {
     expect(screen.getByTestId('chart-tooltip').style.transform).toMatch(/translate/);
   });
 
+  // Scrubbing with vertical drift makes recharts deactivate and reactivate the
+  // tooltip per frame; unmounting the panel each time blinked the card and its
+  // token icon. While the press that started inside the plot is down, the last
+  // shown datum holds through those gaps; the lift releases it.
+  it('holds the panel through a mid-scrub deactivation, until the lift', () => {
+    const onLeave = vi.fn();
+    const { rerender } = render(<Harness onLeave={onLeave} />);
+    const panel = screen.getByTestId('chart-tooltip');
+    fireEvent.pointerDown(screen.getByTestId('plot'));
+    rerender(<Harness onLeave={onLeave} active={false} />);
+    // Same DOM node, not a remount — that identity is what keeps the icon lit.
+    expect(screen.getByTestId('chart-tooltip')).toBe(panel);
+    fireEvent.pointerUp(window);
+    expect(screen.queryByTestId('chart-tooltip')).toBeNull();
+  });
+
   it('holds the dismissal while a press that started inside the plot scrubs', () => {
     const onLeave = vi.fn();
     render(<Harness onLeave={onLeave} />);

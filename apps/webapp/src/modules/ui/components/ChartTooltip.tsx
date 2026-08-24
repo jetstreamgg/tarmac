@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { RefObject, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
 import { useFollow } from './chartMotion';
@@ -99,28 +99,25 @@ function useTooltipPlacement(
  * The whole hover ensemble (panel, cursor, dot, dim and lit segment) reads that
  * one store, so it all leaves together through its usual crossfade.
  */
-function useDismissHoverAway(
-  active: boolean | undefined,
-  anchorRef: RefObject<HTMLElement | null> | undefined
-) {
-  // Whether a press that STARTED inside the plot is still down. While it is,
-  // the finger is scrubbing — a drag with any vertical drift also scrolls the
-  // page, and dismissing on those scrolls fought recharts' touchmove
-  // reactivation frame by frame (the card flashed). Scrubbing wins while the
-  // finger is down; the lift hands the next scroll (momentum included) back to
-  // the dismissal. Tracked outside the active-gated effect below so a
-  // mid-gesture flicker of `active` cannot reset it.
-  const pressedInside = useRef(false);
+/**
+ * Whether a press that STARTED inside the plot is still down. While it is, the
+ * finger is scrubbing: scroll dismissal is suppressed (a drag with vertical
+ * drift also scrolls the page, and dismissing on those scrolls fought
+ * recharts' touchmove reactivation frame by frame) and the panel holds through
+ * recharts' own micro-deactivations (see the hold in `ChartTooltip`). State,
+ * not a ref, so the hold can release on the lift; tracked in its own hook so a
+ * mid-gesture flicker of the tooltip's active flag cannot reset it.
+ */
+function usePressedInsidePlot(anchorRef: RefObject<HTMLElement | null> | undefined): boolean {
+  const [pressed, setPressed] = useState(false);
 
   useEffect(() => {
     const host = anchorRef?.current;
     if (!host) return;
     const onPointerDown = (event: PointerEvent) => {
-      pressedInside.current = event.target instanceof Node && host.contains(event.target);
+      setPressed(event.target instanceof Node && host.contains(event.target));
     };
-    const endPress = () => {
-      pressedInside.current = false;
-    };
+    const endPress = () => setPressed(false);
     window.addEventListener('pointerdown', onPointerDown, { capture: true });
     window.addEventListener('pointerup', endPress, { capture: true });
     window.addEventListener('pointercancel', endPress, { capture: true });
@@ -131,8 +128,16 @@ function useDismissHoverAway(
     };
   }, [anchorRef]);
 
+  return pressed;
+}
+
+function useDismissHoverAway(
+  shown: boolean,
+  anchorRef: RefObject<HTMLElement | null> | undefined,
+  pressedInside: boolean
+) {
   useEffect(() => {
-    if (!active) return;
+    if (!shown) return;
     const host = anchorRef?.current;
     const wrapper = host?.querySelector('.recharts-wrapper');
     if (!host || !wrapper) return;
@@ -142,7 +147,9 @@ function useDismissHoverAway(
         new MouseEvent('mouseout', { bubbles: true, relatedTarget: wrapper.parentElement ?? undefined })
       );
     const onScroll = () => {
-      if (!pressedInside.current) dismiss();
+      // Scrubbing wins while the finger is down; the lift hands the next
+      // scroll (momentum included) back to the dismissal.
+      if (!pressedInside) dismiss();
     };
     const onPointerDown = (event: PointerEvent) => {
       if (!(event.target instanceof Node) || !host.contains(event.target)) dismiss();
@@ -154,7 +161,7 @@ function useDismissHoverAway(
       window.removeEventListener('scroll', onScroll, { capture: true });
       window.removeEventListener('pointerdown', onPointerDown, { capture: true });
     };
-  }, [active, anchorRef]);
+  }, [shown, anchorRef, pressedInside]);
 }
 
 /*
@@ -202,15 +209,41 @@ export function ChartTooltip({
   coordinate,
   anchorRef
 }: CustomTooltipProps) {
-  const { panelRef, style } = useTooltipPlacement(coordinate, anchorRef);
-  useDismissHoverAway(active, anchorRef);
-  const isMin = payload?.some(entry => entry.payload?.isMin === true);
-  const isMax = payload?.some(entry => entry.payload?.isMax === true);
+  const pressedInside = usePressedInsidePlot(anchorRef);
+  const live = useMemo(
+    () => (active && payload?.length && label ? { payload, label, coordinate } : null),
+    [active, payload, label, coordinate]
+  );
+  // While the finger that started on the plot is still down, hold the last
+  // shown datum through recharts' micro-deactivations: a scrub that drifts off
+  // the plot band deactivates and reactivates the tooltip per frame, and
+  // unmounting the panel each time blinked the card and its token icon. The
+  // lift releases the hold — an inactive tooltip then hides as before.
+  const [held, setHeld] = useState<typeof live>(null);
+  useEffect(() => {
+    if (!live) return;
+    // Same datum → keep the previous snapshot, so this cannot loop on the new
+    // object recharts hands over every render.
+    setHeld(prev =>
+      prev &&
+      prev.label.getTime() === live.label.getTime() &&
+      prev.coordinate?.x === live.coordinate?.x &&
+      prev.coordinate?.y === live.coordinate?.y
+        ? prev
+        : live
+    );
+  }, [live]);
+  const shown = live ?? (pressedInside ? held : null);
 
-  if (!active || !payload?.length || !label) return null;
+  const { panelRef, style } = useTooltipPlacement(shown?.coordinate, anchorRef);
+  useDismissHoverAway(!!shown, anchorRef, pressedInside);
+  const isMin = shown?.payload.some(entry => entry.payload?.isMin === true);
+  const isMax = shown?.payload.some(entry => entry.payload?.isMax === true);
+
+  if (!shown) return null;
 
   // Series label — the point's own tooltipLabel wins over the chart-level one.
-  const seriesLabel = payload[0]?.payload?.tooltipLabel || tooltipLabel;
+  const seriesLabel = shown.payload[0]?.payload?.tooltipLabel || tooltipLabel;
 
   // When a token icon trails the value, it carries the unit — so drop the text
   // symbol suffix to match the DS (Figma 5273:12162: bare value + icon).
@@ -232,9 +265,9 @@ export function ChartTooltip({
       data-testid="chart-tooltip"
     >
       <p className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
-        {labelFormatter(label)}
+        {labelFormatter(shown.label)}
       </p>
-      {payload.map((entry, i) => (
+      {shown.payload.map((entry, i) => (
         <div key={`tooltip-value-item-${i}`} className="flex items-center gap-4">
           {seriesLabel != null && (
             <span
