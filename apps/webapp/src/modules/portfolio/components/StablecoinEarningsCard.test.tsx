@@ -45,6 +45,7 @@ const SUPPLIED: SuppliedView = {
       intent: 'SAVINGS_INTENT' as SuppliedView['positions'][number]['intent'],
       amountUsd: 1000,
       rate: 0.0375,
+      rateLoading: false,
       color: '#7C5BF5',
       hoverColor: '#7C5BF5',
       share: 1,
@@ -55,6 +56,7 @@ const SUPPLIED: SuppliedView = {
   totalSupplied: 1000,
   projected1Y: 37.5,
   avgRate: 0.0375,
+  ratesLoading: false,
   activePositions: 1,
   suppliedTokens: ['sUSDS'],
   networksWithPositions: [1]
@@ -166,14 +168,14 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
   it('shows the savings rate and projection stats on the idle tab when savings is available', () => {
     renderCard({ tab: 'idle' });
     expect(screen.getByText('Sky Savings Rate')).toBeTruthy();
-    expect(screen.getByText('1Y projected earnings')).toBeTruthy();
+    expect(screen.getByText('Projected 1Y yield (at current rate)')).toBeTruthy();
     expect(screen.getByText('Idle stablecoins')).toBeTruthy();
   });
 
   it('drops the savings rate and projection stats when savings is geo-restricted (no rate)', () => {
     renderCard({ tab: 'idle', savingsRate: undefined });
     expect(screen.queryByText('Sky Savings Rate')).toBeNull();
-    expect(screen.queryByText('1Y projected earnings')).toBeNull();
+    expect(screen.queryByText('Projected 1Y yield (at current rate)')).toBeNull();
     expect(screen.getByText('Idle stablecoins')).toBeTruthy();
   });
 

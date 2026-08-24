@@ -5,14 +5,15 @@ import { TriangleAlert } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
+import { formatOraclePrice } from '../lib/formatStakeAmount';
 
 // Risk-pill palette on the DS components/status colours (Badge I1036:209777) —
 // the same success/warning/error trio the risk meters took in APP-432 item 6.
@@ -60,8 +61,10 @@ export function StakeTakeoverBorrowCard({
   minCollateralForDust,
   skyToLock,
   simulatedVault,
+  simulationLoading,
   vaultNoBorrow,
   collateralData,
+  collateralLoading,
   error
 }: {
   enabled: boolean;
@@ -75,8 +78,12 @@ export function StakeTakeoverBorrowCard({
   minCollateralForDust: bigint | undefined;
   skyToLock: bigint;
   simulatedVault: Vault | undefined;
+  /** The simulation is in flight — its dust/max/risk figures hold skeletons. */
+  simulationLoading?: boolean;
   vaultNoBorrow: Vault | undefined;
   collateralData: CollateralRiskParameters | undefined;
+  /** The collateral-parameters read is in flight — the borrow rate holds a skeleton. */
+  collateralLoading?: boolean;
   error?: string;
 }) {
   const { sliderValue, handleSliderChange } = useStakeRiskSlider({
@@ -92,6 +99,9 @@ export function StakeTakeoverBorrowCard({
   const inputDisabled = minCollateralNotMet || debtCeilingReached;
   const hasAmount = usdsToBorrow > 0n;
   const riskLevel = hasAmount ? simulatedVault?.riskLevel : undefined;
+  // `maxBorrowable` composes over `?? 0n` fallbacks, so it skeletons while
+  // either input read is unresolved.
+  const maxLoading = collateralLoading || simulationLoading;
 
   const onPercentClick = (percent: number) => {
     if (maxBorrowable === 0n) return;
@@ -101,7 +111,7 @@ export function StakeTakeoverBorrowCard({
 
   return (
     <StakeTakeoverCard
-      step={2}
+      step={3}
       title={<Trans>Borrow USDS</Trans>}
       optional
       enabled={enabled}
@@ -121,7 +131,9 @@ export function StakeTakeoverBorrowCard({
             error={error}
             dataTestId="stake-takeover-borrow-amount"
             topRight={
-              minCollateralNotMet ? undefined : (
+              minCollateralNotMet ? undefined : maxLoading ? (
+                <Skeleton className="h-4 w-24" data-testid="stake-takeover-max-loading" />
+              ) : (
                 <Trans>max. {formatBigInt(maxBorrowable, { compact: true })} USDS</Trans>
               )
             }
@@ -142,12 +154,22 @@ export function StakeTakeoverBorrowCard({
             />
             <div className="text-fgSecondary flex items-center gap-4 text-xs leading-[18px]">
               <span className="flex items-center gap-1">
-                <Trans>min. {dust !== undefined ? formatBigInt(dust, { compact: true }) : NO_VALUE}</Trans>
+                {dust !== undefined ? (
+                  <Trans>min. {formatBigInt(dust, { compact: true })}</Trans>
+                ) : simulationLoading ? (
+                  <Skeleton className="h-3.5 w-10" />
+                ) : (
+                  <Trans>min. {NO_VALUE}</Trans>
+                )}
                 <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
               </span>
               <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
               <span className="flex items-center gap-1">
-                <Trans>max. {formatBigInt(maxBorrowable, { compact: true })}</Trans>
+                {maxLoading ? (
+                  <Skeleton className="h-3.5 w-10" />
+                ) : (
+                  <Trans>max. {formatBigInt(maxBorrowable, { compact: true })}</Trans>
+                )}
                 <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
               </span>
             </div>
@@ -189,7 +211,13 @@ export function StakeTakeoverBorrowCard({
             grid's flow entirely, so the mobile 2×2 keeps its centre rule. */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:flex md:flex-wrap md:gap-4">
           <StatItem label={<Trans>Borrow rate</Trans>}>
-            {collateralData?.stabilityFee ? formatPercent(collateralData.stabilityFee) : NO_VALUE}
+            {collateralData?.stabilityFee ? (
+              formatPercent(collateralData.stabilityFee)
+            ) : collateralLoading ? (
+              <Skeleton className="h-4 w-14" />
+            ) : (
+              NO_VALUE
+            )}
           </StatItem>
           <StatDivider />
           <StatItem
@@ -218,15 +246,21 @@ export function StakeTakeoverBorrowCard({
               >
                 {capitalizeFirstLetter(riskLevel.toLowerCase())}
               </span>
+            ) : hasAmount && simulationLoading ? (
+              <Skeleton className="h-4 w-14" />
             ) : (
               NO_VALUE
             )}
           </StatItem>
           <StatDivider className="hidden md:block" />
           <StatItem label={<Trans>Liquidation price</Trans>}>
-            {hasAmount && simulatedVault?.liquidationPrice
-              ? `$${formatBigInt(simulatedVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-              : NO_VALUE}
+            {hasAmount && simulatedVault?.liquidationPrice ? (
+              formatOraclePrice(simulatedVault.liquidationPrice)
+            ) : hasAmount && simulationLoading ? (
+              <Skeleton className="h-4 w-14" />
+            ) : (
+              NO_VALUE
+            )}
           </StatItem>
           <StatDivider />
           <StatItem
@@ -241,9 +275,13 @@ export function StakeTakeoverBorrowCard({
               </>
             }
           >
-            {simulatedVault?.delayedPrice
-              ? `$${formatBigInt(simulatedVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-              : NO_VALUE}
+            {simulatedVault?.delayedPrice ? (
+              formatOraclePrice(simulatedVault.delayedPrice)
+            ) : simulationLoading ? (
+              <Skeleton className="h-4 w-14" />
+            ) : (
+              NO_VALUE
+            )}
             <span className="bg-glassBadge text-fgSecondary font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]">
               <Trans>Updated hourly</Trans>
             </span>

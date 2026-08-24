@@ -1,18 +1,17 @@
 import { useMemo } from 'react';
-import { useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, UsersRound, Coins } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import {
-  TOKENS,
-  productNetworks,
   rewardsRiskProfile,
-  useRewardContractInfo,
-  useRewardsChartInfo,
+  TOKENS,
   trailingAverageRate,
-  type RewardContract
+  type RewardContract,
+  useProductNetworks,
+  useRewardContractInfo,
+  useRewardsChartInfo
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -20,21 +19,25 @@ import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
-import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import {
+  ProductDetailTemplate,
+  ProductDetailRow,
+  DetailValue
+} from '@/components/product/ProductDetailTemplate';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
 import { RewardsDetailChart } from './RewardsDetailChart';
 import { RewardsPositionCard } from './RewardsPositionCard';
 import { RewardsTransactionsTable } from './RewardsTransactionsTable';
-
-const NO_VALUE = '–';
+import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
 
 /**
- * About-slot content per farm. SPK and the (deprecated) SKY farm read the
- * corpus-fed banners (sync pipeline); Chronicle has no corpus entry yet, so its
- * body carries the same third-party disclaimer `AboutCle` shows elsewhere.
+ * About-slot content per farm. SPK, GROVE and the (deprecated) SKY farm read
+ * the corpus-fed banners (sync pipeline); Chronicle has no corpus entry yet, so
+ * its body carries the same third-party disclaimer `AboutCle` shows elsewhere.
+ * Every farm's "Learn more" points at the User Risk Documentation (APP-526).
  * TODO(corpus): move the Chronicle copy into the banners pipeline.
  */
-function aboutForContract(contract: RewardContract): { body: React.ReactNode; learnMoreHref?: string } {
+function aboutForContract(contract: RewardContract): { body: React.ReactNode; learnMoreHref: string } {
   const symbol = contract.rewardToken.symbol;
   if (symbol === TOKENS.cle.symbol) {
     return {
@@ -48,19 +51,21 @@ function aboutForContract(contract: RewardContract): { body: React.ReactNode; le
           with it.
         </Trans>
       ),
-      learnMoreHref: 'https://chroniclelabs.org/'
+      learnMoreHref: USER_RISKS_URL
     };
   }
   const bannerId =
     symbol === TOKENS.spk.symbol
       ? 'about-the-spk-token'
-      : symbol === TOKENS.sky.symbol
-        ? 'sky'
-        : 'about-sky-token-rewards';
+      : symbol === TOKENS.grove.symbol
+        ? 'about-the-grove-token'
+        : symbol === TOKENS.sky.symbol
+          ? 'sky'
+          : 'about-sky-token-rewards';
   const banner = getBannerById(bannerId)?.description;
   return {
     body: banner ? parseBannerContent(banner) : NO_VALUE,
-    learnMoreHref: contract.externalLink
+    learnMoreHref: USER_RISKS_URL
   };
 }
 
@@ -74,15 +79,7 @@ function aboutForContract(contract: RewardContract): { body: React.ReactNode; le
 export function RewardsProductDetail({ contract }: { contract: RewardContract }) {
   // The networks Rewards is live on among the configured chains (mainnet family
   // only today) — scopes the header's network switcher.
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.REWARDS_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.REWARDS_INTENT);
 
   const isPointsFarm = contract.rewardToken.symbol === TOKENS.cle.symbol;
   const rewardSymbol = contract.rewardToken.symbol;
@@ -90,8 +87,10 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
   // One BA Labs series feeds the stat rows (latest entry + 30-day trailing
   // average); the chart fetches its own timeframe-scoped window. TVL comes from
   // the subgraph contract info, matching the legacy statistics section.
-  const { data: chartInfo } = useRewardsChartInfo({ rewardContractAddress: contract.contractAddress });
-  const { data: contractInfo } = useRewardContractInfo({
+  const { data: chartInfo, isLoading: chartLoading } = useRewardsChartInfo({
+    rewardContractAddress: contract.contractAddress
+  });
+  const { data: contractInfo, isLoading: contractInfoLoading } = useRewardContractInfo({
     chainId: contract.chainId,
     rewardContractAddress: contract.contractAddress
   });
@@ -111,17 +110,47 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
   // Rate is a decimal fraction; zero means "no live rate" (Chronicle, the
   // deprecated SKY farm) and renders as "–" everywhere.
   const rateValue = latest && parseFloat(latest.rate) > 0 ? parseFloat(latest.rate) : undefined;
-  const currentRate = rateValue !== undefined ? formatDecimalPercentage(rateValue) : NO_VALUE;
-  const formattedThirtyDayRate =
-    thirtyDayRate !== undefined && thirtyDayRate > 0 ? formatDecimalPercentage(thirtyDayRate) : NO_VALUE;
+  const currentRate = (
+    <DetailValue
+      loading={chartLoading}
+      value={rateValue !== undefined ? formatDecimalPercentage(rateValue) : undefined}
+    />
+  );
+  const formattedThirtyDayRate = (
+    <DetailValue
+      loading={chartLoading}
+      value={
+        thirtyDayRate !== undefined && thirtyDayRate > 0 ? formatDecimalPercentage(thirtyDayRate) : undefined
+      }
+    />
+  );
 
-  const tvl = contractInfo?.totalSupplied
-    ? `$${formatNumber(parseFloat(formatUnits(contractInfo.totalSupplied, 18)))}`
-    : NO_VALUE;
-  const suppliers = latest?.suppliers !== undefined ? formatNumber(latest.suppliers) : NO_VALUE;
-  const totalRewarded = latest?.totalRewarded
-    ? `${formatNumber(parseFloat(latest.totalRewarded), { compact: true })} ${rewardSymbol}`
-    : NO_VALUE;
+  const tvl = (
+    <DetailValue
+      loading={contractInfoLoading}
+      value={
+        contractInfo?.totalSupplied
+          ? `$${formatNumber(parseFloat(formatUnits(contractInfo.totalSupplied, 18)))}`
+          : undefined
+      }
+    />
+  );
+  const suppliers = (
+    <DetailValue
+      loading={chartLoading}
+      value={latest?.suppliers !== undefined ? formatNumber(latest.suppliers) : undefined}
+    />
+  );
+  const totalRewarded = (
+    <DetailValue
+      loading={chartLoading}
+      value={
+        latest?.totalRewarded
+          ? `${formatNumber(parseFloat(latest.totalRewarded), { compact: true })} ${rewardSymbol}`
+          : undefined
+      }
+    />
+  );
 
   const details: ProductDetailRow[] = [
     {

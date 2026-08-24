@@ -10,7 +10,16 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { singleOrDelta } from '@/components/product/ModalGridCells';
+import {
+  EST_EARNINGS_LABEL,
+  estEarningsTrendCell,
+  networkCell,
+  networkFeeCell,
+  productCell,
+  rateCell,
+  singleOrDelta,
+  withdrawalCell
+} from '@/components/product/ModalGridCells';
 
 /** One labelled grid cell — the shared modal-grid cell model (single or before→after delta). */
 export type RewardsModalCell = ModalGridCell;
@@ -40,6 +49,8 @@ export type RewardsSupplyModalRowInput = {
   rewardsIn?: string;
   /** Network fee, formatted — stubbed until a gas estimate is wired. */
   networkFee: string;
+  /** The staked-position read is unresolved — the Supply and Est. earnings cells render skeletons. */
+  positionLoading?: boolean;
 };
 
 /**
@@ -50,21 +61,18 @@ export type RewardsSupplyModalRowInput = {
  * value; entering one draws the before→after arrows.
  */
 export function buildRewardsSupplyModalRows(input: RewardsSupplyModalRowInput): RewardsModalGridRow[] {
-  const networkFee: RewardsModalCell = { kind: 'single', label: 'Network fee', value: input.networkFee };
+  const networkFee = networkFeeCell(input.networkFee);
   return [
-    [
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
+    [rateCell('Rate', input.rate, 'savings'), networkCell(input.network)],
     [
       singleOrDelta(
-        { label: 'Supply', token: input.supplyToken },
+        { label: 'Supply', token: input.supplyToken, loading: input.positionLoading },
         input.supplyBefore,
         input.supplyAfter,
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)' },
+        { label: EST_EARNINGS_LABEL, loading: input.positionLoading },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
@@ -86,25 +94,22 @@ export type RewardsWithdrawModalRowInput = Omit<RewardsSupplyModalRowInput, 'rew
  */
 export function buildRewardsWithdrawModalRows(input: RewardsWithdrawModalRowInput): RewardsModalGridRow[] {
   return [
-    [
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
+    [rateCell('Rate', input.rate, 'savings'), networkCell(input.network)],
     [
       singleOrDelta(
-        { label: 'Supply', token: input.supplyToken },
+        { label: 'Supply', token: input.supplyToken, loading: input.positionLoading },
         input.supplyBefore,
         input.supplyAfter,
         input.hasAmount
       ),
       singleOrDelta(
-        { label: 'Est. earnings (1Y)' },
+        { label: EST_EARNINGS_LABEL, loading: input.positionLoading },
         input.earningsBefore,
         input.earningsAfter,
         input.hasAmount
       )
     ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [networkFeeCell(input.networkFee)]
   ];
 }
 
@@ -134,31 +139,14 @@ export type RewardsSupplyReviewRowInput = {
  * point farms), [Product | Rate], [Withdrawal | Network], Network fee.
  */
 export function buildRewardsSupplyReviewRows(input: RewardsSupplyReviewRowInput): RewardsModalGridRow[] {
-  const estEarnings: RewardsModalCell = {
-    kind: 'single',
-    label: 'Est. earnings (1Y)',
-    value: input.estEarnings,
-    trend: true
-  };
+  const estEarnings = estEarningsTrendCell(input.estEarnings);
   return [
     input.rewardsIn
       ? [{ kind: 'single', label: 'Rewards in', value: input.rewardsIn, token: input.rewardsIn }, estEarnings]
       : [estEarnings],
-    [
-      {
-        kind: 'single',
-        label: 'Product',
-        value: input.product,
-        token: input.productToken,
-        productIcon: 'default'
-      },
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' }
-    ],
-    [
-      { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [productCell(input.product, input.productToken, 'default'), rateCell('Rate', input.rate, 'savings')],
+    [withdrawalCell(input.withdrawal), networkCell(input.network)],
+    [networkFeeCell(input.networkFee)]
   ];
 }
 
@@ -193,22 +181,10 @@ export function buildRewardsWithdrawReviewRows(input: RewardsWithdrawReviewRowIn
   return [
     [
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
-      { kind: 'single', label: 'Est. earnings (1Y)', value: input.estEarnings, trend: true }
+      estEarningsTrendCell(input.estEarnings)
     ],
-    [
-      {
-        kind: 'single',
-        label: 'Product',
-        value: input.product,
-        token: input.productToken,
-        productIcon: 'default'
-      },
-      { kind: 'single', label: 'Rate', value: input.rate, rateAccent: 'savings' }
-    ],
-    [
-      { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
-      { kind: 'single', label: 'Network', value: input.network, network: true }
-    ],
-    [{ kind: 'single', label: 'Network fee', value: input.networkFee }]
+    [productCell(input.product, input.productToken, 'default'), rateCell('Rate', input.rate, 'savings')],
+    [withdrawalCell(input.withdrawal), networkCell(input.network)],
+    [networkFeeCell(input.networkFee)]
   ];
 }

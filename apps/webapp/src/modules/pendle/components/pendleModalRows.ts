@@ -54,7 +54,7 @@ export type PendleEntryRowInput = {
  * [You'll claim | Claim date], then Network fee full-width.
  */
 export function buildPendleEntryRows(input: PendleEntryRowInput): PendleModalGridRow[] {
-  const earningsLabel = `Est. earnings (${input.daysToMaturity}D)`;
+  const earningsLabel = `Est. ${input.daysToMaturity}D yield`;
   return [
     [
       singleOrDelta(
@@ -213,7 +213,7 @@ export function buildPendleReviewRows(
       { kind: 'single', label: "You'll receive", value: input.receiveAmount, token: input.receiveSymbol },
       {
         kind: 'single',
-        label: `Est. earnings (${input.daysToMaturity}D)`,
+        label: `Est. ${input.daysToMaturity}D yield`,
         value: input.earningsAfter,
         trend: true,
         trailingToken: input.displaySymbol

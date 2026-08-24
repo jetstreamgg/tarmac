@@ -26,6 +26,13 @@ type ModalEntryBodyLive = {
    * the normal confirm, so an override never outlives its condition.
    */
   confirmAction?: () => void;
+  /**
+   * User-readable engine/prepare failure shown above the confirm button on both
+   * first screens. Always pushed — `undefined` clears it, so a stale message
+   * never outlives the engine recovering. Explanatory only: pair it with
+   * `confirmDisabled` to actually block the confirm.
+   */
+  errorMessage?: string;
   /** Read-only breakdown for a three-screen flow's review stage. */
   transactionContent?: ReactNode;
   /** Compact amount summary rendered on the wallet/status screen. */
@@ -77,20 +84,20 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
  * Returns `renderInSlot(body)`: portals `body` into the dialog's entry slot when one
  * is mounted, else renders it inline in the hidden background host.
  */
-export function useModalEntryBody(params: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
-  const {
-    sessionId,
-    execute,
-    confirmDisabled,
-    confirmLabel,
-    confirmAction,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    usdValue,
-    analytics
-  } = params;
+export function useModalEntryBody({
+  sessionId,
+  execute,
+  confirmDisabled,
+  confirmLabel,
+  confirmAction,
+  errorMessage,
+  transactionContent,
+  transactionScreenContent,
+  steps,
+  toast,
+  usdValue,
+  analytics
+}: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
   const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
 
@@ -114,17 +121,20 @@ export function useModalEntryBody(params: UseModalEntryBodyParams): (body: React
   useEffect(() => {
     if (txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
-      // `confirmDisabled` gates the entry screen via the entry descriptor and the
-      // review stage via the top-level field — same value, both screens.
-      // `confirmLabel` merges only when supplied (bodies that don't pass it keep
-      // their launch-time label); `confirmAction` is always pushed so clearing
-      // it (undefined) reliably restores the normal confirm.
+      // `confirmDisabled` and `errorMessage` gate/annotate the entry screen via
+      // the entry descriptor and the review stage via the top-level field — same
+      // value, both screens. `confirmLabel` merges only when supplied (bodies
+      // that don't pass it keep their launch-time label); `confirmAction` and
+      // `errorMessage` are always pushed so clearing them (undefined) reliably
+      // restores the normal confirm / drops a stale error.
       entry: {
         confirmDisabled,
         ...(confirmLabel !== undefined ? { confirmLabel } : {}),
-        confirmAction
+        confirmAction,
+        errorMessage
       },
       confirmDisabled,
+      errorMessage,
       onConfirm,
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
@@ -141,6 +151,7 @@ export function useModalEntryBody(params: UseModalEntryBodyParams): (body: React
     confirmDisabled,
     confirmLabel,
     confirmAction,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,

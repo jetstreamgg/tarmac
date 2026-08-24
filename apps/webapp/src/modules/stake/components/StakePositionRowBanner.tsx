@@ -12,14 +12,13 @@ import {
   getIlkName,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt, formatUsd, WAD_PRECISION } from '@/utils';
+import { formatUsd } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { formatStakeAmount } from '../lib/formatStakeAmount';
+import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
 import { isAtRiskOfLiquidation } from '../lib/liquidation';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { isLiquidatedStakePosition, StakeUserPosition } from '../hooks/useStakeUserPositions';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 function stopRowClick(event: MouseEvent) {
   event.stopPropagation();
@@ -56,13 +55,13 @@ export function StakePositionRowBanner({
     chainId,
     enabled: Boolean(urnAddress && rewardContracts?.length)
   });
-  const { data: prices } = usePrices();
+  const { data: prices, isLoading: pricesLoading } = usePrices();
 
   if (isLiquidatedStakePosition(position)) {
     // The risk-cell badge already marks the row as liquidated from the pure
     // predicate; hold the banner (which quotes the refund/reward figures) until
     // the reads land so it never flashes a 0.00 refund.
-    if (vaultLoading || claimableLoading) return null;
+    if (vaultLoading || claimableLoading || pricesLoading) return null;
 
     const claimable = toClaim ?? [];
     // A failed claimables read is "unknown", not $0.00.
@@ -106,11 +105,7 @@ export function StakePositionRowBanner({
   if (!isAtRiskOfLiquidation(vault)) return null;
 
   const dropPercent = liquidationDropPercent(vault?.liquidationProximityPercentage);
-  // 4 decimals pinned like every other liquidation-price display in the module.
-  const formattedLiqPrice =
-    vault?.liquidationPrice !== undefined
-      ? `$${formatBigInt(vault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-      : NO_VALUE;
+  const formattedLiqPrice = formatOraclePrice(vault?.liquidationPrice);
 
   return (
     <div

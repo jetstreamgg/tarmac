@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
+import { Skeleton } from '@/components/ui/skeleton';
 import { AppLink } from '@/lib/navigation';
 import { ROUTES } from '@/lib/routes';
 import { recallEarnFilterSearch } from '@/lib/earnFilterMemory';
@@ -57,9 +58,19 @@ export interface ProductDetailRow {
   value: ReactNode;
 }
 
+/**
+ * Detail-row value backed by an async read: skeleton while the read is in
+ * flight, the dash once it settles with nothing — so the dash keeps meaning
+ * "no value exists" rather than "not loaded yet".
+ */
+export function DetailValue({ value, loading }: { value?: ReactNode; loading: boolean }) {
+  if (value !== undefined && value !== null) return <>{value}</>;
+  return loading ? <Skeleton className="h-4 w-14" /> : <>{'–'}</>;
+}
+
 export interface ProductDetailAbout {
   body: ReactNode;
-  /** When set, a "Learn more" link is appended to the body. */
+  /** When set, a "Learn more in the User Risk Documentation." link is appended to the body. */
   learnMoreHref?: string;
 }
 
@@ -167,7 +178,7 @@ function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetai
         {about.body}
         {about.learnMoreHref && (
           <a href={about.learnMoreHref} target="_blank" rel="noreferrer" className="text-fgBrand ml-1">
-            <Trans>Learn more</Trans>
+            <Trans>Learn more in the User Risk Documentation.</Trans>
           </a>
         )}
       </div>

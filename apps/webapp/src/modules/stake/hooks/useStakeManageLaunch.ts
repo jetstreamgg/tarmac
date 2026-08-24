@@ -5,7 +5,6 @@ import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
 import {
   useBatchStakeMulticall,
-  useIsBatchSupported,
   useRewardContractTokens,
   useStakeSkyAllowance,
   useStakeUsdsAllowance,
@@ -17,12 +16,17 @@ import {
 import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 // Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
-import { calculateStakeApprovalAmounts, needsDelegateUpdate, useStakeCalldata } from './useStakeCalldata';
+import {
+  calculateStakeApprovalAmounts,
+  needsDelegateUpdate,
+  needsRewardUpdate,
+  useStakeCalldata
+} from './useStakeCalldata';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 
 /**
  * Manage confirm-modal step labels, derived from the calldata set in the manage
@@ -38,6 +42,7 @@ export function buildStakeManageSteps({
   hasFree,
   hasWipe,
   hasBorrow,
+  hasRewardChange,
   hasDelegateChange,
   claimSymbols
 }: {
@@ -47,6 +52,7 @@ export function buildStakeManageSteps({
   hasFree: boolean;
   hasWipe: boolean;
   hasBorrow: boolean;
+  hasRewardChange: boolean;
   hasDelegateChange: boolean;
   /** Display symbols for the getReward legs, aligned to the engine's free-before-claim order. */
   claimSymbols?: string[];
@@ -60,6 +66,7 @@ export function buildStakeManageSteps({
     hasWipe && { label: t`Repay`, tokenSymbol: 'USDS' },
     hasFree && { label: t`Withdraw`, tokenSymbol: 'SKY' },
     ...(claimSymbols ?? []).map(symbol => ({ label: t`Claim`, tokenSymbol: symbol })),
+    hasRewardChange && t`Change reward`,
     hasDelegateChange && t`Change delegate`,
     hasLock && { label: t`Stake`, tokenSymbol: 'SKY' },
     hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS' }
@@ -74,6 +81,12 @@ export interface UseStakeManageLaunchParams {
   usdsToBorrow: bigint;
   usdsToWipe: bigint;
   wipeAll: boolean;
+  /**
+   * EFFECTIVE reward contract: the staged selection, or the urn's current one.
+   * Omitted = the urn's current farm passes through so `needsRewardUpdate`
+   * never fires (the pre-APP-516 behavior, kept for reward-less callers).
+   */
+  selectedRewardContract?: `0x${string}`;
   /** EFFECTIVE delegate: the staged selection, or the urn's current one (M12). */
   selectedDelegate: `0x${string}` | undefined;
   /** Form validity — gates the engine's prepare/simulation. */
@@ -94,8 +107,9 @@ export interface UseStakeManageLaunchParams {
  * `TransactionContext.launch()`. One Confirm stages any combination of
  * repay/withdraw/delegate/stake/borrow — legacy MANAGE multicall semantics.
  *
- * The reward contract is always passed through as the urn's current one so
- * `needsRewardUpdate` never fires — F5 has no Change-reward flow (M4/M12).
+ * The reward contract defaults to the urn's current one so `needsRewardUpdate`
+ * only fires when a caller stages a different farm (APP-516's Change-reward
+ * flow); the selectFarm leg then rides the same multicall.
  * Allowance decisions stay INSIDE the engine; the reads here only label steps.
  * The USDS approval sizing (wipeAll ×100005/100000 buffer) comes from the F1
  * helper, matching the legacy widget byte-for-byte.
@@ -108,6 +122,7 @@ export function useStakeManageLaunch({
   usdsToBorrow,
   usdsToWipe,
   wipeAll,
+  selectedRewardContract,
   selectedDelegate,
   enabled,
   rewardContractsToClaim,
@@ -119,14 +134,16 @@ export function useStakeManageLaunch({
   const { priceString: skyPriceString } = useSkyPrice();
   const { address } = useConnection();
 
-  // The gating baselines (M12): reward passes through unchanged; the delegate
-  // read also feeds the steps/analytics change detection below.
+  // The gating baselines (M12): the urn reads also feed the steps/analytics
+  // change detection below.
   const { data: urnSelectedRewardContract } = useStakeUrnSelectedRewardContract({
     urn: urnAddress || ZERO_ADDRESS
   });
   const { data: urnSelectedVoteDelegate } = useStakeUrnSelectedVoteDelegate({
     urn: urnAddress || ZERO_ADDRESS
   });
+
+  const effectiveRewardContract = selectedRewardContract ?? urnSelectedRewardContract;
 
   const { calldata } = useStakeCalldata({
     flow: 'manage',
@@ -138,7 +155,7 @@ export function useStakeManageLaunch({
     usdsToWipe,
     wipeAll,
     usdsToBorrow,
-    selectedRewardContract: urnSelectedRewardContract,
+    selectedRewardContract: effectiveRewardContract,
     selectedDelegate,
     rewardContractsToClaim,
     restakeSkyRewards: false,
@@ -168,9 +185,7 @@ export function useStakeManageLaunch({
   // bundled claim counts toward the multi-leg batch condition without a
   // separate check here.
   const needsAllowance = needsSkyAllowance || needsUsdsAllowance;
-  const [batchEnabled] = useBatchToggle();
-  const { data: batchSupported } = useIsBatchSupported();
-  const shouldUseBatch = !!batchEnabled && !!batchSupported && (needsAllowance || calldata.length > 1);
+  const shouldUseBatch = useShouldUseBatch(needsAllowance || calldata.length > 1);
 
   const engine = useBatchStakeMulticall({
     calldata,
@@ -191,6 +206,7 @@ export function useStakeManageLaunch({
   const hasFree = skyToFree > 0n;
   const hasWipe = wipeAll || usdsToWipe > 0n;
   const hasBorrow = usdsToBorrow > 0n;
+  const hasRewardChange = !!needsRewardUpdate(urnAddress, effectiveRewardContract, urnSelectedRewardContract);
   const hasDelegateChange = !!needsDelegateUpdate(urnAddress, selectedDelegate, urnSelectedVoteDelegate);
 
   const steps = buildStakeManageSteps({
@@ -200,15 +216,20 @@ export function useStakeManageLaunch({
     hasFree,
     hasWipe,
     hasBorrow,
+    hasRewardChange,
     hasDelegateChange,
     claimSymbols
   });
 
-  const { data: rewardContractTokens } = useRewardContractTokens(urnSelectedRewardContract);
+  const { data: rewardContractTokens } = useRewardContractTokens(effectiveRewardContract);
   const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
 
-  const isDelegateOnly = hasDelegateChange && !hasLock && !hasFree && !hasWipe && !hasBorrow;
-  const isBorrowOnly = hasBorrow && !hasLock && !hasFree && !hasWipe && !hasDelegateChange;
+  const isDelegateOnly =
+    hasDelegateChange && !hasLock && !hasFree && !hasWipe && !hasBorrow && !hasRewardChange;
+  const isRewardOnly =
+    hasRewardChange && !hasLock && !hasFree && !hasWipe && !hasBorrow && !hasDelegateChange;
+  const isBorrowOnly =
+    hasBorrow && !hasLock && !hasFree && !hasWipe && !hasDelegateChange && !hasRewardChange;
 
   const launch = useCallback(() => {
     const formattedLock = hasLock ? formatBigInt(skyToLock) : undefined;
@@ -236,7 +257,7 @@ export function useStakeManageLaunch({
       assetSymbol: 'SKY',
       borrowSymbol: 'USDS',
       urnIndex: Number(urnIndex),
-      selectedRewardContract: urnSelectedRewardContract,
+      selectedRewardContract: effectiveRewardContract,
       selectedRewardSymbol,
       isDelegating: hasDelegateChange && !!selectedDelegate && selectedDelegate !== ZERO_ADDRESS,
       isBatchTx: shouldUseBatch,
@@ -269,7 +290,13 @@ export function useStakeManageLaunch({
     launchModal({
       usdValue,
       // Confirm-modal titles by staged action set (M7, UX 1104:*).
-      title: isDelegateOnly ? t`Confirm delegate change` : isBorrowOnly ? t`Confirm borrow` : t`Confirm`,
+      title: isDelegateOnly
+        ? t`Confirm delegate change`
+        : isRewardOnly
+          ? t`Confirm reward change`
+          : isBorrowOnly
+            ? t`Confirm borrow`
+            : t`Confirm`,
       transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, StakeFlow.MANAGE)),
       subtitles: {
         loading: i18n._(getStakeSubtitle({ flow: StakeFlow.MANAGE, txStatus: TxStatus.LOADING })),
@@ -317,9 +344,10 @@ export function useStakeManageLaunch({
     hasBorrow,
     hasDelegateChange,
     isDelegateOnly,
+    isRewardOnly,
     isBorrowOnly,
     selectedDelegate,
-    urnSelectedRewardContract,
+    effectiveRewardContract,
     selectedRewardSymbol,
     shouldUseBatch,
     skyPriceString,
@@ -333,6 +361,7 @@ export function useStakeManageLaunch({
     execute: engine.execute,
     steps,
     calldata,
+    hasRewardChange,
     hasDelegateChange,
     urnSelectedVoteDelegate,
     shouldUseBatch,

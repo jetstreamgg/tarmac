@@ -77,9 +77,13 @@ export function ConnectedPortfolio() {
   const idleSupplyInfo = buildIdleSupplyInfo(visibleRows);
 
   // Sky Savings Rate as a decimal fraction (drives the Idle footer + projection).
-  const savingsRate = overallSkyData?.skySavingsRatecRate
-    ? parseFloat(overallSkyData.skySavingsRatecRate)
-    : 0;
+  // undefined while the query is in flight — the copy would otherwise quote
+  // "today's 0.00% Sky Savings Rate" as fact.
+  const savingsRate = skyDataLoading
+    ? undefined
+    : overallSkyData?.skySavingsRatecRate
+      ? parseFloat(overallSkyData.skySavingsRatecRate)
+      : 0;
   // undefined while the query is in flight — the callout chips the figure.
   const savingsTvlUsd = skyDataLoading
     ? undefined
@@ -185,7 +189,7 @@ export function ConnectedPortfolio() {
             size="md"
             className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
           >
-            <Trans>Your Stablecoin Earnings</Trans>
+            <Trans>Your Stablecoin Savings</Trans>
           </PageHeading>
           <FilterSelect
             options={networkOptions}

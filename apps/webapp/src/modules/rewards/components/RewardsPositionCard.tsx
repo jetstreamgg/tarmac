@@ -15,8 +15,8 @@ import {
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
-  NO_VALUE,
   ProductActions,
   ProductFigure,
   ProductPercent,
@@ -29,6 +29,7 @@ import { useClaimRewardsModal } from '@/modules/claim';
 import { useRewardsModal, type RewardsModalArgs } from '../hooks/useRewardsModal';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
 import { RewardsSupplyCard } from './RewardsSupplyCard';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * Position-aware action card for the rewards product page (ProductDetailTemplate
@@ -98,6 +99,12 @@ export function RewardsPositionCard({
     rewardTokenSymbol: isPointsFarm ? undefined : contract.rewardToken.symbol,
     rate
   };
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position.
+  if (isConnected && suppliedBalance === undefined) {
+    return <PositionCardSkeleton testId="rewards-position-card-skeleton" />;
+  }
 
   const staked = suppliedBalance ?? 0n;
   const hasPosition = staked > 0n;
@@ -170,7 +177,7 @@ export function RewardsPositionCard({
               {supplyIcon}
               {formatNumber(positionValue, { maxDecimals: 2 })}
             </ProductStat>
-            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
+            <ProductStat label={<Trans>Est. 1Y yield (at current rate)</Trans>}>
               {rate !== undefined && rate > 0 ? (
                 <>
                   <TrendingUp className="text-bullish h-3 w-3 shrink-0" />

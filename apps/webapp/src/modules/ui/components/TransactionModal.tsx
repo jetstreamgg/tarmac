@@ -101,6 +101,12 @@ export type TransactionModalProps = {
   confirmLabel?: string;
   /** Disables the Confirm button (e.g. while a quote is refetching). */
   confirmDisabled?: boolean;
+  /**
+   * User-readable engine/prepare failure rendered above the review screen's
+   * confirm button; the entry screen reads `entry.errorMessage` instead (same
+   * dual sourcing as `confirmDisabled`).
+   */
+  errorMessage?: string;
   successLabel?: string;
   errorLabel?: string;
   steps?: TransactionStep[];
@@ -160,6 +166,7 @@ export function TransactionModal({
   externalLink,
   confirmLabel,
   confirmDisabled,
+  errorMessage,
   successLabel,
   errorLabel,
   steps,
@@ -222,6 +229,7 @@ export function TransactionModal({
   // unless something else already disables them.
   const preflightBlocked = preflight?.kind === 'blocked';
   const preflightPending = preflight?.kind === 'pending';
+  const firstScreenErrorMessage = isEntry ? entry?.errorMessage : errorMessage;
   // The wallet/status screen shows a compact summary when supplied; otherwise it
   // falls back to the review body (review path only), so consumers that pass only
   // `transactionContent` keep their previous transaction-screen content.
@@ -363,7 +371,10 @@ export function TransactionModal({
         // section gaps on the first screens per the comp; the wallet/status
         // screen spaces its sections with per-section padding instead.
         className={cn(
-          'bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
+          // app-loader-cover-hidden: a first connect from inside this modal arms
+          // the app loader's held cover (APP-515) — the card hides for the play
+          // and pops back at reveal; the frosted scrim stays as the backdrop.
+          'app-loader-cover-hidden bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
           !isTransaction && 'sm:gap-12'
         )}
         onOpenAutoFocus={e => e.preventDefault()}
@@ -525,6 +536,14 @@ export function TransactionModal({
                   <div className="flex items-start gap-2" data-testid="transaction-preflight-blocked">
                     <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
                     <Text className="text-error text-sm">{preflight.message}</Text>
+                  </div>
+                )}
+                {/* Explanatory only — the flow's confirmDisabled does the actual blocking. */}
+                {firstScreenErrorMessage && (
+                  <div role="alert">
+                    <Text className="text-error text-sm" data-testid="transaction-modal-error">
+                      {firstScreenErrorMessage}
+                    </Text>
                   </div>
                 )}
                 {hasSecondaryConfirm ? (

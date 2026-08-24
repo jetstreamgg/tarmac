@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { useChains, useChainId } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useAvailableTokenRewardContracts, useNetworkFee, useTransactionFlow } from '@/hooks';
+import { useAvailableTokenRewardContracts, useTransactionFlow } from '@/hooks';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { formatUsd } from '@/utils';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,8 +19,8 @@ import { merklAdapter } from '../adapters/merklAdapter';
 import { skyRewardsAdapter } from '../adapters/skyRewardsAdapter';
 import { stakeAdapter } from '../adapters/stakeAdapter';
 import type { ClaimSource, ClaimableReward, ClaimScope } from '../types';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 /**
  * One claimable reward (Figma 1036:190085): 32px token icon, Heading-2 amount
@@ -67,7 +67,6 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
 export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; scope: ClaimScope }) {
   const { txCallbacks } = useTransaction();
   const chainId = useChainId();
-  const chains = useChains();
 
   // Fixed trio — called unconditionally, in stable order (also the merge order).
   const merkl = merklAdapter.useClaimable(scope);
@@ -102,13 +101,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
-    calls,
-    chainId,
-    shouldUseBatch: !!flow.isBatch
-  });
-
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: !!flow.isBatch });
 
   // Disabled until there's something to send, no in-scope source is still preparing
   // (e.g. Merkl proofs mid-load, so we never claim a partial subset of the scope),
@@ -209,18 +202,18 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   });
 
   // All three engines are mainnet, so the network is the connected chain.
-  const networkName = chains.find(chain => chain.id === chainId)?.name ?? NO_VALUE;
+  const networkName = useNetworkName(chainId, NO_VALUE);
 
   // [Network fee | Network] (Figma 1036:190091). Fee is stubbed like the other modules.
   const gridRows = toGridCells(
     [
       [
-        { label: NETWORK_FEE_LABEL, kind: 'single', value: networkFee?.formatted ?? NO_VALUE },
+        { label: NETWORK_FEE_LABEL, kind: 'single', value: feeCell.fee?.formatted ?? NO_VALUE },
         { label: t`Network`, kind: 'single', value: networkName, network: true }
       ]
     ],
     'claim-modal-row',
-    { fee: networkFee, state: bundleState }
+    feeCell
   );
 
   const body = (
@@ -250,7 +243,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 
       {allRewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
 
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

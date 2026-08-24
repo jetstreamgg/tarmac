@@ -17,8 +17,8 @@ import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Pendle } from '@/widgets';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
-  NO_VALUE,
   ProductActions,
   ProductFigure,
   ProductPercent,
@@ -31,8 +31,9 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
-
-const SECONDS_PER_DAY = 86_400;
+import { NO_VALUE } from '@/lib/constants';
+import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
+import { FixedYieldTerm } from '@/modules/earn/components/FixedYieldTerm';
 
 /**
  * No-position Pendle entry card (Figma 486:33862): "Supply USDS/USDC and earn
@@ -100,14 +101,17 @@ function PendleSupplyCard({
       }
       title={
         <Trans>
-          Supply {inlineToken('USDS')} / {inlineToken('USDC')} and earn {rate} APY
+          Supply {inlineToken('USDS')} / {inlineToken('USDC')} at {rate} APY
         </Trans>
       }
       description={
-        <Trans>
-          Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
-          maturity. Fix your yield at {rate} APY for the next {remainingDays} days.
-        </Trans>
+        <>
+          <Trans>
+            Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
+            maturity.
+          </Trans>{' '}
+          <FixedYieldTerm rate={rate} days={remainingDays} />
+        </>
       }
       stats={
         <ProductStatPair>
@@ -171,10 +175,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   const stats = marketsApi?.[market.marketAddress];
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const remainingDays = Math.max(
-    0,
-    Math.floor((expirySec - Math.floor(Date.now() / 1000)) / SECONDS_PER_DAY)
-  );
+  const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
   const claimDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
 
   const refresh = useCallback(() => {
@@ -182,6 +183,12 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   }, [mutateBalances]);
 
   const { openSupply, openWithdraw } = usePendleModal({ onSuccess: refresh });
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position.
+  if (isConnected && ptBalances === undefined) {
+    return <PositionCardSkeleton testId="pendle-position-card-skeleton" />;
+  }
 
   if (ptBalance === 0n) {
     return (
@@ -219,7 +226,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
           <ProductStatPair grow>
             {/* No cost-basis source for active positions yet — placeholder per
                 the redesign (matches the vault card's already-earned gap). */}
-            <ProductStat label={<Trans>Current earnings</Trans>}>
+            <ProductStat label={<Trans>Accrued to date</Trans>}>
               <span className="text-fgSecondary">{NO_VALUE}</span>
             </ProductStat>
             <ProductStat label={<Trans>You&apos;ll claim</Trans>}>

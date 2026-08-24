@@ -12,7 +12,7 @@ import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagi
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
 import { useConnection, useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@/utils';
+import { familyMainnetId } from '@/utils';
 
 export function rewardsHistoryFragments({
   user,
@@ -133,7 +133,7 @@ export function useAllRewardsUserHistory({
   const currentChainId = useChainId();
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   //this hook is only used for mainnet, update this if this ever changes
-  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const chainIdToUse = familyMainnetId(currentChainId);
   const rewardContracts = useAvailableTokenRewardContracts(chainIdToUse);
   const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useHistoryPagination({

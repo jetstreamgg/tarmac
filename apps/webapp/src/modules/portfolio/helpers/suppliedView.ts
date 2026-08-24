@@ -17,6 +17,8 @@ export type SuppliedPosition = {
   amountUsd: number;
   /** Current rate as a decimal fraction (0.045 = 4.5%); undefined when the product has none. */
   rate?: number;
+  /** The rate source is still loading — rate/earnings cells hold a skeleton instead of 0.00. */
+  rateLoading: boolean;
   /** Brand color derived from the product's display token. */
   color: string;
   /** Hovered-segment color (DS Components/Charts-Hover); base color when the token has no hover variable. */
@@ -42,6 +44,8 @@ export type SuppliedView = {
   projected1Y: number;
   /** Supplied-weighted average rate, decimal fraction. */
   avgRate: number;
+  /** A position's rate source is still loading — the aggregates above are premature. */
+  ratesLoading: boolean;
   activePositions: number;
   /** Deduped display-token symbols across positions, in position order. */
   suppliedTokens: string[];
@@ -54,6 +58,7 @@ const EMPTY_VIEW: SuppliedView = {
   totalSupplied: 0,
   projected1Y: 0,
   avgRate: 0,
+  ratesLoading: false,
   activePositions: 0,
   suppliedTokens: [],
   networksWithPositions: []
@@ -111,6 +116,7 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     address: row.address,
     amountUsd,
     rate: row.rate.value,
+    rateLoading: row.rate.value === undefined && row.isLoading,
     ...(resolveTokenChartColors(row.tokenSymbol) ?? {
       color: FALLBACK_TOKEN_COLOR,
       hoverColor: FALLBACK_TOKEN_COLOR
@@ -127,6 +133,7 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     totalSupplied,
     projected1Y,
     avgRate: totalSupplied > 0 ? projected1Y / totalSupplied : 0,
+    ratesLoading: positions.some(p => p.rateLoading),
     activePositions: positions.length,
     suppliedTokens: [...new Set(positions.map(p => p.tokenSymbol))],
     networksWithPositions: [...networkSet].sort((a, b) => a - b)

@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
-import { useChains } from 'wagmi';
+
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, Gauge, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import {
-  productNetworks,
+  trailingAverageRate,
   useOverallSkyData,
+  useProductNetworks,
   useStUsdsCapacityData,
   useStUsdsChartInfo,
-  useStUsdsData,
-  trailingAverageRate
+  useStUsdsData
 } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -19,12 +19,15 @@ import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
-import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import {
+  ProductDetailTemplate,
+  ProductDetailRow,
+  DetailValue
+} from '@/components/product/ProductDetailTemplate';
 import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
-
-const NO_VALUE = '–';
+import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
 
 const formatUsd = (value: bigint | undefined): string =>
   value !== undefined ? `$${formatNumber(parseFloat(formatUnits(value, 18)))}` : NO_VALUE;
@@ -37,24 +40,21 @@ const formatUsd = (value: bigint | undefined): string =>
  * route-bounce gate.
  */
 export function StUsdsProductDetail() {
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.EXPERT_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
+  const networks = useProductNetworks(Intent.EXPERT_INTENT);
+
+  const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
+  const { data: capacityData, isLoading: capacityLoading } = useStUsdsCapacityData();
+  const { data: overall, isLoading: overallLoading } = useOverallSkyData();
+  const { data: chartInfo, isLoading: chartLoading } = useStUsdsChartInfo();
+
+  const currentRate = (
+    <DetailValue
+      loading={stUsdsLoading}
+      value={
+        stUsdsData ? formatDecimalPercentage(calculateApyFromStr(stUsdsData.moduleRate) / 100) : undefined
+      }
+    />
   );
-
-  const { data: stUsdsData } = useStUsdsData();
-  const { data: capacityData } = useStUsdsCapacityData();
-  const { data: overall } = useOverallSkyData();
-  const { data: chartInfo } = useStUsdsChartInfo();
-
-  const currentRate = stUsdsData
-    ? formatDecimalPercentage(calculateApyFromStr(stUsdsData.moduleRate) / 100)
-    : NO_VALUE;
 
   // 30D Rate = trailing 30-day average of the daily chart series (no dedicated
   // endpoint). Shared with the marketplace table's 30D Rate column, so the row
@@ -67,14 +67,30 @@ export function StUsdsProductDetail() {
           : []
       )
     );
-    return average !== undefined ? formatDecimalPercentage(average) : NO_VALUE;
-  }, [chartInfo]);
+    return (
+      <DetailValue
+        loading={chartLoading}
+        value={average !== undefined ? formatDecimalPercentage(average) : undefined}
+      />
+    );
+  }, [chartInfo, chartLoading]);
 
-  const utilization =
-    capacityData !== undefined
-      ? `${formatNumber(capacityData.utilizationRate, { maxDecimals: 2 })}%`
-      : NO_VALUE;
-  const suppliers = overall?.stusdsSuppliers ? formatNumber(overall.stusdsSuppliers) : NO_VALUE;
+  const utilization = (
+    <DetailValue
+      loading={capacityLoading}
+      value={
+        capacityData !== undefined
+          ? `${formatNumber(capacityData.utilizationRate, { maxDecimals: 2 })}%`
+          : undefined
+      }
+    />
+  );
+  const suppliers = (
+    <DetailValue
+      loading={overallLoading}
+      value={overall?.stusdsSuppliers ? formatNumber(overall.stusdsSuppliers) : undefined}
+    />
+  );
 
   // About copy comes from the shared stUSDS banner — the same source the legacy
   // AboutStUsds surface used (parsed for its inline tooltip link).
@@ -159,7 +175,7 @@ export function StUsdsProductDetail() {
       details={details}
       about={{
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
-        learnMoreHref: 'https://docs.sky.money/user-risks'
+        learnMoreHref: USER_RISKS_URL
       }}
       transactions={<StUsdsTransactionsTable />}
       transactionsTitle={<Trans>All transactions</Trans>}

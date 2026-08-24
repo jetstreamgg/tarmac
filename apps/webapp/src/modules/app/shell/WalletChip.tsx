@@ -12,8 +12,8 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { UnauthorizedPage } from '@/modules/auth/components/UnauthorizedPage';
 import { useIsSafeWallet } from '@/hooks';
 import { WalletPreviewDrawer } from './WalletPreviewDrawer';
+import { formatAddress } from '@/utils';
 
-const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 // Phone tier: 0x + first two hex chars + last four (0x00…C4A2) — short enough
 // to fit the chip at 360px without ellipsis-truncating mid-glyph (APP-416).
 const formatAddressShort = (addr: string) => `${addr.slice(0, 4)}…${addr.slice(-4)}`;
@@ -91,7 +91,7 @@ export function WalletChip() {
               ) : (
                 <>
                   <span className="sm:hidden">{`${isSafeWallet ? 'safe:' : ''}${formatAddressShort(address)}`}</span>
-                  <span className="hidden sm:inline">{`${isSafeWallet ? 'safe:' : ''}${formatAddress(address)}`}</span>
+                  <span className="hidden sm:inline">{`${isSafeWallet ? 'safe:' : ''}${formatAddress(address, 6, 4)}`}</span>
                 </>
               )}
             </span>

@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { type Call } from 'viem';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
@@ -13,7 +12,6 @@ import {
   useBatchPsmSwapExactOut,
   useBatchSavingsSupply,
   useBatchUpgradeAndSavingsSupply,
-  useIsBatchSupported,
   useSavingsAllowance,
   useSavingsWithdraw,
   useTokenAllowance,
@@ -21,9 +19,9 @@ import {
 } from '@/hooks';
 import { isL2ChainId, math } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { useUsdcSupplyGate } from './useUsdcSupplyGate';
+import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 
 export type SavingsLaunchFlow = 'supply' | 'withdraw';
 
@@ -60,25 +58,7 @@ export interface UseSavingsLaunchParams {
   maxAmountInForWithdraw?: bigint;
 }
 
-export interface UseSavingsLaunchResult {
-  /**
-   * Fires the routed engine call directly (txCallbacks already spread in). Used by
-   * the editable modal entry body (`SavingsModalForm`), whose confirm button
-   * drives the shared modal — the modal is already open, so it executes rather
-   * than launching.
-   */
-  execute: () => void;
-  /** Steps for the configured flow (e.g. ["Approve", "Supply"]). */
-  steps: TransactionStep[];
-  /** Whether the routed call-builder hook is ready to execute. */
-  prepared: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  /** The routed engine's calls, for estimating the flow's network fee. */
-  calls: Call[];
-  /** Whether those calls go out bundled — the batch costs less than the sequence. */
-  isBatch: boolean;
-}
+export type UseSavingsLaunchResult = EngineLaunchResult;
 
 /**
  * The single seam between the redesigned Savings UI and the transaction
@@ -116,13 +96,7 @@ export function useSavingsLaunch({
   const { address } = useAccount();
   const chainId = useChainId();
 
-  // Honour the user's batch toggle: bundle approve+action into one EIP-5792 call
-  // only when the user opted in AND the wallet supports it. useTransactionFlow
-  // additionally gates on calls.length > 1, so a no-approval flow stays a single
-  // sequential signature regardless of this flag.
-  const [batchEnabled] = useBatchToggle();
-  const { data: batchSupported } = useIsBatchSupported();
-  const shouldUseBatch = !!batchEnabled && !!batchSupported;
+  const shouldUseBatch = useShouldUseBatch();
 
   const isL2 = isL2ChainId(chainId);
   const isSupply = flow === 'supply';
@@ -331,13 +305,5 @@ export function useSavingsLaunch({
     originToken.symbol
   ]);
 
-  return {
-    execute,
-    steps,
-    prepared: activeHook.prepared,
-    isLoading: activeHook.isLoading,
-    error: activeHook.error,
-    calls: activeHook.calls ?? [],
-    isBatch: !!activeHook.isBatch
-  };
+  return toLaunchResult(activeHook, steps, execute);
 }

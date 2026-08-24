@@ -3,6 +3,9 @@ import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
 
+/** The placeholder every product surface shows for a value it cannot source. */
+export const NO_VALUE = '–';
+
 // Navigation state (module, submodule, entity selection) lives in the path;
 // these are the params that remain query-driven.
 export enum QueryParams {
@@ -132,6 +135,9 @@ export const BATCH_TX_LEGAL_NOTICE_URL = 'https://docs.sky.money/legal-terms';
 // signature step both link them.
 export const TERMS_OF_USE_URL = 'https://docs.sky.money/legal/skybase-international/terms-of-use';
 export const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal/skybase-international/privacy-policy';
+
+/** The "Learn more in the User Risk Documentation." target shared by every product About section. */
+export const USER_RISKS_URL = 'https://docs.sky.money/user-risks';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // Deprecated Seal Engine (LockstakeEngine v1, MKR). The UI was removed; this address backs the

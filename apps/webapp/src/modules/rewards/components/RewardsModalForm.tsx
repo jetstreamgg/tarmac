@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { type Token, useNetworkFee } from '@/hooks';
+import { type Token } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
@@ -13,8 +13,8 @@ import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useRewardsLaunch, type RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
@@ -25,10 +25,11 @@ import {
   buildRewardsWithdrawModalRows,
   buildRewardsWithdrawReviewRows
 } from './rewardsModalRows';
+import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
 export type { RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
-
-const NO_VALUE = '–';
 
 const formatUsd = (value: number) => `$${formatNumber(value, { maxDecimals: 2 })}`;
 
@@ -74,7 +75,6 @@ export function RewardsModalForm({
   preset?: RewardsModalPreset;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { i18n } = useLingui();
 
   const form = useRewardsTransactionForm({ flow, contractAddress, supplyToken, preset });
@@ -85,7 +85,9 @@ export function RewardsModalForm({
     value,
     amount,
     available,
+    availableKnown,
     position,
+    positionKnown,
     isZero,
     insufficient,
     amountReady,
@@ -96,37 +98,15 @@ export function RewardsModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, calls, isBatch } = useRewardsLaunch(engineParams);
+  const { execute, steps, prepared, error, calls, isBatch } = useRewardsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
+  const errorMessage = enginePrepareErrorMessage(prepared, error);
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
-    calls,
-    chainId,
-    shouldUseBatch: isBatch,
-    enabled: amountReady
-  });
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
 
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
-  // every render, so depending on its identity would give the review breakdown a
-  // new identity every render — and the live push that carries it would re-enter
-  // the provider on each of its re-renders (the update loop the modal forms guard
-  // against). Same field-by-field list the savings form keeps.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
-    [
-      networkFee?.formatted,
-      networkFee?.batchSaving,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.canBundle,
-      bundleState.promoVisible
-    ]
-  );
-
-  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
   const rateValue = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
 
   // Position/earnings deltas from the parsed engine `amount` (not the raw input)
@@ -147,7 +127,8 @@ export function RewardsModalForm({
     hasAmount: !isZero,
     earningsBefore: earnings(positionUsd),
     earningsAfter: earnings(positionAfterUsd),
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: feeCell.fee?.formatted ?? NO_VALUE,
+    positionLoading: isConnected && !positionKnown
   };
   const rows = isSupply
     ? buildRewardsSupplyModalRows({ ...entryInput, rewardsIn: rewardTokenSymbol })
@@ -163,7 +144,7 @@ export function RewardsModalForm({
       productToken: rewardTokenSymbol ?? supplyToken.symbol,
       rate: rateValue,
       network: networkName,
-      networkFee: networkFee?.formatted ?? NO_VALUE
+      networkFee: feeCell.fee?.formatted ?? NO_VALUE
     };
     const reviewRows = isSupply
       ? buildRewardsSupplyReviewRows({
@@ -199,7 +180,6 @@ export function RewardsModalForm({
     flow,
     transactionScreenContent,
     feeCell,
-    networkFee,
     i18n
   ]);
 
@@ -229,6 +209,7 @@ export function RewardsModalForm({
     sessionId,
     execute,
     confirmDisabled: disabled,
+    errorMessage,
     transactionContent,
     transactionScreenContent,
     steps,
@@ -251,7 +232,7 @@ export function RewardsModalForm({
         balance={
           <>
             <Trans>Balance</Trans>:{' '}
-            {isConnected
+            {isConnected && availableKnown
               ? formatNumber(parseFloat(formatUnits(available, decimals)), { maxDecimals: 2 })
               : NO_VALUE}
           </>
@@ -274,7 +255,7 @@ export function RewardsModalForm({
 
       <ModalSummaryGrid rows={toGridCells(rows, 'rewards-modal-row', feeCell)} dividerClassName="h-8" />
 
-      {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

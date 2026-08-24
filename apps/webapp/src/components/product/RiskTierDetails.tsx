@@ -32,7 +32,7 @@ import { withdrawalWording } from './withdrawalAvailability';
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
 // decision — the comp treats it as editorial content, not product data.
-export const RISK_LEARN_MORE_URL = 'https://docs.sky.money';
+export const RISK_LEARN_MORE_URL = 'https://docs.sky.money/user-risks';
 
 /**
  * The severity presentation per tier (1036:201215): display name + scale.
@@ -76,7 +76,7 @@ const RISK_PROFILE_DETAILS: Record<
   },
   rewards: {
     description: (
-      <Trans>Supply directly to Sky Protocol and earn rewards. Reward rates vary with emissions.</Trans>
+      <Trans>Supply directly to Sky Protocol to receive rewards. Reward rates vary with emissions.</Trans>
     ),
     exposureTokens: ['USDS'],
     liquidationRisk: <Trans>None</Trans>
@@ -84,7 +84,7 @@ const RISK_PROFILE_DETAILS: Record<
   'rewards-sky': {
     description: (
       <Trans>
-        Supply to Sky Protocol and earn SKY tokens. The reward rate is set by Sky Protocol governance and
+        Supply to Sky Protocol to receive SKY tokens. The reward rate is set by Sky Protocol governance and
         distributed proportionally to the supplied USDS.
       </Trans>
     ),
@@ -124,20 +124,15 @@ const RISK_PROFILE_DETAILS: Record<
   'vault-flagship': {
     description: (
       <Trans>
-        Deployed on Morpho, with a conservative allocation and around 80% of liquidity available for instant
-        withdrawal. Returns vary depending on market utilization.
+        Vault deployed on Morpho, with a conservative allocation and around 80% of liquidity available for
+        instant withdrawal.
       </Trans>
     ),
     exposureTokens: ['cbBTC', 'wstETH', 'WETH', 'PT-sUSDS'],
     liquidationRisk: <Trans>None</Trans>
   },
   'vault-usdt-savings': {
-    description: (
-      <Trans>
-        Deployed on Morpho with a single exposure to sUSDS collateralized debt. Returns vary depending on
-        market utilization.
-      </Trans>
-    ),
+    description: <Trans>Vault deployed on Morpho with a single exposure to sUSDS collateralized debt.</Trans>,
     exposureTokens: ['sUSDS'],
     liquidationRisk: <Trans>None</Trans>
   },
@@ -145,8 +140,8 @@ const RISK_PROFILE_DETAILS: Record<
     // PLACEHOLDER — this vault has no row in the APP-396 risk sheet.
     description: (
       <Trans>
-        Supply USDT and earn savings powered by Sky Protocol, with instant liquidity. Returns vary with the
-        Sky Savings Rate.
+        Supply USDT to access savings powered by Sky Protocol, with instant liquidity. The rate tracks the Sky
+        Savings Rate and is variable.
       </Trans>
     ),
     exposureTokens: ['sUSDS'],
@@ -154,10 +149,7 @@ const RISK_PROFILE_DETAILS: Record<
   },
   'vault-risk-capital': {
     description: (
-      <Trans>
-        Deployed on Morpho, with a single exposure to stUSDS collateral. Note stUSDS risks, including SKY
-        price volatility and potential bad debt. Returns vary depending on market utilization.
-      </Trans>
+      <Trans>Vault deployed on Morpho, with a single exposure to stUSDS collateralized debt.</Trans>
     ),
     exposureTokens: ['stUSDS', 'SKY'],
     liquidationRisk: <Trans>None</Trans>

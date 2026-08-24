@@ -1,12 +1,10 @@
 import { useMemo } from 'react';
-import type { Call } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
   type Token,
   TOKENS,
   useBatchVaultDeposit,
-  useIsBatchSupported,
   useTokenAllowance,
   useVaultRedeem,
   useVaultWithdraw,
@@ -14,7 +12,7 @@ import {
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 
 export type VaultLaunchFlow = 'supply' | 'withdraw';
 
@@ -31,20 +29,7 @@ export interface VaultEngineParams {
   shares?: bigint;
 }
 
-export interface UseVaultLaunchResult {
-  /** Fires the routed engine call directly (txCallbacks already spread in). */
-  execute: () => void;
-  /** Step labels for the configured flow, matching the engine's call count. */
-  steps: string[];
-  /** Whether the routed engine hook is ready to execute. */
-  prepared: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  /** The routed engine's calls, for estimating the flow's network fee. */
-  calls: Call[];
-  /** Whether those calls go out bundled — the batch costs less than the sequence. */
-  isBatch: boolean;
-}
+export type UseVaultLaunchResult = EngineLaunchResult;
 
 /**
  * The seam between the redesigned vault modal and the (unmodified) ERC-4626
@@ -71,12 +56,7 @@ export function useVaultLaunch({
   const { address } = useConnection();
   const chainId = useChainId();
 
-  // Honour the user's batch toggle: bundle approve+deposit into one EIP-5792 call
-  // only when opted in AND supported. useTransactionFlow additionally gates on
-  // calls.length > 1, so a no-approval supply stays a single signature.
-  const [batchEnabled] = useBatchToggle();
-  const { data: batchSupported } = useIsBatchSupported();
-  const shouldUseBatch = !!batchEnabled && !!batchSupported;
+  const shouldUseBatch = useShouldUseBatch();
 
   const isSupply = flow === 'supply';
   const assetAddress = assetToken.address[chainId];
@@ -132,13 +112,5 @@ export function useVaultLaunch({
     return [t`Supply ${symbol}`];
   }, [isSupply, needsReset, needsAllowance, symbol]);
 
-  return {
-    execute: activeHook.execute,
-    steps,
-    prepared: activeHook.prepared,
-    isLoading: activeHook.isLoading,
-    error: activeHook.error,
-    calls: activeHook.calls ?? [],
-    isBatch: !!activeHook.isBatch
-  };
+  return toLaunchResult(activeHook, steps);
 }

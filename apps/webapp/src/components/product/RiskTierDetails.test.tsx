@@ -46,7 +46,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(screen.getByText('Instant')).toBeTruthy();
 
     const learnMore = screen.getByRole('link', { name: /Learn more about risk/ });
-    expect(learnMore.getAttribute('href')).toBe('https://docs.sky.money');
+    expect(learnMore.getAttribute('href')).toBe('https://docs.sky.money/user-risks');
     expect(learnMore.getAttribute('target')).toBe('_blank');
   });
 
@@ -142,7 +142,7 @@ describe('RiskTierDetailsTrigger — mobile bottom panel (486:21797)', () => {
     expect(screen.getByText('Conservative')).toBeTruthy();
     expect(screen.getByText('Withdrawals')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Learn more about risk/ }).getAttribute('href')).toBe(
-      'https://docs.sky.money'
+      'https://docs.sky.money/user-risks'
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Close/ }));

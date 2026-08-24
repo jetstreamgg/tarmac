@@ -12,7 +12,9 @@ import {
 } from '@/hooks';
 import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardError, PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   ProductActions,
   ProductPositionCard,
@@ -23,8 +25,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { merklAdapter, useClaimRewardsModal } from '@/modules/claim';
 import { useVaultModal } from '../hooks/useVaultModal';
 import { VaultSupplyCard } from './VaultSupplyCard';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * Position-aware action card for the vault product page (ProductDetailTemplate
@@ -51,10 +52,13 @@ export function VaultPositionCard({
   const { isConnected } = useConnection();
   const decimals = getTokenDecimals(assetToken, chainId);
 
-  const { data: marketData } = useVaultMarketData({ provider: 'morpho', vaultAddress });
+  const { data: marketData, isLoading: rateLoading } = useVaultMarketData({
+    provider: 'morpho',
+    vaultAddress
+  });
   const netRate = marketData?.rate?.netRate;
 
-  const { data: vaultData, mutate: mutateVault } = useErc4626VaultData({ vaultAddress });
+  const { data: vaultData, error: vaultError, mutate: mutateVault } = useErc4626VaultData({ vaultAddress });
 
   // Rewards read through the same claim adapter the "Claim rewards" modal uses,
   // so the amount on this card is by construction the amount the modal quotes
@@ -80,6 +84,17 @@ export function VaultPositionCard({
   // `provider` drives the analytics module name — omitting it silently fell back
   // to the form's 'morpho' default and mislabelled the Sky-provider vaults.
   const modalArgs = { vaultAddress, assetToken, vaultName, netRate, provider };
+
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position. A failed
+  // read settles on the error card rather than pulsing forever.
+  if (isConnected && vaultData === undefined) {
+    return vaultError ? (
+      <PositionCardError testId="vault-position-card-error" />
+    ) : (
+      <PositionCardSkeleton testId="vault-position-card-skeleton" />
+    );
+  }
 
   const userAssets = vaultData?.userAssets ?? 0n;
   const hasPosition = userAssets > 0n;
@@ -133,15 +148,23 @@ export function VaultPositionCard({
               {assetIcon}
               {formatNumber(positionValue, { maxDecimals: 2 })}
             </ProductStat>
-            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
-              <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
-              {formatNumber(projectedEarnings, { maxDecimals: 2 })}
-              {assetIcon}
+            <ProductStat label={<Trans>Est. 1Y yield (at current rate)</Trans>}>
+              {netRate === undefined && rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : netRate === undefined ? (
+                NO_VALUE
+              ) : (
+                <>
+                  <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+                  {formatNumber(projectedEarnings, { maxDecimals: 2 })}
+                  {assetIcon}
+                </>
+              )}
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
             {/* No cost-basis source yet → dash (PRD: unavailable values read "–"). */}
-            <ProductStat label={<Trans>Already earned</Trans>}>
+            <ProductStat label={<Trans>Accrued to date</Trans>}>
               <span className="text-fgSecondary">{NO_VALUE}</span>
             </ProductStat>
             <ProductStat label={<Trans>Claimable rewards</Trans>}>

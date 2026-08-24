@@ -4,7 +4,6 @@ import { useOverallSkyData, useTokenBalances, type TokenItem } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isL2ChainId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import {
-  NO_VALUE,
   ProductBadge,
   ProductFigure,
   ProductStat,
@@ -21,6 +20,7 @@ import {
   L2_SUPPLY_ORIGINS,
   type OriginSymbol
 } from './SavingsOriginSelect';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * No-position Savings entry card (Figma: undeposited state). Shown when the user
@@ -108,7 +108,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
       }
       title={
         <Trans>
-          Supply {supplyTokens} and earn {rate} APY
+          Supply {supplyTokens} at {rate} APY
         </Trans>
       }
       description={

@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react';
-import { useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import {
   BP,
-  productNetworks,
   useBreakpointIndex,
   useOverallSkyData,
+  useProductNetworks,
   useSavingsData,
   useSkySavingsRateHistoricData
 } from '@/hooks';
@@ -18,28 +17,23 @@ import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
-import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import {
+  ProductDetailTemplate,
+  ProductDetailRow,
+  DetailValue
+} from '@/components/product/ProductDetailTemplate';
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
 import { SavingsTransactionsTable } from './SavingsTransactionsTable';
 import { SavingsTransactionsFilter, SavingsTxFilter } from './SavingsTransactionsFilter';
-
-const NO_VALUE = '–';
+import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
 
 export function SavingsProductDetail() {
   // The networks Savings is live on among the configured chains (which include
   // the Tenderly fork in dev mode) — scopes the header's network switcher to
   // chains where the module is available. Address-bound consumers should also
   // pass their address map here, matching buildEarnProducts.
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.SAVINGS_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.SAVINGS_INTENT);
 
   // Position-awareness (same derivation as SavingsPositionCard; the duplicate
   // useSavingsData() call is deduped by TanStack Query). The has-position page
@@ -55,23 +49,46 @@ export function SavingsProductDetail() {
   const isMobile = bpi < BP.md;
   const showTxFilter = hasPosition || isMobile;
 
-  const { data: overall } = useOverallSkyData();
+  const { data: overall, isLoading: overallLoading } = useOverallSkyData();
   // "6M Rate" = trailing 6-month average APY. 🔶 confirm semantics with design
   // (trailing average vs forward estimate vs rate-as-of-6-months-ago).
-  const { data: rateHistoric } = useSkySavingsRateHistoricData({ daysAgo: 180 });
+  const { data: rateHistoric, isLoading: rateHistoricLoading } = useSkySavingsRateHistoricData({
+    daysAgo: 180
+  });
 
-  const currentRate = overall?.skySavingsRatecRate
-    ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
-    : NO_VALUE;
+  const currentRate = (
+    <DetailValue
+      loading={overallLoading}
+      value={
+        overall?.skySavingsRatecRate
+          ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
+          : undefined
+      }
+    />
+  );
   const sixMonthRate = useMemo(() => {
-    if (!rateHistoric || rateHistoric.length === 0) return NO_VALUE;
-    const avg = rateHistoric.reduce((sum, d) => sum + parseFloat(d.rate), 0) / rateHistoric.length;
-    return formatDecimalPercentage(avg);
-  }, [rateHistoric]);
-  const tvl = overall?.skySavingsRateTvl
-    ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl))}`
-    : NO_VALUE;
-  const users = overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers) : NO_VALUE;
+    const avg =
+      rateHistoric && rateHistoric.length > 0
+        ? formatDecimalPercentage(
+            rateHistoric.reduce((sum, d) => sum + parseFloat(d.rate), 0) / rateHistoric.length
+          )
+        : undefined;
+    return <DetailValue loading={rateHistoricLoading} value={avg} />;
+  }, [rateHistoric, rateHistoricLoading]);
+  const tvl = (
+    <DetailValue
+      loading={overallLoading}
+      value={
+        overall?.skySavingsRateTvl ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl))}` : undefined
+      }
+    />
+  );
+  const users = (
+    <DetailValue
+      loading={overallLoading}
+      value={overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers) : undefined}
+    />
+  );
 
   // About copy comes from the shared savings banner (id 'susds'), parsed for its
   // inline tooltip link — the same source AboutSUsds and other surfaces use.
@@ -150,7 +167,7 @@ export function SavingsProductDetail() {
       details={details}
       about={{
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
-        learnMoreHref: 'https://docs.sky.money'
+        learnMoreHref: USER_RISKS_URL
       }}
       transactions={<SavingsTransactionsTable filter={showTxFilter ? txFilter : 'all'} />}
       transactionsAction={

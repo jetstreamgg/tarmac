@@ -9,8 +9,8 @@ import { StakeCardMode } from '../hooks/useStakeManageFlowState';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { StakeManageCard, StakeManageStatCell, StakeManageStatDivider } from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
+import { NO_VALUE } from '@/lib/constants';
 
-const NO_VALUE = '–';
 const WAD = 10n ** 18n;
 
 /**
@@ -30,10 +30,13 @@ export function StakeManageStakeCard({
   walletBalance,
   walletBalanceLoading,
   stakedAmount,
+  stakedAmountLoading,
   rewardsRate,
+  rateLoading,
   estCurrentSky,
   estNextSky,
   minStakeToBorrow,
+  minStakeToBorrowLoading,
   error
 }: {
   mode: StakeCardMode;
@@ -45,16 +48,23 @@ export function StakeManageStakeCard({
   walletBalance: bigint | undefined;
   walletBalanceLoading: boolean;
   stakedAmount: bigint | undefined;
+  /** The vault read backing `stakedAmount` is in flight — the withdraw base holds a skeleton. */
+  stakedAmountLoading?: boolean;
   rewardsRate: number | null;
+  /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton. */
+  rateLoading?: boolean;
   /** Current est. annual rewards (staked × rate), in SKY. */
   estCurrentSky: bigint | null;
   /** Simulated est. annual rewards once an amount is staged; null = no delta. */
   estNextSky: bigint | null;
   minStakeToBorrow: bigint | undefined;
+  /** The simulation backing `minStakeToBorrow` is in flight. */
+  minStakeToBorrowLoading?: boolean;
   error?: string;
 }) {
   const isStake = mode === 'stake';
   const base = (isStake ? walletBalance : stakedAmount) ?? 0n;
+  const baseLoading = isStake ? walletBalanceLoading : !!stakedAmountLoading;
 
   const sliderPercent = base > 0n ? Math.min(100, Number((amount * 100n) / base)) : 0;
   const onSliderChange = (percent: number) => {
@@ -107,7 +117,7 @@ export function StakeManageStakeCard({
                   alike — a bare trailing space would double up with the gap
                   when the skeleton renders. */}
               <span>{isStake ? t`Balance:` : t`Staked:`}</span>
-              {isStake && walletBalanceLoading ? <Skeleton className="h-4 w-24" /> : formatBigInt(base)}
+              {baseLoading ? <Skeleton className="h-4 w-24" /> : formatBigInt(base)}
             </span>
           }
         />
@@ -145,6 +155,8 @@ export function StakeManageStakeCard({
                   {formatBigInt(minStakeToBorrow)}
                   {skyIcon}
                 </>
+              ) : minStakeToBorrowLoading ? (
+                <Skeleton className="h-4 w-14" />
               ) : (
                 NO_VALUE
               )
@@ -154,12 +166,26 @@ export function StakeManageStakeCard({
           <StakeManageStatDivider />
           <StakeManageStatCell
             label={<Trans>SKY Rewards rate</Trans>}
-            current={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : NO_VALUE}
+            current={
+              rewardsRate !== null ? (
+                formatDecimalPercentage(rewardsRate)
+              ) : rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
           />
           <StakeManageStatDivider />
           <StakeManageStatCell
             label={<Trans>Est. annual rewards</Trans>}
-            current={formatSky(estCurrentSky)}
+            current={
+              estCurrentSky === null && (rateLoading || stakedAmountLoading) ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                formatSky(estCurrentSky)
+              )
+            }
             next={
               estNextSky !== null && amount > 0n && estNextSky !== estCurrentSky
                 ? formatSky(estNextSky)

@@ -1,5 +1,5 @@
 import { useId, useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -7,8 +7,6 @@ import { useLingui } from '@lingui/react';
 import { StUsdsProviderType, TOKENS, stUsdsAddress } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
-import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { useNetworkFee } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
@@ -26,10 +24,12 @@ import { stUsdsPrepareErrorMessage } from '../lib/prepareErrorMessage';
 import { PRICE_IMPACT_HIGH_THRESHOLD_BPS, PRICE_IMPACT_WARNING_THRESHOLD_BPS } from '../lib/providerNotice';
 import { StUsdsProviderNotice } from './StUsdsProviderNotice';
 import { buildStUsdsEntryRows, buildStUsdsReviewRows } from './stUsdsModalRows';
+import { NO_VALUE } from '@/lib/constants';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
 export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
-const NO_VALUE = '–';
 const DECIMALS = 18;
 
 // Decision-12 standard: amounts pin two decimals (hero + grid + balance line).
@@ -62,7 +62,6 @@ export function StUsdsModalForm({
   preset?: StUsdsModalPreset;
 }) {
   const chainId = useChainId();
-  const chains = useChains();
   const { i18n } = useLingui();
 
   const form = useStUsdsTransactionForm({ flow, preset });
@@ -73,6 +72,7 @@ export function StUsdsModalForm({
     value,
     amount,
     available,
+    availableKnown,
     isZero,
     insufficient,
     blocked,
@@ -97,29 +97,7 @@ export function StUsdsModalForm({
   const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const { data: networkFee, error: networkFeeError } = useNetworkFee({
-    calls,
-    shouldUseBatch: isBatch,
-    enabled: amountReady
-  });
-
-  const bundleState = useBundleFeeState(calls.length, networkFee, !!networkFeeError);
-  // Scalar deps, not the objects: `useBundleFeeState` returns a fresh object
-  // every render, so depending on its identity would give the review breakdown a
-  // new identity every render — and the live push that carries it would re-enter
-  // the provider on each of its re-renders (the update loop the modal forms guard
-  // against). Same field-by-field list the convert launch hook keeps.
-  const feeCell = useMemo(
-    () => ({ fee: networkFee, state: bundleState }),
-    [
-      networkFee?.formatted,
-      networkFee?.batchSaving,
-      bundleState.ready,
-      bundleState.settled,
-      bundleState.canBundle,
-      bundleState.promoVisible
-    ]
-  );
+  const feeCell = useModalFeeCell({ calls, shouldUseBatch: isBatch, enabled: amountReady });
 
   const disabled =
     !amountReady ||
@@ -131,7 +109,7 @@ export function StUsdsModalForm({
   const impactCheckboxId = useId();
   const riskCheckboxId = useId();
 
-  const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
+  const networkName = useNetworkName(chainId);
   const rateDisplay = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
   const projectEarnings = (units: bigint) =>
     rate !== undefined
@@ -153,7 +131,7 @@ export function StUsdsModalForm({
     earningsBefore: projectEarnings(position),
     earningsAfter: projectEarnings(positionAfter),
     hasAmount: !isZero,
-    networkFee: networkFee?.formatted ?? NO_VALUE
+    networkFee: feeCell.fee?.formatted ?? NO_VALUE
   });
 
   // Review breakdown: the from→to hero the wallet screen also draws, over the
@@ -189,7 +167,7 @@ export function StUsdsModalForm({
                 routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
                 withdrawal: i18n._(withdrawalWording('stusds', flow)),
                 network: networkName,
-                networkFee: networkFee?.formatted ?? NO_VALUE
+                networkFee: feeCell.fee?.formatted ?? NO_VALUE
               }),
               'stusds-modal-row',
               feeCell
@@ -220,7 +198,6 @@ export function StUsdsModalForm({
       isCurveRoute,
       networkName,
       feeCell,
-      networkFee,
       impactLapsed,
       impactPercent
     ]
@@ -294,7 +271,7 @@ export function StUsdsModalForm({
         balance={
           <>
             {isSupply ? <Trans>Balance</Trans> : <Trans>Withdrawable</Trans>}:{' '}
-            {isConnected ? formatUsds(available) : NO_VALUE}
+            {isConnected && availableKnown ? formatUsds(available) : NO_VALUE}
           </>
         }
         onPercent={setPercentAmount}
@@ -313,7 +290,7 @@ export function StUsdsModalForm({
 
         <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row', feeCell)} dividerClassName="h-8" />
 
-        {bundleState.promoVisible && <BundleSavingsPromo saving={networkFee!.batchSaving!} />}
+        {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
 
         {needsImpactAcknowledgement && (
           <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">

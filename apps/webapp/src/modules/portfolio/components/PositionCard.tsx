@@ -12,6 +12,7 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { IconboxStatus } from '@/components/ui/iconbox';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { productStatusType } from '@/components/product/productVisuals';
@@ -93,9 +94,13 @@ export function PositionCard({
             className="flex-1"
             label={<Trans>Rate</Trans>}
             value={
-              <span className={cn(statValue, 'text-fgPrimary')}>
-                {formatDecimalPercentage(position.rate ?? 0)}
-              </span>
+              position.rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                <span className={cn(statValue, 'text-fgPrimary')}>
+                  {formatDecimalPercentage(position.rate ?? 0)}
+                </span>
+              )
             }
           />
         </div>
@@ -103,19 +108,23 @@ export function PositionCard({
           {/* TODO(D1): Already earned needs a cost-basis source (no hook yet). */}
           <Stat
             className="w-[112px]"
-            label={<Trans>Already earned</Trans>}
+            label={<Trans>Accrued to date</Trans>}
             value={<span className={cn(statValue, 'text-fgSecondary')}>TODO</span>}
           />
           <StatDivider />
           <Stat
             className="flex-1"
-            label={<Trans>1Y projected earnings</Trans>}
+            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
             value={
-              <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>
-                {/* 12px at every tier — both comps draw it that size. */}
-                <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
-                {formatUsd(projected)}
-              </span>
+              position.rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>
+                  {/* 12px at every tier — both comps draw it that size. */}
+                  <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+                  {formatUsd(projected)}
+                </span>
+              )
             }
           />
         </div>

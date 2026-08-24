@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { useChainId } from 'wagmi';
 import { ArrowRight } from 'lucide-react';
 import type { NetworkFeeData } from '@/hooks';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
@@ -53,6 +54,8 @@ export type ModalGridCellHints = {
   action?: React.ReactNode;
   /** Interactive element after the label (the upgrade Penalty info popover). */
   labelAction?: React.ReactNode;
+  /** Draw the skeleton in place of the value while its underlying read is unresolved. */
+  loading?: boolean;
 };
 
 /**
@@ -82,6 +85,68 @@ export const singleOrDelta = (
   hasAmount: boolean
 ): ModalGridCell =>
   hasAmount ? { ...base, kind: 'delta', before, after } : { ...base, kind: 'single', value: before };
+
+/**
+ * Factories for the cells every module's row builders repeat. Emitting through
+ * these keeps each label spelled once — NETWORK_FEE_LABEL especially, which
+ * `toGridCells` keys the live estimate on, so a hand-typed 'Network fee'
+ * that drifts would silently unhook a module's fee cell.
+ */
+export const networkCell = (network: string, networkChainId?: number): ModalGridCell => ({
+  kind: 'single',
+  label: 'Network',
+  value: network,
+  network: true,
+  networkChainId
+});
+
+export const networkFeeCell = (networkFee: string): ModalGridCell => ({
+  kind: 'single',
+  label: NETWORK_FEE_LABEL,
+  value: networkFee
+});
+
+/** Rate cell — the label varies per module ('Savings rate' / 'Rate' / 'Fixed rate'), the accent per product. */
+export const rateCell = (label: string, rate: string, accent?: 'savings' | 'morpho'): ModalGridCell => ({
+  kind: 'single',
+  label,
+  value: rate,
+  rateAccent: accent
+});
+
+/** Review Product cell: display name + 12px token icon inside the ringed iconbox. */
+export const productCell = (
+  product: string,
+  token: string,
+  ring: 'default' | 'morpho' | 'pendle'
+): ModalGridCell => ({
+  kind: 'single',
+  label: 'Product',
+  value: product,
+  token,
+  productIcon: ring
+});
+
+export const withdrawalCell = (withdrawal: string): ModalGridCell => ({
+  kind: 'single',
+  label: 'Withdrawal',
+  value: withdrawal
+});
+
+/**
+ * The projected-yield label, shared by the review cells below and the entry
+ * grids' `singleOrDelta` pairs so the wording is spelled once.
+ */
+export const EST_EARNINGS_LABEL = 'Est. 1Y yield (at current rate)';
+
+/** Review "Est. 1Y yield" cell: green trend glyph, optional trailing denomination icon. */
+export const estEarningsTrendCell = (value: string, trailingToken?: string): ModalGridCell => ({
+  kind: 'single',
+  label: EST_EARNINGS_LABEL,
+  value,
+  trend: true,
+  trailingToken
+});
 
 /** The savings-green treatment on a value's trailing "%" (Figma gradient-savings, per WalletDrawerAssets). */
 function RatePercent({ value }: { value: string }) {
@@ -160,6 +225,10 @@ function CellToken({ symbol, ring }: { symbol: string; ring?: 'default' | 'morph
 
 /** Renders one grid cell's value: optional icons, then a single value or the before→after delta. */
 export function CellValue({ cell }: { cell: ModalGridCell }) {
+  if (cell.loading) {
+    return <Skeleton className="h-4 w-16 rounded" data-testid="cell-loading" />;
+  }
+
   const icon = cell.network ? (
     <NetworkIcon chainId={cell.networkChainId} />
   ) : cell.trend ? (
@@ -239,6 +308,8 @@ function LabelBadge({ text }: { text: string }) {
 export type ModalGridFee = {
   fee?: NetworkFeeData;
   state: BundleFeeState;
+  /** `useNetworkFee().isLoading` — draws the skeleton while the estimate is in flight. */
+  loading?: boolean;
 };
 
 /** Maps builder rows to `ModalSummaryGrid` cells; test ids are `${testIdPrefix}-${label}`. */
@@ -267,7 +338,7 @@ export const toGridCells = (
         ),
         testId: `${testIdPrefix}-${cell.label}`,
         content: isFeeCell ? (
-          <NetworkFeeValue fee={networkFee.fee} state={networkFee.state} />
+          <NetworkFeeValue fee={networkFee.fee} state={networkFee.state} loading={networkFee.loading} />
         ) : (
           <CellValue cell={cell} />
         )

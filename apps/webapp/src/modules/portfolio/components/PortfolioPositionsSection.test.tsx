@@ -102,6 +102,7 @@ const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   intent: over.kind === 'savings' ? Intent.SAVINGS_INTENT : Intent.VAULTS_INTENT,
   amountUsd: 100,
   rate: 0.05,
+  rateLoading: false,
   color: '#000',
   hoverColor: '#000',
   share: 0.5,
@@ -123,6 +124,7 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
   totalSupplied: 200,
   projected1Y: 0,
   avgRate: 0,
+  ratesLoading: false,
   activePositions: positions.length,
   suppliedTokens: [],
   networksWithPositions: [1]
@@ -247,11 +249,13 @@ describe('PositionCard — DS comp conformance', () => {
     expect(within(card).queryByText('APY')).toBeNull();
   });
 
-  it('orders the stats My position → Rate → Already earned → 1Y projected earnings', () => {
+  it('orders the stats My position → Rate → Accrued to date → Projected 1Y yield (at current rate)', () => {
     renderSection([VAULT]);
     const text = screen.getAllByTestId('position-card')[0].textContent ?? '';
-    expect(text.indexOf('My position')).toBeLessThan(text.indexOf('Already earned'));
-    expect(text.indexOf('Already earned')).toBeLessThan(text.indexOf('1Y projected earnings'));
+    expect(text.indexOf('My position')).toBeLessThan(text.indexOf('Accrued to date'));
+    expect(text.indexOf('Accrued to date')).toBeLessThan(
+      text.indexOf('Projected 1Y yield (at current rate)')
+    );
   });
 
   it('shows a single-chain network badge with the chain name', () => {

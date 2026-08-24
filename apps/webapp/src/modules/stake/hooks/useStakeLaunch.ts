@@ -6,7 +6,6 @@ import { i18n } from '@lingui/core';
 import {
   useBatchStakeMulticall,
   useCurrentUrnIndex,
-  useIsBatchSupported,
   useRewardContractTokens,
   useSkyPrice,
   useStakeSkyAllowance,
@@ -15,22 +14,22 @@ import {
 import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 
 /**
  * Confirm-modal step labels, derived from the calldata set — not from tx count
  * (2 txs may render 4 steps). Decisions recorded on APP-311:
  *  - A-Q3: the delegate selection IS shown as a step (the engine bundles
  *    `selectVoteDelegate` into the multicall; hiding it under-reports actions).
- *  - The automatic `selectFarm` call is folded into "Stake SKY" — it is a
- *    default the user never chose (A-Q2 pending product), and no confirm design
- *    shows it.
+ *  - The `selectFarm` call is folded into "Stake SKY" — no confirm design shows
+ *    it as its own step; the picked farm is surfaced by the summary's reward
+ *    row instead (APP-516).
  */
 export function buildStakeOpenSteps({
   needsSkyAllowance,
@@ -127,16 +126,17 @@ export function useStakeLaunch({
   const { data: skyAllowance } = useStakeSkyAllowance();
   const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
 
-  const [batchEnabled] = useBatchToggle();
-  const { data: batchSupported } = useIsBatchSupported();
-  const shouldUseBatch = !!batchEnabled && !!batchSupported && (needsSkyAllowance || calldata.length > 1);
+  const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);
 
   const engine = useBatchStakeMulticall({
     calldata,
     skyAmount: lockAmount,
     usdsAmount,
     shouldUseBatch,
-    enabled: enabled && calldata.length > 0,
+    // The urn-index read must have resolved: calldata built on the 0n fallback
+    // targets urn 0 — an existing user's live position. The engine's open()
+    // index assertion would revert it in simulation, but don't rely on that.
+    enabled: enabled && currentUrnIndex !== undefined && calldata.length > 0,
     ...txCallbacks
   });
 

@@ -26,8 +26,7 @@ import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import { lastStakeUrnBark, useStakeUserPositions } from '../hooks/useStakeUserPositions';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 function StatCell({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
@@ -159,7 +158,7 @@ export function LiquidationPostMortemModal({
     chainId,
     enabled: Boolean(urnAddress && rewardContracts?.length)
   });
-  const { data: prices } = usePrices();
+  const { data: prices, isLoading: pricesLoading } = usePrices();
   const { priceString: skyPriceString } = useSkyPrice();
   const skyPriceUsd = skyPriceString ? parseFloat(skyPriceString) : null;
 
@@ -293,12 +292,16 @@ export function LiquidationPostMortemModal({
                     />
                     {formatStakeAmount(claims[0].amount)}
                   </span>
-                  <span className="text-textSecondary text-xs">{formatUsd(claims[0].amountUsd)}</span>
+                  {pricesLoading ? (
+                    <Skeleton className="h-3.5 w-12" />
+                  ) : (
+                    <span className="text-textSecondary text-xs">{formatUsd(claims[0].amountUsd)}</span>
+                  )}
                 </>
               ) : (
                 <>
                   <span className="text-text font-circle flex items-center gap-2 text-3xl font-medium tracking-tight">
-                    {formatUsd(claimableUsd)}
+                    {pricesLoading ? <Skeleton className="h-8 w-24" /> : formatUsd(claimableUsd)}
                     <IconStack size={20}>
                       {claims.map(claim => (
                         <TokenIcon

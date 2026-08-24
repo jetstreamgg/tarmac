@@ -33,7 +33,7 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     usePendleMarketsApiData: () => ({
-      data: { [MARKET.marketAddress]: { impliedApy: 0.0486, tvl: 1_650_000_000 } },
+      data: { [MARKET.marketAddress]: { impliedApy: 0.0486, liquidity: 1_650_000_000 } },
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
@@ -71,9 +71,9 @@ describe('PendleDetailChart', () => {
 
   it('plots the historical Fixed APY series in percent units, sliced to the timeframe', () => {
     hoisted.chartPoints = [
-      { timestampSec: NOW_SEC - 30 * DAY, impliedApy: 0.03, tvl: 1_000_000 }, // outside 1W
-      { timestampSec: NOW_SEC - 2 * DAY, impliedApy: 0.04, tvl: 2_000_000 },
-      { timestampSec: NOW_SEC - DAY, impliedApy: 0.045, tvl: 3_000_000 }
+      { timestampSec: NOW_SEC - 30 * DAY, impliedApy: 0.03, liquidity: 1_000_000 }, // outside 1W
+      { timestampSec: NOW_SEC - 2 * DAY, impliedApy: 0.04, liquidity: 2_000_000 },
+      { timestampSec: NOW_SEC - DAY, impliedApy: 0.045, liquidity: 3_000_000 }
     ];
 
     render(
@@ -88,12 +88,12 @@ describe('PendleDetailChart', () => {
     expect(data[0].date.getTime()).toBe((NOW_SEC - 2 * DAY) * 1000);
   });
 
-  it('skips a rate-less bucket in Rate mode but keeps it in TVL mode', () => {
+  it('skips a rate-less bucket in Rate mode but keeps it in Liquidity mode', () => {
     hoisted.chartPoints = [
-      { timestampSec: NOW_SEC - 3 * DAY, impliedApy: 0.04, tvl: 2_000_000 },
+      { timestampSec: NOW_SEC - 3 * DAY, impliedApy: 0.04, liquidity: 2_000_000 },
       // Served without a rate — plotting it would draw a false 0% dip.
-      { timestampSec: NOW_SEC - 2 * DAY, impliedApy: undefined, tvl: 2_500_000 },
-      { timestampSec: NOW_SEC - DAY, impliedApy: 0.045, tvl: 3_000_000 }
+      { timestampSec: NOW_SEC - 2 * DAY, impliedApy: undefined, liquidity: 2_500_000 },
+      { timestampSec: NOW_SEC - DAY, impliedApy: 0.045, liquidity: 3_000_000 }
     ];
 
     render(
@@ -105,10 +105,10 @@ describe('PendleDetailChart', () => {
     const rateData = hoisted.chartProps?.data as Array<{ value: number }>;
     expect(rateData.map(point => point.value)).toEqual([4, 4.5]);
 
-    act(() => (hoisted.chartProps?.onMetricChange as (value: string) => void)('tvl'));
+    act(() => (hoisted.chartProps?.onMetricChange as (value: string) => void)('liquidity'));
 
-    const tvlData = hoisted.chartProps?.data as Array<{ value: number }>;
-    expect(tvlData.map(point => point.value)).toEqual([2_000_000, 2_500_000, 3_000_000]);
+    const liquidityData = hoisted.chartProps?.data as Array<{ value: number }>;
+    expect(liquidityData.map(point => point.value)).toEqual([2_000_000, 2_500_000, 3_000_000]);
   });
 
   it('feeds the shared detail Chart with the live Fixed APY headline', () => {
@@ -123,6 +123,6 @@ describe('PendleDetailChart', () => {
     // Headline reads the canonical current rate (matches the Details grid).
     expect(hoisted.chartProps?.displayValue).toBeCloseTo(4.86);
     const metrics = hoisted.chartProps?.metrics as Array<{ value: string }>;
-    expect(metrics?.map(m => m.value)).toEqual(['rate', 'tvl']);
+    expect(metrics?.map(m => m.value)).toEqual(['rate', 'liquidity']);
   });
 });

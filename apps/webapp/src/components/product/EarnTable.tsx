@@ -1,6 +1,13 @@
 import { KeyboardEvent, ReactNode, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { AnimationLabels } from '@/modules/ui/animation/constants';
+import { rowCollapseAnimations, rowCollapseContainerAnimations } from '@/modules/ui/animation/presets';
+import {
+  ROW_SURFACE_TRANSITION_CLASSES,
+  useRowCollapseTransition
+} from '@/modules/ui/animation/useRowCollapse';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import type { EarnRiskProfileId } from '@/hooks';
@@ -70,6 +77,13 @@ export type EarnTableProps = {
   sort: EarnTableSort;
   onSortChange: (column: EarnTableColumn) => void;
   onRowSelect?: (id: string) => void;
+  /**
+   * Fires when a batch of filtered-out rows finishes its exit animation
+   * (AnimatePresence's onExitComplete, both tiers). Lets the caller hold a
+   * wrapper mounted through the collapse — correct at any animation speed,
+   * including prefers-reduced-motion's duration 0.
+   */
+  onRowsExitComplete?: () => void;
   /**
    * The "Products unavailable in the US" treatment (1036:201476): logos,
    * network/supply stacks and the risk pill drop to 50% opacity, the product
@@ -152,121 +166,147 @@ function TokenCell({ row, dimmed }: { row: EarnTableRowItem; dimmed?: boolean })
 function EarnCardList({
   rows,
   onRowSelect,
+  onRowsExitComplete,
   dimmed,
   testIdPrefix: tid = DEFAULT_TEST_ID_PREFIX
-}: Pick<EarnTableProps, 'rows' | 'onRowSelect' | 'dimmed' | 'testIdPrefix'>) {
+}: Pick<EarnTableProps, 'rows' | 'onRowSelect' | 'onRowsExitComplete' | 'dimmed' | 'testIdPrefix'>) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const collapseTransition = useRowCollapseTransition();
 
+  // A filtered-out card must not come back expanded (its exiting twin is a
+  // frozen element, so it still collapses from whatever was on screen).
+  if (expandedId !== null && !rows.some(row => row.id === expandedId)) setExpandedId(null);
+
+  // The 2px card gap is a margin on the card (not the container's gap) so a
+  // collapsing card takes its slit with it, and the first/last radii are
+  // index-driven with a radius transition so they glide onto the surviving
+  // edge card while an exiting one keeps its frozen corners — same recipe as
+  // the desktop table.
   return (
-    <div data-testid={`${tid}-opportunities-table`} className="flex w-full flex-col gap-0.5">
-      {rows.map((row, index) => {
-        const isExpanded = expandedId === row.id;
-        return (
-          <div
-            key={row.id}
-            data-testid={`${tid}-row-${row.id}`}
-            className={cn(
-              'bg-bgSecondary flex flex-col gap-6 p-5 backdrop-blur-[20px]',
-              index === 0 && 'rounded-t-3xl',
-              index === rows.length - 1 && 'rounded-b-3xl'
-            )}
-          >
-            <button
-              type="button"
-              data-testid={`${tid}-card-toggle-${row.id}`}
-              aria-expanded={isExpanded}
-              onClick={() => setExpandedId(isExpanded ? null : row.id)}
-              className="flex w-full items-center justify-between gap-3 text-left"
+    <div data-testid={`${tid}-opportunities-table`} className="flex w-full flex-col">
+      <AnimatePresence initial={false} onExitComplete={onRowsExitComplete}>
+        {rows.map((row, index) => {
+          const isExpanded = expandedId === row.id;
+          return (
+            <motion.div
+              key={row.id}
+              data-testid={`${tid}-row-${row.id}`}
+              className="overflow-hidden"
+              variants={rowCollapseAnimations}
+              initial={AnimationLabels.initial}
+              animate={AnimationLabels.animate}
+              exit={AnimationLabels.exit}
+              transition={collapseTransition}
             >
-              <TokenCell row={row} dimmed={dimmed} />
-              <span className="flex shrink-0 items-center gap-3">
-                <span className="flex flex-col items-end gap-1">
-                  <span className="font-graphik text-fgSecondary text-xs leading-[18px]">
-                    <Trans>Rate</Trans>
-                  </span>
-                  <span
-                    data-testid={`${tid}-card-rate-${row.id}`}
-                    className={cn(
-                      'font-circle text-fgPrimary text-xs leading-3.5 font-medium tracking-[-0.24px]',
-                      dimmed && 'text-fgTertiary'
-                    )}
-                  >
-                    <NumericValue value={row.rate} isLoading={row.isLoading} />
-                  </span>
-                </span>
-                <ChevronDown
-                  size={16}
-                  className={cn('text-fgSecondary transition-transform', isExpanded && 'rotate-180')}
-                  aria-hidden
-                />
-              </span>
-            </button>
-            {isExpanded && (
-              <>
-                <TransactionCardFieldGrid
-                  // Comp 486:22051 expanded grid: Label 6 values (the M5
-                  // transaction cards keep their Label 5 default).
-                  valueClassName={cn('text-xs leading-3.5 tracking-[-0.24px]', dimmed && 'text-fgTertiary')}
-                  fields={[
-                    ...(row.network
-                      ? [
-                          {
-                            label: <Trans>Network</Trans>,
-                            value: <Dim dimmed={dimmed}>{row.network}</Dim>
-                          }
-                        ]
-                      : []),
-                    {
-                      label: <Trans>Risk</Trans>,
-                      value: (
-                        <Dim dimmed={dimmed}>
-                          <RiskTierDetailsTrigger profile={row.riskProfile} />
-                        </Dim>
-                      )
-                    },
-                    {
-                      label: <Trans>Rate</Trans>,
-                      value: <NumericValue value={row.rate} isLoading={row.isLoading} />
-                    },
-                    {
-                      label: <Trans>30D Rate</Trans>,
-                      value: <NumericValue value={row.rate30d} isLoading={row.isLoading} />
-                    },
-                    {
-                      label: <Trans>TVL</Trans>,
-                      value: <NumericValue value={row.tvl} isLoading={row.isLoading} />
-                    },
-                    {
-                      label: <Trans>My position</Trans>,
-                      value: <NumericValue value={row.position} isLoading={row.isLoading} />
-                    }
-                  ]}
-                />
-                {!dimmed && (
-                  <div className="flex w-full items-center gap-3">
-                    <Button
-                      variant="primary"
-                      size="m"
-                      className="flex-1"
-                      onClick={() => onRowSelect?.(row.id)}
-                    >
-                      <Trans>Supply</Trans>
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="m"
-                      className="flex-1"
-                      onClick={() => onRowSelect?.(row.id)}
-                    >
-                      <Trans>View details</Trans>
-                    </Button>
-                  </div>
+              <div
+                className={cn(
+                  'bg-bgSecondary flex flex-col gap-6 p-5 backdrop-blur-[20px]',
+                  ROW_SURFACE_TRANSITION_CLASSES,
+                  index === 0 ? 'rounded-t-3xl' : 'mt-0.5',
+                  index === rows.length - 1 && 'rounded-b-3xl'
                 )}
-              </>
-            )}
-          </div>
-        );
-      })}
+              >
+                <button
+                  type="button"
+                  data-testid={`${tid}-card-toggle-${row.id}`}
+                  aria-expanded={isExpanded}
+                  onClick={() => setExpandedId(isExpanded ? null : row.id)}
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                >
+                  <TokenCell row={row} dimmed={dimmed} />
+                  <span className="flex shrink-0 items-center gap-3">
+                    <span className="flex flex-col items-end gap-1">
+                      <span className="font-graphik text-fgSecondary text-xs leading-[18px]">
+                        <Trans>Rate</Trans>
+                      </span>
+                      <span
+                        data-testid={`${tid}-card-rate-${row.id}`}
+                        className={cn(
+                          'font-circle text-fgPrimary text-xs leading-3.5 font-medium tracking-[-0.24px]',
+                          dimmed && 'text-fgTertiary'
+                        )}
+                      >
+                        <NumericValue value={row.rate} isLoading={row.isLoading} />
+                      </span>
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={cn('text-fgSecondary transition-transform', isExpanded && 'rotate-180')}
+                      aria-hidden
+                    />
+                  </span>
+                </button>
+                {isExpanded && (
+                  <>
+                    <TransactionCardFieldGrid
+                      // Comp 486:22051 expanded grid: Label 6 values (the M5
+                      // transaction cards keep their Label 5 default).
+                      valueClassName={cn(
+                        'text-xs leading-3.5 tracking-[-0.24px]',
+                        dimmed && 'text-fgTertiary'
+                      )}
+                      fields={[
+                        ...(row.network
+                          ? [
+                              {
+                                label: <Trans>Network</Trans>,
+                                value: <Dim dimmed={dimmed}>{row.network}</Dim>
+                              }
+                            ]
+                          : []),
+                        {
+                          label: <Trans>Risk</Trans>,
+                          value: (
+                            <Dim dimmed={dimmed}>
+                              <RiskTierDetailsTrigger profile={row.riskProfile} />
+                            </Dim>
+                          )
+                        },
+                        {
+                          label: <Trans>Rate</Trans>,
+                          value: <NumericValue value={row.rate} isLoading={row.isLoading} />
+                        },
+                        {
+                          label: <Trans>30D Rate</Trans>,
+                          value: <NumericValue value={row.rate30d} isLoading={row.isLoading} />
+                        },
+                        {
+                          label: <Trans>TVL</Trans>,
+                          value: <NumericValue value={row.tvl} isLoading={row.isLoading} />
+                        },
+                        {
+                          label: <Trans>My position</Trans>,
+                          value: <NumericValue value={row.position} isLoading={row.isLoading} />
+                        }
+                      ]}
+                    />
+                    {!dimmed && (
+                      <div className="flex w-full items-center gap-3">
+                        <Button
+                          variant="primary"
+                          size="m"
+                          className="flex-1"
+                          onClick={() => onRowSelect?.(row.id)}
+                        >
+                          <Trans>Supply</Trans>
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="m"
+                          className="flex-1"
+                          onClick={() => onRowSelect?.(row.id)}
+                        >
+                          <Trans>View details</Trans>
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 }
@@ -282,6 +322,7 @@ export function EarnTable({
   sort,
   onSortChange,
   onRowSelect,
+  onRowsExitComplete,
   dimmed,
   testIdPrefix: tid = DEFAULT_TEST_ID_PREFIX
 }: EarnTableProps) {
@@ -298,10 +339,18 @@ export function EarnTable({
   };
 
   if (bpi < BP.md)
-    return <EarnCardList rows={rows} onRowSelect={handleRowSelect} dimmed={dimmed} testIdPrefix={tid} />;
+    return (
+      <EarnCardList
+        rows={rows}
+        onRowSelect={handleRowSelect}
+        onRowsExitComplete={onRowsExitComplete}
+        dimmed={dimmed}
+        testIdPrefix={tid}
+      />
+    );
 
   return (
-    <Table data-testid={`${tid}-opportunities-table`}>
+    <Table animateRows data-testid={`${tid}-opportunities-table`}>
       <TableHeader>
         <TableRow>
           {COLUMNS.map(column => {
@@ -337,48 +386,63 @@ export function EarnTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map(row => (
-          <TableRow
-            key={row.id}
-            data-testid={`${tid}-row-${row.id}`}
-            tabIndex={handleRowSelect ? 0 : undefined}
-            onClick={() => handleRowSelect?.(row.id)}
-            onKeyDown={event => handleRowKeyDown(event, row.id)}
-            // The hover tint lives on the cells (TableRow), so neutralizing it
-            // means re-declaring the same variant chain with the resting surface.
-            className={cn(
-              handleRowSelect ? 'cursor-pointer' : 'has-[td]:hover:[&>td]:bg-bgSecondary',
-              dimmed && '[&>td]:text-fgTertiary'
-            )}
-          >
-            {/* The Figma active-position iconbox (CellToken `active`) is not
+        <AnimatePresence initial={false} onExitComplete={onRowsExitComplete}>
+          {rows.map((row, index) => (
+            <TableRow
+              key={row.id}
+              data-testid={`${tid}-row-${row.id}`}
+              tabIndex={handleRowSelect ? 0 : undefined}
+              onClick={() => handleRowSelect?.(row.id)}
+              onKeyDown={event => handleRowKeyDown(event, row.id)}
+              // Presence labels propagate through the plain tds into the cell
+              // wrappers, which carry the actual collapse; the row itself uses
+              // the label-only container variants (no stagger, no motion).
+              variants={rowCollapseContainerAnimations}
+              initial={AnimationLabels.initial}
+              animate={AnimationLabels.animate}
+              exit={AnimationLabels.exit}
+              // Edge rows are declared from the data (index), not CSS
+              // :first-child/:last-child — an exiting row is still in the DOM,
+              // and the data must win so the survivor takes the radius (and
+              // the last row's trailing 2px) immediately while the surface's
+              // transition glides them in; the exiting row keeps its frozen
+              // edge as it collapses. The selectors themselves live on
+              // TableRow in ui/table.tsx. data-hover="off" re-pins the hover
+              // tint on the inert dimmed table.
+              data-first={index === 0 ? true : undefined}
+              data-last={index === rows.length - 1 ? true : undefined}
+              data-hover={handleRowSelect ? undefined : 'off'}
+              className={cn(handleRowSelect && 'cursor-pointer', dimmed && '[&>td]:text-fgTertiary')}
+            >
+              {/* The Figma active-position iconbox (CellToken `active`) is not
                 wired here on purpose: its trigger follows product logic that
                 is not part of the H8 batch. */}
-            <TableCell>
-              <TokenCell row={row} dimmed={dimmed} />
-            </TableCell>
-            <TableCell>
-              <Dim dimmed={dimmed}>{row.network}</Dim>
-            </TableCell>
-            <TableCell>
-              <Dim dimmed={dimmed}>
-                <RiskTierDetailsTrigger profile={row.riskProfile} />
-              </Dim>
-            </TableCell>
-            <TableCell>
-              <NumericValue value={row.rate} isLoading={row.isLoading} />
-            </TableCell>
-            <TableCell>
-              <NumericValue value={row.rate30d} isLoading={row.isLoading} />
-            </TableCell>
-            <TableCell>
-              <NumericValue value={row.tvl} isLoading={row.isLoading} />
-            </TableCell>
-            <TableCell>
-              <NumericValue value={row.position} isLoading={row.isLoading} />
-            </TableCell>
-          </TableRow>
-        ))}
+              <TableCell>
+                <TokenCell row={row} dimmed={dimmed} />
+              </TableCell>
+              <TableCell>
+                <Dim dimmed={dimmed}>{row.network}</Dim>
+              </TableCell>
+              <TableCell>
+                <Dim dimmed={dimmed}>
+                  <RiskTierDetailsTrigger profile={row.riskProfile} />
+                </Dim>
+              </TableCell>
+              <TableCell>
+                <NumericValue value={row.rate} isLoading={row.isLoading} />
+              </TableCell>
+              <TableCell>
+                <NumericValue value={row.rate30d} isLoading={row.isLoading} />
+              </TableCell>
+              <TableCell>
+                <NumericValue value={row.tvl} isLoading={row.isLoading} />
+              </TableCell>
+              <TableCell>
+                <NumericValue value={row.position} isLoading={row.isLoading} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </AnimatePresence>
       </TableBody>
     </Table>
   );

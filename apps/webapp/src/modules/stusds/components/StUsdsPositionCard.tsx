@@ -7,8 +7,8 @@ import { useStUsdsData } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
+import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
-  NO_VALUE,
   ProductActions,
   ProductBadge,
   ProductFigure,
@@ -21,6 +21,7 @@ import {
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useStUsdsModal } from '../hooks/useStUsdsModal';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * No-position stUSDS entry card: "Supply USDS and earn X%" headline, the
@@ -69,14 +70,13 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
       }
       title={
         <Trans>
-          Supply {usdsToken} and earn {rateLabel}
+          Supply {usdsToken} at {rateLabel}
         </Trans>
       }
       description={
         <Trans>
-          stUSDS gives you a variable reward rate on USDS by participating in SKY-backed borrowing. It is an
-          expert module intended for experienced users — withdrawals may be delayed during periods of high
-          utilization.
+          stUSDS gives you a variable reward rate on USDS by participating in SKY-backed borrowing.
+          Withdrawals may be delayed during periods of high utilization.
         </Trans>
       }
       stats={
@@ -140,6 +140,12 @@ export function StUsdsPositionCard() {
 
   const { openSupply, openWithdraw } = useStUsdsModal({ onSuccess: refresh });
 
+  // Hold the card slot until the position read resolves — deciding on the 0n
+  // fallback flashes the supply pitch at users who hold a position.
+  if (isConnected && stUsdsData === undefined) {
+    return <PositionCardSkeleton testId="stusds-position-card-skeleton" />;
+  }
+
   if (suppliedUsds === 0n) {
     return <StUsdsSupplyCard rate={rate} onSupply={() => openSupply()} />;
   }
@@ -162,7 +168,7 @@ export function StUsdsPositionCard() {
               {usdsIcon}
               {formatNumber(suppliedValue, { maxDecimals: 2 })}
             </ProductStat>
-            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
+            <ProductStat label={<Trans>Est. 1Y yield (at current rate)</Trans>}>
               <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
               {formatNumber(projectAnnualEarnings(suppliedValue, rate), { maxDecimals: 2 })}
               {usdsIcon}
@@ -171,7 +177,7 @@ export function StUsdsPositionCard() {
           <ProductStatPair grow>
             {/* No cost-basis source for active positions yet — placeholder per
                 the redesign (matches the vault card's already-earned gap). */}
-            <ProductStat label={<Trans>Already earned</Trans>}>
+            <ProductStat label={<Trans>Accrued to date</Trans>}>
               <span className="text-fgSecondary">{NO_VALUE}</span>
             </ProductStat>
             <ProductStat label={<Trans>Current rate</Trans>}>

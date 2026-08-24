@@ -19,6 +19,7 @@ const h = vi.hoisted(() => ({
   },
   balances: { balances: [] as { amountUsd: number }[], isLoading: true, isFetched: false, isError: false },
   geoLoading: false,
+  txModalOpen: false,
   // The mocked motion.div parks its onAnimationComplete here so tests can
   // finish the active timeline segment on demand.
   completeCover: undefined as (() => void) | undefined
@@ -39,6 +40,9 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 vi.mock('@/modules/ui/context/ConnectedContext', () => ({
   useConnectedContext: () => ({ isConnectedAndAcceptedTerms: h.acceptedTerms })
+}));
+vi.mock('@/modules/ui/context/TransactionContext', () => ({
+  useTransaction: () => ({ isModalOpen: h.txModalOpen })
 }));
 vi.mock('@/hooks', () => ({
   useEarnMarketplace: () => h.marketplace
@@ -72,11 +76,11 @@ vi.mock('@/modules/icons/IllustrationSkyLogomark', () => ({
 
 /** The loader as Layout composes it: reveal classes + overlay off one hook. */
 function Harness() {
-  const { phase, coverMode, released, endCover } = useAppLoader();
+  const { phase, coverMode, released, revealAnimated, endCover } = useAppLoader();
   return (
     <>
-      <div data-testid="content" className={appLoaderRevealClasses(phase, 'content')} />
-      <div data-testid="chrome" className={appLoaderRevealClasses(phase, 'chrome')} />
+      <div data-testid="content" className={appLoaderRevealClasses(phase, 'content', revealAnimated)} />
+      <div data-testid="chrome" className={appLoaderRevealClasses(phase, 'chrome', revealAnimated)} />
       <AppLoaderOverlay phase={phase} mode={coverMode} released={released} onCoverEnd={endCover} />
     </>
   );
@@ -121,6 +125,7 @@ beforeEach(() => {
   h.marketplace = { rows: [], isPositionsLoading: true, isPositionsError: false };
   h.balances = { balances: [], isLoading: true, isFetched: false, isError: false };
   h.geoLoading = false;
+  h.txModalOpen = false;
   h.completeCover = undefined;
 });
 
@@ -227,7 +232,10 @@ describe('useAppLoader', () => {
     act(() => vi.advanceTimersByTime(1200));
     rerenderHarness(rerender);
 
-    expect(h.navigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/earn', replace: true }));
+    // viewTransition: false — the swap must not flash above the cover/scrim (APP-515).
+    expect(h.navigate).toHaveBeenCalledWith(
+      expect.objectContaining({ to: '/earn', replace: true, viewTransition: false })
+    );
     expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'simulate', tab: 'idle' });
 
     // Release → exit timeline → reveal.
@@ -270,7 +278,9 @@ describe('useAppLoader', () => {
     connectManually(rerender);
 
     expect(screen.queryByTestId('app-loader')).toBeNull();
-    expect(h.navigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/portfolio', replace: true }));
+    expect(h.navigate).toHaveBeenCalledWith(
+      expect.objectContaining({ to: '/portfolio', replace: true, viewTransition: false })
+    );
   });
 
   it('the instant sort re-fires on a repeat connect to the same target', () => {
@@ -430,6 +440,31 @@ describe('useAppLoader', () => {
     const { rerender } = render(<Harness />);
     connectManually(rerender);
     expect(screen.queryByTestId('app-loader')).toBeNull();
+  });
+
+  it('a reveal under an open transaction modal skips the entrance animation (APP-515)', () => {
+    // Connecting from inside the upgrade modal: the cover plays over the
+    // modal's frosted scrim, so the content entrance behind the frost reads as
+    // a flash of the page — the reveal lands static instead.
+    h.pathname = '/earn';
+    h.txModalOpen = true;
+    const { rerender } = render(<Harness />);
+    connectManually(rerender);
+    expect(screen.getByTestId('app-loader')).toBeTruthy();
+
+    settleEmptyWallet();
+    act(() => vi.advanceTimersByTime(1200));
+    rerenderHarness(rerender);
+    act(() => h.completeCover?.());
+
+    expect(screen.queryByTestId('app-loader')).toBeNull();
+    expect(screen.getByTestId('content').className).toBe('');
+    expect(screen.getByTestId('chrome').className).toBe('');
+
+    // Latched: closing the modal later must not replay the entrance.
+    h.txModalOpen = false;
+    rerenderHarness(rerender);
+    expect(screen.getByTestId('content').className).toBe('');
   });
 
   it('is one-shot per page load: never replays after revealing', () => {

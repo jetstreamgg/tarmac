@@ -6,7 +6,7 @@ import {
   useMerklRewards,
   MorphoVaultBalance
 } from '@/hooks';
-import { formatBigInt, formatNumber, isTestnetId, chainId } from '@/utils';
+import { formatBigInt, formatNumber, familyMainnetId } from '@/utils';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -121,7 +121,7 @@ export const VaultsBalanceCard = ({
   hideZeroBalances?: boolean;
 }) => {
   const connectedChainId = useChainId();
-  const vaultChainId = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
+  const vaultChainId = familyMainnetId(connectedChainId);
 
   const { data: morphoAssetsData, isLoading: morphoDataLoading } = useAllMorphoVaultsUserAssets();
   // Provider-neutral rates over the whole registry (Morpho API + Spark on-chain vsr)

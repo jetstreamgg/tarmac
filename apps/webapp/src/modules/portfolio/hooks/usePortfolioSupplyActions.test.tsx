@@ -123,6 +123,7 @@ const position = (
   intent: KIND_INTENT[kind],
   amountUsd: 100,
   rate: 0.05,
+  rateLoading: false,
   color: '#000',
   hoverColor: '#000',
   share: 1,
@@ -265,7 +266,7 @@ describe('usePortfolioSupplyActions', () => {
     });
   });
 
-  it('omits the rewards-in token for a points farm (Chronicle) and titles it by its registry name', () => {
+  it('omits the rewards-in token for a points farm (Chronicle) and titles it as Chronicle Points Rewards', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(
       position('rewards', { id: 'rewards-cle', address: '0xC1E0', rate: undefined })
@@ -275,7 +276,7 @@ describe('usePortfolioSupplyActions', () => {
     expect(h.openRewardsSupply).toHaveBeenCalledWith({
       contractAddress: '0xC1E0',
       supplyToken: { symbol: 'USDS' },
-      displayName: 'Chronicle Points',
+      displayName: 'Chronicle Points Rewards',
       productName: 'Chronicle Points',
       rewardTokenSymbol: undefined,
       rate: undefined

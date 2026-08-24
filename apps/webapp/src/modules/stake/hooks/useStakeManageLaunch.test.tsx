@@ -178,6 +178,7 @@ describe('buildStakeManageSteps', () => {
         hasFree: true,
         hasWipe: true,
         hasBorrow: false,
+        hasRewardChange: false,
         hasDelegateChange: false
       })
     ).toEqual([
@@ -194,6 +195,7 @@ describe('buildStakeManageSteps', () => {
         hasFree: false,
         hasWipe: false,
         hasBorrow: true,
+        hasRewardChange: false,
         hasDelegateChange: true
       })
     ).toEqual([
@@ -211,9 +213,38 @@ describe('buildStakeManageSteps', () => {
         hasFree: false,
         hasWipe: false,
         hasBorrow: true,
+        hasRewardChange: false,
         hasDelegateChange: false
       })
     ).toEqual([{ label: 'Borrow', tokenSymbol: 'USDS' }]);
+  });
+
+  it('places Change reward before Change delegate, matching the manage calldata order', () => {
+    expect(
+      buildStakeManageSteps({
+        needsSkyAllowance: false,
+        needsUsdsAllowance: false,
+        hasLock: true,
+        hasFree: false,
+        hasWipe: false,
+        hasBorrow: false,
+        hasRewardChange: true,
+        hasDelegateChange: true
+      })
+    ).toEqual(['Change reward', 'Change delegate', { label: 'Stake', tokenSymbol: 'SKY' }]);
+
+    expect(
+      buildStakeManageSteps({
+        needsSkyAllowance: false,
+        needsUsdsAllowance: false,
+        hasLock: false,
+        hasFree: false,
+        hasWipe: false,
+        hasBorrow: false,
+        hasRewardChange: true,
+        hasDelegateChange: false
+      })
+    ).toEqual(['Change reward']);
   });
 
   it('places one Claim {symbol} step per claimSymbols entry right after Withdraw SKY', () => {
@@ -225,6 +256,7 @@ describe('buildStakeManageSteps', () => {
         hasFree: true,
         hasWipe: false,
         hasBorrow: false,
+        hasRewardChange: false,
         hasDelegateChange: false,
         claimSymbols: ['SKY', 'SPK']
       })
@@ -243,6 +275,7 @@ describe('buildStakeManageSteps', () => {
         hasFree: true,
         hasWipe: false,
         hasBorrow: false,
+        hasRewardChange: false,
         hasDelegateChange: false
       })
     ).toEqual([{ label: 'Withdraw', tokenSymbol: 'SKY' }]);
@@ -306,6 +339,29 @@ describe('useStakeManageLaunch — calldata parity with the F1 seam', () => {
     );
   });
 
+  it('emits the selectFarm leg when the staged reward differs (APP-516)', () => {
+    h.usdsAllowance = HAS_ALLOWANCE;
+    renderLaunch({ selectedRewardContract: SKY_REWARD_CONTRACT, skyToFree: 0n, usdsToWipe: 0n });
+
+    // Single-entry calldata unwraps to a direct call — the reward-only flow is
+    // one plain selectFarm transaction.
+    const calls = h.capturedCalls as RawCall[];
+    expect(calls.map(call => call.functionName)).toEqual(['selectFarm']);
+    expect(
+      expectedCalldata({ selectedRewardContract: SKY_REWARD_CONTRACT, skyToFree: 0n, usdsToWipe: 0n })
+    ).toHaveLength(1);
+  });
+
+  it('emits no selectFarm leg when the staged reward matches the urn current farm', () => {
+    h.usdsAllowance = HAS_ALLOWANCE;
+    renderLaunch({ selectedRewardContract: REWARD_CONTRACT });
+
+    const calls = h.capturedCalls as RawCall[];
+    expect(calls.map(call => call.functionName)).toEqual(['multicall']);
+    // wipe + free only — passing the current farm explicitly changes nothing.
+    expect(calls[0].args?.[0]).toHaveLength(2);
+  });
+
   it('keeps the engine disabled until the form is valid', () => {
     renderLaunch({ enabled: false });
     expect(h.capturedEnabled).toBe(false);
@@ -356,6 +412,18 @@ describe('useStakeManageLaunch — launch() config', () => {
     act(() => delegateOnly.result.current.launch());
     expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm delegate change');
     delegateOnly.unmount();
+    h.launchMock.mockClear();
+
+    const rewardOnly = renderLaunch({
+      skyToFree: 0n,
+      usdsToWipe: 0n,
+      selectedRewardContract: SKY_REWARD_CONTRACT
+    });
+    act(() => rewardOnly.result.current.launch());
+    expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm reward change');
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Change reward']);
+    expect(h.launchMock.mock.calls[0][0].analytics.data.selectedRewardContract).toBe(SKY_REWARD_CONTRACT);
+    rewardOnly.unmount();
   });
 
   it('derives the withdraw+repay steps from the calldata set, not the stale mock (M6)', () => {

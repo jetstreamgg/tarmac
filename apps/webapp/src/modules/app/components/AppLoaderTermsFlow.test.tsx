@@ -79,6 +79,9 @@ vi.mock('@/modules/ui/context/ConnectedContext', async () => {
 vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
   useConnectModal: () => ({ openConnectModal: () => {} })
 }));
+vi.mock('@/modules/ui/context/TransactionContext', () => ({
+  useTransaction: () => ({ isModalOpen: false })
+}));
 vi.mock('@/modules/sentry/reportError', () => ({
   reportError: vi.fn()
 }));
