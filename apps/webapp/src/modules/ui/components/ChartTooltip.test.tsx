@@ -1,5 +1,6 @@
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useRef } from 'react';
 
 import { ChartTooltip } from './ChartTooltip';
 
@@ -73,5 +74,52 @@ describe('ChartTooltip', () => {
   it('keeps the text symbol suffix when there is no token icon', () => {
     render(<ChartTooltip {...base} symbol="USDS" />);
     expect(screen.getByText('5,774,407 USDS')).toBeTruthy();
+  });
+});
+
+// On touch there is no mouseleave, so without this a tapped tooltip outlives
+// the tap and rides the fixed portal layer away from the chart while the page
+// scrolls. Dismissal is a synthesized mouseleave on the recharts wrapper — the
+// one event recharts clears its hover store from.
+describe('ChartTooltip — dismissal', () => {
+  // Mirrors the live DOM the hook navigates: the plot box (anchorRef) hosting
+  // recharts' own wrapper div, whose React onMouseLeave recharts listens on.
+  const Harness = ({ onLeave, active = true }: { onLeave: () => void; active?: boolean }) => {
+    const anchorRef = useRef<HTMLDivElement>(null);
+    return (
+      <div ref={anchorRef} data-testid="plot">
+        <div className="recharts-wrapper" onMouseLeave={onLeave} />
+        <ChartTooltip {...base} active={active} coordinate={{ x: 10, y: 10 }} anchorRef={anchorRef} />
+      </div>
+    );
+  };
+
+  it('scrolling dismisses the hover via a wrapper mouseleave', () => {
+    const onLeave = vi.fn();
+    render(<Harness onLeave={onLeave} />);
+    fireEvent.scroll(window);
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('a press outside the plot dismisses the hover', () => {
+    const onLeave = vi.fn();
+    render(<Harness onLeave={onLeave} />);
+    fireEvent.pointerDown(document.body);
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('a press inside the plot does not dismiss (a new tap re-scrubs instead)', () => {
+    const onLeave = vi.fn();
+    render(<Harness onLeave={onLeave} />);
+    fireEvent.pointerDown(screen.getByTestId('plot'));
+    expect(onLeave).not.toHaveBeenCalled();
+  });
+
+  it('detaches its listeners once inactive', () => {
+    const onLeave = vi.fn();
+    const { rerender } = render(<Harness onLeave={onLeave} />);
+    rerender(<Harness onLeave={onLeave} active={false} />);
+    fireEvent.scroll(window);
+    expect(onLeave).not.toHaveBeenCalled();
   });
 });

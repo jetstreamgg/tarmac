@@ -1,4 +1,4 @@
-import { RefObject, useLayoutEffect, useState } from 'react';
+import { RefObject, useEffect, useLayoutEffect, useState } from 'react';
 import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
 import { useFollow } from './chartMotion';
@@ -85,6 +85,47 @@ function useTooltipPlacement(
   return { panelRef, style: { position: 'absolute', left: 0, top: 0 } as const };
 }
 
+/**
+ * Ends the hover when the interaction has clearly moved on — the page scrolled,
+ * or a press landed outside the plot.
+ *
+ * On touch there is no mouseleave, so a tapped tooltip outlives the tap: the
+ * portal layer is position:fixed and the anchor box is only re-measured on
+ * recharts re-renders, so once the page scrolls the panel rides the viewport
+ * away from the chart. Recharts (3.x) clears its hover store from exactly one
+ * place — a mouseleave on its wrapper div — so this synthesizes that event.
+ * `relatedTarget` is the wrapper's parent, which scopes React's enter/leave
+ * synthesis to the wrapper alone (no ancestor sees a leave it didn't have).
+ * The whole hover ensemble (panel, cursor, dot, dim and lit segment) reads that
+ * one store, so it all leaves together through its usual crossfade.
+ */
+function useDismissHoverAway(
+  active: boolean | undefined,
+  anchorRef: RefObject<HTMLElement | null> | undefined
+) {
+  useEffect(() => {
+    if (!active) return;
+    const host = anchorRef?.current;
+    const wrapper = host?.querySelector('.recharts-wrapper');
+    if (!host || !wrapper) return;
+
+    const dismiss = () =>
+      wrapper.dispatchEvent(
+        new MouseEvent('mouseout', { bubbles: true, relatedTarget: wrapper.parentElement ?? undefined })
+      );
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Node) || !host.contains(event.target)) dismiss();
+    };
+
+    window.addEventListener('scroll', dismiss, { capture: true, passive: true });
+    window.addEventListener('pointerdown', onPointerDown, { capture: true });
+    return () => {
+      window.removeEventListener('scroll', dismiss, { capture: true });
+      window.removeEventListener('pointerdown', onPointerDown, { capture: true });
+    };
+  }, [active, anchorRef]);
+}
+
 /*
  * The panel's date and value used to trade places on a ~100ms crossfade (the
  * comp fades them over ~96ms — Figma 1598:76197/76206). It is gone: while
@@ -131,6 +172,7 @@ export function ChartTooltip({
   anchorRef
 }: CustomTooltipProps) {
   const { panelRef, style } = useTooltipPlacement(coordinate, anchorRef);
+  useDismissHoverAway(active, anchorRef);
   const isMin = payload?.some(entry => entry.payload?.isMin === true);
   const isMax = payload?.some(entry => entry.payload?.isMax === true);
 
