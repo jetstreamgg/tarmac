@@ -971,6 +971,18 @@
   }
 }
 
+/* Recharts' accessibility layer (v3, on by default) makes the chart surface
+   focusable (tabindex 0, role application) and its z-index groups
+   click-focusable (tabindex -1), so clicking the plot or the series drew the
+   browser's focus ring around the canvas or the line. Chrome counts the
+   click-focused role=application svg as :focus-visible, so the ring can't be
+   scoped away to keyboard focus — it goes entirely. Keyboard scrubbing still
+   works; the hover chrome (dot, cursor, tooltip) is the focus indication. */
+svg.recharts-surface:focus,
+svg.recharts-surface [tabindex]:focus {
+  outline: none;
+}
+
 /* App page background (Figma: Backgrounds 5177:37170) ----------------------
    A viewport-fixed layer behind the shell (rendered once in Layout). Fixed
    instead of `background-attachment: fixed` because the latter is broken on
