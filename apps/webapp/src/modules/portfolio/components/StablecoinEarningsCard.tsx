@@ -17,7 +17,7 @@ import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
 import { earningsForPosition } from '../earnings/earningsForPosition';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
-import { CombinedEarningsStat, EarningsFigureValue } from './EarningsStat';
+import { CombinedEarningsStat, EarningsFigureValue, STAT_ROW, StatInfoGlyph } from './EarningsStat';
 
 /**
  * M6.1 (486:20132): the mobile comp stacks the chart block headline → donut →
@@ -267,12 +267,17 @@ function SuppliedContent({
           }
         />
         <Stat
-          label={<Trans>Projected 1Y yield (at current rate)</Trans>}
+          label={<Trans>Projected 1Y yield</Trans>}
           value={
             ratesPending ? (
               <Skeleton className="h-4 w-14" />
             ) : (
-              <GainValue value={displayProjected} className={LABEL_4} rolling />
+              <span className={STAT_ROW}>
+                <GainValue value={displayProjected} className={LABEL_4} rolling />
+                <StatInfoGlyph testId="projected-yield-info">
+                  <Trans>Using your current rate as a reference</Trans>
+                </StatInfoGlyph>
+              </span>
             )
           }
         />
@@ -388,8 +393,15 @@ function IdleContent({
         {displayProjected !== undefined && (
           <Stat
             key="projected"
-            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
-            value={<GainValue value={displayProjected} className={LABEL_4} rolling />}
+            label={<Trans>Projected 1Y yield</Trans>}
+            value={
+              <span className={STAT_ROW}>
+                <GainValue value={displayProjected} className={LABEL_4} rolling />
+                <StatInfoGlyph testId="projected-yield-info">
+                  <Trans>Using your current rate as a reference</Trans>
+                </StatInfoGlyph>
+              </span>
+            }
           />
         )}
         <Stat

@@ -286,12 +286,12 @@ describe('PositionCard — DS comp conformance', () => {
     expect(within(card).queryByText('APY')).toBeNull();
   });
 
-  it('orders the stats My position → Rate → Accrued to date → Projected 1Y yield (at current rate)', () => {
+  it('orders the stats My position → Rate → Accrued to date → Projected 1Y yield', () => {
     renderSection([VAULT]);
     const text = screen.getAllByTestId('position-card')[0].textContent ?? '';
     expect(text.indexOf('My position')).toBeLessThan(text.indexOf('Accrued to date'));
     expect(text.indexOf('Accrued to date')).toBeLessThan(
-      text.indexOf('Projected 1Y yield (at current rate)')
+      text.indexOf('Projected 1Y yield')
     );
   });
 
