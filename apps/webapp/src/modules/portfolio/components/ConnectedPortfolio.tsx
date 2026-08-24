@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useChainId, useChains, useConnection, useEnsName } from 'wagmi';
 import { useGeoConfig } from '@/modules/geo-config';
 import { useNavigate } from '@tanstack/react-router';
@@ -19,6 +19,7 @@ import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioC
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { useWalletEarnings } from '../hooks/useWalletEarnings';
+import { filterWalletEarnings } from '../earnings/filterWalletEarnings';
 import { PendleReadyToRedeemList } from '@/modules/pendle/components/PendleReadyToRedeemList';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
@@ -42,11 +43,21 @@ export function ConnectedPortfolio() {
   const { balances, isLoading: balancesLoading, isError: balancesError } = useStablecoinBalances();
   // APP-450: aggregated per-wallet earnings (Total earned / Earned this month
   // in the card footer, "Already earned" on each position card).
-  const earnings = useWalletEarnings();
+  const walletEarnings = useWalletEarnings();
   // Geo-restricted positions are hidden from every Portfolio surface (APP-484),
   // so all totals/views build from the visible rows, and the savings promos
   // (callouts, idle-tab rate stats) drop when the savings module is restricted.
   const visibleRows = useGeoVisibleRows(rows);
+  // "Every Portfolio surface" includes the earnings stats: a restricted
+  // product's figures drop from the combined totals along with its row. The
+  // filter names the geo-HIDDEN rows (rows minus visibleRows) so sources whose
+  // rows are absent for other reasons — a matured Pendle market is delisted
+  // from the marketplace while its closed position still earned — survive.
+  const earnings = useMemo(() => {
+    const visible = new Set(visibleRows.map(row => row.id));
+    const hidden = new Set(rows.filter(row => !visible.has(row.id)).map(row => row.id));
+    return filterWalletEarnings(walletEarnings, hidden);
+  }, [walletEarnings, rows, visibleRows]);
   const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
   const savingsAvailable = isGeoLoading || isModuleEnabled('savings');
   // The optimistic default above is safe for the settle path (the callout is
