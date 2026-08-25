@@ -395,12 +395,29 @@ export function PendleModalForm({
   const networkName = useNetworkName(engineChainId);
 
   const lostTooltip = getTooltipById('early-withdrawal-loss');
+  // Both estimate cells caveat the quote (the comps draw an info mark on the
+  // withdraw cell, 2413:66997).
+  const receiveInfo = (
+    <PopoverInfo
+      title={t`You'll receive`}
+      description={t`Estimated at the current Pendle market price.`}
+      iconSize={12}
+    />
+  );
+  const claimInfo = (
+    <PopoverInfo
+      title={t`Claim at maturity`}
+      description={t`Based on the ${ptSymbol} you're expected to receive at the current market price; each ${ptSymbol} redeems for 1 ${displaySymbol} at maturity.`}
+      iconSize={12}
+    />
+  );
   const entryRows = isSupply
     ? buildPendleSupplyEntryRows({
         rate,
         claimDate,
         displaySymbol,
         claimAtMaturity,
+        claimInfo,
         estEarnings,
         daysToMaturity,
         network: networkName,
@@ -418,6 +435,7 @@ export function PendleModalForm({
         ),
         receiveAmount,
         receiveSymbol: selectedToken.symbol,
+        receiveInfo,
         lost,
         lostTrend,
         displaySymbol,

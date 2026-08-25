@@ -31,6 +31,12 @@ describe('buildPendleSupplyEntryRows', () => {
     expect(rows[1][1]).toMatchObject({ value: '228.22', token: 'USDS' });
   });
 
+  it('passes the Claim-at-maturity info mark through as the label action', () => {
+    const info = { marker: 'info' } as unknown as ReactNode;
+    const rows = buildPendleSupplyEntryRows({ ...supplyEntryInput, claimInfo: info });
+    expect(rows[1][0].labelAction).toBe(info);
+  });
+
   it('pins the Network cell to the engine chain when one is given', () => {
     const rows = buildPendleSupplyEntryRows({ ...supplyEntryInput, networkChainId: 1 });
     expect(rows[2][0]).toMatchObject({ label: 'Network', network: true, networkChainId: 1 });
@@ -62,6 +68,12 @@ describe('buildPendleWithdrawEntryRows', () => {
       ['Network fee']
     ]);
     expect(rows[0][1]).toMatchObject({ kind: 'single', value: '100,000.80', token: 'USDS' });
+  });
+
+  it("passes the You'll-receive info mark through as the label action", () => {
+    const info = { marker: 'info' } as unknown as ReactNode;
+    const rows = buildPendleWithdrawEntryRows({ ...withdrawEntryInput, receiveInfo: info });
+    expect(rows[0][1].labelAction).toBe(info);
   });
 
   it('passes the token selector through opaquely as a node cell', () => {

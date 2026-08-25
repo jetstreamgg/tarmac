@@ -39,6 +39,8 @@ type SupplyEconomicsInput = {
   claimDate: string;
   displaySymbol: string;
   claimAtMaturity: string;
+  /** Info popover beside the Claim-at-maturity label (the entry passes one; the review omits it). */
+  claimInfo?: ReactNode;
   estEarnings: string;
   daysToMaturity: number;
 };
@@ -58,7 +60,8 @@ const supplyEconomicsRows = (input: SupplyEconomicsInput): PendleModalGridRow[] 
       kind: 'single',
       label: 'Claim at maturity',
       value: input.claimAtMaturity,
-      token: input.displaySymbol
+      token: input.displaySymbol,
+      labelAction: input.claimInfo
     },
     {
       kind: 'single',
@@ -79,6 +82,8 @@ export type PendleSupplyEntryRowInput = {
   displaySymbol: string;
   /** This order's value at maturity (the quoted PT amount), formatted. */
   claimAtMaturity: string;
+  /** Info popover beside the Claim-at-maturity label. */
+  claimInfo?: ReactNode;
   /** This order's earnings to maturity (maturity value − cost), formatted. */
   estEarnings: string;
   /** Whole days until market expiry — the "(49D)" suffix. */
@@ -110,6 +115,8 @@ export type PendleWithdrawEntryRowInput = {
   receiveAmount: string;
   /** Symbol of the token received. */
   receiveSymbol: string;
+  /** Info popover beside the You'll-receive label. */
+  receiveInfo?: ReactNode;
   /** Yield forfeited vs holding to maturity (maturity value − receive now, clamped at 0), formatted. */
   lost: string;
   /** Draw the red down-trend — only when something is actually forfeited. */
@@ -136,7 +143,13 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
   return [
     [
       { kind: 'node', label: 'Withdrawal token', node: input.tokenSelector },
-      { kind: 'single', label: "You'll receive", value: input.receiveAmount, token: input.receiveSymbol }
+      {
+        kind: 'single',
+        label: "You'll receive",
+        value: input.receiveAmount,
+        token: input.receiveSymbol,
+        labelAction: input.receiveInfo
+      }
     ],
     [
       {
