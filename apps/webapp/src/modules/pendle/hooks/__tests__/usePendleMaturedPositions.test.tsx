@@ -29,6 +29,7 @@ const hoisted = vi.hoisted(() => ({
   // Mutable connection + balances + chain. Tests reassign these before render.
   userAddress: undefined as `0x${string}` | undefined,
   ptBalances: undefined as Record<`0x${string}`, bigint> | undefined,
+  balancesError: undefined as Error | undefined,
   geo: { fixedEnabled: true, isLoading: false }
 }));
 
@@ -41,7 +42,7 @@ vi.mock('@/hooks', async importOriginal => {
     usePendleUserPtBalances: () => ({
       data: hoisted.ptBalances,
       isLoading: false,
-      error: undefined,
+      error: hoisted.balancesError,
       mutate: () => undefined,
       dataSources: []
     })
@@ -66,9 +67,9 @@ vi.mock('@/modules/geo-config', () => ({
 import { usePendleMaturedPositions } from '../usePendleMaturedPositions';
 
 function Probe() {
-  const { maturedPositions } = usePendleMaturedPositions();
+  const { maturedPositions, isLoading } = usePendleMaturedPositions();
   return (
-    <div data-testid="probe">
+    <div data-testid="probe" data-loading={String(isLoading)}>
       {maturedPositions.map(({ market }) => (
         <span key={market.marketAddress} data-testid="matured-position">
           {market.name}
@@ -88,6 +89,7 @@ describe('usePendleMaturedPositions', () => {
     root = createRoot(container);
     hoisted.userAddress = undefined;
     hoisted.ptBalances = undefined;
+    hoisted.balancesError = undefined;
     hoisted.geo = { fixedEnabled: true, isLoading: false };
   });
 
@@ -115,6 +117,20 @@ describe('usePendleMaturedPositions', () => {
     hoisted.userAddress = '0x1111111111111111111111111111111111111111';
     hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 0n, [ACTIVE_MARKET_ADDRESS]: 5_000_000n };
     render();
+    expect(positions()).toHaveLength(0);
+  });
+
+  it('reports loading while the balances read is unresolved', () => {
+    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
+    render();
+    expect(container.querySelector('[data-testid="probe"]')?.getAttribute('data-loading')).toBe('true');
+  });
+
+  it('settles — not loading, no positions — when the balances read fails', () => {
+    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
+    hoisted.balancesError = new Error('multicall failed');
+    render();
+    expect(container.querySelector('[data-testid="probe"]')?.getAttribute('data-loading')).toBe('false');
     expect(positions()).toHaveLength(0);
   });
 

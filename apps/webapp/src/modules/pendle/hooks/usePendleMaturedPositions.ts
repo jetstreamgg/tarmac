@@ -19,11 +19,12 @@ export type PendleMaturedPosition = { market: PendleMarketConfig; ptBalance: big
  */
 export function usePendleMaturedPositions(): {
   maturedPositions: PendleMaturedPosition[];
-  /** PT balances still resolving — matured holdings unknown, not absent. */
+  /** PT balances still resolving — matured holdings unknown, not absent. A
+   *  failed read settles (false): nothing is known, so nothing renders. */
   isLoading: boolean;
 } {
   const { address } = useConnection();
-  const { data: ptBalances, isLoading } = usePendleUserPtBalances();
+  const { data: ptBalances, isLoading, error } = usePendleUserPtBalances();
   const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
   const fixedAvailable = isGeoLoading || isModuleEnabled('fixed');
 
@@ -40,6 +41,6 @@ export function usePendleMaturedPositions(): {
 
   return {
     maturedPositions,
-    isLoading: !!address && (isLoading || ptBalances === undefined)
+    isLoading: !!address && !error && (isLoading || ptBalances === undefined)
   };
 }
