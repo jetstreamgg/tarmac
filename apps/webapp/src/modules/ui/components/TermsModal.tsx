@@ -106,6 +106,7 @@ export function TermsModal() {
     retryTermsCheck,
     isConnectedAndAcceptedTerms,
     latestTermsVersion,
+    termsEffectiveDate,
     acceptTerms
   } = useConnectedContext();
   const [isChecked, setIsChecked] = useState(false);
@@ -238,10 +239,18 @@ export function TermsModal() {
     </div>
   );
 
-  // The effective-date sentence rides the header subtitle (comp 2009:54582).
-  // The terms carry a date and no version number (Kacper with Ann Sofie,
-  // 13 Aug 2026 — APP-513): the comp's "Version 1.0" is placeholder text, and
-  // `terms_version.latest_version` holds the date.
+  // The version + effective-date sentence rides the header subtitle (comp
+  // 2009:54582). The comp's "Version 1.0" is live copy again: the terms carry
+  // BOTH a numeric version and an effective date, which reverses the earlier
+  // "date only" decision on APP-513. The worker serves the two separately —
+  // `latestTermsVersion` is the identity, `termsEffectiveDate` is display.
+  //
+  // Three cases, because the version and the date arrive independently. The
+  // version is what the user is actually agreeing to — the acceptance is
+  // recorded against it — so it stays on screen even when the date does not
+  // arrive (a worker predating the split sends no `effectiveDate`). Only the
+  // date is dropped in that case; rendering "effective undefined" would be
+  // worse than saying nothing, but so would naming no version at all.
   const readTheFullTerms = (
     <Trans>
       Please read the full <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
@@ -262,9 +271,16 @@ export function TermsModal() {
             <Trans>Terms & Privacy</Trans>
           </ResponsiveModalTitle>
           <Text tag="p" className="text-fgSecondary max-w-[368px] text-[11px] leading-4">
-            {latestTermsVersion ? (
+            {latestTermsVersion && termsEffectiveDate ? (
               <>
-                <Trans>Terms of Use effective {latestTermsVersion}.</Trans> {readTheFullTerms}
+                <Trans>
+                  Version {latestTermsVersion}, effective {termsEffectiveDate}.
+                </Trans>{' '}
+                {readTheFullTerms}
+              </>
+            ) : latestTermsVersion ? (
+              <>
+                <Trans>Version {latestTermsVersion}.</Trans> {readTheFullTerms}
               </>
             ) : (
               readTheFullTerms

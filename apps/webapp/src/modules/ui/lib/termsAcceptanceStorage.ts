@@ -12,6 +12,19 @@
  * this browser, then switch to wallet B whose row already exists from another
  * device, and a version-only key would read as present for B too — B's owner
  * would never be shown the terms here.
+ *
+ * `version` is the numeric terms version (`'1.0'`, `'2.1'`) since APP-424's
+ * version rework, not the effective date it used to be. It is treated as an
+ * opaque string — nothing here parses or compares parts of it, because every
+ * bump re-prompts, minor ones included. Two revisions may share an effective
+ * date, so keying on the date could leave an acceptance of the first standing
+ * for the second; keying on the number cannot.
+ *
+ * The switch from dates to numbers changes every existing key's value, so the
+ * deploy that ships it re-prompts everyone once. That is the same fail-closed
+ * direction as a cleared site-data or second-device case, and it self-heals on
+ * the next acceptance — `recordLocalTermsAcceptance` prunes this address's
+ * stale keys by prefix rather than leaving the old date-keyed one behind.
  */
 
 const STORAGE_PREFIX = 'sky.termsAccepted';

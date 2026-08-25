@@ -11,7 +11,14 @@ const mocks = vi.hoisted(() => ({
   openModal: vi.fn(),
   acceptTerms: vi.fn(),
   retryTermsCheck: vi.fn(),
-  connected: { isConnectedAndAcceptedTerms: false, termsCheckDenied: false },
+  connected: {
+    isConnectedAndAcceptedTerms: false,
+    termsCheckDenied: false,
+    // The numeric identity and the date shown beside it, as two values — the
+    // header renders both only when both arrived.
+    latestTermsVersion: '1.0' as string | undefined,
+    termsEffectiveDate: '2026-01-15' as string | undefined
+  },
   termsModal: { isModalOpen: true }
 }));
 
@@ -38,7 +45,8 @@ vi.mock('../context/ConnectedContext', () => ({
     termsCheckDenied: mocks.connected.termsCheckDenied,
     retryTermsCheck: mocks.retryTermsCheck,
     isConnectedAndAcceptedTerms: mocks.connected.isConnectedAndAcceptedTerms,
-    latestTermsVersion: '2026-01-15',
+    latestTermsVersion: mocks.connected.latestTermsVersion,
+    termsEffectiveDate: mocks.connected.termsEffectiveDate,
     acceptTerms: mocks.acceptTerms
   })
 }));
@@ -61,6 +69,8 @@ describe('TermsModal', () => {
     mocks.acceptTerms.mockResolvedValue(true);
     mocks.connected.isConnectedAndAcceptedTerms = false;
     mocks.connected.termsCheckDenied = false;
+    mocks.connected.latestTermsVersion = '1.0';
+    mocks.connected.termsEffectiveDate = '2026-01-15';
     mocks.termsModal.isModalOpen = true;
   });
 
@@ -171,13 +181,36 @@ describe('TermsModal', () => {
     expect(screen.queryByText(/An error occurred/)).toBeNull();
   });
 
-  // The terms carry an effective date and no version label (APP-513): the
-  // header subtitle must render the date and nothing in the modal may say
-  // "version" — the comp's "Version 1.0" is placeholder text.
-  it('renders the effective date in the header with no version label', () => {
+  // The terms carry BOTH a numeric version and an effective date (APP-424,
+  // reversing APP-513's date-only decision), so the comp's "Version 1.0" is
+  // live copy again rather than placeholder text.
+  it('renders the version and the effective date in the header', () => {
     renderModal();
 
-    expect(screen.getByText(/Terms of Use effective 2026-01-15/)).toBeTruthy();
-    expect(screen.queryByText(/version 2026-01-15/i)).toBeNull();
+    expect(screen.getByText(/Version 1\.0, effective 2026-01-15/)).toBeTruthy();
+  });
+
+  // A worker predating the split sends no effectiveDate. "Version 1.0,
+  // effective undefined" must not render — but the version must survive, since
+  // that is what the acceptance is recorded against.
+  it('keeps the version and drops only the date when the effective date is missing', () => {
+    mocks.connected.termsEffectiveDate = undefined;
+
+    renderModal();
+
+    expect(screen.getByText(/Version 1\.0\./)).toBeTruthy();
+    expect(screen.queryByText(/effective/i)).toBeNull();
+    expect(screen.getByText(/Please read the full/)).toBeTruthy();
+  });
+
+  // Nothing to name at all: before the check resolves there is no version yet.
+  it('renders only the plain sentence before the check resolves', () => {
+    mocks.connected.latestTermsVersion = undefined;
+    mocks.connected.termsEffectiveDate = undefined;
+
+    renderModal();
+
+    expect(screen.queryByText(/Version/)).toBeNull();
+    expect(screen.getByText(/Please read the full/)).toBeTruthy();
   });
 });
