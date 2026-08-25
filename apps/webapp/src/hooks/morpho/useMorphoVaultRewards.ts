@@ -1,11 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useChainId, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { useCallback, useMemo } from 'react';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { isTestnetId, formatBigInt } from '@/utils';
-import { mainnet } from 'viem/chains';
-import { MERKL_API_URL } from './constants';
+import { formatBigInt } from '@/utils';
+import { MERKL_API_URL, MORPHO_API_CHAIN_ID } from './constants';
 
 /**
  * Token data from the Merkl API response.
@@ -224,8 +223,8 @@ export function useMorphoVaultRewards({
   vaultAddress: `0x${string}`;
 }): MorphoVaultRewardsHook {
   const { address: userAddress } = useConnection();
-  const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
+  // Morpho vaults' Merkl campaigns are mainnet-only
+  const chainId = MORPHO_API_CHAIN_ID;
 
   const queryClient = useQueryClient();
   // Memoized for the same reason useMerklRewards memoizes its key: `mutate`

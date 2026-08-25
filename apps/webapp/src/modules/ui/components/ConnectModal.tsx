@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Children, useCallback, useEffect, useRef, useState } from 'react';
 import {
   useConnect,
   useConnectors,
@@ -7,9 +7,11 @@ import {
   useSwitchConnection,
   useConnections
 } from 'wagmi';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ListWallet } from '@/components/ui/list';
+import { cn } from '@/lib/cn';
 import { Text } from '@/modules/layout/components/Typography';
 import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
@@ -26,6 +28,26 @@ interface ConnectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+/**
+ * The modal is a two-level drill-down inside one card (Figma 2376:226069 →
+ * reference flow 1142:44341): the root lists the wallets the visitor is most
+ * likely to reach for, and a "Search wallet · +N" row swaps the card's body for
+ * a searchable list of everything else.
+ */
+type ConnectView = 'root' | 'all';
+
+/**
+ * Non-injected connectors that stay on the root level rather than moving into
+ * the sublist. WalletConnect is the universal fallback the comp draws there;
+ * Safe only ever appears inside a Safe app, where burying it would strand the
+ * one connector that can work.
+ */
+const ROOT_OTHER_WALLET_IDS = ['walletConnect', 'safe'];
+
+/** Height of the sublist's scroll viewport (Figma 1142:44375), so the card
+ *  stays the same size whichever level is showing. */
+const SUBLIST_VIEWPORT = 'h-[258px]';
 
 // Detectors for in-page wallet SDK modals that may overlay our own Dialog.
 // Each detector knows the element selector AND how to tell whether the modal
@@ -72,6 +94,123 @@ function LegalLink({ name }: { name: string }) {
     <a href={sanitizeUrl(href)} target="_blank" rel="noreferrer" className="text-fgBrand hover:underline">
       {name}
     </a>
+  );
+}
+
+/**
+ * The root's overflow row (Figma 2376:226069): the same List / Wallet geometry
+ * as a connector row, with a glyph chip instead of a wallet mark and the count
+ * of what sits behind it instead of a badge.
+ */
+function SearchWalletRow({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid="connect-modal-search-wallet"
+      className="border-borderPrimary hover:border-borderTertiary flex w-full items-center justify-between overflow-hidden rounded-2xl border p-4 text-left transition-colors"
+    >
+      <span className="flex min-w-0 items-center gap-3">
+        {/* Figma types the chip colors/bg/bg-quarternary; the app's nearest
+            background token is bg-tertiary, a step lighter at this size. */}
+        <span className="bg-bgTertiary flex size-6 shrink-0 items-center justify-center rounded-lg">
+          <Search aria-hidden className="text-fgPrimary size-3" />
+        </span>
+        <span className="font-circle text-fgPrimary truncate text-sm leading-4 font-medium tracking-[-0.28px]">
+          {t`Search wallet`}
+        </span>
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <span className="text-fgSecondary font-graphik text-sm leading-[22px]">{`+${count}`}</span>
+        <ChevronRight aria-hidden className="text-fgQuaternary size-4 shrink-0" />
+      </span>
+    </button>
+  );
+}
+
+/**
+ * The sublist's filter field (Figma 1142:44374): an underline-only row — glyph,
+ * input, and a rule that takes the brand gradient once something is typed.
+ */
+function WalletSearchInput({
+  value,
+  onChange,
+  count
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  count: number;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <Search aria-hidden className="text-fgSecondary size-4 shrink-0" />
+        <input
+          autoFocus
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          aria-label={t`Search wallets`}
+          data-testid="connect-modal-search-input"
+          placeholder={t`Search through ${count} wallets`}
+          className="text-fgPrimary placeholder:text-fgTertiary font-graphik w-full bg-transparent text-sm leading-[22px] outline-hidden"
+        />
+      </div>
+      <span
+        className={cn(
+          'h-px w-full',
+          value ? 'from-brand3-start to-brand3-end bg-linear-to-r' : 'bg-borderPrimary'
+        )}
+      />
+    </div>
+  );
+}
+
+/**
+ * Fixed-height scroll viewport for the sublist, with the comp's bottom scrim
+ * (Figma 1142:44391) fading the last rows out — masked, not overlaid, so it
+ * works on the glass card without painting a colour over it. The fade only
+ * shows while there is more list below, so a short (or fully scrolled) list
+ * isn't dimmed for nothing.
+ */
+function FadingScrollList({ className, children }: { className?: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [faded, setFaded] = useState(false);
+  const rowCount = Children.count(children);
+
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    // 1px of slack: fractional layout can leave scrollTop a hair short of the
+    // bottom, which would keep the scrim up over nothing.
+    setFaded(el.scrollHeight - el.clientHeight - el.scrollTop > 1);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    // Rows are children, so the viewport's own box may not change when the
+    // filtered list does — watch the content too.
+    Array.from(el.children).forEach(child => observer.observe(child));
+    return () => observer.disconnect();
+    // Keyed on the row count, not on `children` itself: `children` is a fresh
+    // array every render, which would tear the observer down and rebuild it on
+    // every keystroke in the search field. The rows are uniform, so the scroll
+    // height only moves when their number does.
+  }, [measure, rowCount]);
+
+  return (
+    <div
+      ref={ref}
+      onScroll={measure}
+      data-testid="connect-modal-wallet-list"
+      className={cn('flex flex-col gap-2 overflow-y-auto', faded && 'mask-b-from-70%', className)}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -220,6 +359,11 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     return false;
   });
 
+  // "Other wallets" keeps only the connectors listed above; the rest sit behind
+  // the root's "Search wallet" row.
+  const rootOtherWallets = suggestedWallets.filter(c => ROOT_OTHER_WALLET_IDS.includes(c.id));
+  const sublistWallets = suggestedWallets.filter(c => !ROOT_OTHER_WALLET_IDS.includes(c.id));
+
   // Rows are the design-system List / Wallet (Figma 5209:38238): the whole
   // row is the connect button. The legacy "Connecting..." subtitle maps to the
   // active (loader) state; "Connected" and "Connect via QR" move into the
@@ -271,6 +415,23 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   // don't trigger this — our Dialog stays open through them.
   const [hasWalletOverlay, setHasWalletOverlay] = useState(false);
 
+  const [view, setView] = useState<ConnectView>('root');
+  const [query, setQuery] = useState('');
+
+  // A reopened modal always starts at the root — a stale drill-down (or a stale
+  // query) would be the first thing the next visitor sees.
+  useEffect(() => {
+    if (!open) {
+      setView('root');
+      setQuery('');
+    }
+  }, [open]);
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredSublist = normalizedQuery
+    ? sublistWallets.filter(c => c.name.toLowerCase().includes(normalizedQuery))
+    : sublistWallets;
+
   useEffect(() => {
     if (!open) {
       setHasWalletOverlay(false);
@@ -302,15 +463,34 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
         aria-describedby={undefined}
         // app-loader-cover-hidden: keeps this dialog's exit animation from
         // flashing over the app loader cover a first connect arms (APP-515).
-        className="app-loader-cover-hidden bg-containerDark max-h-[calc(100dvh-32px)] gap-8 overflow-auto p-8 sm:max-w-[490px] sm:min-w-[490px]"
+        // Surface is colors/bg/bg-secondary, the near-transparent lavender tint
+        // every other DS modal card takes (Figma 2376:226058, "Wrong background
+        // color"); the frosting comes from DialogOverlay's blur-full scrim, so
+        // the opaque containerDark it used to paint hid it.
+        className="app-loader-cover-hidden bg-bgSecondary max-h-[calc(100dvh-32px)] gap-8 overflow-auto p-8 sm:max-w-[490px] sm:min-w-[490px]"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className="flex items-center justify-between gap-4">
-          {/* Label 3 (Circular 18/22, -0.36) — it was a 24px heading. */}
-          <DialogTitle className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
-            {t`Connect a wallet`}
-          </DialogTitle>
+          <div className="flex items-center gap-4">
+            {/* Drilling in adds a back control and keeps the same title, so the
+                card never looks like a different modal (Figma 1142:44365). */}
+            {view === 'all' && (
+              <Button
+                variant="secondary"
+                size="iconM"
+                aria-label={t`Back`}
+                data-testid="connect-modal-back"
+                onClick={() => setView('root')}
+              >
+                <ChevronLeft aria-hidden className="size-4" />
+              </Button>
+            )}
+            {/* Label 3 (Circular 18/22, -0.36) — it was a 24px heading. */}
+            <DialogTitle className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+              {t`Connect a wallet`}
+            </DialogTitle>
+          </div>
           {/* DS Button / Icon, secondary at 40px. */}
           <DialogClose asChild>
             <Button variant="secondary" size="iconM" data-testid="connect-modal-close">
@@ -319,22 +499,46 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
           </DialogClose>
         </div>
 
-        <div className="flex flex-col gap-8">
-          {installedWallets.length > 0 && (
-            // Section labels are the pattern's Body 6 fg-secondary list titles (Figma 5209:38849).
-            <div className="flex flex-col gap-2">
-              <Text className="text-fgSecondary text-xs leading-[18px]">{t`Connect with`}</Text>
-              {installedWallets.map(renderConnectorButton)}
-            </div>
-          )}
+        {view === 'root' ? (
+          <div className="flex flex-col gap-8">
+            {installedWallets.length > 0 && (
+              // Section labels are the pattern's Body 6 fg-secondary list titles (Figma 5209:38849).
+              <div className="flex flex-col gap-2">
+                <Text className="text-fgSecondary text-xs leading-[18px]">{t`Connect with`}</Text>
+                {installedWallets.map(renderConnectorButton)}
+              </div>
+            )}
 
-          {suggestedWallets.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <Text className="text-fgSecondary text-xs leading-[18px]">{t`Other wallets`}</Text>
-              {suggestedWallets.map(renderConnectorButton)}
-            </div>
-          )}
-        </div>
+            {(rootOtherWallets.length > 0 || sublistWallets.length > 0) && (
+              <div className="flex flex-col gap-2">
+                <Text className="text-fgSecondary text-xs leading-[18px]">{t`Other wallets`}</Text>
+                {rootOtherWallets.map(renderConnectorButton)}
+                {sublistWallets.length > 0 && (
+                  <SearchWalletRow
+                    count={sublistWallets.length}
+                    onClick={() => {
+                      setQuery('');
+                      setView('all');
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <WalletSearchInput value={query} onChange={setQuery} count={sublistWallets.length} />
+            <FadingScrollList className={SUBLIST_VIEWPORT}>
+              {filteredSublist.length > 0 ? (
+                filteredSublist.map(renderConnectorButton)
+              ) : (
+                <Text className="text-fgSecondary py-4 text-center text-xs leading-[18px]">
+                  {t`No wallets match your search`}
+                </Text>
+              )}
+            </FadingScrollList>
+          </div>
+        )}
 
         {/* The comp closes on the terms line, centred under the lists — it used
             to sit between them, only appeared when a wallet was installed, and

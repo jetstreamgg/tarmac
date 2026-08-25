@@ -1,3 +1,4 @@
+import { mainnet } from 'viem/chains';
 import {
   usdcRiskCapitalVaultAddress,
   usdsFlagshipVaultAddress,
@@ -9,6 +10,8 @@ import { TOKENS } from '../tokens/tokens.constants';
 import { MorphoVaultConfig } from './morpho';
 
 export const MORPHO_API_URL = 'https://api.morpho.org/graphql';
+/** Morpho vaults (and their Merkl campaigns) are mainnet-only — always query the APIs with this chainId. */
+export const MORPHO_API_CHAIN_ID = mainnet.id;
 export const MERKL_API_URL = `${import.meta.env?.VITE_PROXY_ORIGIN || 'https://staging-proxy.sky.money'}/merkl/v4`;
 
 export enum MorphoAdapterType {
@@ -154,6 +157,85 @@ export const VAULT_V2_TRANSACTIONS_QUERY = `
         userAddress_in: [$userAddress]
         vaultAddress_in: $vaultAddresses
         type_in: [Deposit, Withdraw]
+      }
+    ) {
+      items {
+        vault {
+          address
+          asset {
+            symbol
+            decimals
+          }
+        }
+        type
+        timestamp
+        txHash
+        data {
+          ... on VaultV2DepositData {
+            assets
+          }
+          ... on VaultV2WithdrawData {
+            assets
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Per-user V2 position PnL plus a daily balance series for the earnings window.
+ * `pnl`/`assets`/series `y` serialize as string above 2^53 and number below;
+ * the series comes back newest-first. Exited positions keep their PnL.
+ */
+export const USER_VAULT_V2_PNL_QUERY = `
+  query UserVaultV2Pnl($userAddress: String!, $chainId: Int!, $startTimestamp: Int!, $endTimestamp: Int!) {
+    userByAddress(address: $userAddress, chainId: $chainId) {
+      vaultV2Positions {
+        vault {
+          address
+          asset {
+            symbol
+            decimals
+          }
+        }
+        assets
+        assetsUsd
+        pnl
+        pnlUsd
+        roe
+        history {
+          assets(options: { startTimestamp: $startTimestamp, endTimestamp: $endTimestamp, interval: DAY }) {
+            x
+            y
+          }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * VAULT_V2_TRANSACTIONS_QUERY variant scoped to a window start via
+ * `timestamp_gte` (an Int, not a BigInt) — the monthly flows method only needs
+ * in-window deposits and withdrawals, not the wallet's whole history.
+ */
+export const VAULT_V2_TRANSACTIONS_SINCE_QUERY = `
+  query VaultV2TransactionsSince(
+    $chainId: Int!
+    $userAddress: String!
+    $vaultAddresses: [String!]!
+    $sinceTimestamp: Int!
+  ) {
+    vaultV2transactions(
+      orderBy: Time
+      orderDirection: Desc
+      where: {
+        chainId_in: [$chainId]
+        userAddress_in: [$userAddress]
+        vaultAddress_in: $vaultAddresses
+        type_in: [Deposit, Withdraw]
+        timestamp_gte: $sinceTimestamp
       }
     ) {
       items {

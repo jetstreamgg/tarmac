@@ -1,11 +1,11 @@
-import { RefObject, useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { RefObject, useLayoutEffect, useState } from 'react';
 import { formatNumber } from '@/utils';
 import { TokenIconStack } from './TokenIconStack';
-import { HOVER_EASE, HOVER_FADE_MS, HOVER_TRACK_MS } from './chartMotion';
+import { useFollow } from './chartMotion';
 
-/** Gap between the hover point and the panel — recharts' own default offset. */
-const CURSOR_OFFSET = 10;
+/** Gap between the hover point and the panel. Wider than recharts' default 10
+ *  so the panel stands clear of the series instead of crowding it. */
+const CURSOR_OFFSET = 18;
 
 type Box = { left: number; top: number; width: number; height: number };
 type Size = { width: number; height: number };
@@ -28,19 +28,38 @@ function useTooltipPlacement(
   coordinate: { x: number; y: number } | undefined,
   anchorRef: RefObject<HTMLElement | null> | undefined
 ) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
   // Only the panel's *size* is tracked, never its position: the panel carries
   // the placement transform, so storing its left/top would re-enter this hook
   // on every animated frame and spin forever.
   const [panelSize, setPanelSize] = useState<Size | null>(null);
   const [anchor, setAnchor] = useState<Box | null>(null);
-  // Whether a previous render already placed the panel. Until one has, the
-  // glide is off — otherwise the first hover animates the panel in from the
-  // layer's origin, i.e. across the page from the top-left corner.
-  const [placed, setPlaced] = useState(false);
 
-  const positioned = Boolean(coordinate && anchorRef && anchor && panelSize);
+  const ready = !!coordinate && !!anchorRef && !!anchor && !!panelSize;
+
+  // Flip to the other side of the cursor when the panel would leave the plot,
+  // which is what recharts does with the default allowEscapeViewBox.
+  const flipX = ready && coordinate.x + CURSOR_OFFSET + panelSize.width > anchor.width;
+  const x = ready
+    ? anchor.left + coordinate.x + (flipX ? -CURSOR_OFFSET - panelSize.width : CURSOR_OFFSET)
+    : null;
+  // The panel rides the top of the plot, always — the comp animates the
+  // tooltip on x only (Figma 1598:76196 has no y track), and it is what the
+  // reference app does: a panel pinned to one line never covers the part of
+  // the series you are reading, and the eye stops having to chase it up and
+  // down while scrubbing.
+  //
+  // There used to be an exception here that dropped the panel to the plot
+  // floor when the series climbed into its band. It keyed off `coordinate.y`,
+  // which recharts fills with the POINTER's y, not the point's — so the panel
+  // swapped lanes whenever the pointer wandered into the top ~100px of the
+  // plot, whatever the series was doing. A rule that cannot see the series
+  // cannot stand clear of it; the pin is the behaviour to keep.
+  const y = ready ? anchor.top + CURSOR_OFFSET : null;
+
+  // The panel names the point the dot and rule mark, so it shares their time
+  // constant and arrives with them rather than trailing like the lit window.
+  // `useFollow` owns `transform`; it must stay out of the style prop below.
+  const panelRef = useFollow<HTMLDivElement>(x, y);
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
@@ -54,70 +73,29 @@ function useTooltipPlacement(
       const next = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
       setAnchor(prev => (sameBox(prev, next) ? prev : next));
     }
-    if (positioned) setPlaced(true);
   });
 
-  if (!coordinate || !anchorRef) return { panelRef, style: undefined };
+  // No anchor means the panel is rendered in place (unit tests, previews), so
+  // it keeps the document flow and places nothing.
+  if (!anchorRef) return { panelRef, style: undefined };
 
-  // First paint after activation has no measurements yet — keep the panel out
-  // of sight for that frame instead of flashing it at the layer's origin.
-  if (!anchor || !panelSize)
-    return { panelRef, style: { position: 'absolute', visibility: 'hidden' } as const };
+  // Anything short of a full placement — the first paint after activation, or
+  // a render recharts hands over without a coordinate — stays out of sight.
+  // Left visible it would paint unplaced at the portal layer's origin, i.e.
+  // the top-left corner of the viewport.
+  if (!ready) return { panelRef, style: { position: 'absolute', visibility: 'hidden' } as const };
 
-  // Flip to the other side of the cursor when the panel would leave the plot,
-  // which is what recharts does with the default allowEscapeViewBox.
-  const flipX = coordinate.x + CURSOR_OFFSET + panelSize.width > anchor.width;
-  const flipY = coordinate.y + CURSOR_OFFSET + panelSize.height > anchor.height;
-  const x = anchor.left + coordinate.x + (flipX ? -CURSOR_OFFSET - panelSize.width : CURSOR_OFFSET);
-  const y = anchor.top + coordinate.y + (flipY ? -CURSOR_OFFSET - panelSize.height : CURSOR_OFFSET);
-
-  return {
-    panelRef,
-    style: {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      // Transform, not left/top, so the move is compositor-driven. The timing
-      // is shared with the cursor, dot and lit window (Chart.tsx) because the
-      // comp moves all four as one — they leave and land together, on quart.
-      // It replaces a 400ms ease-out inherited from recharts' own wrapper,
-      // which left the panel trailing the rest of the hover chrome.
-      transform: `translate(${x}px, ${y}px)`,
-      transition: placed && !reduceMotion ? `transform ${HOVER_TRACK_MS}ms ${HOVER_EASE}` : 'none'
-    } as const
-  };
+  return { panelRef, style: { position: 'absolute', left: 0, top: 0 } as const };
 }
 
-/**
- * Trades one value for another on a ~100ms crossfade (the comp fades its date
- * and amount over ~96ms, out on quart and in on easeInOut).
- *
- * Both copies are stacked in one grid cell so they overlap while they trade —
- * a sequential fade would read as a flicker, and floating one copy out of flow
- * would collapse the panel's width mid-move.
+/*
+ * The panel's date and value used to trade places on a ~100ms crossfade (the
+ * comp fades them over ~96ms — Figma 1598:76197/76206). It is gone: while
+ * scrubbing, the figures are what the user is reading, and fading each swap
+ * leaves them mid-opacity most of the time, which is harder to read rather
+ * than smoother. The reference app the annotation names updates its tooltip
+ * text instantly. Deliberate deviation from the comp, on the user's call.
  */
-function Crossfade({ tokenKey, children }: { tokenKey: string; children: React.ReactNode }) {
-  const reduceMotion = useReducedMotion();
-  if (reduceMotion) return <>{children}</>;
-  return (
-    <span className="grid">
-      <AnimatePresence initial={false} mode="sync">
-        <motion.span
-          key={tokenKey}
-          className="col-start-1 row-start-1"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          // The comp fades the outgoing copy on quart and the incoming one on
-          // easeInOut, so the exit carries its own curve.
-          exit={{ opacity: 0, transition: { duration: HOVER_FADE_MS / 1000, ease: [0.77, 0, 0.175, 1] } }}
-          transition={{ duration: HOVER_FADE_MS / 1000, ease: [0.5, 0, 0.5, 1] }}
-        >
-          {children}
-        </motion.span>
-      </AnimatePresence>
-    </span>
-  );
-}
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -184,7 +162,7 @@ export function ChartTooltip({
       data-testid="chart-tooltip"
     >
       <p className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
-        <Crossfade tokenKey={labelFormatter(label)}>{labelFormatter(label)}</Crossfade>
+        {labelFormatter(label)}
       </p>
       {payload.map((entry, i) => (
         <div key={`tooltip-value-item-${i}`} className="flex items-center gap-4">
@@ -204,10 +182,8 @@ export function ChartTooltip({
           )}
           <span className="ml-auto flex items-center gap-1">
             <span className="text-fgPrimary font-circle text-xs leading-3.5 font-medium tracking-[-0.24px]">
-              <Crossfade tokenKey={String(entry.value)}>
-                {prefix || ''}
-                {`${formatNumber(entry.value)}${symbol && !isPercentage && !hasTokenIcon ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
-              </Crossfade>
+              {prefix || ''}
+              {`${formatNumber(entry.value)}${symbol && !isPercentage && !hasTokenIcon ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
             </span>
             {tokenSymbols && tokenSymbols.length > 0 && (
               <TokenIconStack
