@@ -292,6 +292,23 @@ describe('EarnPage requires-action section', () => {
     expect(row.textContent).not.toContain('%');
   });
 
+  it('respects the table filters like its sibling sections — one list, split in three', async () => {
+    matured.current = MATURED as typeof matured.current;
+    // The matured market is fixed-kind; a savings-only product filter hides it
+    // and the section self-hides with it (the Portfolio card still claims).
+    renderPage('/earn?product=savings');
+    await screen.findByText('Earn Opportunities');
+    expect(screen.queryByTestId('earn-requires-action')).toBeNull();
+  });
+
+  it('stays visible under a filter its registry attributes match', async () => {
+    matured.current = MATURED as typeof matured.current;
+    // The matured market accepted USDC while live, so a USDC filter keeps it.
+    renderPage('/earn?token=usdc');
+    await screen.findByText('Requires action');
+    expect(screen.getByTestId('earn-requires-action-row-matured-0x9c56')).toBeTruthy();
+  });
+
   it('routes a row click to the matured market detail page, where the claim card lives', async () => {
     matured.current = MATURED as typeof matured.current;
     const router = renderPage();
