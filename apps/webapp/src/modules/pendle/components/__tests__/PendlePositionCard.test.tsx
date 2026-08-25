@@ -92,7 +92,11 @@ vi.mock('../../hooks/usePendleModal', () => ({
   usePendleModal: () => ({ openSupply, openWithdraw })
 }));
 
-vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+vi.mock('@/modules/ui/components/TokenIcon', () => ({
+  TokenIcon: ({ token }: { token: { symbol: string } }) => (
+    <span data-testid="token-icon" data-symbol={token.symbol} />
+  )
+}));
 
 // The APP-450 accrued-to-date slice has its own suite
 // (PendlePositionCard.earnings.test.tsx); an empty wallet keeps it inert here.
@@ -219,6 +223,12 @@ describe('PendlePositionCard', () => {
       expect(card.textContent).toContain('Accrued');
       expect(card.textContent).toContain('184.8');
       expect(card.textContent).toContain('ready to withdraw');
+      // The figure is the redeem preview, denominated in the underlying — not
+      // USDS, even on a pegged market.
+      const heroSymbols = Array.from(card.querySelectorAll('[data-testid="token-icon"]'))
+        .slice(0, 2)
+        .map(el => el.getAttribute('data-symbol'));
+      expect(heroSymbols).toEqual(['USDG', 'USDG']);
       // The active-position actions are gone — claiming is the only move.
       expect(screen.queryByTestId('pendle-position-supply')).toBeNull();
       expect(screen.queryByTestId('pendle-position-withdraw')).toBeNull();

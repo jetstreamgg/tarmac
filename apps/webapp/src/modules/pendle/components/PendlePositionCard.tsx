@@ -257,8 +257,8 @@ function PendleMaturedCard({
   const claimAmount = parseFloat(
     formatUnits((previewAmount as bigint | undefined) ?? ptBalance, market.underlyingDecimals)
   );
-  // Pegged markets (1 PT → 1 USDS at expiry) present the claim as USDS.
-  const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
+  // The preview redeems to the underlying (sUSDS shares, not USDS, on the
+  // pegged market), so it carries the underlying symbol — as on the Portfolio card.
 
   // Off-chain, Claim stays enabled: the click switches the wallet first, then
   // opens (usePendleRedeemModal); Safe wallets disable with the hint instead.
@@ -268,7 +268,13 @@ function PendleMaturedCard({
   return (
     <ProductPositionCard
       data-testid="pendle-matured-position-card"
-      hero={<PositionHero pillSymbol={displaySymbol} balanceSymbol={displaySymbol} amount={claimAmount} />}
+      hero={
+        <PositionHero
+          pillSymbol={market.underlyingSymbol}
+          balanceSymbol={market.underlyingSymbol}
+          amount={claimAmount}
+        />
+      }
       stats={
         <>
           <ProductStatPair grow>
