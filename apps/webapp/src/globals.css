@@ -1307,6 +1307,19 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
   animation: none;
   opacity: 1;
 }
+/* A snapshot has no backdrop, so for the length of the transition the pill's
+   glass gets a stand-in for what its blur was sampling. The bar's own gradient
+   already carries the page background up behind the pill, so the same tint
+   over that flat colour lands within a hair of the frosted rest state —
+   whereas the bare tint reads as the glass simply switching off, with the page
+   sliding past sharp and unblurred straight through it.
+
+   background-color under background-image, so the tint composites over the
+   colour exactly as the glass composites over its backdrop. */
+:root:active-view-transition-type(page) .vt-navbar-glass {
+  background-color: var(--color-pageBackground);
+  background-image: linear-gradient(var(--color-glassSurface), var(--color-glassSurface));
+}
 
 @media (prefers-reduced-motion: no-preference) {
   :root:active-view-transition-type(page)::view-transition-old(page) {

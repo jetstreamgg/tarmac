@@ -11,12 +11,13 @@ export const DEFAULT_THEME: Theme = 'dark';
  * coloured but not covered. With no value at all Safari falls back to its own
  * default, which is the flat black the strips were showing.
  *
- * The values are sampled from the top row of the rendered page rather than
- * taken from `--color-pageBackground`: the real page top is the sky background
- * image over that base with the header's gradient on top, and in light mode
- * that reads a full step deeper than the token (#d2d2fa against #ecf0ff).
- * Measured stable across phone widths — 360, 393 and 430 all land within one
- * unit per channel.
+ * The values are sampled off the top of the app's own background layer —
+ * neither `--color-pageBackground` (the flat base the sky images are baked
+ * over, a good step darker/lighter than what anyone actually sees) nor the
+ * page's literal top row, which sits under the header bar's veil and in dark
+ * mode dragged the tint most of the way back to black. Measured on the
+ * background alone, and near enough constant over the first 160px (dark
+ * #100b27 → #100b28) and across phone widths.
  *
  * If a real device shows the strip mismatching the page, nudge these *and*
  * their twin literals in index.html (which has to inline them to get the tint
@@ -24,8 +25,8 @@ export const DEFAULT_THEME: Theme = 'dark';
  * also rings the IconStack badges, which must match the page, not this.
  */
 export const THEME_COLORS: Record<Theme, string> = {
-  dark: '#0c0723',
-  light: '#d2d2fa'
+  dark: '#100b27',
+  light: '#dbdfff'
 };
 
 /** Read the OS-level color-scheme preference, falling back to the default theme. */
@@ -41,11 +42,15 @@ export const applyTheme = (theme: Theme): void => {
 
   // Kept in step with the theme rather than declared once in the markup: the
   // in-app toggle has to move the browser chrome with it.
-  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (!meta) {
-    meta = document.createElement('meta');
-    meta.name = 'theme-color';
-    document.head.appendChild(meta);
-  }
+  //
+  // Replaced rather than re-assigned. Writing `content` on the meta already in
+  // the head leaves iOS Safari showing the *previous* theme's tint until the
+  // next navigation or reload — it reads the value once and does not watch the
+  // attribute. Dropping the element and inserting a fresh one is a head change
+  // it does pick up.
+  document.head.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.remove());
+  const meta = document.createElement('meta');
+  meta.name = 'theme-color';
   meta.content = THEME_COLORS[theme];
+  document.head.appendChild(meta);
 };
