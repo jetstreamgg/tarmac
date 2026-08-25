@@ -6,7 +6,6 @@ import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import {
   isMarketMatured,
-  isPendleChain,
   TOKENS,
   usePendleMarketsApiData,
   usePendleMaturedPositionEarnings,
@@ -39,7 +38,6 @@ import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { usePendleModal } from '../hooks/usePendleModal';
 import { usePendleRedeemModal } from '../hooks/usePendleRedeemModal';
-import { usePendleMaturedNetworkSwitch } from '../hooks/usePendleMaturedPositions';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import { NO_VALUE } from '@/lib/constants';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
@@ -252,11 +250,6 @@ function PendleMaturedCard({
   ptBalance: bigint;
   maturityLabel: string;
 }) {
-  const onPendleChain = isPendleChain(useChainId());
-  // The claim signs on mainnet; this card is a claim surface, so it prompts the
-  // switch the same way the Portfolio's matured cards do.
-  usePendleMaturedNetworkSwitch(true);
-
   const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
   const { earnings, currency } = usePendleMaturedPositionEarnings(market, ptBalance);
   // The receive amount (post SY-rate conversion); the PT balance stands in
@@ -267,7 +260,10 @@ function PendleMaturedCard({
   // Pegged markets (1 PT → 1 USDS at expiry) present the claim as USDS.
   const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
 
-  const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
+  // Off-chain, Claim stays enabled: the click switches the wallet first, then
+  // opens (usePendleRedeemModal); Safe wallets disable with the hint instead.
+  const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
+    usePendleRedeemModal(market);
 
   return (
     <ProductPositionCard
@@ -313,15 +309,17 @@ function PendleMaturedCard({
               variant="primary"
               size="l"
               onClick={openRedeemModal}
-              disabled={!onPendleChain || !isRedeemable || !isPrepared || previewLoading}
+              disabled={switchBlocked || !isRedeemable || previewLoading || (onPendleChain && !isPrepared)}
               data-testid="pendle-matured-redeem-button"
             >
               <Trans>Claim</Trans>
             </Button>
           </ProductActions>
-          {!onPendleChain && (
+          {switchBlocked && (
             <Text variant="small" className="text-fgSecondary" data-testid="pendle-redeem-network-hint">
-              <Trans>Redemption happens on Ethereum mainnet. Switch networks to claim.</Trans>
+              <Trans>
+                Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
+              </Trans>
             </Text>
           )}
         </div>

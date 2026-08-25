@@ -15,10 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SuppliedEmpty } from '@/modules/icons';
 import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
-import {
-  usePendleMaturedNetworkSwitch,
-  type PendleMaturedPosition
-} from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { type PendleMaturedPosition } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { PendleMaturedPositionCard } from '@/modules/pendle/components/PendleMaturedPositionCard';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
@@ -72,9 +69,6 @@ export function PortfolioPositionsSection({
   // switching the wallet to the position's chain first when needed; products
   // without one — and all Manage buttons — route to the product page.
   const resolveSupplyAction = usePortfolioSupplyActions();
-  // Redemption signs on mainnet — prompt the switch only while a claim card
-  // is actually visible (Supplied tab, matured PT held).
-  usePendleMaturedNetworkSwitch(tab === 'supplied' && maturedPositions.length > 0);
   const goToProduct = (detailPath: string) => {
     setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });

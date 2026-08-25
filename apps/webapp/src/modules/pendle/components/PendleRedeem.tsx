@@ -10,6 +10,7 @@ import {
   type Token
 } from '@/hooks';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { toGridCells, type ModalGridFee } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
@@ -39,8 +40,6 @@ type PendleRedeemProps = {
   networkChainId?: number;
   /** Live gas estimate for the Network fee cell. */
   feeCell?: ModalGridFee;
-  /** User-friendly inline-banner copy for prepare/verify failures. */
-  prepareErrorMessage?: string;
 };
 
 /**
@@ -63,8 +62,7 @@ export const PendleRedeem = ({
   slippageAction,
   network,
   networkChainId,
-  feeCell,
-  prepareErrorMessage
+  feeCell
 }: PendleRedeemProps) => {
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const outDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
@@ -129,15 +127,7 @@ export const PendleRedeem = ({
 
       <ModalSummaryGrid rows={toGridCells(rows, 'pendle-redeem-row', feeCell)} dividerClassName="h-6" />
 
-      {prepareErrorMessage && (
-        <div
-          className="bg-error/10 text-error rounded-xl px-3 py-2 text-sm"
-          data-testid="pendle-redeem-prepare-error"
-          role="alert"
-        >
-          {prepareErrorMessage}
-        </div>
-      )}
+      {feeCell?.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 };

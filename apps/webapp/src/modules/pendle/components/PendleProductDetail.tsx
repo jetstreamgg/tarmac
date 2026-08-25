@@ -101,7 +101,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       value: (
         <DetailValue
           loading={statsLoading}
-          value={stats?.tvl !== undefined ? `$${formatNumber(stats.tvl, { compact: true })}` : undefined}
+          value={stats?.tvl !== undefined ? `$${formatNumber(stats.tvl, { maxDecimals: 0 })}` : undefined}
         />
       )
     },

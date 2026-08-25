@@ -14,10 +14,7 @@ import {
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { usePendleUsdValue } from '@/widgets';
-import {
-  usePendleMaturedNetworkSwitch,
-  usePendleMaturedPositions
-} from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { getChainIcon } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { Intent } from '@/lib/enums';
@@ -351,11 +348,6 @@ export function EarnPage() {
       }),
     [visibleMaturedPositions, valueUsd]
   );
-
-  // A visible claim surface prompts the mainnet switch (the claim signs
-  // there) — keyed on the filtered list so a filtered-away section can't pop
-  // a wallet prompt with nothing on screen to explain it.
-  usePendleMaturedNetworkSwitch(visibleMaturedPositions.length > 0);
 
   // Rows route to the market's detail page, like every other row in this table
   // — a matured market keeps its page, and the claim card is its position slot.

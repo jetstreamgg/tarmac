@@ -1,22 +1,9 @@
 import { Trans } from '@lingui/react/macro';
 import { useChainId } from 'wagmi';
-import { mainnet } from 'viem/chains';
 import { Clock } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import {
-  chainId as chainIdMap,
-  formatBigInt,
-  formatNumber,
-  getChainIcon,
-  getChainName,
-  isTestnetId
-} from '@/utils';
-import {
-  isPendleChain,
-  type PendleMarketConfig,
-  usePendleMaturedPositionEarnings,
-  usePendleRedeemPreview
-} from '@/hooks';
+import { familyMainnetId, formatBigInt, formatNumber, getChainIcon, getChainName } from '@/utils';
+import { type PendleMarketConfig, usePendleMaturedPositionEarnings, usePendleRedeemPreview } from '@/hooks';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconboxStatus } from '@/components/ui/iconbox';
@@ -66,17 +53,15 @@ export const PendleMaturedPositionCard = ({
     maxDecimals: 2
   });
 
-  const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
-
-  // Redemption signs on mainnet; the portfolio has already prompted a network
-  // switch (usePendleMaturedNetworkSwitch), so a still-mismatched chain means
-  // the user declined — keep the card visible but the action disabled instead
-  // of letting the confirm fail with a wallet chain-mismatch error.
-  const chainId = useChainId();
-  const onPendleChain = isPendleChain(chainId);
+  // Off-chain, Claim stays enabled: the click switches the wallet first, then
+  // opens (usePendleRedeemModal) — so isPrepared only gates on the right chain.
+  // Safe wallets can't switch from the dapp, so their off-chain Claim disables
+  // with the hint below instead (APP-486).
+  const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
+    usePendleRedeemModal(market);
   // Where the claim executes — matches the redeem modal's Network cell (the
   // fork in dev sessions, mainnet otherwise).
-  const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : mainnet.id;
+  const engineChainId = familyMainnetId(useChainId());
 
   return (
     <Card
@@ -113,8 +98,8 @@ export const PendleMaturedPositionCard = ({
         <Text variant="small" className="text-fgSecondary">
           {earnings !== undefined && earnings > 0 && currency ? (
             <Trans>
-              Matured on {maturityLabel}. Your deposit and {formatNumber(earnings)} {currency} in yield are
-              ready to withdraw.
+              Matured on {maturityLabel}. Your deposit and {formatNumber(earnings, { maxDecimals: 2 })}{' '}
+              {currency} in yield are ready to withdraw.
             </Trans>
           ) : (
             <Trans>Matured on {maturityLabel}. Your deposit is ready to withdraw.</Trans>
@@ -161,7 +146,7 @@ export const PendleMaturedPositionCard = ({
             variant="primary"
             size="l"
             onClick={openRedeemModal}
-            disabled={!onPendleChain || !isRedeemable || !isPrepared || previewLoading}
+            disabled={switchBlocked || !isRedeemable || previewLoading || (onPendleChain && !isPrepared)}
             data-testid="pendle-matured-redeem-button"
           >
             <Trans>Claim</Trans>
@@ -175,9 +160,11 @@ export const PendleMaturedPositionCard = ({
             <Trans>View details</Trans>
           </Button>
         </div>
-        {!onPendleChain && (
+        {switchBlocked && (
           <Text variant="small" className="text-fgSecondary" data-testid="pendle-redeem-network-hint">
-            <Trans>Redemption happens on Ethereum mainnet. Switch networks to claim.</Trans>
+            <Trans>
+              Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
+            </Trans>
           </Text>
         )}
       </div>
