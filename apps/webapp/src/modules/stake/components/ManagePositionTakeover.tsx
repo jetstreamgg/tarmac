@@ -318,12 +318,11 @@ export function ManagePositionTakeover({
   // launch hook). The debounced simulation is the "after" vault — the same one
   // the borrow card's risk row reads, so the two can't disagree.
   const renderConfirmSummary = useCallback(
-    ({ calls, isBatch }: StakeLaunchContentContext) => (
+    ({ calls }: StakeLaunchContentContext) => (
       <div className="flex flex-col gap-8">
         {hasAmounts && heroes}
         <StakeConfirmGrid
           calls={calls}
-          isBatch={isBatch}
           hasPosition
           stakedBefore={existingCollateral}
           stakedAfter={newCollateralAmount > 0n ? newCollateralAmount : 0n}

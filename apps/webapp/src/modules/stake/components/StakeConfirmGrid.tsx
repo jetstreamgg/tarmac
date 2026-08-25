@@ -1,12 +1,20 @@
 import { useChainId } from 'wagmi';
 import type { Call } from 'viem';
 import { t } from '@lingui/core/macro';
-import { RiskLevel, useDelegateName, ZERO_ADDRESS, type Vault } from '@/hooks';
+import {
+  RiskLevel,
+  useDelegateName,
+  useHighestRateFromChartData,
+  useMultipleRewardsChartInfo,
+  ZERO_ADDRESS,
+  type Vault
+} from '@/hooks';
 import { capitalizeFirstLetter, formatAddress, formatBigInt, formatPercent } from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
@@ -20,6 +28,22 @@ export interface StakeRewardEndpoint {
 }
 
 const formatSky = (amount: bigint) => `${formatBigInt(amount, { maxDecimals: 2 })} SKY`;
+const formatRate = (rate: number | null) => (rate !== null ? `${(rate * 100).toFixed(2)}%` : NO_VALUE);
+
+/**
+ * The latest published rate for ONE farm, as a decimal. `useMultipleRewardsChartInfo`
+ * returns its series index-aligned with the addresses it was given, so a single-address
+ * call reduces to that farm's own latest point (no cross-farm "highest" blending).
+ * Disabled when no farm is passed — the common no-switch case costs nothing.
+ */
+function useFarmRate(farm?: `0x${string}`): { rate: number | null; isLoading: boolean } {
+  const { data, isLoading } = useMultipleRewardsChartInfo({
+    rewardContractAddresses: farm ? [farm] : []
+  });
+  const latest = useHighestRateFromChartData(data ?? []);
+  const parsed = latest ? parseFloat(latest.rate) : NaN;
+  return { rate: Number.isFinite(parsed) ? parsed : null, isLoading: !!farm && isLoading };
+}
 const formatUsds = (amount: bigint) => `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
 
 /** Icon symbol + label for one side of the Reward cell. */
@@ -31,8 +55,6 @@ const rewardSide = (endpoint: StakeRewardEndpoint | undefined, none: string): St
 export type StakeConfirmGridProps = {
   /** The engine's calls at launch — prices the live Network fee estimate. */
   calls: Call[];
-  /** Whether the flow goes out as one EIP-5792 bundle (the fee cell's bundling panel). */
-  isBatch: boolean;
   /** False on the open flow: there is no "before", so every cell shows one value. */
   hasPosition: boolean;
   /** Staked SKY before / after the staged legs (wad). */
@@ -73,7 +95,6 @@ export type StakeConfirmGridProps = {
  */
 export function StakeConfirmGrid({
   calls,
-  isBatch,
   hasPosition,
   stakedBefore,
   stakedAfter,
@@ -91,18 +112,31 @@ export function StakeConfirmGrid({
   showSelections
 }: StakeConfirmGridProps) {
   const chainId = useChainId();
-  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch });
+  // Derived here rather than taken as a prop: the fee cell renders the bundle
+  // TOGGLE, so the routing it prices has to track the switch the user is
+  // looking at. `calls` can stay the press-time snapshot — the calldata is
+  // fixed by then — but which way it is sent is still the user's to change.
+  const shouldUseBatch = useShouldUseBatch(calls.length > 1);
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch });
   const networkName = useNetworkName(chainId, NO_VALUE);
 
   const { data: delegateFromName } = useDelegateName(delegateFrom);
   const { data: delegateToName } = useDelegateName(delegateTo);
 
+  // The staged farm's own rate. Without it the review would draw
+  // `Reward: SKY → USDS` beside the OLD farm's rate and project the
+  // after-position at it — a figure that position will never earn.
+  const stagedRate = useFarmRate(rewardTo?.address);
+  const rateAfter = rewardTo ? stagedRate.rate : rewardsRate;
+  const ratesLoading = rateLoading || stagedRate.isLoading;
+
   // Annual staking rewards: rate × staked SKY, the same 1e9-scaled math F4 and
-  // the manage stake card use, so the review can't disagree with the card.
-  const estRewards = (staked: bigint) =>
-    rewardsRate !== null && staked > 0n
-      ? formatSky((staked * BigInt(Math.round(rewardsRate * 1_000_000_000))) / 1_000_000_000n)
-      : rewardsRate !== null
+  // the manage stake card use, so the review can't disagree with the card. The
+  // rate is passed in because the two sides can be different farms.
+  const estRewards = (staked: bigint, rate: number | null) =>
+    rate !== null && staked > 0n
+      ? formatSky((staked * BigInt(Math.round(rate * 1_000_000_000))) / 1_000_000_000n)
+      : rate !== null
         ? formatSky(0n)
         : NO_VALUE;
 
@@ -129,10 +163,11 @@ export function StakeConfirmGrid({
     hasPosition,
     stakedBefore: formatSky(stakedBefore),
     stakedAfter: formatSky(stakedAfter),
-    estRewardsBefore: estRewards(stakedBefore),
-    estRewardsAfter: estRewards(stakedAfter),
-    rewardRate: rewardsRate !== null ? `${(rewardsRate * 100).toFixed(2)}%` : NO_VALUE,
-    rateLoading,
+    estRewardsBefore: estRewards(stakedBefore, rewardsRate),
+    estRewardsAfter: estRewards(stakedAfter, rateAfter),
+    rewardRateBefore: formatRate(rewardsRate),
+    rewardRateAfter: formatRate(rateAfter),
+    rateLoading: ratesLoading,
     borrow: hasBorrow
       ? {
           borrowedBefore: formatUsds(debtBefore),

@@ -3,8 +3,6 @@ import { formatBigInt, formatUsd } from '@/utils';
 import { formatUnits } from 'viem';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
-export type { StakeRewardEndpoint } from './StakeConfirmGrid';
-
 function AmountHero({
   label,
   amount,

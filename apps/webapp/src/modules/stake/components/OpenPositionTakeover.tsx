@@ -253,12 +253,11 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   // launch hooks). A new (or emptied, on reopen) position has no "before", so
   // every cell states what the transaction leaves behind.
   const renderConfirmSummary = useCallback(
-    ({ calls, isBatch }: StakeLaunchContentContext) => (
+    ({ calls }: StakeLaunchContentContext) => (
       <div className="flex flex-col gap-8">
         {heroes}
         <StakeConfirmGrid
           calls={calls}
-          isBatch={isBatch}
           hasPosition={false}
           stakedBefore={debouncedSkyToLock}
           stakedAfter={debouncedSkyToLock}

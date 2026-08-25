@@ -8,7 +8,8 @@ const BASE: StakeConfirmRowInput = {
   stakedAfter: '1,500.00 SKY',
   estRewardsBefore: '56.90 SKY',
   estRewardsAfter: '85.35 SKY',
-  rewardRate: '5.69%',
+  rewardRateBefore: '5.69%',
+  rewardRateAfter: '5.69%',
   network: 'Ethereum',
   networkFee: '$1.23'
 };
@@ -133,6 +134,57 @@ describe('buildStakeConfirmRows', () => {
 
     expect(cells['Reward'].kind).toBe('delta');
     expect(cells['Delegate']).toMatchObject({ kind: 'single', value: '0x0F23...cc86' });
+  });
+
+  it('deltas the reward rate and projects the after-position at the STAGED farm', () => {
+    // A farm switch changes the rate the rewards accrue at. Stating the old
+    // farm's rate beside `Reward: SKY → USDS`, and projecting the resulting
+    // position at it, promises a figure that position will never earn.
+    const cells = cellsByLabel({
+      ...BASE,
+      rewardRateAfter: '12.00%',
+      estRewardsAfter: '180,000.00 SKY',
+      selections: SELECTIONS
+    });
+
+    expect(cells['Reward rate']).toMatchObject({
+      kind: 'delta',
+      before: '5.69%',
+      after: '12.00%',
+      rateAccent: 'savings'
+    });
+    expect(cells['Est. 1Y rewards']).toMatchObject({ kind: 'delta', after: '180,000.00 SKY' });
+  });
+
+  it('keeps the reward rate a single value when no farm switch is staged', () => {
+    expect(cellsByLabel(BASE)['Reward rate']).toMatchObject({ kind: 'single', value: '5.69%' });
+  });
+
+  it('holds the rate cells on a skeleton together while a farm rate is in flight', () => {
+    // Otherwise Est. 1Y rewards shows a skeleton while Reward rate shows a dash
+    // on the same screen, then both pop to a number.
+    const cells = cellsByLabel({ ...BASE, rateLoading: true });
+
+    expect(cells['Reward rate'].loading).toBe(true);
+    expect(cells['Est. 1Y rewards'].loading).toBe(true);
+  });
+
+  it('promotes the after-side icon onto a collapsed single cell', () => {
+    // A single cell has one side, and CellValue reads its glyph from the
+    // before-side hints — so an open-flow cell carrying only `afterToken`
+    // would otherwise read "USDS" beside the SKY icon.
+    const cells = cellsByLabel({
+      ...BASE,
+      hasPosition: false,
+      selections: SELECTIONS
+    });
+
+    expect(cells['Reward']).toMatchObject({ kind: 'single', value: 'USDS', token: 'USDS' });
+    expect(cells['Delegate']).toMatchObject({
+      kind: 'single',
+      value: 'Some Delegate',
+      avatar: SELECTIONS.delegateAfter.address
+    });
   });
 
   it('tints the risk cell per side', () => {

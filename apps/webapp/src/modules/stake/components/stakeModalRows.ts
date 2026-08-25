@@ -64,9 +64,15 @@ export type StakeConfirmRowInput = {
   /** Annual staking rewards on the position, in SKY. */
   estRewardsBefore: string;
   estRewardsAfter: string;
-  /** The urn farm's live staking-reward rate, formatted (e.g. "5.69%"). */
-  rewardRate: string;
-  /** The farm-rate read is in flight — the rate + est-rewards cells hold a skeleton. */
+  /**
+   * The staking-reward rate behind the position, formatted (e.g. "5.69%").
+   * These differ when a farm switch is staged — the rate the rewards accrue at
+   * afterwards is the STAGED farm's, and `estRewardsAfter` must be projected at
+   * it, or the review promises a figure the position will never earn.
+   */
+  rewardRateBefore: string;
+  rewardRateAfter: string;
+  /** A farm-rate read is in flight — the rate + est-rewards cells hold a skeleton. */
   rateLoading?: boolean;
   /**
    * Borrow leg. Omit on a position with no debt and no borrow staged — the
@@ -112,7 +118,7 @@ export type StakeConfirmRowInput = {
  * [ Borrowed    | Borrow rate       ]  ← debt only
  * [ Risk level  | Liquidation price ]  ← debt only
  * [ Reward      | Delegate          ]  ← when either is in play
- * [ Reward rate | Network           ]
+ * [ Reward rate | Network           ]  ← deltas on a farm switch
  * [ Network fee                     ]
  * ```
  *
@@ -128,10 +134,26 @@ export function buildStakeConfirmRows(input: StakeConfirmRowInput): StakeModalGr
    * there is no "before" to arrow from, so the cell states the value the
    * transaction leaves behind.
    */
-  const cell = (base: Parameters<typeof singleOrDelta>[0], before: string, after: string, moved?: boolean) =>
-    input.hasPosition
-      ? singleOrDelta(base, before, after, moved ?? before !== after)
-      : ({ ...base, kind: 'single', value: after } as StakeModalCell);
+  const cell = (
+    base: Parameters<typeof singleOrDelta>[0],
+    before: string,
+    after: string,
+    moved?: boolean
+  ) => {
+    if (input.hasPosition) return singleOrDelta(base, before, after, moved ?? before !== after);
+    // A single cell has only one side, and `CellValue` reads its glyph and tone
+    // from the BEFORE-side hints — so the after-side ones are promoted here
+    // rather than silently dropped (a cell reading "USDS" beside the SKY icon).
+    const { afterToken, afterAvatar, afterTone, ...rest } = base;
+    return {
+      ...rest,
+      token: afterToken ?? base.token,
+      avatar: afterAvatar ?? base.avatar,
+      tone: afterTone ?? base.tone,
+      kind: 'single',
+      value: after
+    } as StakeModalCell;
+  };
 
   const cells: StakeModalCell[] = [
     cell({ label: 'Staked', token: 'SKY' }, input.stakedBefore, input.stakedAfter),
@@ -174,7 +196,11 @@ export function buildStakeConfirmRows(input: StakeConfirmRowInput): StakeModalGr
   }
 
   cells.push(
-    rateCell('Reward rate', input.rewardRate, 'savings'),
+    cell(
+      { label: 'Reward rate', rateAccent: 'savings', loading: input.rateLoading },
+      input.rewardRateBefore,
+      input.rewardRateAfter
+    ),
     networkCell(input.network),
     networkFeeCell(input.networkFee)
   );
