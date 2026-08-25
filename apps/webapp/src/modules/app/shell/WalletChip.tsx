@@ -47,8 +47,16 @@ export function WalletChip() {
   // The terms half is gated on the terms not being accepted yet, which keeps
   // it to exactly the moments that used to show a card: a background re-check
   // for an already-accepted wallet must not throw a scrim over the app.
+  //
+  // It is gated on `isAuthorized` as well, because the two checks do not agree
+  // on when they are done: the terms check fires on address screening alone,
+  // while a region block comes from the separate VPN query. A clean address in
+  // a restricted region is therefore blocked *and* checking terms at once, and
+  // without this term the cover would sit on top of the Access-blocked dialog.
+  // Pre-cover that gate was implicit — the terms wait lived in TermsModal,
+  // which only mounts in the authorized branch below.
   const isScreening = !isAuthorized && !!(authData?.authIsLoading || vpnData?.vpnIsLoading);
-  const showChecksCover = isScreening || (!isConnectedAndAcceptedTerms && isCheckingTerms);
+  const showChecksCover = isScreening || (isAuthorized && !isConnectedAndAcceptedTerms && isCheckingTerms);
 
   // Connect type of Navbar Item / Wallet Info (Figma 5069:27086): the DS
   // primary button recipe at navbar height (40px, Label 5).

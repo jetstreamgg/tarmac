@@ -45,7 +45,14 @@ export function ConnectChecksCover({ open }: { open: boolean }) {
             the terms card finishes rising, not linger over it. */}
         <DialogPrimitive.Content
           className="app-loader-cover-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed inset-0 z-50 flex items-center justify-center outline-hidden data-[state=closed]:duration-150 data-[state=open]:duration-300"
-          onOpenAutoFocus={e => e.preventDefault()}
+          // Auto-focus is deliberately NOT prevented. The cover has no focusable
+          // children, and Radix's FocusScope only arms its trap from whatever it
+          // focused on mount: preventing it leaves `lastFocusedElementRef` null,
+          // and the focusin redirect then calls `focus(null)`, a guarded no-op.
+          // Tab would walk the page under the frost — `hideOthers` sets
+          // `aria-hidden`, which does not remove tabbability, and the body's
+          // `pointer-events: none` only stops the mouse. Letting it run focuses
+          // the scope container itself (`tabIndex={-1}`), which arms the trap.
           onEscapeKeyDown={e => e.preventDefault()}
           onInteractOutside={e => e.preventDefault()}
           data-testid="connect-checks-cover"
