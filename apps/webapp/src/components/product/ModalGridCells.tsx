@@ -41,11 +41,11 @@ export type ModalGridCellHints = {
    */
   rateAccent?: 'savings' | 'morpho';
   /**
-   * Draw the 12px trend glyph before the value: `true`/'up' the green up-arrow
+   * Draw the 12px trend glyph before the value: `true` the green up-arrow
    * (review Est. earnings), 'down' the red down-arrow (the Pendle "Lost on
    * early withdrawal" cell, Figma 2193:73598).
    */
-  trend?: boolean | 'up' | 'down';
+  trend?: boolean | 'down';
   /**
    * Draw the value's token icon inside the ringed Iconbox / Status (review
    * Product row). 'default' = border-tertiary ring (Savings); 'morpho' /
@@ -164,7 +164,7 @@ export const estEarningsTrendCell = (value: string, trailingToken?: string): Mod
  * not carry the healthy-green accent.
  */
 function RatePercent({ value }: { value: string }) {
-  if (!value.endsWith('%') || value.startsWith('-') || value.startsWith('−')) return <>{value}</>;
+  if (!value.endsWith('%') || value.startsWith('-')) return <>{value}</>;
   return (
     <>
       {value.slice(0, -1)}
@@ -243,6 +243,10 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     return <Skeleton className="h-4 w-16 rounded" data-testid="cell-loading" />;
   }
 
+  if (cell.kind === 'node') {
+    return <span className="flex items-center gap-1">{cell.node}</span>;
+  }
+
   const icon = cell.network ? (
     <NetworkIcon chainId={cell.networkChainId} />
   ) : cell.trend === 'down' ? (
@@ -254,10 +258,6 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
   ) : null;
 
   const accent = (value: string) => (cell.rateAccent === 'savings' ? <RatePercent value={value} /> : value);
-
-  if (cell.kind === 'node') {
-    return <span className="flex items-center gap-1">{cell.node}</span>;
-  }
   if (cell.kind === 'single') {
     return (
       <span className="flex items-center gap-1">

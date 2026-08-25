@@ -62,9 +62,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     amountIn: isRedeemable ? ptBalance : undefined,
     slippage,
     enabled: isRedeemable,
-    // Fetch once for the card's isPrepared gating, but only repoll (and
-    // re-simulate on each fresh apiMinOut) while the quote is on screen —
-    // this hook mounts once per matured card.
+    // Fetch once for the card's isPrepared gating; only repoll while the
+    // quote is on screen — this hook mounts once per matured card.
     poll: isModalOpen,
     maturedExit: true,
     ytToken: market.ytToken
@@ -175,16 +174,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const executeRef = useRef<() => void>(() => undefined);
   executeRef.current = () => writeHook.execute();
 
-  // `amount` = USD value of the redeemed output leg (the non-PT side), so
-  // sUSDS/PT redeems don't mis-sum the inflow/outflow tiles. amountFrom /
-  // amountTo in `data` keep the raw token counts. useAppAnalytics has no
-  // sign-flip helper, so emit the withdrawal sign explicitly — dashboard
-  // tiles filtering `properties.amount < 0` pick up redeem as a withdrawal
-  // alongside SELL. Omit `amount` when no price is available rather than
-  // emit a wrong-unit number. (pendleNonPtLeg/valueUsd are total — they never
-  // throw — and the eventual capture is guarded by safeCapture, matching the
-  // amount-math-unguarded / capture-guarded pattern in the other widgets.)
-  // Memoized so the launch seeds it AND the live-update effect below keeps it
+  // `amount` = USD value of the redeemed output leg, negative so dashboard
+  // tiles filtering `properties.amount < 0` count redeem as a withdrawal
+  // alongside SELL; omitted when no price is available rather than emit a
+  // wrong-unit number. amountFrom/amountTo in `data` keep the raw counts.
+  // Memoized so the launch seeds it and the live-update effect keeps it
   // fresh — the output token stays changeable after launch (APP-444 B14).
   const analytics = useMemo(() => {
     const toDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);

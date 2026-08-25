@@ -88,8 +88,7 @@ export const PendleRedeem = ({
     slippage: slippageDisplay,
     slippageMode,
     slippageAction,
-    // Floored, not rounded: this figure is the contractual minimum, and
-    // half-up rounding can display a floor higher than the real guarantee.
+    // Floored: the contractual minimum must not display optimistically.
     minReceived: quote
       ? formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 2, roundingMode: 'floor' })
       : NO_VALUE,

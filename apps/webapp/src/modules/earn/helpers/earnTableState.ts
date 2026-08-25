@@ -67,7 +67,7 @@ export function sanitizeFilters(raw: unknown, valid: EarnFilterOptionValues): Ea
  * section's matured entries — which are not full marketplace rows — run
  * through the same pass as everything else on the page.
  */
-export type EarnFilterableRow = Pick<EarnProductRow, 'risk' | 'networks' | 'supplyTokens' | 'kind'>;
+type EarnFilterableRow = Pick<EarnProductRow, 'risk' | 'networks' | 'supplyTokens' | 'kind'>;
 
 export function filterEarnRows<T extends EarnFilterableRow>(
   rows: T[],

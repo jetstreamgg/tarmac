@@ -104,12 +104,10 @@ export function SlippageMenu({
 
   const isCustom = value !== defaultValue;
 
-  // Only the ceiling clamps per keystroke — flooring there mangles typing:
-  // "0.5" starts with a "0" that a keystroke floor rewrites to the minimum,
-  // committing a tolerance the user never chose. Values still below the floor
-  // (or empty — "still typing", never "zero tolerance": committing 0 pins
-  // apiMinOut to the quote and any price tick reverts) stay uncommitted until
-  // they pass it; blur snaps a settled below-floor value up to the minimum.
+  // Only the ceiling clamps per keystroke — a keystroke floor rewrites the
+  // "0" of "0.5" to the minimum. Empty or below-floor input commits nothing
+  // (committing 0 pins apiMinOut to the quote, so any price tick reverts);
+  // blur snaps a settled below-floor value up to the minimum.
   const handleCustomChange = (raw: string) => {
     const capped = clampPercentMax(raw, max);
     setRawInput(capped);
