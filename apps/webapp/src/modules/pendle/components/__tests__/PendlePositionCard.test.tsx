@@ -25,8 +25,9 @@ const h = vi.hoisted(() => ({
   connected: true,
   ptBalance: 0n as bigint,
   walletBalance: 0n as bigint,
-  // Overrides the market's own expiry (the card prefers the API's) — a past
-  // value is how these specs reach the matured state.
+  // The API's expiry stat — display-only (dates, progress). The matured
+  // branch keys on the registry's market.expiry, so these specs reach it by
+  // rendering a market config with a past expiry instead.
   expirySec: undefined as number | undefined,
   earnings: { earnings: 184.8 as number | undefined, currency: 'USDS' as string | undefined }
 }));
@@ -121,19 +122,19 @@ import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider, CONTINUATION_DELAY_MS } from '@/modules/ui/context/ConnectThenActContext';
 import { PendlePositionCard } from '../PendlePositionCard';
 
-const wrap = () => (
+const wrap = (market: PendleMarketConfig = MARKET) => (
   <I18nProvider i18n={i18n}>
     <AnalyticsFlowProvider>
       <ConnectModalProvider>
         <ConnectThenActProvider>
-          <PendlePositionCard market={MARKET} />
+          <PendlePositionCard market={market} />
         </ConnectThenActProvider>
       </ConnectModalProvider>
     </AnalyticsFlowProvider>
   </I18nProvider>
 );
 
-const renderCard = () => render(wrap());
+const renderCard = (market?: PendleMarketConfig) => render(wrap(market));
 
 describe('PendlePositionCard', () => {
   afterEach(() => {
@@ -204,11 +205,14 @@ describe('PendlePositionCard', () => {
 
   describe('matured market', () => {
     const MATURED_SEC = 1_700_000_000; // 2023
+    // Maturity is the registry's call (the engine and redeem hook read
+    // market.expiry); the API stat only feeds display labels.
+    const MATURED_MARKET: PendleMarketConfig = { ...MARKET, expiry: MATURED_SEC };
 
     it('shows the claim card with the accrued figure and ready-to-withdraw copy', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 100_184n * 10n ** 18n;
-      renderCard();
+      renderCard(MATURED_MARKET);
 
       const card = screen.getByTestId('pendle-matured-position-card');
       expect(card.textContent).toContain('100,184');
@@ -223,7 +227,7 @@ describe('PendlePositionCard', () => {
     it('opens the redeem modal from the Claim CTA', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 100_184n * 10n ** 18n;
-      renderCard();
+      renderCard(MATURED_MARKET);
 
       fireEvent.click(screen.getByTestId('pendle-matured-redeem-button'));
       expect(openRedeemModal).toHaveBeenCalledTimes(1);
@@ -233,7 +237,7 @@ describe('PendlePositionCard', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 100_184n * 10n ** 18n;
       h.earnings = { earnings: undefined, currency: undefined };
-      renderCard();
+      renderCard(MATURED_MARKET);
 
       const card = screen.getByTestId('pendle-matured-position-card');
       expect(card.textContent).toContain('Your deposit is ready to withdraw');
@@ -243,7 +247,7 @@ describe('PendlePositionCard', () => {
     it('shows the closed-market state — never the supply pitch — when a connected user holds nothing', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 0n;
-      renderCard();
+      renderCard(MATURED_MARKET);
 
       const card = screen.getByTestId('pendle-matured-closed-card');
       expect(card.textContent).toContain('This market has matured');
@@ -260,7 +264,7 @@ describe('PendlePositionCard', () => {
       h.expirySec = MATURED_SEC;
       h.connected = false;
       h.ptBalance = 0n;
-      renderCard();
+      renderCard(MATURED_MARKET);
 
       // A zero balance with no wallet means unknown, not empty — and every
       // in-app route to this page requires holding matured PT.

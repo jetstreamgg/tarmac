@@ -364,7 +364,11 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   // card, everyone else the closed-market state. Never the supply pitch — the
   // market cannot accept deposits, and this page is now reachable without a
   // wallet, so an enabled Supply CTA here would open a modal that can't quote.
-  if (isMarketMatured(expirySec)) {
+  // Keyed on the registry expiry, not the API's: the redeem hook and every
+  // other maturity consumer read market.expiry, and a disagreement here would
+  // render a Claim CTA the hook keeps disabled (or a supply pitch on a market
+  // the engine considers matured).
+  if (isMarketMatured(market.expiry)) {
     return ptBalance > 0n ? (
       <PendleMaturedCard market={market} ptBalance={ptBalance} maturityLabel={claimDateLabel} />
     ) : (

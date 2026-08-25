@@ -137,12 +137,14 @@ describe('PendleRedeem', () => {
     expect(screen.queryByTestId('pendle-redeem-row-Claim token')).toBeNull();
   });
 
-  it('omits the swap-math cells on a pure redemption (no aggregator route)', () => {
+  it('keeps slippage and its floor on a pure redemption — the signed minTokenOut binds there too', () => {
     renderRedeem({ quote: baseQuote });
 
-    expect(screen.queryByTestId('pendle-redeem-row-Slippage')).toBeNull();
-    expect(screen.queryByTestId('pendle-redeem-row-Min. received')).toBeNull();
+    expect(screen.getByTestId('pendle-redeem-row-Slippage').textContent).toContain('1%');
+    expect(screen.getByTestId('pendle-redeem-row-Min. received')).toBeTruthy();
+    // Only the per-hop route cells are aggregator-only.
     expect(screen.queryByTestId('pendle-redeem-row-Price impact')).toBeNull();
+    expect(screen.queryByTestId('pendle-redeem-row-Routed via')).toBeNull();
     expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('Included in quote');
     expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
   });
@@ -151,8 +153,9 @@ describe('PendleRedeem', () => {
     renderRedeem({ quote: { ...baseQuote, aggregatorType: 'kyberswap' } });
 
     expect(screen.getByTestId('pendle-redeem-row-Slippage').textContent).toContain('1%');
-    // apiMinOut 1.4652 USDG rounds to 1.47 at two decimals.
-    expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.47');
+    // apiMinOut 1.4652 USDG floors to 1.46 — the figure is a contractual
+    // minimum, so half-up rounding would overstate the guarantee.
+    expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.46');
     // Raw -0.0005 displays positive (a cost) under the inverse convention.
     expect(screen.getByTestId('pendle-redeem-row-Price impact').textContent).toContain('0.050%');
   });

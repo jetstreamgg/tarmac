@@ -62,6 +62,10 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     amountIn: isRedeemable ? ptBalance : undefined,
     slippage,
     enabled: isRedeemable,
+    // Fetch once for the card's isPrepared gating, but only repoll (and
+    // re-simulate on each fresh apiMinOut) while the quote is on screen —
+    // this hook mounts once per matured card.
+    poll: isModalOpen,
     maturedExit: true,
     ytToken: market.ytToken
   });

@@ -31,7 +31,7 @@ type PendleRedeemProps = {
   slippageDisplay: string;
   /** Slippage mode badge text — "Auto" at the flow default, "Custom" otherwise. */
   slippageMode: string;
-  /** Inline gear opening the slippage menu — drawn only on aggregator routes. */
+  /** Inline gear opening the slippage menu. */
   slippageAction?: ReactNode;
   /** Network the transaction runs on. */
   network: string;
@@ -46,9 +46,9 @@ type PendleRedeemProps = {
 /**
  * Body of the matured-claim modal: the receive hero over the shared summary
  * grid. No comp exists for this flow — the layout follows the withdraw comps
- * (Figma 2193:73598 / 2193:73807). Slippage/price-impact cells appear only on
- * aggregator routes; a pure PT burn at the SY's expiry-frozen rate has no
- * swap math.
+ * (Figma 2193:73598 / 2193:73807). Slippage and its floor render on every
+ * route — even the pure burn signs a slippage-adjusted minTokenOut; only the
+ * price-impact/route row is aggregator-only.
  */
 export const PendleRedeem = ({
   market,
@@ -69,9 +69,9 @@ export const PendleRedeem = ({
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const outDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
   const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
-  // Aggregator-ness derives from the token, not the quote: the slippage gear
-  // must stay reachable while no quote resolves (a too-tight tolerance can be
-  // the reason it doesn't), and only non-SY-accepted outputs route through one.
+  // Aggregator-ness derives from the token, not the quote: the route row must
+  // stay stable while a quote is in flight, and only non-SY-accepted outputs
+  // route through one.
   const outputAddress = selectedOutputToken.address[mainnet.id]?.toLowerCase();
   const aggregator = market.syAcceptedTokens
     ? !market.syAcceptedTokens.some(accepted => accepted.toLowerCase() === outputAddress)
@@ -88,7 +88,11 @@ export const PendleRedeem = ({
     slippage: slippageDisplay,
     slippageMode,
     slippageAction,
-    minReceived: quote ? formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE,
+    // Floored, not rounded: this figure is the contractual minimum, and
+    // half-up rounding can display a floor higher than the real guarantee.
+    minReceived: quote
+      ? formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 2, roundingMode: 'floor' })
+      : NO_VALUE,
     receiveSymbol: selectedOutputToken.symbol,
     priceImpact: formatPriceImpact(quote?.priceImpact) ?? NO_VALUE,
     routedVia: aggregatorName ? `Pendle redeem → ${aggregatorName}` : NO_VALUE,

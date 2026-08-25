@@ -130,11 +130,18 @@ export function ConnectedPortfolio() {
   const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
   const calloutLoading = isLoading || balancesLoading || isGeoLoading;
-  const callout = cachedDecision
-    ? cachedDecision.outcome
-    : calloutLoading
-      ? 'none'
-      : portfolioCallout(depositedUsd, idleTotalUsd);
+  // Matured PT is capital in the protocol even though the marketplace rows no
+  // longer carry it — a wallet holding only matured PT gets the Claim card,
+  // never the get-started pitch a $0 depositedUsd would otherwise pick (and a
+  // stale cached outcome from before maturity doesn't resurrect it).
+  const hasMatured = !maturedLoading && allMaturedPositions.length > 0;
+  const callout = hasMatured
+    ? 'none'
+    : cachedDecision
+      ? cachedDecision.outcome
+      : calloutLoading
+        ? 'none'
+        : portfolioCallout(depositedUsd, idleTotalUsd);
   const optimisticSimulate = !cachedDecision && calloutLoading;
 
   // Once every source settles, persist the computed decision for the next
@@ -143,14 +150,15 @@ export function ConnectedPortfolio() {
   // Never off failed data: an errored source settles as empty/zero totals,
   // and caching that would freeze a wrong outcome for the TTL.
   useEffect(() => {
-    if (!address || calloutLoading || isPositionsError || balancesError) return;
+    if (!address || calloutLoading || maturedLoading || isPositionsError || balancesError) return;
     writePortfolioDecision(address, {
-      outcome: portfolioCallout(depositedUsd, idleTotalUsd),
+      outcome: allMaturedPositions.length > 0 ? 'none' : portfolioCallout(depositedUsd, idleTotalUsd),
       tab: depositedUsd <= SIGNIFICANT_BALANCE_USD && allMaturedPositions.length === 0 ? 'idle' : 'supplied'
     });
   }, [
     address,
     calloutLoading,
+    maturedLoading,
     isPositionsError,
     balancesError,
     depositedUsd,
@@ -160,12 +168,18 @@ export function ConnectedPortfolio() {
 
   // Matured PT needs action (Claim) and renders only on Supplied, so it wins
   // the default — and overrides a stale cached 'idle' from before maturity.
+  // The uncached idle default also waits for the matured read, exactly as it
+  // waits for positions: deciding on the in-flight empty list mounts Idle and
+  // then yanks to Supplied when balances resolve. (A pre-maturity cached
+  // 'idle' can still flip once; the cache rewrite above heals it.)
   const tab =
     userTab ??
     (maturedPositions.length > 0
       ? 'supplied'
       : (cachedDecision?.tab ??
-        (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied')));
+        (!isLoading && !isGeoLoading && !maturedLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD
+          ? 'idle'
+          : 'supplied')));
 
   const goToSavings = () => {
     setPendingNavIntent('card', ROUTES.EARN_SAVINGS);

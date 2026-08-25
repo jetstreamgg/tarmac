@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useChains } from 'wagmi';
+import { useChainId, useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho, Pendle } from '@/widgets';
 import {
   useEarnMarketplace,
   EarnProductKind,
+  productNetworks,
   RISK_TIER_BY_PROFILE,
   useUsdsDaiData,
   type EarnProductRow
@@ -18,6 +19,8 @@ import {
   usePendleMaturedPositions
 } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { getChainIcon } from '@/utils';
+import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
+import { Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { retainOnNavigate } from '@/lib/navigation';
@@ -123,6 +126,7 @@ export function EarnPage() {
   const { rows } = useEarnMarketplace();
   const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
   const chains = useChains();
+  const connectedChainId = useChainId();
   const navigate = useNavigate();
   const hash = useRouterState({ select: state => state.location.hash });
 
@@ -302,14 +306,14 @@ export function EarnPage() {
           // built (then discarded) inside useEarnMarketplace, so the matured
           // row can't borrow it — APP-532 folds these back into the rows.
           risk: RISK_TIER_BY_PROFILE.fixed,
-          networks: [mainnet.id],
+          networks: productNetworks(Intent.FIXED_INTENT, getSupportedChainIds(connectedChainId)),
           supplyTokens: ['USDS', 'USDC', position.market.underlyingSymbol],
           kind: 'fixed' as const
         })),
         filters,
         chainSlugById
       ),
-    [maturedPositions, filters, chainSlugById]
+    [maturedPositions, filters, chainSlugById, connectedChainId]
   );
   const requiresActionItems = useMemo<EarnTableRowItem[]>(
     () =>
@@ -350,8 +354,10 @@ export function EarnPage() {
   );
 
   // A visible claim surface prompts the mainnet switch, same as the Portfolio
-  // cards — the claim signs there.
-  usePendleMaturedNetworkSwitch(maturedPositions.length > 0);
+  // cards — the claim signs there. Keyed on the filtered list: when the active
+  // filters drop every matured row, no section renders and a wallet prompt
+  // would have nothing on screen to explain it.
+  usePendleMaturedNetworkSwitch(visibleMaturedPositions.length > 0);
 
   // Rows route to the market's detail page, like every other row in this table
   // — a matured market keeps its page, and the claim card is its position slot.
@@ -478,7 +484,6 @@ export function EarnPage() {
           <EarnTable
             rows={requiresActionItems}
             sort={sort}
-            onSortChange={toggleSort}
             onRowSelect={handleRequiresActionSelect}
             testIdPrefix="earn-requires-action"
           />
