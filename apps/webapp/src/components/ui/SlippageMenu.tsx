@@ -176,7 +176,6 @@ export function SlippageMenu({
                     use for their token pills and mini chips. */}
                 <span className="border-glassBorder focus-within:border-borderTertiary flex h-8 items-center gap-0.5 rounded-full border px-3 transition-colors">
                   <input
-                    autoFocus
                     placeholder={decimalToPercentString(defaultValue)}
                     className="text-fgPrimary font-circle w-[52px] [appearance:textfield] bg-transparent text-right text-sm leading-4 font-medium tracking-[-0.28px] focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     type="number"
