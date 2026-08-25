@@ -17,6 +17,7 @@ import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Close } from '@/modules/icons';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
 import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
+import { cn } from '@/lib/cn';
 
 const USER_RISK_DOCS_URL = 'https://docs.sky.money/user-risks';
 
@@ -105,6 +106,7 @@ export function TermsModal() {
     retryTermsCheck,
     isConnectedAndAcceptedTerms,
     latestTermsVersion,
+    termsEffectiveDate,
     acceptTerms
   } = useConnectedContext();
   const [isChecked, setIsChecked] = useState(false);
@@ -226,10 +228,18 @@ export function TermsModal() {
     </div>
   );
 
-  // The effective-date sentence rides the header subtitle (comp 2009:54582).
-  // The terms carry a date and no version number (Kacper with Ann Sofie,
-  // 13 Aug 2026 — APP-513): the comp's "Version 1.0" is placeholder text, and
-  // `terms_version.latest_version` holds the date.
+  // The version + effective-date sentence rides the header subtitle (comp
+  // 2009:54582). The comp's "Version 1.0" is live copy again: the terms carry
+  // BOTH a numeric version and an effective date, which reverses the earlier
+  // "date only" decision on APP-513. The worker serves the two separately —
+  // `latestTermsVersion` is the identity, `termsEffectiveDate` is display.
+  //
+  // Three cases, because the version and the date arrive independently. The
+  // version is what the user is actually agreeing to — the acceptance is
+  // recorded against it — so it stays on screen even when the date does not
+  // arrive (a worker predating the split sends no `effectiveDate`). Only the
+  // date is dropped in that case; rendering "effective undefined" would be
+  // worse than saying nothing, but so would naming no version at all.
   const readTheFullTerms = (
     <Trans>
       Please read the full <TermsLink href={TERMS_OF_USE_URL}>Terms of Use</TermsLink> and{' '}
@@ -250,9 +260,16 @@ export function TermsModal() {
             <Trans>Terms & Privacy</Trans>
           </ResponsiveModalTitle>
           <Text tag="p" className="text-fgSecondary max-w-[368px] text-[11px] leading-4">
-            {latestTermsVersion ? (
+            {latestTermsVersion && termsEffectiveDate ? (
               <>
-                <Trans>Terms of Use effective {latestTermsVersion}.</Trans> {readTheFullTerms}
+                <Trans>
+                  Version {latestTermsVersion}, effective {termsEffectiveDate}.
+                </Trans>{' '}
+                {readTheFullTerms}
+              </>
+            ) : latestTermsVersion ? (
+              <>
+                <Trans>Version {latestTermsVersion}.</Trans> {readTheFullTerms}
               </>
             ) : (
               readTheFullTerms
@@ -344,13 +361,26 @@ export function TermsModal() {
       <ResponsiveModal open={isModalOpen && !isCheckingTerms} onOpenChange={handleOpenChange}>
         <ResponsiveModalContent
           aria-describedby={undefined}
+          // This is a gate, not a dismissible panel (APP-534): a click on the
+          // scrim would disconnect the wallet, which reads as the app throwing
+          // the user out for missing the card. The X and Escape still exit —
+          // both deliberate, and both route through `handleOpenChange`.
+          onInteractOutside={event => event.preventDefault()}
+          // The top of the app's z stack. The default dialog tier (z-50) sits
+          // *below* the toast stack (z-[60], deliberately readable over other
+          // modals) and below the desktop cookie banner (md:z-[999]), both of
+          // which were drawing over the gate. Nothing may overlap this one, so
+          // it clears the highest of them; the scrim is lifted with the card
+          // because they are portal siblings, not nested.
+          overlayClassName="z-[1000]"
           // DS Modal card (Figma 1868:80728): bg-secondary tint at radius-2xl
           // over the frosted scrim, 610px wide — same recipe as TransactionModal.
-          className={
+          className={cn(
+            'z-[1000]',
             showCompactState
               ? 'bg-bgSecondary flex flex-col p-6 sm:max-w-[300px] sm:min-w-[300px] md:rounded-[28px]'
               : 'bg-bgSecondary flex flex-col gap-6 p-5 sm:max-w-152.5 sm:min-w-152.5 sm:gap-8 sm:p-8 md:rounded-[28px]'
-          }
+          )}
           onOpenAutoFocus={e => e.preventDefault()}
           data-testid="terms-modal"
         >

@@ -13,7 +13,10 @@ import { termsAcceptanceKey } from '@/modules/ui/lib/termsAcceptanceStorage';
 
 const ADDRESS_A = '0x1234567890123456789012345678901234567890';
 const ADDRESS_B = '0x0987654321098765432109876543210987654321';
-const VERSION = '2026-01-15';
+// The numeric identity the local flag is keyed by, and the date shown beside
+// it. Separate values on purpose: nothing derives one from the other.
+const VERSION = '1.0';
+const EFFECTIVE_DATE = '2026-01-15';
 
 // Shared spies/state between the mocks and assertions.
 const mocks = vi.hoisted(() => ({
@@ -132,6 +135,7 @@ const checkResult = (overrides: Record<string, unknown> = {}) => ({
   accepted: true,
   signedForCurrentVersion: false,
   latestVersion: VERSION,
+  effectiveDate: EFFECTIVE_DATE,
   messageToSign: 'By signing this message...',
   ...overrides
 });
@@ -225,11 +229,27 @@ describe('ConnectedContext — the terms AND gate', () => {
 
   it('re-prompts after a terms version bump', async () => {
     localStorage.setItem(termsAcceptanceKey(ADDRESS_A, VERSION), 'true');
-    mocks.checkTermsWithRetry.mockResolvedValue(checkResult({ latestVersion: '2026-06-01' }));
+    mocks.checkTermsWithRetry.mockResolvedValue(checkResult({ latestVersion: '2.0' }));
 
     renderProvider();
 
-    await waitFor(() => expect(screen.getByTestId('version').textContent).toBe('2026-06-01'));
+    await waitFor(() => expect(screen.getByTestId('version').textContent).toBe('2.0'));
+    expect(accepted()).toBe('false');
+  });
+
+  // A minor bump re-prompts exactly like a major one: the flag is keyed by the
+  // whole version string and nothing compares parts of it.
+  it('re-prompts after a MINOR version bump that keeps the effective date', async () => {
+    localStorage.setItem(termsAcceptanceKey(ADDRESS_A, VERSION), 'true');
+    mocks.checkTermsWithRetry.mockResolvedValue(
+      checkResult({ latestVersion: '1.1', effectiveDate: EFFECTIVE_DATE })
+    );
+
+    renderProvider();
+
+    await waitFor(() => expect(screen.getByTestId('version').textContent).toBe('1.1'));
+    // The date is unchanged, so a date-keyed flag would still read as accepted
+    // here — this is the collision the numeric identity exists to prevent.
     expect(accepted()).toBe('false');
   });
 

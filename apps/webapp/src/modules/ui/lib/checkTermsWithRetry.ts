@@ -18,8 +18,21 @@ export interface TermsCheckData {
    * for a version that was never accepted.
    */
   signedForCurrentVersion: boolean;
-  /** The version both booleans were evaluated against, and the local flag's key component. */
+  /**
+   * The version both booleans were evaluated against, and the local flag's key
+   * component. A numeric identity (`'1.0'`, `'2.1'`) since APP-424's version
+   * rework — exact-match only, because every bump re-prompts, minor ones
+   * included. Nothing here parses or compares parts of it.
+   */
   latestVersion: string;
+  /**
+   * The effective date of that version, for display only — the terms modal
+   * names it. Deliberately NOT the local flag's key: two revisions may share
+   * an effective date, and keying on it would let an acceptance of the first
+   * satisfy the second. Optional so a worker that predates the split cannot
+   * block browsing.
+   */
+  effectiveDate?: string;
   /**
    * The exact text Phase B must sign. The worker holds the only copy and
    * verifies against that same constant (APP-508), so this is passed to
@@ -71,6 +84,7 @@ export async function checkTermsWithRetry(address: string): Promise<TermsCheckOu
           accepted: res.accepted === true,
           signedForCurrentVersion: res.signedForCurrentVersion === true,
           latestVersion: res.latestVersion,
+          effectiveDate: typeof res.effectiveDate === 'string' ? res.effectiveDate : undefined,
           messageToSign: typeof res.messageToSign === 'string' ? res.messageToSign : undefined
         };
       }

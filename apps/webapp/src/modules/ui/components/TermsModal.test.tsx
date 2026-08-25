@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TermsModal } from './TermsModal';
 
@@ -11,7 +11,15 @@ const mocks = vi.hoisted(() => ({
   openModal: vi.fn(),
   acceptTerms: vi.fn(),
   retryTermsCheck: vi.fn(),
-  connected: { isConnectedAndAcceptedTerms: false, termsCheckDenied: false, isCheckingTerms: false },
+  connected: {
+    isConnectedAndAcceptedTerms: false,
+    termsCheckDenied: false,
+    isCheckingTerms: false,
+    // The numeric identity and the date shown beside it, as two values — the
+    // header renders both only when both arrived.
+    latestTermsVersion: '1.0' as string | undefined,
+    termsEffectiveDate: '2026-01-15' as string | undefined
+  },
   termsModal: { isModalOpen: true }
 }));
 
@@ -38,7 +46,8 @@ vi.mock('../context/ConnectedContext', () => ({
     termsCheckDenied: mocks.connected.termsCheckDenied,
     retryTermsCheck: mocks.retryTermsCheck,
     isConnectedAndAcceptedTerms: mocks.connected.isConnectedAndAcceptedTerms,
-    latestTermsVersion: '2026-01-15',
+    latestTermsVersion: mocks.connected.latestTermsVersion,
+    termsEffectiveDate: mocks.connected.termsEffectiveDate,
     acceptTerms: mocks.acceptTerms
   })
 }));
@@ -62,6 +71,8 @@ describe('TermsModal', () => {
     mocks.connected.isConnectedAndAcceptedTerms = false;
     mocks.connected.termsCheckDenied = false;
     mocks.connected.isCheckingTerms = false;
+    mocks.connected.latestTermsVersion = '1.0';
+    mocks.connected.termsEffectiveDate = '2026-01-15';
     mocks.termsModal.isModalOpen = true;
   });
 
@@ -124,6 +135,31 @@ describe('TermsModal', () => {
 
     expect(mocks.disconnect).toHaveBeenCalledTimes(1);
     expect(mocks.closeModal).toHaveBeenCalledTimes(1);
+  });
+
+  // APP-534: the modal is a gate, and a scrim click disconnects — so a stray
+  // click beside the card would have read as the app ejecting the user.
+  it('stays open on a click on the scrim', async () => {
+    renderModal();
+
+    // Radix registers its outside-pointer listener on a macrotask after mount,
+    // and (since 1.1.14) only dismisses once the matching `click` lands on a
+    // dismissable surface — the scrim, which is the card's portal sibling. A
+    // bare pointerdown on the body dismisses nothing either way, so it would
+    // pass whether or not the guard is there.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    const scrim = screen.getByTestId('terms-modal').previousElementSibling as HTMLElement;
+    await act(async () => {
+      fireEvent.pointerDown(scrim, { button: 0 });
+      fireEvent.click(scrim, { button: 0 });
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(mocks.disconnect).not.toHaveBeenCalled();
+    expect(mocks.closeModal).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('terms-modal')).not.toBeNull();
   });
 
   it('does not disconnect when the modal closes after terms have been accepted', () => {
@@ -209,13 +245,36 @@ describe('TermsModal', () => {
     expect(screen.queryByText(/An error occurred/)).toBeNull();
   });
 
-  // The terms carry an effective date and no version label (APP-513): the
-  // header subtitle must render the date and nothing in the modal may say
-  // "version" — the comp's "Version 1.0" is placeholder text.
-  it('renders the effective date in the header with no version label', () => {
+  // The terms carry BOTH a numeric version and an effective date (APP-424,
+  // reversing APP-513's date-only decision), so the comp's "Version 1.0" is
+  // live copy again rather than placeholder text.
+  it('renders the version and the effective date in the header', () => {
     renderModal();
 
-    expect(screen.getByText(/Terms of Use effective 2026-01-15/)).toBeTruthy();
-    expect(screen.queryByText(/version 2026-01-15/i)).toBeNull();
+    expect(screen.getByText(/Version 1\.0, effective 2026-01-15/)).toBeTruthy();
+  });
+
+  // A worker predating the split sends no effectiveDate. "Version 1.0,
+  // effective undefined" must not render — but the version must survive, since
+  // that is what the acceptance is recorded against.
+  it('keeps the version and drops only the date when the effective date is missing', () => {
+    mocks.connected.termsEffectiveDate = undefined;
+
+    renderModal();
+
+    expect(screen.getByText(/Version 1\.0\./)).toBeTruthy();
+    expect(screen.queryByText(/effective/i)).toBeNull();
+    expect(screen.getByText(/Please read the full/)).toBeTruthy();
+  });
+
+  // Nothing to name at all: before the check resolves there is no version yet.
+  it('renders only the plain sentence before the check resolves', () => {
+    mocks.connected.latestTermsVersion = undefined;
+    mocks.connected.termsEffectiveDate = undefined;
+
+    renderModal();
+
+    expect(screen.queryByText(/Version/)).toBeNull();
+    expect(screen.getByText(/Please read the full/)).toBeTruthy();
   });
 });

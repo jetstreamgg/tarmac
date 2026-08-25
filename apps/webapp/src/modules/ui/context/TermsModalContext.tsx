@@ -10,33 +10,52 @@ const TermsModalContext = React.createContext({
 
 export function TermsModalProvider({ children }: { children: React.ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // One auto-open per connection. Watching `isModalOpen` instead would reopen
-  // the modal against a dismissal: dismissing disconnects (TermsModal), but
-  // wagmi reports the disconnect asynchronously, so for a few renders the
-  // state still reads connected-without-terms.
-  const [hasAutoOpened, setHasAutoOpened] = useState(false);
+  // One auto-open per *address*, not per connection (APP-534). Keying it to the
+  // connection let an in-wallet account switch through the gate entirely:
+  // wagmi keeps `isConnected` true across the switch, so the latch stayed set
+  // while the new address had no terms verdict at all — the header fell back to
+  // "Connect Wallet" and nothing ever re-prompted. Holding the address the
+  // latch was set for still blocks the reopen-against-a-dismissal case the
+  // boolean existed for: dismissing disconnects (TermsModal), but wagmi reports
+  // that asynchronously, and through those renders the address is unchanged.
+  const [autoOpenedForAddress, setAutoOpenedForAddress] = useState<string | undefined>(undefined);
   const { isConnectedAndAcceptedTerms, termsCheckError, isAuthorized } = useConnectedContext();
-  const { isConnected } = useConnection();
+  const { isConnected, address } = useConnection();
   const { openConnectModal } = useConnectModal();
 
   // Derived from state rather than the connect event: the flow puts address
   // screening between wallet selection and the T&C gate (APP-497), and
   // `isAuthorized` stays false until screening resolves — so a blocked wallet
-  // gets the blocked screen and never sees the terms modal.
+  // gets the blocked screen and never sees the terms modal. That also makes
+  // this cover the account switch for free: ConnectedContext drops the terms
+  // verdict and re-runs screening on every address change, so the switched-in
+  // address arrives here in exactly the state a fresh connection would.
   useEffect(() => {
-    if (!isConnected) {
+    if (!isConnected || !address) {
       // Also drop any open state: a modal latched open during a connection
       // must not greet the next one (found in APP-497 QA — a blocked wallet's
       // disconnect surfaced the terms modal it was never supposed to see).
-      setHasAutoOpened(false);
+      setAutoOpenedForAddress(undefined);
       setIsModalOpen(false);
       return;
     }
-    if (!hasAutoOpened && isAuthorized && !isConnectedAndAcceptedTerms && !termsCheckError) {
-      setHasAutoOpened(true);
+    if (
+      autoOpenedForAddress !== address &&
+      isAuthorized &&
+      !isConnectedAndAcceptedTerms &&
+      !termsCheckError
+    ) {
+      setAutoOpenedForAddress(address);
       setIsModalOpen(true);
     }
-  }, [isConnected, isAuthorized, isConnectedAndAcceptedTerms, termsCheckError, hasAutoOpened]);
+  }, [
+    isConnected,
+    address,
+    isAuthorized,
+    isConnectedAndAcceptedTerms,
+    termsCheckError,
+    autoOpenedForAddress
+  ]);
 
   useEffect(() => {
     if (isConnectedAndAcceptedTerms) {
