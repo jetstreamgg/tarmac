@@ -76,17 +76,6 @@ describe('SlippageMenu', () => {
     expect(onChange).toHaveBeenLastCalledWith(0.5);
   });
 
-  it('warns once the tolerance is high enough to cost real money', () => {
-    renderMenu({ value: 0.005 });
-    openMenu();
-
-    selectTab('slippage-menu-custom-tab');
-    expect(screen.queryByTestId('slippage-menu-high-warning')).toBeNull();
-
-    fireEvent.change(screen.getByTestId('slippage-menu-input'), { target: { value: '5' } });
-    expect(screen.getByTestId('slippage-menu-high-warning')).toBeTruthy();
-  });
-
   it('resets to the default when Auto is selected', () => {
     renderMenu({ value: 0.005 });
     openMenu();

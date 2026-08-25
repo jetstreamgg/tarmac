@@ -19,9 +19,6 @@ import { cn } from '@/lib/cn';
 const AUTO = 'auto';
 const CUSTOM = 'custom';
 
-/** Above this, the panel says so — the price you accept starts to hurt. */
-const HIGH_SLIPPAGE_PERCENT = 1;
-
 /** Decimal slippage (e.g. 0.002 for 0.2%) → percentage string for the input. */
 function decimalToPercentString(decimal: number): string {
   return (decimal * 100).toFixed(2).replace(/\.?0+$/, '');
@@ -194,17 +191,6 @@ export function SlippageMenu({
                   <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>
                 </span>
               </div>
-              {percentStringToDecimal(rawInput) * 100 > HIGH_SLIPPAGE_PERCENT && (
-                <p
-                  className="text-statusWarning font-graphik mt-3 text-xs leading-[18px]"
-                  data-testid={`${dataTestId}-high-warning`}
-                >
-                  <Trans>
-                    A tolerance this high can fill well below the quoted amount. Only raise it if a trade
-                    keeps failing.
-                  </Trans>
-                </p>
-              )}
             </TabsContent>
           </Tabs>
         </div>
