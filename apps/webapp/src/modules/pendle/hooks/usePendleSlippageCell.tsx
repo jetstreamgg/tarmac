@@ -24,7 +24,11 @@ export function usePendleSlippageCell(mode: PendleSlippageMode): {
         value={slippage}
         defaultValue={defaultSlippage}
         onChange={setSlippage}
-        triggerClassName="text-fgTertiary hover:text-fgPrimary data-[state=open]:text-fgPrimary p-0 [&>svg]:size-3.5"
+        // Matches the info affordance beside it: 12px, secondary at rest,
+        // primary on hover/open. It was dimmer and larger than every other
+        // glyph in the grid, which is backwards — it is the one control in an
+        // otherwise read-only table.
+        triggerClassName="text-fgSecondary hover:text-fgPrimary data-[state=open]:text-fgPrimary p-0 [&>svg]:size-3"
         dataTestId="pendle-slippage-menu"
       />
     ),

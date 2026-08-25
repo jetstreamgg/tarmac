@@ -19,6 +19,9 @@ import { cn } from '@/lib/cn';
 const AUTO = 'auto';
 const CUSTOM = 'custom';
 
+/** Above this, the panel says so — the price you accept starts to hurt. */
+const HIGH_SLIPPAGE_PERCENT = 1;
+
 /** Decimal slippage (e.g. 0.002 for 0.2%) → percentage string for the input. */
 function decimalToPercentString(decimal: number): string {
   return (decimal * 100).toFixed(2).replace(/\.?0+$/, '');
@@ -65,7 +68,10 @@ export function SlippageMenu({
   value,
   defaultValue,
   onChange,
-  min = 0,
+  // A floor rather than 0: zero tolerance is never a working setting, it just
+  // guarantees a revert. The ceiling stays generous — a thin market can need
+  // real room — but the panel warns past `HIGH_SLIPPAGE_PERCENT`.
+  min = 0.01,
   max = 50,
   description,
   triggerClassName,
@@ -102,7 +108,12 @@ export function SlippageMenu({
   const handleCustomChange = (raw: string) => {
     const clamped = clampPercentString(raw, min, max);
     setRawInput(clamped);
-    onChange(clamped === '' ? 0 : percentStringToDecimal(clamped));
+    // An empty field means "still typing", not "zero tolerance". Committing 0
+    // here pinned apiMinOut to the quoted amount, so any tick of price movement
+    // reverted the transaction — with the field showing a placeholder and the
+    // grid reading 0%, giving the user nothing to connect the failure to.
+    if (clamped === '') return;
+    onChange(percentStringToDecimal(clamped));
   };
 
   return (
@@ -118,7 +129,9 @@ export function SlippageMenu({
         <Settings className="h-5 w-5" />
       </PopoverTrigger>
       <PopoverContent
-        className="w-[330px] rounded-[20px] shadow-xl backdrop-blur-2xl"
+        // Same surface as PopoverInfo, which opens from a cell two along in
+        // the same grid — they read as siblings rather than two dialects.
+        className="bg-containerDark w-80 rounded-xl backdrop-blur-[50px]"
         data-testid={`${dataTestId}-content`}
       >
         <div className="flex w-full flex-col gap-4">
@@ -174,7 +187,8 @@ export function SlippageMenu({
                     use for their token pills and mini chips. */}
                 <span className="border-glassBorder focus-within:border-borderTertiary flex h-8 items-center gap-0.5 rounded-full border px-3 transition-colors">
                   <input
-                    placeholder={t`Custom`}
+                    autoFocus
+                    placeholder={decimalToPercentString(defaultValue)}
                     className="text-fgPrimary font-circle w-[52px] [appearance:textfield] bg-transparent text-right text-sm leading-4 font-medium tracking-[-0.28px] focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     type="number"
                     step="any"
@@ -188,6 +202,17 @@ export function SlippageMenu({
                   <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>
                 </span>
               </div>
+              {percentStringToDecimal(rawInput) * 100 > HIGH_SLIPPAGE_PERCENT && (
+                <p
+                  className="text-statusWarning font-graphik mt-3 text-xs leading-[18px]"
+                  data-testid={`${dataTestId}-high-warning`}
+                >
+                  <Trans>
+                    A tolerance this high can fill well below the quoted amount. Only raise it if a trade
+                    keeps failing.
+                  </Trans>
+                </p>
+              )}
             </TabsContent>
           </Tabs>
         </div>

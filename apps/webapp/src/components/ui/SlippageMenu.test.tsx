@@ -76,6 +76,40 @@ describe('SlippageMenu', () => {
     expect(onChange).toHaveBeenLastCalledWith(0.5);
   });
 
+  it('never commits zero tolerance when the field is cleared', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    fireEvent.change(screen.getByTestId('slippage-menu-input'), { target: { value: '' } });
+
+    // Zero pins the minimum received to the quote, so any price movement
+    // reverts the transaction — with nothing on screen to explain it.
+    expect(onChange).not.toHaveBeenCalledWith(0);
+    expect((screen.getByTestId('slippage-menu-input') as HTMLInputElement).value).toBe('');
+  });
+
+  it('floors a typed zero rather than accepting it', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    fireEvent.change(screen.getByTestId('slippage-menu-input'), { target: { value: '0' } });
+
+    expect(onChange).not.toHaveBeenCalledWith(0);
+  });
+
+  it('warns once the tolerance is high enough to cost real money', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    expect(screen.queryByTestId('slippage-menu-high-warning')).toBeNull();
+
+    fireEvent.change(screen.getByTestId('slippage-menu-input'), { target: { value: '5' } });
+    expect(screen.getByTestId('slippage-menu-high-warning')).toBeTruthy();
+  });
+
   it('resets to the default when Auto is selected', () => {
     renderMenu({ value: 0.005 });
     openMenu();
