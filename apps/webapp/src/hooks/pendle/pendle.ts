@@ -337,11 +337,16 @@ export type PendleMarketsAllResponseRaw = {
  * `assetUsd` is the underlying token's USD price at trade time;
  * `txValueAsset * assetUsd` yields the USD-denominated trade value.
  *
- * Fields not consumed (ptData/ytData/lpData, profit, priceInAsset) are
- * intentionally omitted — the wire shape diverges from Pendle's OpenAPI
- * for ptData.unit (claimed delta, actually a running balance / 0 / per-tx
- * delta depending on action), and leaving them off keeps us from being
- * tempted to read unreliable values.
+ * Fields not consumed (ptData/ytData/lpData, priceInAsset) are intentionally
+ * omitted — the wire shape diverges from Pendle's OpenAPI for ptData.unit
+ * (claimed delta, actually a running balance / 0 / per-tx delta depending on
+ * action), and leaving them off keeps us from being tempted to read
+ * unreliable values.
+ *
+ * `profit` is the per-transaction realized profit and covers EVERY action —
+ * including the LP/reward actions the history view filters out — so earnings
+ * math must read it from raw rows, not normalized history rows. Optional and
+ * consumed only behind Number.isFinite guards (computePendleEarnings).
  */
 export type PendlePnlTransactionRaw = {
   chainId: number;
@@ -352,11 +357,67 @@ export type PendlePnlTransactionRaw = {
   txValueAsset: number;
   assetUsd: number;
   effectivePtExchangeRate: number;
+  profit?: { usd?: number; asset?: number; eth?: number };
 };
 
 export type PendlePnlTransactionsResponseRaw = {
   total: number;
   results: PendlePnlTransactionRaw[];
+};
+
+// ---------------------------------------------------------------------------
+// Pendle API transport types (/v1/pnl/gained and /v1/dashboard/positions)
+// ---------------------------------------------------------------------------
+
+/** USD/asset/ETH triple used across Pendle's PnL payloads. */
+export type PendlePnlValueRaw = { usd?: number; asset?: number; eth?: number };
+
+/**
+ * One entry in /v1/pnl/gained/{user}/positions `positions`. Covers the user's
+ * whole activity in the market (PT, YT and LP alike): `netGain` is the
+ * lifetime realized gain, `totalSpent` the open cost basis. The endpoint
+ * IGNORES a chainId query param (verified live 2026-08-19) — every chain
+ * comes back and callers must filter on the `chainId` field.
+ */
+export type PendlePnlGainedPositionRaw = {
+  market: string;
+  chainId: number;
+  pnl: {
+    netGain: PendlePnlValueRaw;
+    totalSpent: PendlePnlValueRaw;
+  };
+  ptBalance?: number;
+  ytBalance?: number;
+  lpBalance?: number;
+};
+
+export type PendlePnlGainedPositionsResponseRaw = {
+  total: number;
+  positions: PendlePnlGainedPositionRaw[];
+};
+
+/**
+ * One market's holdings inside /v1/dashboard/positions/database/{user}.
+ * `marketId` is the "<chainId>-<address>" form; `valuation` is USD directly —
+ * the reason this endpoint was chosen as the current-value source over
+ * /v1/prices/assets (which would need our own balance × price math).
+ */
+export type PendleDashboardMarketPositionRaw = {
+  marketId: string;
+  pt: { valuation: number; balance: string };
+  yt: { valuation: number; balance: string };
+  lp: { valuation: number; balance: string };
+};
+
+/** Per-chain grouping in the dashboard positions response. */
+export type PendleDashboardChainPositionsRaw = {
+  chainId: number;
+  openPositions: PendleDashboardMarketPositionRaw[];
+  closedPositions: PendleDashboardMarketPositionRaw[];
+};
+
+export type PendleDashboardPositionsResponseRaw = {
+  positions: PendleDashboardChainPositionsRaw[];
 };
 
 /**

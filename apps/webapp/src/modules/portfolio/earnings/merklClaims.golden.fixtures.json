@@ -1,0 +1,2099 @@
+[
+  {
+    "id": "11251867496049916927",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xfc12cf51b7f89a8fc52d371df59b8ec8d5eb35009d72cd72f5aacdb74ce65826",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "530703228862558",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000530703228862558
+    },
+    "isLatest": true
+  },
+  {
+    "id": "11806928778232745767",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x05c053e66c68fd6ae6c2fcd140ed04f71c9d98fd14c9dec79041b48642be53b5",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~14865586649273179662_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "160204884573039259310",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 160.21769239569605
+    },
+    "isLatest": true
+  },
+  {
+    "id": "6776841123418343807",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x08183abdcd13877f02f30032fa2bc648fe86f6317f2451885be119a384b1bfbd",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "82655917290921622917",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 82.66252534368492
+    },
+    "isLatest": true
+  },
+  {
+    "id": "17560597430465058691",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x0dcda557298c23af7e5107d199d117718927e8f8be792a20e67eb7939dbe1559",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "349271847797328532062",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 349.2997708653268
+    },
+    "isLatest": true
+  },
+  {
+    "id": "5514289567981368026",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x0e09c154fbd9512dbb29ad0dd8aeb3fb6d81282444ce2d8b1ee7ebaee1208f00",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "87830670856111562276",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 87.83769261240288
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10594461360882294544",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x171ed56397ee6b433f921a18ac57af01bfcb058b1fe217687351d4fd8e41d6a8",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "151016358141316322614",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 151.02843137328117
+    },
+    "isLatest": true
+  },
+  {
+    "id": "4786094235486804330",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x1beb48986326700b33649ae471e463f01d394fe7d7460d612b4001e763171894",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "333016297695384944312",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 333.0429211887576
+    },
+    "isLatest": true
+  },
+  {
+    "id": "13008931439296711263",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x1cc864a65ed7ba4c992353cb011d08b19aefc1b61a0f97a316e6989ffca40437",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "170290249368321580852",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 170.30386348077454
+    },
+    "isLatest": true
+  },
+  {
+    "id": "14602841943009245965",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x1d8fab9bca83540fcdb027cf402887dc741fd794e4df724f839a1a125dd85c64",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "134304285385549165326",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 134.3150225454919
+    },
+    "isLatest": true
+  },
+  {
+    "id": "13408461483196920657",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x1dc3050c7cb2221c88acd33d00811ce63623c20cc75988b92e9c5a62ee7f24ce",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~8299513547853120444_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "183196851066645199695",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 183.2114970169606
+    },
+    "isLatest": true
+  },
+  {
+    "id": "12276152031408863930",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x2eb342954a3909d11ca0efeac3208be28f46e8fe745268b48ffa02fc22db27aa",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "172278917400018477296",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 172.29269049955565
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3178781250252108848",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x373a124a43279b9996d9ca0ff980bee60a4b784d75df224c05ab1c72825bb48e",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "174456544704170244350",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 174.47049189742742
+    },
+    "isLatest": true
+  },
+  {
+    "id": "5566977540970111507",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x3e862fd9707f4f82797e8fc2010b2340a5ef16d5986f9a593fb1e2321f314ecd",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~2065952585144993369_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "37976329016940806456",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 37.97936509220469
+    },
+    "isLatest": true
+  },
+  {
+    "id": "11234648070543091791",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x4311b737759233fd384f1b92d4c6aec86e4e9134351ffa6adffc85b79bca0419",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~7412178497497895694_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "327538613705242484371",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 327.5647992768545
+    },
+    "isLatest": true
+  },
+  {
+    "id": "9952932203253563252",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x4687adf181597232f7e07f34da39d05a1684276a2f01d024f2c7719cebcce87b",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~5079407019756537681_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "277091881162667179578",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 277.1140336936778
+    },
+    "isLatest": true
+  },
+  {
+    "id": "2396437638076728125",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x48e2b4ceb28e817a8d60140e4e0d7d889fa82084cebeb840a1708da0389843b4",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~10698939995949821128_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "161578569306078201539",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 161.59148695004595
+    },
+    "isLatest": true
+  },
+  {
+    "id": "14061008056964002537",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x4f10e00b1d7c3d7355ea4e478e5379f598519bc55397bffeefbbdd72993cf715",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~1282563235865272582_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "331450903597539825502",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 331.47740194310546
+    },
+    "isLatest": true
+  },
+  {
+    "id": "1517779816385519235",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x4fc178b3d69c3db2b6947d5021a8a0c32516f8c67a1f69b7f8a715e4c67a4883",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "185809831252692240862",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 185.82468610167462
+    },
+    "isLatest": true
+  },
+  {
+    "id": "12120239208958211584",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x58f5898e811ac2984b5784c1e26aea7e67179849e1b325435a5cf1a1897da437",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~1399691905466647888_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "326823815130650770625",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 326.8499435566058
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10858491083078979643",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x65c492ca9e8dc2570609e6901d8f3c722c8b0eb01b5cc79ebb6bc14c8f654619",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "30031960537068243930",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 30.034361487736007
+    },
+    "isLatest": true
+  },
+  {
+    "id": "1517596764883484523",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x8e34a7e5545b2ddb34a880255a109d428a5711e3ac0541e96a6437295c5a1afe",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~15193260006690908247_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "191031051329911459981",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 191.0463235972577
+    },
+    "isLatest": true
+  },
+  {
+    "id": "14848438461758273977",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x94420eebffc952a51d11488fb2c8c0d0fa13c5427af6990effa4a82bd9e29a1c",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "158063028207099514920",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 158.0756647957982
+    },
+    "isLatest": true
+  },
+  {
+    "id": "14831588907243854463",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x9581b08647e7e83c20d1a11494bc0a42138f17c97608b0fdcebef4e8bcca956f",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~1831273900475329531_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "302672642604909926600",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 302.6968402287207
+    },
+    "isLatest": true
+  },
+  {
+    "id": "11786755074540780791",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x95e335bd83b0cd2a4deca6eb3ffb24c53ecb98ceae64ac962f8e5e8d43111092",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "74898117154224684977",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 74.90410499788122
+    },
+    "isLatest": true
+  },
+  {
+    "id": "13561725692492475204",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x9adaebc1fb982e540d7b634c67f17c5c4ad1447e0024ed80c328be9985b2096e",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "290418386429425399826",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 290.4416043681266
+    },
+    "isLatest": true
+  },
+  {
+    "id": "1728043467932006700",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x9d4a0f8ef6315f9732655e60042d6e9a20d2d9ffebc058e8a5399e7aa4548d14",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "69996729388669927047",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 70.00232538344221
+    },
+    "isLatest": true
+  },
+  {
+    "id": "15770611586937536497",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0x9f117b4bae60bc96c2bf9ab73eb6b80653b804db6b0cf41236cad9bf00e887a3",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~14365988515133128099_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "442485800870178529864",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 442.5211760691358
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10299857213465322337",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xa2fba9d961b9531f9281eb5a8ebe39d6188dbf3993aeb7026eede3a845982f7f",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~17200272563617390731_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "464936853185547645251",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 464.9740232679585
+    },
+    "isLatest": true
+  },
+  {
+    "id": "5481217389958556133",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xa302d13dec848bd604fbeb7bb9d7e201a5ef46f7f5ce7dd11a7c76b403a4e969",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~18394111865451951071_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "329624972356396492605",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 329.6513247251176
+    },
+    "isLatest": true
+  },
+  {
+    "id": "11673536600604385725",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xa742351dcaa6529460c7a22414e65459b9043cc27cb1c4fe64ac7c8b26ac26bf",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "109345263137212288647",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 109.35400491023844
+    },
+    "isLatest": true
+  },
+  {
+    "id": "968302268386195965",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xa818bf5038ac1662c85a4ad5e8e6cacec163a69fccd559a12499d81354257505",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "79385421566143855356",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 79.39176815416246
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10827812348933230371",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xa9edfbfcb11b80465965efad0d34a08940ebe2a170ae80735cc53456a00e5344",
+    "reason": "usds-flagship-ssr",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "125425076526671647967",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 125.43510382478523
+    },
+    "isLatest": true
+  },
+  {
+    "id": "8783039128462404842",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xca73333d4a7fdc41e4067dd0e068bc972b15bfa12d7d6f0f6aaed48e0218ffd0",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~6642166784457639607_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "265540830303987655081",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 265.5620593687052
+    },
+    "isLatest": true
+  },
+  {
+    "id": "9440464571507884566",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xce353d7616ca917ea18f7504bf68079e4aae9db18455b0bc580d17d4917d1053",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "19375855471102715941",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 19.377404503277102
+    },
+    "isLatest": true
+  },
+  {
+    "id": "17648320403669719025",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xd49d11d80cc23a4e3e45f2b2d85ef0e4320e1166ce2c2fa944eafeaadde8c98c",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "153861030049902864724",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 153.87333070348106
+    },
+    "isLatest": true
+  },
+  {
+    "id": "599718204801892022",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xd4a6e1430bb5d14df6891d632def70a27874dbdf93268a6affb84675db72be1c",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~4336002260826753022_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "453205552689800851629",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 453.2417848955878
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3844424801664562847",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xd60c3dfd8dc11bf4f1f866e87e80de75dc0843cd655e838479b6d8ef27b2e503",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~16100700954866286562_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "395436664139676138016",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 395.468277923986
+    },
+    "isLatest": true
+  },
+  {
+    "id": "6600563706268145379",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xd94061206350e00653ec80d6f7146012d498854ac625afc4aedce07fab21b513",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~12056777558565777758_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "554004957472095867909",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 554.0492482392918
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10498011458145405673",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xe122485b6903353d1ec8bada5a2cc4dcda18a22179b1f13c09af6de0de80a8fb",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~2708600238064470051_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "82716438516562372863",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 82.72305140778691
+    },
+    "isLatest": true
+  },
+  {
+    "id": "18052180111647835619",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xf6e4c9f829eff64ba708755f3befcabb9678ce4f309972deb25bce377dff9343",
+    "reason": "ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "143736035626645229271",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 143.7475268221765
+    },
+    "isLatest": true
+  },
+  {
+    "id": "4332073182427535879",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+    "campaignId": "0xf9632f1b2438092bb64c5d7d1aae4ca8b762e5a3b533009ca6d0eb9e25ae72d8",
+    "reason": "ERC20_0xdC035D45d973E3EC169d2276DDab16f1e407384F~5278278303001856202_MorphoVaultV2_ERC20_0xE15fcC81118895b67b6647BBd393182dF44E11E0",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "63901421541357370215",
+    "metadata": {
+      "tokenPrice": 1.0000799465178039,
+      "eventAmount": "407334589886013861093",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 63.90653023749232
+    },
+    "isLatest": true
+  },
+  {
+    "id": "259377311045851964",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0x0529f772130b8ca69e3300f8bc585a6c2fed53e6e6bd23a4e57b542fabaab5c5",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "415240525721354",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000415240525721354
+    },
+    "isLatest": true
+  },
+  {
+    "id": "15481475665800339680",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0x19da264e2fbf1b74f3b239bb1a7d3844fc2da4496daa335380f2447acd2f6ea8",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "528002881323882",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000528002881323882
+    },
+    "isLatest": true
+  },
+  {
+    "id": "14393582557817949833",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0x3dccb3ac450bfc6ebb54b96a627e992b9617e055051d6714cb3456b42cccba40",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "534205793133872",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000534205793133872
+    },
+    "isLatest": true
+  },
+  {
+    "id": "11447886835638561635",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0x44ca33f82212560efc971dc46afd17fe2bba1e260f2bdea8d61dd8f275cece09",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "402469901255038826",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.40246990125503884
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3393171438119424743",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0x5eb398171e9a3f141871977beffe0da3e9825b2a10967ef3389d2843d1345b25",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "528795927091689",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000528795927091689
+    },
+    "isLatest": true
+  },
+  {
+    "id": "16472879037245818754",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0x6f2b2264f36c64b63098aa4e32e70e15b040084ea2119a1eac51c58ef331199e",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "504974010589467",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000504974010589467
+    },
+    "isLatest": true
+  },
+  {
+    "id": "11648766808717726915",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0x93845a2dc755427d29fb77219ade9179992969108ea737d0f33b946f5b12f4eb",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "520006720435194",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000520006720435194
+    },
+    "isLatest": true
+  },
+  {
+    "id": "16476074499660193314",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xa8f86d520bce4cf17bdced82b300052d27edb9d23081d52a8e196e43a2e2334e",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "220888581540321",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000220888581540321
+    },
+    "isLatest": true
+  },
+  {
+    "id": "5023231729179607359",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xb6ce25a9e0d4e7ead6b2bccf2ea69c4bbe2465f422bf42b3f6fc92642614bff7",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "535579970504419",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000535579970504419
+    },
+    "isLatest": true
+  },
+  {
+    "id": "17980328490393584922",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xc0bb6d103846b1d92e1eeb94480d8663d40d0667baa68fc15a926e6b3d6d77d5",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "532399284441960",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.00053239928444196
+    },
+    "isLatest": true
+  },
+  {
+    "id": "1322883992089020158",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xe5d23d88f16cab4ffcb86a565adea41c58b640358605f6ca40fdb2ffe34354c8",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "538299920466714",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000538299920466714
+    },
+    "isLatest": true
+  },
+  {
+    "id": "6119255966985069724",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xe7f8aa228012a4038d3be991d784c8b893ba4ff1e1d2088541134caf81501941",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "539104099869139",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000539104099869139
+    },
+    "isLatest": true
+  },
+  {
+    "id": "17246015348305809420",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xebdf1e3d3a78e3690860ac683bc74e9bf98ebba6fe13e6db80ac7ae4ceb45bc4",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "523163833216951",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000523163833216951
+    },
+    "isLatest": true
+  },
+  {
+    "id": "4050755637114704987",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xf8b83633ff35e5f112247a8fdd905d7c87f547422e89b1cd1f7af5931c0d8311",
+    "reason": "Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "257557598538273",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000257557598538273
+    },
+    "isLatest": true
+  },
+  {
+    "id": "4715629897018127564",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xf9584acf78a11107ef29dffb4beacb5890f7dbd57a792457a9312a5e25b112bf",
+    "reason": "ERC20_0xC139190F447e929f090Edeb554D95AbB8b18aC1C~10768955319320541400_Aave_Aave_Supply_0xEc4ef66D4fCeEba34aBB4dE69dB391Bc5476ccc8",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "53293462955649",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000053293462955649
+    },
+    "isLatest": true
+  },
+  {
+    "id": "13212150693789652070",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 25749602,
+    "timestamp": 1786666223,
+    "token": "0x04EADd7B10ea9a484c60860aea7A7C0AEc09B9F0",
+    "campaignId": "0xf9584acf78a11107ef29dffb4beacb5890f7dbd57a792457a9312a5e25b112bf",
+    "reason": "ERC20_0xC139190F447e929f090Edeb554D95AbB8b18aC1C~13649385870921300761_Aave_MultiLogProcessor_9225982115762840490",
+    "root": "0xd03193ee54ceff3d3d07888c901c648e93bf420ef512094544d56c797140488f",
+    "amount": "50083209897543",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "411618660499995",
+      "transactionHash": "0x8de182042ef7bef4fa901cdb1b0a70bae965f8c9b2e85e6628f76eb6831055d5",
+      "amountClaimedInUSD": 0.000050083209897543
+    },
+    "isLatest": true
+  },
+  {
+    "id": "16655148836653809724",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x1f755d8fdb46651b57866e4fd0b31cf68de9f20181a762f3c0140fd0a52fab94",
+    "reason": "MultiLogProcessor_9863193320017997295",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "742",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.000742
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3340419473578656242",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x9767bd25e671dab0a1371cc4045b7ca41f5907da8742309e568b5fd00eefe621",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "18634146813377399",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.01863370938577607
+    },
+    "isLatest": true
+  },
+  {
+    "id": "479991301635521169",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x9e9fb62370d5ff1c44a9bb569ff9e704c7607faba3e6d070860018def584ea51",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "5900829302742787",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.005900690783623366
+    },
+    "isLatest": true
+  },
+  {
+    "id": "16673600343183289395",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0xd6a725f4f385c30c640ed9a68c50c3dd789baf3af8884de47055487708902124",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "5796470585676204",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.00579633451632729
+    },
+    "isLatest": true
+  },
+  {
+    "id": "2557244224938641288",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0xd6e76079c9c8cb4c2d4bddf4b22aedb64f5c151b9599d9b18793ee529d0579d2",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "5955336127955304",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.005955196329314473
+    },
+    "isLatest": true
+  },
+  {
+    "id": "8701252997764357798",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0xd9fb37adc23b4f0606a9333af816234958d47993e955638150899aba513f594b",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "5792095450076843",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.005791959483432124
+    },
+    "isLatest": true
+  },
+  {
+    "id": "911127624204552568",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x04ACaF8D2865c0714F79da09645C13FD2888977f",
+    "campaignId": "0x5731f1bc59df32b11140ffe67c1c3b9c793065034e4743650f865ac151033bdb",
+    "reason": "ERC20_0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29~8987962350132523940_FraxLend_ERC20_0xaB3cb84c310186B2Fa4B4503624A5D90b5DcB22D",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "408570423983591",
+    "metadata": {
+      "tokenPrice": 0.5041954176779702,
+      "eventAmount": "162893828292294",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.000205999335571272
+    },
+    "isLatest": true
+  },
+  {
+    "id": "4436504523867329475",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x04ACaF8D2865c0714F79da09645C13FD2888977f",
+    "campaignId": "0xa6a6e629559e3bd237f1fc37ce47d962e876b38b5a3c1447dfa85fce4d458f6c",
+    "reason": "ERC20_0xCAcd6fd266aF91b8AeD52aCCc382b4e165586E29~9982484856995129966_FraxLend_ERC20_0xaB3cb84c310186B2Fa4B4503624A5D90b5DcB22D",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "16576828741891696009",
+    "metadata": {
+      "tokenPrice": 0.5041954176779702,
+      "eventAmount": "162893828292294",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 8.357961091294264
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3846498263157402578",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x0ef739720955a1d79d78a763213c569b48122ec85dc704b786ddc3ad81a24d62",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "569500808",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 569.500808
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10654198271723419289",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x0fc73f6d9bd4db546d08e4fad67e50b141c7e8c67312c2a83c2beb55482b2d04",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "319240270",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 319.24027
+    },
+    "isLatest": true
+  },
+  {
+    "id": "1499171831919214675",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x38d7b9fcd7a5f85e79423924804c085e3879dcd93b62d2c1d30879d1ab1d00b2",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "1157731579",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 1157.731579
+    },
+    "isLatest": true
+  },
+  {
+    "id": "9475154608217281514",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x3fb92af6d1771489cb236c19742cb6b88722c9b360ee09ab90c7ac2e93e4b9ad",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "173852698",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 173.852698
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10260209084284273446",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x5764c86d0a95315c4349e230bbbfd5bd0a15f381540eb07f15ff4d28b2b4f230",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "326397529",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 326.397529
+    },
+    "isLatest": true
+  },
+  {
+    "id": "181241336149202811",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x756bbf10bffad0de46df06de8cfc54470ef8052721bc463f5fb05ae7afafa46b",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "879281926",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 879.281926
+    },
+    "isLatest": true
+  },
+  {
+    "id": "12334701915219878330",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x83ba7a3dd2c7e618c6e8a7af7126639c4315378461528449709e8a0958a4eaee",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "1207313225",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 1207.313225
+    },
+    "isLatest": true
+  },
+  {
+    "id": "17530163403197762230",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x850d68c4383f8035377e064240ade801b407bac656fcc09b2feda673eb1016e1",
+    "reason": "MultiLogProcessor_9863193320017997295",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "2679",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.002679
+    },
+    "isLatest": true
+  },
+  {
+    "id": "12102836512658201301",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x92c993636cbb5cf93d5d3109a9fcf05fe4cb7c61debaeb08fb706fd267c14f85",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "1275373177",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 1275.373177
+    },
+    "isLatest": true
+  },
+  {
+    "id": "371361063024495404",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0xa584f69ae882f5e0afd425074f34405525d5ac6eaa90f36ff01890551db538a5",
+    "reason": "MultiLogProcessor_9863193320017997295",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "2181",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.002181
+    },
+    "isLatest": true
+  },
+  {
+    "id": "8068016000820774917",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0xaa8d6d0ccbeccffbef6f465919e36918a9fd6345c4c47d6f1b17bfddad7ca01b",
+    "reason": "MultiLogProcessor_9863193320017997295",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "2190",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.00219
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3042032074803478106",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0xc5ac9d22530a0bc3d46550a14fa7f439ab968d0f9141f7523712d774453e1fd6",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "2076532553",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 2076.532553
+    },
+    "isLatest": true
+  },
+  {
+    "id": "8619129637483629887",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0xc6e8aea32c952785d4b62cba0e5172a5e59c18b384cf1779b7c947ca0dcd0f3f",
+    "reason": "MultiLogProcessor_9863193320017997295",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "1747",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.001747
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3837090130737408733",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0xcfea657ce5af73fec1dfc0f1e1477043a3c79cfe07680bf7593f1beae14bb952",
+    "reason": "MultiLogProcessor_641626595063325333",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "2545222958",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 2545.222958
+    },
+    "isLatest": true
+  },
+  {
+    "id": "1713169375834277117",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0xf1160c8eff07510bdc2513b305aa4de275f1f7aa20342523c3a119a6770ed28b",
+    "reason": "MultiLogProcessor_9863193320017997295",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "206651103",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 206.651103
+    },
+    "isLatest": true
+  },
+  {
+    "id": "8191631245431473493",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x0f1eb8D5568E9C1ee72E6dE7B5a9e2837A530019",
+    "campaignId": "0x6c0e1ad5f300fccb58145ca99dd01fab8efa182ab0ba3cd5a44345ee4f2d86cf",
+    "reason": "MultiLogProcessor_9863193320017997295",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "102520351",
+    "metadata": {
+      "tokenPrice": 1,
+      "eventAmount": "43360667",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 102.520351
+    },
+    "isLatest": true
+  },
+  {
+    "id": "4247856725827563770",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x05685817a6cde5f9a3cbdd16555926debf9b0490d5be20e215663f6266a5a911",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "5793255144843916",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.005793119150975923
+    },
+    "isLatest": true
+  },
+  {
+    "id": "12351321019206160626",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x22b0779cd6a8062decc766bf7f568be4f03aac25e5f9a292f58d31fef0d98580",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "6333978232587199",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.00633382954550574
+    },
+    "isLatest": true
+  },
+  {
+    "id": "16977351221614082020",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x2600b397eaa95736a8787a7c1fb66d5edac0a85728790fb1d7d3c46a2d599de4",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "9657753127768423492",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 9.657526416675761
+    },
+    "isLatest": true
+  },
+  {
+    "id": "8631334894026922229",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x3e2211cd22fc60d2a6fe24e3f800bc65209399bcd96f3541f0fa2b0de44c8a73",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "8867691117702497",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.008867482952934139
+    },
+    "isLatest": true
+  },
+  {
+    "id": "15561260946169833940",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x5158e7c253f0107e5c0883e5b1e5020dd2b2a13066798fcf5b03e35eab559941",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "6518244470302815",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.006518091457660375
+    },
+    "isLatest": true
+  },
+  {
+    "id": "14960320211150356513",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x528d15c6a24687d3c1829f7555d61c76cf3fa7c71509e8c9ec18f3fafee9b7c3",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "27832125452893549",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.02783147210718372
+    },
+    "isLatest": true
+  },
+  {
+    "id": "17245003374494789270",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x59d3e93903d9a0b781a6f27b9ec2229da648b130b6f2769637b1ee8b15999e80",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "14009609762396773",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.01400928089357035
+    },
+    "isLatest": true
+  },
+  {
+    "id": "1840354217413477088",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x758761b74ebd168be3a6de5453bc3e9129fd4364348b617b5c05dc89f5679cbb",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "6212177450820803",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.0062120316229539
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3476359886805649158",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x89c12dceeadab92f86c90648f16874cf0651305a5136e4b4d97c1e6d7ca86eee",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "15680798856952353",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.01568043075776865
+    },
+    "isLatest": true
+  },
+  {
+    "id": "15507969698392656925",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24968359,
+    "timestamp": 1777256579,
+    "token": "0x72eEED8043Dcce2Fe7CdAC950D928F80f472ab80",
+    "campaignId": "0x940261556e0d16b34a879ec53bf5aaa83d7ed544dc12d33ab1a7762ed441028f",
+    "reason": "MultiLogProcessor_13605534647313957749",
+    "root": "0x07df1166dcabd9c888d8dbb22b36172a075c8b6551361313b069cd1f65e5200c",
+    "amount": "10902013170298340",
+    "metadata": {
+      "tokenPrice": 0.9999765254827221,
+      "eventAmount": "26951678743068758",
+      "transactionHash": "0x63f10494b101d7b85d1400aeeea5d2fc8d56c99a2cfb5943689d1d46d2899d11",
+      "amountClaimedInUSD": 0.01090175725080181
+    },
+    "isLatest": true
+  },
+  {
+    "id": "4214787603421110848",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_2649583438695103981~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "1299649681428348699",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 2.506260103628657
+    },
+    "isLatest": true
+  },
+  {
+    "id": "649196617825893696",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_3752372392775985319~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "1829333276746037079",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 3.52770833037875
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10345025819451085208",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_458729400308109355~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "478263852449934118",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 0.9222897751074438
+    },
+    "isLatest": true
+  },
+  {
+    "id": "13456565096425686408",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_8213690950496418119~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "275212455054215820",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 0.5307230140402286
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10389394149610812455",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_16826279796938149349~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "357068714026128067",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 0.6885756100321965
+    },
+    "isLatest": true
+  },
+  {
+    "id": "6507269968077438377",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_17868638645149552556~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "5534701439478242734",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 10.6731849370481
+    },
+    "isLatest": true
+  },
+  {
+    "id": "10842485028742240264",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_18119162419359975129~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "2874501261249725524",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 5.543222863704924
+    },
+    "isLatest": true
+  },
+  {
+    "id": "16092270214715770439",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_2769936865541551087~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "709562438980891107",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 1.368328756020469
+    },
+    "isLatest": true
+  },
+  {
+    "id": "9547400666869319983",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_10884481578584070202~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "639225683801934776",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 1.232690509927894
+    },
+    "isLatest": true
+  },
+  {
+    "id": "14680818272006258745",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_13795241309264205178~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "2346295192011125517",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 4.524623916046733
+    },
+    "isLatest": true
+  },
+  {
+    "id": "6039073705716218489",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_14953812854227576149~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "355072873727828890",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 0.6847268075554058
+    },
+    "isLatest": true
+  },
+  {
+    "id": "3162040902784045426",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 24918568,
+    "timestamp": 1776657503,
+    "token": "0x58D97B57BB95320F9a05dC918Aef65434969c2B2",
+    "campaignId": "0x9fbf7a7563bbf6f93ae8bd9b8153ff3bf6f48a484e8bfc29d70428c128636575",
+    "reason": "MultiLogProcessor_16717576751688491132~16302314840604574134_MorphoVaultV2_ERC20_0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf",
+    "root": "0xf331f71def5d9d9098ef5aa9f1bab4f9cabc8a47bd1355f80491e12e5f78247b",
+    "amount": "3700003842108118939",
+    "metadata": {
+      "tokenPrice": 1.92841204783293,
+      "eventAmount": "20398890711062531270",
+      "transactionHash": "0x04ed277a4e6a45d49831434197924ff76dc8ed08b3f740c01f716a02433d67cd",
+      "amountClaimedInUSD": 7.135131986149427
+    },
+    "isLatest": true
+  },
+  {
+    "id": "1903888070198634169",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1763850791,
+    "token": "0x8A5A5DE9db5770123Ff2145F59e9F20047f0A8EC",
+    "campaignId": "0x5ae0f1ba74e67460aadebe496f5228fd6629063ba6b375342a8693e483cb9740",
+    "reason": "ERC20_0x82c40e07277eBb92935f79cE92268F80dDc7caB4",
+    "root": "0x7842ef006fffc704f186db9a461bc50428ed7e9867f192e07798e08f7bebbdf4",
+    "amount": "1914747991692636761188",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "17658410498688699208",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1763850791,
+    "token": "0x8A5A5DE9db5770123Ff2145F59e9F20047f0A8EC",
+    "campaignId": "0x53f536ad8d41e05dff2e2cd62f52b4e9d11389a676244ee3105552a837260208",
+    "reason": "MorphoBorrow_0x85ab69d50add7daa0934b5224889af0a882f2e3b4572d82c771dd0875f4eaa9b",
+    "root": "0x7842ef006fffc704f186db9a461bc50428ed7e9867f192e07798e08f7bebbdf4",
+    "amount": "665068039795820438389",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "3702211476153648094",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1763850791,
+    "token": "0x8A5A5DE9db5770123Ff2145F59e9F20047f0A8EC",
+    "campaignId": "0xfffe0080834438dbd08b04c387831acd21ceefe28d9dda608529dcf9a825d429",
+    "reason": "ERC20_0x82c40e07277eBb92935f79cE92268F80dDc7caB4",
+    "root": "0x7842ef006fffc704f186db9a461bc50428ed7e9867f192e07798e08f7bebbdf4",
+    "amount": "9805871094248169532456",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "14436721283651584780",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1762998419,
+    "token": "0xFe0c30065B384F05761f15d0CC899D4F9F9Cc0eB",
+    "campaignId": "0x63303fd13b4ac4833e8764057733906c8ee7d34d7d5a22f44cbc7ddc748decb4",
+    "reason": "MultiLogProcessor_12217475128686903035",
+    "root": "0x5c3824ddae0de466ede0122c7bfa5c6f71f3e9b7d31737a3980929e1763cc98f",
+    "amount": "606221956428625",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "7951704036154660354",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1742560775,
+    "token": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+    "campaignId": "0xa5b1ff1fd12a97f766aa45528f443f59a158d55fa2d9d989123fbeff5be9e49a",
+    "reason": "staker",
+    "root": "0x4e3cbca2bb54e0a447868643df58bc8c7e0d2ae749974a7b1af07ed2973df03c",
+    "amount": "71512807254735708160",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "12341636296171508642",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1742560775,
+    "token": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+    "campaignId": "0xa5b1ff1fd12a97f766aa45528f443f59a158d55fa2d9d989123fbeff5be9e49a",
+    "reason": "base",
+    "root": "0x4e3cbca2bb54e0a447868643df58bc8c7e0d2ae749974a7b1af07ed2973df03c",
+    "amount": "1430256145094714327040",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "5268955530999350516",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1742560775,
+    "token": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+    "campaignId": "0xa5b1ff1fd12a97f766aa45528f443f59a158d55fa2d9d989123fbeff5be9e49a",
+    "reason": "stakoor",
+    "root": "0x4e3cbca2bb54e0a447868643df58bc8c7e0d2ae749974a7b1af07ed2973df03c",
+    "amount": "71512807254735708160",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "14393405082211883110",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1742560775,
+    "token": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+    "campaignId": "0xf9f30e2125f579215729eee4614148ece724a012631e633f3ddc1b874f8bff04",
+    "reason": "base",
+    "root": "0x4e3cbca2bb54e0a447868643df58bc8c7e0d2ae749974a7b1af07ed2973df03c",
+    "amount": "223657804605795631104",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "10634815887627502952",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1742560775,
+    "token": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+    "campaignId": "0xf9f30e2125f579215729eee4614148ece724a012631e633f3ddc1b874f8bff04",
+    "reason": "stakoor",
+    "root": "0x4e3cbca2bb54e0a447868643df58bc8c7e0d2ae749974a7b1af07ed2973df03c",
+    "amount": "11182890230289780736",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  },
+  {
+    "id": "12209334726609142147",
+    "chainId": 1,
+    "recipient": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+    "blockNumber": 0,
+    "timestamp": 1742560775,
+    "token": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+    "campaignId": "0xf9f30e2125f579215729eee4614148ece724a012631e633f3ddc1b874f8bff04",
+    "reason": "staker",
+    "root": "0x4e3cbca2bb54e0a447868643df58bc8c7e0d2ae749974a7b1af07ed2973df03c",
+    "amount": "11182890230289780736",
+    "metadata": { "isMigrated": true, "transactionHash": "", "isIncrementalMigration": false },
+    "isLatest": true
+  }
+]

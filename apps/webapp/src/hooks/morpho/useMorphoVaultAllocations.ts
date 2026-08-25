@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { useChainId, usePublicClient } from 'wagmi';
+import { usePublicClient } from 'wagmi';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import {
+  MORPHO_API_CHAIN_ID,
   MORPHO_API_URL,
   MORPHO_VAULT_V1_ADAPTER_ABI,
   MorphoAdapterType,
   VAULT_V2_ADAPTERS_QUERY
 } from './constants';
-import { isTestnetId, formatBigInt, formatNumber } from '@/utils';
-import { mainnet } from 'viem/chains';
+import { formatBigInt, formatNumber } from '@/utils';
 import { PublicClient } from 'viem';
 import type {
   MorphoIdleLiquidityAllocation,
@@ -194,8 +194,8 @@ export function useMorphoVaultAllocations({
 }: {
   vaultAddress: `0x${string}`;
 }): MorphoVaultAllocationsHook {
-  const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
+  // Morpho vaults are mainnet-only: pin the API query and the adapter reads to mainnet
+  const chainId = MORPHO_API_CHAIN_ID;
   const publicClient = usePublicClient({ chainId });
 
   const {

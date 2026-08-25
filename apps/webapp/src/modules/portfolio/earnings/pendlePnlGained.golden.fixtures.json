@@ -1,0 +1,347 @@
+{
+  "total": 19,
+  "positions": [
+    {
+      "market": "0xfc82267a9e065aaf407f64dadd49bfbdc9511fb1",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 450.9047612472256, "asset": 479.98339676474797, "eth": 5.786527214863395 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 49991.36136049647,
+        "maxCapital": { "usd": 49991.36136049647, "asset": 50021.71960790044, "eth": 23.461350023570404 },
+        "tradingVolume": 100348.30728469502
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0xafb7d6d1e9bca5b675adc9b4f52f0cdfddec9654",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 418.274071793794, "asset": 451.6464919775681, "eth": 8.582267134691824 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 50544.46422619609,
+        "maxCapital": { "usd": 50544.46422619609, "asset": 50541.68594971944, "eth": 15.245911122498278 },
+        "tradingVolume": 101408.75816655572
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x22a72b0c504cbb7f8245208f84d8f035c311adec",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 390.11384711943657, "asset": 495.20488392607564, "eth": 3.685084656953529 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 48288.465671094236,
+        "maxCapital": { "usd": 48288.465671094236, "asset": 51654.44050729186, "eth": 17.699045600324855 },
+        "tradingVolume": 48288.465671094236
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x8e101c690390de722163d4dc3f76043bebbbcadd",
+      "chainId": 42161,
+      "pnl": {
+        "netGain": { "usd": -189.8825564254434, "asset": -113.51257567926821, "eth": 0.40484146183614556 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 49937.652254381355,
+        "maxCapital": { "usd": 49937.652254381355, "asset": 49621.40421442913, "eth": 11.936780718896408 },
+        "tradingVolume": 99685.42195233726
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x64506968e80c9ed07bff60c8d9d57474effff2c9",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": -1757.7336098609383, "asset": 1666.2160481288784, "eth": 2.9534659946387465 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 49956.55130645895,
+        "maxCapital": { "usd": 49956.55130645895, "asset": 49988.22445916298, "eth": 14.66905169552998 },
+        "tradingVolume": 49956.55130645895
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x43023675c804a759cbf900da83dbcc97ee2afbe7",
+      "chainId": 42161,
+      "pnl": {
+        "netGain": { "usd": 1394.116184945858, "asset": 1570.822974321311, "eth": 4.269811943519362 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 49747.76929332312,
+        "maxCapital": { "usd": 49747.76929332312, "asset": 49507.891638749854, "eth": 12.341622080349664 },
+        "tradingVolume": 100857.05789415266
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0xcbf629c8d396b1261f81f55175afa010e94787d8",
+      "chainId": 42161,
+      "pnl": {
+        "netGain": { "usd": 834.605761320246, "asset": 800.3855809977088, "eth": 9.42815408584652 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 49975.475161653405,
+        "maxCapital": { "usd": 49975.475161653405, "asset": 49999.78672495086, "eth": 21.426539571367563 },
+        "tradingVolume": 100671.84928859616
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0xc5b32dba5f29f8395fb9591e1a15f23a75214f33",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 665.7570979553248, "asset": 688.5583635138487, "eth": -4.396037813114316 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 99968.376645,
+        "maxCapital": { "usd": 99968.376645, "asset": 99967.737851, "eth": 48.299031 },
+        "tradingVolume": 200063.4413366153
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x3c53fae231ad3c0408a8b6d33138bbff1caec330",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": -2998.2879464177713, "asset": 503.0456950356299, "eth": 2.542305085116748 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 29988.608940319675,
+        "maxCapital": { "usd": 29988.608940319675, "asset": 29996.30203017616, "eth": 13.291323242574727 },
+        "tradingVolume": 29988.60894031967
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0xa83174f1dd8475378abca9d676dad3ce97409e0a",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 844.2742202584403, "asset": 853.4937671544141, "eth": 3.243359699295833 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 49984.90955459811,
+        "maxCapital": { "usd": 49984.90955459811, "asset": 49973.18764258645, "eth": 12.078301562911877 },
+        "tradingVolume": 100746.58321485086
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x66ec657c59cdcaf171ab43b83da3942758bf8a97",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 164.3003373661926, "asset": 123.55439196704339, "eth": -1.1141290318301713 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 50045.275750366665,
+        "maxCapital": { "usd": 50045.275750366665, "asset": 50104.36050578941, "eth": 29.05771747145465 },
+        "tradingVolume": 100237.98057110961
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x475b98c83aedbfdd0a0abaa930ec8cb501ac93b1",
+      "chainId": 143,
+      "pnl": {
+        "netGain": { "usd": 1070.627673999999, "asset": 1073.411091, "eth": -1.4417720000000034 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 50431.674324,
+        "maxCapital": { "usd": 50431.674324, "asset": 50448.240231, "eth": 31.967043 },
+        "tradingVolume": 201811.39585408708
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0xafdc922d0059147486cc1f0f32e3a2354b0d35cc",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 1484.0021700078285, "asset": 306.94043074502804, "eth": 4.8663525979398505 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 48678.57951821368,
+        "maxCapital": { "usd": 48678.57951821368, "asset": 52149.645391217935, "eth": 21.38413025727839 },
+        "tradingVolume": 98830.72731208093
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x0d7d9abee602c7f0a242ea7e200e47c372acba84",
+      "chainId": 9745,
+      "pnl": {
+        "netGain": { "usd": 287.45721140359717, "asset": 288.6613062520942, "eth": -3.243565592710684 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 49985.94648973517,
+        "maxCapital": { "usd": 49985.94648973517, "asset": 49993.47962785877, "eth": 24.81754112403686 },
+        "tradingVolume": 100232.73335722016
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x2092fa5d02276b3136a50f3c2c3a6ed45413183e",
+      "chainId": 42161,
+      "pnl": {
+        "netGain": { "usd": 1434.792942069601, "asset": 1489.6900511722179, "eth": 9.36658228808143 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 50041.442344864554,
+        "maxCapital": { "usd": 50041.442344864554, "asset": 50000.55029281746, "eth": 16.337734179231127 },
+        "tradingVolume": 101449.49060381929
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x81f3a11db1de16f4f9ba8bf46b71d2b168c64899",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 179.16926846727475, "asset": 55.901832340318535, "eth": 2.2561523303300444 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 50152.14779386726,
+        "maxCapital": { "usd": 50152.14779386726, "asset": 52445.67477121098, "eth": 26.24502271429962 },
+        "tradingVolume": 100476.63892083374
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x9c560ebaf78e596cbcc27411d633a74d628dd7dc",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 916.817210565856, "asset": 907.3636590259626, "eth": -0.6945541398212486 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 99826.3304651493,
+        "maxCapital": { "usd": 99826.3304651493, "asset": 99874.11757889061, "eth": 60.681456878473966 },
+        "tradingVolume": 299757.60367012036
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0x9d0676ec013cb50b7bf9b291c22b618e9fe86832",
+      "chainId": 9745,
+      "pnl": {
+        "netGain": { "usd": 5407.47029274968, "asset": 5633.3951915727275, "eth": 12.867592627661926 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 100299.19030600155,
+        "maxCapital": { "usd": 100299.19030600155, "asset": 100274.865, "eth": 25.96900002716844 },
+        "tradingVolume": 205879.10339207706
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    },
+    {
+      "market": "0xc5f938a8ef5f3bf9e72f5aa094baf5e03f4727d3",
+      "chainId": 1,
+      "pnl": {
+        "netGain": { "usd": 970.232091504139, "asset": 570.7834388310567, "eth": -0.7769935934713086 },
+        "totalSpent": { "usd": 0, "asset": 0, "eth": 0 },
+        "preSeasonUnclaimedRewards": [],
+        "peakTvlUsd": 26990.319544968334,
+        "maxCapital": { "usd": 26990.319544968334, "asset": 30499.346087901562, "eth": 15.833627477687667 },
+        "tradingVolume": 54906.94326096302
+      },
+      "ptBalance": 0,
+      "ytBalance": 0,
+      "lpBalance": 0,
+      "ptData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "ytData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } },
+      "lpData": { "unit": 0, "spent_v2": { "usd": 0, "asset": 0, "eth": 0 } }
+    }
+  ]
+}

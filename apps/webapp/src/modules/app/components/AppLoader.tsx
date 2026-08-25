@@ -326,8 +326,11 @@ export function useAppLoader(): {
  * Reveal dress for the layout regions the loader hides and re-introduces:
  * hidden while covered, then a one-shot entrance off the Figma timeline —
  * `content` (1875:6837) fades in rising 30px over 300ms, `chrome` (1875:6836,
- * the navbars) just fades over 625ms; both on the house quint-out. `both`
- * fill keeps them hidden through the pre-animation frame.
+ * the navbars) just fades over 625ms; both on the house quint-out. The fill
+ * keeps them hidden through the pre-animation frame — `backwards` on `content`
+ * (a forwards fill there would pin a lingering identity transform on the page
+ * wrapper and kill every glass card's backdrop-filter; see globals.css),
+ * `both` on `chrome`, which animates opacity only.
  */
 export function appLoaderRevealClasses(
   phase: AppLoaderPhase,

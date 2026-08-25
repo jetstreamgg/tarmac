@@ -109,7 +109,8 @@ function Harness() {
       isConnectedAndAcceptedTerms: h.isConnected && hasAcceptedTerms,
       hasAcceptedTerms,
       hasSignedCurrentTerms: false,
-      latestTermsVersion: '2026-01-15',
+      latestTermsVersion: '1.0',
+      termsEffectiveDate: '2026-01-15',
       // Stands in for the real Phase A write (POST /add, then the local flag),
       // which ConnectedContext owns and its own suite covers.
       acceptTerms: async () => {
