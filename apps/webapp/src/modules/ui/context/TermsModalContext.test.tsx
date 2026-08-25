@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { TermsModalProvider, useTermsModal } from './TermsModalContext';
 
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     isAuthorized: false
   },
   isConnected: false,
+  address: undefined as string | undefined,
   openConnectModal: vi.fn()
 }));
 
@@ -25,15 +26,23 @@ vi.mock('./ConnectedContext', () => ({
   useConnectedContext: () => mocks.connected
 }));
 vi.mock('wagmi', () => ({
-  useConnection: () => ({ isConnected: mocks.isConnected })
+  useConnection: () => ({ isConnected: mocks.isConnected, address: mocks.address })
 }));
 vi.mock('../context/ConnectModalContext', () => ({
   useConnectModal: () => ({ openConnectModal: mocks.openConnectModal })
 }));
 
+const ADDRESS_A = '0x1111111111111111111111111111111111111111';
+const ADDRESS_B = '0x2222222222222222222222222222222222222222';
+
 const ModalState = () => {
-  const { isModalOpen } = useTermsModal();
-  return <div data-testid="modal-open">{String(isModalOpen)}</div>;
+  const { isModalOpen, closeModal } = useTermsModal();
+  return (
+    <>
+      <div data-testid="modal-open">{String(isModalOpen)}</div>
+      <button data-testid="close-modal" onClick={closeModal} />
+    </>
+  );
 };
 
 const renderProvider = () =>
@@ -63,6 +72,7 @@ describe('TermsModalProvider error-effect gating', () => {
 
   it('still opens on a terms-check error while connected (the retryable error state)', () => {
     mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
     mocks.connected = { isConnectedAndAcceptedTerms: false, termsCheckError: true, isAuthorized: false };
     renderProvider();
     expect(screen.getByTestId('modal-open').textContent).toBe('true');
@@ -70,8 +80,68 @@ describe('TermsModalProvider error-effect gating', () => {
 
   it('auto-opens once when connected, authorized and unaccepted', () => {
     mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
     mocks.connected = { isConnectedAndAcceptedTerms: false, termsCheckError: false, isAuthorized: true };
     renderProvider();
     expect(screen.getByTestId('modal-open').textContent).toBe('true');
+  });
+});
+
+/**
+ * APP-534. Switching accounts inside the wallet keeps `isConnected` true, so a
+ * latch keyed to the connection never reopens the gate — the switched-in
+ * address browsed on with no terms verdict at all.
+ */
+describe('TermsModalProvider account switching', () => {
+  it('re-opens for an address switched in inside the wallet', () => {
+    mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
+    mocks.connected = { isConnectedAndAcceptedTerms: true, termsCheckError: false, isAuthorized: true };
+    const { rerender } = renderProvider();
+    expect(screen.getByTestId('modal-open').textContent).toBe('false');
+
+    // The switch: same connection, new address, and ConnectedContext has
+    // dropped the terms verdict that belonged to the previous one.
+    mocks.address = ADDRESS_B;
+    mocks.connected = { isConnectedAndAcceptedTerms: false, termsCheckError: false, isAuthorized: true };
+    rerender(
+      <TermsModalProvider>
+        <ModalState />
+      </TermsModalProvider>
+    );
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
+  });
+
+  it('does not re-open for the same address after a dismissal', () => {
+    mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
+    mocks.connected = { isConnectedAndAcceptedTerms: false, termsCheckError: false, isAuthorized: true };
+    const { rerender } = renderProvider();
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
+
+    // Dismissing disconnects, but wagmi reports that asynchronously: for these
+    // renders the app still reads connected-without-terms at the same address.
+    fireEvent.click(screen.getByTestId('close-modal'));
+    rerender(
+      <TermsModalProvider>
+        <ModalState />
+      </TermsModalProvider>
+    );
+    expect(screen.getByTestId('modal-open').textContent).toBe('false');
+  });
+
+  it('leaves the gate closed when the switched-in address has already accepted', () => {
+    mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
+    mocks.connected = { isConnectedAndAcceptedTerms: true, termsCheckError: false, isAuthorized: true };
+    const { rerender } = renderProvider();
+
+    mocks.address = ADDRESS_B;
+    rerender(
+      <TermsModalProvider>
+        <ModalState />
+      </TermsModalProvider>
+    );
+    expect(screen.getByTestId('modal-open').textContent).toBe('false');
   });
 });

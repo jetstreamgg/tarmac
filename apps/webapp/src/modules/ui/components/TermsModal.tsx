@@ -18,6 +18,7 @@ import { Close } from '@/modules/icons';
 import { LoadingSpinner } from './LoadingSpinner';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
 import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
+import { cn } from '@/lib/cn';
 
 const USER_RISK_DOCS_URL = 'https://docs.sky.money/user-risks';
 
@@ -365,13 +366,26 @@ export function TermsModal() {
       <ResponsiveModal open={isModalOpen} onOpenChange={handleOpenChange}>
         <ResponsiveModalContent
           aria-describedby={undefined}
+          // This is a gate, not a dismissible panel (APP-534): a click on the
+          // scrim would disconnect the wallet, which reads as the app throwing
+          // the user out for missing the card. The X and Escape still exit —
+          // both deliberate, and both route through `handleOpenChange`.
+          onInteractOutside={event => event.preventDefault()}
+          // The top of the app's z stack. The default dialog tier (z-50) sits
+          // *below* the toast stack (z-[60], deliberately readable over other
+          // modals) and below the desktop cookie banner (md:z-[999]), both of
+          // which were drawing over the gate. Nothing may overlap this one, so
+          // it clears the highest of them; the scrim is lifted with the card
+          // because they are portal siblings, not nested.
+          overlayClassName="z-[1000]"
           // DS Modal card (Figma 1868:80728): bg-secondary tint at radius-2xl
           // over the frosted scrim, 610px wide — same recipe as TransactionModal.
-          className={
+          className={cn(
+            'z-[1000]',
             showCompactState
               ? 'bg-bgSecondary flex flex-col p-6 sm:max-w-[300px] sm:min-w-[300px] md:rounded-[28px]'
               : 'bg-bgSecondary flex flex-col gap-6 p-5 sm:max-w-152.5 sm:min-w-152.5 sm:gap-8 sm:p-8 md:rounded-[28px]'
-          }
+          )}
           onOpenAutoFocus={e => e.preventDefault()}
           data-testid="terms-modal"
         >
