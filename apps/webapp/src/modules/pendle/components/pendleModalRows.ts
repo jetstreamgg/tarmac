@@ -113,8 +113,10 @@ export type PendleWithdrawEntryRowInput = {
   receiveAmount: string;
   /** Symbol of the token received. */
   receiveSymbol: string;
-  /** Yield forfeited vs holding to maturity (maturity value − receive now), formatted. */
+  /** Yield forfeited vs holding to maturity (maturity value − receive now, clamped at 0), formatted. */
   lost: string;
+  /** Draw the red down-trend — only when something is actually forfeited. */
+  lostTrend: boolean;
   /** Display symbol for the maturity-value icons — USDS on pegged markets. */
   displaySymbol: string;
   /** Info popover beside the Lost label (the early-withdrawal-impact tooltip). */
@@ -145,7 +147,7 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
         kind: 'single',
         label: 'Lost on early withdrawal',
         value: input.lost,
-        trend: 'down',
+        trend: input.lostTrend ? 'down' : undefined,
         trailingToken: input.displaySymbol,
         labelAction: input.lostInfo
       },
@@ -171,8 +173,9 @@ export type PendleRedeemRowInput = {
   ptSymbol: string;
   /**
    * True when the quote routes through an aggregator (a non-SY-accepted output
-   * token) — the only case slippage/price-impact math applies; a pure PT burn
-   * at the expiry-frozen rate has none.
+   * token) — gates the price-impact/route row. Slippage rows are NOT gated on
+   * this: the API's minTokenOut is slippage-adjusted and signed even on the
+   * pure-burn route, so the tolerance binds either way.
    */
   aggregator: boolean;
   /** Quote still in flight — the quote-derived cells hold skeletons instead of dashes. */
@@ -202,16 +205,15 @@ export type PendleRedeemRowInput = {
 };
 
 /**
- * Grid for the matured-claim modal: [Product | Claim amount], then — only on
- * aggregator routes, where swap math exists — [Slippage | Min. received] and
- * [Price impact | Routed via], closing with [Pendle fee | Network] and the
- * full-width fee row. The payout token is picked on the hero pill, not here:
- * a read-only grid is the wrong home for the flow's one control. A pure
- * redemption drops the swap rows entirely: the
- * slippage control is deliberately absent there (redeeming to an SY-accepted
- * token is fixed-rate; a gear would imply a tolerance that cannot bind), and
- * so is the per-leg price-impact breakdown the legacy overview drew — the
- * aggregate number plus the route line carry the risk info.
+ * Grid for the matured-claim modal: [Product | Claim amount], [Slippage |
+ * Min. received], then — only on aggregator routes — [Price impact | Routed
+ * via], closing with [Pendle fee | Network] and the full-width fee row. The
+ * payout token is picked on the hero pill, not here: a read-only grid is the
+ * wrong home for the flow's one control. Slippage and its floor render on
+ * every route — even the pure burn signs a slippage-adjusted minTokenOut
+ * (see buildVerifiedArgs' matured-exit fixtures), so the tolerance must stay
+ * visible and adjustable everywhere. Only the per-hop rows (price impact,
+ * route) are aggregator-only; a pure redemption has no swap legs to describe.
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
   const feeCell = networkFeeCell(input.networkFee);
@@ -226,12 +228,12 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
       productCell(input.product, input.productSymbol, 'pendle'),
       { kind: 'single', label: 'Claim amount', value: input.claimAmount, token: input.ptSymbol }
     ],
+    [
+      slippageCell(input),
+      { ...minReceivedCell(input.minReceived, input.receiveSymbol), loading: input.quoteLoading }
+    ],
     ...(input.aggregator
       ? [
-          [
-            slippageCell(input),
-            { ...minReceivedCell(input.minReceived, input.receiveSymbol), loading: input.quoteLoading }
-          ],
           [
             {
               kind: 'single' as const,

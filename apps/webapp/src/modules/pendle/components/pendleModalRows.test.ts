@@ -47,6 +47,7 @@ const withdrawEntryInput = {
   receiveAmount: '100,000.80',
   receiveSymbol: 'USDS',
   lost: '184.00',
+  lostTrend: true,
   displaySymbol: 'USDS',
   network: 'Ethereum',
   networkFee: '–'
@@ -75,6 +76,11 @@ describe('buildPendleWithdrawEntryRows', () => {
     const lost = rows[1][0];
     expect(lost).toMatchObject({ kind: 'single', value: '184.00', trend: 'down', trailingToken: 'USDS' });
     expect(lost.labelAction).toBe(info);
+  });
+
+  it('drops the down-trend when nothing is forfeited — a favorable quote is not a loss', () => {
+    const rows = buildPendleWithdrawEntryRows({ ...withdrawEntryInput, lost: '0', lostTrend: false });
+    expect(rows[1][0].trend).toBeUndefined();
   });
 });
 

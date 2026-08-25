@@ -47,7 +47,7 @@ vi.mock('@/widgets', async importOriginal => {
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
-  return { ...actual, useChains: () => [{ id: 1, name: 'Ethereum' }] };
+  return { ...actual, useChains: () => [{ id: 1, name: 'Ethereum' }], useChainId: () => 1 };
 });
 
 // Visual leaves with their own tests; stubbed so this spec is about the

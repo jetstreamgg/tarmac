@@ -372,13 +372,25 @@ export function PendleModalForm({
   const withdrawMaturityUsd = !isSupply && quote ? valueUsd(displaySymbol, inFloat) : undefined;
   const withdrawReceiveUsd =
     !isSupply && outFloat !== undefined ? valueUsd(selectedToken.symbol, outFloat) : undefined;
-  const lost =
+  // The cell states a forfeit, so a favorable quote clamps to 0 and drops the
+  // red down-trend — otherwise a small gain formats as the loss "<0.01" (the
+  // small-number branch drops the sign) under a red arrow.
+  const lostValue =
     withdrawMaturityUsd !== undefined && withdrawReceiveUsd !== undefined
-      ? fmt(withdrawMaturityUsd - withdrawReceiveUsd)
-      : NO_VALUE;
+      ? withdrawMaturityUsd - withdrawReceiveUsd
+      : undefined;
+  const lost = lostValue !== undefined ? fmt(Math.max(0, lostValue)) : NO_VALUE;
+  const lostTrend = lostValue !== undefined && lostValue >= 0.005;
 
-  // Slippage floor: the minimum the quote guarantees (PT on supply, output token on withdraw).
-  const minReceived = quote ? fmt(parseFloat(formatUnits(quote.apiMinOut, outDecimals))) : NO_VALUE;
+  // Slippage floor: the minimum the quote guarantees (PT on supply, output
+  // token on withdraw). Floored, not rounded — half-up can display a floor
+  // higher than the real guarantee.
+  const minReceived = quote
+    ? formatNumber(parseFloat(formatUnits(quote.apiMinOut, outDecimals)), {
+        maxDecimals: 2,
+        roundingMode: 'floor'
+      })
+    : NO_VALUE;
 
   // The Network cells describe where the trade executes — the engine chain,
   // which the connected chain only matches while Pendle stays mainnet-gated.
@@ -409,6 +421,7 @@ export function PendleModalForm({
         receiveAmount,
         receiveSymbol: selectedToken.symbol,
         lost,
+        lostTrend,
         displaySymbol,
         lostInfo: lostTooltip ? (
           <PopoverInfo title={lostTooltip.title} description={lostTooltip.tooltip} iconSize={12} />

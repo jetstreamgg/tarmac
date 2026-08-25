@@ -84,7 +84,13 @@ function NumericValue({ value, isLoading }: { value: string; isLoading?: boolean
 export type EarnTableProps = {
   rows: EarnTableRowItem[];
   sort: EarnTableSort;
-  onSortChange: (column: EarnTableColumn) => void;
+  /**
+   * Omit for tables whose rows are never sorted (the Requires-action list):
+   * headers render as plain labels — a sort button here would mutate the
+   * page-wide sort state and reorder the sibling tables while this one sits
+   * still.
+   */
+  onSortChange?: (column: EarnTableColumn) => void;
   onRowSelect?: (id: string) => void;
   /**
    * Fires when a batch of filtered-out rows finishes its exit animation
@@ -371,32 +377,36 @@ export function EarnTable({
       <TableHeader>
         <TableRow>
           {COLUMNS.map(column => {
-            const isSorted = sort.column === column.key;
+            const isSorted = !!onSortChange && sort.column === column.key;
             return (
               <TableHead
                 key={column.key}
                 className={cn(column.key === 'token' && 'w-[34%]')}
                 aria-sort={isSorted ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined}
               >
-                <button
-                  type="button"
-                  data-testid={`${tid}-sort-${column.key}`}
-                  onClick={() => onSortChange(column.key)}
-                  className={cn(
-                    'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
-                    isSorted && 'text-fgPrimary'
-                  )}
-                >
-                  {column.label}
-                  <ChevronDown
-                    size={12}
+                {onSortChange ? (
+                  <button
+                    type="button"
+                    data-testid={`${tid}-sort-${column.key}`}
+                    onClick={() => onSortChange(column.key)}
                     className={cn(
-                      'transition-transform',
-                      isSorted ? 'opacity-100' : 'opacity-40',
-                      isSorted && sort.direction === 'asc' && 'rotate-180'
+                      'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
+                      isSorted && 'text-fgPrimary'
                     )}
-                  />
-                </button>
+                  >
+                    {column.label}
+                    <ChevronDown
+                      size={12}
+                      className={cn(
+                        'transition-transform',
+                        isSorted ? 'opacity-100' : 'opacity-40',
+                        isSorted && sort.direction === 'asc' && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                ) : (
+                  column.label
+                )}
               </TableHead>
             );
           })}

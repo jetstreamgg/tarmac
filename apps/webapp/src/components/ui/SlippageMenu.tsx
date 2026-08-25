@@ -34,12 +34,11 @@ function percentStringToDecimal(value: string): number {
   return n / 100;
 }
 
-/** Clamp a raw percent string into [min, max]; empty/NaN normalize to ''. */
-function clampPercentString(value: string, min: number, max: number): string {
+/** Clamp a raw percent string to the ceiling only; empty/NaN normalize to ''. */
+function clampPercentMax(value: string, max: number): string {
   if (value === '') return '';
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return '';
-  if (numeric < min) return String(min);
   if (numeric > max) return String(max);
   return value;
 }
@@ -105,15 +104,27 @@ export function SlippageMenu({
 
   const isCustom = value !== defaultValue;
 
+  // Only the ceiling clamps per keystroke — flooring there mangles typing:
+  // "0.5" starts with a "0" that a keystroke floor rewrites to the minimum,
+  // committing a tolerance the user never chose. Values still below the floor
+  // (or empty — "still typing", never "zero tolerance": committing 0 pins
+  // apiMinOut to the quote and any price tick reverts) stay uncommitted until
+  // they pass it; blur snaps a settled below-floor value up to the minimum.
   const handleCustomChange = (raw: string) => {
-    const clamped = clampPercentString(raw, min, max);
-    setRawInput(clamped);
-    // An empty field means "still typing", not "zero tolerance". Committing 0
-    // here pinned apiMinOut to the quoted amount, so any tick of price movement
-    // reverted the transaction — with the field showing a placeholder and the
-    // grid reading 0%, giving the user nothing to connect the failure to.
-    if (clamped === '') return;
-    onChange(percentStringToDecimal(clamped));
+    const capped = clampPercentMax(raw, max);
+    setRawInput(capped);
+    if (capped === '') return;
+    const decimal = percentStringToDecimal(capped);
+    if (decimal * 100 < min) return;
+    onChange(decimal);
+  };
+
+  const handleCustomBlur = () => {
+    if (rawInput === '') return;
+    const numeric = Number(rawInput);
+    if (Number.isNaN(numeric) || numeric >= min) return;
+    setRawInput(String(min));
+    onChange(min / 100);
   };
 
   return (
@@ -197,6 +208,7 @@ export function SlippageMenu({
                     inputMode="decimal"
                     value={rawInput}
                     onChange={e => handleCustomChange(e.target.value)}
+                    onBlur={handleCustomBlur}
                     data-testid={`${dataTestId}-input`}
                   />
                   <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>
