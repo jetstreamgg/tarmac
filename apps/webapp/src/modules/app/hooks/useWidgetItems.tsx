@@ -81,7 +81,7 @@ export function useWidgetItems(intent: Intent): {
       RewardsModule,
       false,
       undefined,
-      'Use USDS to access Sky Token Rewards',
+      'Use USDS to access Sky Ecosystem Rewards',
       rewardSubItems
     ],
     [

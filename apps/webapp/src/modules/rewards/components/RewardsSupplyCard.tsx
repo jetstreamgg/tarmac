@@ -104,7 +104,7 @@ export function RewardsSupplyCard({
             />
           }
         >
-          <Trans>Sky Token Rewards</Trans>
+          <Trans>Sky Ecosystem Rewards</Trans>
         </ProductBadge>
       }
       title={
