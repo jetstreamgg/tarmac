@@ -13,8 +13,11 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
+import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
+import { earningsForPosition } from '../earnings/earningsForPosition';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
+import { CombinedEarningsStat, EarningsFigureValue, STAT_ROW, StatInfoGlyph } from './EarningsStat';
 
 /**
  * M6.1 (486:20132): the mobile comp stacks the chart block headline → donut →
@@ -79,6 +82,7 @@ export function StablecoinEarningsCard({
   idleView,
   idleLoading,
   savingsRate,
+  earnings,
   tab,
   onTabChange
 }: {
@@ -90,6 +94,8 @@ export function StablecoinEarningsCard({
    * undefined when Savings is geo-restricted — the Idle footer then drops the
    * rate and projection stats instead of pitching a blocked product. */
   savingsRate?: number;
+  /** APP-450 wallet earnings driving the Total earned / Earned this month stats. */
+  earnings: WalletEarnings;
   tab: PortfolioTab;
   onTabChange: (tab: PortfolioTab) => void;
 }) {
@@ -100,13 +106,21 @@ export function StablecoinEarningsCard({
       {tab === 'idle' ? (
         <IdleContent view={idleView} savingsRate={savingsRate} isLoading={idleLoading} />
       ) : (
-        <SuppliedContent view={suppliedView} isLoading={suppliedLoading} />
+        <SuppliedContent view={suppliedView} earnings={earnings} isLoading={suppliedLoading} />
       )}
     </Card>
   );
 }
 
-function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: boolean }) {
+function SuppliedContent({
+  view,
+  earnings,
+  isLoading
+}: {
+  view: SuppliedView;
+  earnings: WalletEarnings;
+  isLoading: boolean;
+}) {
   // Hovering a position (legend or chart) focuses the card on it: totals and
   // footer stats collapse to that single position's values.
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -116,6 +130,14 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
   if (isLoading && view.positions.length === 0) return <EarningsSkeleton />;
 
   const activePosition = activeId ? view.positions.find(p => p.id === activeId) : undefined;
+  // Hover-focus for the two earnings stats: the hovered position's own slice
+  // (null when the row is outside APP-450 scope → dash, like its siblings).
+  const activeEarnings = activePosition ? earningsForPosition(earnings, activePosition.id) : null;
+  // Positions with no earnings source at all: the combined stats exclude them,
+  // so the footer names them instead of posing as complete (review finding #2).
+  const untrackedNames = view.positions
+    .filter(p => earningsForPosition(earnings, p.id) === null)
+    .map(p => p.name);
   const activeSymbol = activePosition?.tokenSymbol ?? null;
   const displayTotal = activePosition ? activePosition.amountUsd : view.totalSupplied;
   const displayProjected = activePosition
@@ -198,16 +220,64 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
       <Divider />
 
       <FooterStats>
-        {/* TODO(D1): Total earned / Earned this month need a cost-basis source (no hook yet). */}
-        <Stat label={<Trans>Total accrued</Trans>} value={<TodoValue />} />
-        <Stat label={<Trans>Accrued this month</Trans>} value={<TodoValue />} />
         <Stat
-          label={<Trans>Projected 1Y yield (at current rate)</Trans>}
+          label={<Trans>Total accrued</Trans>}
+          value={
+            activePosition ? (
+              <EarningsFigureValue
+                figure={activeEarnings?.totalEarned ?? null}
+                missing={activeEarnings?.missingFromTotal}
+                coverage={activeEarnings?.coverage}
+                variant="gain"
+                className={figureClass(activeEarnings?.totalEarned)}
+                testId="earnings-total-value"
+              />
+            ) : (
+              <CombinedEarningsStat
+                earnings={earnings}
+                field="total"
+                className={LABEL_4}
+                testId="earnings-total-value"
+                untrackedNames={untrackedNames}
+              />
+            )
+          }
+        />
+        <Stat
+          label={<Trans>Accrued this month</Trans>}
+          value={
+            activePosition ? (
+              <EarningsFigureValue
+                figure={activeEarnings?.earnedThisMonth ?? null}
+                missing={activeEarnings?.missingFromMonth}
+                coverage={activeEarnings?.coverage}
+                variant="gain"
+                className={figureClass(activeEarnings?.earnedThisMonth)}
+                testId="earnings-month-value"
+              />
+            ) : (
+              <CombinedEarningsStat
+                earnings={earnings}
+                field="month"
+                className={LABEL_4}
+                testId="earnings-month-value"
+                untrackedNames={untrackedNames}
+              />
+            )
+          }
+        />
+        <Stat
+          label={<Trans>Projected 1Y yield</Trans>}
           value={
             ratesPending ? (
               <Skeleton className="h-4 w-14" />
             ) : (
-              <GainValue value={displayProjected} className={LABEL_4} rolling />
+              <span className={STAT_ROW}>
+                <GainValue value={displayProjected} className={LABEL_4} rolling />
+                <StatInfoGlyph testId="projected-yield-info">
+                  <Trans>Using your current rate as a reference</Trans>
+                </StatInfoGlyph>
+              </span>
             )
           }
         />
@@ -323,8 +393,15 @@ function IdleContent({
         {displayProjected !== undefined && (
           <Stat
             key="projected"
-            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
-            value={<GainValue value={displayProjected} className={LABEL_4} rolling />}
+            label={<Trans>Projected 1Y yield</Trans>}
+            value={
+              <span className={STAT_ROW}>
+                <GainValue value={displayProjected} className={LABEL_4} rolling />
+                <StatInfoGlyph testId="projected-yield-info">
+                  <Trans>Using your current rate as a reference</Trans>
+                </StatInfoGlyph>
+              </span>
+            }
           />
         )}
         <Stat
@@ -461,11 +538,14 @@ function FooterStats({ children }: { children: ReactNode }) {
       {stats.map((stat, index) => (
         <Fragment key={isValidElement(stat) && stat.key !== null ? stat.key : index}>
           {index > 0 && <span className="bg-borderPrimary hidden h-7 w-px shrink-0 self-center lg:block" />}
-          {/* `lg:flex-1` + `min-w-0`: from lg the footer is a flex row of equal
-              columns split by hairlines (APP-443 item 7), so each stat has to
-              claim its share rather than size to content. */}
+          {/* From lg the footer packs left — content-width stats 32px apart,
+              split by hairlines (Figma 2376:225116 → I…;5034:39291, "Align
+              stats to the left side"). This supersedes APP-443 item 7, which
+              had each stat claim an equal share of the row (`lg:flex-1`) and
+              so pushed the last one out to the card's right edge. `min-w-0`
+              stays so a long figure truncates instead of overflowing. */}
           <motion.div
-            className="min-w-0 lg:flex-1"
+            className="min-w-0"
             {...entrance({ x: STAT_TRAVEL }, ENTRANCE_START + index * STAT_STAGGER)}
           >
             {stat}
@@ -484,6 +564,10 @@ function FooterStats({ children }: { children: ReactNode }) {
  * and no tracking.
  */
 const LABEL_4 = 'font-circle text-base leading-[18px] font-medium tracking-[-0.32px]';
+
+/** Hovered-position earnings stat: values keep the stat treatment, dashes go secondary. */
+const figureClass = (figure: Maybe<EarningsFigure> | null | undefined) =>
+  cn(LABEL_4, figure?.status === 'ok' ? undefined : 'text-textSecondary');
 
 function Stat({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
@@ -507,10 +591,6 @@ function StatValue({ children }: { children: string | number }) {
       <RollingValue value={children} speed="stat" />
     </span>
   );
-}
-
-function TodoValue() {
-  return <span className={cn(LABEL_4, 'text-textSecondary')}>TODO</span>;
 }
 
 /**

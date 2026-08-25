@@ -96,7 +96,8 @@ export function WalletPreviewHeader({
               >
                 {truncatedAddress}
               </Text>
-              <CopyToClipboard text={address || ''} />
+              {/* 12px, not the icon's own 16 (Figma 2376:225808, "smaller icon"). */}
+              <CopyToClipboard text={address || ''} iconClassName="size-3" />
             </div>
           </div>
         </div>

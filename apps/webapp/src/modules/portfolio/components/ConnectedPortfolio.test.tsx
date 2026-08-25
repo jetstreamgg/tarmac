@@ -64,6 +64,16 @@ vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
 vi.mock('../hooks/useStablecoinBalances', () => ({
   useStablecoinBalances: () => h.balances
 }));
+// APP-450: the earnings aggregator fires real queries (needs a QueryClient);
+// this suite only exercises the decision plumbing, so stub it inert.
+vi.mock('../hooks/useWalletEarnings', () => ({
+  useWalletEarnings: () => ({
+    protocols: [],
+    combined: { totalEarnedUsd: 0, earnedThisMonthUsd: 0, missingFromTotal: [], missingFromMonth: [] },
+    isLoading: true,
+    window: { startSec: 0, endSec: 0 }
+  })
+}));
 vi.mock('@/modules/geo-config', () => ({
   useGeoConfig: () => ({
     isModuleEnabled: (module: string) => (module === 'savings' ? h.geo.savingsEnabled : true),

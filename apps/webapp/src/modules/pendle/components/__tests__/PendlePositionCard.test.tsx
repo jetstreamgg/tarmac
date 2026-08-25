@@ -93,6 +93,17 @@ vi.mock('../../hooks/usePendleModal', () => ({
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
+// The APP-450 accrued-to-date slice has its own suite
+// (PendlePositionCard.earnings.test.tsx); an empty wallet keeps it inert here.
+vi.mock('@/modules/portfolio/hooks/useWalletEarnings', () => ({
+  useWalletEarnings: () => ({
+    protocols: [],
+    combined: { totalEarnedUsd: 0, earnedThisMonthUsd: 0, missingFromTotal: [], missingFromMonth: [] },
+    isLoading: false,
+    window: { startSec: 0, endSec: 0 }
+  })
+}));
+
 vi.mock('@/modules/ui/context/ConnectedContext', async importOriginal => {
   const actual = await importOriginal<typeof import('@/modules/ui/context/ConnectedContext')>();
   return {

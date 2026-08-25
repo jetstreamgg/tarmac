@@ -26,6 +26,7 @@ vi.mock('wagmi', async importOriginal => {
   return {
     ...actual,
     useChainId: () => 1,
+    useChains: () => [{ id: 1 }],
     useConnection: () => ({ address: '0x1111111111111111111111111111111111111111' }),
     useReadContracts: () => ({ data: undefined, isLoading: false, error: null, refetch: noopRefetch })
   };
