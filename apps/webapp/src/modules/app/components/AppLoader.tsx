@@ -17,6 +17,9 @@ import { useGeoVisibleRows } from '@/modules/portfolio/hooks/useGeoVisibleRows';
 import { useGeoConfig } from '@/modules/geo-config';
 import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '@/modules/portfolio/helpers/portfolioCallout';
 import { IllustrationSkyLogomark } from '@/modules/icons/IllustrationSkyLogomark';
+// The held spin lives with the standalone spinner: the terms-check cover
+// wears the same glyph at the same angular speed (see SkyLogomarkSpinner).
+import { SPIN_ANIMATE, SPIN_TRANSITION } from './SkyLogomarkSpinner';
 
 /**
  * First-visit app loader (Figma "App Loader", 1875:6834): the Sky logomark
@@ -347,14 +350,6 @@ const TIMED_TRANSITION: Transition = {
   rotate: { duration: 1.6, times: [0, 0.75, 1], ease: [[0, 0, 0.3, 1], 'easeIn'] },
   scale: { duration: 1.6, times: [0, 0.63, 0.75, 1], ease: ['linear', [0, 0, 0, 1], [0.7, 0, 1, 1]] }
 };
-
-/**
- * The held spin: two full turns per cycle at the comp's angular speed
- * (-640deg over 1.6s), so the loop reset lands on the same orientation and
- * the spin reads as continuous for as long as the decision takes.
- */
-const SPIN_ANIMATE = { rotate: -720 };
-const SPIN_TRANSITION: Transition = { rotate: { duration: 1.8, ease: 'linear', repeat: Infinity } };
 
 /** The held exit: the timeline's pop-to-1.6x-then-collapse tail. */
 const EXIT_ANIMATE = { scale: [1, 1.6, 0] };

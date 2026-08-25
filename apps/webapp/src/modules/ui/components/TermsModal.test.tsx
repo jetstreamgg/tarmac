@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   openModal: vi.fn(),
   acceptTerms: vi.fn(),
   retryTermsCheck: vi.fn(),
-  connected: { isConnectedAndAcceptedTerms: false, termsCheckDenied: false },
+  connected: { isConnectedAndAcceptedTerms: false, termsCheckDenied: false, isCheckingTerms: false },
   termsModal: { isModalOpen: true }
 }));
 
@@ -33,7 +33,7 @@ vi.mock('../context/TermsModalContext', () => ({
 
 vi.mock('../context/ConnectedContext', () => ({
   useConnectedContext: () => ({
-    isCheckingTerms: false,
+    isCheckingTerms: mocks.connected.isCheckingTerms,
     termsCheckError: null,
     termsCheckDenied: mocks.connected.termsCheckDenied,
     retryTermsCheck: mocks.retryTermsCheck,
@@ -61,7 +61,29 @@ describe('TermsModal', () => {
     mocks.acceptTerms.mockResolvedValue(true);
     mocks.connected.isConnectedAndAcceptedTerms = false;
     mocks.connected.termsCheckDenied = false;
+    mocks.connected.isCheckingTerms = false;
     mocks.termsModal.isModalOpen = true;
+  });
+
+  // The card must open exactly once, already at its final size: a modal that
+  // opened compact and then grew into the terms read as expanding outward from
+  // its centre rather than sliding up like the rest of the app's modals.
+  it('covers the screen instead of opening the card while the terms check runs', () => {
+    mocks.connected.isCheckingTerms = true;
+    const { rerender } = renderModal();
+
+    expect(screen.getByTestId('terms-check-cover')).toBeTruthy();
+    expect(screen.queryByTestId('terms-modal')).toBeNull();
+
+    mocks.connected.isCheckingTerms = false;
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <TermsModal />
+      </I18nProvider>
+    );
+
+    expect(screen.getByTestId('terms-modal')).toBeTruthy();
+    expect(agreeButton()).toBeTruthy();
   });
 
   // The worker's /check refused the address (403) after client-side screening
