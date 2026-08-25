@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { parseAmountInput, sanitizeAmountInput } from './amountInput';
+import { normalizeDecimalSeparator, parseAmountInput, sanitizeAmountInput } from './amountInput';
 
 describe('sanitizeAmountInput', () => {
   it('strips signs (negative amounts are unrepresentable)', () => {
@@ -29,11 +29,38 @@ describe('sanitizeAmountInput', () => {
     expect(sanitizeAmountInput(' 1 ', 18)).toBe('1');
   });
 
+  it('reads a decimal comma as a decimal point (the iOS keypad key)', () => {
+    expect(sanitizeAmountInput('1,5', 18)).toBe('1.5');
+    expect(sanitizeAmountInput('0,', 18)).toBe('0.');
+    expect(sanitizeAmountInput('1,9999999', 6)).toBe('1.999999');
+  });
+
   it('preserves in-progress typing states', () => {
     expect(sanitizeAmountInput('', 18)).toBe('');
     expect(sanitizeAmountInput('.', 18)).toBe('.');
     expect(sanitizeAmountInput('1.', 18)).toBe('1.');
     expect(sanitizeAmountInput('0.0', 18)).toBe('0.0');
+  });
+});
+
+describe('normalizeDecimalSeparator', () => {
+  it('reads a lone comma as the decimal separator', () => {
+    expect(normalizeDecimalSeparator('1,5')).toBe('1.5');
+    expect(normalizeDecimalSeparator(',5')).toBe('.5');
+  });
+
+  it('reads the last of the two marks as the decimal separator', () => {
+    expect(normalizeDecimalSeparator('1,234.5')).toBe('1234.5');
+    expect(normalizeDecimalSeparator('1.234,5')).toBe('1234.5');
+  });
+
+  it('treats repeated commas as grouping — a number has only one decimal mark', () => {
+    expect(normalizeDecimalSeparator('1,234,567')).toBe('1234567');
+  });
+
+  it('leaves comma-free text exactly as it is', () => {
+    expect(normalizeDecimalSeparator('1.5')).toBe('1.5');
+    expect(normalizeDecimalSeparator('')).toBe('');
   });
 });
 

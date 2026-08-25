@@ -4,6 +4,7 @@ import { useChainId, useConnection } from 'wagmi';
 import { useTokenBalance } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
+import { normalizeDecimalSeparator } from '@/lib/amountInput';
 import {
   getPsmConversionTokens,
   getPsmDecimalsForDirection,
@@ -94,8 +95,13 @@ export function useConvertForm() {
 
   const onInput = useCallback(
     (raw: string) => {
-      if (raw === '' || getValidatedPsmExternalAmount(raw, direction) !== undefined) {
-        setRawValue(raw);
+      // iOS's numeric keypad offers a single decimal key labelled from the
+      // system locale, so under most European locales a comma is the only
+      // separator typeable — read it as the decimal point the validator (and
+      // every `?amount=` deep link) works in (APP-518).
+      const typed = normalizeDecimalSeparator(raw);
+      if (typed === '' || getValidatedPsmExternalAmount(typed, direction) !== undefined) {
+        setRawValue(typed);
       }
     },
     [direction]

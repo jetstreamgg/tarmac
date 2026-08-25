@@ -31,6 +31,11 @@ export function MobileNavbar() {
       data-state={isHidden ? 'hidden' : 'visible'}
       className={cn(
         'from-pageBackground/0 to-pageBackground desktop:hidden fixed inset-x-0 bottom-0 z-30 flex bg-gradient-to-b px-3 pt-4 pb-[max(16px,env(safe-area-inset-bottom))]',
+        // Captured alongside the page during a route transition so the page's
+        // snapshot — which paints in the top layer, above every z-index in the
+        // document — passes behind the bar instead of over it (APP-518). The
+        // hook is inert outside a running transition; rules in globals.css.
+        'vt-shell-navbar',
         // M2.1: slide out while scrolling down, back in on scroll up. The bar
         // is fixed, so the transform doesn't reflow the page.
         // in-out rather than the app's ease-out-expo: expo front-loads ~80% of
