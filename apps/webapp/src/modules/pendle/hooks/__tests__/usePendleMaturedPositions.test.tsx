@@ -29,11 +29,7 @@ const hoisted = vi.hoisted(() => ({
   // Mutable connection + balances + chain. Tests reassign these before render.
   userAddress: undefined as `0x${string}` | undefined,
   ptBalances: undefined as Record<`0x${string}`, bigint> | undefined,
-  chainId: 1,
-  geo: { fixedEnabled: true, isLoading: false },
-  setSearchParamsMock: vi.fn(),
-  setIsSwitchingNetworkMock: vi.fn(),
-  setIsAutoSwitchingMock: vi.fn()
+  geo: { fixedEnabled: true, isLoading: false }
 }));
 
 vi.mock('@/hooks', async importOriginal => {
@@ -56,23 +52,7 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useConnection: () => ({ address: hoisted.userAddress }),
-    useChainId: () => hoisted.chainId,
-    // Production-like chain list (no tenderly fork) so the L2 auto-switch
-    // targets ethereum; the fork-preferring variant is covered by the
-    // widget-network-map unit tests.
-    useChains: () => [
-      { id: 1, name: 'Ethereum' },
-      { id: 8453, name: 'Base' }
-    ]
-  };
-});
-
-vi.mock('@/lib/navigation', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/lib/navigation')>();
-  return {
-    ...actual,
-    useAppSearchParams: () => [new URLSearchParams(), hoisted.setSearchParamsMock]
+    useConnection: () => ({ address: hoisted.userAddress })
   };
 });
 
@@ -83,21 +63,10 @@ vi.mock('@/modules/geo-config', () => ({
   })
 }));
 
-vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({
-    isSwitchingNetwork: false,
-    setIsSwitchingNetwork: hoisted.setIsSwitchingNetworkMock,
-    isAutoSwitching: false,
-    setIsAutoSwitching: hoisted.setIsAutoSwitchingMock
-  })
-}));
+import { usePendleMaturedPositions } from '../usePendleMaturedPositions';
 
-import { usePendleMaturedNetworkSwitch, usePendleMaturedPositions } from '../usePendleMaturedPositions';
-
-/** Probe pairing the hooks the way PortfolioPositionsSection does. */
 function Probe() {
   const { maturedPositions } = usePendleMaturedPositions();
-  usePendleMaturedNetworkSwitch(maturedPositions.length > 0);
   return (
     <div data-testid="probe">
       {maturedPositions.map(({ market }) => (
@@ -119,11 +88,7 @@ describe('usePendleMaturedPositions', () => {
     root = createRoot(container);
     hoisted.userAddress = undefined;
     hoisted.ptBalances = undefined;
-    hoisted.chainId = 1;
     hoisted.geo = { fixedEnabled: true, isLoading: false };
-    hoisted.setSearchParamsMock.mockClear();
-    hoisted.setIsSwitchingNetworkMock.mockClear();
-    hoisted.setIsAutoSwitchingMock.mockClear();
   });
 
   afterEach(() => {
@@ -153,58 +118,12 @@ describe('usePendleMaturedPositions', () => {
     expect(positions()).toHaveLength(0);
   });
 
-  it('auto-switches to Ethereum when holding matured PT on an L2 — once per mount, flagged automatic', () => {
-    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
-    hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
-    hoisted.chainId = 8453; // Base
-    render();
-    // The switch rides the ?network= param (the orchestration performs the
-    // wallet switch and the shell toast announces it), flagged as automatic.
-    expect(hoisted.setIsSwitchingNetworkMock).toHaveBeenCalledWith(true);
-    expect(hoisted.setIsAutoSwitchingMock).toHaveBeenCalledWith(true);
-    expect(hoisted.setSearchParamsMock).toHaveBeenCalledTimes(1);
-    const updater = hoisted.setSearchParamsMock.mock.calls[0][0] as (p: URLSearchParams) => URLSearchParams;
-    expect(updater(new URLSearchParams()).get('network')).toBe('ethereum');
-    // A declined prompt (chain unchanged) must not re-fire on re-render.
-    render();
-    expect(hoisted.setSearchParamsMock).toHaveBeenCalledTimes(1);
-    // The positions stay listed while off-chain — the cards disable Claim instead.
-    expect(positions()).toHaveLength(1);
-  });
-
-  it('does not switch on mainnet', () => {
-    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
-    hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
-    render();
-    expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
-  });
-
-  it('does not switch on a tenderly testnet — the fork session is valid for redemption', () => {
-    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
-    hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
-    hoisted.chainId = 314310; // tenderly vnet
-    render();
-    expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
-    expect(positions()).toHaveLength(1);
-  });
-
-  it('does not switch off-chain when there is nothing to redeem', () => {
-    hoisted.userAddress = '0x1111111111111111111111111111111111111111';
-    hoisted.ptBalances = { [ACTIVE_MARKET_ADDRESS]: 5_000_000n };
-    hoisted.chainId = 8453;
-    render();
-    expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
-  });
-
   it('hides matured positions while the fixed module is geo-restricted (APP-484)', () => {
     hoisted.userAddress = '0x1111111111111111111111111111111111111111';
     hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
     hoisted.geo = { fixedEnabled: false, isLoading: false };
-    hoisted.chainId = 8453; // Base — would auto-switch if a position were listed
     render();
     expect(positions()).toHaveLength(0);
-    // No visible claim surface, so no switch prompt either.
-    expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
   });
 
   it('passes positions through while the geo config is still loading (restrictive default)', () => {

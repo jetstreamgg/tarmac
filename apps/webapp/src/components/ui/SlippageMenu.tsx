@@ -34,11 +34,12 @@ function percentStringToDecimal(value: string): number {
   return n / 100;
 }
 
-/** Clamp a raw percent string to the ceiling only; empty/NaN normalize to ''. */
-function clampPercentMax(value: string, max: number): string {
+/** Clamp a raw percent string into [min, max]; empty/NaN normalize to ''. */
+function clampPercentString(value: string, min: number, max: number): string {
   if (value === '') return '';
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return '';
+  if (numeric < min) return String(min);
   if (numeric > max) return String(max);
   return value;
 }
@@ -67,10 +68,7 @@ export function SlippageMenu({
   value,
   defaultValue,
   onChange,
-  // A floor rather than 0: zero tolerance is never a working setting, it just
-  // guarantees a revert. The ceiling stays generous — a thin market can need
-  // real room — but the panel warns past `HIGH_SLIPPAGE_PERCENT`.
-  min = 0.01,
+  min = 0,
   max = 50,
   description,
   triggerClassName,
@@ -104,25 +102,10 @@ export function SlippageMenu({
 
   const isCustom = value !== defaultValue;
 
-  // Only the ceiling clamps per keystroke — a keystroke floor rewrites the
-  // "0" of "0.5" to the minimum. Empty or below-floor input commits nothing
-  // (committing 0 pins apiMinOut to the quote, so any price tick reverts);
-  // blur snaps a settled below-floor value up to the minimum.
   const handleCustomChange = (raw: string) => {
-    const capped = clampPercentMax(raw, max);
-    setRawInput(capped);
-    if (capped === '') return;
-    const decimal = percentStringToDecimal(capped);
-    if (decimal * 100 < min) return;
-    onChange(decimal);
-  };
-
-  const handleCustomBlur = () => {
-    if (rawInput === '') return;
-    const numeric = Number(rawInput);
-    if (Number.isNaN(numeric) || numeric >= min) return;
-    setRawInput(String(min));
-    onChange(min / 100);
+    const clamped = clampPercentString(raw, min, max);
+    setRawInput(clamped);
+    onChange(clamped === '' ? 0 : percentStringToDecimal(clamped));
   };
 
   return (
@@ -206,7 +189,6 @@ export function SlippageMenu({
                     inputMode="decimal"
                     value={rawInput}
                     onChange={e => handleCustomChange(e.target.value)}
-                    onBlur={handleCustomBlur}
                     data-testid={`${dataTestId}-input`}
                   />
                   <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>

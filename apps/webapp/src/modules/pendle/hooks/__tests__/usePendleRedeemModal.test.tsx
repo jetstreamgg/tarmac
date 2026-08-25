@@ -54,17 +54,45 @@ const hoisted = vi.hoisted(() => ({
   valueUsd: ((_symbol: string, amount: number) => amount) as (
     symbol: string,
     amount: number
-  ) => number | undefined
+  ) => number | undefined,
+  // Click-time network switch collaborators.
+  chainId: 1,
+  isSafeWallet: false,
+  switchChainAsyncMock: vi.fn(async () => undefined as unknown),
+  setIsAutoSwitchingMock: vi.fn(),
+  setAutoSwitchIntentMock: vi.fn(),
+  trackSwitchRequestedMock: vi.fn(),
+  trackSwitchCompletedMock: vi.fn()
 }));
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => 1,
-    useChains: () => [{ id: 1, name: 'Ethereum' }]
+    useChainId: () => hoisted.chainId,
+    useChains: () => [{ id: 1, name: 'Ethereum' }],
+    useSwitchChain: () => ({ switchChainAsync: hoisted.switchChainAsyncMock }),
+    useConnection: () => ({ address: '0x1111111111111111111111111111111111111111' })
   };
 });
+
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({
+    isSwitchingNetwork: false,
+    setIsSwitchingNetwork: () => undefined,
+    isAutoSwitching: false,
+    setIsAutoSwitching: hoisted.setIsAutoSwitchingMock,
+    autoSwitchIntent: null,
+    setAutoSwitchIntent: hoisted.setAutoSwitchIntentMock
+  })
+}));
+
+vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
+  useAppAnalytics: () => ({
+    trackNetworkSwitchRequested: hoisted.trackSwitchRequestedMock,
+    trackNetworkSwitchCompleted: hoisted.trackSwitchCompletedMock
+  })
+}));
 
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
   useBatchToggle: () => [true, () => undefined]
@@ -75,6 +103,8 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     isMarketMatured: () => hoisted.matured,
+    useIsSafeWallet: () => hoisted.isSafeWallet,
+    useTokenAllowance: () => ({ data: 0n, isLoading: false, error: null, mutate: () => {} }),
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
@@ -342,5 +372,70 @@ describe('usePendleRedeemModal onConfirm freshness', () => {
     expect(executeAtLaunch).not.toHaveBeenCalled();
     expect(executeAfterChange).toHaveBeenCalledTimes(1);
     unmount();
+  });
+});
+
+describe('usePendleRedeemModal network switch', () => {
+  beforeEach(() => {
+    hoisted.launchMock.mockClear();
+    hoisted.isModalOpen = false;
+    hoisted.txStatus = 'idle';
+    hoisted.matured = true;
+    hoisted.chainId = 1;
+    hoisted.isSafeWallet = false;
+    hoisted.switchChainAsyncMock.mockReset();
+    hoisted.switchChainAsyncMock.mockResolvedValue(undefined);
+    hoisted.setIsAutoSwitchingMock.mockClear();
+    hoisted.setAutoSwitchIntentMock.mockClear();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  let open: () => Promise<void> | void;
+  const Capture = () => {
+    const { openRedeemModal } = usePendleRedeemModal(MATURED_MARKET);
+    open = openRedeemModal;
+    return null;
+  };
+
+  it('opens directly on the pendle chain without touching the wallet', async () => {
+    const view = renderComponent(<Capture />);
+    await act(async () => open());
+    expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
+    expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('switches the wallet to mainnet first when clicked off-chain, flagged automatic', async () => {
+    hoisted.chainId = 8453; // Base
+    const view = renderComponent(<Capture />);
+    await act(async () => open());
+    expect(hoisted.setIsAutoSwitchingMock).toHaveBeenCalledWith(true);
+    expect(hoisted.switchChainAsyncMock).toHaveBeenCalledWith({ chainId: 1 });
+    expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('a rejected switch opens nothing and resets the auto flags — the click stays retryable', async () => {
+    hoisted.chainId = 8453;
+    hoisted.switchChainAsyncMock.mockRejectedValueOnce(new Error('User rejected the request'));
+    const view = renderComponent(<Capture />);
+    await act(async () => open());
+    expect(hoisted.launchMock).not.toHaveBeenCalled();
+    expect(hoisted.setIsAutoSwitchingMock).toHaveBeenLastCalledWith(false);
+    expect(hoisted.setAutoSwitchIntentMock).toHaveBeenLastCalledWith(null);
+    view.unmount();
+  });
+
+  it('does nothing off-chain in a Safe — it cannot switch from the dapp (APP-486)', async () => {
+    hoisted.chainId = 8453;
+    hoisted.isSafeWallet = true;
+    const view = renderComponent(<Capture />);
+    await act(async () => open());
+    expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
+    expect(hoisted.launchMock).not.toHaveBeenCalled();
+    view.unmount();
   });
 });

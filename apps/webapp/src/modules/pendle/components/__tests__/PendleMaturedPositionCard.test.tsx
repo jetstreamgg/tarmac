@@ -26,7 +26,8 @@ const MARKET: PendleMarketConfig = {
 const h = vi.hoisted(() => ({
   chainId: 1,
   earnings: { earnings: 184.8 as number | undefined, currency: 'USDS' as string | undefined },
-  isPrepared: true
+  isPrepared: true,
+  switchBlocked: false
 }));
 
 const openRedeemModal = vi.fn();
@@ -51,6 +52,8 @@ vi.mock('../../hooks/usePendleRedeemModal', () => ({
     openRedeemModal,
     isRedeemable: true,
     isPrepared: h.isPrepared,
+    onPendleChain: h.chainId === 1,
+    switchBlocked: h.switchBlocked,
     ptBalance: 0n
   })
 }));
@@ -75,6 +78,7 @@ const renderCard = () =>
 describe('PendleMaturedPositionCard', () => {
   beforeEach(() => {
     h.chainId = 1;
+    h.switchBlocked = false;
     h.earnings = { earnings: 184.8, currency: 'USDS' };
     h.isPrepared = true;
   });
@@ -110,12 +114,22 @@ describe('PendleMaturedPositionCard', () => {
     expect(onViewDetails).toHaveBeenCalledTimes(1);
   });
 
-  it('disables Claim off the pendle chain and explains why, leaving View details usable', () => {
+  it('keeps Claim enabled off the pendle chain — the click switches the wallet first', () => {
     h.chainId = 8453; // Base
+    h.isPrepared = false; // prepare may not resolve off-chain; it must not gate here
+    renderCard();
+
+    expect((screen.getByTestId('pendle-matured-redeem-button') as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByTestId('pendle-redeem-network-hint')).toBeNull();
+  });
+
+  it('disables Claim off-chain in a Safe and explains why, leaving View details usable', () => {
+    h.chainId = 8453;
+    h.switchBlocked = true; // Safe wallets can't switch from the dapp (APP-486)
     renderCard();
 
     expect((screen.getByTestId('pendle-matured-redeem-button') as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByTestId('pendle-redeem-network-hint')).toBeTruthy();
+    expect(screen.getByTestId('pendle-redeem-network-hint').textContent).toContain('Safe app');
     // Reading the market never depended on the wallet's chain.
     expect((screen.getByTestId('pendle-matured-view-details') as HTMLButtonElement).disabled).toBe(false);
   });

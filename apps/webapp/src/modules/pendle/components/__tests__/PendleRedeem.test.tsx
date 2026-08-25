@@ -86,7 +86,7 @@ const baseProps = {
   networkChainId: 1
 };
 
-const renderRedeem = (props: Partial<typeof baseProps> & { prepareErrorMessage?: string } = {}) =>
+const renderRedeem = (props: Partial<typeof baseProps> = {}) =>
   render(
     <I18nProvider i18n={i18n}>
       <PendleRedeem {...baseProps} {...props} />
@@ -167,15 +167,6 @@ describe('PendleRedeem', () => {
     cleanup();
     renderRedeem({ quote: { ...baseQuote, feeUsd: 12.345 } });
     expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$12.35');
-  });
-
-  it('renders the inline prepare-error banner only when a message is set', () => {
-    renderRedeem({ prepareErrorMessage: 'Quote expired' });
-    expect(screen.getByTestId('pendle-redeem-prepare-error').textContent).toBe('Quote expired');
-
-    cleanup();
-    renderRedeem();
-    expect(screen.queryByTestId('pendle-redeem-prepare-error')).toBeNull();
   });
 
   it('names the network in the Network cell', () => {

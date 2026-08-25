@@ -1,12 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useChainId, useChains, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
-import { Intent } from '@/lib/enums';
-import { QueryParams } from '@/lib/constants';
-import { useAppSearchParams } from '@/lib/navigation';
-import { getNetworkOverrideForIntent } from '@/lib/widget-network-map';
 import { useGeoConfig } from '@/modules/geo-config';
-import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 
 export type PendleMaturedPosition = { market: PendleMarketConfig; ptBalance: bigint };
 
@@ -14,9 +8,8 @@ export type PendleMaturedPosition = { market: PendleMarketConfig; ptBalance: big
  * Matured PT the connected user holds, per market (G6 — the marketplace
  * filters matured markets out, so the Portfolio matured cards are these
  * positions' only surface, rendered in the Supplied carousel — Figma
- * 2306:72334). Pure read: the mainnet auto-switch lives in
- * `usePendleMaturedNetworkSwitch`, enabled only where a claim surface is
- * actually visible.
+ * 2306:72334). Pure read: the claim cards switch the wallet on click
+ * (usePendleRedeemModal), never on mount.
  *
  * Geo: empty while the `fixed` module is region-restricted — restricted
  * positions are hidden from every surface (APP-484 / useGeoVisibleRows), and
@@ -49,36 +42,4 @@ export function usePendleMaturedPositions(): {
     maturedPositions,
     isLoading: !!address && (isLoading || ptBalances === undefined)
   };
-}
-
-/**
- * Auto-switch the wallet to Ethereum while a claim surface is visible —
- * the redeem signs there. Same mechanics as module navigation
- * (destinations.tsx): auto-flagged ?network= override, orchestration
- * performs the switch, testnets exempt. Once per mount, so a declined
- * prompt doesn't re-fire; the cards stay visible off-chain either way.
- */
-export function usePendleMaturedNetworkSwitch(enabled: boolean): void {
-  const chainId = useChainId();
-  const chains = useChains();
-  const [, setSearchParams] = useAppSearchParams();
-  const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
-
-  const networkOverride = enabled
-    ? getNetworkOverrideForIntent(Intent.FIXED_INTENT, chainId, chains)
-    : undefined;
-  const promptedRef = useRef(false);
-  useEffect(() => {
-    if (!networkOverride || promptedRef.current) return;
-    promptedRef.current = true;
-    setIsSwitchingNetwork(true);
-    setIsAutoSwitching(true);
-    setSearchParams(
-      params => {
-        params.set(QueryParams.Network, networkOverride);
-        return params;
-      },
-      { replace: true }
-    );
-  }, [networkOverride, setSearchParams, setIsSwitchingNetwork, setIsAutoSwitching]);
 }

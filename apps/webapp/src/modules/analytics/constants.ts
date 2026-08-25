@@ -59,7 +59,7 @@ export type ConnectReason =
 export type ConnectMethod = 'connect' | 'switch';
 export type GatedActionOutcome = 'completed' | 'abandoned';
 export type NetworkSwitchSource =
-  'chain_modal' | 'network_toast' | 'unsupported_network_page' | 'portfolio_supply';
+  'chain_modal' | 'network_toast' | 'unsupported_network_page' | 'portfolio_supply' | 'pendle_claim';
 export type NetworkSwitchStatus = 'success' | 'rejected' | 'error';
 export type AutoSwitchTrigger = 'connect' | 'url_param' | 'route_guard';
 export type PromoId = 'allocate_stablecoins' | 'savings_tvl_simulate' | 'connect_wallet_card';
