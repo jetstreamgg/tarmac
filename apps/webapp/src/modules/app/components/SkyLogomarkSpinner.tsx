@@ -13,10 +13,10 @@ export const SPIN_TRANSITION: Transition = { rotate: { duration: 1.8, ease: 'lin
 
 /**
  * The loader glyph on its own, for covers that wait on a check rather than on
- * the app's first data load (the terms gate). No exit pop: those covers hand
- * off to a modal, so they cross-fade out instead of collapsing — which also
- * means this can be a plain looping element rather than the App Loader's
- * one-element-throughout timeline.
+ * the app's first data load — the connect-time compliance checks
+ * (ConnectChecksCover). No exit pop: that cover hands off to a modal, so it
+ * cross-fades out instead of collapsing, which also means this can be a plain
+ * looping element rather than the App Loader's one-element-throughout timeline.
  *
  * The spin is kept under `prefers-reduced-motion`, unlike the App Loader cover
  * (which simply never plays): here it is the only progress affordance on

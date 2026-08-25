@@ -65,14 +65,16 @@ describe('TermsModal', () => {
     mocks.termsModal.isModalOpen = true;
   });
 
-  // The card must open exactly once, already at its final size: a modal that
-  // opened compact and then grew into the terms read as expanding outward from
-  // its centre rather than sliding up like the rest of the app's modals.
-  it('covers the screen instead of opening the card while the terms check runs', () => {
+  // The card must open exactly once, already at its final size. It used to open
+  // while the check was still running — as the narrow waiting card — and then
+  // swap to the wide terms card; DialogContent transitions `all`, so that swap
+  // animated width and height and the modal read as expanding outward from its
+  // centre rather than sliding up. WalletChip's ConnectChecksCover holds the
+  // screen for the check instead (covered in WalletChip.test).
+  it('stays shut while the terms check runs, then opens straight at its full width', () => {
     mocks.connected.isCheckingTerms = true;
     const { rerender } = renderModal();
 
-    expect(screen.getByTestId('terms-check-cover')).toBeTruthy();
     expect(screen.queryByTestId('terms-modal')).toBeNull();
 
     mocks.connected.isCheckingTerms = false;
@@ -82,8 +84,22 @@ describe('TermsModal', () => {
       </I18nProvider>
     );
 
-    expect(screen.getByTestId('terms-modal')).toBeTruthy();
+    const card = screen.getByTestId('terms-modal');
     expect(agreeButton()).toBeTruthy();
+    // The full-size recipe, never the 300px dead-end one.
+    expect(card.className).toContain('sm:min-w-152.5');
+    expect(card.className).not.toContain('sm:min-w-[300px]');
+  });
+
+  // The dead ends keep the narrow card, and must reach it by opening at that
+  // size rather than by resizing a card that is already on screen.
+  it('opens the denied dead end straight at the narrow width', () => {
+    mocks.connected.termsCheckDenied = true;
+    renderModal();
+
+    const card = screen.getByTestId('terms-modal');
+    expect(card.className).toContain('sm:min-w-[300px]');
+    expect(card.className).not.toContain('sm:min-w-152.5');
   });
 
   // The worker's /check refused the address (403) after client-side screening

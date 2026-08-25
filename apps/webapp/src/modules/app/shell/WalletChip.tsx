@@ -6,6 +6,7 @@ import { mainnet } from 'viem/chains';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { TermsModal } from '@/modules/ui/components/TermsModal';
+import { ConnectChecksCover } from '@/modules/ui/components/ConnectChecksCover';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
@@ -33,8 +34,21 @@ export function WalletChip() {
     authData,
     vpnData,
     accessBlockReason,
-    retryAccessChecks
+    retryAccessChecks,
+    isCheckingTerms
   } = useConnectedContext();
+
+  // The connect-time compliance checks run back to back — address screening,
+  // then the terms check — and each used to raise its own "Please wait" card,
+  // so a connect showed two in a row. One cover spans both, mounted here
+  // because this is the single place that owns both gates (UnauthorizedPage
+  // also mounts inside AuthWrapper, so a cover living in it would stack).
+  //
+  // The terms half is gated on the terms not being accepted yet, which keeps
+  // it to exactly the moments that used to show a card: a background re-check
+  // for an already-accepted wallet must not throw a scrim over the app.
+  const isScreening = !isAuthorized && !!(authData?.authIsLoading || vpnData?.vpnIsLoading);
+  const showChecksCover = isScreening || (!isConnectedAndAcceptedTerms && isCheckingTerms);
 
   // Connect type of Navbar Item / Wallet Info (Figma 5069:27086): the DS
   // primary button recipe at navbar height (40px, Label 5).
@@ -49,6 +63,7 @@ export function WalletChip() {
     // gives up width instead of overflowing the viewport. Scoped off at the
     // desktop grid, where chip width intentionally squeezes the flanks (APP-415).
     <div data-testid="wallet-chip" className="desktop:min-w-[auto] min-w-0">
+      <ConnectChecksCover open={showChecksCover} />
       {!isAuthorized ? (
         <UnauthorizedPage
           authData={authData}

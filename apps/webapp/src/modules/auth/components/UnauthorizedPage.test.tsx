@@ -60,10 +60,16 @@ afterEach(() => {
 });
 
 describe('UnauthorizedPage', () => {
-  it('shows the waiting state while checks are loading', () => {
-    renderPage({ authIsLoading: true });
+  // The wait is WalletChip's ConnectChecksCover now, not a card here: this
+  // component mounts twice at once (navbar + AuthWrapper), so a scrim of its
+  // own would stack. It must render nothing at all until the verdict is in —
+  // in particular not the blocked dialog, which would otherwise flash for
+  // every user while screening was still in flight.
+  it('renders no dialog at all while the checks are loading', () => {
+    renderPage({ authIsLoading: true, blockReason: 'wallet-blocked' });
 
-    expect(screen.getByText('Please wait...')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText('Wallet blocked')).toBeNull();
     expect(screen.queryByRole('button')).toBeNull();
   });
 

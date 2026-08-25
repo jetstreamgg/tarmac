@@ -15,7 +15,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CheckedState } from '@radix-ui/react-checkbox';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Close } from '@/modules/icons';
-import { TermsCheckCover } from './TermsCheckCover';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
 import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 
@@ -335,14 +334,13 @@ export function TermsModal() {
   const showCompactState = !!termsCheckError || !!termsCheckDenied;
 
   // The modal stays shut for as long as the check runs, so it opens exactly
-  // once, already at its final size, and plays the house slide-up. The cover
-  // holds the screen (and the scrim) in the meantime.
-  const showCover = isModalOpen && isCheckingTerms;
+  // once, already at its final size, and plays the house slide-up. WalletChip's
+  // ConnectChecksCover holds the screen (and the scrim) in the meantime — one
+  // cover for the whole connect-time check sequence, not one per check.
 
   return (
     <>
       {triggerButton}
-      <TermsCheckCover open={showCover} />
       <ResponsiveModal open={isModalOpen && !isCheckingTerms} onOpenChange={handleOpenChange}>
         <ResponsiveModalContent
           aria-describedby={undefined}
