@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import type { NetworkFeeData } from '@/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { SparklesMorpho, TrendingUp } from '@/modules/icons';
@@ -17,6 +18,15 @@ import type { ModalSummaryCell } from './ModalSummaryGrid';
  */
 export const NETWORK_FEE_LABEL = 'Network fee';
 
+/** Status colouring a value can carry (DS components/status). */
+export type CellTone = 'success' | 'warning' | 'error';
+
+const TONE_CLASS: Record<CellTone, string> = {
+  success: 'text-statusSuccess',
+  warning: 'text-statusWarning',
+  error: 'text-statusError'
+};
+
 /** The presentation hints shared by every cell kind — see `ModalGridCell`. */
 export type ModalGridCellHints = {
   label: string;
@@ -24,6 +34,23 @@ export type ModalGridCellHints = {
   labelBadge?: string;
   /** Symbol for the 12px token icon drawn before the value(s). */
   token?: string;
+  /**
+   * Token icon for a delta's *right* side, when the two sides are different
+   * tokens (the stake review's reward-farm change: SKY → USDS). Defaults to
+   * `token`, which every same-token delta keeps using.
+   */
+  afterToken?: string;
+  /**
+   * Address seeding a 12px identicon drawn before the value(s), in place of a
+   * token icon (the stake review's Delegate cell).
+   */
+  avatar?: string;
+  /** Identicon for a delta's right side. Defaults to `avatar`. */
+  afterAvatar?: string;
+  /** Status colour on the value — the stake review's Risk level. */
+  tone?: CellTone;
+  /** Status colour on a delta's right side. Defaults to `tone`. */
+  afterTone?: CellTone;
   /** Draw the 12px network (chain) icon before the value. */
   network?: boolean;
   /**
@@ -229,13 +256,31 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     return <Skeleton className="h-4 w-16 rounded" data-testid="cell-loading" />;
   }
 
-  const icon = cell.network ? (
-    <NetworkIcon chainId={cell.networkChainId} />
-  ) : cell.trend ? (
-    <TrendingUp boxSize={12} className="text-statusSuccessSolid size-3 shrink-0" aria-hidden />
-  ) : cell.token ? (
-    <CellToken symbol={cell.token} ring={cell.productIcon} />
-  ) : null;
+  // A delta's two sides can carry different glyphs (the stake reward-farm
+  // change draws SKY → USDS, the delegate change two identicons), so the icon
+  // is resolved per side; `after` falls back to `before` for the same-token
+  // deltas every other module emits.
+  const iconFor = (side: 'before' | 'after') => {
+    if (cell.network) return <NetworkIcon chainId={cell.networkChainId} />;
+    if (cell.trend) {
+      return <TrendingUp boxSize={12} className="text-statusSuccessSolid size-3 shrink-0" aria-hidden />;
+    }
+    const avatar = side === 'after' ? (cell.afterAvatar ?? cell.avatar) : cell.avatar;
+    if (avatar) {
+      return (
+        <span className="flex size-3 shrink-0 overflow-hidden rounded-full">
+          <CustomAvatar address={avatar} size={12} />
+        </span>
+      );
+    }
+    const token = side === 'after' ? (cell.afterToken ?? cell.token) : cell.token;
+    return token ? <CellToken symbol={token} ring={cell.productIcon} /> : null;
+  };
+  const icon = iconFor('before');
+
+  const toneFor = (side: 'before' | 'after') =>
+    (side === 'after' ? (cell.afterTone ?? cell.tone) : cell.tone) &&
+    TONE_CLASS[(side === 'after' ? (cell.afterTone ?? cell.tone) : cell.tone)!];
 
   const accent = (value: string) => (cell.rateAccent === 'savings' ? <RatePercent value={value} /> : value);
 
@@ -243,7 +288,7 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     return (
       <span className="flex items-center gap-1">
         {icon}
-        <span>{accent(cell.value)}</span>
+        <span className={toneFor('before')}>{accent(cell.value)}</span>
         {cell.rateAccent === 'morpho' && (
           <SparklesMorpho boxSize={12} className="size-3 shrink-0" aria-hidden />
         )}
@@ -279,16 +324,31 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     <span className="flex flex-wrap items-center gap-1.5">
       <span className="flex items-center gap-1">
         {icon}
-        <span>{accent(cell.before)}</span>
+        <span className={toneFor('before')}>{accent(cell.before)}</span>
       </span>
       <ArrowRight className="text-fgPrimary size-3 shrink-0" aria-hidden />
       <span className="flex items-center gap-1">
-        {icon}
-        <span>{accent(cell.after)}</span>
+        {iconFor('after')}
+        <span className={toneFor('after')}>{accent(cell.after)}</span>
       </span>
     </span>
   );
 }
+
+/**
+ * Chunks an ordered cell list into the grid's rows of two. Modules whose cell
+ * set is fixed spell their rows out literally; stake's is genuinely dynamic
+ * (the borrow, reward and delegate cells each appear only when that leg is in
+ * play), so it orders the cells it has and pairs them here — keeping the grid
+ * balanced whatever collapses. Optional cells are emitted in even-sized groups
+ * so a collapse never re-pairs unrelated labels.
+ */
+export const pairCells = (cells: ModalGridCell[]): ModalGridCell[][] =>
+  cells.reduce<ModalGridCell[][]>((rows, cell, i) => {
+    if (i % 2 === 0) rows.push([cell]);
+    else rows[rows.length - 1].push(cell);
+    return rows;
+  }, []);
 
 /** Label pill (Figma Badge, 16px tall, Label 7 on badges/bg-secondary) beside a cell label. */
 function LabelBadge({ text }: { text: string }) {

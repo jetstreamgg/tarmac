@@ -48,6 +48,28 @@ const setSearchParamsMock = vi.fn<SetSearchParams>(next => {
     typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
 });
 
+// The confirm grid runs its own live reads (fee estimate, delegate metadata) —
+// out of scope here. Stubbed to expose the reward/delegate context this
+// takeover hands it, which IS this component's job to get right.
+vi.mock('./StakeConfirmGrid', () => ({
+  StakeConfirmGrid: ({
+    rewardFrom,
+    rewardTo,
+    delegateFrom,
+    delegateTo
+  }: {
+    rewardFrom?: { address: string; symbol?: string };
+    rewardTo?: { address: string; symbol?: string };
+    delegateFrom?: string;
+    delegateTo?: string;
+  }) => (
+    <div data-testid="stake-confirm-grid-stub">
+      <span data-testid="stake-confirm-grid-reward">{JSON.stringify({ rewardFrom, rewardTo })}</span>
+      <span data-testid="stake-confirm-grid-delegate">{JSON.stringify({ delegateFrom, delegateTo })}</span>
+    </div>
+  )
+}));
+
 vi.mock('@/lib/navigation', async importOriginal => {
   const actual = await importOriginal<typeof import('@/lib/navigation')>();
   return {
@@ -226,6 +248,19 @@ const renderTakeover = () =>
 const typeStakeAmount = (value: string) =>
   fireEvent.change(screen.getByTestId('stake-takeover-stake-amount'), { target: { value } });
 
+/**
+ * The review body is a render function now — the launch hook feeds it the
+ * engine's own calls so the grid can price the network fee. Nothing here
+ * simulates, so an empty routing is enough.
+ */
+const renderConfirmSummary = (params: Record<string, unknown> | undefined = h.launchParams) => {
+  const build = params?.transactionContent as (context: {
+    calls: unknown[];
+    isBatch: boolean;
+  }) => React.ReactNode;
+  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false })}</I18nProvider>);
+};
+
 describe('OpenPositionTakeover', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams('flow=open');
@@ -311,10 +346,10 @@ describe('OpenPositionTakeover', () => {
     fireEvent.click(row);
     expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
 
-    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
-    const rewardRow = screen.getByTestId('stake-takeover-confirm-reward');
-    expect(rewardRow.textContent).toContain('FOO');
-    expect(rewardRow.textContent).not.toContain('SKY');
+    renderConfirmSummary();
+    const reward = screen.getByTestId('stake-confirm-grid-reward').textContent!;
+    expect(reward).toContain('FOO');
+    expect(reward).not.toContain('SKY');
   });
 
   it('falls back to the shortened farm address while the on-chain symbol is unresolved', () => {
@@ -324,8 +359,12 @@ describe('OpenPositionTakeover', () => {
     typeStakeAmount('100');
 
     fireEvent.click(screen.getByTestId(`stake-takeover-reward-${unknownFarm}`));
-    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
-    expect(screen.getByTestId('stake-takeover-confirm-reward').textContent).toContain('0x9999...9999');
+    renderConfirmSummary();
+    // No symbol resolved: the grid gets the farm address and renders the
+    // shortened form (see stakeModalRows.test.ts).
+    const reward = JSON.parse(screen.getByTestId('stake-confirm-grid-reward').textContent!);
+    expect(reward.rewardFrom).toMatchObject({ address: unknownFarm });
+    expect(reward.rewardFrom.symbol).toBeUndefined();
   });
 
   it('enables Confirm for a valid stake amount and launches the confirm modal', () => {

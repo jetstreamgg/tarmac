@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { formatUnits } from 'viem';
+import { formatUnits, type Call } from 'viem';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
@@ -94,9 +94,24 @@ export interface UseStakeManageLaunchParams {
   rewardContractsToClaim?: `0x${string}`[];
   /** Display symbols aligned to `rewardContractsToClaim`, for step labels only. */
   claimSymbols?: string[];
-  /** Review-screen body (per-action amount heroes / delegate From→To). */
-  transactionContent?: ReactNode;
+  /**
+   * Review-screen body (the amount heroes over the confirm grid). Pass a
+   * function to receive the engine's own `calls` — the grid prices the live
+   * Network fee from them, which it cannot do from the caller's render (the
+   * calls are this hook's output, the body its input).
+   */
+  transactionContent?: ReactNode | ((context: StakeLaunchContentContext) => ReactNode);
+  /** Compact wallet/status-screen summary; omitted, the review body carries over. */
+  transactionScreenContent?: ReactNode;
   onSuccess?: () => void;
+}
+
+/** What a `transactionContent` render function receives — the engine's live routing. */
+export interface StakeLaunchContentContext {
+  /** The flow's calls, as the engine will send them. */
+  calls: Call[];
+  /** Whether they go out as one EIP-5792 bundle. */
+  isBatch: boolean;
 }
 
 /**
@@ -127,6 +142,7 @@ export function useStakeManageLaunch({
   rewardContractsToClaim,
   claimSymbols,
   transactionContent,
+  transactionScreenContent,
   onSuccess
 }: UseStakeManageLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
@@ -199,6 +215,18 @@ export function useStakeManageLaunch({
   useEffect(() => {
     executeRef.current = engine.execute;
   }, [engine.execute]);
+
+  // Same trick for the routing the review body prices its fee from: `calls` is
+  // a fresh array every render, so keeping it out of `launch`'s deps is what
+  // stops the callback churning on each one. It is read at press time, when the
+  // calldata has long settled.
+  const routingRef = useRef<StakeLaunchContentContext>({
+    calls: engine.calls ?? [],
+    isBatch: !!engine.isBatch
+  });
+  useEffect(() => {
+    routingRef.current = { calls: engine.calls ?? [], isBatch: !!engine.isBatch };
+  });
 
   const hasLock = skyToLock > 0n;
   const hasFree = skyToFree > 0n;
@@ -294,7 +322,11 @@ export function useStakeManageLaunch({
         success: t`Your position is updated!`,
         error: t`Failed to change the position`
       },
-      transactionContent,
+      transactionContent:
+        typeof transactionContent === 'function'
+          ? transactionContent(routingRef.current)
+          : transactionContent,
+      transactionScreenContent,
       steps,
       confirmLabel: t`Confirm`,
       onConfirm: () => executeRef.current(),
@@ -326,6 +358,7 @@ export function useStakeManageLaunch({
     selectedRewardSymbol,
     shouldUseBatch,
     transactionContent,
+    transactionScreenContent,
     steps,
     onSuccess
   ]);
@@ -335,6 +368,8 @@ export function useStakeManageLaunch({
     execute: engine.execute,
     steps,
     calldata,
+    calls: engine.calls ?? [],
+    isBatch: !!engine.isBatch,
     hasRewardChange,
     hasDelegateChange,
     urnSelectedVoteDelegate,

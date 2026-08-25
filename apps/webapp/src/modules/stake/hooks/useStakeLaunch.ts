@@ -19,6 +19,7 @@ import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
+import type { StakeLaunchContentContext } from './useStakeManageLaunch';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 
 /**
@@ -54,8 +55,16 @@ export interface UseStakeLaunchParams {
   selectedDelegate: `0x${string}` | undefined;
   /** Form validity — gates the engine's prepare/simulation. */
   enabled: boolean;
-  /** Review-screen body (stake/borrow amount heroes per hi-fi 486:33412). */
-  transactionContent?: ReactNode;
+  /**
+   * Review-screen body (the stake/borrow amount heroes per hi-fi 486:33412,
+   * over the confirm grid). Pass a function to receive the engine's own
+   * `calls` — the grid prices the live Network fee from them, which it cannot
+   * do from the caller's render (the calls are this hook's output, the body
+   * its input).
+   */
+  transactionContent?: ReactNode | ((context: StakeLaunchContentContext) => ReactNode);
+  /** Compact wallet/status-screen summary; omitted, the review body carries over. */
+  transactionScreenContent?: ReactNode;
   /** Refetch positions/history + close the takeover after success. */
   onSuccess?: () => void;
 }
@@ -83,6 +92,7 @@ export function useStakeLaunch({
   selectedDelegate,
   enabled,
   transactionContent,
+  transactionScreenContent,
   onSuccess
 }: UseStakeLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
@@ -145,6 +155,18 @@ export function useStakeLaunch({
     executeRef.current = engine.execute;
   }, [engine.execute]);
 
+  // Same trick for the routing the review body prices its fee from: `calls` is
+  // a fresh array every render, so keeping it out of `launch`'s deps is what
+  // stops the callback churning on each one. It is read at press time, when the
+  // calldata has long settled.
+  const routingRef = useRef<StakeLaunchContentContext>({
+    calls: engine.calls ?? [],
+    isBatch: !!engine.isBatch
+  });
+  useEffect(() => {
+    routingRef.current = { calls: engine.calls ?? [], isBatch: !!engine.isBatch };
+  });
+
   const hasBorrow = usdsToBorrow > 0n;
   const hasDelegate = !!selectedDelegate && selectedDelegate !== ZERO_ADDRESS;
   const steps = buildStakeOpenSteps({ needsSkyAllowance, hasBorrow, hasDelegate });
@@ -196,7 +218,11 @@ export function useStakeLaunch({
         success: hasBorrow ? t`The position is now open!` : t`${formattedSky} SKY staked!`,
         error: t`Failed to open the position`
       },
-      transactionContent,
+      transactionContent:
+        typeof transactionContent === 'function'
+          ? transactionContent(routingRef.current)
+          : transactionContent,
+      transactionScreenContent,
       steps,
       confirmLabel: t`Confirm`,
       onConfirm: () => executeRef.current(),
@@ -218,6 +244,7 @@ export function useStakeLaunch({
     hasDelegate,
     shouldUseBatch,
     transactionContent,
+    transactionScreenContent,
     steps,
     onSuccess
   ]);
@@ -225,6 +252,8 @@ export function useStakeLaunch({
   return {
     launch,
     execute: engine.execute,
+    calls: engine.calls ?? [],
+    isBatch: !!engine.isBatch,
     steps,
     calldata,
     needsSkyAllowance,

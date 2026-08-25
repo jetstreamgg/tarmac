@@ -28,7 +28,7 @@ import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
-import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
+import { useStakeManageLaunch, type StakeLaunchContentContext } from '../hooks/useStakeManageLaunch';
 import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
@@ -37,6 +37,7 @@ import { StakeTakeoverRewardCard } from './StakeTakeoverRewardCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
+import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 
 const FOOTER_NOTE_CLASSES =
@@ -231,16 +232,60 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     );
   }, [queryClient, setSearchParams]);
 
-  const confirmSummary = useMemo(
-    () => (
-      <StakeTakeoverConfirmSummary
-        skyToLock={debouncedSkyToLock}
-        usdsToBorrow={debouncedUsdsToBorrow}
-        rewardSymbol={rewardSymbol}
-        rewardContract={selectedRewardContract}
-      />
+  // Amount heroes: the wallet/status screen's compact summary, and the top of
+  // the review body. The farm the picker staged used to ride here as a chip —
+  // it is now the grid's Reward cell, next to the delegate and the rates.
+  const heroes = useMemo(
+    () => <StakeTakeoverConfirmSummary skyToLock={debouncedSkyToLock} usdsToBorrow={debouncedUsdsToBorrow} />,
+    [debouncedSkyToLock, debouncedUsdsToBorrow]
+  );
+
+  const effectiveDelegate = state.selectedDelegate ?? reopenDelegateBaseline;
+  // Memoized so the review body below keeps its identity across renders — it
+  // is a dep of the launch descriptor.
+  const rewardFrom = useMemo(
+    () => (selectedRewardContract ? { address: selectedRewardContract, symbol: rewardSymbol } : undefined),
+    [selectedRewardContract, rewardSymbol]
+  );
+
+  // The review body is built at Confirm time from the engine's own calls, so
+  // the grid can price the live network fee (see `transactionContent` on the
+  // launch hooks). A new (or emptied, on reopen) position has no "before", so
+  // every cell states what the transaction leaves behind.
+  const renderConfirmSummary = useCallback(
+    ({ calls, isBatch }: StakeLaunchContentContext) => (
+      <div className="flex flex-col gap-8">
+        {heroes}
+        <StakeConfirmGrid
+          calls={calls}
+          isBatch={isBatch}
+          hasPosition={false}
+          stakedBefore={debouncedSkyToLock}
+          stakedAfter={debouncedSkyToLock}
+          rewardsRate={rewardsRate}
+          rateLoading={rateLoading}
+          debtBefore={debouncedUsdsToBorrow}
+          debtAfter={debouncedUsdsToBorrow}
+          vaultBefore={debouncedVault}
+          vaultAfter={debouncedVault}
+          stabilityFee={collateralData?.stabilityFee}
+          rewardFrom={rewardFrom}
+          delegateFrom={effectiveDelegate}
+          showSelections
+        />
+      </div>
     ),
-    [debouncedSkyToLock, debouncedUsdsToBorrow, rewardSymbol, selectedRewardContract]
+    [
+      heroes,
+      debouncedSkyToLock,
+      debouncedUsdsToBorrow,
+      rewardsRate,
+      rateLoading,
+      debouncedVault,
+      collateralData?.stabilityFee,
+      rewardFrom,
+      effectiveDelegate
+    ]
   );
 
   const openLaunch = useStakeLaunch({
@@ -249,7 +294,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     selectedRewardContract,
     selectedDelegate: state.selectedDelegate,
     enabled: !reopen && formValid,
-    transactionContent: confirmSummary,
+    transactionContent: renderConfirmSummary,
+    transactionScreenContent: heroes,
     onSuccess
   });
 
@@ -266,9 +312,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     usdsToWipe: 0n,
     wipeAll: false,
     selectedRewardContract,
-    selectedDelegate: state.selectedDelegate ?? reopenDelegateBaseline,
+    selectedDelegate: effectiveDelegate,
     enabled: !!reopen && formValid,
-    transactionContent: confirmSummary,
+    transactionContent: renderConfirmSummary,
+    transactionScreenContent: heroes,
     onSuccess
   });
 

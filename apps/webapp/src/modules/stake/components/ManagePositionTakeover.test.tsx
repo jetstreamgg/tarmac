@@ -55,6 +55,28 @@ const setSearchParamsMock = vi.fn<SetSearchParams>(next => {
     typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
 });
 
+// The confirm grid runs its own live reads (fee estimate, delegate metadata) —
+// out of scope here. Stubbed to expose the reward/delegate context this
+// takeover hands it, which IS this component's job to get right.
+vi.mock('./StakeConfirmGrid', () => ({
+  StakeConfirmGrid: ({
+    rewardFrom,
+    rewardTo,
+    delegateFrom,
+    delegateTo
+  }: {
+    rewardFrom?: { address: string; symbol?: string };
+    rewardTo?: { address: string; symbol?: string };
+    delegateFrom?: string;
+    delegateTo?: string;
+  }) => (
+    <div data-testid="stake-confirm-grid-stub">
+      <span data-testid="stake-confirm-grid-reward">{JSON.stringify({ rewardFrom, rewardTo })}</span>
+      <span data-testid="stake-confirm-grid-delegate">{JSON.stringify({ delegateFrom, delegateTo })}</span>
+    </div>
+  )
+}));
+
 vi.mock('@/lib/navigation', async importOriginal => {
   const actual = await importOriginal<typeof import('@/lib/navigation')>();
   return {
@@ -242,6 +264,19 @@ const renderSheet = (init: StakeManageFlowInit = {}) => {
 };
 
 const confirmButton = () => screen.getByTestId('stake-manage-confirm') as HTMLButtonElement;
+
+/**
+ * The review body is a render function now — the launch hook feeds it the
+ * engine's own calls so the grid can price the network fee. Nothing here
+ * simulates, so an empty routing is enough.
+ */
+const renderConfirmSummary = (params: Record<string, unknown> | undefined = h.launchParams) => {
+  const build = params?.transactionContent as (context: {
+    calls: unknown[];
+    isBatch: boolean;
+  }) => React.ReactNode;
+  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false })}</I18nProvider>);
+};
 
 describe('ManagePositionTakeover', () => {
   beforeEach(() => {
@@ -562,10 +597,10 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('reward: an out-of-address-book farm previews with its on-chain token in the From → To block', () => {
+  it('reward: an out-of-address-book farm previews with its on-chain token', () => {
     // The indexer can list a farm before the webapp ships its generated
-    // addresses. The review body must still preview the change — hiding the
-    // block would confirm a reward-only multicall behind an empty summary.
+    // addresses. The review body must still preview the change — dropping it
+    // would confirm a reward-only multicall behind an empty summary.
     const unknownFarm = '0x9999999999999999999999999999999999999999' as const;
     h.extraFarm = unknownFarm;
     h.farmTokenSymbols[unknownFarm] = 'FOO';
@@ -575,11 +610,11 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
     expect(confirmButton().disabled).toBe(false);
 
-    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
-    const block = screen.getByTestId('stake-manage-summary-reward');
+    renderConfirmSummary();
     // From: the urn's current farm token; To: the staged farm's real token.
-    expect(block.textContent).toContain('SKY');
-    expect(block.textContent).toContain('FOO');
+    const reward = screen.getByTestId('stake-confirm-grid-reward').textContent!;
+    expect(reward).toContain('SKY');
+    expect(reward).toContain('FOO');
   });
 
   it('reward: a deprecated current farm renders pre-selected with its chip and warning (CTA deep-link)', () => {

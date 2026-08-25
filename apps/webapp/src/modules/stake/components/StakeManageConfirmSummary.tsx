@@ -1,28 +1,9 @@
 import { Trans } from '@lingui/react/macro';
-import { ArrowDown } from 'lucide-react';
-import { formatBigInt, formatUsd, formatAddress } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils';
 import { formatUnits } from 'viem';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { CustomAvatar } from '@/modules/ui/components/Avatar';
 
-/** A reward-block endpoint: the farm, plus its reward-token symbol when known. */
-export interface StakeRewardEndpoint {
-  address: `0x${string}`;
-  /** Missing = outside the address books with the on-chain symbol unresolved — renders the shortened farm address. */
-  symbol?: string;
-}
-
-/** Icon + symbol when the token is known; the shortened farm address otherwise. */
-function RewardEndpoint({ endpoint }: { endpoint: StakeRewardEndpoint }) {
-  return (
-    <>
-      {endpoint.symbol && (
-        <TokenIcon token={{ symbol: endpoint.symbol }} width={28} className="h-7 w-7" showChainIcon={false} />
-      )}
-      {endpoint.symbol ?? formatAddress(endpoint.address, 6, 4)}
-    </>
-  );
-}
+export type { StakeRewardEndpoint } from './StakeConfirmGrid';
 
 function AmountHero({
   label,
@@ -50,40 +31,33 @@ function AmountHero({
 }
 
 /**
- * Manage review-screen body (M8, UX 1104:6429 / 1104:20198 / 1104:21216): one
- * amount hero per staged action; staged reward/delegate changes render
- * From → To blocks instead (token chip vs avatar rows). USD subvalues: SKY via
- * the protocol price, USDS at parity.
+ * Manage review-screen heroes (M8, UX 1104:6429 / 1104:20198 / 1104:21216):
+ * one amount hero per staged amount. USD subvalues: SKY via the protocol
+ * price, USDS at parity.
+ *
+ * The staged reward / delegate switches used to stack here as further
+ * full-width From → To blocks, which made a mixed bundle's review a long
+ * column of headings with no transaction facts in it at all. They are now
+ * `Reward` / `Delegate` before→after cells in `StakeConfirmGrid`, alongside
+ * the position, rate and Network / Network fee cells every other product
+ * review shows — so this component is the heroes only, and doubles as the
+ * compact wallet-screen summary.
  */
 export function StakeManageConfirmSummary({
   skyToLock,
   skyToFree,
   usdsToBorrow,
   usdsToWipe,
-  skyPriceUsd,
-  rewardFrom,
-  rewardTo,
-  delegateFrom,
-  delegateTo
+  skyPriceUsd
 }: {
   skyToLock: bigint;
   skyToFree: bigint;
   usdsToBorrow: bigint;
   usdsToWipe: bigint;
   skyPriceUsd: number | null;
-  /** Reward farms — `rewardTo` set renders the reward From → To block. */
-  rewardFrom?: StakeRewardEndpoint;
-  rewardTo?: StakeRewardEndpoint;
-  /** Set both to render the delegate From → To block. */
-  delegateFrom?: `0x${string}`;
-  delegateTo?: `0x${string}`;
 }) {
   const skyUsd = (amount: bigint) =>
     skyPriceUsd !== null ? Number(formatUnits(amount, 18)) * skyPriceUsd : null;
-  // A staged reward/delegate change always previews — including mixed bundles
-  // where amounts are staged too, since each is a step either way.
-  const showReward = !!rewardTo;
-  const showDelegate = !!delegateTo;
 
   return (
     <div data-testid="stake-manage-confirm-summary" className="flex flex-col gap-5">
@@ -122,58 +96,6 @@ export function StakeManageConfirmSummary({
           usdValue={Number(formatUnits(usdsToWipe, 18))}
           dataTestId="stake-manage-summary-repay"
         />
-      )}
-
-      {showReward && (
-        <div className="flex flex-col gap-3" data-testid="stake-manage-summary-reward">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-textSecondary text-sm">
-              <Trans>From</Trans>
-            </span>
-            <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
-              {rewardFrom ? <RewardEndpoint endpoint={rewardFrom} /> : <Trans>No reward</Trans>}
-            </span>
-          </div>
-          <ArrowDown className="text-textSecondary h-4 w-4" aria-hidden />
-          <div className="flex flex-col gap-1.5">
-            <span className="text-textSecondary text-sm">
-              <Trans>To</Trans>
-            </span>
-            <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
-              <RewardEndpoint endpoint={rewardTo!} />
-            </span>
-          </div>
-        </div>
-      )}
-
-      {showDelegate && (
-        <div className="flex flex-col gap-3" data-testid="stake-manage-summary-delegate">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-textSecondary text-sm">
-              <Trans>From</Trans>
-            </span>
-            <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
-              {delegateFrom ? (
-                <>
-                  <CustomAvatar address={delegateFrom} size={28} />
-                  {formatAddress(delegateFrom, 6, 4)}
-                </>
-              ) : (
-                <Trans>No delegate</Trans>
-              )}
-            </span>
-          </div>
-          <ArrowDown className="text-textSecondary h-4 w-4" aria-hidden />
-          <div className="flex flex-col gap-1.5">
-            <span className="text-textSecondary text-sm">
-              <Trans>To</Trans>
-            </span>
-            <span className="text-text font-circle flex items-center gap-2 text-lg font-medium">
-              <CustomAvatar address={delegateTo!} size={28} />
-              {formatAddress(delegateTo!, 6, 4)}
-            </span>
-          </div>
-        </div>
       )}
     </div>
   );
