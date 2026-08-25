@@ -169,8 +169,6 @@ export type PendleRedeemRowInput = {
   claimAmount: string;
   /** The market's PT symbol (e.g. "PT-sUSDS") — the Claim amount icon. */
   ptSymbol: string;
-  /** The Claim-token selector (interactive, passed through opaquely). */
-  tokenSelector: ReactNode;
   /**
    * True when the quote routes through an aggregator (a non-SY-accepted output
    * token) — the only case slippage/price-impact math applies; a pure PT burn
@@ -204,10 +202,12 @@ export type PendleRedeemRowInput = {
 };
 
 /**
- * Grid for the matured-claim modal: [Product | Claim amount], [Claim token |
- * Network], then — only on aggregator routes, where swap math exists —
- * [Slippage | Min. received], [Price impact | Routed via], [Pendle fee |
- * Network fee]. A pure redemption keeps just [Pendle fee | Network fee]: the
+ * Grid for the matured-claim modal: [Product | Claim amount], then — only on
+ * aggregator routes, where swap math exists — [Slippage | Min. received] and
+ * [Price impact | Routed via], closing with [Pendle fee | Network] and the
+ * full-width fee row. The payout token is picked on the hero pill, not here:
+ * a read-only grid is the wrong home for the flow's one control. A pure
+ * redemption drops the swap rows entirely: the
  * slippage control is deliberately absent there (redeeming to an SY-accepted
  * token is fixed-rate; a gear would imply a tolerance that cannot bind), and
  * so is the per-leg price-impact breakdown the legacy overview drew — the
@@ -225,10 +225,6 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
     [
       productCell(input.product, input.productSymbol, 'pendle'),
       { kind: 'single', label: 'Claim amount', value: input.claimAmount, token: input.ptSymbol }
-    ],
-    [
-      { kind: 'node', label: 'Claim token', node: input.tokenSelector },
-      networkCell(input.network, input.networkChainId)
     ],
     ...(input.aggregator
       ? [
@@ -249,10 +245,11 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
               value: input.routedVia,
               loading: input.quoteLoading
             }
-          ],
-          [pendleFeeCell, feeCell]
+          ]
         ]
-      : [[pendleFeeCell, feeCell]])
+      : []),
+    [pendleFeeCell, networkCell(input.network, input.networkChainId)],
+    [feeCell]
   ];
 }
 

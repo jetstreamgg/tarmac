@@ -32,6 +32,7 @@ export function TransactionAmountHero({
   usd,
   size = 'md',
   loading = false,
+  badge,
   dataTestId,
   usdTestId
 }: {
@@ -40,6 +41,12 @@ export function TransactionAmountHero({
   symbol: string;
   /** Draw a skeleton in place of the amount while its underlying read is unresolved. */
   loading?: boolean;
+  /**
+   * Replaces the static token pill — for a flow whose token is a choice rather
+   * than a fact (the matured claim picks its payout token here, since it has
+   * no amount field to carry the selector).
+   */
+  badge?: ReactNode;
   /** Dollar value of the amount, formatted without the `$` (e.g. "10,000.00"). Omit to hide. */
   usd?: string;
   /**
@@ -83,7 +90,7 @@ export function TransactionAmountHero({
             )}
           </div>
         </div>
-        <TokenBadge symbol={symbol} />
+        {badge ?? <TokenBadge symbol={symbol} />}
       </div>
     </div>
   );

@@ -119,11 +119,12 @@ describe('PendleRedeem', () => {
     expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('1.5');
   });
 
-  it('hosts the output-token selector in the Claim token cell', () => {
+  it('hosts the payout-token selector on the hero pill, not in the read-only grid', () => {
     renderRedeem();
 
-    const cell = screen.getByTestId('pendle-redeem-row-Claim token');
-    expect(cell.querySelector('[data-testid="pendle-redeem-output-token"]')).toBeTruthy();
+    const hero = screen.getByTestId('pendle-redeem-hero');
+    expect(hero.querySelector('[data-testid="pendle-redeem-output-token"]')).toBeTruthy();
+    expect(screen.queryByTestId('pendle-redeem-row-Claim token')).toBeNull();
   });
 
   it('omits the swap-math cells on a pure redemption (no aggregator route)', () => {
