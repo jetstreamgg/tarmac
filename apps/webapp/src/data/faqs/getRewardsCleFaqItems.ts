@@ -8,7 +8,7 @@ export const getRewardsCleFaqItems = () => {
     },
     {
       question: 'What are Chronicle Points, and how do they work?',
-      answer: `When an eligible user supplies USDS to the Sky Token Rewards module of the Sky Protocol through the Sky.money web app (or some other platforms), they can access Chronicle Points as rewards. No minimum amount of USDS is required to access those points.
+      answer: `When an eligible user supplies USDS to the Sky Ecosystem Rewards module of the Sky Protocol through the Sky.money web app (or some other platforms), they can access Chronicle Points as rewards. No minimum amount of USDS is required to access those points.
 
 Chronicle Points might ultimately become claimable for Chronicle tokens (CLE) at a rate of 10 points for every 1 CLE token. The total supply of CLE tokens is anticipated to be 10 billion. Chronicle Points are emitted at a rate of 3.75 billion per year. Any future opportunities to convert Chronicle Points into CLE tokens would be managed independently by Chronicle's own applications.`,
       index: 1
