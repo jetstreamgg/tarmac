@@ -104,7 +104,10 @@ export const PendleRedeem = ({
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="pendle-redeem">
       <TransactionAmountHero
-        label={t`You'll claim`}
+        // "Claim" is the PT side throughout the section's comps ("Claim at
+        // maturity", "You'll claim"); "receive" is what a trade pays out, as
+        // the withdraw comps use it. The hero is the payout, so it receives.
+        label={t`You'll receive`}
         amount={quote ? formatBigInt(quote.amountOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE}
         symbol={selectedOutputToken.symbol}
         loading={quoteLoading}
