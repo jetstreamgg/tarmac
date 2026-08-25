@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TermsModal } from './TermsModal';
 
@@ -96,6 +96,31 @@ describe('TermsModal', () => {
 
     expect(mocks.disconnect).toHaveBeenCalledTimes(1);
     expect(mocks.closeModal).toHaveBeenCalledTimes(1);
+  });
+
+  // APP-534: the modal is a gate, and a scrim click disconnects — so a stray
+  // click beside the card would have read as the app ejecting the user.
+  it('stays open on a click on the scrim', async () => {
+    renderModal();
+
+    // Radix registers its outside-pointer listener on a macrotask after mount,
+    // and (since 1.1.14) only dismisses once the matching `click` lands on a
+    // dismissable surface — the scrim, which is the card's portal sibling. A
+    // bare pointerdown on the body dismisses nothing either way, so it would
+    // pass whether or not the guard is there.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    const scrim = screen.getByTestId('terms-modal').previousElementSibling as HTMLElement;
+    await act(async () => {
+      fireEvent.pointerDown(scrim, { button: 0 });
+      fireEvent.click(scrim, { button: 0 });
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(mocks.disconnect).not.toHaveBeenCalled();
+    expect(mocks.closeModal).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('terms-modal')).not.toBeNull();
   });
 
   it('does not disconnect when the modal closes after terms have been accepted', () => {
