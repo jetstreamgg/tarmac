@@ -298,9 +298,7 @@ describe('PositionCard — DS comp conformance', () => {
     renderSection([VAULT]);
     const text = screen.getAllByTestId('position-card')[0].textContent ?? '';
     expect(text.indexOf('My position')).toBeLessThan(text.indexOf('Accrued to date'));
-    expect(text.indexOf('Accrued to date')).toBeLessThan(
-      text.indexOf('Projected 1Y yield')
-    );
+    expect(text.indexOf('Accrued to date')).toBeLessThan(text.indexOf('Projected 1Y yield'));
   });
 
   it('shows a single-chain network badge with the chain name', () => {
