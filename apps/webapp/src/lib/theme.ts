@@ -16,9 +16,9 @@ export const DEFAULT_THEME: Theme = 'dark';
  * globals.css by `--color-browserChrome`, which these values mirror; the meta
  * stays for the browsers that do read it.
  *
- * The values are sampled off the top of the app's own background image, not
- * `--color-pageBackground` — that is the flat base the image is baked over and
- * reads a step darker/lighter than anything on screen. Do not reach for it
+ * The values are the page's own top edge, read off device screenshots — not
+ * `--color-pageBackground`, which is the flat base the sky image is baked over
+ * and reads a step darker/lighter than anything on screen. Do not reach for it
  * here: it also rings the IconStack badges, which must match the page.
  *
  * If a device shows the strip mismatching the page, nudge these, the CSS token
@@ -26,8 +26,8 @@ export const DEFAULT_THEME: Theme = 'dark';
  * tint right on the first paint) together.
  */
 export const THEME_COLORS: Record<Theme, string> = {
-  dark: '#100b27',
-  light: '#dbdfff'
+  dark: '#0b0724',
+  light: '#d2d2fb'
 };
 
 /** Read the OS-level color-scheme preference, falling back to the default theme. */
