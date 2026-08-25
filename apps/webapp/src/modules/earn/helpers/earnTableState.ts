@@ -62,11 +62,18 @@ export function sanitizeFilters(raw: unknown, valid: EarnFilterOptionValues): Ea
   };
 }
 
-export function filterEarnRows(
-  rows: EarnProductRow[],
+/**
+ * The row fields the filters read. Structural, so the "Requires action"
+ * section's matured entries — which are not full marketplace rows — run
+ * through the same pass as everything else on the page.
+ */
+export type EarnFilterableRow = Pick<EarnProductRow, 'risk' | 'networks' | 'supplyTokens' | 'kind'>;
+
+export function filterEarnRows<T extends EarnFilterableRow>(
+  rows: T[],
   filters: EarnTableFiltersState,
   chainSlugById: Record<number, string>
-): EarnProductRow[] {
+): T[] {
   return rows.filter(row => {
     if (filters.risk.length > 0 && !filters.risk.includes(row.risk)) return false;
     if (filters.network !== 'all' && !row.networks.some(id => chainSlugById[id] === filters.network)) {

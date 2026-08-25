@@ -3,7 +3,13 @@ import { useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho, Pendle } from '@/widgets';
-import { useEarnMarketplace, EarnProductKind, useUsdsDaiData, type EarnProductRow } from '@/hooks';
+import {
+  useEarnMarketplace,
+  EarnProductKind,
+  RISK_TIER_BY_PROFILE,
+  useUsdsDaiData,
+  type EarnProductRow
+} from '@/hooks';
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { usePendleUsdValue } from '@/widgets';
@@ -279,13 +285,35 @@ export function EarnPage() {
   // "Requires action" (2251:50832): matured markets the user still holds PT
   // for — the marketplace filters them out of the opportunities rows, so this
   // is their only Earn surface. Geo is enforced inside the hook (restricted
-  // positions hide app-wide, APP-484); the table filters are skipped — hiding
-  // a row that needs action behind a filter would defeat it.
+  // positions hide app-wide, APP-484). The table filters apply here like they
+  // do to the geo section — one list, split in three — filtering by the
+  // market's registry attributes (its risk tier, networks, supply tokens),
+  // not the dashed live-market cells. A filtered-out row strands nobody: the
+  // Portfolio matured card stays the primary claim surface. The shared sort is
+  // NOT applied — every sortable column is a dash on these rows.
   const { maturedPositions } = usePendleMaturedPositions();
   const valueUsd = usePendleUsdValue();
+  const visibleMaturedPositions = useMemo(
+    () =>
+      filterEarnRows(
+        maturedPositions.map(position => ({
+          ...position,
+          // The registry's fixed entry, restated: its `fixed` descriptor is
+          // built (then discarded) inside useEarnMarketplace, so the matured
+          // row can't borrow it — APP-532 folds these back into the rows.
+          risk: RISK_TIER_BY_PROFILE.fixed,
+          networks: [mainnet.id],
+          supplyTokens: ['USDS', 'USDC', position.market.underlyingSymbol],
+          kind: 'fixed' as const
+        })),
+        filters,
+        chainSlugById
+      ),
+    [maturedPositions, filters, chainSlugById]
+  );
   const requiresActionItems = useMemo<EarnTableRowItem[]>(
     () =>
-      maturedPositions.map(({ market, ptBalance }) => {
+      visibleMaturedPositions.map(({ market, ptBalance }) => {
         // 1 PT redeems 1 underlying (1 USDS on pegged markets) at expiry.
         const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
         const usd = valueUsd(displaySymbol, parseFloat(formatUnits(ptBalance, market.underlyingDecimals)));
@@ -318,7 +346,7 @@ export function EarnPage() {
           ctaLabel: <Trans>Claim</Trans>
         };
       }),
-    [maturedPositions, valueUsd]
+    [visibleMaturedPositions, valueUsd]
   );
 
   // A visible claim surface prompts the mainnet switch, same as the Portfolio
