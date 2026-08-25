@@ -393,16 +393,22 @@ describe('usePendleRedeemModal network switch', () => {
     vi.clearAllMocks();
   });
 
-  let open: () => Promise<void> | void;
+  // A real click, not a render-time capture — reassigning an outer variable
+  // during render trips react-hooks/globals, and the click path is what ships.
   const Capture = () => {
     const { openRedeemModal } = usePendleRedeemModal(MATURED_MARKET);
-    open = openRedeemModal;
-    return null;
+    return <button data-testid="open-redeem" onClick={() => void openRedeemModal()} />;
   };
+  const clickOpen = (container: HTMLElement) =>
+    act(async () => {
+      container
+        .querySelector('[data-testid="open-redeem"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
 
   it('opens directly on the pendle chain without touching the wallet', async () => {
     const view = renderComponent(<Capture />);
-    await act(async () => open());
+    await clickOpen(view.container);
     expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
     expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
     view.unmount();
@@ -411,7 +417,7 @@ describe('usePendleRedeemModal network switch', () => {
   it('switches the wallet to mainnet first when clicked off-chain, flagged automatic', async () => {
     hoisted.chainId = 8453; // Base
     const view = renderComponent(<Capture />);
-    await act(async () => open());
+    await clickOpen(view.container);
     expect(hoisted.setIsAutoSwitchingMock).toHaveBeenCalledWith(true);
     expect(hoisted.switchChainAsyncMock).toHaveBeenCalledWith({ chainId: 1 });
     expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
@@ -422,7 +428,7 @@ describe('usePendleRedeemModal network switch', () => {
     hoisted.chainId = 8453;
     hoisted.switchChainAsyncMock.mockRejectedValueOnce(new Error('User rejected the request'));
     const view = renderComponent(<Capture />);
-    await act(async () => open());
+    await clickOpen(view.container);
     expect(hoisted.launchMock).not.toHaveBeenCalled();
     expect(hoisted.setIsAutoSwitchingMock).toHaveBeenLastCalledWith(false);
     expect(hoisted.setAutoSwitchIntentMock).toHaveBeenLastCalledWith(null);
@@ -433,7 +439,7 @@ describe('usePendleRedeemModal network switch', () => {
     hoisted.chainId = 8453;
     hoisted.isSafeWallet = true;
     const view = renderComponent(<Capture />);
-    await act(async () => open());
+    await clickOpen(view.container);
     expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
     expect(hoisted.launchMock).not.toHaveBeenCalled();
     view.unmount();
