@@ -5,10 +5,7 @@
     <!-- Set theme before first paint to avoid a flash (FOUC). Mirrors the
          resolution in src/lib/theme.ts: stored choice, else OS pref, else dark.
          Also preloads the theme's page background image so the shell doesn't
-         paint on a bare backdrop while the CSS background downloads, and tints
-         the mobile browser chrome (theme-color) so the iOS status bar isn't
-         black for the trip to React. The colours are the THEME_COLORS twins —
-         inlined for the same reason the image paths are; keep them in step. -->
+         paint on a bare backdrop while the CSS background downloads. -->
     <script>
       (function () {
         try {
@@ -22,16 +19,14 @@
         } catch (e) {
           document.documentElement.dataset.theme = 'dark';
         }
-        var isLight = document.documentElement.dataset.theme === 'light';
         var link = document.createElement('link');
         link.rel = 'preload';
         link.as = 'image';
-        link.href = isLight ? '/images/background-light.webp' : '/images/background-dark.webp';
+        link.href =
+          document.documentElement.dataset.theme === 'light'
+            ? '/images/background-light.webp'
+            : '/images/background-dark.webp';
         document.head.appendChild(link);
-        var themeColor = document.createElement('meta');
-        themeColor.name = 'theme-color';
-        themeColor.content = isLight ? '#d2d2fb' : '#0b0724';
-        document.head.appendChild(themeColor);
       })();
     </script>
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />

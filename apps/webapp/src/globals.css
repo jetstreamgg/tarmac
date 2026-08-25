@@ -284,19 +284,6 @@
      not the surface they sit on — to read as punched-out circles. Changing the
      dark value requires re-baking the pre-blended background image below. */
   --color-pageBackground: #090420;
-  /* Tint the mobile browser chrome takes — iOS Safari's status bar and toolbar
-     strips, Android Chrome's address bar (APP-518). It is `body`'s background
-     colour that does the work: iOS 26 dropped `<meta name="theme-color">` and
-     derives the strips from the page instead, and `body` is what it samples
-     here (measured — the viewport-fixed `.app-background` layer is not).
-     Nothing in the app ever shows it: that layer covers the whole viewport,
-     so this is visible only through the browser's own chrome and the
-     rubber-band overscroll behind it.
-
-     The values are the page's own top edge, read off device screenshots. Not
-     `--color-pageBackground`, which is the flat base the sky image is baked
-     over and reads a step darker/lighter than anything on screen. */
-  --color-browserChrome: #0b0724;
   /* Dark page background (Figma 5010:6624): a bottom fade into the solid
      backdrop over the sky image. The image is pre-baked — sunset sky blended
      (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
@@ -578,24 +565,6 @@
      for both families. */
   body {
     @apply bg-background text-foreground antialiased;
-    /* Wins over `bg-background` deliberately. That token is `hsl(var(--background))`
-       and `--background` is only defined in the light scope (see the note by its
-       declaration), so in dark it resolved to an invalid colour and `body` fell
-       back to transparent — which is exactly why iOS Safari painted its strips
-       flat black there while light mode picked up #ecf0ff.
-
-       Safari 26 will read the colour off a fixed element at the top edge in
-       preference to `body`, but only one that is a *direct child of `<body>`* —
-       a band rendered inside `#root`, and an opaque colour on the sticky header,
-       are both ignored (all three measured on the 26.2 simulator). Sampling it
-       that way buys nothing over `body` anyway, because Safari latches whichever
-       source it picked for the life of the page: swapping this variable, writing
-       the colour inline on `body` or on `html`, replacing the sampled element
-       outright, scrolling, a `pushState`, and running the change inside a view
-       transition were all tried, and the strips stayed on the outgoing theme
-       every time. So the in-app theme toggle still needs a reload or a
-       navigation to catch up; what this fixes is every page load. */
-    background-color: var(--color-browserChrome);
   }
 
   /*
@@ -943,8 +912,6 @@
     --color-primary-bright-end: rgba(148, 131, 248);
 
     --color-pageBackground: #ecf0ff; /* colors/bg/bg-primary */
-    /* Sampled off the light background image's top, as the dark twin is. */
-    --color-browserChrome: #d2d2fb;
     /* Light page background (Figma 5124:25430): bottom fade + daytime sky
        image over a pale blue base gradient (visible only while the image
        loads, since the image is opaque and covers the layer). */
