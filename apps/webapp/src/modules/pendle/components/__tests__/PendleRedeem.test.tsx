@@ -99,6 +99,16 @@ afterEach(() => {
 });
 
 describe('PendleRedeem', () => {
+  it('labels the hero as the payout, not a claim — "claim" names the PT side in the comps', () => {
+    renderRedeem({ quote: baseQuote });
+
+    const hero = screen.getByTestId('pendle-redeem-hero');
+    expect(hero.textContent).toContain("You'll receive");
+    expect(hero.textContent).not.toContain("You'll claim");
+    // The PT side keeps the claim vocabulary.
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount')).toBeTruthy();
+  });
+
   it('draws the receive hero from the quote, a dash before one arrives', () => {
     const { rerender } = renderRedeem();
     expect(screen.getByTestId('pendle-redeem-hero').textContent).toContain('–');
