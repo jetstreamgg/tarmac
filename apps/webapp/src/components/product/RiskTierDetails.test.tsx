@@ -50,17 +50,17 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(learnMore.getAttribute('target')).toBe('_blank');
   });
 
-  it('lights one success segment on the scale for the low tier', () => {
+  it('lights one risk-low segment on the scale for the low tier', () => {
     renderCard('low', 'savings');
 
     const segments = screen.getAllByTestId('risk-details-segment');
     expect(segments).toHaveLength(3);
-    expect(segments[0].className).toContain('bg-statusSuccess');
+    expect(segments[0].className).toContain('bg-riskLow');
     expect(segments[1].className).toContain('bg-fgQuaternary');
     expect(segments[2].className).toContain('bg-fgQuaternary');
   });
 
-  it('renders the Flagship vault profile with its multi-asset exposure, with two warning segments', () => {
+  it('renders the Flagship vault profile with its multi-asset exposure, with two risk-medium segments', () => {
     renderCard('moderate', 'vault-flagship');
 
     expect(screen.getByText('Moderate')).toBeTruthy();
@@ -71,8 +71,8 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(screen.getByText('Liquidity based')).toBeTruthy();
 
     const segments = screen.getAllByTestId('risk-details-segment');
-    expect(segments[0].className).toContain('bg-statusWarning');
-    expect(segments[1].className).toContain('bg-statusWarning');
+    expect(segments[0].className).toContain('bg-riskMedium');
+    expect(segments[1].className).toContain('bg-riskMedium');
     expect(segments[2].className).toContain('bg-fgQuaternary');
   });
 
@@ -104,7 +104,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(screen.queryByText(/tokens/)).toBeNull();
   });
 
-  it('renders the Aggressive stUSDS profile with SKY exposure and three error segments', () => {
+  it('renders the Aggressive stUSDS profile with SKY exposure and three risk-high segments', () => {
     renderCard('advanced', 'stusds');
 
     expect(screen.getByText('Aggressive')).toBeTruthy();
@@ -113,7 +113,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(screen.getByText('Liquidity based')).toBeTruthy();
 
     const segments = screen.getAllByTestId('risk-details-segment');
-    segments.forEach(segment => expect(segment.className).toContain('bg-statusError'));
+    segments.forEach(segment => expect(segment.className).toContain('bg-riskHigh'));
   });
 });
 

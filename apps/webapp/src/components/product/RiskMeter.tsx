@@ -19,20 +19,23 @@ export function RiskMeter({
   label?: string;
   className?: string;
 }) {
-  // Figma Badges/Risk (Table Cell Type=Risk): 15px bordered pill of three
-  // 8×3 segments; unlit segments are fg-quaternary (1036:201215).
+  // Figma Badges/Risk (5017:7512): 38×15 bordered pill of three 8×3 segments;
+  // unlit segments are fg-quaternary at 40%. Figma insets the segments 6px
+  // from the outer edge with the stroke drawn inside the frame, so the CSS
+  // padding is that inset minus the 1px border — px-[5px], not px-1.5, which
+  // rendered the pill 2px too wide.
   return (
     <div
       role={label ? 'img' : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
       className={cn(
-        'border-glassBorder inline-flex h-[15px] items-center gap-px rounded-full border px-1.5',
+        'border-glassBorder inline-flex h-[15px] items-center gap-px rounded-full border px-[5px]',
         className
       )}
     >
       {segments.map((color, index) => (
-        <span key={index} className={cn('h-[3px] w-2 rounded-[2px]', color ?? 'bg-fgQuaternary')} />
+        <span key={index} className={cn('h-[3px] w-2 rounded-[2px]', color ?? 'bg-fgQuaternary/40')} />
       ))}
     </div>
   );
@@ -159,13 +162,15 @@ export function RiskScaleMeter({
 
 const TIERS: EarnRiskTier[] = ['low', 'moderate', 'advanced'];
 
-// Figma status palette (1036:201215, which settled the open question the H8
-// tables batch left on the 3-lit tier): Conservative = fg-success,
-// Moderate = fg-warning, Aggressive = fg-error.
+// Figma Badges/Risk palette (5017:7512): the DS gave the risk pill its own
+// components/badges/bg-risk-* variables rather than reusing components/status,
+// so Aggressive is orange (Orange/600) — not the status red the meter borrowed
+// before — and Conservative/Moderate take different light-mode steps than
+// fg-success/fg-warning do.
 const TIER_COLOR: Record<EarnRiskTier, string> = {
-  low: 'bg-statusSuccess',
-  moderate: 'bg-statusWarning',
-  advanced: 'bg-statusError'
+  low: 'bg-riskLow',
+  moderate: 'bg-riskMedium',
+  advanced: 'bg-riskHigh'
 };
 
 /** Compact product-risk indicator (Figma "Risk profile" cell): N segments lit in the tier color. */

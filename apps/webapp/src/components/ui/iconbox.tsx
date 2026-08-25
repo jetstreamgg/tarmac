@@ -7,13 +7,13 @@ import { cn } from '@/lib/cn';
 // surfaces and activity rows:
 // - Iconbox         (5007:72698)  bare token / glyph-on-disc + network chip
 // - Iconbox2Tokens  (5007:73290)  the 4px-overlap token pair
-// - IconboxStatus   (5017:7858)   ringed token with optional status dot
+// - IconboxStatus   (5017:7858)   ringed token
 // - IconboxPosition (5051:145321) green (or inactive-neutral) position disc
 // - IconboxAction   (5034:42418)  bordered neutral disc around a 16px glyph
 //
 // Figma names the Status ring types by product (Pendle / Morpho); here they
 // are named by system color (success / info) since that is what the values
-// are — the dots are colors/system/success and border-system-info-primary.
+// are.
 // Children are the caller's icons (TokenIcon, module glyphs); the box only
 // draws the container, so size the child to the inner hole it documents.
 
@@ -113,7 +113,8 @@ const iconboxStatusVariants = cva('relative inline-flex shrink-0 items-center ju
     size: {
       l: 'size-16 border-2',
       // Figma types the M ring at 1.5px, but the border scale is whole-px
-      // (1/2) — rounded up to 2 (APP-416).
+      // (1/2) — rounded up to 2 (APP-416). The gap below absorbs the extra
+      // half-pixel so the logo still lands on Figma's 28px.
       m: 'size-9 border-2',
       s: 'size-6 border',
       xs: 'size-4 border',
@@ -132,60 +133,36 @@ const iconboxStatusVariants = cva('relative inline-flex shrink-0 items-center ju
  * The box owns the logo's size rather than each caller repeating it: the ring
  * diameter, the border and this gap fully determine it, so a caller that sets a
  * responsive box (the product headers run 56px on the phone tier and 64 from
- * md) gets the right logo at every tier for free. Figma measures the L box at
- * 64 overall around a 52px logo — 2px of ring and 4px of gap each side — and
- * the smaller sizes at the 28/18/10/8 the docblock lists.
+ * md) gets the right logo at every tier for free. Figma insets the logo from
+ * the box edge by 6/4/2/2/2px at L/M/S/XS/2XS; since Figma strokes sit inside
+ * the frame while a CSS border does not, the padding here is that inset minus
+ * the ring width — landing the logo on Figma's 52/28/20/12/8px.
  */
 const iconboxStatusGap: Record<NonNullable<VariantProps<typeof iconboxStatusVariants>['size']>, string> = {
   l: 'p-1',
   m: 'p-0.5',
-  s: 'p-0.5',
-  xs: 'p-0.5',
+  s: 'p-px',
+  xs: 'p-px',
   '2xs': 'p-px'
 };
 
-const iconboxStatusDot = cva('ring-pageBackground absolute rounded-full ring-2', {
-  variants: {
-    type: {
-      success: 'bg-statusSuccessSolid',
-      info: 'bg-statusInfoSolid'
-    },
-    size: {
-      l: 'top-0.5 right-0.5 size-2.5',
-      m: 'top-0 right-0 size-2',
-      s: 'top-0 right-0 size-1.5',
-      xs: '-top-px -right-px size-1',
-      // Figma draws no dot at 2XS; the box is barely bigger than a dot.
-      '2xs': 'hidden'
-    }
-  },
-  // Must mirror the box cva's default: without it, callers that omit `size`
-  // (table cells) got a box at `m` but a dot with NO size/position classes —
-  // a 0×0, invisible dot (APP-416 round 3).
-  defaultVariants: {
-    size: 'm'
-  }
-});
-
 /**
  * Iconbox / Status: the ringed token container. `default` is the resting
- * borderTertiary ring; `success` / `info` tint the ring and (with `dot`)
- * pin a solid status dot to the top-right.
+ * borderTertiary ring; `success` / `info` tint it. The ring is the whole
+ * signal — the notification-style dot the earlier comps pinned to the
+ * top-right was removed from the DS component.
  *
- * The logo is sized by the box (see `iconboxStatusGap`) — 52@l, 28@m, 18@s,
- * 10@xs, 8@2xs at the default diameters — so children need only be the mark
+ * The logo is sized by the box (see `iconboxStatusGap`) — 52@l, 28@m, 20@s,
+ * 12@xs, 8@2xs at the default diameters — so children need only be the mark
  * itself. Any width/height a child carries is overridden; pass `width` on a
  * `TokenIcon` purely as the raster resolution hint it is.
  */
 export function IconboxStatus({
   type,
   size,
-  dot = false,
   children,
   className
 }: VariantProps<typeof iconboxStatusVariants> & {
-  /** Show the status dot (success/info types only). */
-  dot?: boolean;
   children: ReactNode;
   className?: string;
 }) {
@@ -195,9 +172,6 @@ export function IconboxStatus({
           size utility on the child, so a caller's leftover h-/w- classes can't
           reintroduce the old diameter. */}
       <span className="flex size-full items-center justify-center [&>*]:size-full">{children}</span>
-      {dot && (type === 'success' || type === 'info') && (
-        <span className={iconboxStatusDot({ type, size })} />
-      )}
     </span>
   );
 }
