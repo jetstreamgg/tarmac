@@ -83,14 +83,6 @@ export const PendleRedeem = ({
     productSymbol: market.underlyingSymbol,
     claimAmount: formatBigInt(ptBalance, { unit: market.underlyingDecimals, maxDecimals: 2 }),
     ptSymbol,
-    tokenSelector: (
-      <TokenSelectorPill
-        tokens={outputTokenList}
-        selected={selectedOutputToken}
-        onSelect={onOutputTokenChange}
-        testId="pendle-redeem-output-token"
-      />
-    ),
     aggregator,
     quoteLoading,
     slippage: slippageDisplay,
@@ -116,6 +108,16 @@ export const PendleRedeem = ({
         amount={quote ? formatBigInt(quote.amountOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE}
         symbol={selectedOutputToken.symbol}
         loading={quoteLoading}
+        // The claim has no amount field, so the payout token is chosen here —
+        // beside the figure it denominates, rather than parked in the grid.
+        badge={
+          <TokenSelectorPill
+            tokens={outputTokenList}
+            selected={selectedOutputToken}
+            onSelect={onOutputTokenChange}
+            testId="pendle-redeem-output-token"
+          />
+        }
         dataTestId="pendle-redeem-hero"
       />
 
