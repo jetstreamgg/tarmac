@@ -96,10 +96,10 @@ import { usePendleMaturedNetworkSwitch, usePendleMaturedPositions } from '../use
 
 /** Probe pairing the hooks the way PortfolioPositionsSection does. */
 function Probe() {
-  const { maturedPositions, onPendleChain } = usePendleMaturedPositions();
+  const { maturedPositions } = usePendleMaturedPositions();
   usePendleMaturedNetworkSwitch(maturedPositions.length > 0);
   return (
-    <div data-testid="probe" data-on-pendle-chain={onPendleChain}>
+    <div data-testid="probe">
       {maturedPositions.map(({ market }) => (
         <span key={market.marketAddress} data-testid="matured-position">
           {market.name}
@@ -170,9 +170,6 @@ describe('usePendleMaturedPositions', () => {
     expect(hoisted.setSearchParamsMock).toHaveBeenCalledTimes(1);
     // The positions stay listed while off-chain — the cards disable Claim instead.
     expect(positions()).toHaveLength(1);
-    expect(container.querySelector('[data-testid="probe"]')?.getAttribute('data-on-pendle-chain')).toBe(
-      'false'
-    );
   });
 
   it('does not switch on mainnet', () => {
@@ -180,9 +177,6 @@ describe('usePendleMaturedPositions', () => {
     hoisted.ptBalances = { [MATURED_MARKET_ADDRESS]: 1_000_000n };
     render();
     expect(hoisted.setSearchParamsMock).not.toHaveBeenCalled();
-    expect(container.querySelector('[data-testid="probe"]')?.getAttribute('data-on-pendle-chain')).toBe(
-      'true'
-    );
   });
 
   it('does not switch on a tenderly testnet — the fork session is valid for redemption', () => {

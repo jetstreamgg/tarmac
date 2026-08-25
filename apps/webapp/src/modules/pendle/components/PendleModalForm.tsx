@@ -372,9 +372,8 @@ export function PendleModalForm({
   const withdrawMaturityUsd = !isSupply && quote ? valueUsd(displaySymbol, inFloat) : undefined;
   const withdrawReceiveUsd =
     !isSupply && outFloat !== undefined ? valueUsd(selectedToken.symbol, outFloat) : undefined;
-  // The cell states a forfeit, so a favorable quote clamps to 0 and drops the
-  // red down-trend — otherwise a small gain formats as the loss "<0.01" (the
-  // small-number branch drops the sign) under a red arrow.
+  // The cell states a forfeit: a favorable quote clamps to 0 and drops the
+  // red trend — fmt's small-number branch would render a tiny gain as "<0.01".
   const lostValue =
     withdrawMaturityUsd !== undefined && withdrawReceiveUsd !== undefined
       ? withdrawMaturityUsd - withdrawReceiveUsd
@@ -382,9 +381,8 @@ export function PendleModalForm({
   const lost = lostValue !== undefined ? fmt(Math.max(0, lostValue)) : NO_VALUE;
   const lostTrend = lostValue !== undefined && lostValue >= 0.005;
 
-  // Slippage floor: the minimum the quote guarantees (PT on supply, output
-  // token on withdraw). Floored, not rounded — half-up can display a floor
-  // higher than the real guarantee.
+  // The minimum the quote guarantees (PT on supply, output token on
+  // withdraw) — floored, so the display never overstates it.
   const minReceived = quote
     ? formatNumber(parseFloat(formatUnits(quote.apiMinOut, outDecimals)), {
         maxDecimals: 2,

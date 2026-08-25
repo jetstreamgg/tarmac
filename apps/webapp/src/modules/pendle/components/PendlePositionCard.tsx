@@ -360,14 +360,11 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
     return <PositionCardSkeleton testId="pendle-position-card-skeleton" />;
   }
 
-  // A matured market keeps its detail page (2193:73881): holders get the claim
-  // card, everyone else the closed-market state. Never the supply pitch — the
-  // market cannot accept deposits, and this page is now reachable without a
-  // wallet, so an enabled Supply CTA here would open a modal that can't quote.
-  // Keyed on the registry expiry, not the API's: the redeem hook and every
-  // other maturity consumer read market.expiry, and a disagreement here would
-  // render a Claim CTA the hook keeps disabled (or a supply pitch on a market
-  // the engine considers matured).
+  // A matured market keeps its detail page (2193:73881): holders get the
+  // claim card, everyone else the closed-market state — never the supply
+  // pitch, since the market can't accept deposits. Keyed on the registry
+  // expiry like the redeem hook; keying on the API stat could render a Claim
+  // CTA the hook keeps disabled.
   if (isMarketMatured(market.expiry)) {
     return ptBalance > 0n ? (
       <PendleMaturedCard market={market} ptBalance={ptBalance} maturityLabel={claimDateLabel} />

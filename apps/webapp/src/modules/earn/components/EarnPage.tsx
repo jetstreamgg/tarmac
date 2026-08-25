@@ -324,7 +324,6 @@ export function EarnPage() {
         return {
           id: `matured-${market.marketAddress.toLowerCase()}`,
           name: `Pendle ${market.underlyingSymbol}`,
-          riskProfile: undefined,
           icon: (
             <TokenIcon
               token={{ symbol: market.underlyingSymbol }}
@@ -353,10 +352,9 @@ export function EarnPage() {
     [visibleMaturedPositions, valueUsd]
   );
 
-  // A visible claim surface prompts the mainnet switch, same as the Portfolio
-  // cards — the claim signs there. Keyed on the filtered list: when the active
-  // filters drop every matured row, no section renders and a wallet prompt
-  // would have nothing on screen to explain it.
+  // A visible claim surface prompts the mainnet switch (the claim signs
+  // there) — keyed on the filtered list so a filtered-away section can't pop
+  // a wallet prompt with nothing on screen to explain it.
   usePendleMaturedNetworkSwitch(visibleMaturedPositions.length > 0);
 
   // Rows route to the market's detail page, like every other row in this table
@@ -483,7 +481,6 @@ export function EarnPage() {
           </h2>
           <EarnTable
             rows={requiresActionItems}
-            sort={sort}
             onRowSelect={handleRequiresActionSelect}
             testIdPrefix="earn-requires-action"
           />

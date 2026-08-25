@@ -166,10 +166,7 @@ type UseQuotePendleConvertParams = {
   /** Slippage tolerance (decimal, e.g. 0.002 = 0.2%) */
   slippage: number;
   enabled?: boolean;
-  /**
-   * When false, the initial fetch still runs but the 60s repoll doesn't — for
-   * hooks that mount per card and only display the quote inside a modal.
-   */
+  /** When false, the initial fetch still runs but the 60s repoll doesn't. */
   poll?: boolean;
   /**
    * Matured-market exit. When true, the API's `inputs` is sent as a two-entry
@@ -329,8 +326,8 @@ export function useQuotePendleConvert({
     staleTime: 30_000,
     gcTime: 60_000,
     // Disconnected previews fetch once on input change but don't poll — keeps
-    // anonymous-visitor traffic to Pendle bounded. Callers opt out the same
-    // way while their quote isn't on screen.
+    // anonymous-visitor traffic to Pendle bounded; `poll` lets callers opt
+    // out while their quote isn't on screen.
     refetchInterval: poll && connectedAddress ? PENDLE_QUOTE_REFETCH_MS : false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,

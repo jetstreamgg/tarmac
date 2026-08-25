@@ -1,14 +1,11 @@
 /**
- * Pure cell builders for the Pendle transaction modals, per the reworked comps
- * (Figma 2193:73513 supply entry, 2193:73598 "Early withdrawal" entry,
- * 2193:73734 review supply, 2193:73807 review withdrawal). Same grid contract
- * as the savings/vault builders: rows of shared `ModalGridCell`s, asserted in
- * `pendleModalRows.test.ts`.
+ * Pure cell builders for the Pendle transaction modals, per the reworked
+ * comps (Figma 2193:73513/73598 entries, 2193:73734/73807 reviews) — the
+ * same grid contract as the savings/vault builders.
  *
- * Deliberate divergences from the comps: Price impact stays (material AMM
- * risk info, PR #1773), the supply Withdrawal cell keeps the risk-sheet
- * wording over the comp's "Anytime" (single-sourced per APP-447), and
- * "Min. received" appears on both reviews — the slippage floor the
+ * Deliberate divergences from the comps: Price impact stays (PR #1773), the
+ * supply Withdrawal cell keeps the risk-sheet wording over "Anytime"
+ * (APP-447), and "Min. received" appears on both reviews — the floor the
  * disclosure's "may be lower than shown" refers to.
  */
 
@@ -132,9 +129,8 @@ export type PendleWithdrawEntryRowInput = {
 /**
  * Grid for the "Early withdrawal" entry screen (Figma 2193:73598):
  * [Withdrawal token | You'll receive], [Lost on early withdrawal | Network],
- * then Network fee full-width. The output-token choice lives here (the amount
- * field's pill is the fixed PT input), and the rate rows are gone — the cost
- * of selling early is stated directly, in tokens, under the red down-trend.
+ * then Network fee full-width. No rate rows — the cost of selling early is
+ * stated directly.
  */
 export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput): PendleModalGridRow[] {
   return [
@@ -172,10 +168,8 @@ export type PendleRedeemRowInput = {
   /** The market's PT symbol (e.g. "PT-sUSDS") — the Claim amount icon. */
   ptSymbol: string;
   /**
-   * True when the quote routes through an aggregator (a non-SY-accepted output
-   * token) — gates the price-impact/route row. Slippage rows are NOT gated on
-   * this: the API's minTokenOut is slippage-adjusted and signed even on the
-   * pure-burn route, so the tolerance binds either way.
+   * True when the quote routes through an aggregator (non-SY-accepted output).
+   * Gates only the price-impact/route row — slippage binds on every route.
    */
   aggregator: boolean;
   /** Quote still in flight — the quote-derived cells hold skeletons instead of dashes. */
@@ -206,14 +200,12 @@ export type PendleRedeemRowInput = {
 
 /**
  * Grid for the matured-claim modal: [Product | Claim amount], [Slippage |
- * Min. received], then — only on aggregator routes — [Price impact | Routed
- * via], closing with [Pendle fee | Network] and the full-width fee row. The
- * payout token is picked on the hero pill, not here: a read-only grid is the
- * wrong home for the flow's one control. Slippage and its floor render on
- * every route — even the pure burn signs a slippage-adjusted minTokenOut
- * (see buildVerifiedArgs' matured-exit fixtures), so the tolerance must stay
- * visible and adjustable everywhere. Only the per-hop rows (price impact,
- * route) are aggregator-only; a pure redemption has no swap legs to describe.
+ * Min. received], then — aggregator routes only — [Price impact | Routed
+ * via], closing with [Pendle fee | Network] and the fee row. The payout token
+ * is picked on the hero pill, not in this read-only grid. Slippage renders on
+ * every route: even the pure burn signs a slippage-adjusted minTokenOut (see
+ * buildVerifiedArgs' matured-exit fixtures); only the per-hop rows are
+ * aggregator-only.
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
   const feeCell = networkFeeCell(input.networkFee);
@@ -303,13 +295,10 @@ export type PendleReviewRowInput = {
 };
 
 /**
- * Grid for the Pendle review stages. Supply (Figma 2193:73734): [Fixed rate |
- * Claim date], [Claim at maturity | Est. ND yield], [Product |
- * Withdrawal], then the two rows the comp omits but this app keeps — [Slippage
- * | Price impact], [Min. received | Network] — and Network fee. Withdraw
- * (Figma 2193:73807): [Product | Withdrawal amount], [Slippage | Min.
- * received], [Price impact | Network], Network fee; the disclosure paragraph
- * renders as the modal subtitle, not a grid row.
+ * Grid for the Pendle review stages: supply per Figma 2193:73734 (plus the
+ * [Slippage | Price impact] and [Min. received | Network] rows the comp
+ * omits), withdraw per 2193:73807 (its disclosure renders as the modal
+ * subtitle, not a grid row).
  */
 export function buildPendleReviewRows(
   flow: 'supply' | 'withdraw',

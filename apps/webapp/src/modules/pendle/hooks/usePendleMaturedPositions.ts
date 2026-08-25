@@ -1,12 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useChainId, useChains, useConnection } from 'wagmi';
-import {
-  isMarketMatured,
-  isPendleChain,
-  PENDLE_MARKETS,
-  usePendleUserPtBalances,
-  type PendleMarketConfig
-} from '@/hooks';
+import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { Intent } from '@/lib/enums';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -34,10 +28,8 @@ export function usePendleMaturedPositions(): {
   maturedPositions: PendleMaturedPosition[];
   /** PT balances still resolving — matured holdings unknown, not absent. */
   isLoading: boolean;
-  onPendleChain: boolean;
 } {
   const { address } = useConnection();
-  const chainId = useChainId();
   const { data: ptBalances, isLoading } = usePendleUserPtBalances();
   const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
   const fixedAvailable = isGeoLoading || isModuleEnabled('fixed');
@@ -55,21 +47,16 @@ export function usePendleMaturedPositions(): {
 
   return {
     maturedPositions,
-    isLoading: !!address && (isLoading || ptBalances === undefined),
-    onPendleChain: isPendleChain(chainId)
+    isLoading: !!address && (isLoading || ptBalances === undefined)
   };
 }
 
 /**
- * Auto-switch the wallet to Ethereum while a claim surface is visible
- * (`enabled`). Balances are read from mainnet regardless of the connected
- * chain, but the redeem transaction must be signed there — so the switch works
- * the way module navigation does (TopNav): flag it as automatic, then point
- * ?network= at Ethereum; the orchestration performs the wallet switch (a
- * rejection resets the param), the shell's network toast announces the change,
- * and testnets are exempt so a tenderly session is never disrupted. Once per
- * mount: a declined prompt must not re-fire on every render, and the cards
- * stay visible either way (they disable their Claim buttons off-chain).
+ * Auto-switch the wallet to Ethereum while a claim surface is visible —
+ * the redeem signs there. Same mechanics as module navigation
+ * (destinations.tsx): auto-flagged ?network= override, orchestration
+ * performs the switch, testnets exempt. Once per mount, so a declined
+ * prompt doesn't re-fire; the cards stay visible off-chain either way.
  */
 export function usePendleMaturedNetworkSwitch(enabled: boolean): void {
   const chainId = useChainId();

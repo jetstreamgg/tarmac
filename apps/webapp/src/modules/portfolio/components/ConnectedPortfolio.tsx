@@ -130,10 +130,9 @@ export function ConnectedPortfolio() {
   const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
   const calloutLoading = isLoading || balancesLoading || isGeoLoading;
-  // Matured PT is capital in the protocol even though the marketplace rows no
-  // longer carry it — a wallet holding only matured PT gets the Claim card,
-  // never the get-started pitch a $0 depositedUsd would otherwise pick (and a
-  // stale cached outcome from before maturity doesn't resurrect it).
+  // Matured PT is still capital in the protocol even though the marketplace
+  // rows drop it — a matured-only wallet gets the Claim card, never the
+  // get-started pitch its $0 depositedUsd would otherwise pick.
   const hasMatured = !maturedLoading && allMaturedPositions.length > 0;
   const callout = hasMatured
     ? 'none'
@@ -166,12 +165,10 @@ export function ConnectedPortfolio() {
     allMaturedPositions.length
   ]);
 
-  // Matured PT needs action (Claim) and renders only on Supplied, so it wins
-  // the default — and overrides a stale cached 'idle' from before maturity.
-  // The uncached idle default also waits for the matured read, exactly as it
-  // waits for positions: deciding on the in-flight empty list mounts Idle and
-  // then yanks to Supplied when balances resolve. (A pre-maturity cached
-  // 'idle' can still flip once; the cache rewrite above heals it.)
+  // Matured PT needs action and renders only on Supplied, so it wins the
+  // default (overriding a stale pre-maturity cached 'idle'). The uncached
+  // idle default waits for the matured read like it waits for positions —
+  // deciding on the in-flight empty list would mount Idle, then yank.
   const tab =
     userTab ??
     (maturedPositions.length > 0
