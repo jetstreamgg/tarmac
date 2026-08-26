@@ -38,6 +38,24 @@ const reviewAndConfirm = async (page: Page) => {
   });
 };
 
+/**
+ * Asserts the two-step DS step list: "Approve ◉ USDS" then "Convert ◉ USDS to ◉ USDC".
+ *
+ * The convert row is no longer one text node — `StepsItem` draws the label, each
+ * token symbol (beside its own 14px icon) and the "to" as sibling spans with no
+ * whitespace between them, so the row's text content reads "ConvertUSDStoUSDC"
+ * and `getByText('Convert USDS to USDC')` can never match. Locate the row, then
+ * assert its parts.
+ */
+const expectApproveAndConvertSteps = async (page: Page) => {
+  await expect(page.getByText('Approve')).toBeVisible({ timeout: 60_000 });
+
+  const convertStep = page.getByRole('dialog').getByRole('listitem').filter({ hasText: 'Convert' });
+  await expect(convertStep).toBeVisible({ timeout: 60_000 });
+  await expect(convertStep.getByText('USDS', { exact: true })).toBeVisible();
+  await expect(convertStep.getByText('USDC', { exact: true })).toBeVisible();
+};
+
 export const runPsmConversionTests = async ({ networkName }: { networkName: NetworkName }) => {
   const isMainnet = networkName === NetworkName.mainnet;
 
@@ -257,8 +275,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       // The DS step list renders on the wallet/status screen and persists
       // through success (all steps completed).
-      await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
-      await expect(isolatedPage.getByText('Convert USDS to USDC')).toBeVisible({ timeout: 60_000 });
+      await expectApproveAndConvertSteps(isolatedPage);
 
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
@@ -294,8 +311,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
         timeout: 60_000
       });
-      await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
-      await expect(isolatedPage.getByText('Convert USDS to USDC')).toBeVisible({ timeout: 60_000 });
+      await expectApproveAndConvertSteps(isolatedPage);
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
   });
