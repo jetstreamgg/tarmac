@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import { useState, useCallback, useEffect, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus } from '@/widgets';
 import { ArrowLeft } from 'lucide-react';
@@ -192,8 +192,6 @@ export function TransactionModal({
   // Entry-only and review-only configs keep their two screens.
   const hasReviewStage = !!(entry && transactionContent);
   const [step, setStep] = useState<TransactionModalStep>(firstStep);
-  const [contentHeight, setContentHeight] = useState<number | undefined>();
-  const reviewRef = useRef<HTMLDivElement>(null);
   const chainId = useChainId();
   const isSafeWallet = useIsSafeWallet();
   const explorerName = getExplorerName(chainId, isSafeWallet);
@@ -292,9 +290,6 @@ export function TransactionModal({
       onReviewStage?.();
       return;
     }
-    if (reviewRef.current) {
-      setContentHeight(reviewRef.current.offsetHeight);
-    }
     setStep('transaction');
     onConfirm();
   }, [isEntry, hasReviewStage, onConfirm, entryConfirmAction, onReviewStage]);
@@ -302,9 +297,6 @@ export function TransactionModal({
   // The entry's secondary CTA (entry-only flows — see the contract): same
   // advance to the wallet screen, firing the secondary action's handler.
   const handleSecondaryConfirm = useCallback(() => {
-    if (reviewRef.current) {
-      setContentHeight(reviewRef.current.offsetHeight);
-    }
     setStep('transaction');
     onSecondaryConfirm?.();
   }, [onSecondaryConfirm]);
@@ -329,7 +321,6 @@ export function TransactionModal({
   const handleClose = useCallback(() => {
     if (txStatus === TxStatus.LOADING) return;
     setStep(firstStep);
-    setContentHeight(undefined);
     onClose();
   }, [txStatus, onClose, firstStep]);
 
@@ -347,7 +338,6 @@ export function TransactionModal({
   const handleBack = useCallback(() => {
     onBack?.();
     setStep(firstStep);
-    setContentHeight(undefined);
   }, [onBack, firstStep]);
 
   // Hand the provider the same back-to-first-screen the header arrow uses, so
@@ -448,11 +438,7 @@ export function TransactionModal({
           </div>
         </div>
 
-        <div
-          ref={isFirstScreen ? reviewRef : undefined}
-          className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}
-          style={isTransaction ? { minHeight: contentHeight } : undefined}
-        >
+        <div className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}>
           {/* Subtitle */}
           <AnimatePresence mode="wait" initial={false}>
             {subtitle && (
@@ -548,11 +534,6 @@ export function TransactionModal({
               </Steps>
             </>
           )}
-
-          {/* Pushes the status row/buttons to the held height on the wallet screen.
-              A zero-height child still consumes two column gaps, so it must not
-              render on the first screens (their card hugs content, Figma 859:36036). */}
-          {isTransaction && <div className="grow" />}
 
           {/* Bottom section: animates on step/status change */}
           <AnimatePresence mode="wait" initial={false}>
