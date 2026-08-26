@@ -103,6 +103,23 @@ describe('useConvertForm', () => {
     expect(result.current.value).toBe('1.123456');
   });
 
+  it('holds the in-progress decimal point the iOS keypad types (APP-518)', () => {
+    const { result } = renderHook(() => useConvertForm());
+
+    // A leading separator: dropping it would land the next digit as a whole unit.
+    act(() => result.current.onInput(','));
+    expect(result.current.value).toBe('.');
+    expect(result.current.amount).toBe(0n);
+
+    act(() => result.current.onInput('.5'));
+    expect(result.current.value).toBe('.5');
+    expect(result.current.amount).toBe(parseUnits('0.5', 18));
+
+    // A second tap of the key must not relocate the point (0.5 → 5).
+    act(() => result.current.onInput('.5,'));
+    expect(result.current.value).toBe('.5');
+  });
+
   it('flip inverts the direction via the URL, clamping the typed fraction', () => {
     // The router re-renders on URL writes in the app; `rerender()` stands in here.
     const { result, rerender } = renderHook(() => useConvertForm());

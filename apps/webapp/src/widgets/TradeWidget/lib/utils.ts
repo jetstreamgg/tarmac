@@ -71,6 +71,10 @@ export function getQuoteErrorForType(errorType: HandledQuoteErrorTypes | string)
 }
 
 // Check if slippage is a valid number and compare it with its
-// minimum and maximum values. Then, return the input value or the default value
+// minimum and maximum values. Then, return the input value or the default value.
+// A bare '.' passes through as the in-progress decimal point a first tap of the
+// keypad's decimal key (comma or dot) produces: `+'.'` is NaN, so blanking it
+// would snap the field back to empty and land the next digit as a whole percent
+// (0.5% typed as ',5' arriving as 5%). It is never persisted — see the menu.
 export const verifySlippage = (s: string, slippageConfig: { min: number; max: number; default: number }) =>
-  !!s && !Number.isNaN(+s) && +s >= +slippageConfig.min && +s <= +slippageConfig.max ? s : '';
+  s === '.' || (!!s && !Number.isNaN(+s) && +s >= +slippageConfig.min && +s <= +slippageConfig.max) ? s : '';
