@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn';
 import { RiskLevel, RISK_LEVEL_THRESHOLDS, type EarnRiskTier } from '@/hooks';
 
 /**
- * Generic three-dash risk pill — purely presentational (review feedback on
+ * Generic three-dash risk pill - purely presentational (review feedback on
  * the F-track PR: one pill, many domains). Callers translate their domain
  * (product risk tier, liquidation proximity, …) into per-segment fill
  * classes; `null` entries render the shared unlit tint. Decorative unless a
@@ -22,7 +22,7 @@ export function RiskMeter({
   // Figma Badges/Risk (5017:7512): 38×15 bordered pill of three 8×3 segments;
   // unlit segments are fg-quaternary at 40%. Figma insets the segments 6px
   // from the outer edge with the stroke drawn inside the frame, so the CSS
-  // padding is that inset minus the 1px border — px-[5px], not px-1.5, which
+  // padding is that inset minus the 1px border - px-[5px], not px-1.5, which
   // rendered the pill 2px too wide.
   return (
     <div
@@ -62,7 +62,7 @@ const RISK_ZONE_LABEL: Record<RiskLevel, ReactNode> = {
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 /**
- * DS "Charts / Progress Steps" (Figma 5246:24677): a value-driven risk bar —
+ * DS "Charts / Progress Steps" (Figma 5246:24677): a value-driven risk bar -
  * a rounded track split into four evenly-spaced zones (Low → Liquidation),
  * with a gradient fill whose length encodes the risk, zone dot-markers, and a
  * tick at the liquidation threshold. Distinct from the compact table-cell
@@ -95,7 +95,7 @@ export function RiskScaleMeter({
 
   // Zone/tint prefers an explicit `level`; otherwise the value's quarter. Fill
   // length prefers a continuous `value`; otherwise the level's zone end
-  // (Liquidation → the real threshold tick — Figma 5246:24677 leaves a tail past
+  // (Liquidation → the real threshold tick - Figma 5246:24677 leaves a tail past
   // it rather than filling the whole bar). Passing both fills to `value` but
   // tints by `level`, e.g. the stake liquidation indicator (real proximity, real
   // risk level, whose thresholds aren't evenly spaced).
@@ -164,8 +164,8 @@ const TIERS: EarnRiskTier[] = ['low', 'moderate', 'advanced'];
 
 // Figma Badges/Risk palette (5017:7512): the DS gave the risk pill its own
 // components/badges/bg-risk-* variables rather than reusing components/status,
-// so Aggressive is orange (Orange/600) — not the status red the meter borrowed
-// before — and Conservative/Moderate take different light-mode steps than
+// so Advanced is orange (Orange/600) - not the status red the meter borrowed
+// before - and Core/Medium take different light-mode steps than
 // fg-success/fg-warning do.
 const TIER_COLOR: Record<EarnRiskTier, string> = {
   low: 'bg-riskLow',

@@ -32,11 +32,11 @@ const renderCard = (tier: EarnRiskTier, profile: EarnRiskProfileId) =>
 describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 risk sheet)', () => {
   afterEach(cleanup);
 
-  it('renders the Conservative profile with the savings sheet copy and facts', () => {
+  it('renders the Core profile with the savings sheet copy and facts', () => {
     renderCard('low', 'savings');
 
     expect(screen.getByText('Risk profile')).toBeTruthy();
-    expect(screen.getByText('Conservative')).toBeTruthy();
+    expect(screen.getByText('Core')).toBeTruthy();
     expect(screen.getByText(/Funds secured by Sky Protocol/)).toBeTruthy();
     expect(screen.getByText('Exposure')).toBeTruthy();
     expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe('USDS');
@@ -63,7 +63,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
   it('renders the Flagship vault profile with its multi-asset exposure, with two risk-medium segments', () => {
     renderCard('moderate', 'vault-flagship');
 
-    expect(screen.getByText('Moderate')).toBeTruthy();
+    expect(screen.getByText('Medium')).toBeTruthy();
     expect(screen.getByText(/conservative allocation and around 80% of liquidity/)).toBeTruthy();
     expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe(
       'cbBTC, wstETH, WETH, PT-sUSDS'
@@ -76,10 +76,10 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(segments[2].className).toContain('bg-fgQuaternary');
   });
 
-  it('renders the Risk Capital vault profile as Aggressive — same provider, different assessment', () => {
+  it('renders the Risk Capital vault profile as Advanced — same provider, different assessment', () => {
     renderCard('advanced', 'vault-risk-capital');
 
-    expect(screen.getByText('Aggressive')).toBeTruthy();
+    expect(screen.getByText('Advanced')).toBeTruthy();
     expect(screen.getByText(/single exposure to stUSDS collateral/)).toBeTruthy();
     expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe('stUSDS, SKY');
   });
@@ -87,7 +87,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
   it('renders Pendle copy for moderate fixed-yield with the market-sell withdrawal fact', () => {
     renderCard('moderate', 'fixed');
 
-    expect(screen.getByText('Moderate')).toBeTruthy();
+    expect(screen.getByText('Medium')).toBeTruthy();
     expect(screen.getByText(/powered by Pendle/)).toBeTruthy();
     expect(screen.queryByText(/Morpho/)).toBeNull();
     expect(screen.getByText('At maturity or via market sell')).toBeTruthy();
@@ -104,10 +104,10 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
     expect(screen.queryByText(/tokens/)).toBeNull();
   });
 
-  it('renders the Aggressive stUSDS profile with SKY exposure and three risk-high segments', () => {
+  it('renders the Advanced stUSDS profile with SKY exposure and three risk-high segments', () => {
     renderCard('advanced', 'stusds');
 
-    expect(screen.getByText('Aggressive')).toBeTruthy();
+    expect(screen.getByText('Advanced')).toBeTruthy();
     expect(screen.getByText(/SKY token-collateralized loans/)).toBeTruthy();
     expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe('SKY');
     expect(screen.getByText('Liquidity based')).toBeTruthy();
@@ -136,17 +136,17 @@ describe('RiskTierDetailsTrigger — mobile bottom panel (486:21797)', () => {
   it('opens the details sheet from the pill and dismisses via the close button', () => {
     renderTrigger('savings');
 
-    expect(screen.queryByText('Conservative')).toBeNull();
+    expect(screen.queryByText('Core')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Risk profile' }));
-    expect(screen.getByText('Conservative')).toBeTruthy();
+    expect(screen.getByText('Core')).toBeTruthy();
     expect(screen.getByText('Withdrawals')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Learn more about risk/ }).getAttribute('href')).toBe(
       'https://docs.sky.money/user-risks'
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Close/ }));
-    expect(screen.queryByText('Conservative')).toBeNull();
+    expect(screen.queryByText('Core')).toBeNull();
   });
 
   it('reveals the exposure token names on tap — the sheet has no hover for the native title', () => {
@@ -174,7 +174,7 @@ describe('RiskTierDetailsTrigger — desktop tooltip (1036:201215)', () => {
     fireEvent.keyDown(document.body, { key: 'Tab' });
     fireEvent.focus(trigger);
     expect(screen.getAllByText(/conservative allocation/).length).toBeGreaterThan(0);
-    // 'vault-flagship' is Moderate per the sheet — the trigger derived it itself.
-    expect(screen.getAllByText('Moderate').length).toBeGreaterThan(0);
+    // 'vault-flagship' is Medium per the sheet — the trigger derived it itself.
+    expect(screen.getAllByText('Medium').length).toBeGreaterThan(0);
   });
 });

@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useMemo } from 'react';
+import { Ban, TriangleAlert } from 'lucide-react';
+import { useDisconnect } from 'wagmi';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Unavailable } from '@/modules/icons';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { LoadingSpinner } from '@/modules/ui/components/LoadingSpinner';
 import { sanitizeUrl } from '@/lib/utils';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { type BlockReason } from '@/modules/analytics/constants';
+import { type AccessBlockReason } from '@/modules/ui/context/ConnectedContext';
 import {
   type TermsLink,
   getTermsLinkConfig,
@@ -33,98 +36,53 @@ type VpnData = {
 type UnauthorizedPageProps = {
   authData: AuthData;
   vpnData: VpnData;
+  blockReason?: AccessBlockReason;
+  /** Re-runs the failed checks — wired to the "unavailable" states only. */
+  onRetry?: () => void;
   children?: React.ReactNode;
 };
 
-const getTitle = (authData: AuthData, vpnData: VpnData): string => {
-  if (vpnData.vpnError) {
-    return t`Network Error`;
-  }
-
-  if (authData.authError) {
-    return t`Address Verification Error`;
-  }
-
-  if (!vpnData.vpnIsLoading && vpnData.isConnectedToVpn && !vpnData.vpnError) {
-    return t`VPN Detected`;
-  }
-
-  if (
-    authData?.addressAllowed === false &&
-    !authData.authIsLoading &&
-    authData.address &&
-    !authData.authError
-  ) {
-    return t`Access Restricted`;
-  }
-
-  return t`Network Error`;
+const ANALYTICS_REASON: Record<AccessBlockReason, BlockReason> = {
+  'region-restricted': 'restricted_region',
+  'ip-check-unavailable': 'network_error',
+  'wallet-blocked': 'address_restricted',
+  'screening-unavailable': 'auth_error'
 };
 
-const getMessage = (
-  authData: AuthData,
-  vpnData: VpnData,
-  termsLink: TermsLink[]
-): string | React.ReactElement => {
-  if (!vpnData.vpnIsLoading && vpnData.isConnectedToVpn && !vpnData.vpnError) {
-    return t`Access via VPN is not permitted. Please disconnect your VPN and refresh the page to continue.`;
-  }
+const TermsOfUseLink = ({ termsLinks }: { termsLinks: TermsLink[] }) =>
+  Array.isArray(termsLinks) && termsLinks.length > 0 ? (
+    <ExternalLink className="text-textEmphasis" showIcon={false} href={sanitizeUrl(termsLinks[0].url)}>
+      {termsLinks[0].name}
+    </ExternalLink>
+  ) : (
+    <>Terms of Use</>
+  );
 
-  if (
-    authData?.addressAllowed === false &&
-    !authData.authIsLoading &&
-    authData.address &&
-    !authData.authError
-  ) {
-    return (
-      <Trans>
-        Your access is restricted. For more information, please refer to our{' '}
-        {Array.isArray(termsLink) && termsLink.length > 0 ? (
-          <ExternalLink className="text-textEmphasis" showIcon={false} href={sanitizeUrl(termsLink[0].url)}>
-            {termsLink[0].name}
-          </ExternalLink>
-        ) : (
-          'Terms of Use'
-        )}
-        .
-      </Trans>
-    );
-  }
-
-  return '';
-};
-
-export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPageProps) => {
+export const UnauthorizedPage = ({
+  authData,
+  vpnData,
+  blockReason,
+  onRetry,
+  children
+}: UnauthorizedPageProps) => {
   const { trackVpnBlockedPageView } = useVpnAnalytics();
+  const { disconnect } = useDisconnect();
   const blockedTrackedRef = useRef(false);
+
+  const isLoading = useMemo(
+    () => authData.authIsLoading || vpnData.vpnIsLoading,
+    [authData.authIsLoading, vpnData.vpnIsLoading]
+  );
+
   useEffect(() => {
-    if (blockedTrackedRef.current || authData.authIsLoading || vpnData.vpnIsLoading) return;
+    if (blockedTrackedRef.current || isLoading) return;
     blockedTrackedRef.current = true;
 
-    const blockReason: BlockReason = vpnData.isConnectedToVpn
-      ? 'vpn_detected'
-      : vpnData.vpnError
-        ? 'network_error'
-        : authData.authError
-          ? 'auth_error'
-          : vpnData.isRestrictedRegion
-            ? 'restricted_region'
-            : authData.addressAllowed === false
-              ? 'address_restricted'
-              : 'unknown';
-
-    trackVpnBlockedPageView({ blockReason, countryCode: vpnData.countryCode ?? null });
-  }, [
-    authData.authIsLoading,
-    authData.authError,
-    authData.addressAllowed,
-    vpnData.vpnIsLoading,
-    vpnData.isConnectedToVpn,
-    vpnData.isRestrictedRegion,
-    vpnData.vpnError,
-    vpnData.countryCode,
-    trackVpnBlockedPageView
-  ]);
+    trackVpnBlockedPageView({
+      blockReason: blockReason ? ANALYTICS_REASON[blockReason] : 'unknown',
+      countryCode: vpnData.countryCode ?? null
+    });
+  }, [isLoading, blockReason, vpnData.countryCode, trackVpnBlockedPageView]);
 
   const { termsLinks } = getTermsLinkConfig();
 
@@ -137,10 +95,82 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
     });
   }, []);
 
-  const isLoading = useMemo(
-    () => authData.authIsLoading || vpnData.vpnIsLoading,
-    [authData.authIsLoading, vpnData.vpnIsLoading]
-  );
+  // Each reason gets a visibly distinct state, and in particular an
+  // unavailable check reads as "try again later", never as a block (APP-497).
+  // No contact/recourse route on the blocked states for now: the
+  // compliance mailing group won't be created yet (Kacper, 10 Aug 2026).
+  const stateContent = () => {
+    switch (blockReason) {
+      case 'region-restricted':
+        return {
+          icon: <Ban className="text-error size-5 shrink-0" />,
+          title: t`Access blocked`,
+          message: (
+            <Trans>
+              Sky.money isn&apos;t available in your region. For more information, please refer to our{' '}
+              <TermsOfUseLink termsLinks={termsLinks} />.
+            </Trans>
+          ),
+          actions: null
+        };
+      case 'wallet-blocked':
+        return {
+          icon: <Ban className="text-error size-5 shrink-0" />,
+          title: t`Wallet blocked`,
+          message: (
+            <Trans>
+              This wallet address can&apos;t be used with Sky.money. For more information, please refer to our{' '}
+              <TermsOfUseLink termsLinks={termsLinks} />.
+            </Trans>
+          ),
+          actions: (
+            <Button variant="secondary" size="l" className="w-full" onClick={() => disconnect()}>
+              <Trans>Disconnect wallet</Trans>
+            </Button>
+          )
+        };
+      case 'screening-unavailable':
+        return {
+          icon: <TriangleAlert className="text-error size-5 shrink-0" />,
+          title: t`Unable to verify this wallet`,
+          message: (
+            <Trans>
+              We couldn&apos;t run the checks required before a wallet can be used with Sky.money. This is
+              usually temporary — please check again in a few minutes.
+            </Trans>
+          ),
+          actions: (
+            <div className="flex w-full gap-4">
+              <Button variant="secondary" size="l" className="flex-1" onClick={() => disconnect()}>
+                <Trans>Disconnect wallet</Trans>
+              </Button>
+              <Button variant="primary" size="l" className="flex-1" onClick={onRetry}>
+                <Trans>Check again</Trans>
+              </Button>
+            </div>
+          )
+        };
+      case 'ip-check-unavailable':
+      default:
+        return {
+          icon: <TriangleAlert className="text-error size-5 shrink-0" />,
+          title: t`Network error`,
+          message: (
+            <Trans>
+              We couldn&apos;t verify that Sky.money is available in your region. Please check your connection
+              and try again.
+            </Trans>
+          ),
+          actions: (
+            <Button variant="primary" size="l" className="w-full" onClick={onRetry}>
+              <Trans>Try again</Trans>
+            </Button>
+          )
+        };
+    }
+  };
+
+  const { icon, title, message, actions } = stateContent();
 
   return (
     <>
@@ -157,20 +187,20 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
             </div>
           </DialogContent>
         ) : (
-          <DialogContent aria-describedby={undefined} className="bg-containerDark max-w-[640px] p-10">
-            <div className="flex flex-col gap-5 sm:flex-row">
-              <Unavailable className="shrink-0" />
-              <div className="">
+          <DialogContent
+            aria-describedby={undefined}
+            className="bg-containerDark w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
+          >
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                {icon}
                 <DialogTitle asChild>
-                  <Text className="text-text mb-2 text-[28px] md:text-[32px]">
-                    {getTitle(authData, vpnData)}
-                  </Text>
+                  <Text className="text-text font-circle text-xl">{title}</Text>
                 </DialogTitle>
-                <Text className="font-graphik text-text mb-10">
-                  {getMessage(authData, vpnData, termsLinks)}
-                </Text>
               </div>
+              <Text className="font-graphik text-textSecondary text-sm">{message}</Text>
             </div>
+            {actions}
           </DialogContent>
         )}
       </Dialog>
