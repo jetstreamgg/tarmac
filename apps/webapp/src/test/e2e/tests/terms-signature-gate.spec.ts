@@ -49,7 +49,10 @@ test('US user without a signature gets the signature step, then the transaction 
   // must not satisfy this.
   await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true }).first()).toBeVisible();
 
-  await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+  // The generic success sentence is gone — status now lives only in the
+  // status badge, which cycles "Confirm in the wallet" → "Processing" →
+  // "Success". toHaveText auto-retries, so this waits for the terminal text.
+  await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
     timeout: 60_000
   });
   // The completed signature row survives into the success view.
@@ -73,7 +76,7 @@ test('Rejecting the signature fails the step in place and retry recovers', async
   // The wallet cooperates on the second attempt; retry re-runs the whole gate.
   signControl.mode = 'sign';
   await isolatedPage.getByRole('button', { name: 'Try again' }).click();
-  await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+  await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
     timeout: 60_000
   });
 });
@@ -98,7 +101,7 @@ for (const { title, setup } of [
     const confirm = await openSavingsSupplyConfirm(isolatedPage, { connect: { expectTerms: true } });
     await confirm.click();
 
-    await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+    await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
       timeout: 60_000
     });
     await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true })).toHaveCount(0);
