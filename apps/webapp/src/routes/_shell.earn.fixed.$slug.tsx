@@ -2,15 +2,17 @@ import { useEffect } from 'react';
 import { createFileRoute, Navigate, redirect, useRouterState } from '@tanstack/react-router';
 import { FixedIntent } from '@/lib/enums';
 import { keepSearch } from '@/lib/navigation';
-import { getPendleMarketBySlug, isMarketMatured } from '@/hooks';
+import { getPendleMarketBySlug } from '@/hooks';
 import { PendleProductDetail } from '@/modules/pendle/components/PendleProductDetail';
 import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 
 // Market details render full-width through the ProductDetailTemplate (E1).
-// Matured markets have no detail view — they redirect to the Portfolio, whose
-// ready-to-redeem section is where redemption lives (G6) — and unknown slugs
-// fall back to the Earn marketplace.
+// Matured markets keep their detail view — the page swaps its position card
+// for the claim layout (Figma 2193:73881) and the Maturity section reads 100%
+// — so only unknown slugs fall back to the Earn marketplace. The market stays
+// out of the marketplace rows and every supply entry point; it is reachable
+// from the Earn "Requires action" section and the Portfolio.
 export const Route = createFileRoute('/_shell/earn/fixed/$slug')({
   // `!preload` keeps link-hover preloads from emitting phantom redirects.
   beforeLoad: async ({ context, params, location, search, preload }) => {
@@ -20,12 +22,6 @@ export const Route = createFileRoute('/_shell/earn/fixed/$slug')({
         trackRouteRedirected({ fromPath: location.pathname, toPath: '/earn', reason: 'unknown_market' });
       }
       throw redirect({ to: '/earn', search: keepSearch, replace: true });
-    }
-    if (isMarketMatured(market.expiry)) {
-      if (!preload) {
-        trackRouteRedirected({ fromPath: location.pathname, toPath: '/portfolio', reason: 'market_matured' });
-      }
-      throw redirect({ to: '/portfolio', search: keepSearch, replace: true });
     }
     // Slug validity resolves first, so an unknown slug still lands on the
     // marketplace rather than implying the market exists but is restricted.
@@ -39,16 +35,15 @@ function PendleMarketDetail() {
   const { slug } = Route.useParams();
   const pathname = useRouterState({ select: s => s.location.pathname });
   const market = getPendleMarketBySlug(slug);
-  // beforeLoad guarantees a live market; the re-check keeps the render safe if
-  // the market matures while the page is mounted.
-  const redirectToPortfolio = !market || isMarketMatured(market.expiry);
+  // beforeLoad already redirected an unknown slug; the re-check keeps the
+  // render safe (and typed) if the registry changes while the page is mounted.
   useEffect(() => {
-    if (redirectToPortfolio) {
-      trackRouteRedirected({ fromPath: pathname, toPath: '/portfolio', reason: 'market_matured' });
+    if (!market) {
+      trackRouteRedirected({ fromPath: pathname, toPath: '/earn', reason: 'unknown_market' });
     }
-  }, [redirectToPortfolio, pathname]);
-  if (redirectToPortfolio) {
-    return <Navigate to="/portfolio" search={keepSearch} replace />;
+  }, [market, pathname]);
+  if (!market) {
+    return <Navigate to="/earn" search={keepSearch} replace />;
   }
   return <PendleProductDetail market={market} />;
 }

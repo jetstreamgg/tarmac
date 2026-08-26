@@ -21,40 +21,23 @@ const renderSummary = (props: Partial<React.ComponentProps<typeof StakeTakeoverC
 describe('StakeTakeoverConfirmSummary', () => {
   afterEach(cleanup);
 
-  it('names the selected reward token when provided', () => {
-    renderSummary({ rewardSymbol: 'SKY' });
-
-    const row = screen.getByTestId('stake-takeover-confirm-reward');
-    expect(row.textContent).toContain('Reward');
-    expect(row.textContent).toContain('SKY');
-  });
-
-  it('omits the reward row when no reward is passed at all', () => {
+  it('always draws the stake hero', () => {
     renderSummary();
 
-    expect(screen.queryByTestId('stake-takeover-confirm-reward')).toBeNull();
-  });
-
-  it('falls back to the shortened farm address when the symbol is unknown', () => {
-    // A picked farm outside the generated address books must still show in the
-    // review — the multicall carries its selectFarm leg either way.
-    renderSummary({ rewardContract: '0x9999999999999999999999999999999999999999' });
-
-    expect(screen.getByTestId('stake-takeover-confirm-reward').textContent).toContain('0x9999...9999');
-  });
-
-  it('prefers the symbol over the address when both are known', () => {
-    renderSummary({ rewardSymbol: 'FOO', rewardContract: '0x9999999999999999999999999999999999999999' });
-
-    const row = screen.getByTestId('stake-takeover-confirm-reward');
-    expect(row.textContent).toContain('FOO');
-    expect(row.textContent).not.toContain('0x9999');
+    expect(screen.getByText('Stake amount')).toBeTruthy();
+    expect(screen.getByTestId('stake-takeover-confirm-summary').textContent).toContain('100');
   });
 
   it('keeps the borrow hero conditional on a non-zero amount', () => {
-    renderSummary({ usdsToBorrow: 5n * 10n ** 18n, rewardSymbol: 'USDS' });
+    renderSummary({ usdsToBorrow: 5n * 10n ** 18n });
 
     expect(screen.getByText('Borrow amount')).toBeTruthy();
     expect(screen.getByText('Stake amount')).toBeTruthy();
+  });
+
+  it('omits the borrow hero for a stake-only open', () => {
+    renderSummary();
+
+    expect(screen.queryByText('Borrow amount')).toBeNull();
   });
 });

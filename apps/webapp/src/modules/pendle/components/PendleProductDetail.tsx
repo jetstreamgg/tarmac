@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
@@ -20,6 +19,7 @@ import { PendleTransactionsTable } from './PendleTransactionsTable';
 import { PendleMaturityProgress } from './PendleMaturityProgress';
 import { PendleAboutContent } from './PendleAboutContent';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 
 export type PendleProductDetailProps = {
@@ -44,7 +44,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
   const nowMs = Date.now();
   const remainingSeconds = Math.max(0, expirySec - Math.floor(nowMs / 1000));
   const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
-  const maturityDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const maturityDateLabel = formatMaturity(expirySec);
 
   const details: ProductDetailRow[] = [
     {
@@ -87,7 +87,9 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         <span>
           {maturityDateLabel}{' '}
           <span className="text-textSecondary">
-            <Trans>({remainingDays} days)</Trans>
+            {/* A matured market reads "(Matured)" — the elapsed-days figure is 0
+                there, which reads as "matures today". */}
+            {remainingSeconds > 0 ? <Trans>({remainingDays} days)</Trans> : <Trans>(Matured)</Trans>}
           </span>
         </span>
       )
@@ -99,7 +101,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       value: (
         <DetailValue
           loading={statsLoading}
-          value={stats?.tvl !== undefined ? `$${formatNumber(stats.tvl, { compact: true })}` : undefined}
+          value={stats?.tvl !== undefined ? `$${formatNumber(stats.tvl, { maxDecimals: 0 })}` : undefined}
         />
       )
     },

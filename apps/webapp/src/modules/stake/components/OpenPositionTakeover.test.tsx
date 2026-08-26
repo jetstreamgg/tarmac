@@ -48,6 +48,28 @@ const setSearchParamsMock = vi.fn<SetSearchParams>(next => {
     typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
 });
 
+// The confirm grid runs its own live reads (fee estimate, delegate metadata) —
+// out of scope here. Stubbed to expose the reward/delegate context this
+// takeover hands it, which IS this component's job to get right.
+vi.mock('./StakeConfirmGrid', () => ({
+  StakeConfirmGrid: ({
+    rewardFrom,
+    rewardTo,
+    delegateFrom,
+    delegateTo
+  }: {
+    rewardFrom?: { address: string; symbol?: string };
+    rewardTo?: { address: string; symbol?: string };
+    delegateFrom?: string;
+    delegateTo?: string;
+  }) => (
+    <div data-testid="stake-confirm-grid-stub">
+      <span data-testid="stake-confirm-grid-reward">{JSON.stringify({ rewardFrom, rewardTo })}</span>
+      <span data-testid="stake-confirm-grid-delegate">{JSON.stringify({ delegateFrom, delegateTo })}</span>
+    </div>
+  )
+}));
+
 vi.mock('@/lib/navigation', async importOriginal => {
   const actual = await importOriginal<typeof import('@/lib/navigation')>();
   return {
@@ -140,6 +162,8 @@ vi.mock('@/hooks', async importOriginal => {
     }),
     useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null }),
     useHighestRateFromChartData: () => ({ rate: '0.015' }),
+    // $0.05/SKY — the est. annual rewards stat is quoted in USD.
+    useSkyPrice: () => ({ data: 5n * 10n ** 16n, priceString: '0.05', isLoading: false, error: null }),
     useStakeUserDelegates: () => ({
       data: [
         { id: DELEGATE_A, ownerAddress: DELEGATE_A, totalDelegated: 3122232n * WAD, metadata: null },
@@ -226,6 +250,20 @@ const renderTakeover = () =>
 const typeStakeAmount = (value: string) =>
   fireEvent.change(screen.getByTestId('stake-takeover-stake-amount'), { target: { value } });
 
+/**
+ * The review body is a render function — the launch hook feeds it the engine's
+ * live routing so the grid can price the network fee. Nothing here simulates,
+ * so an empty routing is enough.
+ */
+const renderConfirmSummary = (params: Record<string, unknown> | undefined = h.launchParams) => {
+  const build = params?.transactionContent as (context: {
+    calls: unknown[];
+    isBatch: boolean;
+    legCount: number;
+  }) => React.ReactNode;
+  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false, legCount: 1 })}</I18nProvider>);
+};
+
 describe('OpenPositionTakeover', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams('flow=open');
@@ -311,10 +349,10 @@ describe('OpenPositionTakeover', () => {
     fireEvent.click(row);
     expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
 
-    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
-    const rewardRow = screen.getByTestId('stake-takeover-confirm-reward');
-    expect(rewardRow.textContent).toContain('FOO');
-    expect(rewardRow.textContent).not.toContain('SKY');
+    renderConfirmSummary();
+    const reward = screen.getByTestId('stake-confirm-grid-reward').textContent!;
+    expect(reward).toContain('FOO');
+    expect(reward).not.toContain('SKY');
   });
 
   it('falls back to the shortened farm address while the on-chain symbol is unresolved', () => {
@@ -324,8 +362,12 @@ describe('OpenPositionTakeover', () => {
     typeStakeAmount('100');
 
     fireEvent.click(screen.getByTestId(`stake-takeover-reward-${unknownFarm}`));
-    render(<I18nProvider i18n={i18n}>{h.launchParams?.transactionContent as React.ReactNode}</I18nProvider>);
-    expect(screen.getByTestId('stake-takeover-confirm-reward').textContent).toContain('0x9999...9999');
+    renderConfirmSummary();
+    // No symbol resolved: the grid gets the farm address and renders the
+    // shortened form (see stakeModalRows.test.ts).
+    const reward = JSON.parse(screen.getByTestId('stake-confirm-grid-reward').textContent!);
+    expect(reward.rewardFrom).toMatchObject({ address: unknownFarm });
+    expect(reward.rewardFrom.symbol).toBeUndefined();
   });
 
   it('enables Confirm for a valid stake amount and launches the confirm modal', () => {
@@ -427,12 +469,13 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(10n * WAD);
   });
 
-  it('shows the est. annual rewards from the selected farm rate', () => {
+  it('shows the est. annual rewards from the selected farm rate, in USD', () => {
     renderTakeover();
 
-    typeStakeAmount('100');
-    // 100 SKY × 1.50% = 1.5 SKY.
-    expect(screen.getByTestId('stake-takeover-est-rewards').textContent).toContain('1.5');
+    typeStakeAmount('1000');
+    // 1,000 SKY × 1.50% = 15 SKY-equivalent of value, at $0.05/SKY = $0.75. The
+    // BA Labs rate is a VALUE APR, so the projection is never a token count.
+    expect(screen.getByTestId('stake-takeover-est-rewards').textContent).toContain('$0.75');
   });
 
   it('borrow card: toggle expands, amount reaches the seam, risk pill and slider render', () => {

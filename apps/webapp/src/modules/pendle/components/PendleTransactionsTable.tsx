@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { mainnet } from 'wagmi/chains';
 import { usePendleMarketHistory, PendleHistoryAction, type PendleMarketConfig } from '@/hooks';
 import { formatNumber, getEtherscanLink, formatAddress } from '@/utils';
@@ -45,7 +46,13 @@ const actionCell = (row: PendleTxRow, sublabel?: string) => (
 );
 
 const amountCell = (row: PendleTxRow) => (
-  <CellAmount amount={`${row.amount} ${row.marketName}`} usd={row.usd} />
+  <CellAmount
+    icon={
+      <TokenIcon token={{ symbol: row.marketName }} width={12} showChainIcon={false} className="h-3 w-3" />
+    }
+    amount={`${row.amount} ${row.marketName}`}
+    usd={row.usd}
+  />
 );
 
 const COLUMNS: ProductTransactionColumn<PendleTxRow>[] = [
@@ -99,7 +106,7 @@ export function PendleTransactionsTable({ market }: { market: PendleMarketConfig
     return history.map(tx => ({
       id: tx.id,
       action: tx.action,
-      amount: formatNumber(tx.ptAmount, { compact: true }),
+      amount: formatNumber(tx.ptAmount, { maxDecimals: 2 }),
       usd: `$${formatNumber(Math.abs(tx.valueUsd), { maxDecimals: 2 })}`,
       // Amounts are PT-denominated; `market.name` is the product display name
       // ("Fixed Yield"), so derive the ticker from the underlying.

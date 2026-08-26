@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { formatAddress, formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 function AmountBlock({ label, amount, symbol }: { label: React.ReactNode; amount: bigint; symbol: string }) {
@@ -21,48 +21,27 @@ function AmountBlock({ label, amount, symbol }: { label: React.ReactNode; amount
 }
 
 /**
- * Confirm-modal review body (hi-fi 486:33412): stake / borrow amount heroes
- * with token chips. The step list, batch toggle, and wallet states are all
- * rendered by the shared TransactionModal. The reward row echoes the picker
- * card's selection; a farm whose reward token can't be named yet (outside the
- * address books, on-chain symbol unresolved) renders its shortened address —
- * the row must never hide or mislabel a selectFarm leg the multicall carries.
+ * Open-flow review heroes (hi-fi 486:33412): stake / borrow amount heroes with
+ * token chips. The step list, batch toggle and wallet states are all rendered
+ * by the shared TransactionModal.
+ *
+ * The selected farm used to ride along here as a lone "Reward" chip. It is now
+ * a `Reward` cell in `StakeConfirmGrid`, beside the delegate, the rates and
+ * the transaction's Network / Network fee — so this component is the heroes
+ * only, and doubles as the compact wallet-screen summary.
  */
 export function StakeTakeoverConfirmSummary({
   skyToLock,
-  usdsToBorrow,
-  rewardSymbol,
-  rewardContract
+  usdsToBorrow
 }: {
   skyToLock: bigint;
   usdsToBorrow: bigint;
-  rewardSymbol?: string;
-  /** The selected farm — the row's shortened-address fallback when the symbol is unknown. */
-  rewardContract?: `0x${string}`;
 }) {
   return (
     <div data-testid="stake-takeover-confirm-summary" className="flex flex-col gap-5">
       <AmountBlock label={<Trans>Stake amount</Trans>} amount={skyToLock} symbol="SKY" />
       {usdsToBorrow > 0n && (
         <AmountBlock label={<Trans>Borrow amount</Trans>} amount={usdsToBorrow} symbol="USDS" />
-      )}
-      {(rewardSymbol || rewardContract) && (
-        <div data-testid="stake-takeover-confirm-reward" className="flex items-center justify-between gap-4">
-          <span className="text-fgSecondary text-sm">
-            <Trans>Reward</Trans>
-          </span>
-          <span className="bg-surfaceAlt text-text font-circle flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
-            {rewardSymbol && (
-              <TokenIcon
-                token={{ symbol: rewardSymbol }}
-                width={14}
-                className="h-3.5 w-3.5"
-                showChainIcon={false}
-              />
-            )}
-            {rewardSymbol ?? formatAddress(rewardContract!, 6, 4)}
-          </span>
-        </div>
       )}
     </div>
   );

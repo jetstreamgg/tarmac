@@ -172,7 +172,8 @@ export function ProductSupplyCard({
   /** Omitted by /stake, whose comp (1036:208779) carries no blurb. */
   description?: ReactNode;
   stats: ReactNode;
-  cta: ReactNode;
+  /** Omitted by cards with nothing to offer — a matured market's closed state. */
+  cta?: ReactNode;
   className?: string;
   /**
    * Opt-in only — every other product's card sizes to its own content, which
