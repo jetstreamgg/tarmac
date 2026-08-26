@@ -286,19 +286,19 @@ Bundled transaction: Active`
     id: 'vault-rates',
     title: 'Vault Rates',
     tooltip:
-      "The rates shown reflect the range of variable rates currently offered across the vaults available here, from lowest to highest. These vaults come from different sources: some are curated by Sky on third-party lending protocols such as Morpho, while others are first-party vaults managed by Sky. Each vault's rate is variable and depends on that specific vault—its underlying strategy, the market conditions and supply-and-demand dynamics of the lending markets or products it uses, and its risk profile. Sky.money does not control or guarantee vault performance. The rates shown are estimated annual rates, updated using data from the relevant protocols, for informational purposes only, and do not guarantee future results."
+      "The rates shown reflect the range of variable rates currently offered across the vaults available here, from lowest to highest. These vaults come from different sources: some are curated by Sky on third-party lending protocols such as Morpho, while others are first-party vaults managed by Sky. Each vault's rate is variable and depends on that specific vault - its underlying strategy, the market conditions and supply-and-demand dynamics of the lending markets or products it uses, and its risk profile. Sky.money does not control or guarantee vault performance. The rates shown are estimated annual rates, updated using data from the relevant protocols, for informational purposes only, and do not guarantee future results."
   },
   {
     id: 'susdt-vault-rate',
     title: 'sUSDT Vault Rate',
     tooltip:
-      'The Tether Savings (sUSDT) Vault rate is variable and set by Sky. Sky sets the sUSDT savings rate against three inputs: profit-and-loss sustainability across the full deposit base, depositor composition, and on-chain borrow demand—adjusting the rate to reflect what deployment yields can support. The rate shown is an estimated annual rate provided for informational purposes only and does not guarantee future results. Sky.money does not control or guarantee vault performance.'
+      'The Tether Savings (sUSDT) Vault rate is variable and set by Sky. Sky sets the sUSDT savings rate against three inputs: profit-and-loss sustainability across the full deposit base, depositor composition, and on-chain borrow demand - adjusting the rate to reflect what deployment yields can support. The rate shown is an estimated annual rate provided for informational purposes only and does not guarantee future results. Sky.money does not control or guarantee vault performance.'
   },
   {
     id: 'pt-susds',
     title: 'PT-sUSDS',
     tooltip:
-      'PT-sUSDS is a Principal Token issued by Pendle that represents the right to redeem an underlying amount of USDS via sUSDS at a specific future maturity date. It is purchased at a discount to its redemption value, and that discount is what produces the fixed APY when held to maturity. PT-sUSDS is a tradable derivative, not a stablecoin — its market price can fluctuate before maturity.'
+      'PT-sUSDS is a Principal Token issued by Pendle that represents the right to redeem an underlying amount of USDS via sUSDS at a specific future maturity date. It is purchased at a discount to its redemption value, and that discount is what produces the fixed APY when held to maturity. PT-sUSDS is a tradable derivative, not a stablecoin - its market price can fluctuate before maturity.'
   },
   {
     id: 'fixed-yield-rate',
@@ -328,7 +328,7 @@ Bundled transaction: Active`
     id: 'rewards-rate',
     title: 'Rewards Rate',
     tooltip:
-      "The Sky Token Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors: the issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance; the market price of the token rewarded; and the user's proportional supply within the total pool of assets linked to the Sky Token Rewards module. Sky.money does not control the issuance, determination, or distribution of these rewards. The STR rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results."
+      "The Sky Ecosystem Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors: the issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance; the market price of the token rewarded; and the user's proportional supply within the total pool of assets linked to the Sky Ecosystem Rewards module. Sky.money does not control the issuance, determination, or distribution of these rewards. The Sky Ecosystem Rewards rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results."
   }
 ];
 

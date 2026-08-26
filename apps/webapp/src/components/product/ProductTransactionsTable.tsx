@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { TransactionsEmpty } from '@/modules/icons';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CustomPagination } from '@/modules/ui/components/CustomPagination';
+import { TransactionCardSkeleton } from './TransactionCard';
 import { paginate } from './paginate';
 
 /**
@@ -24,12 +25,17 @@ import { paginate } from './paginate';
 
 export type ProductTransactionStatus = 'pending' | 'completed';
 
+/** Placeholder rows/cards rendered while `isLoading`. */
+const LOADING_ROWS = 4;
+
 export interface ProductTransactionColumn<T> {
   id: string;
   header: ReactNode;
   /** Width hint: `fr` weights are converted to percentages, px pass through. */
   width: string;
   cell: (row: T) => ReactNode;
+  /** Set false for icon/affordance columns (chevrons, network icons) so loading doesn't paint a text bar there. */
+  skeleton?: boolean;
 }
 
 export interface ProductTransactionsTableProps<T> {
@@ -56,6 +62,8 @@ export interface ProductTransactionsTableProps<T> {
   renderBelowRow?: (row: T) => ReactNode;
   /** Mobile card for a row; providing it swaps the table for a card list below the md tier. */
   renderCard?: (row: T) => ReactNode;
+  /** Loading stand-in matching the consumer's card shape; defaults to a 1-field-row TransactionCardSkeleton. */
+  cardSkeleton?: ReactNode;
 }
 
 // The legacy grid API declared tracks ('1.5fr', '140px'); a <table> wants
@@ -104,7 +112,8 @@ export function ProductTransactionsTable<T>({
   onRowClick,
   rowTestId,
   renderBelowRow,
-  renderCard
+  renderCard,
+  cardSkeleton = <TransactionCardSkeleton />
 }: ProductTransactionsTableProps<T>) {
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
@@ -124,16 +133,16 @@ export function ProductTransactionsTable<T>({
             surface (border-spacing-y + first/last cell radii). */}
         <div data-testid={dataTestId} className="flex w-full flex-col gap-0.5">
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
+            Array.from({ length: LOADING_ROWS }).map((_, index) => (
               <div
                 key={index}
                 className={cn(
-                  'bg-bgSecondary p-5',
+                  'overflow-hidden',
                   index === 0 && 'rounded-t-[20px]',
-                  index === 3 && 'rounded-b-[20px]'
+                  index === LOADING_ROWS - 1 && 'rounded-b-[20px]'
                 )}
               >
-                <Skeleton className="h-5 w-1/3" />
+                {cardSkeleton}
               </div>
             ))
           ) : error ? (
@@ -203,11 +212,13 @@ export function ProductTransactionsTable<T>({
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
+            Array.from({ length: LOADING_ROWS }).map((_, index) => (
               <TableRow key={index} className="pointer-events-none">
-                <TableCell colSpan={columns.length}>
-                  <Skeleton className="h-5 w-1/3" />
-                </TableCell>
+                {columns.map(column => (
+                  <TableCell key={column.id}>
+                    {column.skeleton !== false && <Skeleton className="h-5 w-2/3" />}
+                  </TableCell>
+                ))}
               </TableRow>
             ))
           ) : error ? (

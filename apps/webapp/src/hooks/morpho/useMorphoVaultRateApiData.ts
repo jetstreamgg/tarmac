@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { MORPHO_API_URL } from './constants';
-import { mainnet } from 'viem/chains';
+import { MORPHO_API_CHAIN_ID, MORPHO_API_URL } from './constants';
 
 type MorphoVaultApiResponse = {
   data: {
@@ -154,9 +153,8 @@ export function useMorphoVaultRateApiData({
 }: {
   vaultAddress?: `0x${string}`;
 }): MorphoVaultRateHook {
-  // Always use mainnet chainId since Morpho vaults are only on mainnet
   // This ensures the query is cached across network switches
-  const chainId = mainnet.id;
+  const chainId = MORPHO_API_CHAIN_ID;
 
   const {
     data,
@@ -204,7 +202,7 @@ export function useMorphoVaultMultipleRateApiData({
 }: {
   vaultAddresses: `0x${string}`[];
 }): MorphoVaultMultipleRateHook {
-  const chainId = mainnet.id;
+  const chainId = MORPHO_API_CHAIN_ID;
 
   const {
     data,

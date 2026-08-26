@@ -473,7 +473,10 @@ function TradeWidgetWrapped({
           token => token.symbol.toLowerCase() === externalWidgetState?.token?.toLowerCase()
         );
         if (amountHasChanged && newOriginToken !== undefined) {
-          const newAmount = parseUnits(externalWidgetState.amount, getTokenDecimals(newOriginToken, chainId));
+          const newAmount = parseUnits(
+            externalWidgetState.amount || '0',
+            getTokenDecimals(newOriginToken, chainId)
+          );
 
           // Only update if the amount has actually changed
           if (newAmount !== originAmount) {

@@ -198,6 +198,16 @@
      tier). Distinct from the legacy `--color-error` (--service-red #ff6d6d),
      which the pre-redesign widgets still read for validation copy. */
   --color-statusError: #f83c3b;
+  /* components/badges/bg-risk-low|medium|high (Figma Badges/Risk 5017:7512).
+     The DS split the risk pill off the components/status palette, so it needs
+     its own tokens: risk-low is Green/400→500 where status success goes
+     400→600, risk-medium is Orange/300→400 where status warning goes
+     300→600, and risk-high is Orange/600 in BOTH modes — orange, not the
+     status red the meters used to borrow. */
+  --color-riskLow: #40e3c8;
+  --color-riskMedium: #ffc044;
+  /* Theme-invariant — no light override below. */
+  --color-riskHigh: #e25310;
   --color-statusBrand: #9ca9ff;
   --color-statusBrandBg: rgba(156, 160, 229, 0.1);
   /* components/charts/bg-chart1 + bg-chart2 (Figma DS Charts/Line 5041:7043):
@@ -206,11 +216,10 @@
      charts carry no light mode. */
   --color-chart1: #757dff;
   --color-chart2: #1dd9ba;
-  /* Iconbox status rings + info dot (Figma Components/Iconbox 5017:7858).
+  /* Iconbox status rings (Figma Components/Iconbox 5017:7858).
      Figma types the rings by product — Pendle mint / Morpho blue — as raw
      hexes (no variable); promoted here under the system color each pairs
-     with. statusInfoSolid is border-system-info-primary, the info dot
-     (statusSuccessSolid above doubles as the success dot). None are overridden
+     with. statusInfoSolid is border-system-info-primary. None are overridden
      in the light scope: the product rings are raw hexes with no mode dimension,
      and border-system-info-primary is theme-invariant. */
   --color-statusSuccessRing: #8bf1ca;
@@ -893,6 +902,8 @@
     --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */
     --color-statusWarning: #dd6102; /* components/status/fg-warning */
     --color-statusError: #e51f1d; /* components/status/fg-error */
+    --color-riskLow: #02c2a1; /* components/badges/bg-risk-low */
+    --color-riskMedium: #ffaa20; /* components/badges/bg-risk-medium */
     --color-statusBrand: #4836f5; /* components/status/fg-brand */
     --color-statusBrandBg: #9ca0e54d; /* components/status/bg-brand */
 
