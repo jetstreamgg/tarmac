@@ -14,8 +14,8 @@ import {
 export type EarnFilterOption = FilterOption;
 
 const RISK_TIERS: { value: EarnRiskTier; label: ReactNode }[] = [
-  { value: 'low', label: <Trans>Low</Trans> },
-  { value: 'moderate', label: <Trans>Moderate</Trans> },
+  { value: 'low', label: <Trans>Core</Trans> },
+  { value: 'moderate', label: <Trans>Medium</Trans> },
   { value: 'advanced', label: <Trans>Advanced</Trans> }
 ];
 
