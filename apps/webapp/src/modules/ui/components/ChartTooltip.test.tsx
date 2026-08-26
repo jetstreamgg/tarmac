@@ -1,5 +1,6 @@
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useRef } from 'react';
 
 import { ChartTooltip } from './ChartTooltip';
 
@@ -73,6 +74,110 @@ describe('ChartTooltip', () => {
   it('keeps the text symbol suffix when there is no token icon', () => {
     render(<ChartTooltip {...base} symbol="USDS" />);
     expect(screen.getByText('5,774,407 USDS')).toBeTruthy();
+  });
+});
+
+// On touch there is no mouseleave, so without this a tapped tooltip outlives
+// the tap and rides the fixed portal layer away from the chart while the page
+// scrolls. Dismissal is a synthesized mouseleave on the recharts wrapper — the
+// one event recharts clears its hover store from.
+describe('ChartTooltip — dismissal', () => {
+  // Mirrors the live DOM the hook navigates: the plot box (anchorRef) hosting
+  // recharts' own wrapper div, whose React onMouseLeave recharts listens on.
+  const Harness = ({ onLeave, active = true }: { onLeave: () => void; active?: boolean }) => {
+    const anchorRef = useRef<HTMLDivElement>(null);
+    return (
+      <div ref={anchorRef} data-testid="plot">
+        <div className="recharts-wrapper" onMouseLeave={onLeave} />
+        <ChartTooltip {...base} active={active} coordinate={{ x: 10, y: 10 }} anchorRef={anchorRef} />
+      </div>
+    );
+  };
+
+  it('scrolling dismisses the hover via a wrapper mouseleave', () => {
+    const onLeave = vi.fn();
+    render(<Harness onLeave={onLeave} />);
+    fireEvent.scroll(window);
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('a press outside the plot dismisses the hover', () => {
+    const onLeave = vi.fn();
+    render(<Harness onLeave={onLeave} />);
+    fireEvent.pointerDown(document.body);
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('a press inside the plot does not dismiss (a new tap re-scrubs instead)', () => {
+    const onLeave = vi.fn();
+    render(<Harness onLeave={onLeave} />);
+    fireEvent.pointerDown(screen.getByTestId('plot'));
+    expect(onLeave).not.toHaveBeenCalled();
+  });
+
+  // Recharts keeps the content component mounted (and the last coordinate)
+  // while inactive, so resuming a hover on the same snapped point remounts the
+  // panel with identical x/y — which used to skip the follower's coordinate-
+  // keyed placement and leave the card visible at the screen's top-left.
+  it('re-places a remounted panel whose coordinate has not changed', () => {
+    const anchorRef = { current: document.createElement('div') };
+    const props = { ...base, coordinate: { x: 100, y: 50 }, anchorRef };
+    const { rerender } = render(<ChartTooltip {...props} />);
+    const before = screen.getByTestId('chart-tooltip').style.transform;
+    expect(before).toMatch(/translate/);
+    rerender(<ChartTooltip {...props} active={false} />);
+    expect(screen.queryByTestId('chart-tooltip')).toBeNull();
+    rerender(<ChartTooltip {...props} />);
+    expect(screen.getByTestId('chart-tooltip').style.transform).toBe(before);
+  });
+
+  // The diagonal-drag repro (real iPhone; also mouse scrub + arrow-key scroll
+  // on desktop): a dismissal landing in the same commit as a coordinate change
+  // used to wipe the follower's target while the panel was unmounted, so the
+  // remount on the next commit had nothing to place at — top-left card again.
+  it('re-places a remounted panel whose coordinate moved while it was hidden', () => {
+    const anchorRef = { current: document.createElement('div') };
+    const props = { ...base, anchorRef };
+    const { rerender } = render(<ChartTooltip {...props} coordinate={{ x: 100, y: 50 }} />);
+    expect(screen.getByTestId('chart-tooltip').style.transform).toMatch(/translate/);
+    rerender(<ChartTooltip {...props} active={false} coordinate={{ x: 140, y: 60 }} />);
+    rerender(<ChartTooltip {...props} coordinate={{ x: 140, y: 60 }} />);
+    expect(screen.getByTestId('chart-tooltip').style.transform).toMatch(/translate/);
+  });
+
+  // Scrubbing with vertical drift makes recharts deactivate and reactivate the
+  // tooltip per frame; unmounting the panel each time blinked the card and its
+  // token icon. While the press that started inside the plot is down, the last
+  // shown datum holds through those gaps; the lift releases it.
+  it('holds the panel through a mid-scrub deactivation, until the lift', () => {
+    const onLeave = vi.fn();
+    const { rerender } = render(<Harness onLeave={onLeave} />);
+    const panel = screen.getByTestId('chart-tooltip');
+    fireEvent.pointerDown(screen.getByTestId('plot'));
+    rerender(<Harness onLeave={onLeave} active={false} />);
+    // Same DOM node, not a remount — that identity is what keeps the icon lit.
+    expect(screen.getByTestId('chart-tooltip')).toBe(panel);
+    fireEvent.pointerUp(window);
+    expect(screen.queryByTestId('chart-tooltip')).toBeNull();
+  });
+
+  it('holds the dismissal while a press that started inside the plot scrubs', () => {
+    const onLeave = vi.fn();
+    render(<Harness onLeave={onLeave} />);
+    fireEvent.pointerDown(screen.getByTestId('plot'));
+    fireEvent.scroll(window);
+    expect(onLeave).not.toHaveBeenCalled();
+    fireEvent.pointerUp(window);
+    fireEvent.scroll(window);
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('detaches its listeners once inactive', () => {
+    const onLeave = vi.fn();
+    const { rerender } = render(<Harness onLeave={onLeave} />);
+    rerender(<Harness onLeave={onLeave} active={false} />);
+    fireEvent.scroll(window);
+    expect(onLeave).not.toHaveBeenCalled();
   });
 });
 
