@@ -207,7 +207,11 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
   const [, setSearchParams] = useAppSearchParams();
   const sessionId = useId();
 
+  // Latched by onSuccess for the close interlock below.
+  const succeededRef = useRef(false);
+
   const onSuccess = useCallback(() => {
+    succeededRef.current = true;
     invalidateStakeQueries(queryClient);
     setSearchParams(
       params => {
@@ -259,15 +263,19 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
     });
   }, [launch, sessionId, urnIndex, onSuccess]);
 
-  // Return to the details modal when the shared modal closes. Success never
-  // reaches this: it clears the flow params, unmounting this launcher first.
+  // Return to the details modal when the shared modal closes — unless the
+  // claim succeeded. Success routes away instead, but through an ASYNC router
+  // navigation (setSearchParams), while the modal now closes itself
+  // synchronously in the same callback: isModalOpen flips with this launcher
+  // still mounted, so without the latch the details modal would flash up for
+  // the frames before the navigation lands.
   const wasOpenRef = useRef(false);
   useEffect(() => {
     if (isModalOpen) {
       wasOpenRef.current = true;
       return;
     }
-    if (wasOpenRef.current) onClose();
+    if (wasOpenRef.current && !succeededRef.current) onClose();
   }, [isModalOpen, onClose]);
 
   return null;
