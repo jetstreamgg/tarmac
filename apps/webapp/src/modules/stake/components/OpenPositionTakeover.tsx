@@ -260,6 +260,12 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   // and the launch hook re-pushes it as that routing changes. A new (or
   // emptied, on reopen) position has no "before", so every cell states what the
   // transaction leaves behind.
+  // Every dep below must be a SCALAR or a memoized value: the launch hook
+  // re-pushes this body whenever its identity changes, and each push
+  // re-renders the provider — which re-renders this host. An unmemoized object
+  // in here (`useSimulatedVault` rebuilds its `data` every render) would make
+  // that a loop, which is why the grid takes the risk tier and liquidation
+  // price as scalars rather than the two vaults.
   const renderConfirmSummary = useCallback(
     ({ calls, legCount }: StakeLaunchContentContext) => (
       <div className="flex flex-col gap-8">
@@ -272,8 +278,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
           stakedAfter={debouncedSkyToLock}
           debtBefore={debouncedUsdsToBorrow}
           debtAfter={debouncedUsdsToBorrow}
-          vaultBefore={debouncedVault}
-          vaultAfter={debouncedVault}
+          riskBefore={debouncedVault?.riskLevel}
+          riskAfter={debouncedVault?.riskLevel}
+          liquidationBefore={debouncedVault?.liquidationPrice}
+          liquidationAfter={debouncedVault?.liquidationPrice}
           stabilityFee={collateralData?.stabilityFee}
           rewardFrom={rewardFrom}
           delegateFrom={effectiveDelegate}
@@ -285,7 +293,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       heroes,
       debouncedSkyToLock,
       debouncedUsdsToBorrow,
-      debouncedVault,
+      debouncedVault?.riskLevel,
+      debouncedVault?.liquidationPrice,
       collateralData?.stabilityFee,
       rewardFrom,
       effectiveDelegate

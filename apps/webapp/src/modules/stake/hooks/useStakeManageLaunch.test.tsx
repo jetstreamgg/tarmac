@@ -29,6 +29,7 @@ const h = vi.hoisted(() => ({
   capturedEnabled: undefined as boolean | undefined,
   mockExecute: vi.fn(),
   launchMock: vi.fn(),
+  updateModalContent: vi.fn(),
   skyAllowance: 0n as bigint | undefined,
   usdsAllowance: 0n as bigint | undefined
 }));
@@ -102,7 +103,7 @@ vi.mock('@/hooks/rewards/useRewardContractTokens', () => ({
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: h.launchMock,
-    updateModalContent: () => undefined,
+    updateModalContent: h.updateModalContent,
     isModalOpen: false,
     txCallbacks: {
       onMutate: () => undefined,
@@ -301,6 +302,21 @@ describe('useStakeManageLaunch — calldata parity with the F1 seam', () => {
     expect(calls[0].functionName).toBe('approve');
     expect(calls[1].functionName).toBe('multicall');
     expect(calls[1].args?.[0]).toEqual(expectedCalldata());
+  });
+
+  it('pushes the review body once, and not again on a re-render that changes nothing', () => {
+    // The push re-enters the transaction provider, which re-renders this host.
+    // If the body's identity churned per render — a fresh `calls` array, an
+    // unmemoized vault object in the caller's deps — that would loop.
+    h.updateModalContent.mockClear();
+    const memoBody = () => null;
+    const { rerender } = renderLaunch({ transactionContent: memoBody });
+    const pushesAfterMount = h.updateModalContent.mock.calls.length;
+    expect(pushesAfterMount).toBeGreaterThan(0);
+
+    rerender();
+
+    expect(h.updateModalContent.mock.calls.length).toBe(pushesAfterMount);
   });
 
   it('reports the flow leg count, which the collapsed calls do not', () => {

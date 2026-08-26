@@ -7,8 +7,7 @@ import {
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
   useSkyPrice,
-  ZERO_ADDRESS,
-  type Vault
+  ZERO_ADDRESS
 } from '@/hooks';
 import { capitalizeFirstLetter, formatAddress, formatBigInt, formatPercent, formatUsd } from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
@@ -71,9 +70,18 @@ export type StakeConfirmGridProps = {
   /** Debt before / after (wad). */
   debtBefore: bigint;
   debtAfter: bigint;
-  /** The vault as it stands, and as the staged legs leave it — risk + liquidation price. */
-  vaultBefore: Vault | undefined;
-  vaultAfter: Vault | undefined;
+  /**
+   * The vault's risk tier and liquidation price as things stand, and as the
+   * staged legs leave them. Taken as SCALARS rather than the two `Vault`
+   * objects: `useSimulatedVault` rebuilds its `data` every render, so a vault
+   * object in the caller's `useCallback` deps would give this body a new
+   * identity on every render — and the launch hook's live push would then
+   * re-enter the provider on each of its own re-renders.
+   */
+  riskBefore: RiskLevel | undefined;
+  riskAfter: RiskLevel | undefined;
+  liquidationBefore: bigint | undefined;
+  liquidationAfter: bigint | undefined;
   /** Annualized stability fee (wad ratio) — the Borrow rate cell. */
   stabilityFee: bigint | undefined;
   /** The urn's current farm, and the staged one when a switch is in play. */
@@ -108,8 +116,10 @@ export function StakeConfirmGrid({
   stakedAfter,
   debtBefore,
   debtAfter,
-  vaultBefore,
-  vaultAfter,
+  riskBefore,
+  riskAfter,
+  liquidationBefore,
+  liquidationAfter,
   stabilityFee,
   rewardFrom,
   rewardTo,
@@ -187,12 +197,12 @@ export function StakeConfirmGrid({
           borrowedBefore: formatUsds(debtBefore),
           borrowedAfter: formatUsds(debtAfter),
           borrowRate: stabilityFee !== undefined ? formatPercent(stabilityFee) : NO_VALUE,
-          riskBefore: vaultBefore?.riskLevel,
-          riskAfter: vaultAfter?.riskLevel,
-          riskLabelBefore: riskLabel(vaultBefore?.riskLevel),
-          riskLabelAfter: riskLabel(vaultAfter?.riskLevel),
-          liquidationBefore: formatOraclePrice(vaultBefore?.liquidationPrice),
-          liquidationAfter: formatOraclePrice(vaultAfter?.liquidationPrice)
+          riskBefore,
+          riskAfter,
+          riskLabelBefore: riskLabel(riskBefore),
+          riskLabelAfter: riskLabel(riskAfter),
+          liquidationBefore: formatOraclePrice(liquidationBefore),
+          liquidationAfter: formatOraclePrice(liquidationAfter)
         }
       : undefined,
     selections: selectionsShown

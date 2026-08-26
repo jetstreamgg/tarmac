@@ -321,6 +321,12 @@ export function ManagePositionTakeover({
   // what the modal shows keeps up until the transaction leaves IDLE. The
   // debounced simulation is the "after" vault — the same one the borrow card's
   // risk row reads, so the two can't disagree.
+  // Every dep below must be a SCALAR or a memoized value: the launch hook
+  // re-pushes this body whenever its identity changes, and each push
+  // re-renders the provider — which re-renders this host. An unmemoized object
+  // in here (`useSimulatedVault` rebuilds its `data` every render) would make
+  // that a loop, which is why the grid takes the risk tier and liquidation
+  // price as scalars rather than the two vaults.
   const renderConfirmSummary = useCallback(
     ({ calls, legCount }: StakeLaunchContentContext) => (
       <div className="flex flex-col gap-8">
@@ -333,8 +339,10 @@ export function ManagePositionTakeover({
           stakedAfter={newCollateralAmount > 0n ? newCollateralAmount : 0n}
           debtBefore={existingDebt}
           debtAfter={newDebtValue > 0n ? newDebtValue : 0n}
-          vaultBefore={existingVault}
-          vaultAfter={debouncedVault}
+          riskBefore={existingVault?.riskLevel}
+          riskAfter={debouncedVault?.riskLevel}
+          liquidationBefore={existingVault?.liquidationPrice}
+          liquidationAfter={debouncedVault?.liquidationPrice}
           stabilityFee={detail.stabilityFee}
           rewardFrom={rewardFrom}
           rewardTo={rewardTo}
@@ -351,8 +359,10 @@ export function ManagePositionTakeover({
       detail.stabilityFee,
       existingDebt,
       newDebtValue,
-      existingVault,
-      debouncedVault,
+      existingVault?.riskLevel,
+      existingVault?.liquidationPrice,
+      debouncedVault?.riskLevel,
+      debouncedVault?.liquidationPrice,
       rewardFrom,
       rewardTo,
       currentDelegate,
