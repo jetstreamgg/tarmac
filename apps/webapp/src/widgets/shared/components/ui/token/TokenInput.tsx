@@ -5,8 +5,9 @@ import { getTokenDecimals, Token } from '@/hooks';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/widgets/components/ui/button';
 import { cn } from '@/widgets/lib/utils';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { formatBigInt, truncateStringToFourDecimals } from '@/utils';
+import { parseAmountInput, sanitizeAmountInput } from '@/lib/amountInput';
 import { HStack } from '../layout/HStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { VStack } from '../layout/VStack';
@@ -116,27 +117,18 @@ export function TokenInput({
   const [inputValue, setInputValue] = useState<`${number}` | ''>(
     value && value !== 0n ? (formatUnits(value, decimals) as `${number}`) : ''
   );
-  const [errorInvalidFormat, setErrorInvalidFormat] = useState(false);
-  const shownError = errorInvalidFormat ? 'Invalid amount. Please enter a valid amount.' : error;
 
   const updateValue = (
     val: `${number}`,
     event?: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>
   ) => {
-    //prevent exponential notation
-    if (val.includes('e')) return;
-
-    //truncate if too many decimals
-    const parts = val.split('.');
-    if (parts.length === 2 && parts[1].length > decimals) {
-      val = (parts[0] + '.' + parts[1].substring(0, decimals)) as `${number}`;
-    }
-
-    //same as above but for formats that use commas istead of periods
-    const partsComma = val.split(',');
-    if (partsComma.length === 2 && partsComma[1].length > decimals) {
-      val = (partsComma[0] + ',' + partsComma[1].substring(0, decimals)) as `${number}`;
-    }
+    // Mask the text down to digits and at most one decimal point, the fraction
+    // capped at the token's decimals. This replaces the hand-rolled truncation
+    // and exponent guard that used to sit here, and it is also what reads a
+    // decimal *comma* as a decimal point: iOS's numeric keypad carries one
+    // decimal key labelled from the system locale, so on most of Europe a
+    // comma is the only separator a user can type (APP-518).
+    val = sanitizeAmountInput(val, decimals) as `${number}`;
 
     // Bigint multiplication (e.g. collateralValue = ink * price) is exact but
     // unbounded — a 40-digit input quietly produces 80-digit results that
@@ -146,52 +138,27 @@ export function TokenInput({
     // historical bounds.
     const DEFAULT_MAX_TOTAL_DIGITS = 38;
     const maxDigits = maxIntegerDigits ?? Math.max(DEFAULT_MAX_TOTAL_DIGITS - decimals, 1);
-    const integerPart = val.split(/[.,]/)[0];
+    const integerPart = val.split('.')[0];
     if (integerPart.length > maxDigits) {
       return; // Don't update if too many digits
     }
 
     setInputValue(val);
-
-    try {
-      // Use bigint to validate the number
-      const newValue = parseUnits(val || '0', decimals);
-
-      if (newValue < 0n) {
-        throw new Error('Invalid');
-      }
-
-      setErrorInvalidFormat(false);
-
-      onChange(newValue, event);
-    } catch (e) {
-      console.error('Error updating value: ', e);
-      setErrorInvalidFormat(true);
-      onChange(0n, event);
-      return;
-    }
+    // Masked text always parses, and `parseAmountInput` also covers the
+    // in-progress states ('' and a bare '.') that `parseUnits` chokes on.
+    onChange(parseAmountInput(val, decimals), event);
   };
 
   useEffect(() => {
     if (value === undefined) {
       setInputValue('');
-    } else {
-      try {
-        const valueDiffers = parseUnits(inputValue || '0', decimals) !== value;
-        if (valueDiffers) {
-          setInputValue(formatUnits(value, decimals) as `${number}`);
-        }
-      } catch (e) {
-        console.error('Error setting input value: ', e);
-        setErrorInvalidFormat(true);
-        onChange(0n);
-      }
+    } else if (parseAmountInput(inputValue, decimals) !== value) {
+      setInputValue(formatUnits(value, decimals) as `${number}`);
     }
   }, [value]);
 
   useEffect(() => {
-    const newValue = parseUnits(inputValue || '0', decimals);
-    const needsUpdate = value !== newValue;
+    const needsUpdate = value !== parseAmountInput(inputValue, decimals);
     if (inputValue && needsUpdate) updateValue(inputValue);
   }, [token?.decimals]);
 
@@ -334,7 +301,7 @@ export function TokenInput({
                     ) : (
                       <Input
                         ref={inputRef}
-                        className="hide-spin-button light:placeholder:text-textDimmed placeholder:text-white/30"
+                        className="light:placeholder:text-textDimmed placeholder:text-white/30"
                         value={inputValue !== '00' ? inputValue : '0'}
                         onChange={e => {
                           updateValue(e.target.value as `${number}`, e);
@@ -344,9 +311,16 @@ export function TokenInput({
                           onInput?.();
                         }}
                         disabled={disabled || inputDisabled}
-                        //prevent scrolling to change input
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        type="number"
+                        // A `type="number"` control reports anything it cannot
+                        // parse as the empty string, so a decimal comma — the
+                        // only separator iOS's keypad offers under most European
+                        // locales — never reached the handler and a fraction was
+                        // unenterable on a phone (APP-518). The field is text
+                        // now and masked in `updateValue`; `inputMode` keeps the
+                        // numeric keypad.
+                        type="text"
+                        inputMode="decimal"
+                        autoComplete="off"
                         placeholder={placeholder || 'Enter amount'}
                         rightElement={
                           <div ref={tokenSelectorRef}>
@@ -357,11 +331,9 @@ export function TokenInput({
                             />
                           </div>
                         }
-                        error={shownError}
+                        error={error}
                         errorTooltip={errorTooltip}
                         data-testid={dataTestId}
-                        step={'any'}
-                        min={0}
                       />
                     )}
                   </motion.div>

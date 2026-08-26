@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { parseAmountInput, sanitizeAmountInput } from './amountInput';
+import { normalizeDecimalSeparator, parseAmountInput, sanitizeAmountInput } from './amountInput';
 
 describe('sanitizeAmountInput', () => {
   it('strips signs (negative amounts are unrepresentable)', () => {
@@ -29,11 +29,48 @@ describe('sanitizeAmountInput', () => {
     expect(sanitizeAmountInput(' 1 ', 18)).toBe('1');
   });
 
+  it('reads a decimal comma as a decimal point (the iOS keypad key)', () => {
+    expect(sanitizeAmountInput('1,5', 18)).toBe('1.5');
+    expect(sanitizeAmountInput('0,', 18)).toBe('0.');
+    expect(sanitizeAmountInput('1,9999999', 6)).toBe('1.999999');
+  });
+
   it('preserves in-progress typing states', () => {
     expect(sanitizeAmountInput('', 18)).toBe('');
     expect(sanitizeAmountInput('.', 18)).toBe('.');
     expect(sanitizeAmountInput('1.', 18)).toBe('1.');
     expect(sanitizeAmountInput('0.0', 18)).toBe('0.0');
+  });
+});
+
+describe('normalizeDecimalSeparator', () => {
+  it('reads a lone comma as the decimal separator', () => {
+    expect(normalizeDecimalSeparator('1,5')).toBe('1.5');
+    expect(normalizeDecimalSeparator(',5')).toBe('.5');
+  });
+
+  it('drops a comma beside a dot — the dot is the point the mask already placed', () => {
+    expect(normalizeDecimalSeparator('1,234.5')).toBe('1234.5');
+    expect(normalizeDecimalSeparator('1.234,5')).toBe('1.2345');
+  });
+
+  it('never moves a decimal point already on screen (a second tap of the key)', () => {
+    // The field re-renders masked, so "1,5" comes back as "1.5" and tapping the
+    // keypad's decimal key again hands us "1.5,". Relocating the point there
+    // would silently transact 15.
+    expect(normalizeDecimalSeparator('1.5,')).toBe('1.5');
+    expect(normalizeDecimalSeparator('0.5,')).toBe('0.5');
+    expect(sanitizeAmountInput('1.5,', 18)).toBe('1.5');
+    expect(sanitizeAmountInput('0.5,', 2)).toBe('0.5');
+  });
+
+  it('treats repeated commas as grouping — a number has only one decimal mark', () => {
+    expect(normalizeDecimalSeparator('1,234,567')).toBe('1234567');
+  });
+
+  it('leaves comma-free text exactly as it is', () => {
+    expect(normalizeDecimalSeparator('1.5')).toBe('1.5');
+    expect(normalizeDecimalSeparator('')).toBe('');
   });
 });
 

@@ -5,6 +5,7 @@ import { t } from '@lingui/core/macro';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
+import { sanitizeAmountInput } from '@/lib/amountInput';
 
 /**
  * Shared slippage-settings menu (E1) — a gear trigger opening an Auto/Custom
@@ -33,7 +34,11 @@ function percentStringToDecimal(value: string): number {
 
 /** Clamp a raw percent string into [min, max]; empty/NaN normalize to ''. */
 function clampPercentString(value: string, min: number, max: number): string {
-  if (value === '') return '';
+  // A bare '.' is a decimal point with nothing after it yet — what a first tap
+  // of the keypad's decimal key produces. `Number('.')` is NaN, so clamping it
+  // would snap the field back to empty and land the next digit as a whole
+  // percent (',5' typed as 0.5% arriving as 5%).
+  if (value === '' || value === '.') return value;
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return '';
   if (numeric < min) return String(min);
@@ -100,7 +105,12 @@ export function SlippageMenu({
   const isCustom = value !== defaultValue;
 
   const handleCustomChange = (raw: string) => {
-    const clamped = clampPercentString(raw, min, max);
+    // Masked to what this field can mean — digits and one decimal point, at
+    // the two decimals it renders at. That is also what reads a decimal comma
+    // as a point, the only separator iOS's keypad offers under most European
+    // locales (APP-518), and what keeps the text a number now that the control
+    // is text rather than number.
+    const clamped = clampPercentString(sanitizeAmountInput(raw, 2), min, max);
     setRawInput(clamped);
     onChange(clamped === '' ? 0 : percentStringToDecimal(clamped));
   };
@@ -178,10 +188,11 @@ export function SlippageMenu({
                   <input
                     placeholder={decimalToPercentString(defaultValue)}
                     className="text-fgPrimary font-circle w-[52px] [appearance:textfield] bg-transparent text-right text-sm leading-4 font-medium tracking-[-0.28px] focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    type="number"
-                    step="any"
-                    min={min}
-                    max={max}
+                    // Text, not number: a number control reports anything it
+                    // cannot parse — a decimal comma included — as the empty
+                    // string, so the keystroke never reaches the handler. The
+                    // bounds are enforced by `clampPercentString` regardless.
+                    type="text"
                     inputMode="decimal"
                     value={rawInput}
                     onChange={e => handleCustomChange(e.target.value)}

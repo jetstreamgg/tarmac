@@ -4,6 +4,7 @@ import { useChainId, useConnection } from 'wagmi';
 import { useTokenBalance } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
+import { normalizeDecimalSeparator } from '@/lib/amountInput';
 import {
   getPsmConversionTokens,
   getPsmDecimalsForDirection,
@@ -94,8 +95,16 @@ export function useConvertForm() {
 
   const onInput = useCallback(
     (raw: string) => {
-      if (raw === '' || getValidatedPsmExternalAmount(raw, direction) !== undefined) {
-        setRawValue(raw);
+      // iOS's numeric keypad offers a single decimal key labelled from the
+      // system locale, so under most European locales a comma is the only
+      // separator typeable — read it as the decimal point the validator (and
+      // every `?amount=` deep link) works in (APP-518).
+      const typed = normalizeDecimalSeparator(raw);
+      // A bare '.' is that key's first tap: the validator rejects it (it is not
+      // an amount yet) but the field has to show it, or the next digit lands as
+      // a whole unit — ',5' typed as 0.5 arriving as 5. It parses to 0n below.
+      if (typed === '' || typed === '.' || getValidatedPsmExternalAmount(typed, direction) !== undefined) {
+        setRawValue(typed);
       }
     },
     [direction]

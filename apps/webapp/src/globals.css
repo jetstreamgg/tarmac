@@ -955,22 +955,6 @@
   pointer-events: none;
 }
 
-@utility hide-spin-button {
-  /* InputStyles.module.css */
-  -webkit-appearance: none;
-  -moz-appearance: textfield;
-
-  &::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-
-  &::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-}
-
 /* App page background (Figma: Backgrounds 5177:37170) ----------------------
    A viewport-fixed layer behind the shell (rendered once in Layout). Fixed
    instead of `background-attachment: fixed` because the latter is broken on
@@ -1252,6 +1236,11 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
   /* Dynamic viewport units so the box tracks the visible area under mobile
      browser toolbars rather than the largest possible one. */
   height: 100dvh;
+  /* Group stacking is not inherited from the document — the groups are
+     siblings painted in capture order — so the page's place under the navbar
+     (see the block below) has to be stated here rather than left to the z-30
+     the bar carries in the page. */
+  z-index: 0;
 }
 ::view-transition-old(page) {
   object-position: left calc(-1 * var(--vt-scroll, 0px));
@@ -1271,6 +1260,70 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
      pinned group box. */
   object-fit: none;
   mix-blend-mode: normal;
+}
+
+/* The bottom navbar has to be captured too, or the page slides over it -------
+   The page's snapshots paint in the *top layer*, above every stacking context
+   in the document, so the fixed bottom navbar — z-30, but that only ever
+   ranked it against the page's own boxes — spent the whole animation
+   *underneath* the outgoing page. That is the phone bug in APP-518: page
+   content slides across the navbar pill, and the pill looks unfrosted at the
+   same time, because the captured page is no longer painted in the document
+   and the pill's `backdrop-filter` has nothing left to sample.
+
+   Nothing in the document can be raised above a top-layer pseudo, so the fix
+   is to capture the bar as well and order the groups by hand. Naming is scoped
+   to a running `page` transition for the same reason the page's name is (a
+   name standing at rest is a backdrop root, which is what killed the glass the
+   last time — see the block above).
+
+   The sticky header needs none of this: the page group's box starts at the
+   page wrapper's own layout position, which is below the header in flow, so
+   the two never overlap (measured: group at y=88, header 0–72). Leaving it
+   uncaptured also keeps its own frost alive through the transition.
+
+   Note the capture does not restore the pill's blur *during* the animation: a
+   captured element's snapshot is painted in isolation, so its own
+   `backdrop-filter` has no backdrop either, and neither does one applied to
+   the group — both were measured. What it fixes is the layering, which is what
+   made the bar read as broken; the page now passes behind the bar, dimmed by
+   its gradient, instead of over it. */
+@supports selector(:active-view-transition-type(page)) {
+  :root:active-view-transition-type(page) .vt-shell-navbar {
+    view-transition-name: shell-navbar;
+  }
+}
+::view-transition-group(shell-navbar) {
+  z-index: 1;
+  /* The bar holds the same box on both routes, so there is nothing for the
+     UA's group animation to interpolate. */
+  animation: none;
+}
+/* Only the *new* image is kept, and it is the live one: it tracks the real
+   element frame by frame, so motion inside the bar carries on through the
+   transition — the active pill glides to the tab that was just tapped at
+   exactly this moment, and cross-fading it against a frozen picture of where
+   it started would ghost it. */
+::view-transition-old(shell-navbar) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(shell-navbar) {
+  animation: none;
+  opacity: 1;
+}
+/* A snapshot has no backdrop, so for the length of the transition the pill's
+   glass gets a stand-in for what its blur was sampling. The bar's own gradient
+   already carries the page background up behind the pill, so the same tint
+   over that flat colour lands within a hair of the frosted rest state —
+   whereas the bare tint reads as the glass simply switching off, with the page
+   sliding past sharp and unblurred straight through it.
+
+   background-color under background-image, so the tint composites over the
+   colour exactly as the glass composites over its backdrop. */
+:root:active-view-transition-type(page) .vt-navbar-glass {
+  background-color: var(--color-pageBackground);
+  background-image: linear-gradient(var(--color-glassSurface), var(--color-glassSurface));
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -65,6 +65,35 @@ describe('SlippageMenu', () => {
     expect(onChange).toHaveBeenLastCalledWith(0.005);
   });
 
+  it('keeps a leading decimal separator on screen so the next digit is a fraction', () => {
+    renderMenu();
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    const input = screen.getByTestId('slippage-menu-input');
+    // The keypad's decimal key under a European locale — ",5" for 0.5%.
+    fireEvent.change(input, { target: { value: ',' } });
+    expect((input as HTMLInputElement).value).toBe('.');
+
+    fireEvent.change(input, { target: { value: '.5' } });
+    expect((input as HTMLInputElement).value).toBe('.5');
+    expect(onChange).toHaveBeenLastCalledWith(0.005);
+  });
+
+  it('does not move a decimal point already typed when the key is tapped again', () => {
+    renderMenu();
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    const input = screen.getByTestId('slippage-menu-input');
+    fireEvent.change(input, { target: { value: '0,5' } });
+    expect((input as HTMLInputElement).value).toBe('0.5');
+
+    fireEvent.change(input, { target: { value: '0.5,' } });
+    expect((input as HTMLInputElement).value).toBe('0.5');
+    expect(onChange).toHaveBeenLastCalledWith(0.005);
+  });
+
   it('clamps custom input to the configured maximum', () => {
     renderMenu({ max: 50 });
     openMenu();
