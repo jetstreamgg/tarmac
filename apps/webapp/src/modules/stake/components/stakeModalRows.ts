@@ -61,7 +61,11 @@ export type StakeConfirmRowInput = {
   /** Staked SKY before / after the staged legs, formatted (e.g. "1,000.00 SKY"). */
   stakedBefore: string;
   stakedAfter: string;
-  /** Annual staking rewards on the position, in SKY. */
+  /**
+   * Annual staking rewards on the position, in USD. The BA Labs rate is a value
+   * APR, so the projection is a SKY-equivalent VALUE, not a count of any one
+   * token — and a farm switch changes which token it is actually paid in.
+   */
   estRewardsBefore: string;
   estRewardsAfter: string;
   /**
@@ -114,7 +118,7 @@ export type StakeConfirmRowInput = {
  * Ordered cells for the stake confirm grid, chunked into rows of two:
  *
  * ```
- * [ Staked      | Est. 1Y rewards   ]
+ * [ Staked      | Est. 1Y yield     ]
  * [ Borrowed    | Borrow rate       ]  ← debt only
  * [ Risk level  | Liquidation price ]  ← debt only
  * [ Reward      | Delegate          ]  ← when either is in play
@@ -157,8 +161,10 @@ export function buildStakeConfirmRows(input: StakeConfirmRowInput): StakeModalGr
 
   const cells: StakeModalCell[] = [
     cell({ label: 'Staked', token: 'SKY' }, input.stakedBefore, input.stakedAfter),
+    // No token icon: the figure is a USD value, and across a farm switch there
+    // is no single token it is paid in.
     cell(
-      { label: 'Est. 1Y rewards', token: 'SKY', loading: input.rateLoading },
+      { label: 'Est. 1Y yield (at current rate)', loading: input.rateLoading },
       input.estRewardsBefore,
       input.estRewardsAfter
     )

@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -30,7 +31,8 @@ import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
-import { useStakeManageLaunch, type StakeLaunchContentContext } from '../hooks/useStakeManageLaunch';
+import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
+import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
 import { StakeManageStakeCard } from './StakeManageStakeCard';
 import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
@@ -313,21 +315,22 @@ export function ManagePositionTakeover({
   );
   const delegateTo = delegateChanged ? state.selectedDelegate : undefined;
 
-  // The review body is built at Confirm time from the engine's own calls, so
-  // the grid can price the live network fee (see `transactionContent` on the
-  // launch hook). The debounced simulation is the "after" vault — the same one
-  // the borrow card's risk row reads, so the two can't disagree.
+  // The review body is built from the engine's own routing, so the grid can
+  // price the live network fee (see `transactionContent` on the launch hook).
+  // The launch hook re-pushes it as that routing and these figures change, so
+  // what the modal shows keeps up until the transaction leaves IDLE. The
+  // debounced simulation is the "after" vault — the same one the borrow card's
+  // risk row reads, so the two can't disagree.
   const renderConfirmSummary = useCallback(
-    ({ calls }: StakeLaunchContentContext) => (
+    ({ calls, legCount }: StakeLaunchContentContext) => (
       <div className="flex flex-col gap-8">
         {hasAmounts && heroes}
         <StakeConfirmGrid
           calls={calls}
+          legCount={legCount}
           hasPosition
           stakedBefore={existingCollateral}
           stakedAfter={newCollateralAmount > 0n ? newCollateralAmount : 0n}
-          rewardsRate={detail.rewardsRate}
-          rateLoading={detail.rateLoading}
           debtBefore={existingDebt}
           debtAfter={newDebtValue > 0n ? newDebtValue : 0n}
           vaultBefore={existingVault}
@@ -345,8 +348,6 @@ export function ManagePositionTakeover({
       heroes,
       existingCollateral,
       newCollateralAmount,
-      detail.rewardsRate,
-      detail.rateLoading,
       detail.stabilityFee,
       existingDebt,
       newDebtValue,
@@ -393,12 +394,18 @@ export function ManagePositionTakeover({
     formValid && !launchLoading ? launchError : null
   );
 
-  // Est. annual rewards delta for card 1 (M22): rate × simulated collateral.
-  const estNextSky =
-    detail.rewardsRate !== null && state.stakeEnabled && state.skyAmount > 0n
-      ? ((newCollateralAmount > 0n ? newCollateralAmount : 0n) *
-          BigInt(Math.round(detail.rewardsRate * 1_000_000_000))) /
-        1_000_000_000n
+  // Est. annual rewards for card 1 (M22): rate × collateral, in USD. The BA
+  // Labs rate is a VALUE APR, so the projection is a SKY-equivalent value
+  // rather than a count of any one token — the treatment the position details
+  // modal and the confirm grid already use.
+  const estRewardsUsd = (staked: bigint) =>
+    detail.rewardsRate !== null && detail.skyPriceUsd !== null
+      ? Number(formatUnits(staked, 18)) * detail.rewardsRate * detail.skyPriceUsd
+      : null;
+  const estCurrentUsd = estRewardsUsd(existingCollateral);
+  const estNextUsd =
+    state.stakeEnabled && state.skyAmount > 0n
+      ? estRewardsUsd(newCollateralAmount > 0n ? newCollateralAmount : 0n)
       : null;
 
   return (
@@ -558,8 +565,8 @@ export function ManagePositionTakeover({
         stakedAmountLoading={detail.vaultLoading}
         rewardsRate={detail.rewardsRate}
         rateLoading={detail.rateLoading}
-        estCurrentSky={detail.estAnnualRewardsSky}
-        estNextSky={estNextSky}
+        estCurrentUsd={estCurrentUsd}
+        estNextUsd={estNextUsd}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
         minStakeToBorrowLoading={liveSimLoading}
         error={stakeError}

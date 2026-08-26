@@ -6,8 +6,8 @@ const BASE: StakeConfirmRowInput = {
   hasPosition: true,
   stakedBefore: '1,000.00 SKY',
   stakedAfter: '1,500.00 SKY',
-  estRewardsBefore: '56.90 SKY',
-  estRewardsAfter: '85.35 SKY',
+  estRewardsBefore: '$2.85',
+  estRewardsAfter: '$4.27',
   rewardRateBefore: '5.69%',
   rewardRateAfter: '5.69%',
   network: 'Ethereum',
@@ -48,7 +48,7 @@ describe('buildStakeConfirmRows', () => {
     const rows = buildStakeConfirmRows(BASE);
 
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
-      ['Staked', 'Est. 1Y rewards'],
+      ['Staked', 'Est. 1Y yield (at current rate)'],
       ['Reward rate', 'Network'],
       ['Network fee']
     ]);
@@ -69,7 +69,7 @@ describe('buildStakeConfirmRows', () => {
     const rows = buildStakeConfirmRows({ ...BASE, borrow: BORROW });
 
     expect(rows.map(row => row.map(cell => cell.label))).toEqual([
-      ['Staked', 'Est. 1Y rewards'],
+      ['Staked', 'Est. 1Y yield (at current rate)'],
       ['Borrowed', 'Borrow rate'],
       ['Risk level', 'Liquidation price'],
       ['Reward rate', 'Network'],
@@ -143,7 +143,7 @@ describe('buildStakeConfirmRows', () => {
     const cells = cellsByLabel({
       ...BASE,
       rewardRateAfter: '12.00%',
-      estRewardsAfter: '180,000.00 SKY',
+      estRewardsAfter: '$9,000.00',
       selections: SELECTIONS
     });
 
@@ -153,7 +153,7 @@ describe('buildStakeConfirmRows', () => {
       after: '12.00%',
       rateAccent: 'savings'
     });
-    expect(cells['Est. 1Y rewards']).toMatchObject({ kind: 'delta', after: '180,000.00 SKY' });
+    expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({ kind: 'delta', after: '$9,000.00' });
   });
 
   it('keeps the reward rate a single value when no farm switch is staged', () => {
@@ -161,12 +161,12 @@ describe('buildStakeConfirmRows', () => {
   });
 
   it('holds the rate cells on a skeleton together while a farm rate is in flight', () => {
-    // Otherwise Est. 1Y rewards shows a skeleton while Reward rate shows a dash
+    // Otherwise Est. 1Y yield shows a skeleton while Reward rate shows a dash
     // on the same screen, then both pop to a number.
     const cells = cellsByLabel({ ...BASE, rateLoading: true });
 
     expect(cells['Reward rate'].loading).toBe(true);
-    expect(cells['Est. 1Y rewards'].loading).toBe(true);
+    expect(cells['Est. 1Y yield (at current rate)'].loading).toBe(true);
   });
 
   it('promotes the after-side icon onto a collapsed single cell', () => {

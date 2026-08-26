@@ -1,15 +1,16 @@
 import { useChainId } from 'wagmi';
-import type { Call } from 'viem';
+import { formatUnits, type Call } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   RiskLevel,
   useDelegateName,
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
+  useSkyPrice,
   ZERO_ADDRESS,
   type Vault
 } from '@/hooks';
-import { capitalizeFirstLetter, formatAddress, formatBigInt, formatPercent } from '@/utils';
+import { capitalizeFirstLetter, formatAddress, formatBigInt, formatPercent, formatUsd } from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
@@ -53,17 +54,20 @@ const rewardSide = (endpoint: StakeRewardEndpoint | undefined, none: string): St
     : { label: none };
 
 export type StakeConfirmGridProps = {
-  /** The engine's calls at launch — prices the live Network fee estimate. */
+  /** The engine's calls, live — prices the Network fee estimate. */
   calls: Call[];
+  /**
+   * Legs the flow sends when bundled. Kept separate from `calls.length`, which
+   * describes the CURRENT route: with bundling off the engine hands back a
+   * single collapsed `multicall`, and inferring from that would hide the fee
+   * cell's own bundle toggle from everyone who has bundling switched off.
+   */
+  legCount: number;
   /** False on the open flow: there is no "before", so every cell shows one value. */
   hasPosition: boolean;
   /** Staked SKY before / after the staged legs (wad). */
   stakedBefore: bigint;
   stakedAfter: bigint;
-  /** The urn farm's live staking-reward rate as a decimal (0.0569 = 5.69%), null when unresolved. */
-  rewardsRate: number | null;
-  /** The farm-rate read is in flight — the rate + est-rewards cells hold a skeleton. */
-  rateLoading?: boolean;
   /** Debt before / after (wad). */
   debtBefore: bigint;
   debtAfter: bigint;
@@ -90,16 +94,18 @@ export type StakeConfirmGridProps = {
  *
  * It renders INSIDE the transaction modal (the launch hooks carry it as
  * `transactionContent`), so its own hooks run there: the fee estimate keeps
- * refreshing on the review screen, and the delegate name resolves late without
- * the takeover having to wait for it.
+ * refreshing on the review screen, and the rates, prices and delegate names
+ * resolve late without the takeover having to wait for them. What it is handed
+ * as props — the engine's routing and the position's figures — the launch hook
+ * re-pushes as those change (`useStakeConfirmContent`), until the transaction
+ * leaves IDLE.
  */
 export function StakeConfirmGrid({
   calls,
+  legCount,
   hasPosition,
   stakedBefore,
   stakedAfter,
-  rewardsRate,
-  rateLoading,
   debtBefore,
   debtAfter,
   vaultBefore,
@@ -112,33 +118,41 @@ export function StakeConfirmGrid({
   showSelections
 }: StakeConfirmGridProps) {
   const chainId = useChainId();
-  // Derived here rather than taken as a prop: the fee cell renders the bundle
-  // TOGGLE, so the routing it prices has to track the switch the user is
-  // looking at. `calls` can stay the press-time snapshot — the calldata is
-  // fixed by then — but which way it is sent is still the user's to change.
-  const shouldUseBatch = useShouldUseBatch(calls.length > 1);
-  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch });
+  // Derived from the flow's leg count, not from `calls`: the fee cell renders
+  // the bundle TOGGLE, and the calls describe whichever route that toggle is
+  // currently on.
+  const shouldUseBatch = useShouldUseBatch(legCount > 1);
+  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch, legCount });
   const networkName = useNetworkName(chainId, NO_VALUE);
 
   const { data: delegateFromName } = useDelegateName(delegateFrom);
   const { data: delegateToName } = useDelegateName(delegateTo);
 
-  // The staged farm's own rate. Without it the review would draw
-  // `Reward: SKY → USDS` beside the OLD farm's rate and project the
-  // after-position at it — a figure that position will never earn.
+  // Both farms' rates are resolved here rather than handed in: the modal
+  // outlives the press, and a rate still in flight at Confirm-press would
+  // otherwise be frozen on its skeleton for the modal's whole lifetime. The
+  // staged farm needs its own read regardless — without it the review would
+  // draw `Reward: SKY → USDS` beside the OLD farm's rate and project the
+  // after-position at it, a figure that position will never earn.
+  const currentRate = useFarmRate(rewardFrom?.address);
   const stagedRate = useFarmRate(rewardTo?.address);
-  const rateAfter = rewardTo ? stagedRate.rate : rewardsRate;
-  const ratesLoading = rateLoading || stagedRate.isLoading;
+  const rateBefore = currentRate.rate;
+  const rateAfter = rewardTo ? stagedRate.rate : rateBefore;
 
-  // Annual staking rewards: rate × staked SKY, the same 1e9-scaled math F4 and
-  // the manage stake card use, so the review can't disagree with the card. The
-  // rate is passed in because the two sides can be different farms.
+  const { priceString: skyPriceString, isLoading: priceLoading } = useSkyPrice();
+  const skyPriceUsd = skyPriceString ? parseFloat(skyPriceString) : null;
+  const ratesLoading = currentRate.isLoading || stagedRate.isLoading || priceLoading;
+
+  // Annual staking rewards, in USD. The BA Labs rate is a VALUE APR, so
+  // `staked × rate` is a SKY-equivalent value rather than a count of any one
+  // token — and this is the first surface that shows it across a farm switch,
+  // where labelling it in SKY beside `Reward: SKY → USDS` states the wrong
+  // token outright. USD is what the position details modal and the rewards
+  // module's own review already quote.
   const estRewards = (staked: bigint, rate: number | null) =>
-    rate !== null && staked > 0n
-      ? formatSky((staked * BigInt(Math.round(rate * 1_000_000_000))) / 1_000_000_000n)
-      : rate !== null
-        ? formatSky(0n)
-        : NO_VALUE;
+    rate !== null && skyPriceUsd !== null
+      ? formatUsd(Number(formatUnits(staked, 18)) * rate * skyPriceUsd)
+      : NO_VALUE;
 
   // The borrow group collapses whole on a position that neither owes nor is
   // taking on debt — four cells, so the pairing stays aligned either way.
@@ -163,9 +177,9 @@ export function StakeConfirmGrid({
     hasPosition,
     stakedBefore: formatSky(stakedBefore),
     stakedAfter: formatSky(stakedAfter),
-    estRewardsBefore: estRewards(stakedBefore, rewardsRate),
+    estRewardsBefore: estRewards(stakedBefore, rateBefore),
     estRewardsAfter: estRewards(stakedAfter, rateAfter),
-    rewardRateBefore: formatRate(rewardsRate),
+    rewardRateBefore: formatRate(rateBefore),
     rewardRateAfter: formatRate(rateAfter),
     rateLoading: ratesLoading,
     borrow: hasBorrow

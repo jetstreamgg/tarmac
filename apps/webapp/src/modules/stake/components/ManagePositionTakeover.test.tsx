@@ -266,16 +266,17 @@ const renderSheet = (init: StakeManageFlowInit = {}) => {
 const confirmButton = () => screen.getByTestId('stake-manage-confirm') as HTMLButtonElement;
 
 /**
- * The review body is a render function now — the launch hook feeds it the
- * engine's own calls so the grid can price the network fee. Nothing here
- * simulates, so an empty routing is enough.
+ * The review body is a render function — the launch hook feeds it the engine's
+ * live routing so the grid can price the network fee. Nothing here simulates,
+ * so an empty routing is enough.
  */
 const renderConfirmSummary = (params: Record<string, unknown> | undefined = h.launchParams) => {
   const build = params?.transactionContent as (context: {
     calls: unknown[];
     isBatch: boolean;
+    legCount: number;
   }) => React.ReactNode;
-  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false })}</I18nProvider>);
+  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false, legCount: 1 })}</I18nProvider>);
 };
 
 describe('ManagePositionTakeover', () => {
@@ -364,6 +365,21 @@ describe('ManagePositionTakeover', () => {
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '500' } });
     expect(h.launchParams?.skyToFree).toBe(500n * WAD);
     expect(h.launchParams?.skyToLock).toBe(0n);
+  });
+
+  it('quotes est. annual rewards in USD, and deltas them on a staged stake', () => {
+    // The BA Labs rate is a VALUE APR, so `staked × rate` is a SKY-equivalent
+    // value, not a count of the reward token — which a farm switch changes
+    // anyway. USD is what the position details modal and the confirm grid show.
+    renderSheet({ stakeCard: 'stake' });
+
+    // 3,000,000 SKY × 1.50% × $0.05.
+    const stat = screen.getByTestId('stake-manage-est-rewards');
+    expect(stat.textContent).toContain('$2,250.00');
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
+    // 4,000,000 SKY at the same rate and price.
+    expect(screen.getByTestId('stake-manage-est-rewards').textContent).toContain('$3,000.00');
   });
 
   it('flags a withdraw above the staked amount', () => {

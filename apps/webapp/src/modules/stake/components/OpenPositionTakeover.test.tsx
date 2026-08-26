@@ -162,6 +162,8 @@ vi.mock('@/hooks', async importOriginal => {
     }),
     useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null }),
     useHighestRateFromChartData: () => ({ rate: '0.015' }),
+    // $0.05/SKY — the est. annual rewards stat is quoted in USD.
+    useSkyPrice: () => ({ data: 5n * 10n ** 16n, priceString: '0.05', isLoading: false, error: null }),
     useStakeUserDelegates: () => ({
       data: [
         { id: DELEGATE_A, ownerAddress: DELEGATE_A, totalDelegated: 3122232n * WAD, metadata: null },
@@ -249,16 +251,17 @@ const typeStakeAmount = (value: string) =>
   fireEvent.change(screen.getByTestId('stake-takeover-stake-amount'), { target: { value } });
 
 /**
- * The review body is a render function now — the launch hook feeds it the
- * engine's own calls so the grid can price the network fee. Nothing here
- * simulates, so an empty routing is enough.
+ * The review body is a render function — the launch hook feeds it the engine's
+ * live routing so the grid can price the network fee. Nothing here simulates,
+ * so an empty routing is enough.
  */
 const renderConfirmSummary = (params: Record<string, unknown> | undefined = h.launchParams) => {
   const build = params?.transactionContent as (context: {
     calls: unknown[];
     isBatch: boolean;
+    legCount: number;
   }) => React.ReactNode;
-  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false })}</I18nProvider>);
+  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false, legCount: 1 })}</I18nProvider>);
 };
 
 describe('OpenPositionTakeover', () => {
@@ -466,12 +469,13 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(10n * WAD);
   });
 
-  it('shows the est. annual rewards from the selected farm rate', () => {
+  it('shows the est. annual rewards from the selected farm rate, in USD', () => {
     renderTakeover();
 
-    typeStakeAmount('100');
-    // 100 SKY × 1.50% = 1.5 SKY.
-    expect(screen.getByTestId('stake-takeover-est-rewards').textContent).toContain('1.5');
+    typeStakeAmount('1000');
+    // 1,000 SKY × 1.50% = 15 SKY-equivalent of value, at $0.05/SKY = $0.75. The
+    // BA Labs rate is a VALUE APR, so the projection is never a token count.
+    expect(screen.getByTestId('stake-takeover-est-rewards').textContent).toContain('$0.75');
   });
 
   it('borrow card: toggle expands, amount reaches the seam, risk pill and slider render', () => {
