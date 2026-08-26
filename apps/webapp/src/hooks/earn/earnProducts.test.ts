@@ -72,7 +72,7 @@ describe('buildEarnProducts', () => {
   });
 
   // Tiers per the APP-396 risk sheet (Kacper's initial draft, 2026-07-20).
-  it('assigns per-profile risk tiers from the sheet: savings and rewards Conservative, Risk Capital vaults and stUSDS Aggressive', () => {
+  it('assigns per-profile risk tiers from the sheet: savings and rewards Core, Risk Capital vaults and stUSDS Advanced', () => {
     const byId = Object.fromEntries(products.map(p => [p.id, p]));
     expect(byId['savings'].riskProfile).toBe('savings');
     expect(byId['savings'].risk).toBe('low');
@@ -84,7 +84,7 @@ describe('buildEarnProducts', () => {
       expect(product.riskProfile).toBe('fixed');
       expect(product.risk).toBe('moderate');
     }
-    // Vaults split by profile: Flagship/USDT Savings Moderate, Risk Capital Aggressive.
+    // Vaults split by profile: Flagship/USDT Savings Medium, Risk Capital Advanced.
     for (const product of products.filter(p => p.kind === 'vault')) {
       expect(product.risk).toBe(product.riskProfile === 'vault-risk-capital' ? 'advanced' : 'moderate');
     }

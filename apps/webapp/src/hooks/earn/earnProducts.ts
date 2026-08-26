@@ -14,9 +14,9 @@ import type { EarnProductDescriptor, EarnRiskProfileId, EarnRiskTier } from './t
  * the marketplace registry below and every standalone risk surface (product
  * detail pages, portfolio cards) read from here, so the list and the detail
  * page can never diverge for the same product. Assignments come from the risk
- * sheet Kacper posted on APP-396 (initial draft, 2026-07-20): Conservative →
- * savings + every rewards farm, Moderate → USDS Flagship / USDT Savings /
- * Pendle fixed yield, Aggressive → stUSDS + the Risk Capital vaults.
+ * sheet Kacper posted on APP-396 (initial draft, 2026-07-20): Core →
+ * savings + every rewards farm, Medium → USDS Flagship / USDT Savings /
+ * Pendle fixed yield, Advanced → stUSDS + the Risk Capital vaults.
  * 'vault-tether-savings' (flag-gated sUSDT) and the generic 'rewards' fallback
  * are not in the sheet — placeholder tiers pending a product assessment.
  */

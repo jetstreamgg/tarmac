@@ -121,7 +121,7 @@ function AssetRow({ asset, onStartEarning }: { asset: WalletDrawerAsset; onStart
               onClick={onStartEarning}
               data-testid={`wallet-drawer-earn-${asset.symbol.toLowerCase()}`}
             >
-              <Trans>Sky Savings Rate</Trans>
+              <Trans>Put {asset.symbol} to work</Trans>
             </Button>
           </div>
         </div>
