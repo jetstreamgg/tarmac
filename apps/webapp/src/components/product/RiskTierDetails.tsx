@@ -42,9 +42,9 @@ const RISK_TIER_DETAILS: Record<
   EarnRiskTier,
   { title: ReactNode; litSegments: number; segmentClass: string }
 > = {
-  low: { title: <Trans>Conservative</Trans>, litSegments: 1, segmentClass: 'bg-statusSuccess' },
-  moderate: { title: <Trans>Moderate</Trans>, litSegments: 2, segmentClass: 'bg-statusWarning' },
-  advanced: { title: <Trans>Aggressive</Trans>, litSegments: 3, segmentClass: 'bg-statusError' }
+  low: { title: <Trans>Conservative</Trans>, litSegments: 1, segmentClass: 'bg-riskLow' },
+  moderate: { title: <Trans>Moderate</Trans>, litSegments: 2, segmentClass: 'bg-riskMedium' },
+  advanced: { title: <Trans>Aggressive</Trans>, litSegments: 3, segmentClass: 'bg-riskHigh' }
 };
 
 /**
