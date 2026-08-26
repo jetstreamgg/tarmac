@@ -127,10 +127,9 @@ test.describe('app loader and portfolio decision cache', () => {
 
     // The connected page still settles and rewrites this wallet's entry.
     await expect
-      .poll(
-        async () => Math.max(0, ...(await readDecisions(isolatedPage)).map(d => d.updatedAt as number)),
-        { timeout: 30_000 }
-      )
+      .poll(async () => Math.max(0, ...(await readDecisions(isolatedPage)).map(d => d.updatedAt as number)), {
+        timeout: 30_000
+      })
       .toBeGreaterThan(seededAt);
   });
 

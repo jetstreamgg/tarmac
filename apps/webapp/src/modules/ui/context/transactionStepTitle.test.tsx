@@ -87,6 +87,7 @@ describe('TransactionModal — per-step title', () => {
   it('shows the first-screen title on a review screen and the transaction-screen title after advancing', () => {
     renderModal(cb => ({
       title: 'Review supply',
+      usdValue: 0,
       transactionTitle: 'Confirm in the wallet',
       transactionContent: <div data-testid="review-body">review</div>,
       confirmLabel: 'Supply',
@@ -108,6 +109,7 @@ describe('TransactionModal — per-step title', () => {
   it('shows the entry title on an entry screen and the transaction-screen title after confirm', () => {
     renderModal(cb => ({
       title: 'Supply to Sky Savings',
+      usdValue: 0,
       transactionTitle: 'Confirm in the wallet',
       entry: {
         content: <div data-testid="entry-fields">fields</div>,
@@ -129,6 +131,7 @@ describe('TransactionModal — per-step title', () => {
   it('keeps a single title across both screens when transactionTitle is omitted (existing consumers unchanged)', () => {
     renderModal(cb => ({
       title: 'Upgrade',
+      usdValue: 0,
       transactionContent: <div data-testid="review-body">review</div>,
       confirmLabel: 'Confirm',
       onConfirm: () => cb.onMutate()

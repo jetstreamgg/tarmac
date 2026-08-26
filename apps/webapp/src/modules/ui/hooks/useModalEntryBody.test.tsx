@@ -23,7 +23,8 @@ function Host({
   confirmLabel,
   confirmAction,
   errorMessage,
-  analytics
+  analytics,
+  usdValue
 }: {
   steps?: TransactionStep[];
   transactionContent?: ReactNode;
@@ -31,6 +32,7 @@ function Host({
   confirmAction?: () => void;
   errorMessage?: string;
   analytics?: TransactionAnalytics;
+  usdValue?: number;
 }) {
   const renderInSlot = useModalEntryBody({
     sessionId: 's1',
@@ -41,7 +43,8 @@ function Host({
     errorMessage,
     steps,
     transactionContent,
-    analytics
+    analytics,
+    usdValue
   });
   return <>{renderInSlot(<div data-testid="body" />)}</>;
 }
@@ -178,5 +181,24 @@ describe('useModalEntryBody — analytics live merge', () => {
   it('omits the analytics key entirely when not supplied — never clobbers a launch-time blob', () => {
     render(<Host />);
     expect('analytics' in h.updateModalContent.mock.calls[0][1]).toBe(false);
+  });
+});
+
+describe('useModalEntryBody — usdValue live channel (APP-517)', () => {
+  beforeEach(() => {
+    h.txStatus = TxStatus.IDLE;
+    h.updateModalContent.mockClear();
+  });
+
+  it('pushes the live valuation while IDLE', () => {
+    render(<Host usdValue={300_000} />);
+    expect(h.updateModalContent).toHaveBeenCalledWith('s1', expect.objectContaining({ usdValue: 300_000 }));
+  });
+
+  it('always pushes the key — an explicit `undefined` (unknown) reaches the config rather than leaving a stale launch value', () => {
+    render(<Host usdValue={undefined} />);
+    const partial = h.updateModalContent.mock.calls[0][1];
+    expect('usdValue' in partial).toBe(true);
+    expect(partial.usdValue).toBeUndefined();
   });
 });

@@ -1,5 +1,8 @@
 import { expect, type Page } from '@playwright/test';
-import { connectMockWalletAndAcceptTerms } from './connectMockWalletAndAcceptTerms';
+import {
+  connectMockWalletAndAcceptTerms,
+  type ConnectMockWalletOptions
+} from './connectMockWalletAndAcceptTerms';
 
 /**
  * connectMockWalletAndAcceptTerms with verification: retries until the wallet
@@ -7,7 +10,7 @@ import { connectMockWalletAndAcceptTerms } from './connectMockWalletAndAcceptTer
  * button without checking the outcome — a click that lands before wagmi is
  * ready silently no-ops and leaves the run disconnected.
  */
-export const connectAndVerify = async (page: Page, options?: { batch?: boolean }) => {
+export const connectAndVerify = async (page: Page, options?: ConnectMockWalletOptions) => {
   const chip = page.getByTestId('wallet-chip');
   await expect(async () => {
     const text = await chip.innerText().catch(() => '');

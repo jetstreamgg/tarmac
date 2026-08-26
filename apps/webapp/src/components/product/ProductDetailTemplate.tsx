@@ -116,7 +116,7 @@ function ProductTitleIcon({ token }: { token: ProductDetailToken }) {
   return (
     <div className="shrink-0" data-testid="product-detail-token-icon">
       {/* M6.3 mobile header ring is 56px (486:20720); 64 from md. */}
-      <IconboxStatus size="l" type={token.status} dot={!!token.status} className="size-14 md:size-16">
+      <IconboxStatus size="l" type={token.status} className="size-14 md:size-16">
         {token.icon}
       </IconboxStatus>
     </div>
