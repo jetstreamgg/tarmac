@@ -33,7 +33,10 @@ export const RISK_TIER_BY_PROFILE: Record<EarnRiskProfileId, EarnRiskTier> = {
   'vault-risk-capital': 'advanced',
   fixed: 'moderate',
   stusds: 'advanced',
-  stake: 'advanced'
+  // The sheet says Advanced, but staking adds no market exposure over holding
+  // SKY (its only added risks are contract risk and the exit fee); tier under
+  // review with product.
+  stake: 'low'
 };
 
 /**
