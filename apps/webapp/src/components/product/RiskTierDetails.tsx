@@ -36,15 +36,15 @@ export const RISK_LEARN_MORE_URL = 'https://docs.sky.money/user-risks';
 
 /**
  * The severity presentation per tier (1036:201215): display name + scale.
- * The comp frame reads "Aggresive" — corrected spelling here.
+ * Names follow the product risk sheet: Core / Medium / Advanced.
  */
 const RISK_TIER_DETAILS: Record<
   EarnRiskTier,
   { title: ReactNode; litSegments: number; segmentClass: string }
 > = {
-  low: { title: <Trans>Conservative</Trans>, litSegments: 1, segmentClass: 'bg-statusSuccess' },
-  moderate: { title: <Trans>Moderate</Trans>, litSegments: 2, segmentClass: 'bg-statusWarning' },
-  advanced: { title: <Trans>Aggressive</Trans>, litSegments: 3, segmentClass: 'bg-statusError' }
+  low: { title: <Trans>Core</Trans>, litSegments: 1, segmentClass: 'bg-riskLow' },
+  moderate: { title: <Trans>Medium</Trans>, litSegments: 2, segmentClass: 'bg-riskMedium' },
+  advanced: { title: <Trans>Advanced</Trans>, litSegments: 3, segmentClass: 'bg-riskHigh' }
 };
 
 /**

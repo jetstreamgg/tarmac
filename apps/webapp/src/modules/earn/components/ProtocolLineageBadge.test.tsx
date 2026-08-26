@@ -21,7 +21,7 @@ const renderBadge = () =>
   );
 
 const LINEAGE =
-  /Sky Protocol is MakerDAO's continuation — running decentralized stablecoin infrastructure since 2017\./;
+  /Sky Protocol is MakerDAO's continuation - running decentralized stablecoin infrastructure since 2017\./;
 
 describe('ProtocolLineageBadge — the Earn hero years badge and its lineage tooltip', () => {
   afterEach(() => {

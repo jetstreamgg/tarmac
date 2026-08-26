@@ -25,7 +25,7 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
           the detail headers, and sizes the logo itself — 64px overall around a
           52px mark at `l` (Figma 2376:225234 → I…;5320:41748, "update icon
           size"). This had been shrunk to a 48px box around a 40px mark. */}
-      <IconboxStatus size="l" type={productStatusType(row)} dot={!!productStatusType(row)}>
+      <IconboxStatus size="l" type={productStatusType(row)}>
         <TokenIcon token={{ symbol: productIconSymbol(row) }} width={52} showChainIcon={false} />
       </IconboxStatus>
 

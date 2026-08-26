@@ -21,7 +21,7 @@ import { protocolStartYear, yearsOperating } from '../helpers/protocolStats';
  */
 const LINEAGE_COPY = (
   <Trans>
-    Sky Protocol is MakerDAO&apos;s continuation — running decentralized stablecoin infrastructure since{' '}
+    Sky Protocol is MakerDAO&apos;s continuation - running decentralized stablecoin infrastructure since{' '}
     {protocolStartYear}.
   </Trans>
 );

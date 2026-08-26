@@ -64,6 +64,7 @@ i18n.activate('en');
 
 const SUPPLY_CONFIG: TransactionConfig = {
   title: 'Supply USDS',
+  usdValue: 0,
   steps: ['Supply'],
   analytics: { widgetName: 'savings', flow: 'supply' },
   onConfirm: () => {}
@@ -71,6 +72,7 @@ const SUPPLY_CONFIG: TransactionConfig = {
 
 const STAKE_CONFIG: TransactionConfig = {
   title: 'Stake SKY',
+  usdValue: 0,
   steps: ['Stake'],
   onConfirm: () => {}
 };

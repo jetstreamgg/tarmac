@@ -7,7 +7,9 @@ import {
   type TransactionConfig
 } from './transactionContract';
 
-const onchain: TransactionConfig = { title: 'Supply', onConfirm: () => {} };
+// `usdValue` is deliberately required (APP-517): a config without it must not
+// compile — see the field's doc in the contract.
+const onchain: TransactionConfig = { title: 'Supply', usdValue: 0, onConfirm: () => {} };
 
 const order: AsyncOrderConfig = {
   kind: 'async-order',

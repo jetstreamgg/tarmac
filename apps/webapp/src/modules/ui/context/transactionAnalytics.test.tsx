@@ -106,6 +106,7 @@ const cbOf = (ctx: TransactionContextValue): TxCallbacks => ctx.txCallbacks;
 const baseConfig = (overrides: Partial<TransactionConfig> = {}): TransactionConfig => ({
   title: 'Supply USDS',
   steps: ['Supply'],
+  usdValue: 100,
   analytics: { widgetName: 'savings', flow: 'supply', action: 'supply', data: { module: 'savings' } },
   onConfirm: () => {},
   ...overrides
