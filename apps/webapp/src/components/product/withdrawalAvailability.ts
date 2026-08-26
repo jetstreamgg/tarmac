@@ -14,8 +14,8 @@ type WithdrawalFlow = 'supply' | 'withdraw';
  * but the withdraw review's market sell executes now) or on instant-exit
  * products, whose supply review uses the comps' friendlier future-looking
  * "Anytime" for the same fact.
- * 'vault-tether-savings' and 'stake' are PLACEHOLDER copy pending a product
- * assessment, like their RiskTierDetails entries.
+ * 'vault-tether-savings' is PLACEHOLDER copy pending a product assessment,
+ * like its RiskTierDetails entry.
  */
 const WITHDRAWAL_AVAILABILITY: Record<
   EarnRiskProfileId,

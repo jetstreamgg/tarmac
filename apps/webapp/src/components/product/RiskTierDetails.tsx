@@ -59,8 +59,8 @@ const RISK_TIER_DETAILS: Record<
  *   (deliberately reward-agnostic — points farms don't pay a second token);
  * - 'vault-tether-savings' (flag-gated sUSDT, absent from the sheet) is
  *   PLACEHOLDER copy pending a product assessment;
- * - 'stake' (the Portfolio's Earn-with-Sky card, APP-531) is PLACEHOLDER copy
- *   pending the Stake row of the risk sheet.
+ * - 'stake' is the sheet's Stake SKY row (added 2026-08-26 for the Portfolio's
+ *   Earn-with-Sky card, APP-531).
  */
 const RISK_PROFILE_DETAILS: Record<
   EarnRiskProfileId,
@@ -177,15 +177,11 @@ const RISK_PROFILE_DETAILS: Record<
     liquidationRisk: <Trans>None</Trans>
   },
   stake: {
-    // PLACEHOLDER — pending the Stake row of the risk sheet.
     description: (
-      <Trans>
-        Stake SKY with Sky Protocol to accrue rewards and borrow USDS against it. Borrowing exposes the
-        position to SKY price volatility and liquidation.
-      </Trans>
+      <Trans>Get staking rewards from Sky Protocol revenue while keeping full exposure to SKY’s price</Trans>
     ),
     exposureTokens: ['SKY'],
-    liquidationRisk: <Trans>When borrowing</Trans>
+    liquidationRisk: <Trans>None</Trans>
   }
 };
 

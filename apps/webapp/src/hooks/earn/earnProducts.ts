@@ -33,7 +33,7 @@ export const RISK_TIER_BY_PROFILE: Record<EarnRiskProfileId, EarnRiskTier> = {
   'vault-risk-capital': 'advanced',
   fixed: 'moderate',
   stusds: 'advanced',
-  stake: 'moderate'
+  stake: 'advanced'
 };
 
 /**
