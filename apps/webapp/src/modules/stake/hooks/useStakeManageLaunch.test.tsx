@@ -29,6 +29,7 @@ const h = vi.hoisted(() => ({
   capturedEnabled: undefined as boolean | undefined,
   mockExecute: vi.fn(),
   launchMock: vi.fn(),
+  updateModalContent: vi.fn(),
   skyAllowance: 0n as bigint | undefined,
   usdsAllowance: 0n as bigint | undefined
 }));
@@ -102,7 +103,7 @@ vi.mock('@/hooks/rewards/useRewardContractTokens', () => ({
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: h.launchMock,
-    updateModalContent: () => undefined,
+    updateModalContent: h.updateModalContent,
     isModalOpen: false,
     txCallbacks: {
       onMutate: () => undefined,
@@ -301,6 +302,40 @@ describe('useStakeManageLaunch — calldata parity with the F1 seam', () => {
     expect(calls[0].functionName).toBe('approve');
     expect(calls[1].functionName).toBe('multicall');
     expect(calls[1].args?.[0]).toEqual(expectedCalldata());
+  });
+
+  it('pushes the review body once, and not again on a re-render that changes nothing', () => {
+    // The push re-enters the transaction provider, which re-renders this host.
+    // If the body's identity churned per render — a fresh `calls` array, an
+    // unmemoized vault object in the caller's deps — that would loop.
+    h.updateModalContent.mockClear();
+    const memoBody = () => null;
+    const { rerender } = renderLaunch({ transactionContent: memoBody });
+    const pushesAfterMount = h.updateModalContent.mock.calls.length;
+    expect(pushesAfterMount).toBeGreaterThan(0);
+
+    rerender();
+
+    expect(h.updateModalContent.mock.calls.length).toBe(pushesAfterMount);
+  });
+
+  it('reports the flow leg count, which the collapsed calls do not', () => {
+    // Bundling off collapses wipe+free into ONE `multicall`, so the engine
+    // hands back [approve, multicall] for a three-leg flow. The review body
+    // needs the leg count instead: `calls.length` would tell the fee cell this
+    // flow has nothing to bundle, and its bundle toggle would disappear for
+    // everyone who has bundling switched off.
+    const seen: { calls: unknown[]; legCount: number }[] = [];
+    renderLaunch({
+      transactionContent: context => {
+        seen.push(context);
+        return null;
+      }
+    });
+
+    // approve(USDS) + the two calldata legs.
+    expect(seen.at(-1)?.legCount).toBe(3);
+    expect(expectedCalldata()).toHaveLength(2);
   });
 
   it('buffers the wipeAll USDS approval by 100005/100000 (M11)', () => {

@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
-import { formatBigInt } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
@@ -33,8 +33,8 @@ export function StakeManageStakeCard({
   stakedAmountLoading,
   rewardsRate,
   rateLoading,
-  estCurrentSky,
-  estNextSky,
+  estCurrentUsd,
+  estNextUsd,
   minStakeToBorrow,
   minStakeToBorrowLoading,
   error
@@ -53,10 +53,15 @@ export function StakeManageStakeCard({
   rewardsRate: number | null;
   /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton. */
   rateLoading?: boolean;
-  /** Current est. annual rewards (staked × rate), in SKY. */
-  estCurrentSky: bigint | null;
+  /**
+   * Current est. annual rewards (staked × rate), in USD. The BA Labs rate is a
+   * value APR, so the projection is a SKY-equivalent value rather than a count
+   * of any one token — the same treatment the position details modal and the
+   * confirm grid use.
+   */
+  estCurrentUsd: number | null;
   /** Simulated est. annual rewards once an amount is staged; null = no delta. */
-  estNextSky: bigint | null;
+  estNextUsd: number | null;
   minStakeToBorrow: bigint | undefined;
   /** The simulation backing `minStakeToBorrow` is in flight. */
   minStakeToBorrowLoading?: boolean;
@@ -78,15 +83,6 @@ export function StakeManageStakeCard({
   const skyIcon = (
     <TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />
   );
-  const formatSky = (value: bigint | null) =>
-    value !== null ? (
-      <>
-        {formatBigInt(value, { compact: true })}
-        {skyIcon}
-      </>
-    ) : (
-      NO_VALUE
-    );
 
   return (
     <StakeManageCard
@@ -180,15 +176,17 @@ export function StakeManageStakeCard({
           <StakeManageStatCell
             label={<Trans>Est. annual rewards</Trans>}
             current={
-              estCurrentSky === null && (rateLoading || stakedAmountLoading) ? (
+              estCurrentUsd === null && (rateLoading || stakedAmountLoading) ? (
                 <Skeleton className="h-4 w-14" />
+              ) : estCurrentUsd !== null ? (
+                formatUsd(estCurrentUsd)
               ) : (
-                formatSky(estCurrentSky)
+                NO_VALUE
               )
             }
             next={
-              estNextSky !== null && amount > 0n && estNextSky !== estCurrentSky
-                ? formatSky(estNextSky)
+              estNextUsd !== null && amount > 0n && estNextUsd !== estCurrentUsd
+                ? formatUsd(estNextUsd)
                 : undefined
             }
             dataTestId="stake-manage-est-rewards"

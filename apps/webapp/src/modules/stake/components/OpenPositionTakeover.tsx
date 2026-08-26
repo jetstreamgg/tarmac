@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -12,6 +13,7 @@ import {
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
   useSimulatedVault,
+  useSkyPrice,
   useStakeRewardContracts,
   useStakeUrnAddress,
   useStakeUrnSelectedRewardContract,
@@ -29,6 +31,7 @@ import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMe
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
+import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
 import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
@@ -37,6 +40,7 @@ import { StakeTakeoverRewardCard } from './StakeTakeoverRewardCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
+import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 
 const FOOTER_NOTE_CLASSES =
@@ -161,11 +165,15 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const highestRateData = useHighestRateFromChartData(rewardsChartInfo ?? []);
   const parsedRate = highestRateData ? parseFloat(highestRateData.rate) : NaN;
   const rewardsRate = Number.isFinite(parsedRate) ? parsedRate : null;
-  // Rate scaled at 1e9 so BA Labs rates (8 decimal places) survive intact —
-  // 1e6 truncated e.g. 5.692243% and drifted the estimate by whole tokens.
-  const estAnnualRewards =
-    rewardsRate !== null && state.skyToLock > 0n
-      ? (state.skyToLock * BigInt(Math.round(rewardsRate * 1_000_000_000))) / 1_000_000_000n
+  // Est. annual rewards, in USD: the BA Labs rate is a VALUE APR, so
+  // `staked × rate` is a SKY-equivalent value rather than a count of the reward
+  // token — quoting it in USD is what the position details modal and the
+  // confirm grid do.
+  const { priceString: skyPriceString } = useSkyPrice();
+  const skyPriceUsd = skyPriceString ? parseFloat(skyPriceString) : null;
+  const estAnnualRewardsUsd =
+    rewardsRate !== null && skyPriceUsd !== null && state.skyToLock > 0n
+      ? Number(formatUnits(state.skyToLock, 18)) * rewardsRate * skyPriceUsd
       : null;
 
   const { fromDebtCeiling: availableBorrowFromDebtCeiling, balance: availableBorrowBalance } =
@@ -231,16 +239,66 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     );
   }, [queryClient, setSearchParams]);
 
-  const confirmSummary = useMemo(
-    () => (
-      <StakeTakeoverConfirmSummary
-        skyToLock={debouncedSkyToLock}
-        usdsToBorrow={debouncedUsdsToBorrow}
-        rewardSymbol={rewardSymbol}
-        rewardContract={selectedRewardContract}
-      />
+  // Amount heroes: the wallet/status screen's compact summary, and the top of
+  // the review body. The farm the picker staged used to ride here as a chip —
+  // it is now the grid's Reward cell, next to the delegate and the rates.
+  const heroes = useMemo(
+    () => <StakeTakeoverConfirmSummary skyToLock={debouncedSkyToLock} usdsToBorrow={debouncedUsdsToBorrow} />,
+    [debouncedSkyToLock, debouncedUsdsToBorrow]
+  );
+
+  const effectiveDelegate = state.selectedDelegate ?? reopenDelegateBaseline;
+  // Memoized so the review body below keeps its identity across renders — it
+  // is a dep of the launch descriptor.
+  const rewardFrom = useMemo(
+    () => (selectedRewardContract ? { address: selectedRewardContract, symbol: rewardSymbol } : undefined),
+    [selectedRewardContract, rewardSymbol]
+  );
+
+  // The review body is built from the engine's own routing, so the grid can
+  // price the live network fee (see `transactionContent` on the launch hooks),
+  // and the launch hook re-pushes it as that routing changes. A new (or
+  // emptied, on reopen) position has no "before", so every cell states what the
+  // transaction leaves behind.
+  // Every dep below must be a SCALAR or a memoized value: the launch hook
+  // re-pushes this body whenever its identity changes, and each push
+  // re-renders the provider — which re-renders this host. An unmemoized object
+  // in here (`useSimulatedVault` rebuilds its `data` every render) would make
+  // that a loop, which is why the grid takes the risk tier and liquidation
+  // price as scalars rather than the two vaults.
+  const renderConfirmSummary = useCallback(
+    ({ calls, legCount }: StakeLaunchContentContext) => (
+      <div className="flex flex-col gap-8">
+        {heroes}
+        <StakeConfirmGrid
+          calls={calls}
+          legCount={legCount}
+          hasPosition={false}
+          stakedBefore={debouncedSkyToLock}
+          stakedAfter={debouncedSkyToLock}
+          debtBefore={debouncedUsdsToBorrow}
+          debtAfter={debouncedUsdsToBorrow}
+          riskBefore={debouncedVault?.riskLevel}
+          riskAfter={debouncedVault?.riskLevel}
+          liquidationBefore={debouncedVault?.liquidationPrice}
+          liquidationAfter={debouncedVault?.liquidationPrice}
+          stabilityFee={collateralData?.stabilityFee}
+          rewardFrom={rewardFrom}
+          delegateFrom={effectiveDelegate}
+          showSelections
+        />
+      </div>
     ),
-    [debouncedSkyToLock, debouncedUsdsToBorrow, rewardSymbol, selectedRewardContract]
+    [
+      heroes,
+      debouncedSkyToLock,
+      debouncedUsdsToBorrow,
+      debouncedVault?.riskLevel,
+      debouncedVault?.liquidationPrice,
+      collateralData?.stabilityFee,
+      rewardFrom,
+      effectiveDelegate
+    ]
   );
 
   const openLaunch = useStakeLaunch({
@@ -249,7 +307,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     selectedRewardContract,
     selectedDelegate: state.selectedDelegate,
     enabled: !reopen && formValid,
-    transactionContent: confirmSummary,
+    transactionContent: renderConfirmSummary,
+    transactionScreenContent: heroes,
     onSuccess
   });
 
@@ -266,9 +325,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     usdsToWipe: 0n,
     wipeAll: false,
     selectedRewardContract,
-    selectedDelegate: state.selectedDelegate ?? reopenDelegateBaseline,
+    selectedDelegate: effectiveDelegate,
     enabled: !!reopen && formValid,
-    transactionContent: confirmSummary,
+    transactionContent: renderConfirmSummary,
+    transactionScreenContent: heroes,
     onSuccess
   });
 
@@ -350,8 +410,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         balanceLoading={balanceLoading}
         rewardsRate={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : null}
         rateLoading={rateLoading}
-        estAnnualRewards={estAnnualRewards}
-        rewardSymbol={rewardSymbol}
+        estAnnualRewardsUsd={estAnnualRewardsUsd}
         minStakeToBorrow={state.borrowEnabled ? simulatedVault?.minCollateralForDust : undefined}
         error={stakeError}
       />

@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -31,12 +32,14 @@ import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
+import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
 import { StakeManageStakeCard } from './StakeManageStakeCard';
 import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageRewardCard } from './StakeManageRewardCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
+import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 
@@ -280,7 +283,9 @@ export function ManagePositionTakeover({
     );
   }, [queryClient, setSearchParams]);
 
-  const confirmSummary = useMemo(
+  // Amount heroes: the wallet/status screen's compact summary, and the top of
+  // the review body.
+  const heroes = useMemo(
     () => (
       <StakeManageConfirmSummary
         skyToLock={skyToLock}
@@ -288,32 +293,80 @@ export function ManagePositionTakeover({
         usdsToBorrow={usdsToBorrow}
         usdsToWipe={usdsToWipe}
         skyPriceUsd={detail.skyPriceUsd}
-        rewardFrom={
-          currentRewardContract ? { address: currentRewardContract, symbol: detail.rewardSymbol } : undefined
-        }
-        rewardTo={
-          rewardChanged && state.selectedRewardContract
-            ? { address: state.selectedRewardContract, symbol: stagedRewardSymbol }
-            : undefined
-        }
-        delegateFrom={currentDelegate}
-        delegateTo={delegateChanged ? state.selectedDelegate : undefined}
       />
     ),
+    [skyToLock, skyToFree, usdsToBorrow, usdsToWipe, detail.skyPriceUsd]
+  );
+  const hasAmounts = skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n;
+
+  // Memoized so the review body below keeps its identity across renders — it
+  // is a dep of the launch descriptor.
+  const rewardFrom = useMemo(
+    () =>
+      currentRewardContract ? { address: currentRewardContract, symbol: detail.rewardSymbol } : undefined,
+    [currentRewardContract, detail.rewardSymbol]
+  );
+  const rewardTo = useMemo(
+    () =>
+      rewardChanged && state.selectedRewardContract
+        ? { address: state.selectedRewardContract, symbol: stagedRewardSymbol }
+        : undefined,
+    [rewardChanged, state.selectedRewardContract, stagedRewardSymbol]
+  );
+  const delegateTo = delegateChanged ? state.selectedDelegate : undefined;
+
+  // The review body is built from the engine's own routing, so the grid can
+  // price the live network fee (see `transactionContent` on the launch hook).
+  // The launch hook re-pushes it as that routing and these figures change, so
+  // what the modal shows keeps up until the transaction leaves IDLE. The
+  // debounced simulation is the "after" vault — the same one the borrow card's
+  // risk row reads, so the two can't disagree.
+  // Every dep below must be a SCALAR or a memoized value: the launch hook
+  // re-pushes this body whenever its identity changes, and each push
+  // re-renders the provider — which re-renders this host. An unmemoized object
+  // in here (`useSimulatedVault` rebuilds its `data` every render) would make
+  // that a loop, which is why the grid takes the risk tier and liquidation
+  // price as scalars rather than the two vaults.
+  const renderConfirmSummary = useCallback(
+    ({ calls, legCount }: StakeLaunchContentContext) => (
+      <div className="flex flex-col gap-8">
+        {hasAmounts && heroes}
+        <StakeConfirmGrid
+          calls={calls}
+          legCount={legCount}
+          hasPosition
+          stakedBefore={existingCollateral}
+          stakedAfter={newCollateralAmount > 0n ? newCollateralAmount : 0n}
+          debtBefore={existingDebt}
+          debtAfter={newDebtValue > 0n ? newDebtValue : 0n}
+          riskBefore={existingVault?.riskLevel}
+          riskAfter={debouncedVault?.riskLevel}
+          liquidationBefore={existingVault?.liquidationPrice}
+          liquidationAfter={debouncedVault?.liquidationPrice}
+          stabilityFee={detail.stabilityFee}
+          rewardFrom={rewardFrom}
+          rewardTo={rewardTo}
+          delegateFrom={currentDelegate}
+          delegateTo={delegateTo}
+        />
+      </div>
+    ),
     [
-      skyToLock,
-      skyToFree,
-      usdsToBorrow,
-      usdsToWipe,
-      detail.skyPriceUsd,
-      detail.rewardSymbol,
-      currentRewardContract,
-      rewardChanged,
-      state.selectedRewardContract,
-      stagedRewardSymbol,
+      hasAmounts,
+      heroes,
+      existingCollateral,
+      newCollateralAmount,
+      detail.stabilityFee,
+      existingDebt,
+      newDebtValue,
+      existingVault?.riskLevel,
+      existingVault?.liquidationPrice,
+      debouncedVault?.riskLevel,
+      debouncedVault?.liquidationPrice,
+      rewardFrom,
+      rewardTo,
       currentDelegate,
-      delegateChanged,
-      state.selectedDelegate
+      delegateTo
     ]
   );
 
@@ -333,7 +386,10 @@ export function ManagePositionTakeover({
     selectedRewardContract: effectiveRewardContract,
     selectedDelegate: effectiveDelegate,
     enabled: formValid,
-    transactionContent: confirmSummary,
+    transactionContent: renderConfirmSummary,
+    // No staged amount (a reward- or delegate-only change) leaves no hero to
+    // show, so the wallet screen falls back to the full review body.
+    transactionScreenContent: hasAmounts ? heroes : undefined,
     onSuccess
   });
 
@@ -348,12 +404,18 @@ export function ManagePositionTakeover({
     formValid && !launchLoading ? launchError : null
   );
 
-  // Est. annual rewards delta for card 1 (M22): rate × simulated collateral.
-  const estNextSky =
-    detail.rewardsRate !== null && state.stakeEnabled && state.skyAmount > 0n
-      ? ((newCollateralAmount > 0n ? newCollateralAmount : 0n) *
-          BigInt(Math.round(detail.rewardsRate * 1_000_000_000))) /
-        1_000_000_000n
+  // Est. annual rewards for card 1 (M22): rate × collateral, in USD. The BA
+  // Labs rate is a VALUE APR, so the projection is a SKY-equivalent value
+  // rather than a count of any one token — the treatment the position details
+  // modal and the confirm grid already use.
+  const estRewardsUsd = (staked: bigint) =>
+    detail.rewardsRate !== null && detail.skyPriceUsd !== null
+      ? Number(formatUnits(staked, 18)) * detail.rewardsRate * detail.skyPriceUsd
+      : null;
+  const estCurrentUsd = estRewardsUsd(existingCollateral);
+  const estNextUsd =
+    state.stakeEnabled && state.skyAmount > 0n
+      ? estRewardsUsd(newCollateralAmount > 0n ? newCollateralAmount : 0n)
       : null;
 
   return (
@@ -513,8 +575,8 @@ export function ManagePositionTakeover({
         stakedAmountLoading={detail.vaultLoading}
         rewardsRate={detail.rewardsRate}
         rateLoading={detail.rateLoading}
-        estCurrentSky={detail.estAnnualRewardsSky}
-        estNextSky={estNextSky}
+        estCurrentUsd={estCurrentUsd}
+        estNextUsd={estNextUsd}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
         minStakeToBorrowLoading={liveSimLoading}
         error={stakeError}

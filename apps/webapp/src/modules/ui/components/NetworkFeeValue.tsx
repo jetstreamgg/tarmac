@@ -31,6 +31,12 @@ export type BundleFeeState = {
  * cached, so the row re-reads them without another fetch.
  */
 export function useBundleFeeState(
+  /**
+   * Legs in the flow — what bundling would have to work with. Normally
+   * `calls.length`; an engine that collapses its legs into one call when
+   * bundling is off (stake's multicall) must pass the bundled count instead,
+   * or the toggle vanishes for everyone who has bundling off.
+   */
   callCount: number,
   fee?: NetworkFeeData,
   /** The estimate failed — a call that reverts in simulation, an unreachable node. */

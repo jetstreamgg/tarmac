@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -9,6 +9,7 @@ import {
   useRewardContractTokens,
   useSkyPrice,
   useStakeSkyAllowance,
+  useStakeUsdsAllowance,
   ZERO_ADDRESS
 } from '@/hooks';
 import { formatBigInt } from '@/utils';
@@ -21,6 +22,7 @@ import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
+import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
 
 /**
  * Confirm-modal step labels, derived from the calldata set — not from tx count
@@ -55,8 +57,17 @@ export interface UseStakeLaunchParams {
   selectedDelegate: `0x${string}` | undefined;
   /** Form validity — gates the engine's prepare/simulation. */
   enabled: boolean;
-  /** Review-screen body (stake/borrow amount heroes per hi-fi 486:33412). */
-  transactionContent?: ReactNode;
+  /**
+   * Review-screen body (the stake/borrow amount heroes per hi-fi 486:33412,
+   * over the confirm grid). Pass a MEMOIZED function to receive the engine's
+   * own routing — the grid prices the live Network fee from it, which it cannot
+   * do from the caller's render (the calls are this hook's output, the body its
+   * input). The body is re-pushed as that routing changes, until the
+   * transaction leaves IDLE.
+   */
+  transactionContent?: StakeLaunchContent;
+  /** Compact wallet/status-screen summary; omitted, the review body carries over. */
+  transactionScreenContent?: ReactNode;
   /** Refetch positions/history + close the takeover after success. */
   onSuccess?: () => void;
 }
@@ -84,9 +95,11 @@ export function useStakeLaunch({
   selectedDelegate,
   enabled,
   transactionContent,
+  transactionScreenContent,
   onSuccess
 }: UseStakeLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
+  const sessionId = useId();
   const { address } = useConnection();
   const { priceString: skyPriceString } = useSkyPrice();
 
@@ -125,6 +138,11 @@ export function useStakeLaunch({
   // READ ONLY — labels the Approve step; the engine derives its own approve call.
   const { data: skyAllowance } = useStakeSkyAllowance();
   const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
+  // Nothing to approve on the open flow (`usdsAmount` is 0), but the engine
+  // still emits an approve leg while the read is unresolved — mirrored so the
+  // leg count below can't disagree with the calls it actually builds.
+  const { data: usdsAllowance } = useStakeUsdsAllowance();
+  const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
 
   const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);
 
@@ -146,6 +164,25 @@ export function useStakeLaunch({
   useEffect(() => {
     executeRef.current = engine.execute;
   }, [engine.execute]);
+
+  // Legs the flow sends when bundled, mirroring the engine's own composition
+  // (approvals, then one call per calldata entry). NOT `calls.length`: with
+  // bundling off the engine collapses the calldata into a single `multicall`,
+  // so the calls it hands back describe the current route rather than the
+  // flow's shape.
+  const legCount = (needsSkyAllowance ? 1 : 0) + (needsUsdsAllowance ? 1 : 0) + calldata.length;
+
+  // Keeps the review body live while it is still a review — the fee estimate
+  // follows the in-modal bundle toggle, and the rate/delegate reads it draws
+  // from resolve there rather than freezing at Confirm-press.
+  const confirmContent = useStakeConfirmContent({
+    sessionId,
+    calls: engine.calls ?? [],
+    isBatch: !!engine.isBatch,
+    legCount,
+    content: transactionContent,
+    screenContent: transactionScreenContent
+  });
 
   const hasBorrow = usdsToBorrow > 0n;
   const hasDelegate = !!selectedDelegate && selectedDelegate !== ZERO_ADDRESS;
@@ -210,7 +247,9 @@ export function useStakeLaunch({
         success: hasBorrow ? t`The position is now open!` : t`${formattedSky} SKY staked!`,
         error: t`Failed to open the position`
       },
-      transactionContent,
+      sessionId,
+      transactionContent: confirmContent,
+      transactionScreenContent,
       steps,
       confirmLabel: t`Confirm`,
       onConfirm: () => executeRef.current(),
@@ -232,7 +271,9 @@ export function useStakeLaunch({
     hasDelegate,
     shouldUseBatch,
     skyPriceString,
-    transactionContent,
+    sessionId,
+    confirmContent,
+    transactionScreenContent,
     steps,
     onSuccess
   ]);
@@ -240,6 +281,8 @@ export function useStakeLaunch({
   return {
     launch,
     execute: engine.execute,
+    calls: engine.calls ?? [],
+    isBatch: !!engine.isBatch,
     steps,
     calldata,
     needsSkyAllowance,
