@@ -1,14 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useChains } from 'wagmi';
+import { useChainId, useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho, Pendle } from '@/widgets';
-import { useEarnMarketplace, EarnProductKind, useUsdsDaiData, type EarnProductRow } from '@/hooks';
+import {
+  useEarnMarketplace,
+  EarnProductKind,
+  productNetworks,
+  RISK_TIER_BY_PROFILE,
+  useUsdsDaiData,
+  type EarnProductRow
+} from '@/hooks';
+import { formatUnits } from 'viem';
+import { mainnet } from 'viem/chains';
+import { usePendleUsdValue } from '@/widgets';
+import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { getChainIcon } from '@/utils';
+import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
+import { Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { retainOnNavigate } from '@/lib/navigation';
-import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
+import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
@@ -110,6 +123,7 @@ export function EarnPage() {
   const { rows } = useEarnMarketplace();
   const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
   const chains = useChains();
+  const connectedChainId = useChainId();
   const navigate = useNavigate();
   const hash = useRouterState({ select: state => state.location.hash });
 
@@ -269,6 +283,84 @@ export function EarnPage() {
     void navigate({ to: row.detailPath as '/', search: retainOnNavigate });
   };
 
+  // "Requires action" (2251:50832): matured markets the user still holds PT
+  // for — the marketplace filters them out of the opportunities rows, so this
+  // is their only Earn surface. Geo is enforced inside the hook (restricted
+  // positions hide app-wide, APP-484). The table filters apply here like they
+  // do to the geo section — one list, split in three — filtering by the
+  // market's registry attributes (its risk tier, networks, supply tokens),
+  // not the dashed live-market cells. A filtered-out row strands nobody: the
+  // Portfolio matured card stays the primary claim surface. The shared sort is
+  // NOT applied — every sortable column is a dash on these rows.
+  const { maturedPositions } = usePendleMaturedPositions();
+  const valueUsd = usePendleUsdValue();
+  const visibleMaturedPositions = useMemo(
+    () =>
+      filterEarnRows(
+        maturedPositions.map(position => ({
+          ...position,
+          // The registry's fixed entry, restated: its `fixed` descriptor is
+          // built (then discarded) inside useEarnMarketplace, so the matured
+          // row can't borrow it — APP-532 folds these back into the rows.
+          risk: RISK_TIER_BY_PROFILE.fixed,
+          networks: productNetworks(Intent.FIXED_INTENT, getSupportedChainIds(connectedChainId)),
+          supplyTokens: ['USDS', 'USDC', position.market.underlyingSymbol],
+          kind: 'fixed' as const
+        })),
+        filters,
+        chainSlugById
+      ),
+    [maturedPositions, filters, chainSlugById, connectedChainId]
+  );
+  const requiresActionItems = useMemo<EarnTableRowItem[]>(
+    () =>
+      visibleMaturedPositions.map(({ market, ptBalance }) => {
+        // 1 PT redeems 1 underlying (1 USDS on pegged markets) at expiry.
+        const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
+        const usd = valueUsd(displaySymbol, parseFloat(formatUnits(ptBalance, market.underlyingDecimals)));
+        return {
+          id: `matured-${market.marketAddress.toLowerCase()}`,
+          name: `Pendle ${market.underlyingSymbol}`,
+          icon: (
+            <TokenIcon
+              token={{ symbol: market.underlyingSymbol }}
+              width={28}
+              className="h-7 w-7"
+              showChainIcon={false}
+            />
+          ),
+          status: 'success' as const,
+          nameSuffix: <Pendle className="h-4 w-4" />,
+          // What the market accepted while live (the registry's fixed entry).
+          supply: <TokenIconStack symbols={['USDS', 'USDC', market.underlyingSymbol]} size={12} />,
+          statusLabel: (
+            <span className="text-statusWarning">
+              <Trans>Matured</Trans>
+            </span>
+          ),
+          network: <CellNetworks>{[getChainIcon(mainnet.id, 'h-full w-full')]}</CellNetworks>,
+          rate: NO_VALUE,
+          rate30d: NO_VALUE,
+          tvl: NO_VALUE,
+          position: formatUsd(usd),
+          ctaLabel: <Trans>Claim</Trans>
+        };
+      }),
+    [visibleMaturedPositions, valueUsd]
+  );
+
+  // Rows route to the market's detail page, like every other row in this table
+  // — a matured market keeps its page, and the claim card is its position slot.
+  const handleRequiresActionSelect = (id: string) => {
+    const position = maturedPositions.find(
+      ({ market }) => `matured-${market.marketAddress.toLowerCase()}` === id
+    );
+    if (!position) return;
+    const detailPath = `${ROUTES.EARN_FIXED}/${position.market.slug}`;
+    setPendingNavIntent('card', detailPath);
+    void navigate({ to: detailPath as '/', search: retainOnNavigate });
+  };
+
   // The desktop px-calc insets the page to the middle 10 columns of the design
   // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
   return (
@@ -370,6 +462,21 @@ export function EarnPage() {
             <Trans>Clear filters</Trans> <span className="text-fgSecondary">({hiddenRowCount})</span>
           </span>
         </Button>
+      )}
+      {/* "Requires action" (2251:50832) — matured positions that need a claim.
+          Sits between the opportunities and the geo-restricted section; hidden
+          entirely while the user holds nothing matured. */}
+      {requiresActionItems.length > 0 && (
+        <section className="flex flex-col gap-6 md:gap-8" data-testid="earn-requires-action">
+          <h2 className={SECTION_HEADING}>
+            <Trans>Requires action</Trans>
+          </h2>
+          <EarnTable
+            rows={requiresActionItems}
+            onRowSelect={handleRequiresActionSelect}
+            testIdPrefix="earn-requires-action"
+          />
+        </section>
       )}
       {/* "Products unavailable in the US" (1036:201473) — same table, dimmed and
           inert, always last on the page. Hidden entirely when the region (or

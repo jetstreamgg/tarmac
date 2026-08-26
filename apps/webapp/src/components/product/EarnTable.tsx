@@ -37,10 +37,19 @@ export type EarnTableRowItem = {
   supply?: ReactNode;
   /** Maturity chip text for fixed-yield rows (e.g. "18 Jun 2026"). */
   maturityLabel?: string;
+  /** Product-status suffix on the subline (the "Requires action" rows' orange "Matured", 2251:50832). */
+  statusLabel?: ReactNode;
   /** Stacked network icons slot. */
   network?: ReactNode;
-  /** Selects the risk tier + details copy (APP-396) — the Risk cell derives everything from it. */
-  riskProfile: EarnRiskProfileId;
+  /**
+   * Selects the risk tier + details copy (APP-396) — the Risk cell derives
+   * everything from it. Absent on "Requires action" rows, whose Risk cell
+   * (like their rate/TVL cells) is a dash: the product no longer accepts
+   * deposits, so its risk tier is moot.
+   */
+  riskProfile?: EarnRiskProfileId;
+  /** Mobile expanded-card primary CTA label; defaults to "Supply". */
+  ctaLabel?: ReactNode;
   rate: string;
   rate30d: string;
   tvl: string;
@@ -74,8 +83,13 @@ function NumericValue({ value, isLoading }: { value: string; isLoading?: boolean
 
 export type EarnTableProps = {
   rows: EarnTableRowItem[];
-  sort: EarnTableSort;
-  onSortChange: (column: EarnTableColumn) => void;
+  /** Omit alongside onSortChange for never-sorted tables. */
+  sort?: EarnTableSort;
+  /**
+   * Omit for never-sorted tables (the Requires-action list): headers render
+   * as plain labels instead of mutating the page-wide sort state.
+   */
+  onSortChange?: (column: EarnTableColumn) => void;
   onRowSelect?: (id: string) => void;
   /**
    * Fires when a batch of filtered-out rows finishes its exit animation
@@ -142,6 +156,12 @@ function TokenCell({ row, dimmed }: { row: EarnTableRowItem; dimmed?: boolean })
             <>
               <span aria-hidden>·</span>
               {row.maturityLabel}
+            </>
+          )}
+          {row.statusLabel && (
+            <>
+              <span aria-hidden>·</span>
+              {row.statusLabel}
             </>
           )}
         </>
@@ -256,10 +276,12 @@ function EarnCardList({
                           : []),
                         {
                           label: <Trans>Risk</Trans>,
-                          value: (
+                          value: row.riskProfile ? (
                             <Dim dimmed={dimmed}>
                               <RiskTierDetailsTrigger profile={row.riskProfile} />
                             </Dim>
+                          ) : (
+                            <CellEmpty />
                           )
                         },
                         {
@@ -288,7 +310,7 @@ function EarnCardList({
                           className="flex-1"
                           onClick={() => onRowSelect?.(row.id)}
                         >
-                          <Trans>Supply</Trans>
+                          {row.ctaLabel ?? <Trans>Supply</Trans>}
                         </Button>
                         <Button
                           variant="secondary"
@@ -354,32 +376,36 @@ export function EarnTable({
       <TableHeader>
         <TableRow>
           {COLUMNS.map(column => {
-            const isSorted = sort.column === column.key;
+            const isSorted = !!onSortChange && sort?.column === column.key;
             return (
               <TableHead
                 key={column.key}
                 className={cn(column.key === 'token' && 'w-[34%]')}
-                aria-sort={isSorted ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined}
+                aria-sort={isSorted ? (sort?.direction === 'asc' ? 'ascending' : 'descending') : undefined}
               >
-                <button
-                  type="button"
-                  data-testid={`${tid}-sort-${column.key}`}
-                  onClick={() => onSortChange(column.key)}
-                  className={cn(
-                    'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
-                    isSorted && 'text-fgPrimary'
-                  )}
-                >
-                  {column.label}
-                  <ChevronDown
-                    size={12}
+                {onSortChange ? (
+                  <button
+                    type="button"
+                    data-testid={`${tid}-sort-${column.key}`}
+                    onClick={() => onSortChange(column.key)}
                     className={cn(
-                      'transition-transform',
-                      isSorted ? 'opacity-100' : 'opacity-40',
-                      isSorted && sort.direction === 'asc' && 'rotate-180'
+                      'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
+                      isSorted && 'text-fgPrimary'
                     )}
-                  />
-                </button>
+                  >
+                    {column.label}
+                    <ChevronDown
+                      size={12}
+                      className={cn(
+                        'transition-transform',
+                        isSorted ? 'opacity-100' : 'opacity-40',
+                        isSorted && sort?.direction === 'asc' && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                ) : (
+                  column.label
+                )}
               </TableHead>
             );
           })}
@@ -424,9 +450,13 @@ export function EarnTable({
                 <Dim dimmed={dimmed}>{row.network}</Dim>
               </TableCell>
               <TableCell>
-                <Dim dimmed={dimmed}>
-                  <RiskTierDetailsTrigger profile={row.riskProfile} />
-                </Dim>
+                {row.riskProfile ? (
+                  <Dim dimmed={dimmed}>
+                    <RiskTierDetailsTrigger profile={row.riskProfile} />
+                  </Dim>
+                ) : (
+                  <CellEmpty />
+                )}
               </TableCell>
               <TableCell>
                 <NumericValue value={row.rate} isLoading={row.isLoading} />

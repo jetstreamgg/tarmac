@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 /**
@@ -30,12 +31,22 @@ export function TransactionAmountHero({
   symbol,
   usd,
   size = 'md',
+  loading = false,
+  badge,
   dataTestId,
   usdTestId
 }: {
   label?: ReactNode;
   amount: string;
   symbol: string;
+  /** Draw a skeleton in place of the amount while its underlying read is unresolved. */
+  loading?: boolean;
+  /**
+   * Replaces the static token pill — for a flow whose token is a choice rather
+   * than a fact (the matured claim picks its payout token here, since it has
+   * no amount field to carry the selector).
+   */
+  badge?: ReactNode;
   /** Dollar value of the amount, formatted without the `$` (e.g. "10,000.00"). Omit to hide. */
   usd?: string;
   /**
@@ -60,9 +71,13 @@ export function TransactionAmountHero({
             showChainIcon={false}
           />
           <div className="flex min-w-0 flex-col">
-            <span className="font-circle text-fgPrimary truncate text-[44px] leading-12 font-medium tracking-[-0.88px]">
-              {amount}
-            </span>
+            {loading ? (
+              <Skeleton className="my-2 h-8 w-40 rounded" data-testid="hero-loading" />
+            ) : (
+              <span className="font-circle text-fgPrimary truncate text-[44px] leading-12 font-medium tracking-[-0.88px]">
+                {amount}
+              </span>
+            )}
             {usd && (
               <span
                 className={
@@ -75,7 +90,7 @@ export function TransactionAmountHero({
             )}
           </div>
         </div>
-        <TokenBadge symbol={symbol} />
+        {badge ?? <TokenBadge symbol={symbol} />}
       </div>
     </div>
   );
