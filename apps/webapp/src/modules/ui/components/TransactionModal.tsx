@@ -266,6 +266,7 @@ export function TransactionModal({
     [TxStatus.ERROR]: subtitles?.error
   };
   const subtitle = isFirstScreen ? subtitles?.review : (gateCopy?.subtitle ?? subtitleByStatus[txStatus]);
+  const firstScreenSubtitle = isFirstScreen ? subtitle : undefined;
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
   // and the three-screen review stage its own (e.g. "Review supply"); both fall back
@@ -403,32 +404,46 @@ export function TransactionModal({
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph.
+        <div className={cn('flex justify-between', firstScreenSubtitle ? 'items-start' : 'items-center')}>
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            <div className="flex items-center gap-4">
+              {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph.
                 The flow's initial screen has no back arrow (Figma 859:36036 draws
                 title + close only); later screens gain it. */}
-            {step !== firstStep && (
-              <Button
-                variant="secondary"
-                size="iconM"
-                aria-label={t`Back`}
-                onClick={handleHeaderBack}
-                disabled={isTransacting}
-                data-testid="transaction-modal-back"
-              >
-                <ArrowLeft className="size-4" />
-              </Button>
-            )}
-            {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking, fg-primary. */}
-            <ResponsiveModalTitle className="text-fgPrimary font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
-              {displayTitle}
-            </ResponsiveModalTitle>
-            {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
+              {step !== firstStep && (
+                <Button
+                  variant="secondary"
+                  size="iconM"
+                  aria-label={t`Back`}
+                  onClick={handleHeaderBack}
+                  disabled={isTransacting}
+                  data-testid="transaction-modal-back"
+                >
+                  <ArrowLeft className="size-4" />
+                </Button>
+              )}
+              {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking, fg-primary. */}
+              <ResponsiveModalTitle className="text-fgPrimary font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
+                {displayTitle}
+              </ResponsiveModalTitle>
+              {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
                 the wallet/status screen relabels the title. */}
-            {isFirstScreen && titleBadge}
+              {isFirstScreen && titleBadge}
+            </div>
+            {/* Body 6 (Figma 2413:67012): a flow's pre-transaction disclosure hugs
+                the title inside the header block, 12/18 on fg-secondary. The
+                status subtitles below keep the content column's treatment. */}
+            {firstScreenSubtitle && (
+              <Text
+                variant="captionSm"
+                className="text-fgSecondary leading-[18px]"
+                dataTestId="transaction-modal-subtitle"
+              >
+                {firstScreenSubtitle}
+              </Text>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {rightHeaderComponent}
             <Button
               variant="secondary"
@@ -445,7 +460,7 @@ export function TransactionModal({
         <div className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}>
           {/* Subtitle */}
           <AnimatePresence mode="wait" initial={false}>
-            {subtitle && (
+            {subtitle && !isFirstScreen && (
               <motion.div
                 key={subtitle}
                 initial={{ opacity: 0 }}

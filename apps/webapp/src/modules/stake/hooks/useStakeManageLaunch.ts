@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -27,6 +27,13 @@ import {
   useStakeCalldata
 } from './useStakeCalldata';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
+import {
+  useStakeConfirmContent,
+  type StakeLaunchContent,
+  type StakeLaunchContentContext
+} from './useStakeConfirmContent';
+
+export type { StakeLaunchContentContext };
 
 /**
  * Manage confirm-modal step labels, derived from the calldata set in the manage
@@ -95,8 +102,16 @@ export interface UseStakeManageLaunchParams {
   rewardContractsToClaim?: `0x${string}`[];
   /** Display symbols aligned to `rewardContractsToClaim`, for step labels only. */
   claimSymbols?: string[];
-  /** Review-screen body (per-action amount heroes / delegate From→To). */
-  transactionContent?: ReactNode;
+  /**
+   * Review-screen body (the amount heroes over the confirm grid). Pass a
+   * MEMOIZED function to receive the engine's own routing — the grid prices the
+   * live Network fee from it, which it cannot do from the caller's render (the
+   * calls are this hook's output, the body its input). The body is re-pushed
+   * as that routing changes, until the transaction leaves IDLE.
+   */
+  transactionContent?: StakeLaunchContent;
+  /** Compact wallet/status-screen summary; omitted, the review body carries over. */
+  transactionScreenContent?: ReactNode;
   onSuccess?: () => void;
 }
 
@@ -128,9 +143,11 @@ export function useStakeManageLaunch({
   rewardContractsToClaim,
   claimSymbols,
   transactionContent,
+  transactionScreenContent,
   onSuccess
 }: UseStakeManageLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
+  const sessionId = useId();
   const { priceString: skyPriceString } = useSkyPrice();
   const { address } = useConnection();
 
@@ -201,6 +218,25 @@ export function useStakeManageLaunch({
   useEffect(() => {
     executeRef.current = engine.execute;
   }, [engine.execute]);
+
+  // Legs the flow sends when bundled, mirroring the engine's own composition
+  // (approvals, then one call per calldata entry). NOT `calls.length`: with
+  // bundling off the engine collapses the calldata into a single `multicall`,
+  // so the calls it hands back describe the current route rather than the
+  // flow's shape.
+  const legCount = (needsSkyAllowance ? 1 : 0) + (needsUsdsAllowance ? 1 : 0) + calldata.length;
+
+  // Keeps the review body live while it is still a review — the fee estimate
+  // follows the in-modal bundle toggle, and the rate/delegate/simulation reads
+  // it draws from resolve there rather than freezing at Confirm-press.
+  const confirmContent = useStakeConfirmContent({
+    sessionId,
+    calls: engine.calls ?? [],
+    isBatch: !!engine.isBatch,
+    legCount,
+    content: transactionContent,
+    screenContent: transactionScreenContent
+  });
 
   const hasLock = skyToLock > 0n;
   const hasFree = skyToFree > 0n;
@@ -319,7 +355,9 @@ export function useStakeManageLaunch({
         success: t`Your position is updated!`,
         error: t`Failed to change the position`
       },
-      transactionContent,
+      sessionId,
+      transactionContent: confirmContent,
+      transactionScreenContent,
       steps,
       confirmLabel: t`Confirm`,
       onConfirm: () => executeRef.current(),
@@ -351,7 +389,9 @@ export function useStakeManageLaunch({
     selectedRewardSymbol,
     shouldUseBatch,
     skyPriceString,
-    transactionContent,
+    sessionId,
+    confirmContent,
+    transactionScreenContent,
     steps,
     onSuccess
   ]);
@@ -361,6 +401,8 @@ export function useStakeManageLaunch({
     execute: engine.execute,
     steps,
     calldata,
+    calls: engine.calls ?? [],
+    isBatch: !!engine.isBatch,
     hasRewardChange,
     hasDelegateChange,
     urnSelectedVoteDelegate,

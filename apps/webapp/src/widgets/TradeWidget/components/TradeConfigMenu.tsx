@@ -11,6 +11,7 @@ import {
   L2_ETH_SLIPPAGE_STORAGE_KEY
 } from '../lib/constants';
 import { getAutoSlippage } from '@/hooks';
+import { sanitizeAmountInput } from '@/lib/amountInput';
 import { Settings as SettingsIcon } from '@/widgets/shared/components/icons/Icons';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
@@ -58,15 +59,23 @@ export const TradeConfigMenu = ({
       : ETH_SLIPPAGE_STORAGE_KEY
     : ERC_SLIPPAGE_STORAGE_KEY;
 
-  const handleSlippageChange = (value: string) => {
-    // Parse value and apply precision figures
-    const splitValue = value.split('.');
-    const parsedValue =
-      splitValue.length === 1 ? splitValue[0] : [splitValue[0], splitValue[1].slice(0, 2)].join('.');
+  const handleSlippageChange = (raw: string) => {
+    // Masked to what this field can mean — digits and one decimal point, at the
+    // two decimals it renders at (the precision this used to trim by hand).
+    // That is also what reads a decimal comma as a point, the only separator
+    // iOS's keypad offers under most European locales (APP-518), and what keeps
+    // the text a number now that the control is text rather than number.
+    const parsedValue = sanitizeAmountInput(raw, 2);
     const verifiedSlippage = verifySlippage(parsedValue, slippageConfig);
 
     setSlippage(verifiedSlippage);
-    window.localStorage.setItem(SLIPPAGE_STORAGE_KEY, verifiedSlippage);
+    // A bare '.' is an in-progress decimal point: it shows, but there is no
+    // number to persist yet, so the stored value stays as it was — which is
+    // also what keeps the reader above from ever seeing one. The quote path
+    // re-validates and falls back to the default meanwhile.
+    if (verifiedSlippage !== '.') {
+      window.localStorage.setItem(SLIPPAGE_STORAGE_KEY, verifiedSlippage);
+    }
   };
 
   // we can't use a Button inside PopoverTrigger because PopoverTrigger is already a button
@@ -125,9 +134,12 @@ export const TradeConfigMenu = ({
                     <input
                       placeholder={t`Custom`}
                       className="bg-background light:bg-transparent ring-offset-background placeholder:text-surface light:placeholder:text-textDimmed text-text w-[55px] [appearance:textfield] text-right text-[14px] leading-tight focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      type="number"
-                      min={slippageConfig.min}
-                      max={slippageConfig.max}
+                      // Text, not number: a number control reports anything it
+                      // cannot parse — a decimal comma included — as the empty
+                      // string, so the keystroke never reaches the handler. The
+                      // bounds are enforced by `verifySlippage` anyway.
+                      type="text"
+                      inputMode="decimal"
                       value={slippage}
                       onChange={e => handleSlippageChange(e.target.value)}
                     />

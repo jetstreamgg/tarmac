@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { formatBigInt } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider, SliderTicks } from '@/components/ui/slider';
@@ -39,8 +39,7 @@ export function StakeTakeoverStakeCard({
   balanceLoading,
   rewardsRate,
   rateLoading,
-  estAnnualRewards,
-  rewardSymbol,
+  estAnnualRewardsUsd,
   minStakeToBorrow,
   error
 }: {
@@ -52,10 +51,12 @@ export function StakeTakeoverStakeCard({
   rewardsRate: string | null;
   /** The farm-rate read is in flight — the rate/est-rewards cells hold a skeleton. */
   rateLoading?: boolean;
-  /** In reward-token units; null renders the design's "–" empty marker. */
-  estAnnualRewards: bigint | null;
-  /** Undefined while the selected farm's reward token is unresolved — the icon waits. */
-  rewardSymbol?: string;
+  /**
+   * Est. annual rewards in USD; null renders the design's "–" empty marker. The
+   * BA Labs rate is a value APR, so this is a SKY-equivalent value rather than a
+   * count of the reward token — showing it as one named the wrong token.
+   */
+  estAnnualRewardsUsd: number | null;
   /** Shown only when Borrow is enabled (minCollateralForDust). */
   minStakeToBorrow: bigint | undefined;
   error?: string;
@@ -134,18 +135,8 @@ export function StakeTakeoverStakeCard({
           <span data-testid="stake-takeover-est-rewards" className="flex items-center gap-1">
             {rateLoading && amount > 0n ? (
               <Skeleton className="h-4 w-14" />
-            ) : estAnnualRewards !== null && estAnnualRewards > 0n ? (
-              <>
-                {formatBigInt(estAnnualRewards)}
-                {rewardSymbol && (
-                  <TokenIcon
-                    token={{ symbol: rewardSymbol }}
-                    width={12}
-                    className="h-3 w-3"
-                    showChainIcon={false}
-                  />
-                )}
-              </>
+            ) : estAnnualRewardsUsd !== null && estAnnualRewardsUsd > 0 ? (
+              formatUsd(estAnnualRewardsUsd)
             ) : (
               NO_VALUE
             )}

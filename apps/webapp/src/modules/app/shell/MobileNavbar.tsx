@@ -26,11 +26,28 @@ export function MobileNavbar() {
   const reducedMotion = useReducedMotion();
 
   return (
-    <nav
+    // `motion.nav` + `layoutScroll`: the active pill below is a layout animation
+    // inside a `position: fixed` box, and motion converts every measurement to
+    // page coordinates by adding the window scroll — an offset a fixed element
+    // never moved by. A route change resets the document to the top between the
+    // pill's two measurements, so the entire scroll position landed in the
+    // animation and the pill flew in from that far below the bar (APP-518;
+    // measured at 600px of scroll, the pill entered exactly 600px low).
+    // `layoutScroll` is what makes motion measure this element's own scroll,
+    // and measuring is the only path on which it records the node as a scroll
+    // root — which it is, by `position: fixed` — so descendants stop having the
+    // page scroll folded in.
+    <motion.nav
+      layoutScroll
       data-testid="mobile-navbar"
       data-state={isHidden ? 'hidden' : 'visible'}
       className={cn(
         'from-pageBackground/0 to-pageBackground desktop:hidden fixed inset-x-0 bottom-0 z-30 flex bg-gradient-to-b px-3 pt-4 pb-[max(16px,env(safe-area-inset-bottom))]',
+        // Captured alongside the page during a route transition so the page's
+        // snapshot — which paints in the top layer, above every z-index in the
+        // document — passes behind the bar instead of over it (APP-518). The
+        // hook is inert outside a running transition; rules in globals.css.
+        'vt-shell-navbar',
         // M2.1: slide out while scrolling down, back in on scroll up. The bar
         // is fixed, so the transform doesn't reflow the page.
         // in-out rather than the app's ease-out-expo: expo front-loads ~80% of
@@ -38,7 +55,10 @@ export function MobileNavbar() {
         'transition-transform duration-500 ease-in-out data-[state=hidden]:translate-y-full motion-reduce:transition-none'
       )}
     >
-      <div className="bg-glassSurface mx-auto flex h-[60px] w-full max-w-md flex-1 rounded-full p-1 backdrop-blur-[20px]">
+      {/* `vt-navbar-glass`: while the bar is captured its `backdrop-filter` has
+          nothing to sample, so globals.css stands a flat colour in behind the
+          tint for the length of the transition. Inert at rest. */}
+      <div className="bg-glassSurface vt-navbar-glass mx-auto flex h-[60px] w-full max-w-md flex-1 rounded-full p-1 backdrop-blur-[20px]">
         {DESTINATIONS.map(destination => {
           const isActive = activePath === destination.path;
           const Icon = destination.icon;
@@ -94,6 +114,6 @@ export function MobileNavbar() {
           );
         })}
       </div>
-    </nav>
+    </motion.nav>
   );
 }

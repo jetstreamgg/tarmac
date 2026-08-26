@@ -7,7 +7,7 @@ import { JSX } from 'react';
 // the desktop tier they float above the bottom Navbar instead; they stay
 // visible and clickable there for Playwright's text selectors.
 const mockButtonClasses =
-  'max-w-40 truncate rounded-lg bg-white px-2 py-1 text-xs desktop:max-w-none desktop:px-4 desktop:py-2 desktop:text-sm';
+  'max-w-40 truncate rounded-lg bg-white px-2 py-1 text-xs text-black desktop:max-w-none desktop:px-4 desktop:py-2 desktop:text-sm';
 
 export function MockConnectButton(): JSX.Element {
   const { connect } = useConnect();

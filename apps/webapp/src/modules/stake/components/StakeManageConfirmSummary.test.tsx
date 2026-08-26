@@ -6,17 +6,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 i18n.load('en', {});
 i18n.activate('en');
 
-// Token icons/avatars pull image/wagmi machinery irrelevant to the summary layout.
+// Token icons pull image/wagmi machinery irrelevant to the summary layout.
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
-vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 
 const WAD = 10n ** 18n;
-const DELEGATE_A = '0x1111111111111111111111111111111111111111' as const;
-const DELEGATE_B = '0x2222222222222222222222222222222222222222' as const;
-const FARM_A = '0x8888888888888888888888888888888888888888' as const;
-const FARM_B = '0x9999999999999999999999999999999999999999' as const;
 
 const renderSummary = (props: Partial<React.ComponentProps<typeof StakeManageConfirmSummary>> = {}) =>
   render(
@@ -35,59 +30,42 @@ const renderSummary = (props: Partial<React.ComponentProps<typeof StakeManageCon
 describe('StakeManageConfirmSummary', () => {
   afterEach(cleanup);
 
-  it('renders the delegate From → To block for a delegate-only change', () => {
-    renderSummary({ delegateFrom: DELEGATE_A, delegateTo: DELEGATE_B });
-
-    const block = screen.getByTestId('stake-manage-summary-delegate');
-    expect(block.textContent).toContain('From');
-    expect(block.textContent).toContain('To');
-  });
-
-  it('keeps the delegate block visible when amounts are staged in the same bundle', () => {
-    // Mixed manage action: the review screen must preview EVERY leg —
-    // "Change delegate" is one of the steps, so hiding its From → To block
-    // behind the amount heroes under-reports the transaction.
-    renderSummary({ skyToFree: 500n * WAD, usdsToWipe: 1_000n * WAD, delegateTo: DELEGATE_B });
+  it('renders one hero per staged amount', () => {
+    // A mixed manage action: the review must preview EVERY amount leg — each
+    // one is its own step, so a missing hero under-reports the transaction.
+    renderSummary({ skyToFree: 500n * WAD, usdsToWipe: 1_000n * WAD });
 
     expect(screen.getByTestId('stake-manage-summary-withdraw')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-summary-repay')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-summary-delegate')).toBeTruthy();
+    expect(screen.queryByTestId('stake-manage-summary-stake')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-summary-borrow')).toBeNull();
   });
 
-  it('omits the delegate block when no change is staged', () => {
-    renderSummary({ skyToLock: 100n * WAD, delegateFrom: DELEGATE_A });
+  it('labels the stake and borrow heroes by direction', () => {
+    renderSummary({ skyToLock: 100n * WAD, usdsToBorrow: 20n * WAD });
 
-    expect(screen.getByTestId('stake-manage-summary-stake')).toBeTruthy();
-    expect(screen.queryByTestId('stake-manage-summary-delegate')).toBeNull();
+    expect(screen.getByTestId('stake-manage-summary-stake').textContent).toContain('Stake amount');
+    expect(screen.getByTestId('stake-manage-summary-borrow').textContent).toContain('Borrow amount');
   });
 
-  it('renders the reward From → To block for a staged reward change (APP-516)', () => {
-    renderSummary({
-      rewardFrom: { address: FARM_A, symbol: 'SKY' },
-      rewardTo: { address: FARM_B, symbol: 'USDS' }
-    });
+  it('prices SKY through the protocol price and USDS at parity', () => {
+    renderSummary({ skyToLock: 100n * WAD, usdsToBorrow: 20n * WAD });
 
-    const block = screen.getByTestId('stake-manage-summary-reward');
-    expect(block.textContent).toContain('From');
-    expect(block.textContent).toContain('SKY');
-    expect(block.textContent).toContain('To');
-    expect(block.textContent).toContain('USDS');
+    expect(screen.getByTestId('stake-manage-summary-stake').textContent).toContain('$5.00');
+    expect(screen.getByTestId('stake-manage-summary-borrow').textContent).toContain('$20.00');
   });
 
-  it('omits the reward block when no change is staged', () => {
-    renderSummary({ skyToLock: 100n * WAD, rewardFrom: { address: FARM_A, symbol: 'SKY' } });
+  it('drops the USD subvalue when the SKY price is unresolved', () => {
+    renderSummary({ skyToLock: 100n * WAD, skyPriceUsd: null });
 
-    expect(screen.queryByTestId('stake-manage-summary-reward')).toBeNull();
+    expect(screen.getByTestId('stake-manage-summary-stake').textContent).not.toContain('$');
   });
 
-  it('falls back to the shortened farm address when the reward token is unknown', () => {
-    // A farm outside the generated address books whose on-chain symbol hasn't
-    // resolved must still preview — the multicall carries its selectFarm leg
-    // either way, and a hidden or mislabeled block under-reports what's signed.
-    renderSummary({ rewardTo: { address: FARM_B } });
+  it('renders nothing for a selection-only change', () => {
+    // A reward- or delegate-only manage stages no amount: the heroes collapse
+    // and `StakeConfirmGrid`'s Reward / Delegate cells carry the change.
+    renderSummary();
 
-    const block = screen.getByTestId('stake-manage-summary-reward');
-    expect(block.textContent).toContain('No reward');
-    expect(block.textContent).toContain('0x9999...9999');
+    expect(screen.getByTestId('stake-manage-confirm-summary').textContent).toBe('');
   });
 });
