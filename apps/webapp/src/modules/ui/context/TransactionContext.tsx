@@ -112,7 +112,6 @@ export function useEntrySlot() {
 type TransactionModalView = {
   config: TransactionConfig;
   txStatus: TxStatus;
-  externalLink: string | undefined;
   currentStep: number;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
@@ -162,7 +161,6 @@ export function TransactionProvider({
   // changing key, per the React guidance on resetting all state.
   const [launchCount, setLaunchCount] = useState(0);
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
-  const [externalLink, setExternalLink] = useState<string | undefined>();
   const [currentStep, setCurrentStep] = useState(0);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
@@ -375,7 +373,6 @@ export function TransactionProvider({
       setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
       txStatusRef.current = TxStatus.IDLE;
-      setExternalLink(undefined);
       txHashRef.current = undefined;
       setCurrentStep(0);
       preludeStepsRef.current = null;
@@ -449,7 +446,6 @@ export function TransactionProvider({
   );
 
   const resetTransactionProgress = useCallback(() => {
-    setExternalLink(undefined);
     setCurrentStep(0);
   }, []);
 
@@ -471,7 +467,6 @@ export function TransactionProvider({
       setExitingView({
         config: configRef.current,
         txStatus: txStatusRef.current,
-        externalLink,
         currentStep,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
@@ -489,7 +484,6 @@ export function TransactionProvider({
     setMinimized(false);
     setTxStatus(TxStatus.IDLE);
     txStatusRef.current = TxStatus.IDLE;
-    setExternalLink(undefined);
     setCurrentStep(0);
     preludeStepsRef.current = null;
     setPreludeSteps(null);
@@ -500,7 +494,7 @@ export function TransactionProvider({
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [handleInitializedAbandon, externalLink, currentStep]);
+  }, [handleInitializedAbandon, currentStep]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -748,7 +742,6 @@ export function TransactionProvider({
       }
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
-      setExternalLink(undefined);
       txHashRef.current = undefined;
 
       // Track transaction started; approve legs report action 'approve' (dev parity)
@@ -774,7 +767,6 @@ export function TransactionProvider({
       setTxStatus(TxStatus.LOADING);
       txStatusRef.current = TxStatus.LOADING;
       if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         txHashRef.current = hash;
       }
     },
@@ -787,7 +779,6 @@ export function TransactionProvider({
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;
       if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         txHashRef.current = hash;
       }
 
@@ -832,8 +823,8 @@ export function TransactionProvider({
           { id: SUCCESS_TOAST_ID, duration: 10000 }
         );
       }
-      // Via the ref so this callback doesn't churn on every externalLink /
-      // currentStep change (it is handed to every engine hook). The close
+      // Via the ref so this callback doesn't churn on every currentStep
+      // change (it is handed to every engine hook). The close
       // snapshots the SUCCESS screen for the modal's 300ms exit, so the
       // handoff reads as the modal leaving, not blinking out.
       handleCloseRef.current();
@@ -856,7 +847,6 @@ export function TransactionProvider({
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
       if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         txHashRef.current = hash;
       }
 
@@ -922,7 +912,7 @@ export function TransactionProvider({
   );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, externalLink, currentStep, preludeSteps, gateCopy }
+    ? { config: activeConfig, txStatus, currentStep, preludeSteps, gateCopy }
     : exitingView;
 
   // The gate's prelude steps render ahead of the flow's own list. Composed at
@@ -998,7 +988,6 @@ export function TransactionProvider({
             onRetry={handleRetry}
             onBack={resetTransactionProgress}
             txStatus={modalView.txStatus}
-            externalLink={modalView.externalLink}
             confirmLabel={modalView.config.confirmLabel}
             confirmDisabled={modalView.config.confirmDisabled}
             errorMessage={modalView.config.errorMessage}

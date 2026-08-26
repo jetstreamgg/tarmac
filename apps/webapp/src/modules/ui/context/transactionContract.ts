@@ -262,7 +262,8 @@ export type TransactionContextValue = {
  * receipt: sign (EIP-712) → POST → orderId (UID) → poll → terminal.
  *
  * What it formalizes vs the on-chain flow:
- *  - No tx hash. The order is its UID; the link uses `orderExplorerUrl(orderId)`.
+ *  - No tx hash. The order is its UID; a link would use `orderExplorerUrl(orderId)`
+ *    — E3 has to place it itself, since the modal no longer renders one.
  *  - Retry RE-POLLS the existing order — never re-signs (that would create a
  *    second order).
  *  - All terminal states surface (today's Trade flow drops cancelled/expired).
@@ -299,7 +300,11 @@ export type AsyncOrderConfig = Pick<
   pollOrderStatus: (orderId: string) => Promise<AsyncOrderStatus>;
   /** Cancel an open order by UID. */
   cancelOrder?: (orderId: string) => Promise<void>;
-  /** Explorer URL for the order, shown in place of the tx-hash link. */
+  /**
+   * Explorer URL for the order — the async-order stand-in for a tx hash.
+   * Unwired: the modal's explorer link was removed (a confirmed transaction
+   * hands its hash to the success toast instead), so E3 owns where this lands.
+   */
   orderExplorerUrl?: (orderId: string) => string;
   /** Poll cadence in ms; defaults to 2000 (matches the current Trade flow). */
   pollIntervalMs?: number;

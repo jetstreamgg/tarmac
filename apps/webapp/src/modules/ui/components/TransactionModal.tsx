@@ -14,12 +14,8 @@ import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { getExplorerName } from '@/utils';
-import { useIsSafeWallet } from '@/hooks';
 import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useChainId } from 'wagmi';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TriangleAlert } from 'lucide-react';
 import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
@@ -98,7 +94,6 @@ export type TransactionModalProps = {
   onRetry?: () => void;
   onBack?: () => void;
   txStatus: TxStatus;
-  externalLink?: string;
   confirmLabel?: string;
   /** Disables the Confirm button (e.g. while a quote is refetching). */
   confirmDisabled?: boolean;
@@ -171,7 +166,6 @@ export function TransactionModal({
   onRetry,
   onBack,
   txStatus,
-  externalLink,
   confirmLabel,
   confirmDisabled,
   errorMessage,
@@ -192,9 +186,6 @@ export function TransactionModal({
   // Entry-only and review-only configs keep their two screens.
   const hasReviewStage = !!(entry && transactionContent);
   const [step, setStep] = useState<TransactionModalStep>(firstStep);
-  const chainId = useChainId();
-  const isSafeWallet = useIsSafeWallet();
-  const explorerName = getExplorerName(chainId, isSafeWallet);
   const { data: batchSupported } = useIsBatchSupported();
   const [batchEnabled] = useBatchToggle();
 
@@ -627,16 +618,18 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
-                {/* Status row: the icon and the per-status sentence are gone (Figma
-                    review) — flows that render a Steps header already show the status
-                    chip there, so this row is just the explorer link for them. Flows
-                    without a step list have no Steps header, so the chip renders
-                    inline here, in the slot the old icon/message/loading-button
-                    treatment used to occupy (Figma 2376:225580). The gate's own copy
-                    is the one sentence that survives: it narrates an off-chain phase
-                    (screening, terms signature) that the chip's txStatus-keyed label
-                    cannot describe (APP-501). */}
-                {((!showStepList && badgeContent) || gateCopy?.message || externalLink) && (
+                {/* Status row: the icon, the per-status sentence and the explorer
+                    link are all gone (Figma review). Flows that render a Steps
+                    header already show the status chip there; flows without a step
+                    list have no Steps header, so the chip renders inline here, in
+                    the slot the old icon/message/loading-button treatment used to
+                    occupy (Figma 2376:225580). The link left with them — a
+                    confirmed transaction hands its hash to the success toast, and
+                    a mid-flow link to one leg of a multi-step flow was noise. The
+                    gate's own copy is the one thing that survives: it narrates an
+                    off-chain phase (screening, terms signature) that the chip's
+                    txStatus-keyed label cannot describe (APP-501). */}
+                {((!showStepList && badgeContent) || gateCopy?.message) && (
                   <div className="flex items-center gap-3 pt-4">
                     {!showStepList && badgeContent && (
                       <StepsBadge variant="brand" dataTestId="transaction-status-badge">
@@ -644,15 +637,6 @@ export function TransactionModal({
                       </StepsBadge>
                     )}
                     {gateCopy?.message && <Text className="text-textSecondary">{gateCopy.message}</Text>}
-                    {externalLink && (
-                      <ExternalLink
-                        href={externalLink}
-                        showIcon={false}
-                        className="text-text hover:text-text text-sm hover:underline"
-                      >
-                        <Trans>View on {explorerName}</Trans>
-                      </ExternalLink>
-                    )}
                   </div>
                 )}
 
