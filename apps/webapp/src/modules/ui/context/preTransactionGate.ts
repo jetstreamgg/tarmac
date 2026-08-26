@@ -51,6 +51,14 @@ export type GateStatusCopy = {
   message?: ReactNode;
   /** Replaces the status-keyed subtitle under the modal title. */
   subtitle?: string;
+  /**
+   * Replaces the status chip's short label. Both gate phases render as
+   * INITIALIZED, whose label is "Confirm in the wallet" — true of the
+   * signature phase, but wrong while the gate is only running an HTTP address
+   * check, where it would sit beside "Verifying your wallet address…" and send
+   * the user to a wallet that has nothing to show them.
+   */
+  badgeLabel?: ReactNode;
 };
 
 /**

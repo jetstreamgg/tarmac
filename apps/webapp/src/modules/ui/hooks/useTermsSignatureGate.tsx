@@ -138,7 +138,11 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
     // locale activation.
     const screeningCopy = (): GateStatusCopy => ({
       message: <Trans>Verifying your wallet address…</Trans>,
-      subtitle: t`Running a quick check before your transaction starts.`
+      subtitle: t`Running a quick check before your transaction starts.`,
+      // Nothing has been sent to the wallet yet — the default INITIALIZED
+      // label would say otherwise. The signature phase keeps that default:
+      // there, a sign request really is waiting in the wallet.
+      badgeLabel: <Trans>Verifying</Trans>
     });
     const signaturePendingCopy = (): GateStatusCopy => ({
       message: <Trans>Review and sign the Terms of Use confirmation in your wallet.</Trans>,

@@ -228,10 +228,14 @@ export function TransactionModal({
   // always mounts with something; the guard stays as a belt-and-braces against
   // a future status arriving without a label. Dots ride along while the
   // transaction is genuinely in flight, including the IDLE prepare window.
-  const badgeContent = statusBadgeLabel[txStatus] ? (
+  // A gate phase owns the label while it holds the floor: both of its phases
+  // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
+  // in the wallet" during an HTTP address check (APP-501).
+  const badgeLabel = gateCopy?.badgeLabel ?? statusBadgeLabel[txStatus];
+  const badgeContent = badgeLabel ? (
     <>
       {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
-      {statusBadgeLabel[txStatus]}
+      {badgeLabel}
     </>
   ) : undefined;
 
