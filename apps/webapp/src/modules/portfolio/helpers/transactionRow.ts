@@ -204,7 +204,7 @@ function amountString(item: CombinedHistoryItem, chainId: number): string {
 
 // Deposit-style (true) vs withdraw-style (false); undefined = no direction. Drives
 // only the action icon (in/out), not the amount color.
-function isPositive(type: TransactionTypeEnum): boolean | undefined {
+export function isPositive(type: TransactionTypeEnum): boolean | undefined {
   switch (type) {
     case TransactionTypeEnum.STAKE_OPEN:
     case TransactionTypeEnum.UNSTAKE_KICK:
