@@ -16,7 +16,9 @@ export type EarnProductKind = 'savings' | 'rewards' | 'vault' | 'fixed' | 'stusd
  * family carry different assessments — the Flagship and Risk Capital Morpho
  * vaults sit in different tiers, and each rewards farm names its own reward.
  * 'rewards' is the generic fallback for a reward token without a profile of
- * its own yet.
+ * its own yet. 'stake' is not an Earn product — it is the Stake module's
+ * profile, keyed here so the Portfolio's "Earn with Sky" card draws the same
+ * risk pill and details as the marketplace products.
  */
 export type EarnRiskProfileId =
   | 'savings'
@@ -30,7 +32,8 @@ export type EarnRiskProfileId =
   | 'vault-tether-savings'
   | 'vault-risk-capital'
   | 'fixed'
-  | 'stusds';
+  | 'stusds'
+  | 'stake';
 
 /**
  * USD-denominated amount aggregated across the active chain family, with a
