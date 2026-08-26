@@ -69,7 +69,13 @@ export const TradeConfigMenu = ({
     const verifiedSlippage = verifySlippage(parsedValue, slippageConfig);
 
     setSlippage(verifiedSlippage);
-    window.localStorage.setItem(SLIPPAGE_STORAGE_KEY, verifiedSlippage);
+    // A bare '.' is an in-progress decimal point: it shows, but there is no
+    // number to persist yet, so the stored value stays as it was — which is
+    // also what keeps the reader above from ever seeing one. The quote path
+    // re-validates and falls back to the default meanwhile.
+    if (verifiedSlippage !== '.') {
+      window.localStorage.setItem(SLIPPAGE_STORAGE_KEY, verifiedSlippage);
+    }
   };
 
   // we can't use a Button inside PopoverTrigger because PopoverTrigger is already a button

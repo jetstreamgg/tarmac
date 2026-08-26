@@ -49,9 +49,19 @@ describe('normalizeDecimalSeparator', () => {
     expect(normalizeDecimalSeparator(',5')).toBe('.5');
   });
 
-  it('reads the last of the two marks as the decimal separator', () => {
+  it('drops a comma beside a dot — the dot is the point the mask already placed', () => {
     expect(normalizeDecimalSeparator('1,234.5')).toBe('1234.5');
-    expect(normalizeDecimalSeparator('1.234,5')).toBe('1234.5');
+    expect(normalizeDecimalSeparator('1.234,5')).toBe('1.2345');
+  });
+
+  it('never moves a decimal point already on screen (a second tap of the key)', () => {
+    // The field re-renders masked, so "1,5" comes back as "1.5" and tapping the
+    // keypad's decimal key again hands us "1.5,". Relocating the point there
+    // would silently transact 15.
+    expect(normalizeDecimalSeparator('1.5,')).toBe('1.5');
+    expect(normalizeDecimalSeparator('0.5,')).toBe('0.5');
+    expect(sanitizeAmountInput('1.5,', 18)).toBe('1.5');
+    expect(sanitizeAmountInput('0.5,', 2)).toBe('0.5');
   });
 
   it('treats repeated commas as grouping — a number has only one decimal mark', () => {

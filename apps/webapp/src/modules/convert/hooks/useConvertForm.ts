@@ -100,7 +100,10 @@ export function useConvertForm() {
       // separator typeable — read it as the decimal point the validator (and
       // every `?amount=` deep link) works in (APP-518).
       const typed = normalizeDecimalSeparator(raw);
-      if (typed === '' || getValidatedPsmExternalAmount(typed, direction) !== undefined) {
+      // A bare '.' is that key's first tap: the validator rejects it (it is not
+      // an amount yet) but the field has to show it, or the next digit lands as
+      // a whole unit — ',5' typed as 0.5 arriving as 5. It parses to 0n below.
+      if (typed === '' || typed === '.' || getValidatedPsmExternalAmount(typed, direction) !== undefined) {
         setRawValue(typed);
       }
     },

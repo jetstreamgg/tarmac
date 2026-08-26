@@ -34,7 +34,11 @@ function percentStringToDecimal(value: string): number {
 
 /** Clamp a raw percent string into [min, max]; empty/NaN normalize to ''. */
 function clampPercentString(value: string, min: number, max: number): string {
-  if (value === '') return '';
+  // A bare '.' is a decimal point with nothing after it yet — what a first tap
+  // of the keypad's decimal key produces. `Number('.')` is NaN, so clamping it
+  // would snap the field back to empty and land the next digit as a whole
+  // percent (',5' typed as 0.5% arriving as 5%).
+  if (value === '' || value === '.') return value;
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return '';
   if (numeric < min) return String(min);

@@ -8,21 +8,27 @@ import { parseUnits } from 'viem';
  * user can type is `,` — with the comma dropped, `1,5` became `15` and a
  * fraction was simply not enterable.
  *
- * When both marks are present the last one is the decimal separator and the
- * other is grouping, which reads "1,234.5" and "1.234,5" alike; more than one
- * comma can only be grouping. That leaves one genuinely ambiguous case, a lone
- * comma with a group-sized tail ("1,000"), and this resolves it as a decimal —
- * the keypad case is the one that happens, and because the field re-renders
- * with the masked text the reading is always visible before it can transact.
+ * Only a comma standing alone reads as that point. A dot already in the text
+ * is the decimal point — the fields are controlled and re-render masked, so
+ * the only dot they can hold is one the mask put there — which makes any comma
+ * beside it a group mark or a stray keypad tap; either way it drops. More than
+ * one comma is grouping for the same reason.
+ *
+ * That costs the EU-formatted paste "1.234,5", read as 1.2345 rather than
+ * 1234.5. It is the same string a keypad user produces by typing 1 , 2 3 4 ,
+ * (the field shows "1.234" after the first comma), and there the second comma
+ * is a slip that must not move the point a user is watching — mis-reading a
+ * paste beats silently multiplying a typed amount by 1000. Reading the lone
+ * comma in "1,000" as a decimal is the mirror of the same call.
  */
 export function normalizeDecimalSeparator(raw: string): string {
   const lastComma = raw.lastIndexOf(',');
   if (lastComma === -1) return raw;
 
-  const isGrouping = raw.lastIndexOf('.') > lastComma || raw.indexOf(',') !== lastComma;
+  const isGrouping = raw.includes('.') || raw.indexOf(',') !== lastComma;
   if (isGrouping) return raw.replace(/,/g, '');
 
-  return `${raw.slice(0, lastComma).replace(/\./g, '')}.${raw.slice(lastComma + 1)}`;
+  return `${raw.slice(0, lastComma)}.${raw.slice(lastComma + 1)}`;
 }
 
 /**
