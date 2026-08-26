@@ -1,13 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { retainOnNavigate } from '@/lib/navigation';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext
-} from '@/components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem, CarouselArrows } from '@/components/ui/carousel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heading } from '@/modules/layout/components/Typography';
 import { EarnWithSkyCard } from './EarnWithSkyCard';
@@ -16,9 +10,6 @@ import type { EarnWithSkyDestination, EarnWithSkyProduct } from '../helpers/earn
 
 // Each card spans a fraction of the row so 1 (mobile) → 3 (desktop) show at once.
 const ITEM_BASIS = 'basis-full sm:basis-1/2 desktop:basis-1/3';
-// Neutralizes CarouselPrevious/Next's default absolute positioning so the
-// arrows sit inline in the section header (matches the supplied carousel).
-const INLINE_ARROW = 'static left-auto right-auto top-auto translate-y-0';
 
 /**
  * The "Earn with Sky" carousel (Figma 2376:225231, APP-531): the three fixed
@@ -61,11 +52,9 @@ export function EarnWithSkySection({
           <Heading tag="h2" variant="medium">
             <Trans>Earn with Sky</Trans>
           </Heading>
-          {/* Same DS Button / Icon pair as the positions carousel. */}
-          <div className="flex gap-1.5">
-            <CarouselPrevious variant="secondary" size="iconS" className={INLINE_ARROW} />
-            <CarouselNext variant="secondary" size="iconS" className={INLINE_ARROW} />
-          </div>
+          {/* Only while the cards overflow — on desktop all three fit and the
+              comp (2376:225231) draws no arrows. */}
+          <CarouselArrows />
         </div>
         <CarouselContent>
           {products.map(product => (

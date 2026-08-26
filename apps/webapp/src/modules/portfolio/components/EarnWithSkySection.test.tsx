@@ -17,8 +17,7 @@ vi.mock('@/components/ui/carousel', () => ({
   Carousel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CarouselContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CarouselItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CarouselPrevious: () => <button type="button" />,
-  CarouselNext: () => <button type="button" />
+  CarouselArrows: () => null
 }));
 
 // Not under test — stub to keep the render light.
