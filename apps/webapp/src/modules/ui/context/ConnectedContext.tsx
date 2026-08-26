@@ -241,6 +241,14 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setTermsCheck(undefined);
     setTermsCheckError(false);
     setTermsCheckDenied(false);
+    // The in-flight flag has to be dropped here too. An overtaken check returns
+    // at the ref guard above, *before* it can clear the flag itself, so a
+    // disconnect (or a wallet lock) mid-check would otherwise leave it stuck on
+    // — and WalletChip's cover is modal, so the app locks up until a reload.
+    // It cannot be cleared in the check's own `finally` instead: by then the
+    // next address may already have set it, and clearing it there would drop
+    // the cover for a check that is genuinely running.
+    setIsCheckingTerms(false);
   }, [address]);
 
   // The flow puts address screening between wallet selection and the T&C gate

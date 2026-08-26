@@ -15,7 +15,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CheckedState } from '@radix-ui/react-checkbox';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Close } from '@/modules/icons';
-import { LoadingSpinner } from './LoadingSpinner';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
 import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 import { cn } from '@/lib/cn';
@@ -188,17 +187,6 @@ export function TermsModal() {
     </Button>
   );
 
-  const checkingContent = (
-    <div className="flex items-center justify-center gap-2 p-4">
-      <ResponsiveModalTitle asChild>
-        <Text className="text-text text-center">
-          <Trans>Please wait...</Trans>
-        </Text>
-      </ResponsiveModalTitle>
-      <LoadingSpinner />
-    </div>
-  );
-
   const termsCheckErrorContent = (
     <div className="flex flex-col items-center gap-4 p-4">
       <ResponsiveModalTitle asChild>
@@ -358,12 +346,19 @@ export function TermsModal() {
     </>
   );
 
-  const showCompactState = isCheckingTerms || !!termsCheckError || !!termsCheckDenied;
+  // The dead-end states keep the narrow card; the check itself no longer has
+  // one, so nothing resizes after the modal has opened.
+  const showCompactState = !!termsCheckError || !!termsCheckDenied;
+
+  // The modal stays shut for as long as the check runs, so it opens exactly
+  // once, already at its final size, and plays the house slide-up. WalletChip's
+  // ConnectChecksCover holds the screen (and the scrim) in the meantime — one
+  // cover for the whole connect-time check sequence, not one per check.
 
   return (
     <>
       {triggerButton}
-      <ResponsiveModal open={isModalOpen} onOpenChange={handleOpenChange}>
+      <ResponsiveModal open={isModalOpen && !isCheckingTerms} onOpenChange={handleOpenChange}>
         <ResponsiveModalContent
           aria-describedby={undefined}
           // This is a gate, not a dismissible panel (APP-534): a click on the
@@ -389,13 +384,11 @@ export function TermsModal() {
           onOpenAutoFocus={e => e.preventDefault()}
           data-testid="terms-modal"
         >
-          {isCheckingTerms
-            ? checkingContent
-            : termsCheckDenied
-              ? termsCheckDeniedContent
-              : termsCheckError
-                ? termsCheckErrorContent
-                : acceptanceContent}
+          {termsCheckDenied
+            ? termsCheckDeniedContent
+            : termsCheckError
+              ? termsCheckErrorContent
+              : acceptanceContent}
         </ResponsiveModalContent>
       </ResponsiveModal>
     </>

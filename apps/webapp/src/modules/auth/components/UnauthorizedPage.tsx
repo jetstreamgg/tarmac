@@ -7,7 +7,6 @@ import { t } from '@lingui/core/macro';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { LoadingSpinner } from '@/modules/ui/components/LoadingSpinner';
 import { sanitizeUrl } from '@/lib/utils';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { type BlockReason } from '@/modules/analytics/constants';
@@ -174,19 +173,19 @@ export const UnauthorizedPage = ({
 
   return (
     <>
-      <Dialog open={true}>
-        {isLoading ? (
-          <DialogContent aria-describedby={undefined} className="bg-containerDark max-w-[300px]">
-            <div className="flex items-center justify-center p-4">
-              <DialogTitle asChild>
-                <Text className="text-text mr-2 text-center">
-                  <Trans>Please wait...</Trans>
-                </Text>
-              </DialogTitle>
-              <LoadingSpinner />
-            </div>
-          </DialogContent>
-        ) : (
+      {/* While the checks are in flight this renders nothing: WalletChip's
+          ConnectChecksCover holds the screen for the whole connect-time
+          sequence (screening, then the terms check), so the spinner doesn't
+          restart between them. This component mounts in two places at once
+          (here and AuthWrapper), which is the other reason the wait can't live
+          in it — two scrims would stack.
+
+          The dialog therefore mounts only once the verdict is in, which is
+          also what stops it resizing: it used to stay open across the swap
+          from the 300px waiting card to this 500px one, and DialogContent's
+          `transition: all 300ms` animated that as a widening. */}
+      {!isLoading && (
+        <Dialog open={true}>
           <DialogContent
             aria-describedby={undefined}
             className="bg-containerDark w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
@@ -202,8 +201,8 @@ export const UnauthorizedPage = ({
             </div>
             {actions}
           </DialogContent>
-        )}
-      </Dialog>
+        </Dialog>
+      )}
       {children}
     </>
   );

@@ -101,6 +101,7 @@ function Consumer() {
     latestTermsVersion,
     termsMessageToSign,
     termsCheckDenied,
+    isCheckingTerms,
     acceptTerms,
     signTerms,
     retryAccessChecks
@@ -116,6 +117,7 @@ function Consumer() {
       <span data-testid="version">{latestTermsVersion ?? 'none'}</span>
       <span data-testid="message">{termsMessageToSign ?? 'none'}</span>
       <span data-testid="denied">{String(termsCheckDenied)}</span>
+      <span data-testid="checking">{String(isCheckingTerms)}</span>
       <button data-testid="accept" onClick={() => void acceptTerms()}>
         accept
       </button>
@@ -540,6 +542,36 @@ describe('ConnectedContext — the terms AND gate', () => {
         renderProvider();
         expect(screen.getByTestId('is-us').textContent).toBe('undefined');
       });
+    });
+  });
+
+  // APP-534 review. The in-flight flag drives WalletChip's full-screen cover,
+  // and that cover is modal — so a flag that never clears locks the app.
+  describe('a check overtaken by a disconnect', () => {
+    it('clears the in-flight flag instead of leaving the cover up forever', async () => {
+      let settle: (result: unknown) => void = () => {};
+      mocks.checkTermsWithRetry.mockReturnValue(
+        new Promise(resolve => {
+          settle = resolve;
+        })
+      );
+
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(screen.getByTestId('checking').textContent).toBe('true'));
+
+      // The disconnect lands while `/check` is still out. Its continuation now
+      // returns at the stale-address guard, before it can clear the flag.
+      mocks.address = undefined;
+      rerender(
+        <ConnectedProvider>
+          <Consumer />
+        </ConnectedProvider>
+      );
+      await act(async () => {
+        settle(checkResult());
+      });
+
+      expect(screen.getByTestId('checking').textContent).toBe('false');
     });
   });
 

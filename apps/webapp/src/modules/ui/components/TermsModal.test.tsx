@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   connected: {
     isConnectedAndAcceptedTerms: false,
     termsCheckDenied: false,
+    isCheckingTerms: false,
     // The numeric identity and the date shown beside it, as two values — the
     // header renders both only when both arrived.
     latestTermsVersion: '1.0' as string | undefined,
@@ -40,7 +41,7 @@ vi.mock('../context/TermsModalContext', () => ({
 
 vi.mock('../context/ConnectedContext', () => ({
   useConnectedContext: () => ({
-    isCheckingTerms: false,
+    isCheckingTerms: mocks.connected.isCheckingTerms,
     termsCheckError: null,
     termsCheckDenied: mocks.connected.termsCheckDenied,
     retryTermsCheck: mocks.retryTermsCheck,
@@ -69,9 +70,47 @@ describe('TermsModal', () => {
     mocks.acceptTerms.mockResolvedValue(true);
     mocks.connected.isConnectedAndAcceptedTerms = false;
     mocks.connected.termsCheckDenied = false;
+    mocks.connected.isCheckingTerms = false;
     mocks.connected.latestTermsVersion = '1.0';
     mocks.connected.termsEffectiveDate = '2026-01-15';
     mocks.termsModal.isModalOpen = true;
+  });
+
+  // The card must open exactly once, already at its final size. It used to open
+  // while the check was still running — as the narrow waiting card — and then
+  // swap to the wide terms card; DialogContent transitions `all`, so that swap
+  // animated width and height and the modal read as expanding outward from its
+  // centre rather than sliding up. WalletChip's ConnectChecksCover holds the
+  // screen for the check instead (covered in WalletChip.test).
+  it('stays shut while the terms check runs, then opens straight at its full width', () => {
+    mocks.connected.isCheckingTerms = true;
+    const { rerender } = renderModal();
+
+    expect(screen.queryByTestId('terms-modal')).toBeNull();
+
+    mocks.connected.isCheckingTerms = false;
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <TermsModal />
+      </I18nProvider>
+    );
+
+    const card = screen.getByTestId('terms-modal');
+    expect(agreeButton()).toBeTruthy();
+    // The full-size recipe, never the 300px dead-end one.
+    expect(card.className).toContain('sm:min-w-152.5');
+    expect(card.className).not.toContain('sm:min-w-[300px]');
+  });
+
+  // The dead ends keep the narrow card, and must reach it by opening at that
+  // size rather than by resizing a card that is already on screen.
+  it('opens the denied dead end straight at the narrow width', () => {
+    mocks.connected.termsCheckDenied = true;
+    renderModal();
+
+    const card = screen.getByTestId('terms-modal');
+    expect(card.className).toContain('sm:min-w-[300px]');
+    expect(card.className).not.toContain('sm:min-w-152.5');
   });
 
   // The worker's /check refused the address (403) after client-side screening
