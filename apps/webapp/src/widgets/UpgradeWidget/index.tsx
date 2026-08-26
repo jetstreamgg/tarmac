@@ -142,7 +142,7 @@ export function UpgradeWidgetWrapped({
     }
 
     if (validatedExternalState?.amount !== undefined) {
-      setOriginAmount(parseUnits(validatedExternalState.amount, 18));
+      setOriginAmount(parseUnits(validatedExternalState.amount || '0', 18));
     }
   }, [
     validatedExternalState?.initialUpgradeToken,

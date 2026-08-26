@@ -21,8 +21,8 @@ export const AboutUsds = ({ height }: { height?: number | undefined }) => {
       description={
         <Trans>
           USDS is the stablecoin of the decentralised Sky Protocol. It can be used in several ways, including
-          to participate in the Sky Savings Rate and get Sky Token Rewards without giving up control. It is
-          the upgraded version of DAI.
+          to participate in the Sky Savings Rate and get Sky Ecosystem Rewards without giving up control. It
+          is the upgraded version of DAI.
         </Trans>
       }
       linkHref={nstEtherscanLink}

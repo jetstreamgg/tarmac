@@ -1684,12 +1684,12 @@ function BoxToken({ symbol, px, className }: { symbol: string; px: number; class
 
 const ICONBOX_SIZES = ['l', 'm', 's', 'xs'] as const;
 const STATUS_SIZES = ['l', 'm', 's', 'xs', '2xs'] as const;
-// Inner logo per Status ring size (48/28/18/10/8px).
+// Inner logo per Status ring size (52/28/20/12/8px).
 const STATUS_LOGO: Record<(typeof STATUS_SIZES)[number], { px: number; className: string }> = {
-  l: { px: 48, className: 'size-12' },
+  l: { px: 52, className: 'size-13' },
   m: { px: 28, className: 'size-7' },
-  s: { px: 18, className: 'size-[18px]' },
-  xs: { px: 10, className: 'size-2.5' },
+  s: { px: 20, className: 'size-5' },
+  xs: { px: 12, className: 'size-3' },
   '2xs': { px: 8, className: 'size-2' }
 };
 
@@ -1724,12 +1724,12 @@ function IconboxSection() {
         />
       </SubSection>
 
-      <SubSection title="Status — default / success / info × L / M / S / XS / 2XS, status dot">
+      <SubSection title="Status — default / success / info × L / M / S / XS / 2XS">
         <div className="flex flex-col gap-4">
           {(['default', 'success', 'info'] as const).map(type => (
             <div key={type} className="flex items-center gap-6">
               {STATUS_SIZES.map(size => (
-                <IconboxStatus key={size} type={type} size={size} dot={type !== 'default'}>
+                <IconboxStatus key={size} type={type} size={size}>
                   <BoxToken symbol="sUSDS" {...STATUS_LOGO[size]} />
                 </IconboxStatus>
               ))}
