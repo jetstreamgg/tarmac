@@ -15,6 +15,7 @@ import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
+import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSuccessToast';
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
@@ -44,6 +45,8 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
 const MINIMIZED_TOAST_ID = 'transaction-minimized';
+// The confirmed-transaction toast the modal hands off to on its way out.
+const SUCCESS_TOAST_ID = 'transaction-success';
 const ABANDONED_TOAST_ID = 'transaction-abandoned';
 const PENDING_BLOCK_TOAST_ID = 'transaction-pending-block';
 
@@ -536,13 +539,14 @@ export function TransactionProvider({
     const config = configRef.current;
     if (!config) return;
     // Amount-aware title when the flow supplied one, else the subtitle sentence, else the title.
-    const titleFor = (state: 'loading' | 'success' | 'error') =>
+    const titleFor = (state: 'loading' | 'error') =>
       config.toast?.[state] ?? config.subtitles?.[state] ?? config.title;
 
+    // SUCCESS never reaches here: it closes the session (see onSuccess), which
+    // clears `minimized` in the same commit and posts its own toast.
     const inFlight = txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED;
-    const state =
-      txStatus === TxStatus.SUCCESS ? 'success' : txStatus === TxStatus.ERROR ? 'error' : 'loading';
-    if (txStatus !== TxStatus.SUCCESS && txStatus !== TxStatus.ERROR && !inFlight) return;
+    const state = txStatus === TxStatus.ERROR ? 'error' : 'loading';
+    if (txStatus !== TxStatus.ERROR && !inFlight) return;
 
     toastWithClose(
       () => (
@@ -807,6 +811,32 @@ export function TransactionProvider({
       if (analytics) {
         startNewFlow();
       }
+
+      // A confirmed transaction no longer holds the modal: it closes itself and
+      // the outcome moves to a toast (Figma 859:35901). Read the config BEFORE
+      // closing — the close tears the session down, configRef included — and
+      // dismiss any minimized toast first, so the two never sit stacked.
+      const config = configRef.current;
+      if (config) {
+        toast.dismiss(MINIMIZED_TOAST_ID);
+        const successTitle = config.toast?.success ?? config.subtitles?.success ?? config.title;
+        const txHash = hash ?? txHashRef.current;
+        toastWithClose(
+          () => (
+            <TransactionSuccessToast
+              title={successTitle}
+              hash={txHash}
+              href={txHash ? getTransactionLink(chainId, address, txHash, isSafeWallet) : undefined}
+            />
+          ),
+          { id: SUCCESS_TOAST_ID, duration: 10000 }
+        );
+      }
+      // Via the ref so this callback doesn't churn on every externalLink /
+      // currentStep change (it is handed to every engine hook). The close
+      // snapshots the SUCCESS screen for the modal's 300ms exit, so the
+      // handoff reads as the modal leaving, not blinking out.
+      handleCloseRef.current();
     },
     [
       sessionGen,
