@@ -1,7 +1,7 @@
 import { test as playwrightTest, expect, Browser, TestInfo, Page } from '@playwright/test';
 import { accountPool } from './utils/accountPoolManager';
 import { mockRpcCalls } from './mock-rpc-call';
-import { mockVpnCheck } from './mock-vpn-check';
+import { unmockedIpStatusHandler } from './mock-vpn-check';
 import { mockGeoConfig } from './mock-geo-config';
 
 type TestFixtures = {
@@ -76,8 +76,11 @@ export const test = playwrightTest.extend<TestFixtures>({
     // Set up RPC call mocking (from base fixtures)
     await page.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
 
-    // Set up VPN check mocking (from base fixtures)
-    await page.route('https://vpnapi.io/**', mockVpnCheck);
+    // /ip/status never fires in the default skip-auth build; a spec that
+    // forces the checks on must register its own mock (which takes precedence
+    // over this one) — the default 500s so a forgotten mock fails closed and
+    // loudly instead of silently disarming the US signature gate.
+    await page.route('**/ip/status', unmockedIpStatusHandler);
 
     // Serve an unrestricted geo config; the staging endpoint is unreachable
     // from the test browser and the fetch fallback disables several modules.

@@ -81,6 +81,11 @@ vi.mock('@/hooks/stake/useStakeAllowance', () => ({
 }));
 
 // The next urn index for a brand-new position.
+// SKY spot for the enhanced-screening USD notional (APP-517).
+vi.mock('@/hooks/prices/useSkyPrice', () => ({
+  useSkyPrice: () => ({ data: 50000000000000000n, priceString: '0.05', isLoading: false, error: null })
+}));
+
 vi.mock('@/hooks/stake/useCurrentUrnIndex', () => ({
   useCurrentUrnIndex: () => ({ data: URN_INDEX, error: null, isLoading: false, mutate: () => undefined })
 }));

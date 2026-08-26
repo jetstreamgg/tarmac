@@ -10,8 +10,8 @@ import { TermsModal } from '@/modules/ui/components/TermsModal';
 
 /**
  * The loader/terms contract, driven through the REAL modal machinery:
- * TermsModalProvider + TermsModal + TermsDialog + useAppLoader wired together,
- * with ConnectedContext replaced by a live test double. E2E can't reach this
+ * TermsModalProvider + TermsModal + useAppLoader wired together, with
+ * ConnectedContext replaced by a live test double. E2E can't reach this
  * flow — VITE_SKIP_AUTH_CHECK auto-accepts terms in every e2e environment —
  * so this suite is where the ordering is pinned deterministically.
  */
@@ -20,12 +20,11 @@ const ADDRESS = '0x00000000000000000000000000000000000000aa';
 
 const h = vi.hoisted(() => ({
   isConnected: false,
+  isAuthorized: true,
   address: undefined as string | undefined,
   onConnectCallbacks: [] as ((data: { address: string; isReconnected: boolean }) => void)[],
-  scrolledToEnd: false,
   disconnect: undefined as ReturnType<typeof vi.fn> | undefined,
-  navigate: undefined as ReturnType<typeof vi.fn> | undefined,
-  signMutation: undefined as { onSuccess?: (data: string) => void } | undefined
+  navigate: undefined as ReturnType<typeof vi.fn> | undefined
 }));
 
 vi.mock('wagmi', async importOriginal => ({
@@ -42,12 +41,6 @@ vi.mock('wagmi', async importOriginal => ({
   }) => {
     if (config.onConnect) h.onConnectCallbacks.push(config.onConnect);
   },
-  useSignMessage: (config: { mutation: { onSuccess?: (data: string) => void } }) => ({
-    signMessage: () => {
-      h.signMutation = config.mutation;
-      config.mutation.onSuccess?.('0xsignature');
-    }
-  }),
   useDisconnect: () => ({ disconnect: h.disconnect! })
 }));
 vi.mock('@tanstack/react-router', () => ({
@@ -56,7 +49,11 @@ vi.mock('@tanstack/react-router', () => ({
     select({ location: { pathname: '/portfolio' } })
 }));
 vi.mock('@/hooks', () => ({
-  useEarnMarketplace: () => ({ rows: [], isPositionsLoading: true })
+  useEarnMarketplace: () => ({ rows: [], isPositionsLoading: true }),
+  // ResponsiveModal (inside TermsModal) reads the breakpoint from the barrel;
+  // pin the desktop tier so the modal composes as a Dialog deterministically.
+  BP: { sm: 0, md: 1, lg: 2, desktop: 3, xl: 4, '2xl': 5 },
+  useBreakpointIndex: () => ({ bpi: 3 })
 }));
 vi.mock('@/modules/portfolio/hooks/useStablecoinBalances', () => ({
   useStablecoinBalances: () => ({ balances: [], isLoading: true })
@@ -66,12 +63,6 @@ vi.mock('@/modules/portfolio/hooks/useGeoVisibleRows', () => ({
 }));
 vi.mock('@/modules/geo-config', () => ({
   useGeoConfig: () => ({ isModuleEnabled: () => true, isLoading: false })
-}));
-
-// The scroll-to-end gate is an IntersectionObserver in TermsDialog; drive it
-// from the holder so tests control when "the user read to the bottom".
-vi.mock('react-intersection-observer', () => ({
-  useInView: () => [() => {}, h.scrolledToEnd]
 }));
 
 // ConnectedContext gets a live double below (real React context, so state
@@ -90,12 +81,6 @@ vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
 }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ isModalOpen: false })
-}));
-vi.mock('@/modules/ui/components/terms-loader', () => ({
-  getTermsContent: () => '# Terms of use'
-}));
-vi.mock('@/modules/ui/components/markdown/TermsMarkdownRenderer', () => ({
-  TermsMarkdownRenderer: ({ markdown }: { markdown: string }) => <div>{markdown}</div>
 }));
 vi.mock('@/modules/sentry/reportError', () => ({
   reportError: vi.fn()
@@ -122,15 +107,25 @@ function Harness() {
   const value = useMemo(
     () => ({
       isConnectedAndAcceptedTerms: h.isConnected && hasAcceptedTerms,
-      setHasAcceptedTerms,
+      hasAcceptedTerms,
+      hasSignedCurrentTerms: false,
+      latestTermsVersion: '1.0',
+      termsEffectiveDate: '2026-01-15',
+      // Stands in for the real Phase A write (POST /add, then the local flag),
+      // which ConnectedContext owns and its own suite covers.
+      acceptTerms: async () => {
+        setHasAcceptedTerms(true);
+        return true;
+      },
       isCheckingTerms: false,
       termsCheckError: false,
       retryTermsCheck: () => {},
-      isAuthorized: true,
+      isAuthorized: h.isAuthorized,
       authData: { authIsLoading: false },
       vpnData: { vpnIsLoading: false }
     }),
-    [hasAcceptedTerms]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- h.isAuthorized is test-harness state read at render time
+    [hasAcceptedTerms, h.isAuthorized]
   );
   return (
     <I18nProvider i18n={i18n}>
@@ -156,14 +151,13 @@ const connect = (rerender: (ui: React.ReactElement) => void) => {
 beforeEach(() => {
   localStorage.clear();
   h.isConnected = false;
+  h.isAuthorized = true;
   h.address = undefined;
   h.onConnectCallbacks = [];
   h.navigate = vi.fn();
-  h.scrolledToEnd = false;
   h.disconnect = vi.fn();
   // Must sit on sanitizeUrl's domain allowlist or the POST silently drops.
   vi.stubEnv('VITE_TERMS_ENDPOINT', 'https://staging-api.sky.money/terms-acceptance');
-  vi.stubEnv('VITE_TERMS_MESSAGE_TO_SIGN', 'test terms message');
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => ({ ok: true, json: async () => ({}) }))
@@ -179,43 +173,80 @@ afterEach(() => {
 describe('loader/terms flow (real modal)', () => {
   it('connecting opens the terms modal and the loader stays down behind it', () => {
     const { rerender } = render(<Harness />);
-    expect(screen.queryByTestId('end-of-terms')).toBeNull();
+    expect(screen.queryByTestId('terms-modal')).toBeNull();
 
     connect(rerender);
 
-    expect(screen.getByTestId('end-of-terms')).toBeTruthy();
+    expect(screen.getByTestId('terms-modal')).toBeTruthy();
     expect(phase()).toBe('off');
     expect(screen.queryByTestId('app-loader')).toBeNull();
-    // The gate, not the timing: checkbox locked until the terms are read.
-    expect((screen.getByRole('checkbox') as HTMLButtonElement).disabled).toBe(true);
+    // The gate: the box is unchecked by default, so the CTA starts disabled.
+    // (The scroll-to-end gate is gone with the embedded document — APP-500.)
+    expect((screen.getByRole('button', { name: 'Agree and continue' }) as HTMLButtonElement).disabled).toBe(
+      true
+    );
   });
 
-  it('signing accepts the terms, closes the modal, and only then releases the loader', async () => {
+  it('accepting closes the modal, and only then releases the loader', async () => {
     const { rerender } = render(<Harness />);
     connect(rerender);
     expect(phase()).toBe('off');
 
-    // Read to the end, then check the box — TermsModal signs on check, the
-    // signature POSTs to the terms endpoint, and acceptance flips.
-    h.scrolledToEnd = true;
-    rerender(<Harness />);
+    // Tick the box, then agree. Ticking no longer accepts anything on its
+    // own — the signature that used to fire here is gone.
     fireEvent.click(screen.getByRole('checkbox'));
+    expect(screen.getByTestId('terms-modal')).toBeTruthy();
 
-    await waitFor(() => expect(screen.queryByTestId('end-of-terms')).toBeNull());
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('https://staging-api.sky.money/terms-acceptance/add');
+    fireEvent.click(screen.getByRole('button', { name: 'Agree and continue' }));
+
+    await waitFor(() => expect(screen.queryByTestId('terms-modal')).toBeNull());
     // Acceptance is what releases the loader: the cover is up only now.
     expect(phase()).toBe('cover');
     expect(screen.getByTestId('app-loader')).toBeTruthy();
   });
 
-  it('rejecting the terms disconnects and never shows the loader', () => {
+  // The APP-497 ordering: address screening sits between wallet selection and
+  // the T&C gate. While `isAuthorized` is false (screening pending, or the
+  // wallet is blocked), the terms modal must not open — the blocked/loading UI
+  // owns the screen. It opens only once screening resolves in favor.
+  it('holds the terms modal until screening authorizes the wallet', () => {
+    h.isAuthorized = false;
+    const { rerender } = render(<Harness />);
+
+    connect(rerender);
+    expect(screen.queryByTestId('terms-modal')).toBeNull();
+
+    h.isAuthorized = true;
+    rerender(<Harness />);
+
+    expect(screen.getByTestId('terms-modal')).toBeTruthy();
+    expect(phase()).toBe('off');
+  });
+
+  // Found in APP-497 browser QA: a modal state latched open during a
+  // connection (e.g. behind the blocked-wallet screen) must not survive the
+  // disconnect and greet whatever connects next.
+  it('disconnecting clears any open terms modal', () => {
+    const { rerender } = render(<Harness />);
+    connect(rerender);
+    expect(screen.getByTestId('terms-modal')).toBeTruthy();
+
+    h.isConnected = false;
+    h.address = undefined;
+    rerender(<Harness />);
+
+    expect(screen.queryByTestId('terms-modal')).toBeNull();
+  });
+
+  it('dismissing the terms disconnects and never shows the loader', () => {
     const { rerender } = render(<Harness />);
     connect(rerender);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
+    // The realigned comp (1868:80727) dropped Cancel — the X is the only exit.
+    fireEvent.click(screen.getByTestId('terms-modal-close'));
 
     expect(h.disconnect).toHaveBeenCalled();
-    expect(screen.queryByTestId('end-of-terms')).toBeNull();
+    expect(screen.queryByTestId('terms-modal')).toBeNull();
     expect(phase()).toBe('off');
     expect(screen.queryByTestId('app-loader')).toBeNull();
   });

@@ -27,7 +27,14 @@ export function WalletChip() {
   const { data: ensAvatar } = useEnsAvatar({ name: ensName!, chainId: mainnet.id });
   const isSafeWallet = useIsSafeWallet();
   const [showDrawer, setShowDrawer] = useState(false);
-  const { isConnectedAndAcceptedTerms, isAuthorized, authData, vpnData } = useConnectedContext();
+  const {
+    isConnectedAndAcceptedTerms,
+    isAuthorized,
+    authData,
+    vpnData,
+    accessBlockReason,
+    retryAccessChecks
+  } = useConnectedContext();
 
   // Connect type of Navbar Item / Wallet Info (Figma 5069:27086): the DS
   // primary button recipe at navbar height (40px, Label 5).
@@ -43,7 +50,12 @@ export function WalletChip() {
     // desktop grid, where chip width intentionally squeezes the flanks (APP-415).
     <div data-testid="wallet-chip" className="desktop:min-w-[auto] min-w-0">
       {!isAuthorized ? (
-        <UnauthorizedPage authData={authData} vpnData={vpnData}>
+        <UnauthorizedPage
+          authData={authData}
+          vpnData={vpnData}
+          blockReason={accessBlockReason}
+          onRetry={retryAccessChecks}
+        >
           {connectButton}
         </UnauthorizedPage>
       ) : !isConnectedAndAcceptedTerms ? (

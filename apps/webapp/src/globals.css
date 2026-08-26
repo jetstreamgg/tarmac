@@ -67,12 +67,9 @@
   --color-cardLight: rgba(64, 60, 113, 0.207);
   /* B5 chrome-surface tokens — dark values are production parity (don't change);
      G2 filled the light scope from the DS light mode. These replace magic hex
-     in CookieConsentBanner + TermsDialog so those surfaces render on tokens. */
+     in CookieConsentBanner so that surface renders on tokens. */
   --color-cookieSurface: #1a1a2e;
   --color-cookieToggleOn: #5116cc;
-  --color-termsCard: #181720;
-  --color-termsBtnHover: rgb(17, 16, 31);
-  --color-termsBtnActive: rgb(34, 32, 66);
   /* E2 convert glass tokens — dark values are the Figma source values
      (colors/bg/bg-secondary, components/badges/bg-secondary,
      colors/border/border-secondary, and the flip control's literal fills, which
@@ -829,9 +826,6 @@
        cookieToggleOn has no light value: the toggle track's light:bg-surfaceAlt
        wins by source order in light, so the accent only shows in dark (parity). */
     --color-cookieSurface: #ecf0ff; /* components/modals/bg-item — mirrors containerDark */
-    --color-termsCard: #ffffff99; /* colors/bg/bg-secondary — mirrors card */
-    --color-termsBtnHover: #bcb6ef4d; /* components/modals/bg-subsection — mirrors surfaceHover */
-    --color-termsBtnActive: #9ca0e533; /* components/badges/bg-secondary — mirrors surfaceAlt */
 
     /* Secondary buttons — the DS gives the hairline
        (components/buttons/secondary/border-default, on --color-glassBorder below)
