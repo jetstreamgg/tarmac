@@ -65,7 +65,7 @@ function Harness({ steps, onReady }: { steps: string[]; onReady: (cb: TxCallback
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    launch({ title: 'Supply', steps, onConfirm: () => {} });
+    launch({ title: 'Supply', usdValue: 0, steps, onConfirm: () => {} });
   }, [launch, steps]);
   return null;
 }

@@ -176,6 +176,23 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   const executeRef = useRef<() => void>(() => undefined);
   executeRef.current = () => writeHook.execute();
 
+  // USD notional for the enhanced-screening threshold (APP-517): the valued
+  // output leg, live across output-token/quote changes (pushed by the effect
+  // below). A non-empty redeem whose leg can't be valued yet (quote or price
+  // missing) is `undefined` — unknown, treated as above-threshold.
+  const usdValue = useMemo(() => {
+    const leg = pendleNonPtLeg('redeem', {
+      originSymbol: ptToken.symbol,
+      targetSymbol: selectedOutputToken.symbol,
+      amountInBigint: ptBalance,
+      amountOutBigint: quote?.amountOut ?? 0n,
+      fromDecimals: market.underlyingDecimals,
+      toDecimals: getTokenDecimals(selectedOutputToken, mainnet.id)
+    });
+    if (leg.amount === 0) return ptBalance > 0n ? undefined : 0;
+    return valueUsd(leg.symbol, leg.amount);
+  }, [ptToken, selectedOutputToken, ptBalance, quote, market, valueUsd]);
+
   // `amount` = USD value of the redeemed output leg, negative so dashboard
   // tiles filtering `properties.amount < 0` count redeem as a withdrawal
   // alongside SELL; omitted when no price is available rather than emit a
@@ -264,6 +281,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       });
     }
     launch({
+      usdValue,
       title: t`Claim matured position`,
       transactionTitle: t`Confirm in the wallet`,
       subtitles: {
@@ -296,19 +314,23 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     steps,
     confirmDisabled,
     sessionId,
-    analytics
+    analytics,
+    usdValue
   ]);
 
   useEffect(() => {
     // Freeze once the flow leaves IDLE (same as useModalEntryBody): the quote
-    // repolls mid-flight and must not rewrite the blob the signed tx started with.
+    // repolls mid-flight and must not rewrite the blob the signed tx started
+    // with — and a drifted `usdValue` could downgrade the screening tier a
+    // retry is gated on (APP-517). Pushes resume when a failure returns to IDLE.
     if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
       transactionContent,
       errorMessage: prepareErrorMessage,
       steps,
       confirmDisabled,
-      analytics
+      analytics,
+      usdValue
     });
   }, [
     isModalOpen,
@@ -319,7 +341,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     prepareErrorMessage,
     steps,
     confirmDisabled,
-    analytics
+    analytics,
+    usdValue
   ]);
 
   return {

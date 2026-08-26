@@ -46,6 +46,11 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
+      # The forced-checks e2e specs (APP-502) route-mock /terms-acceptance/check,
+      # but the app only issues that request when the endpoint is a well-formed URL
+      # — without this the terms modal opens in its error state and the accept
+      # flow can never find its checkbox.
+      VITE_TERMS_ENDPOINT: 'https://staging-api.sky.money/terms-acceptance'
       VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       # Parallel test configuration
       TEST_WORKERS: ${{ github.event.inputs.workers || '3' }}

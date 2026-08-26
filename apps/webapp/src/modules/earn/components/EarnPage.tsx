@@ -400,7 +400,7 @@ export function EarnPage() {
         subtitle={
           <>
             <Trans>
-              Sky Protocol is where stablecoins go to work — and where they&apos;ve been going since{' '}
+              Sky Protocol is where stablecoins go to work - and where they&apos;ve been going since{' '}
               {protocolStartYear}.
             </Trans>{' '}
             {circulationIsLoading ? (

@@ -1,12 +1,24 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
+import { forceAuthChecks, mockAddressScreening, mockIpStatus, mockTermsCheck } from '../mock-terms-gate';
 
 test.describe('accept terms', () => {
+  // The default e2e build auto-accepts (VITE_SKIP_AUTH_CHECK), which made this
+  // spec a no-op: the modal never opened and the helper timed out into its
+  // skip branch. Forcing the checks back on turns it into the real Phase A
+  // path (APP-502): modal opens, checkbox gates the CTA, accepting keeps the
+  // wallet connected and dismisses the modal.
   test('accept terms', async ({ isolatedPage }) => {
+    await forceAuthChecks(isolatedPage);
+    await mockIpStatus(isolatedPage, { countryCode: 'XX' });
+    await mockAddressScreening(isolatedPage);
+    await mockTermsCheck(isolatedPage);
     await isolatedPage.goto('/');
 
-    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.waitForTimeout(1000);
+    // expectTerms makes the modal's appearance an assertion (the seam really
+    // landed), and the helper itself pins the completion: modal closed with
+    // the wallet still connected.
+    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true, expectTerms: true });
   });
 });
 

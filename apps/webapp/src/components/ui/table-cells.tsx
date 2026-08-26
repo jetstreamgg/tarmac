@@ -169,9 +169,7 @@ export function CellToken({
 }) {
   return (
     <span className="flex items-center gap-3">
-      <IconboxStatus type={active ? 'success' : (status ?? 'default')} dot={active || !!status}>
-        {icon}
-      </IconboxStatus>
+      <IconboxStatus type={active ? 'success' : (status ?? 'default')}>{icon}</IconboxStatus>
       <span className="flex flex-col gap-0.5">
         <span className={cn(label4, 'text-fgPrimary flex items-center gap-1', titleClassName)}>
           {title}

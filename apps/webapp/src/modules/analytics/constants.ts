@@ -17,6 +17,7 @@ export const AppEvents = {
   WALLET_CONNECT_ATTEMPTED: 'app_wallet_connect_attempted',
   WALLET_CONNECT_REJECTED: 'app_wallet_connect_rejected',
   GATED_ACTION_RESOLVED: 'app_gated_action_resolved',
+  TERMS_SIGNATURE_DECLINED: 'app_terms_signature_declined',
   NETWORK_SWITCH_REQUESTED: 'app_network_switch_requested',
   NETWORK_SWITCH_COMPLETED: 'app_network_switch_completed',
   NETWORK_AUTO_SWITCHED: 'app_network_auto_switched',
@@ -41,9 +42,20 @@ export type RedirectReason =
   | 'market_matured'
   | 'not_found';
 export type TxStatus = 'success' | 'error' | 'cancelled';
-export type VpnCheckResult = 'allowed' | 'vpn_blocked' | 'region_blocked' | 'error' | 'unknown';
+export type ErrorContext = string;
+/**
+ * How a per-transaction terms signature was declined (APP-501):
+ * 'wallet_rejected' = the sign request was rejected in the wallet;
+ * 'abandoned' = the modal was closed (or another transaction launched)
+ * while the sign request was still pending.
+ */
+export type TermsSignatureDeclineMethod = 'wallet_rejected' | 'abandoned';
+// A VPN stopped being a block outcome in APP-497 ('vpn_blocked'/'vpn_detected'
+// retired): VPN users transact behind the per-transaction signature instead,
+// and the `is_vpn` property on the events carries the fact.
+export type VpnCheckResult = 'allowed' | 'region_blocked' | 'error' | 'unknown';
 export type BlockReason =
-  'vpn_detected' | 'restricted_region' | 'address_restricted' | 'network_error' | 'auth_error' | 'unknown';
+  'restricted_region' | 'address_restricted' | 'network_error' | 'auth_error' | 'unknown';
 export type Viewport = 'mobile' | 'tablet' | 'desktop';
 export type DisconnectSource = 'wallet_drawer' | 'terms_declined' | 'terms_dismissed' | 'external';
 /** Why the connect modal opened: the generic button, or the gated action that needed a wallet. */

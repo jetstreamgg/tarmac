@@ -110,7 +110,7 @@ describe('PendleProductDetail', () => {
     expect(details.textContent).toContain('4.86%'); // Fixed APY
     expect(details.textContent).toContain('3.65%'); // Underlying APY
     expect(details.textContent).toContain('$1,650,000,000'); // TVL, full figure like the vault detail
-    expect(details.textContent).toContain('$1,947,757'); // Liquidity
+    expect(details.textContent).toContain('$1,947,757'); // AMM liquidity
     expect(details.textContent).toMatch(/2026/); // Maturity date
     expect(screen.getByRole('img', { name: 'moderate' })).toBeTruthy(); // Risk meter
   });

@@ -242,6 +242,9 @@ export function SavingsModalForm({
     transactionScreenContent,
     steps,
     toast,
+    // All supply/withdraw origins are $1-pegged (USDS/DAI/USDC), so the
+    // entered amount doubles as the USD notional (enhanced screening, APP-517).
+    usdValue: parseFloat(formatUnits(amount, originDecimals)),
     analytics
   });
 

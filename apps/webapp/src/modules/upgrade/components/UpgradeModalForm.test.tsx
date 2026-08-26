@@ -40,7 +40,9 @@ vi.mock('@/hooks', async importOriginal => {
     useTokenBalance: () => ({ data: { value: 100n * 10n ** 18n }, refetch: vi.fn() }),
     useMkrSkyFee: () => ({ data: h.mkrSkyFee, error: h.mkrSkyFeeError }),
     useNetworkFee: () => ({ data: undefined, isLoading: false, error: null }),
-    useIsBatchSupported: () => ({ data: false })
+    useIsBatchSupported: () => ({ data: false }),
+    // The APP-517 usdValue derivation reads the SKY price; keep it out of react-query.
+    useSkyPrice: () => ({ priceString: '0.05' })
   };
 });
 

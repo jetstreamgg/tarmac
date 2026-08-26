@@ -108,7 +108,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
     {
       id: 'liquidity',
       icon: <Droplet className="h-3 w-3" />,
-      label: <Trans>Liquidity</Trans>,
+      label: <Trans>AMM liquidity</Trans>,
       value: (
         <DetailValue
           loading={statsLoading}

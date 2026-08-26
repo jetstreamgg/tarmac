@@ -69,7 +69,7 @@ export const PendleMaturedPositionCard = ({
       data-testid="pendle-matured-position-card"
     >
       <div className="flex items-start justify-between">
-        <IconboxStatus size="l" type="success" dot>
+        <IconboxStatus size="l" type="success">
           <TokenIcon
             token={{ symbol: market.underlyingSymbol }}
             width={48}

@@ -45,6 +45,8 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
         sessionId: supplySessionId,
         reviewTitle: t`Review supply`,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
+        usdValue: 0,
         confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
@@ -74,6 +76,8 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
         sessionId: withdrawSessionId,
         reviewTitle: t`Review withdrawal`,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
+        usdValue: 0,
         confirmLabel: t`Confirm`,
         backgroundContent: <PendleModalForm sessionId={withdrawSessionId} flow="withdraw" market={market} />,
         onConfirm: () => {},

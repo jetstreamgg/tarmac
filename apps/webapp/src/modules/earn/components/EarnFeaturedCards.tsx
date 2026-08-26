@@ -253,7 +253,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
       </>
     ),
     icon: row => (
-      <IconboxStatus size="l" type="success" dot className="size-14 md:size-16">
+      <IconboxStatus size="l" type="success" className="size-14 md:size-16">
         <TokenIcon token={{ symbol: row.tokenSymbol }} width={52} showChainIcon={false} />
       </IconboxStatus>
     ),
