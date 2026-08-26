@@ -205,7 +205,7 @@ describe('EarnTable — interactive risk profile (APP-396)', () => {
     fireEvent.click(screen.getByTestId('earn-card-toggle-savings'));
     fireEvent.click(screen.getByRole('button', { name: 'Risk profile' }));
 
-    expect(screen.getByText('Conservative')).toBeTruthy();
+    expect(screen.getByText('Core')).toBeTruthy();
     expect(screen.getByText('Withdrawals')).toBeTruthy();
   });
 });

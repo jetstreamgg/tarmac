@@ -214,6 +214,9 @@ export function RewardsModalForm({
     transactionScreenContent,
     steps,
     toast,
+    // The supply token is $1-pegged USDS (see amountUsd above) — enhanced
+    // screening, APP-517.
+    usdValue: amountUsd,
     analytics
   });
 

@@ -136,6 +136,13 @@ export type TransactionConfig = {
     success?: string;
     error?: string;
   };
+  /**
+   * Starts the flow's write(s). The provider consults the pre-transaction
+   * gate (`./preTransactionGate`) before invoking this — and before
+   * `onSecondaryConfirm` / `onRetry` — so a denied verdict never reaches the
+   * engine. The stub gate allows synchronously, keeping this (and the
+   * engine's `onMutate`) in the same tick as the user's confirm click.
+   */
   onConfirm: () => void;
   /**
    * Fires when the entry's secondary CTA is clicked (see
@@ -165,6 +172,22 @@ export type TransactionConfig = {
   steps?: TransactionStep[];
   /** Analytics metadata for tracking transaction lifecycle events. */
   analytics?: TransactionAnalytics;
+  /**
+   * Estimated USD notional of the transaction (APP-517): what the compliance
+   * surface compares against the enhanced-screening threshold. Editable flows
+   * launch with `0` (nothing entered yet) and keep it live via
+   * `updateModalContent` as the amount changes; flows whose amounts resolve
+   * asynchronously (the claim panels) launch with `undefined` until the
+   * amounts land. `undefined` means UNKNOWN and is treated as
+   * above-threshold — the enhanced check is required — so a flow that cannot
+   * value its amount fails safe rather than open.
+   *
+   * DELIBERATELY REQUIRED (not `usdValue?:`): this is legal-compliance
+   * gating, so a new launch site must state its valuation — or explicitly
+   * declare it unknown — at compile time. Passing `undefined` is always
+   * safe (it forces the enhanced check); omitting the field is a type error.
+   */
+  usdValue: number | undefined;
   /** Identity used to gate updateModalContent calls to the active session. */
   sessionId?: string;
 };
@@ -193,6 +216,7 @@ export type LiveModalUpdate = Partial<
     | 'steps'
     | 'toast'
     | 'analytics'
+    | 'usdValue'
   >
 > & {
   /** Partial entry merged into the existing entry — `content` is preserved if omitted. */

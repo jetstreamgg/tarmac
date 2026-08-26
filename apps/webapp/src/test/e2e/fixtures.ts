@@ -2,7 +2,7 @@ import { test as playwrightTest, expect } from '@playwright/test';
 import { waitForVnetReady } from './utils/waitForVnetsReady';
 import { evmRevert, evmSnapshot, SnapshotInfo } from './utils/snapshotTestnet';
 import { mockRpcCalls } from './mock-rpc-call';
-import { mockVpnCheck } from './mock-vpn-check';
+import { mockIpStatusHandler } from './mock-vpn-check';
 import { mockGeoConfig } from './mock-geo-config';
 import { setErc20Balance, setEthBalance } from './utils/setBalance';
 import {
@@ -141,7 +141,7 @@ const test = playwrightTest.extend<TestFixture, WorkerFixture>({
     process.env.VITE_TEST_WORKER_INDEX = String(workerInfo.workerIndex);
 
     await page.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
-    await page.route('**/ip/status', mockVpnCheck);
+    await page.route('**/ip/status', mockIpStatusHandler());
     await page.route('**/geo-config', mockGeoConfig);
 
     await use(page);

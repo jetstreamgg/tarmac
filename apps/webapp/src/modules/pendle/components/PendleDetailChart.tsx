@@ -5,25 +5,24 @@ import { Chart, TimeFrame, type Data } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 
-type Metric = 'rate' | 'liquidity';
-
 const SECONDS_PER_DAY = 86_400;
 
 /**
- * The product-detail Rate/Liquidity chart for a Pendle market — injected into
+ * The product-detail Rate chart for a Pendle market — injected into
  * ProductDetailTemplate's `chart` slot, mirroring SavingsDetailChart's
  * composition. The daily series covers the whole market lifetime (markets live
  * for months), so timeframe filtering happens client-side.
+ *
+ * Rate is the only series: the Liquidity one was pulled in APP-527 because the
+ * figure it plotted is AMM liquidity, not the total liquidity the design asks
+ * for. `usePendleMarketChartData` still carries the series so it can come back.
  */
 export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
-  const [metric, setMetric] = useState<Metric>('rate');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
   const { data: points, isLoading, error } = usePendleMarketChartData(market.marketAddress);
   const { data: marketsApi } = usePendleMarketsApiData();
   const stats = marketsApi?.[market.marketAddress];
-
-  const isRate = metric === 'rate';
 
   const data = useMemo<Data[]>(() => {
     if (!points) return [];
@@ -31,19 +30,16 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
     return points
       .filter(point => point.timestampSec >= cutoffSec)
       .flatMap(point => {
-        const value = isRate ? point.impliedApy : (point.liquidity ?? 0);
         // A bucket the API serves without a rate is skipped rather than drawn
-        // as a 0% dip. The two fields are independently optional, so this only
-        // ever drops the metric that's actually missing.
-        if (value === undefined) return [];
-        // Rate plots percent units (0.045 → 4.5); Liquidity plots raw USD.
-        return [{ value: isRate ? value * 100 : value, date: new Date(point.timestampSec * 1000) }];
+        // as a 0% dip.
+        if (point.impliedApy === undefined) return [];
+        // Percent units (0.045 → 4.5).
+        return [{ value: point.impliedApy * 100, date: new Date(point.timestampSec * 1000) }];
       });
-  }, [points, timeFrame, isRate]);
+  }, [points, timeFrame]);
 
-  // Headlines read the canonical current figures (matching the Details grid),
-  // not the last historic bucket. The series is pool liquidity, not TVL -
-  // Pendle's historical endpoint carries no totalTvl (see usePendleMarketChartData).
+  // Headline reads the canonical current figure (matching the Details grid),
+  // not the last historic bucket.
   const currentRate = stats?.impliedApy !== undefined ? stats.impliedApy * 100 : undefined;
 
   return (
@@ -54,16 +50,10 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
         data={data}
         isLoading={isLoading}
         error={error ?? undefined}
-        isPercentage={isRate}
-        symbol={isRate ? undefined : 'USD'}
-        label={isRate ? <Trans>Fixed APY</Trans> : <Trans>Liquidity</Trans>}
-        displayValue={isRate ? currentRate : stats?.liquidity}
-        metrics={[
-          { value: 'rate', label: <Trans>Rate</Trans> },
-          { value: 'liquidity', label: <Trans>Liquidity</Trans> }
-        ]}
-        activeMetric={metric}
-        onMetricChange={value => setMetric(value as Metric)}
+        isPercentage
+        label={<Trans>Fixed APY</Trans>}
+        tooltipLabel={<Trans>Rate</Trans>}
+        displayValue={currentRate}
         onTimeFrameChange={setTimeFrame}
       />
     </ErrorBoundary>
