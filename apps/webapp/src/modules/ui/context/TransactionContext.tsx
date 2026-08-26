@@ -797,6 +797,12 @@ export function TransactionProvider({
         });
       }
 
+      // Captured alongside `analytics`, BEFORE the consumer callback: the
+      // close below tears the session down (configRef included), and a
+      // consumer that relaunched from its own onSuccess would otherwise put
+      // the new flow's copy on this transaction's toast.
+      const config = configRef.current;
+
       configRef.current?.onSuccess?.();
       // Rotate AFTER the consumer callback so anything it emits joins this flow
       if (analytics) {
@@ -804,10 +810,8 @@ export function TransactionProvider({
       }
 
       // A confirmed transaction no longer holds the modal: it closes itself and
-      // the outcome moves to a toast (Figma 859:35901). Read the config BEFORE
-      // closing — the close tears the session down, configRef included — and
-      // dismiss any minimized toast first, so the two never sit stacked.
-      const config = configRef.current;
+      // the outcome moves to a toast (Figma 859:35901). Dismiss any minimized
+      // toast first, so the two never sit stacked.
       if (config) {
         toast.dismiss(MINIMIZED_TOAST_ID);
         const successTitle = config.toast?.success ?? config.subtitles?.success ?? config.title;

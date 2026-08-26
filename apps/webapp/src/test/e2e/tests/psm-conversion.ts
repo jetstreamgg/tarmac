@@ -46,6 +46,12 @@ const reviewAndConfirm = async (page: Page) => {
  * and `getByText('Convert USDS to USDC')` can never match. Locate the row, then
  * assert its parts.
  */
+/*
+ * TIMING: the step list only exists while the modal is open, and a confirmed
+ * transaction closes it. Call this immediately after the confirm click —
+ * Playwright's first poll is synchronous, so the assertion lands well inside
+ * the receipt round-trip, but anything queued ahead of it eats that margin.
+ */
 const expectApproveAndConvertSteps = async (page: Page) => {
   await expect(page.getByText('Approve')).toBeVisible({ timeout: 60_000 });
 

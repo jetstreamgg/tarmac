@@ -12,7 +12,7 @@ import {
   type UpgradeSourceToken
 } from '@/hooks';
 import { formatNumber, math } from '@/utils';
-import { TxStatus, PopoverRateInfo } from '@/widgets';
+import { PopoverRateInfo } from '@/widgets';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -96,7 +96,13 @@ export function UpgradeModalForm({
 
   const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
-    amount: debouncedAmount
+    amount: debouncedAmount,
+    // The wallet balance is chain state the engine's success doesn't refetch —
+    // sync it so the entry screen shows the post-upgrade balance if revisited.
+    // Hung off the engine, not the context's txStatus: a confirmed transaction
+    // closes the modal in the same commit that sets SUCCESS, so no render ever
+    // observes that status.
+    onSuccess: refetchBalance
   });
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
@@ -109,12 +115,7 @@ export function UpgradeModalForm({
   const disabled = isConnected && (!amountReady || !prepared);
   const errorMessage = enginePrepareErrorMessage(prepared, error);
 
-  // The wallet balance is chain state the engine's success doesn't refetch —
-  // sync it so the entry screen shows the post-upgrade balance if revisited.
-  const { txStatus, isModalOpen, isMinimized } = useTransaction();
-  useEffect(() => {
-    if (txStatus === TxStatus.SUCCESS) refetchBalance();
-  }, [txStatus, refetchBalance]);
+  const { isModalOpen, isMinimized } = useTransaction();
 
   // Upgrade is the one URL-less surface: while its modal is visibly open the
   // destination stamp reads 'upgrade' (APP-444 D2/B6). Gated on visibility, not

@@ -289,6 +289,16 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
         success: t`You've successfully claimed your matured position.`,
         error: t`An error occurred while claiming your matured position.`
       },
+      // Short headlines for the success/minimized toast — without them it
+      // falls back to the success SUBTITLE above, a full sentence where the
+      // toast wants a label. Deliberately output-token-independent: the
+      // selection stays changeable after launch, and this copy would otherwise
+      // need pushing on every switch.
+      toast: {
+        loading: t`Claiming your matured position`,
+        success: t`Position claimed`,
+        error: t`Claim failed`
+      },
       transactionContent,
       errorMessage: prepareErrorMessage,
       steps,

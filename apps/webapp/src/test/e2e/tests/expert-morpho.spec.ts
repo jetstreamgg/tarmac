@@ -1,7 +1,6 @@
 import { expect, test } from '../fixtures-parallel.ts';
 import { performAction } from '../utils/approveOrPerformAction';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
-import { expectTransactionSuccess } from '../utils/expectTransactionSuccess.ts';
 import { Page } from '@playwright/test';
 
 // Morpho vault address on mainnet
@@ -87,20 +86,21 @@ const mockMerklApiWithNoRewards = async (page: Page) => {
   });
 };
 
-// A confirmed transaction closes its own modal, so the outcome is asserted on
-// the toast it hands off to. The amount is formatted (thousands separators, up
-// to 2 decimals), so match the integer part and let the rest float.
-const expectSupplySuccess = async (isolatedPage: any, amount: string) =>
-  expectTransactionSuccess(isolatedPage, {
-    title: new RegExp(`${amount}(\\.\\d+)? USDS supplied!`),
-    timeout: 30_000
-  });
+// NOTE: this spec drives the LEGACY VaultWidget, which owns its own txStatus
+// via WidgetContext and renders its own success screen. It never touches
+// TransactionProvider, so the shared `expectTransactionSuccess` toast helper
+// does NOT apply here — these text assertions are the right oracle.
+// Helper to check for supply success message
+const expectSupplySuccess = async (isolatedPage: any, amount: string) => {
+  const successMessage = isolatedPage.getByText(`You've supplied ${amount} USDS to the Morpho Vault`);
+  await expect(successMessage).toBeVisible({ timeout: 30000 });
+};
 
-const expectWithdrawSuccess = async (isolatedPage: any, amount: string) =>
-  expectTransactionSuccess(isolatedPage, {
-    title: new RegExp(`${amount}(\\.\\d+)? USDS withdrawn!`),
-    timeout: 30_000
-  });
+// Helper to check for withdraw success message
+const expectWithdrawSuccess = async (isolatedPage: any, amount: string) => {
+  const successMessage = isolatedPage.getByText(`You've withdrawn ${amount} USDS from the Morpho Vault.`);
+  await expect(successMessage).toBeVisible({ timeout: 30000 });
+};
 
 test.describe('Expert Module - Morpho Vault', () => {
   test.beforeEach(async ({ isolatedPage }) => {

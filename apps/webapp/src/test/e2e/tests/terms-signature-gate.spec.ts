@@ -97,10 +97,15 @@ for (const { title, setup } of [
     const confirm = await openSavingsSupplyConfirm(isolatedPage, { connect: { expectTerms: true } });
     await confirm.click();
 
+    // Wait for whichever lands first, then take a NON-retrying count: a
+    // retrying matcher would happily wait out a step that did render, since
+    // success closes the modal and drops the count back to 0 a beat later.
+    // `.first()` on both sides keeps the race locator single-element even
+    // when both are present (strict mode).
     const signatureStep = isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true });
     const successToast = isolatedPage.getByTestId('transaction-success-toast');
-    await expect(signatureStep.first().or(successToast)).toBeVisible({ timeout: 60_000 });
-    await expect(signatureStep).toHaveCount(0);
+    await expect(signatureStep.first().or(successToast.first())).toBeVisible({ timeout: 60_000 });
+    expect(await signatureStep.count()).toBe(0);
 
     await expectTransactionSuccess(isolatedPage);
   });

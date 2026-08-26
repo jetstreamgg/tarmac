@@ -252,7 +252,15 @@ export type TransactionContextValue = {
   isMinimized: boolean;
   /** Transaction lifecycle callbacks to spread into write hooks. */
   txCallbacks: TxCallbacks;
-  /** Current transaction status. */
+  /**
+   * Current transaction status.
+   *
+   * NEVER observably SUCCESS: a confirmed transaction closes the modal in the
+   * same synchronous callback that sets it, and React batches the two, so the
+   * only committed value is the IDLE the close resets to. Read this for "has
+   * the flow left IDLE" (the freeze-live-updates rule); for a post-success
+   * side effect use the config's `onSuccess`, or compose the engine's.
+   */
   txStatus: TxStatus;
 };
 

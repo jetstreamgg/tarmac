@@ -25,7 +25,11 @@ export function TransactionSuccessToast({
   const shortHash = hash ? formatAddress(hash, 6, 4) : undefined;
   return (
     <div className="flex w-full items-center gap-3 pr-6" data-testid="transaction-success-toast">
-      <ToastSuccessIcon />
+      {/* shrink-0: the disc is a circle, and a long headline would otherwise
+          squeeze it into an ellipse (same wrapper the sibling toasts use). */}
+      <span className="shrink-0">
+        <ToastSuccessIcon />
+      </span>
       <span className="flex flex-col gap-1">
         <Text className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
           {title}
