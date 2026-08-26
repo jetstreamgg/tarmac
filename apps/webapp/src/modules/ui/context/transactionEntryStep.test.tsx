@@ -10,6 +10,7 @@ import type { TransactionConfig } from './transactionContract';
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -111,6 +112,7 @@ describe('TransactionModal — editable entry step', () => {
     renderModal(() => ({
       title: 'Supply to Sky Savings',
       usdValue: 0,
+      supportedChainIds: [1],
       // The read-only review content must NOT be what shows first in entry mode.
       transactionContent: <div data-testid="review-body">review</div>,
       entry: {
@@ -133,6 +135,7 @@ describe('TransactionModal — editable entry step', () => {
       title: 'Supply to Sky Savings',
       transactionContent: <div>review</div>,
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm: () => {}
     }));
     expect(screen.getByRole('dialog').className).toContain('app-loader-cover-hidden');
@@ -143,6 +146,7 @@ describe('TransactionModal — editable entry step', () => {
     renderModal(() => ({
       title: 'Supply to Sky Savings',
       usdValue: 0,
+      supportedChainIds: [1],
       entry: { content: <div>fields</div>, confirmLabel: 'Supply', confirmDisabled: true },
       onConfirm
     }));
@@ -158,6 +162,7 @@ describe('TransactionModal — editable entry step', () => {
     const get = renderModal(cb => ({
       title: 'Supply to Sky Savings',
       usdValue: 0,
+      supportedChainIds: [1],
       entry: {
         content: <div data-testid="entry-fields">fields</div>,
         confirmLabel: 'Supply',
@@ -193,6 +198,7 @@ describe('TransactionModal — editable entry step', () => {
     const get = renderModal(() => ({
       title: 'Supply to Sky Savings',
       usdValue: 0,
+      supportedChainIds: [1],
       sessionId: SESSION,
       // Start disabled with a placeholder confirm — the in-modal body takes over.
       entry: {
@@ -228,6 +234,7 @@ describe('TransactionModal — editable entry step', () => {
     const get = renderModal(cb => ({
       title: 'Upgrade DAI/MKR',
       usdValue: 0,
+      supportedChainIds: [1],
       sessionId: SESSION,
       entry: {
         content: <div>fields</div>,
@@ -268,6 +275,7 @@ describe('TransactionModal — editable entry step', () => {
     renderModal(cb => ({
       title: 'Claim rewards',
       usdValue: 0,
+      supportedChainIds: [1],
       entry: {
         content: <div>rewards</div>,
         confirmLabel: 'Claim & Restake SKY',
@@ -298,6 +306,7 @@ describe('TransactionModal — editable entry step', () => {
     const get = renderModal(() => ({
       title: 'Claim rewards',
       usdValue: 0,
+      supportedChainIds: [1],
       sessionId: SESSION,
       entry: {
         content: <div>rewards</div>,
@@ -323,6 +332,7 @@ describe('TransactionModal — editable entry step', () => {
     renderModal(cb => ({
       title: 'Upgrade',
       usdValue: 0,
+      supportedChainIds: [1],
       transactionContent: <div data-testid="review-body">review</div>,
       confirmLabel: 'Confirm',
       onConfirm: () => {
@@ -353,6 +363,7 @@ describe('TransactionModal — engine error slot', () => {
         errorMessage: 'Something went wrong preparing the transaction. Please try again.'
       },
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm: () => {}
     }));
 
@@ -375,6 +386,7 @@ describe('TransactionModal — engine error slot', () => {
       confirmDisabled: true,
       errorMessage: 'Something went wrong preparing the transaction. Please try again.',
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm: () => {}
     }));
 
@@ -391,6 +403,7 @@ describe('TransactionModal — engine error slot', () => {
       sessionId: SESSION,
       entry: { content: <div>fields</div>, confirmLabel: 'Review', confirmDisabled: false },
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm: () => {}
     }));
 

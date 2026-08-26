@@ -126,6 +126,24 @@ export type TransactionModalProps = {
    * that only advance screens (a three-screen entry's Review) stay live.
    */
   preflight?: TransactionPreflight;
+  /**
+   * Cross-chain-calldata guard (APP-528). Non-null while the connected wallet is
+   * on a chain outside the flow's `supportedChainIds`: every first-screen CTA
+   * (advance and fire alike) is disabled and this explanatory block — with a
+   * "Switch to <network>" action when the wallet can switch — takes their place,
+   * so a product address resolved on another chain can never be sent here.
+   */
+  chainGuard?: ChainGuard | null;
+};
+
+/** The transaction modal's chain-guard descriptor (see `chainGuard` prop). */
+export type ChainGuard = {
+  /** Name of the chain the wallet is wrongly on (may be undefined if unknown). */
+  currentName?: string;
+  /** Name of the chain to switch to; undefined when none is offerable. */
+  targetName?: string;
+  /** Switches the wallet to the supported chain; undefined for Safe wallets. */
+  onSwitch?: () => void;
 };
 
 // Figma review (badge restyle, "Confirm in the wallet" 2376:225580): the old
@@ -181,6 +199,7 @@ export function TransactionModal({
   currentStep = 0,
   gateCopy,
   preflight,
+  chainGuard,
   registerReturnToFirstScreen
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
@@ -242,7 +261,11 @@ export function TransactionModal({
   // The entry screen sources its label/gating from the entry descriptor (kept
   // live by the in-modal body); the review screen uses the top-level config.
   const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
-  const firstScreenConfirmDisabled = isEntry ? entry?.confirmDisabled : confirmDisabled;
+  // The chain guard (APP-528) disables EVERY first-screen CTA — advancing ones
+  // too, not just the firing one — so a wrong-chain flow can't even reach its
+  // review. It takes precedence over the flow's own gating, hence the `||`.
+  const chainGuarded = !!chainGuard;
+  const firstScreenConfirmDisabled = (isEntry ? entry?.confirmDisabled : confirmDisabled) || chainGuarded;
   // Which first-screen primary CTA actually FIRES the transaction: the review
   // confirm, or an entry-only flow's confirm. A three-screen entry's confirm
   // only advances to the review (and a `confirmAction` override runs in
@@ -565,6 +588,41 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
+                {/* Cross-chain-calldata guard (APP-528): the wallet is on a chain
+                    this product isn't on. Rendered above the CTAs (all disabled),
+                    with a switch action when the wallet can switch. Precedes the
+                    screening block — a wrong chain is the more fundamental block. */}
+                {chainGuard && (
+                  <div className="flex flex-col gap-3" data-testid="transaction-chain-guard">
+                    <div className="flex items-start gap-2">
+                      <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
+                      <Text className="text-error text-sm">
+                        {chainGuard.targetName ? (
+                          <Trans>
+                            This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}.
+                            Switch to {chainGuard.targetName} to continue.
+                          </Trans>
+                        ) : (
+                          <Trans>
+                            This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}.
+                            Switch networks to continue.
+                          </Trans>
+                        )}
+                      </Text>
+                    </div>
+                    {chainGuard.onSwitch && chainGuard.targetName && (
+                      <Button
+                        variant="primary"
+                        size="xl"
+                        className="w-full"
+                        onClick={chainGuard.onSwitch}
+                        data-testid="transaction-chain-guard-switch"
+                      >
+                        <Trans>Switch to {chainGuard.targetName}</Trans>
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {/* Enhanced-screening failure (APP-517): rendered above the CTAs,
                     which stay visible but disabled — the transaction is blocked. */}
                 {preflight?.kind === 'blocked' && (
@@ -589,7 +647,7 @@ export function TransactionModal({
                       size="xl"
                       className="flex-1"
                       onClick={handleSecondaryConfirm}
-                      disabled={entry?.secondaryConfirmDisabled || preflightBlocked}
+                      disabled={entry?.secondaryConfirmDisabled || preflightBlocked || chainGuarded}
                       loading={!entry?.secondaryConfirmDisabled && preflightPending}
                     >
                       {entry?.secondaryConfirmLabel}

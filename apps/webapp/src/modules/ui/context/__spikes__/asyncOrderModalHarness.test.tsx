@@ -41,6 +41,7 @@ i18n.activate('en');
 function makeOrder(statuses: AsyncOrderStatus[]) {
   let i = 0;
   return {
+    supportedChainIds: [1],
     submitOrder: vi.fn(() => Promise.resolve('0xORDERUID')),
     pollOrderStatus: vi.fn(() => Promise.resolve(statuses[Math.min(i++, statuses.length - 1)]))
   };

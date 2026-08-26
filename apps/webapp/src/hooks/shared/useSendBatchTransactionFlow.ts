@@ -89,6 +89,17 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         console.log(
           'ERROR: You are attempting to send a single transaction as a batch transaction. It may be more gas efficient to send the transaction individually'
         );
+      } else if (parameters.calls.some(call => !(call as { to?: unknown }).to)) {
+        // Cross-chain-calldata backstop (APP-528): a batch is sent WITHOUT
+        // per-call simulation (unlike the sequential flow), so a target address
+        // that resolved to `undefined` — the shape a `Record<chainId, address>`
+        // takes when read on a chain the product doesn't live on — would sail
+        // straight into the wallet as a call to the zero address. Refuse it. The
+        // modal's chain guard is the user-facing stop; this is the last-resort
+        // invariant so no future flow can reintroduce the bug by omission.
+        console.error(
+          'ERROR: A batch transaction has a call with no target address — refusing to send (likely a cross-chain address resolution miss).'
+        );
       } else {
         // Call is legit, proceed to send the transaction
         sendCalls(sendCallsParameters);

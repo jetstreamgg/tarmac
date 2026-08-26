@@ -10,6 +10,7 @@ import type { TxCallbacks } from './transactionContract';
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -65,7 +66,7 @@ function Harness({ steps, onReady }: { steps: string[]; onReady: (cb: TxCallback
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    launch({ title: 'Supply', usdValue: 0, steps, onConfirm: () => {} });
+    launch({ title: 'Supply', usdValue: 0, supportedChainIds: [1], steps, onConfirm: () => {} });
   }, [launch, steps]);
   return null;
 }

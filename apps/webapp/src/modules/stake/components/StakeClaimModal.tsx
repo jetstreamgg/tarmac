@@ -6,6 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
 import { formatNumber } from '@/utils';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { TxStatus } from '@/widgets';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
@@ -231,6 +232,8 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
       // sum) — treated as above-threshold, so the enhanced check runs rather
       // than being skipped (APP-517).
       usdValue: undefined,
+      // Staking is mainnet-only — guard the modal off any L2 (APP-528).
+      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
       // Figma 1036:214007 titles the wallet screen "Confirm claim".
       transactionTitle: t`Confirm claim`,
       subtitles: {

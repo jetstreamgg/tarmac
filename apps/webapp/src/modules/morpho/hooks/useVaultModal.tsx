@@ -2,6 +2,7 @@ import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
 import { type Token, type VaultProvider } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { VaultModalForm, type VaultModalPreset } from '../components/VaultModalForm';
 
 /** Per-vault inputs the launcher needs to open the modal for a specific vault. */
@@ -51,6 +52,8 @@ export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // Morpho/Sky vaults are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
@@ -88,6 +91,8 @@ export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // Morpho/Sky vaults are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         backgroundContent: (
           <VaultModalForm

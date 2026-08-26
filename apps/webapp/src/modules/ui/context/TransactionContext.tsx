@@ -16,7 +16,9 @@ import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
-import { useChainId, useConnection } from 'wagmi';
+import { useChainId, useConnection, useChains } from 'wagmi';
+import { chainSwitchTarget } from '@/lib/chainAvailability';
+import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
@@ -246,6 +248,8 @@ export function TransactionProvider({
 
   const chainId = useChainId();
   const { address } = useConnection();
+  const chains = useChains();
+  const { handleSwitchChain } = useChainModalContext();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
@@ -895,6 +899,47 @@ export function TransactionProvider({
     ? { config: activeConfig, txStatus, externalLink, currentStep, preludeSteps, gateCopy }
     : exitingView;
 
+  // Chain guard (APP-528): the modal survives a wallet chain switch (the
+  // provider is mounted above the router, so a mainnet-only product page can
+  // redirect underneath while its modal stays open), and its editable body then
+  // rebuilds calldata against the new chain — resolving a product address on a
+  // chain it doesn't live on. Sending that succeeds against a codeless (or
+  // attacker-occupied) address. So while a flow's supported set is declared and
+  // the connected wallet has left it, block every first-screen CTA and offer a
+  // switch back. Read off `modalView.config` (not `activeConfig`) so a modal
+  // animating away doesn't flash the guard as it leaves. Only meaningful before
+  // the write starts — once INITIALIZED/LOADING the calldata is already the
+  // wallet's problem, and wagmi's own connector-chain assertion rejects a send
+  // whose target chain no longer matches the wallet.
+  const guardConfig = modalView?.config;
+  const isPreWrite = txStatus === TxStatus.IDLE;
+  const chainGuardActive =
+    !!guardConfig &&
+    isPreWrite &&
+    guardConfig.supportedChainIds.length > 0 &&
+    !guardConfig.supportedChainIds.includes(chainId);
+  const guardTargetChainId = chainGuardActive
+    ? chainSwitchTarget(
+        guardConfig.supportedChainIds,
+        chains.map(c => c.id)
+      )
+    : undefined;
+  const guardTargetName = chains.find(c => c.id === guardTargetChainId)?.name;
+  // Safe wallets can't switch networks from the dapp (APP-486) — offer no
+  // switch button, only the explanatory block; the guard still disables the CTAs.
+  const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
+  const switchGuardChain = useCallback(() => {
+    if (guardTargetChainId === undefined) return;
+    handleSwitchChain({ chainId: guardTargetChainId, source: 'transaction_modal' });
+  }, [guardTargetChainId, handleSwitchChain]);
+  const chainGuard = chainGuardActive
+    ? {
+        currentName: chains.find(c => c.id === chainId)?.name,
+        targetName: guardTargetName,
+        onSwitch: guardCanSwitch ? switchGuardChain : undefined
+      }
+    : null;
+
   // The gate's prelude steps render ahead of the flow's own list. Composed at
   // render (not written into the config) so a retry that no longer needs the
   // prelude — the signature landed on a previous attempt — restarts with the
@@ -978,6 +1023,7 @@ export function TransactionProvider({
             currentStep={modalView.currentStep}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
+            chainGuard={chainGuard}
           />
         )}
       </EntrySlotContext.Provider>

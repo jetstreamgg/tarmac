@@ -1,7 +1,14 @@
 import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { chainIdsForIntent } from '@/lib/chainAvailability';
+import { Intent } from '@/lib/enums';
 import { SavingsModalForm, type SavingsModalPreset } from '../components/SavingsModalForm';
+
+// Savings is a multi-chain product (mainnet + every supported L2). Switching
+// among these chains is legitimate and the form re-resolves; the guard only
+// fires if the wallet reaches a chain that offers no Savings at all (APP-528).
+const SAVINGS_SUPPORTED_CHAIN_IDS = chainIdsForIntent(Intent.SAVINGS_INTENT);
 
 type UseSavingsModalOptions = {
   /** Fires after a successful supply/withdraw — refetch the position/balances. */
@@ -40,6 +47,7 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        supportedChainIds: SAVINGS_SUPPORTED_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
@@ -66,6 +74,7 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        supportedChainIds: SAVINGS_SUPPORTED_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         backgroundContent: <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" preset={preset} />,
         onConfirm: () => {},

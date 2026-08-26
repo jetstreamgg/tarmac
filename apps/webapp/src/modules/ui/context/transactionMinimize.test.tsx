@@ -10,6 +10,7 @@ import type { TransactionContextValue, TxCallbacks } from './transactionContract
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -68,6 +69,7 @@ i18n.activate('en');
 const REVIEW_CONFIG: TransactionConfig = {
   title: 'Supply',
   usdValue: 0,
+  supportedChainIds: [1],
   steps: ['Supply'],
   onConfirm: () => {}
 };
@@ -229,6 +231,7 @@ describe('TransactionModal minimize', () => {
     const ctx = renderFlow({
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       steps: ['Supply'],
       entry: { content: <div>inputs</div>, confirmDisabled: false },
       backgroundContent: <ProbeBody />,
@@ -281,7 +284,15 @@ describe('TransactionModal minimize', () => {
     act(() => cb.onSuccess('0xhash')); // completed while minimized — session lingers
 
     // Reopen via a fresh launch (e.g. clicking the page's Supply button again).
-    act(() => ctx.launch({ title: 'Supply', usdValue: 0, steps: ['Supply'], onConfirm: () => undefined }));
+    act(() =>
+      ctx.launch({
+        title: 'Supply',
+        usdValue: 0,
+        supportedChainIds: [1],
+        steps: ['Supply'],
+        onConfirm: () => undefined
+      })
+    );
 
     // The modal is back on its first screen (Confirm), not the stale completed screen.
     expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeNull();
@@ -294,6 +305,7 @@ describe('TransactionModal minimize', () => {
     const config: TransactionConfig = {
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       steps: ['Supply'],
       entry: { confirmDisabled: false },
       backgroundContent: <ProbeBody />,
@@ -318,6 +330,7 @@ describe('TransactionModal minimize', () => {
     const config: TransactionConfig = {
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       steps: ['Supply'],
       entry: { confirmDisabled: false },
       backgroundContent: <ProbeBody />,
@@ -347,6 +360,7 @@ describe('TransactionModal minimize', () => {
     const ctx = renderFlow({
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       steps: ['Supply'],
       entry: { confirmDisabled: false },
       backgroundContent: <PortalingHost />,
@@ -371,6 +385,7 @@ describe('TransactionModal minimize', () => {
     const ctx = renderFlow({
       title: 'Withdraw',
       usdValue: 0,
+      supportedChainIds: [1],
       steps: ['Withdraw'],
       sessionId,
       entry: { confirmDisabled: false },
@@ -397,6 +412,7 @@ describe('TransactionModal minimize', () => {
     renderFlow({
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       steps: ['Supply'],
       entry: { confirmDisabled: false },
       backgroundContent: <SlotProbe />,
@@ -412,6 +428,7 @@ describe('TransactionModal minimize', () => {
   const TOAST_CONFIG: TransactionConfig = {
     title: 'Supply',
     usdValue: 0,
+    supportedChainIds: [1],
     steps: ['Supply'],
     subtitles: { success: 'Supplied!', error: 'Supply failed' },
     // Amount-aware title (what the savings host pushes) takes precedence over subtitles.
