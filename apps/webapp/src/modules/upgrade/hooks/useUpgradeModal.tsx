@@ -29,6 +29,8 @@ export function useUpgradeModal() {
         },
         sessionId,
         entry: { confirmLabel: t`Continue`, confirmDisabled: true },
+        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
+        usdValue: 0,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
         // Keyed by the source token so a relaunch with a different preselection

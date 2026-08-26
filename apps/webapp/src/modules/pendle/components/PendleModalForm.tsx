@@ -484,7 +484,12 @@ export function PendleModalForm({
     errorMessage,
     transactionContent,
     transactionScreenContent,
-    steps
+    steps,
+    // USD value of the non-PT leg (same number the analytics use). Zero
+    // amount is $0 even when prices haven't loaded — an empty input owes no
+    // check; `undefined` (unpriceable non-zero amount) is treated as
+    // above-threshold (enhanced screening, APP-517).
+    usdValue: leg.amount === 0 ? 0 : formattedAmount
   });
 
   const balanceDisplay = formatBigInt(available, { unit: inputDecimals, maxDecimals: 2 });

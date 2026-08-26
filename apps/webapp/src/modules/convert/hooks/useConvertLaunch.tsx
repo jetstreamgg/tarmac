@@ -205,6 +205,9 @@ export function useConvertLaunch({
       onConfirm: () => executeRef.current(),
       onSuccess: handleSuccess,
       sessionId,
+      // Both legs are $1-pegged (USDC/USDS); the amount is fixed at launch
+      // (enhanced screening, APP-517).
+      usdValue: Number(formatUnits(amount, originDecimals)),
       analytics: {
         widgetName: 'convert',
         flow: direction === 'USDC_TO_USDS' ? 'usdc-to-usds' : 'usds-to-usdc',
