@@ -44,7 +44,13 @@ export async function confirmTransactionModal(page: Page) {
   const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
   await expect(confirm).toBeEnabled({ timeout: 60_000 });
   await confirm.click();
-  await expect(page.getByText('Transaction completed successfully.')).toBeVisible({ timeout: 60_000 });
+  // The old generic success sentence is gone — status now lives only in the
+  // status badge (`data-testid="transaction-status-badge"`), which cycles through
+  // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
+  // so this waits for the terminal text rather than whatever the badge reads first.
+  await expect(page.getByTestId('transaction-status-badge')).toHaveText('Success', {
+    timeout: 60_000
+  });
   await page.getByRole('button', { name: 'Done' }).click();
 }
 

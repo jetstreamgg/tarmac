@@ -102,14 +102,18 @@ export function StakeProductPage() {
   const isMobile = bpi < BP.md;
 
   return (
-    // Desktop comp 1222:15123 sets the title row 96px under the navbar
-    // (APP-426 item 1), hence pt-24 over the sibling pages' pt.
-    <div data-testid="stake-product-page" className="flex flex-col gap-16 py-4 md:gap-6 md:pt-24 md:pb-10">
+    // Desktop comp 1222:15123: corrected measurement (Figma Annotations R2
+    // A2) puts the title row 80px under the navbar, not 96 — the previous
+    // pt-24 was read as a deliberate navbar offset, but the reviewer's
+    // remeasure supersedes that. The bottom is 72px, asymmetric from the top.
+    <div data-testid="stake-product-page" className="flex flex-col gap-16 py-4 md:gap-6 md:pt-20 md:pb-18">
       {/* Header (Patterns/Headers, Stake type 5043:59183): the DS 64px
           Iconbox / Status beside a Heading 2 title; the DS 17px icon-title gap
           is normalized to 16. The brand glow was dropped from product icons in
           the latest design iterations (APP-416). */}
-      <div className="flex items-center justify-between gap-4">
+      {/* From md up the title row carries 72px of its own padding-bottom on
+          top of the column's 24px gap — 96px of clearance to the tab strip. */}
+      <div className="flex items-center justify-between gap-4 md:pb-18">
         <div className="flex items-center gap-3 md:gap-4">
           <div className="shrink-0" data-testid="stake-header-icon">
             <IconboxStatus size="l" className="size-14 md:size-16">

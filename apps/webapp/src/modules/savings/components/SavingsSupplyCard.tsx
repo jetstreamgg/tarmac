@@ -92,6 +92,12 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
     </span>
   );
 
+  // Figma Annotations R2 F3: at 3+ origins (mainnet's USDS/DAI/USDC) the
+  // per-token icon+symbol enumeration gets crowded, so the design drops the
+  // icons entirely for generic "stablecoins" copy. Keyed off the actual
+  // origins length (not a mainnet check) so L2's 2 origins keep enumerating.
+  const hasManyOrigins = origins.length >= 3;
+
   return (
     <ProductSupplyCard
       data-testid="savings-supply-card"
@@ -107,9 +113,13 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
         </ProductBadge>
       }
       title={
-        <Trans>
-          Supply {supplyTokens} at {rate} APY
-        </Trans>
+        hasManyOrigins ? (
+          <Trans>Supply stablecoins and earn {rate} APY</Trans>
+        ) : (
+          <Trans>
+            Supply {supplyTokens} at {rate} APY
+          </Trans>
+        )
       }
       description={
         <Trans>

@@ -7,7 +7,6 @@ import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -187,8 +186,6 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
       )}
 
       {rewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
-
-      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

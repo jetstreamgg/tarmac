@@ -2,7 +2,6 @@ import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
@@ -77,15 +76,19 @@ export function useConvertLaunch({
   );
   const networkName = useNetworkName(chainId);
 
-  // Step 1 renders "Approve ◉ USDS" via the steps model's tokenSymbol chip
-  // (Figma 1036:205564). The convert step's two inline icons aren't supported
-  // (one trailing tokenSymbol only) — plain text, same as the upgrade steps.
+  // Step 1 renders "Approve ◉ USDS" via the steps model's tokenSymbol chip;
+  // step 2 renders "Convert ◉ USDS to ◉ USDC" via the source→target pair chip
+  // (Figma 1036:205564, two token icons side by side around a translated "to").
+  const convertStep = useMemo<TransactionStep>(
+    () => ({ label: t`Convert`, tokenSymbol: originSymbol, targetTokenSymbol: targetSymbol }),
+    [originSymbol, targetSymbol]
+  );
   const steps = useMemo<TransactionStep[]>(
     () =>
       conversion.needsAllowance
-        ? [{ label: t`Approve`, tokenSymbol: originSymbol }, t`Convert ${originSymbol} to ${targetSymbol}`]
-        : [t`Convert ${originSymbol} to ${targetSymbol}`],
-    [conversion.needsAllowance, originSymbol, targetSymbol]
+        ? [{ label: t`Approve`, tokenSymbol: originSymbol }, convertStep]
+        : [convertStep],
+    [conversion.needsAllowance, originSymbol, convertStep]
   );
 
   const confirmDisabled =
@@ -133,9 +136,6 @@ export function useConvertLaunch({
         networkName={networkName}
         networkFee={feeCell.fee?.formatted ?? NO_VALUE}
         feeCell={feeCell}
-        promo={
-          feeCell.state.promoVisible ? <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} /> : undefined
-        }
       />
     ),
     [

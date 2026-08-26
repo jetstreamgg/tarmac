@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import { useState, useCallback, useEffect, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { TxStatus, Clock, InProgress, SuccessCheck, FailedX, Cancel } from '@/widgets';
+import { TxStatus } from '@/widgets';
 import { ArrowLeft } from 'lucide-react';
 import {
   ResponsiveModal,
@@ -8,7 +8,8 @@ import {
   ResponsiveModalTitle
 } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
-import { Steps, StepsItem } from '@/components/ui/steps';
+import { Steps, StepsItem, StepsBadge } from '@/components/ui/steps';
+import { Loader } from '@/components/ui/loader';
 import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
@@ -127,20 +128,27 @@ export type TransactionModalProps = {
   preflight?: TransactionPreflight;
 };
 
-const statusIcons: Partial<Record<TxStatus, ReactNode>> = {
-  [TxStatus.INITIALIZED]: <Clock />,
-  [TxStatus.LOADING]: <InProgress />,
-  [TxStatus.SUCCESS]: <SuccessCheck />,
-  [TxStatus.ERROR]: <FailedX />,
-  [TxStatus.CANCELLED]: <Cancel />
-};
-
-const statusMessages: Partial<Record<TxStatus, ReactNode>> = {
-  [TxStatus.INITIALIZED]: <Trans>Confirm this transaction in your wallet.</Trans>,
-  [TxStatus.LOADING]: <Trans>Transaction is being processed...</Trans>,
-  [TxStatus.SUCCESS]: <Trans>Transaction completed successfully.</Trans>,
-  [TxStatus.ERROR]: <Trans>Transaction failed. Please try again.</Trans>,
-  [TxStatus.CANCELLED]: <Trans>Transaction was cancelled.</Trans>
+// Figma review (badge restyle, "Confirm in the wallet" 2376:225580): the old
+// bottom icon + generic sentence + loading-indicator CTA are gone — the Steps
+// badge (multi-step flows) / an equivalent inline chip (single-step flows) is
+// now the ONLY place status is shown on this screen. This is the per-status
+// source of truth for its label; short chip copy, distinct from `subtitles`
+// (which stays the flow-specific sentence rendered above the hero). No IDLE
+// entry — the transaction screen isn't reached at that status outside of a
+// test harness, and the chip simply stays hidden (see `badgeContent` below).
+const statusBadgeLabel: Partial<Record<TxStatus, ReactNode>> = {
+  // IDLE is normally a blink — it ends the moment `execute()` fires — but the
+  // bottom section swaps through `AnimatePresence mode="wait"`, so a throttled
+  // rAF (a backgrounded tab while the user is in their wallet) can hold this
+  // frame for seconds. The chip is now the ONLY status surface, so without an
+  // entry here that stall paints an empty status area with no icon, text or
+  // button. Give it honest in-flight copy rather than a dead screen.
+  [TxStatus.IDLE]: <Trans>Preparing</Trans>,
+  [TxStatus.INITIALIZED]: <Trans>Confirm in the wallet</Trans>,
+  [TxStatus.LOADING]: <Trans>Processing</Trans>,
+  [TxStatus.SUCCESS]: <Trans>Success</Trans>,
+  [TxStatus.ERROR]: <Trans>Failed</Trans>,
+  [TxStatus.CANCELLED]: <Trans>Cancelled</Trans>
 };
 
 export function TransactionModal({
@@ -184,8 +192,6 @@ export function TransactionModal({
   // Entry-only and review-only configs keep their two screens.
   const hasReviewStage = !!(entry && transactionContent);
   const [step, setStep] = useState<TransactionModalStep>(firstStep);
-  const [contentHeight, setContentHeight] = useState<number | undefined>();
-  const reviewRef = useRef<HTMLDivElement>(null);
   const chainId = useChainId();
   const isSafeWallet = useIsSafeWallet();
   const explorerName = getExplorerName(chainId, isSafeWallet);
@@ -214,6 +220,24 @@ export function TransactionModal({
   // the header back arrow still returns to the first screen. Single-step flows
   // have no list, so they keep the bottom treatment.
   const showInlineFailure = showStepList && isTransaction && txStatus === TxStatus.ERROR;
+  // The status chip's content (Figma 2376:225580: leading dots + label). The
+  // dots only hop while a status is genuinely in-flight (awaiting signature or
+  // pending broadcast) — `isTransacting` already draws exactly that line for
+  // the rest of the component, so it's reused here rather than re-derived.
+  // Every status the transaction screen can reach now has copy, so the chip
+  // always mounts with something; the guard stays as a belt-and-braces against
+  // a future status arriving without a label. Dots ride along while the
+  // transaction is genuinely in flight, including the IDLE prepare window.
+  // A gate phase owns the label while it holds the floor: both of its phases
+  // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
+  // in the wallet" during an HTTP address check (APP-501).
+  const badgeLabel = gateCopy?.badgeLabel ?? statusBadgeLabel[txStatus];
+  const badgeContent = badgeLabel ? (
+    <>
+      {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
+      {badgeLabel}
+    </>
+  ) : undefined;
 
   // The entry screen sources its label/gating from the entry descriptor (kept
   // live by the in-modal body); the review screen uses the top-level config.
@@ -271,9 +295,6 @@ export function TransactionModal({
       onReviewStage?.();
       return;
     }
-    if (reviewRef.current) {
-      setContentHeight(reviewRef.current.offsetHeight);
-    }
     setStep('transaction');
     onConfirm();
   }, [isEntry, hasReviewStage, onConfirm, entryConfirmAction, onReviewStage]);
@@ -281,9 +302,6 @@ export function TransactionModal({
   // The entry's secondary CTA (entry-only flows — see the contract): same
   // advance to the wallet screen, firing the secondary action's handler.
   const handleSecondaryConfirm = useCallback(() => {
-    if (reviewRef.current) {
-      setContentHeight(reviewRef.current.offsetHeight);
-    }
     setStep('transaction');
     onSecondaryConfirm?.();
   }, [onSecondaryConfirm]);
@@ -308,7 +326,6 @@ export function TransactionModal({
   const handleClose = useCallback(() => {
     if (txStatus === TxStatus.LOADING) return;
     setStep(firstStep);
-    setContentHeight(undefined);
     onClose();
   }, [txStatus, onClose, firstStep]);
 
@@ -326,7 +343,6 @@ export function TransactionModal({
   const handleBack = useCallback(() => {
     onBack?.();
     setStep(firstStep);
-    setContentHeight(undefined);
   }, [onBack, firstStep]);
 
   // Hand the provider the same back-to-first-screen the header arrow uses, so
@@ -358,6 +374,13 @@ export function TransactionModal({
         // the document root, so Radix sees a pointer-down on them as outside the dialog
         // and closes it — which killed the transaction when the bundling switch was used.
         onPointerDownOutside={event => {
+          // Figma review: click-outside is disabled while a transaction is actually
+          // pending (wallet-signature + broadcast window) so an accidental outside
+          // click can't dismiss it mid-flight — entry/review stay dismissable.
+          if (isTransacting) {
+            event.preventDefault();
+            return;
+          }
           if ((event.target as HTMLElement | null)?.closest('[data-radix-popper-content-wrapper]')) {
             event.preventDefault();
           }
@@ -434,11 +457,7 @@ export function TransactionModal({
           </div>
         </div>
 
-        <div
-          ref={isFirstScreen ? reviewRef : undefined}
-          className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}
-          style={isTransaction ? { minHeight: contentHeight } : undefined}
-        >
+        <div className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}>
           {/* Subtitle */}
           <AnimatePresence mode="wait" initial={false}>
             {subtitle && !isFirstScreen && (
@@ -486,11 +505,7 @@ export function TransactionModal({
             <>
               {/* Figma 859:36229: the steps section splits from the hero on a border-primary hairline, 24px above the header. */}
               {transactionScreenBody && <div className="border-borderPrimary border-t" />}
-              <Steps
-                className="pt-2"
-                bundled={isBundled}
-                badge={txStatus === TxStatus.INITIALIZED ? <Trans>Confirm in the wallet</Trans> : undefined}
-              >
+              <Steps className="pt-2" bundled={isBundled} badge={badgeContent}>
                 {(() => {
                   const items = deriveTransactionStepItems({
                     steps: steps ?? [],
@@ -518,6 +533,16 @@ export function TransactionModal({
                           />
                         )
                       }
+                      targetTokenSymbol={item.targetTokenSymbol}
+                      targetTokenIcon={
+                        item.targetTokenSymbol && (
+                          <TokenIcon
+                            token={{ symbol: item.targetTokenSymbol }}
+                            className="h-3.5 w-3.5"
+                            showChainIcon={false}
+                          />
+                        )
+                      }
                       state={item.state}
                       description={item.description}
                       trailingAction={item.retry === 'trailing' ? tryAgain : undefined}
@@ -528,11 +553,6 @@ export function TransactionModal({
               </Steps>
             </>
           )}
-
-          {/* Pushes the status row/buttons to the held height on the wallet screen.
-              A zero-height child still consumes two column gaps, so it must not
-              render on the first screens (their card hugs content, Figma 859:36036). */}
-          {isTransaction && <div className="grow" />}
 
           {/* Bottom section: animates on step/status change */}
           <AnimatePresence mode="wait" initial={false}>
@@ -607,13 +627,23 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
-                <div className="flex items-center gap-3 pt-4">
-                  {statusIcons[txStatus] && statusIcons[txStatus]}
-
-                  <div className="flex flex-col">
-                    <Text className="text-textSecondary">
-                      {gateCopy?.message ?? statusMessages[txStatus]}
-                    </Text>
+                {/* Status row: the icon and the per-status sentence are gone (Figma
+                    review) — flows that render a Steps header already show the status
+                    chip there, so this row is just the explorer link for them. Flows
+                    without a step list have no Steps header, so the chip renders
+                    inline here, in the slot the old icon/message/loading-button
+                    treatment used to occupy (Figma 2376:225580). The gate's own copy
+                    is the one sentence that survives: it narrates an off-chain phase
+                    (screening, terms signature) that the chip's txStatus-keyed label
+                    cannot describe (APP-501). */}
+                {((!showStepList && badgeContent) || gateCopy?.message || externalLink) && (
+                  <div className="flex items-center gap-3 pt-4">
+                    {!showStepList && badgeContent && (
+                      <StepsBadge variant="brand" dataTestId="transaction-status-badge">
+                        {badgeContent}
+                      </StepsBadge>
+                    )}
+                    {gateCopy?.message && <Text className="text-textSecondary">{gateCopy.message}</Text>}
                     {externalLink && (
                       <ExternalLink
                         href={externalLink}
@@ -624,38 +654,29 @@ export function TransactionModal({
                       </ExternalLink>
                     )}
                   </div>
-                </div>
+                )}
 
-                <div className="w-full">
-                  {txStatus === TxStatus.INITIALIZED && (
-                    <Button variant="primary" size="xl" className="w-full" loading>
-                      <Trans>Waiting for confirmation</Trans>
-                    </Button>
-                  )}
-
-                  {txStatus === TxStatus.LOADING && (
-                    <Button variant="primary" size="xl" className="w-full" loading>
-                      <Trans>Processing</Trans>
-                    </Button>
-                  )}
-
-                  {(txStatus === TxStatus.SUCCESS || txStatus === TxStatus.CANCELLED) && (
+                {/* Terminal-state actions only — the in-flight states (awaiting
+                    signature / processing) are pure loading indicators now
+                    represented solely by the chip's dots, not a button. */}
+                {(txStatus === TxStatus.SUCCESS || txStatus === TxStatus.CANCELLED) && (
+                  <div className="w-full">
                     <Button variant="primary" size="xl" className="w-full" onClick={handleClose}>
                       {successLabel ?? <Trans>Done</Trans>}
                     </Button>
-                  )}
+                  </div>
+                )}
 
-                  {txStatus === TxStatus.ERROR && (
-                    <div className="flex w-full gap-3">
-                      <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
-                        <Trans>Back</Trans>
-                      </Button>
-                      <Button variant="primary" size="xl" className="flex-1" onClick={handleRetry}>
-                        {errorLabel ?? <Trans>Retry</Trans>}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                {txStatus === TxStatus.ERROR && (
+                  <div className="flex w-full gap-3">
+                    <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
+                      <Trans>Back</Trans>
+                    </Button>
+                    <Button variant="primary" size="xl" className="flex-1" onClick={handleRetry}>
+                      {errorLabel ?? <Trans>Retry</Trans>}
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

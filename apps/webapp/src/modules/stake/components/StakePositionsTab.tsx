@@ -28,8 +28,11 @@ export function StakePositionsTab({
       {/* Two panes at lg (ProductDetailTemplate's pattern): the left pane is a
           real column so positions → activity follow its normal flow beside the
           self-heighted rail. Below lg the pane dissolves (`contents`) and
-          `order` restores the stacked sequence summary → positions → activity. */}
-      <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-6">
+          `order` restores the stacked sequence summary → positions → activity.
+          Positions→activity is 80px at lg (Figma Annotations R2 A3, measured)
+          — owned by this wrapper's own gap, so it doesn't touch the outer
+          grid's gap-10, which also sets the rail's spacing below lg. */}
+      <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-20">
         <div className="order-2">
           <StakePositionsTable
             positions={positions}

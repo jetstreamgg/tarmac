@@ -13,7 +13,7 @@ vi.mock('@/hooks', () => ({
 vi.mock('@/modules/ui/components/NetworkFeeValue', () => ({
   useBundleFeeState: (callCount: number) => {
     h.callCounts.push(callCount);
-    return { ready: false, settled: false, failed: false, canBundle: callCount > 1, promoVisible: false };
+    return { ready: false, settled: false, failed: false, canBundle: callCount > 1 };
   }
 }));
 

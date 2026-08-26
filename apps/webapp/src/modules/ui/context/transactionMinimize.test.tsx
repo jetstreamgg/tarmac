@@ -188,7 +188,7 @@ describe('TransactionModal minimize', () => {
     act(() => cb.onMutate());
     act(() => cb.onStart('0xhash'));
     expect(screen.queryByText('Supply')).not.toBeNull();
-    expect(screen.queryByRole('button', { name: /processing/i })).not.toBeNull();
+    expect(screen.queryByText(/processing/i)).not.toBeNull();
 
     // Minimize: the modal view is gone, but the transaction is NOT torn down.
     act(() => ctx.minimize());
@@ -260,7 +260,7 @@ describe('TransactionModal minimize', () => {
 
     act(() => cb.onMutate());
     act(() => cb.onStart('0xhash')); // LOADING — in-flight
-    expect(screen.queryByRole('button', { name: /processing/i })).not.toBeNull();
+    expect(screen.queryByText(/processing/i)).not.toBeNull();
 
     // The close control minimizes mid-flight (the modal view goes away)…
     act(() => fireEvent.click(screen.getByTestId('transaction-modal-close')));
@@ -268,7 +268,7 @@ describe('TransactionModal minimize', () => {
 
     // …but the transaction was not torn down — restore shows it still processing.
     act(() => ctx.restore());
-    expect(screen.queryByRole('button', { name: /processing/i })).not.toBeNull();
+    expect(screen.queryByText(/processing/i)).not.toBeNull();
   });
 
   it('resets to a fresh first screen when a new transaction is launched after a minimized one', () => {
@@ -337,7 +337,7 @@ describe('TransactionModal minimize', () => {
     // The running host is NOT torn down (no remount) and the modal comes back on
     // its pending screen rather than a fresh entry.
     expect(probe.unmounts).toBe(unmountsBefore);
-    expect(screen.queryByRole('button', { name: /processing/i })).not.toBeNull();
+    expect(screen.queryByText(/processing/i)).not.toBeNull();
     expect(screen.queryByRole('button', { name: /confirm/i })).toBeNull();
   });
 

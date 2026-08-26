@@ -138,15 +138,29 @@ const minorHeadingClasses =
 const majorHeadingClasses =
   'text-xl leading-[22px] tracking-[-0.4px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]';
 
-function DetailsSection({ title, details }: { title?: ReactNode; details: ProductDetailRow[] }) {
+function DetailsSection({
+  title,
+  details,
+  className
+}: {
+  title?: ReactNode;
+  details: ProductDetailRow[];
+  className?: string;
+}) {
   return (
-    <section className="flex flex-col gap-4" data-testid="product-detail-details">
+    // Figma Annotations R2 (measured): the Details block's heading→list gap is
+    // 32px, matching the Stake Statistics Details strip. Specific to Details —
+    // About stays 16px and Transactions 24px.
+    <section className={cn('flex flex-col gap-8', className)} data-testid="product-detail-details">
       <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>Details</Trans>}</SectionHeading>
-      <div className="grid grid-cols-1 gap-x-12 sm:grid-cols-2">
+      {/* Figma Annotations R2 F1 (measured, 1512px frame): 20px between the two
+          columns, 24px row-to-row (owned by the grid's gap-y, not per-row
+          padding), 12px content→divider inside each row. */}
+      <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2">
         {details.map(row => (
           <div
             key={row.id}
-            className="border-borderPrimary flex items-center justify-between gap-4 border-b py-4"
+            className="border-borderPrimary flex items-center justify-between gap-4 border-b pb-3"
           >
             {/* Desktop comp (859:35723): label Body 5 (Graphik 14/22), value
                 Label 4 (Circular Medium 16/18, -0.32px). Mobile keeps the M6.3
@@ -165,9 +179,17 @@ function DetailsSection({ title, details }: { title?: ReactNode; details: Produc
   );
 }
 
-function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetailAbout }) {
+function AboutSection({
+  title,
+  about,
+  className
+}: {
+  title?: ReactNode;
+  about: ProductDetailAbout;
+  className?: string;
+}) {
   return (
-    <section className="flex flex-col gap-4" data-testid="product-detail-about">
+    <section className={cn('flex flex-col gap-4', className)} data-testid="product-detail-about">
       <SectionHeading className={minorHeadingClasses}>{title ?? <Trans>About</Trans>}</SectionHeading>
       {/* Body 5 on fg-secondary with an inline fg-brand-primary link
           (Figma 859:35769). Named explicitly rather than left to textSecondary:
@@ -189,16 +211,21 @@ function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetai
 function TransactionsSection({
   title,
   action,
-  children
+  children,
+  className
 }: {
   title?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
+  className?: string;
 }) {
   return (
     // M6.3 (486:20827): on mobile the action drops under the heading as its
     // own full-width row (24px below the heading, 32px above the cards).
-    <section className="flex flex-col gap-8 md:gap-4" data-testid="product-detail-transactions">
+    <section
+      className={cn('flex flex-col gap-8 md:gap-4', className)}
+      data-testid="product-detail-transactions"
+    >
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <SectionHeading className={majorHeadingClasses}>
           {title ?? <Trans>Transactions</Trans>}
@@ -234,7 +261,10 @@ export function ProductDetailTemplate({
   const [backTo] = useState(() => backToMarketplace(backHref));
 
   return (
-    <div className="flex w-full flex-col gap-8 py-4 md:py-10" data-testid={dataTestId}>
+    // Figma Annotations R2 F2: 120px page-bottom padding below the last
+    // section, measured on the 1512px frame (matches the `md:pb-30` recipe
+    // ConnectedPortfolio already uses for the same spec); top inset unchanged.
+    <div className="flex w-full flex-col gap-8 py-4 md:pt-10 md:pb-30" data-testid={dataTestId}>
       {/* Header (Patterns/Headers, Savings type 5039:35173): Label 5 back-link
           over the ringed-icon + Heading 3 title row, network pill right. The
           DS 17px icon-title gap is normalized to 16. M6.3 mobile (486:20720):
@@ -265,35 +295,60 @@ export function ProductDetailTemplate({
 
       {/* Body on the design grid at every tier (M3): 4 columns on mobile,
           8 on tablet, 12 at desktop — 20px gaps below desktop, 32px at it.
-          Desktop places two panes side by side: the left pane (8 cols) flows
-          chart → details → about → transactions; the right pane (4 cols,
+          Desktop places two panes side by side: the left pane (8 cols) is a
+          single uniform stack — chart, Details, the optional afterDetails
+          section, About, Transactions — all one gap; the right pane (4 cols,
           self-start) holds the position card at its own height. Below desktop
           the left pane dissolves (`contents`) and every block spans the full
-          row, so all four stack, with `order` slotting the card first (M6.3,
-          486:20706 — the position/hero card leads on phones): position →
-          chart → details → …. Stacked rows sit 40px apart per the comp. */}
+          row, so everything stacks, with `order` slotting the card first
+          (M6.3, 486:20706 — the position/hero card leads on phones): position
+          → chart → details → …. */}
       <div
         className="desktop:grid-cols-12 desktop:gap-8 grid grid-cols-4 gap-x-5 gap-y-10 sm:grid-cols-8"
         data-testid="product-detail-body"
       >
+        {/* Figma Annotations R2 F2 (measured, 1512px frame): chart, Details,
+            afterDetails, About and Transactions are ONE uniform stack — 80px
+            apart at desktop, via this wrapper's own `gap-20` once it becomes a
+            real flex column. Below desktop the wrapper is `contents`, so it
+            can't own a gap; the outer grid's `gap-y-10` (40px) is what
+            actually separates these — and it also separates the rail
+            (position, order-1) from the chart, which must stay untouched — so
+            each section past the first (order-3 and up) carries `mt-2` (8px)
+            to top the grid's 40px up to the same 48px the stack used below
+            desktop before this change, cancelled by `desktop:mt-0` once the
+            flex `gap-20` takes over. */}
         <div
-          className="desktop:col-span-8 desktop:flex desktop:flex-col desktop:gap-8 contents"
+          className="desktop:col-span-8 desktop:flex desktop:flex-col desktop:gap-20 contents"
           data-testid="product-detail-left-pane"
         >
           <div className="order-2 col-span-full">{chart}</div>
-          <div className="order-3 col-span-full flex flex-col gap-12 md:gap-10">
-            <DetailsSection title={detailsTitle} details={details} />
-            {afterDetails && (
-              <section className="flex flex-col gap-4" data-testid="product-detail-after-details">
-                <SectionHeading className={minorHeadingClasses}>{afterDetails.title}</SectionHeading>
-                {afterDetails.body}
-              </section>
-            )}
-            <AboutSection title={aboutTitle} about={about} />
-            <TransactionsSection title={transactionsTitle} action={transactionsAction}>
-              {transactions}
-            </TransactionsSection>
-          </div>
+          <DetailsSection
+            title={detailsTitle}
+            details={details}
+            className="desktop:mt-0 order-3 col-span-full mt-2"
+          />
+          {afterDetails && (
+            <section
+              className="desktop:mt-0 order-4 col-span-full mt-2 flex flex-col gap-4"
+              data-testid="product-detail-after-details"
+            >
+              <SectionHeading className={minorHeadingClasses}>{afterDetails.title}</SectionHeading>
+              {afterDetails.body}
+            </section>
+          )}
+          <AboutSection
+            title={aboutTitle}
+            about={about}
+            className="desktop:mt-0 order-5 col-span-full mt-2"
+          />
+          <TransactionsSection
+            title={transactionsTitle}
+            action={transactionsAction}
+            className="desktop:mt-0 order-6 col-span-full mt-2"
+          >
+            {transactions}
+          </TransactionsSection>
         </div>
         <div
           className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-1 col-span-full"

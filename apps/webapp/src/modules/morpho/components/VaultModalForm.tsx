@@ -6,7 +6,6 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { getVaultByAddress, type Token, type VaultProvider, useVaultMarketData } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
@@ -281,7 +280,7 @@ export function VaultModalForm({
           }
           error={
             insufficient && !zeroLiquidity ? (
-              <Text className="text-error text-sm" data-testid="vault-modal-amount-error">
+              <Text className="text-statusError text-sm" data-testid="vault-modal-amount-error">
                 {isSupply ? (
                   <Trans>Insufficient balance</Trans>
                 ) : isLiquidityConstrained ? (
@@ -319,8 +318,6 @@ export function VaultModalForm({
       </div>
 
       <ModalSummaryGrid rows={toGridCells(rows, 'vault-modal-row', feeCell)} dividerClassName="h-8" />
-
-      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 

@@ -12,7 +12,6 @@ import {
   type UpgradeSourceToken
 } from '@/hooks';
 import { formatNumber, math } from '@/utils';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { TxStatus, PopoverRateInfo } from '@/widgets';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
@@ -261,7 +260,7 @@ export function UpgradeModalForm({
         }
         error={
           insufficient ? (
-            <Text className="text-error text-sm" data-testid="upgrade-modal-amount-error">
+            <Text className="text-statusError text-sm" data-testid="upgrade-modal-amount-error">
               <Trans>Insufficient balance</Trans>
             </Text>
           ) : undefined
@@ -273,8 +272,6 @@ export function UpgradeModalForm({
 
       <div className="flex flex-col gap-4">
         <ModalSummaryGrid rows={toGridCells(rows, 'upgrade-modal-row', feeCell)} dividerClassName="h-6" />
-
-        {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
       </div>
     </div>
   );

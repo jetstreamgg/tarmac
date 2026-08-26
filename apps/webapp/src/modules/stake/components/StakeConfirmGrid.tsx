@@ -16,7 +16,6 @@ import { toGridCells } from '@/components/product/ModalGridCells';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
 import { buildStakeConfirmRows, type StakeDelegateSide, type StakeRewardSide } from './stakeModalRows';
 
@@ -225,7 +224,6 @@ export function StakeConfirmGrid({
   return (
     <div className="flex flex-col gap-6" data-testid="stake-confirm-grid">
       <ModalSummaryGrid rows={toGridCells(rows, 'stake-confirm-row', feeCell)} dividerClassName="h-6" />
-      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 }

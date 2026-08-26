@@ -3,11 +3,12 @@ import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { BATCH_TX_LEGAL_NOTICE_URL } from '@/lib/constants';
 
 /**
- * What bundling does, said once — the body copy shared by the badge's panel
- * (`BundleTogglePanel`) and the savings card (`BundleSavingsPromo`).
+ * What bundling does, said once — the body copy for the badge's panel
+ * (`BundleTogglePanel`), now the sole in-modal bundling control since the
+ * promo card was removed app-wide (figma-annotations r2, item G2).
  *
  * The comps write the first sentence as "Approve + Supply run as one transaction", but
- * both surfaces render on nine flows: the bundle is Approve + Convert on /convert,
+ * this copy renders on nine flows: the bundle is Approve + Convert on /convert,
  * Approve + Upgrade on upgrade, and N claims with no approval at all on the two claim
  * modals. Naming the steps generically is the only phrasing that is true everywhere;
  * per-flow copy would have to come from each flow's `steps` and needs a design call.

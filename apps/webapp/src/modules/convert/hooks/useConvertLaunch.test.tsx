@@ -133,15 +133,21 @@ describe('useConvertLaunch', () => {
   it('labels a two-step approve → convert flow when allowance is needed', () => {
     h.needsAllowance = true;
     const { result } = renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
-    // The approve step carries tokenSymbol so the steps list renders "Approve ◉ USDS" (Figma 1036:205564).
-    expect(result.current.steps).toEqual([{ label: 'Approve', tokenSymbol: 'USDS' }, 'Convert USDS to USDC']);
+    // The approve step carries tokenSymbol so the steps list renders "Approve ◉ USDS" (Figma 1036:205564);
+    // the convert step carries a source→target pair so it renders "Convert ◉ USDS to ◉ USDC".
+    expect(result.current.steps).toEqual([
+      { label: 'Approve', tokenSymbol: 'USDS' },
+      { label: 'Convert', tokenSymbol: 'USDS', targetTokenSymbol: 'USDC' }
+    ]);
   });
 
   it('collapses to a single convert step when allowance covers the amount', () => {
     const { result } = renderHook(() =>
       useConvertLaunch({ direction: 'USDC_TO_USDS', amount: parseUnits('100', 6) })
     );
-    expect(result.current.steps).toEqual(['Convert USDC to USDS']);
+    expect(result.current.steps).toEqual([
+      { label: 'Convert', tokenSymbol: 'USDC', targetTokenSymbol: 'USDS' }
+    ]);
   });
 
   it('launches the review modal with the frozen config shape and convert analytics', () => {
@@ -157,7 +163,7 @@ describe('useConvertLaunch', () => {
       transactionTitle: 'Review conversion',
       confirmLabel: 'Confirm',
       confirmDisabled: false,
-      steps: ['Convert USDS to USDC'],
+      steps: [{ label: 'Convert', tokenSymbol: 'USDS', targetTokenSymbol: 'USDC' }],
       toast: {
         loading: 'Converting 100 USDS',
         success: 'USDC converted!',
@@ -212,7 +218,10 @@ describe('useConvertLaunch', () => {
     expect(h.updateMock).toHaveBeenCalled();
     const [sessionId, partial] = h.updateMock.mock.calls.at(-1)!;
     expect(typeof sessionId).toBe('string');
-    expect(partial).toMatchObject({ confirmDisabled: false, steps: ['Convert USDS to USDC'] });
+    expect(partial).toMatchObject({
+      confirmDisabled: false,
+      steps: [{ label: 'Convert', tokenSymbol: 'USDS', targetTokenSymbol: 'USDC' }]
+    });
   });
 
   it('freezes modal content once the transaction leaves the review screen', () => {

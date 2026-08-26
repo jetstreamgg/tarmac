@@ -282,7 +282,30 @@ describe('TransactionProvider pre-transaction gate', () => {
     expect(screen.getByText('Signature needed to continue.')).not.toBeNull();
     // The flow's own pending copy stays hidden while the gate copy is set.
     expect(screen.queryByText('Supplying your tokens...')).toBeNull();
-    expect(screen.queryByText('Confirm this transaction in your wallet.')).toBeNull();
+    // The chip is the only other status surface. A sign request really is
+    // waiting in the wallet here, so it keeps the INITIALIZED label.
+    expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Confirm in the wallet');
+  });
+
+  it('the chip takes the gate\'s label while screening — not "Confirm in the wallet"', async () => {
+    // Both gate phases render as INITIALIZED, but screening is an HTTP check:
+    // a txStatus-keyed chip would send the user to a wallet showing nothing,
+    // right beside the gate's own "Verifying your wallet address…".
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setGateStatus('screening', {
+        message: 'Verifying your wallet address…',
+        badgeLabel: 'Verifying'
+      });
+      return new Promise(() => {}); // the screen never resolves
+    };
+    renderWithGate(gate, { title: 'Supply', usdValue: 0, onConfirm: vi.fn(), steps: ['Supply USDS'] });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await flush();
+
+    const badge = screen.getByTestId('transaction-status-badge');
+    expect(badge.textContent).toContain('Verifying');
+    expect(badge.textContent).not.toContain('Confirm in the wallet');
   });
 
   it("the engine's first onMutate clears the gate copy — the flow's narration takes over", async () => {

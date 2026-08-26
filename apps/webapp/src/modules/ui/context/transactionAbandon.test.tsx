@@ -201,7 +201,7 @@ describe('TransactionModal abandon vs minimize (state-dependent dismissal)', () 
 
     // Restore proves the session survived.
     act(() => ctx.restore());
-    expect(screen.queryByRole('button', { name: /processing/i })).not.toBeNull();
+    expect(screen.queryByText(/processing/i)).not.toBeNull();
   });
 
   it('launching a new flow after broadcast restores the pending modal WITH an explanation toast', () => {
@@ -305,7 +305,7 @@ describe('stale engine callbacks from a still-mounted host (APP-416)', () => {
     // The new session must not adopt the foreign broadcast: still awaiting confirm.
     expect(screen.queryByText('Stake SKY')).not.toBeNull();
     expect(screen.queryByRole('button', { name: /^confirm$/i })).not.toBeNull();
-    expect(screen.queryByRole('button', { name: /processing/i })).toBeNull();
+    expect(screen.queryByText(/processing/i)).toBeNull();
   });
 
   it('a late onSuccess from an abandoned write neither settles the replacing session nor fires its onSuccess', () => {

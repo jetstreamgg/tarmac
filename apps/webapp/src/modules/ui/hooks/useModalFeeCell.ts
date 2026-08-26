@@ -35,15 +35,10 @@ export function useModalFeeCell({ legCount, ...params }: UseModalFeeCellParamete
   const state = useBundleFeeState(legCount ?? params.calls.length, fee, !!error);
   return useMemo(
     () => ({ fee, state, loading: isLoading }),
-    [
-      fee?.formatted,
-      fee?.batchSaving,
-      isLoading,
-      state.ready,
-      state.settled,
-      state.failed,
-      state.canBundle,
-      state.promoVisible
-    ]
+    // Every field the fee row reads, one by one. `promoVisible`/`batchSaving`
+    // are absent on purpose: the bundling promo card is gone, so the saving is
+    // computed but never rendered — listing it would churn the memo for a value
+    // nothing can display.
+    [fee?.formatted, isLoading, state.ready, state.settled, state.failed, state.canBundle]
   );
 }

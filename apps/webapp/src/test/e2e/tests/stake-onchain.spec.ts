@@ -385,7 +385,11 @@ test('claim pays rewards out and claim & restake locks them back into the urn', 
   await expect(isolatedPage.getByTestId('stake-claim-form')).toBeVisible();
   await expect(isolatedPage.getByTestId('stake-claim-reward-sky')).toBeVisible({ timeout: 15_000 });
   await isolatedPage.getByRole('button', { name: 'Claim', exact: true }).click();
-  await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+  // The old generic success sentence is gone — status now lives only in the
+  // status badge (`data-testid="transaction-status-badge"`), which cycles through
+  // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
+  // so this waits for the terminal text rather than whatever the badge reads first.
+  await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
     timeout: 60_000
   });
   await isolatedPage.getByRole('button', { name: 'Done' }).click();
@@ -406,7 +410,11 @@ test('claim pays rewards out and claim & restake locks them back into the urn', 
   await isolatedPage.getByTestId('stake-manage-menu-claim').click();
   await expect(isolatedPage.getByTestId('stake-claim-reward-sky')).toBeVisible({ timeout: 15_000 });
   await isolatedPage.getByRole('button', { name: 'Claim & Restake SKY' }).click();
-  await expect(isolatedPage.getByText('Transaction completed successfully.')).toBeVisible({
+  // The old generic success sentence is gone — status now lives only in the
+  // status badge (`data-testid="transaction-status-badge"`), which cycles through
+  // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
+  // so this waits for the terminal text rather than whatever the badge reads first.
+  await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
     timeout: 60_000
   });
   await isolatedPage.getByRole('button', { name: 'Done' }).click();

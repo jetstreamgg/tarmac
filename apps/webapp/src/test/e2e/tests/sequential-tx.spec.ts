@@ -89,7 +89,10 @@ test.describe('Sequential transactions — Savings supply', () => {
     await interceptAndRejectSecondTransaction(isolatedPage, 200);
     await confirm.click();
 
-    await expect(isolatedPage.getByText('Transaction failed. Please try again.')).toBeVisible({
+    // The old generic error sentence is gone — status now lives only in the
+    // status badge (`data-testid="transaction-status-badge"`). toHaveText auto-retries,
+    // so this waits for the terminal "Failed" text rather than an in-flight state.
+    await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Failed', {
       timeout: 60_000
     });
 
@@ -173,7 +176,10 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await interceptAndRejectSecondTransaction(isolatedPage, 200);
     await confirm.click();
 
-    await expect(isolatedPage.getByText('Transaction failed. Please try again.')).toBeVisible({
+    // The old generic error sentence is gone — status now lives only in the
+    // status badge (`data-testid="transaction-status-badge"`). toHaveText auto-retries,
+    // so this waits for the terminal "Failed" text rather than an in-flight state.
+    await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Failed', {
       timeout: 60_000
     });
 

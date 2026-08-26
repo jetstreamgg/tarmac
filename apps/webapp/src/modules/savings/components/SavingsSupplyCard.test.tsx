@@ -58,6 +58,7 @@ import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlow
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider, CONTINUATION_DELAY_MS } from '@/modules/ui/context/ConnectThenActContext';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
+import { MAINNET_SUPPLY_ORIGINS, L2_SUPPLY_ORIGINS } from './SavingsOriginSelect';
 
 const wrap = (onSupply: () => void) => (
   <I18nProvider i18n={i18n}>
@@ -84,7 +85,7 @@ describe('SavingsSupplyCard — no-position entry card', () => {
     h.connected = true;
   });
 
-  it('renders the rate, aggregated idle balance, and the chain-aware supply tokens', () => {
+  it('renders the rate and aggregated idle balance', () => {
     renderCard();
 
     expect(screen.getByTestId('savings-supply-card')).toBeTruthy();
@@ -92,11 +93,47 @@ describe('SavingsSupplyCard — no-position entry card', () => {
     expect(screen.getAllByText('3.75%').length).toBeGreaterThan(0);
     // Idle balance = sum of the supply origins' wallet balances (20k + 10k).
     expect(screen.getByText('30,000')).toBeTruthy();
-    // Mainnet supply origins are USDS + DAI (no inline input, just labels).
-    expect(screen.getAllByText('USDS').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('DAI').length).toBeGreaterThan(0);
     // No inline amount input — entry happens in the modal.
     expect(screen.queryByTestId('savings-amount-input')).toBeNull();
+  });
+
+  // Figma Annotations R2 F3: mainnet's 3 supply origins (USDS/DAI/USDC) trip
+  // the 3+ edge case — the enumerated per-token icons+symbols drop in favor
+  // of generic "stablecoins" copy.
+  it('falls back to generic "stablecoins" copy with no per-token symbols at 3+ origins (mainnet)', () => {
+    renderCard();
+
+    expect(screen.getByText('Supply stablecoins and earn 3.75% APY')).toBeTruthy();
+    // TokenIcon is mocked to null, so the enumerated span (icon + symbol per
+    // origin) is only observable via its symbol text — absent here confirms
+    // the whole enumerated tree, icons included, isn't mounted on this path.
+    expect(screen.queryByText('USDS')).toBeNull();
+    expect(screen.queryByText('DAI')).toBeNull();
+    expect(screen.queryByText('USDC')).toBeNull();
+  });
+
+  // The ≤2-origin path (L2: USDS/USDC) keeps the original enumerated form.
+  it('keeps the enumerated icons+symbols form at 2 origins (L2)', () => {
+    h.chainId = 8453; // Base
+    renderCard();
+
+    expect(screen.getByText(/at 3\.75% APY/)).toBeTruthy();
+    expect(screen.getAllByText('USDS').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('USDC').length).toBeGreaterThan(0);
+    // DAI isn't an L2 supply origin — confirms the enumeration is chain-aware,
+    // not just "every symbol the card knows about".
+    expect(screen.queryByText('DAI')).toBeNull();
+    // The generic 3+ copy must not leak into the 2-origin path.
+    expect(screen.queryByText(/Supply stablecoins/)).toBeNull();
+  });
+
+  // Branch-boundary pin: the 3+ edge case in SavingsSupplyCard is keyed off
+  // `origins.length >= 3`. If MAINNET_SUPPLY_ORIGINS ever drops back to 2 (or
+  // L2_SUPPLY_ORIGINS grows to 3), the card's copy silently flips — this
+  // fails loudly instead, independent of the rendering assertions above.
+  it('pins the origin counts the generic-copy branch boundary depends on', () => {
+    expect(MAINNET_SUPPLY_ORIGINS.length).toBe(3);
+    expect(L2_SUPPLY_ORIGINS.length).toBe(2);
   });
 
   // M6.3: both comps carry a product badge above the headline (desktop

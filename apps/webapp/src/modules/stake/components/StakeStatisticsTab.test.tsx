@@ -18,7 +18,7 @@ vi.mock('./StakeEngineCard', () => ({
 }));
 
 describe('StakeStatisticsTab', () => {
-  it('mounts the chart, details strip and utilization block in the main column and the engine card in the rail', () => {
+  it('stacks chart, Details and Borrow Utilization in the left column, with the engine card in its own rail', () => {
     render(<StakeStatisticsTab />);
 
     const chart = screen.getByTestId('stub-rate-chart');
@@ -26,9 +26,27 @@ describe('StakeStatisticsTab', () => {
     const utilization = screen.getByTestId('stub-borrow-utilization');
     const engineCard = screen.getByTestId('stub-engine-card');
 
-    const mainColumn = chart.parentElement;
-    expect(mainColumn).toBe(strip.parentElement);
-    expect(mainColumn).toBe(utilization.parentElement);
-    expect(engineCard.parentElement).not.toBe(mainColumn);
+    // Chart, Details and Borrow Utilization all live in the same left-column
+    // container, in that DOM order.
+    const leftColumn = chart.parentElement;
+    expect(leftColumn).toBe(strip.parentElement);
+    expect(leftColumn).toBe(utilization.parentElement);
+    const leftColumnChildren = Array.from(leftColumn?.children ?? []);
+    expect(leftColumnChildren.indexOf(chart)).toBeLessThan(leftColumnChildren.indexOf(strip));
+    expect(leftColumnChildren.indexOf(strip)).toBeLessThan(leftColumnChildren.indexOf(utilization));
+
+    // The engine card sits in a separate cell from the left column, as a
+    // sibling in the same top-level grid — not sharing a row/column with the
+    // chart, so it never inherits the left column's (much taller) height.
+    const engineCell = engineCard.parentElement;
+    expect(engineCell).not.toBe(leftColumn);
+    const grid = leftColumn?.parentElement;
+    expect(grid).toBe(engineCell?.parentElement);
+    expect(grid?.className).toContain('items-start');
+
+    // Mobile order (comp 1222:17089): promo card → chart → Details → Borrow
+    // Utilization, independent of the desktop grid placement above.
+    expect(engineCell?.className).toContain('order-1');
+    expect(leftColumn?.className).toContain('order-2');
   });
 });

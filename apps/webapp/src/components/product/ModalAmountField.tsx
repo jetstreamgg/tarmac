@@ -4,6 +4,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { sanitizeAmountInput } from '@/lib/amountInput';
 import { cn } from '@/lib/cn';
+import { AmountFieldHairline } from './amountFieldHairline';
 
 const PERCENT_PRESETS = [25, 50, 100] as const;
 export type PercentPreset = (typeof PERCENT_PRESETS)[number];
@@ -59,6 +60,10 @@ export function ModalAmountField({
   // maxTestId in the DOM).
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
+  // The only error signal the field gets: whatever the caller renders below the hairline.
+  // A validation state doesn't need its own boolean prop — the presence of `error` already
+  // says everything the hairline needs to know.
+  const hasError = Boolean(error);
 
   const percentChips = (
     <div className={cn('flex items-center gap-1', isMobile && 'mt-1 w-full')}>
@@ -80,7 +85,10 @@ export function ModalAmountField({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    // `group` carries the input's focus state down to the hairline below (DS Input /
+    // Amount 5620:26710, Active variant) without a local focus-tracking state hook — the
+    // hairline is a sibling, not a border on the input itself.
+    <div className="group flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="flex min-w-40 flex-1 flex-col gap-2">
           <span className="font-graphik text-fgSecondary text-xs leading-[18px]">{label}</span>
@@ -111,8 +119,17 @@ export function ModalAmountField({
           </div>
         </div>
       </div>
-      {error}
-      <div className="border-borderPrimary border-t" aria-hidden />
+      {/* DS Input / Amount hairline (5620:26710) — recipe owned by
+          AmountFieldHairline, shared with StakeTakeoverAmountField. 16px down
+          from the value row (this parent's gap-4); 4px down to the error
+          message when present, so both live in their own nested gap-1
+          column instead of inheriting the 16px sibling gap. The amount,
+          chips and token selector above stay in normal colours regardless of
+          state — only the hairline (and the error text itself) redden. */}
+      <div className="flex flex-col gap-1">
+        <AmountFieldHairline hasError={hasError} />
+        {error}
+      </div>
       {isMobile && percentChips}
     </div>
   );

@@ -10,7 +10,6 @@ import {
   type Token
 } from '@/hooks';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { toGridCells, type ModalGridFee } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
@@ -126,8 +125,6 @@ export const PendleRedeem = ({
       />
 
       <ModalSummaryGrid rows={toGridCells(rows, 'pendle-redeem-row', feeCell)} dividerClassName="h-6" />
-
-      {feeCell?.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 };

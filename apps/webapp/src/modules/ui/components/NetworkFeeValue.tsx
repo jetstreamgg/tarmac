@@ -1,31 +1,27 @@
-import { useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useIsBatchSupported } from '@/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { NetworkFeeData } from '@/hooks';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { BundleTogglePanel } from './BundleTogglePanel';
 import { NO_VALUE } from '@/lib/constants';
 
 export type BundleFeeState = {
-  /** Every input the row and the card depend on has landed. */
+  /** Every input the row depends on has landed. */
   ready: boolean;
   /** The estimate is in, or has failed — either way it will not change shape again. */
   settled: boolean;
   /** The estimate failed with no figure to show. */
   failed: boolean;
   canBundle: boolean;
-  promoVisible: boolean;
 };
 
 /**
- * One resolved answer for everything the fee row and the promo card render from.
+ * One resolved answer for everything the fee row renders from.
  *
  * The pieces arrive at different times — wallet capabilities from one query, the two gas
  * figures from another, the ETH price from a third — and rendering each as it lands walks
- * the row through several layouts (dash → badge → value → strikethrough) and pops the card
- * in underneath. `ready` holds the whole composition until they're all in, so it changes
- * shape once.
+ * the row through several layouts (dash → badge → value → strikethrough). `ready` holds
+ * the whole composition until they're all in, so it changes shape once.
  *
  * Toggling bundling afterwards costs nothing: both figures are already simulated and
  * cached, so the row re-reads them without another fetch.
@@ -43,10 +39,6 @@ export function useBundleFeeState(
   feeFailed = false
 ): BundleFeeState {
   const { data: batchSupported, isLoading: isSupportLoading } = useIsBatchSupported();
-  const [batchEnabled] = useBatchToggle();
-  // Snapshot: someone who already had bundling on never sees the pitch, and someone who
-  // switches it on mid-modal keeps the card until they close and reopen.
-  const [enabledOnOpen] = useState(batchEnabled);
 
   // `formatted` is the one field that requires every input: it exists only once the two
   // gas figures, the fee-per-gas history and the ETH price have all landed. Waiting on
@@ -71,8 +63,7 @@ export function useBundleFeeState(
     // Failed only counts when there is no figure to fall back on — a held previous
     // estimate keeps rendering through a failed refetch.
     failed: settled && !ready,
-    canBundle,
-    promoVisible: ready && canBundle && !enabledOnOpen && (fee?.batchSaving ?? 0) > 0
+    canBundle
   };
 }
 
@@ -82,8 +73,12 @@ export function useBundleFeeState(
  * Figma 1036:206870 also strikes the sequential cost through beside a bundled fee. It is
  * deliberately not drawn: it only appears once bundling is *on*, and at that point the
  * saving has already been made — the reader is being sold something they have bought.
- * The pitch belongs to the promo card, which is aimed at people who have bundling off
- * (team call, 2026-07-28).
+ *
+ * This badge is the app's only in-modal bundling control (figma-annotations r2, item G2
+ * removed the "Save X% on network fees" promo card that used to share the pitch, and the
+ * interlock that hid the badge behind it — `BundleSavingsPromo` no longer exists anywhere
+ * in the app). The badge shows whenever bundling is available, full stop: on or off, no
+ * card to defer to and no snapshot of whether it was on when the modal opened.
  *
  * Without bundling available this is just the fee, so the row is unchanged for wallets
  * that can't batch.
@@ -98,8 +93,6 @@ export function NetworkFeeValue({
   /** `useNetworkFee().isLoading` — the estimate is wanted and in flight. */
   loading?: boolean;
 }) {
-  const [batchEnabled] = useBatchToggle();
-
   // The dash is reserved for "nothing to estimate".
   const value = state.failed ? (
     <span data-testid="network-fee-failed">
@@ -111,10 +104,7 @@ export function NetworkFeeValue({
     <>{fee?.formatted ?? NO_VALUE}</>
   );
 
-  // The `Not bundled` badge exists to explain a higher fee to someone who just switched
-  // bundling off. While the promo card is up it is already making that case, so the row
-  // stays plain until bundling is actually on (Figma 1036:206739 vs 1036:207086).
-  const showBadge = state.settled && state.canBundle && (batchEnabled || !state.promoVisible);
+  const showBadge = state.settled && state.canBundle;
 
   if (!showBadge) return value;
 

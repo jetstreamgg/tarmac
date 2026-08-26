@@ -6,7 +6,6 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { StUsdsProviderType, TOKENS, stUsdsAddress } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
@@ -250,11 +249,11 @@ export function StUsdsModalForm({
         : 'text-fgSecondary';
 
   const amountError = insufficient ? (
-    <Text className="text-error text-sm" data-testid="stusds-modal-amount-error">
+    <Text className="text-statusError text-sm" data-testid="stusds-modal-amount-error">
       {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
     </Text>
   ) : blocked && !providerSelection.allProvidersBlocked ? (
-    <Text className="text-error text-sm" data-testid="stusds-modal-capacity-error">
+    <Text className="text-statusError text-sm" data-testid="stusds-modal-capacity-error">
       <Trans>Amount exceeds the module&apos;s remaining supply capacity</Trans>
     </Text>
   ) : undefined;
@@ -289,8 +288,6 @@ export function StUsdsModalForm({
         <StUsdsProviderNotice providerSelection={providerSelection} flow={flow} />
 
         <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row', feeCell)} dividerClassName="h-8" />
-
-        {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
 
         {needsImpactAcknowledgement && (
           <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">

@@ -32,7 +32,6 @@ import {
   type PendleAnalyticsSide
 } from '@/widgets';
 import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
-import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
@@ -604,7 +603,7 @@ export function PendleModalForm({
         }
         error={
           insufficient ? (
-            <Text className="text-error text-sm" data-testid="pendle-modal-insufficient">
+            <Text className="text-statusError text-sm" data-testid="pendle-modal-insufficient">
               <Trans>Insufficient funds</Trans>
             </Text>
           ) : undefined
@@ -615,8 +614,6 @@ export function PendleModalForm({
       />
 
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
-
-      {feeCell.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 
