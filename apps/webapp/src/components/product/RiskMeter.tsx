@@ -160,8 +160,8 @@ export function RiskScaleMeter({
 const TIERS: EarnRiskTier[] = ['low', 'moderate', 'advanced'];
 
 // Figma status palette (1036:201215, which settled the open question the H8
-// tables batch left on the 3-lit tier): Conservative = fg-success,
-// Moderate = fg-warning, Aggressive = fg-error.
+// tables batch left on the 3-lit tier): Core = fg-success,
+// Medium = fg-warning, Advanced = fg-error.
 const TIER_COLOR: Record<EarnRiskTier, string> = {
   low: 'bg-statusSuccess',
   moderate: 'bg-statusWarning',
