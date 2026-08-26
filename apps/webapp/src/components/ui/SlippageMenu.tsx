@@ -118,15 +118,18 @@ export function SlippageMenu({
         <Settings className="h-5 w-5" />
       </PopoverTrigger>
       <PopoverContent
-        className="w-[330px] rounded-[20px] shadow-xl backdrop-blur-2xl"
+        // Same surface as PopoverInfo, which opens from a cell two along in
+        // the same grid — they read as siblings rather than two dialects.
+        className="bg-containerDark w-80 rounded-xl backdrop-blur-[50px]"
         data-testid={`${dataTestId}-content`}
       >
-        <div className="flex w-full flex-col gap-5">
-          <div className="space-y-3">
-            <h3 className="text-text font-circle font-medium">
+        <div className="flex w-full flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            {/* Label 3, the heading every modal/popover surface uses. */}
+            <h3 className="text-fgPrimary font-circle text-base leading-5 font-medium tracking-[-0.32px]">
               <Trans>Slippage</Trans>
             </h3>
-            <p className="text-textSecondary text-sm leading-relaxed">
+            <p className="text-fgSecondary font-graphik text-xs leading-[18px]">
               {description ?? (
                 <Trans>
                   Maximum acceptable difference between the quoted amount and what the trade actually executes
@@ -144,31 +147,37 @@ export function SlippageMenu({
               }
             }}
           >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value={AUTO} data-testid={`${dataTestId}-auto-tab`}>
+            {/* Tabs2 (5039:73501): the DS's enclosed segmented control — the
+                same recipe the detail chart's Rate/TVL and range toggles use. */}
+            <TabsList variant="segmented">
+              <TabsTrigger variant="segmented" value={AUTO} data-testid={`${dataTestId}-auto-tab`}>
                 <Trans>Auto</Trans>
               </TabsTrigger>
-              <TabsTrigger value={CUSTOM} data-testid={`${dataTestId}-custom-tab`}>
+              <TabsTrigger variant="segmented" value={CUSTOM} data-testid={`${dataTestId}-custom-tab`}>
                 <Trans>Custom</Trans>
               </TabsTrigger>
             </TabsList>
-            <TabsContent value={AUTO}>
-              <div className="flex h-[60px] w-full items-center justify-between p-2">
-                <span className="text-text text-sm">
-                  <Trans>Max slippage:</Trans>
+            <TabsContent value={AUTO} className="mt-4">
+              <div className="flex w-full items-center justify-between">
+                <span className="text-fgSecondary font-graphik text-xs leading-[18px]">
+                  <Trans>Max slippage</Trans>
                 </span>
-                <span className="text-text ml-2 text-sm">{decimalToPercentString(defaultValue)}%</span>
+                <span className="text-fgPrimary font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
+                  {decimalToPercentString(defaultValue)}%
+                </span>
               </div>
             </TabsContent>
-            <TabsContent value={CUSTOM}>
-              <div className="flex h-[60px] items-center justify-between gap-1 rounded-xl p-2">
-                <span className="text-text text-sm">
-                  <Trans>Max slippage:</Trans>
+            <TabsContent value={CUSTOM} className="mt-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-fgSecondary font-graphik text-xs leading-[18px]">
+                  <Trans>Max slippage</Trans>
                 </span>
-                <span className="border-borderPrimary flex items-center rounded-xl border p-2">
+                {/* Pill input, matching the glass-bordered controls the modals
+                    use for their token pills and mini chips. */}
+                <span className="border-glassBorder focus-within:border-borderTertiary flex h-8 items-center gap-0.5 rounded-full border px-3 transition-colors">
                   <input
-                    placeholder={t`Custom`}
-                    className="text-text w-[55px] [appearance:textfield] bg-transparent text-right text-sm focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    placeholder={decimalToPercentString(defaultValue)}
+                    className="text-fgPrimary font-circle w-[52px] [appearance:textfield] bg-transparent text-right text-sm leading-4 font-medium tracking-[-0.28px] focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     type="number"
                     step="any"
                     min={min}
@@ -178,7 +187,7 @@ export function SlippageMenu({
                     onChange={e => handleCustomChange(e.target.value)}
                     data-testid={`${dataTestId}-input`}
                   />
-                  <span className="text-text mt-[3px] text-xs">%</span>
+                  <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>
                 </span>
               </div>
             </TabsContent>

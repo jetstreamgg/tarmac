@@ -171,7 +171,8 @@ export function ProductSupplyCard({
   /** Omitted by /stake, whose comp (1036:208779) carries no blurb. */
   description?: ReactNode;
   stats: ReactNode;
-  cta: ReactNode;
+  /** Omitted by cards with nothing to offer — a matured market's closed state. */
+  cta?: ReactNode;
   className?: string;
   // `title` here is the headline node, not the HTML string attribute.
 } & Omit<React.HTMLAttributes<HTMLDivElement>, 'title'>) {

@@ -7,7 +7,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { SparklesMorpho, TrendingUp } from '@/modules/icons';
+import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
 import { useChainImage } from '@/widgets';
 import type { ModalSummaryCell } from './ModalSummaryGrid';
 
@@ -67,8 +67,12 @@ export type ModalGridCellHints = {
    * incentives, per the vault rate popover.
    */
   rateAccent?: 'savings' | 'morpho';
-  /** Draw the 12px trending-up glyph before the value (review Est. earnings). */
-  trend?: boolean;
+  /**
+   * Draw the 12px trend glyph before the value: `true` the green up-arrow
+   * (review Est. earnings), 'down' the red down-arrow (the Pendle "Lost on
+   * early withdrawal" cell, Figma 2193:73598).
+   */
+  trend?: boolean | 'down';
   /**
    * Draw the value's token icon inside the ringed Iconbox / Status (review
    * Product row). 'default' = border-tertiary ring (Savings); 'morpho' /
@@ -98,6 +102,12 @@ export type ModalGridCell = ModalGridCellHints &
     | { kind: 'delta'; before: string; after: string }
     /** `◉ left = ◉ right` — the token-pair equation (upgrade Rate, Figma 1310:130775). */
     | { kind: 'pair'; left: string; right: string; rightToken: string }
+    /**
+     * An interactive value the builder passes through opaquely (the Pendle
+     * withdraw entry's Withdrawal-token selector, Figma 2193:73598) — same
+     * contract as the `action`/`labelAction` hints.
+     */
+    | { kind: 'node'; node: React.ReactNode }
   );
 
 /**
@@ -175,9 +185,13 @@ export const estEarningsTrendCell = (value: string, trailingToken?: string): Mod
   trailingToken
 });
 
-/** The savings-green treatment on a value's trailing "%" (Figma gradient-savings, per WalletDrawerAssets). */
+/**
+ * The savings-green treatment on a value's trailing "%" (Figma gradient-savings,
+ * per WalletDrawerAssets). Negative rates render plain — a losing rate must
+ * not carry the healthy-green accent.
+ */
 function RatePercent({ value }: { value: string }) {
-  if (!value.endsWith('%')) return <>{value}</>;
+  if (!value.endsWith('%') || value.startsWith('-')) return <>{value}</>;
   return (
     <>
       {value.slice(0, -1)}
@@ -256,12 +270,19 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     return <Skeleton className="h-4 w-16 rounded" data-testid="cell-loading" />;
   }
 
+  if (cell.kind === 'node') {
+    return <span className="flex items-center gap-1">{cell.node}</span>;
+  }
+
   // A delta's two sides can carry different glyphs (the stake reward-farm
   // change draws SKY → USDS, the delegate change two identicons), so the icon
   // is resolved per side; `after` falls back to `before` for the same-token
   // deltas every other module emits.
   const iconFor = (side: 'before' | 'after') => {
     if (cell.network) return <NetworkIcon chainId={cell.networkChainId} />;
+    if (cell.trend === 'down') {
+      return <TrendingDown boxSize={12} className="text-statusError size-3 shrink-0" aria-hidden />;
+    }
     if (cell.trend) {
       return <TrendingUp boxSize={12} className="text-statusSuccessSolid size-3 shrink-0" aria-hidden />;
     }
@@ -283,7 +304,6 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     TONE_CLASS[(side === 'after' ? (cell.afterTone ?? cell.tone) : cell.tone)!];
 
   const accent = (value: string) => (cell.rateAccent === 'savings' ? <RatePercent value={value} /> : value);
-
   if (cell.kind === 'single') {
     return (
       <span className="flex items-center gap-1">

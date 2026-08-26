@@ -40,7 +40,13 @@ vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (fn: () => void) => fn
 }));
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
-vi.mock('@/widgets', () => ({ Pendle: () => null }));
+// Spread the real module: the card's module graph reaches more of '@/widgets'
+// than the glyph (the matured slot pulls the redeem-modal hooks), and a fixed
+// export list breaks on every addition.
+vi.mock('@/widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/widgets')>();
+  return { ...actual, Pendle: () => null };
+});
 vi.mock('@/modules/portfolio/hooks/useWalletEarnings', () => ({
   useWalletEarnings: () => earningsHolder.value
 }));
