@@ -244,7 +244,7 @@ export function Steps({ title, bundled = false, badge, children, className }: St
         <div className="flex items-center gap-2">
           <span className="text-fgSecondary text-sm leading-5.5">{title ?? <Trans>Actions</Trans>}</span>
           {bundled && (
-            <StepsBadge variant="brand" dataTestId="transaction-status-badge">
+            <StepsBadge variant="brand">
               <LightningIcon />
               <Trans>Bundled</Trans>
             </StepsBadge>
