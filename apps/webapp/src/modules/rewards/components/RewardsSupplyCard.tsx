@@ -5,7 +5,6 @@ import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
 import {
-  NO_VALUE,
   ProductBadge,
   ProductFigure,
   ProductStat,
@@ -13,6 +12,7 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * No-position rewards entry card (the rewards analogue of `SavingsSupplyCard`).
@@ -104,7 +104,7 @@ export function RewardsSupplyCard({
             />
           }
         >
-          <Trans>Sky Token Rewards</Trans>
+          <Trans>Sky Ecosystem Rewards</Trans>
         </ProductBadge>
       }
       title={

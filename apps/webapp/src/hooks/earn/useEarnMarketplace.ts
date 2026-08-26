@@ -4,8 +4,7 @@ import { useQueries } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import {
-  chainId as chainIdConstants,
-  isTestnetId,
+  familyMainnetId as resolveFamilyMainnetId,
   calculateApyFromStr,
   formatDecimalPercentage,
   math
@@ -22,7 +21,7 @@ import { useAvailableTokenRewardContracts } from '../rewards/useAvailableTokenRe
 import { filterDeprecatedRewardContracts } from '../rewards/deprecatedRewards';
 import { useMultipleRewardsChartInfo } from '../rewards/useMultipleRewardsChartInfo';
 import type { RewardsChartInfoParsed } from '../rewards/useRewardsChartInfo';
-import { MORPHO_VAULTS } from '../morpho/constants';
+import { MORPHO_API_CHAIN_ID, MORPHO_VAULTS } from '../morpho/constants';
 import { useMorphoVaultMultipleRateApiData } from '../morpho/useMorphoVaultRateApiData';
 import { useMorphoVaultsTrailingRates } from '../morpho/useMorphoVaultsTrailingRates';
 import { fetchMorphoVaultMarketData } from '../morpho/useMorphoVaultMarketApiData';
@@ -45,8 +44,9 @@ const NO_RATE = '—';
 /** Window of the table's "30D Rate" column, in days. */
 const TRAILING_DAYS = 30;
 
-// Same valuation math as useSuppliedBalancesTotalUsd (which this supersedes):
-// WAD amount × BA Labs price. Portfolio must consume these rows, not refork it.
+// The canonical supplied-value math: WAD amount × BA Labs price. Portfolio
+// must consume these rows, not refork it (it superseded the deleted
+// useSuppliedBalancesTotalUsd).
 const bigintToUsd = (balance: bigint, priceStr: string | undefined) =>
   (Number(balance) / 1e18) * parseFloat(priceStr || '0');
 
@@ -79,9 +79,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   const familyChainIds = getSupportedChainIds(connectedChainId);
   // Single-chain products (rewards, vaults, fixed, stUSDS) live on mainnet;
   // the Tenderly fork mirrors it under its own chain id.
-  const familyMainnetId = isTestnetId(connectedChainId)
-    ? chainIdConstants.tenderly
-    : chainIdConstants.mainnet;
+  const familyMainnetId = resolveFamilyMainnetId(connectedChainId);
 
   const { data: pricesData, isLoading: pricesLoading, error: pricesError } = usePrices();
 
@@ -140,8 +138,8 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   // the existing widgets and mounting both costs no extra requests.
   const morphoMarketResults = useQueries({
     queries: MORPHO_VAULTS.map(vault => ({
-      queryKey: ['morpho-vault-market-data', vault.vaultAddress[mainnet.id], mainnet.id],
-      queryFn: () => fetchMorphoVaultMarketData(vault.vaultAddress[mainnet.id], mainnet.id),
+      queryKey: ['morpho-vault-market-data', vault.vaultAddress[MORPHO_API_CHAIN_ID], MORPHO_API_CHAIN_ID],
+      queryFn: () => fetchMorphoVaultMarketData(vault.vaultAddress[MORPHO_API_CHAIN_ID], MORPHO_API_CHAIN_ID),
       staleTime: 30_000,
       gcTime: 60_000
     }))
@@ -303,7 +301,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               );
               tvlUsd = sparkMarket.data?.totalAssetsUsd;
               if (tvlUsd === undefined && sparkMarket.data?.totalAssets !== undefined && vault) {
-                const decimals = math.resolveDecimals(vault.assetToken.decimals, mainnet.id);
+                const decimals = math.resolveDecimals(vault.assetToken.decimals, familyMainnetId);
                 tvlUsd = bigintToUsd(
                   math.scaleToBaseDecimals(sparkMarket.data.totalAssets, decimals),
                   priceFor(vault.assetToken.symbol)

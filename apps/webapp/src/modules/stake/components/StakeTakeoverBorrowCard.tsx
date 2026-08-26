@@ -12,8 +12,8 @@ import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
+import { formatOraclePrice } from '../lib/formatStakeAmount';
 
 // Risk-pill palette on the DS components/status colours (Badge I1036:209777) —
 // the same success/warning/error trio the risk meters took in APP-432 item 6.
@@ -244,7 +244,7 @@ export function StakeTakeoverBorrowCard({
           <StatDivider className="hidden md:block" />
           <StatItem label={<Trans>Liquidation price</Trans>}>
             {hasAmount && simulatedVault?.liquidationPrice ? (
-              `$${formatBigInt(simulatedVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+              formatOraclePrice(simulatedVault.liquidationPrice)
             ) : hasAmount && simulationLoading ? (
               <Skeleton className="h-4 w-14" />
             ) : (
@@ -265,7 +265,7 @@ export function StakeTakeoverBorrowCard({
             }
           >
             {simulatedVault?.delayedPrice ? (
-              `$${formatBigInt(simulatedVault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
+              formatOraclePrice(simulatedVault.delayedPrice)
             ) : simulationLoading ? (
               <Skeleton className="h-4 w-14" />
             ) : (

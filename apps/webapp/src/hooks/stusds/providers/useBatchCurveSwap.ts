@@ -10,8 +10,7 @@ import {
 import { BatchWriteHook, BatchWriteHookParams } from '../../hooks';
 import { getWriteContractCall } from '../../shared/getWriteContractCall';
 import { useTransactionFlow } from '../../shared/useTransactionFlow';
-import { isTestnetId } from '@/utils';
-import { TENDERLY_CHAIN_ID } from '../../constants';
+import { familyMainnetId } from '@/utils';
 import { useCurveAllowance } from './useCurveAllowance';
 import { useCurvePoolData } from './useCurvePoolData';
 import { calculateMinOutputWithSlippage } from './rateComparison';
@@ -49,7 +48,7 @@ export function useBatchCurveSwap({
 }: BatchCurveSwapParams): BatchWriteHook {
   const { address: connectedAddress, isConnected } = useAccount();
   const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? TENDERLY_CHAIN_ID : 1;
+  const chainId = familyMainnetId(connectedChainId);
 
   // Determine which token needs approval based on direction
   const inputToken = direction === StUsdsDirection.SUPPLY ? 'USDS' : 'stUSDS';

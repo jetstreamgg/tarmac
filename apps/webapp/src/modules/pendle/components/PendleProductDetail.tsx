@@ -1,11 +1,9 @@
-import { useMemo } from 'react';
-import { useChains } from 'wagmi';
 import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import { productNetworks, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { type PendleMarketConfig, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
@@ -22,8 +20,7 @@ import { PendleTransactionsTable } from './PendleTransactionsTable';
 import { PendleMaturityProgress } from './PendleMaturityProgress';
 import { PendleAboutContent } from './PendleAboutContent';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
-
-const SECONDS_PER_DAY = 86_400;
+import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 
 export type PendleProductDetailProps = {
   market: PendleMarketConfig;
@@ -36,22 +33,17 @@ export type PendleProductDetailProps = {
  * the $slug route resolves the slug and guards maturity before mounting this.
  */
 export function PendleProductDetail({ market }: PendleProductDetailProps) {
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.FIXED_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.FIXED_INTENT);
 
   const { data: marketsApi, isLoading: statsLoading } = usePendleMarketsApiData();
   const stats = marketsApi?.[market.marketAddress];
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const remainingSeconds = Math.max(0, expirySec - Math.floor(Date.now() / 1000));
-  const remainingDays = Math.floor(remainingSeconds / SECONDS_PER_DAY);
+  // One instant for both, so the countdown and the day count can't straddle a
+  // second boundary and disagree.
+  const nowMs = Date.now();
+  const remainingSeconds = Math.max(0, expirySec - Math.floor(nowMs / 1000));
+  const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const maturityDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
 
   const details: ProductDetailRow[] = [

@@ -1,9 +1,7 @@
 import { Children, Fragment, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { NO_VALUE } from '@/lib/constants';
 import { Card } from '@/components/ui/card';
-
-/** The placeholder every product surface shows for a value it cannot source. */
-export const NO_VALUE = '–';
 
 /**
  * The two CTA cards every product detail page mounts in the

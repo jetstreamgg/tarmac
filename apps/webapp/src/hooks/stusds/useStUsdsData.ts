@@ -4,7 +4,7 @@ import { useTokenBalance } from '../tokens/useTokenBalance';
 import { usdsAddress, stUsdsAddress, stUsdsImplementationAbi, useReadClipperDue } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink, isTestnetId } from '@/utils';
+import { familyMainnetId, getEtherscanLink } from '@/utils';
 import { useCollateralData } from '../vaults/useCollateralData';
 import { getIlkName } from '../vaults/helpers';
 import { calculateLiquidityBuffer } from './helpers';
@@ -33,7 +33,8 @@ export type StUsdsHook = ReadHook & {
 
 export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
   const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? 314310 : 1; //StUsds is only on mainnet / mainnet testnet
+  //StUsds is only on mainnet / mainnet testnet
+  const chainId = familyMainnetId(connectedChainId);
   const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress;
 

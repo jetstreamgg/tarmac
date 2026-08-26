@@ -17,7 +17,9 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { productStatusType } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
+import type { PositionEarnings } from '../earnings/earningsForPosition';
 import { ProductGlyph } from './ProductGlyph';
+import { EarningsFigureValue, StatInfoGlyph } from './EarningsStat';
 
 // DS type tokens, resolved per the comps (mobile 486:20195 → desktop 486:20044).
 // Every one is responsive, so the card is NOT tier-agnostic. Color comes from the
@@ -45,10 +47,13 @@ const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-[20px] py-1 pr-
  */
 export function PositionCard({
   position,
+  alreadyEarned,
   onSupply,
   onManage
 }: {
   position: SuppliedPosition;
+  /** APP-450 earnings slice for this row; null → outside scope, renders a dash. */
+  alreadyEarned: PositionEarnings | null;
   onSupply: () => void;
   onManage: () => void;
 }) {
@@ -61,7 +66,7 @@ export function PositionCard({
     <Card className="flex flex-col gap-7 p-5 md:gap-10 md:px-8 md:py-7" data-testid="position-card">
       {/* DS Iconbox/Status: 64px box, borderTertiary ring, 52px token inside. */}
       <div className="flex items-start justify-between">
-        <IconboxStatus size="l" type={productStatusType(position)} dot={!!productStatusType(position)}>
+        <IconboxStatus size="l" type={productStatusType(position)}>
           <TokenIcon token={{ symbol: position.tokenSymbol }} width={52} showChainIcon={false} />
         </IconboxStatus>
         <NetworkBadge chainIds={position.chainIds} />
@@ -100,16 +105,29 @@ export function PositionCard({
           />
         </div>
         <div className="flex">
-          {/* TODO(D1): Already earned needs a cost-basis source (no hook yet). */}
           <Stat
             className="w-[112px]"
             label={<Trans>Accrued to date</Trans>}
-            value={<span className={cn(statValue, 'text-fgSecondary')}>TODO</span>}
+            value={
+              <EarningsFigureValue
+                figure={alreadyEarned?.totalEarned ?? null}
+                missing={alreadyEarned?.missingFromTotal}
+                coverage={alreadyEarned?.coverage}
+                variant="plain"
+                className={cn(
+                  statValue,
+                  alreadyEarned?.totalEarned?.status === 'ok' ? 'text-fgPrimary' : 'text-fgSecondary'
+                )}
+                testId="position-already-earned"
+                pendleSplit={alreadyEarned?.pendleSplit}
+                skeletonClassName="h-3.5 w-14 rounded"
+              />
+            }
           />
           <StatDivider />
           <Stat
             className="flex-1"
-            label={<Trans>Projected 1Y yield (at current rate)</Trans>}
+            label={<Trans>Projected 1Y yield</Trans>}
             value={
               position.rateLoading ? (
                 <Skeleton className="h-4 w-14" />
@@ -118,6 +136,9 @@ export function PositionCard({
                   {/* 12px at every tier — both comps draw it that size. */}
                   <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
                   {formatUsd(projected)}
+                  <StatInfoGlyph testId="projected-yield-info">
+                    <Trans>Using your current rate as a reference</Trans>
+                  </StatInfoGlyph>
                 </span>
               )
             }

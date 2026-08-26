@@ -35,8 +35,7 @@ import { useEarnTableState } from '../hooks/useEarnTableState';
 import { EarnFeaturedCards } from './EarnFeaturedCards';
 import { ProtocolLineageBadge } from './ProtocolLineageBadge';
 import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /** Stable identity so the geo split doesn't rebuild the tables every render. */
 const EMPTY_ROWS: EarnProductRow[] = [];
@@ -315,7 +314,7 @@ export function EarnPage() {
         subtitle={
           <>
             <Trans>
-              Sky Protocol is where stablecoins go to work — and where they&apos;ve been going since{' '}
+              Sky Protocol is where stablecoins go to work - and where they&apos;ve been going since{' '}
               {protocolStartYear}.
             </Trans>{' '}
             {circulationIsLoading ? (

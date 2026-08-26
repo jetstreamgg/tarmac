@@ -190,7 +190,7 @@ export function TokenInput({
   }, [value]);
 
   useEffect(() => {
-    const newValue = parseUnits(inputValue, decimals);
+    const newValue = parseUnits(inputValue || '0', decimals);
     const needsUpdate = value !== newValue;
     if (inputValue && needsUpdate) updateValue(inputValue);
   }, [token?.decimals]);

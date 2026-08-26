@@ -180,3 +180,52 @@ describe('ChartTooltip — dismissal', () => {
     expect(onLeave).not.toHaveBeenCalled();
   });
 });
+
+// Portalled out of the chart card, the panel places itself in viewport pixels
+// (see the hook's own notes). happy-dom measures every box as zero, so these
+// assert the *shape* of the placement — which axis moves, and that a placement
+// survives — rather than real pixel values.
+describe('ChartTooltip — placement', () => {
+  const anchorRef = { current: document.createElement('div') };
+  const placed = () => screen.getByTestId('chart-tooltip').style.transform;
+  const at = (coordinate: { x: number; y: number }, active = true) => (
+    <ChartTooltip {...base} active={active} coordinate={coordinate} anchorRef={anchorRef} />
+  );
+
+  /** `translate(<x>px, <y>px)` -> the two components. */
+  const axes = (transform: string) => transform.replace(/translate\(|\)|px/g, '').split(', ');
+
+  it('rides one line: x follows the point, y stays pinned to the plot top', () => {
+    const { rerender } = render(at({ x: 200, y: 200 }));
+    const low = placed();
+    // Same point, pointer near the plot's top edge — the panel used to swap to
+    // the plot floor here, which is the up-and-down the pin exists to avoid.
+    rerender(at({ x: 200, y: 8 }));
+    expect(placed()).toBe(low);
+
+    // A fresh mount places outright, so this reads the new x without waiting
+    // on the follower's first frame.
+    cleanup();
+    render(at({ x: 340, y: 8 }));
+    const [movedX, movedY] = axes(placed());
+    const [restingX, restingY] = axes(low);
+    expect(movedX).not.toBe(restingX);
+    expect(movedY).toBe(restingY);
+  });
+
+  it('stays placed when it remounts at the point it left from', () => {
+    const { rerender } = render(at({ x: 200, y: 200 }));
+    const before = placed();
+    expect(before).not.toBe('');
+
+    // recharts keeps handing over the last coordinate while inactive, so the
+    // panel unmounts and comes back with the follower's target unchanged —
+    // what happens at the plot's edges, where the pointer leaves and re-enters
+    // on the same snapped point. Unplaced, the new node would paint at the
+    // top-left corner of the viewport.
+    rerender(at({ x: 200, y: 200 }, false));
+    expect(screen.queryByTestId('chart-tooltip')).toBeNull();
+    rerender(at({ x: 200, y: 200 }));
+    expect(placed()).toBe(before);
+  });
+});

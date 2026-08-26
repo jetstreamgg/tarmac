@@ -30,7 +30,7 @@ import {
   ProductTransactionsTable,
   ProductTransactionColumn
 } from '@/components/product/ProductTransactionsTable';
-import { TransactionCard } from '@/components/product/TransactionCard';
+import { TransactionCard, TransactionCardSkeleton } from '@/components/product/TransactionCard';
 import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
 import { CellAmount, CellAmountWithToken, CellChevron, CellPosition } from '@/components/ui/table-cells';
 import {
@@ -42,15 +42,15 @@ import { StakePositionRowBanner } from './StakePositionRowBanner';
 
 // Liquidation-proximity mapping for the shared risk pill: more (and warmer)
 // lit segments = closer to liquidation; rows with no debt render unlit
-// (Figma Type=Risk "None"). Colors are the design-system status palette the
-// pill uses everywhere; a 3-lit error tier never appears in the Figma
-// patterns — red pending design confirmation. The pill chrome is the shared
-// RiskMeter (review feedback: one pill app-wide).
+// (Figma Type=Risk "None"). Colors are the design-system Badges/Risk palette
+// (5017:7512) the pill uses everywhere — that node also settles what the 3-lit
+// tier is: Orange/600, not red. The pill chrome is the shared RiskMeter
+// (review feedback: one pill app-wide).
 const RISK_SEGMENTS: Record<RiskLevel, { lit: number; color: string }> = {
-  [RiskLevel.LOW]: { lit: 1, color: 'bg-statusSuccess' },
-  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-statusWarning' },
-  [RiskLevel.HIGH]: { lit: 3, color: 'bg-error' },
-  [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-error' }
+  [RiskLevel.LOW]: { lit: 1, color: 'bg-riskLow' },
+  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-riskMedium' },
+  [RiskLevel.HIGH]: { lit: 3, color: 'bg-riskHigh' },
+  [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-riskHigh' }
 };
 
 function PositionRiskMeter({ riskLevel }: { riskLevel?: RiskLevel }) {
@@ -210,6 +210,7 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     id: 'chevron',
     header: null,
     width: '64px',
+    skeleton: false,
     cell: () => (
       <span className="flex justify-center">
         <CellChevron />
@@ -362,6 +363,7 @@ export function StakePositionsTable({
         emptyIllustration={<SuppliedEmpty aria-hidden />}
         minWidth={720}
         renderCard={renderCard}
+        cardSkeleton={<TransactionCardSkeleton fieldRows={2} fieldRowGapClassName="gap-6" />}
         renderBelowRow={position => (
           <StakePositionRowBanner
             position={position}

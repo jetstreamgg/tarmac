@@ -7,10 +7,8 @@ import { IconProps } from '@/modules/icons/Icon';
 import React from 'react';
 
 import { useChainId } from 'wagmi';
-import { mainnet } from 'wagmi/chains';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
-import { isL2ChainId, isTestnetId } from '@/utils';
-import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
+import { familyMainnetId, isL2ChainId } from '@/utils';
 import { useAvailableTokenRewardContracts, VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
@@ -49,7 +47,7 @@ export function useWidgetItems(intent: Intent): {
     }));
 
   // Vaults only exist on mainnet/testnet, so use appropriate chain based on environment
-  const vaultChainId = isTestnetId(chainId) ? TENDERLY_CHAIN_ID : mainnet.id;
+  const vaultChainId = familyMainnetId(chainId);
   const vaultSubItems = VAULTS.filter(vault => vault.vaultAddress[vaultChainId]).map(vault => ({
     label: vault.name,
     icon: <TokenIcon token={{ symbol: vault.assetToken.symbol }} className="h-3 w-3" showChainIcon={false} />,
@@ -83,7 +81,7 @@ export function useWidgetItems(intent: Intent): {
       RewardsModule,
       false,
       undefined,
-      'Use USDS to access Sky Token Rewards',
+      'Use USDS to access Sky Ecosystem Rewards',
       rewardSubItems
     ],
     [

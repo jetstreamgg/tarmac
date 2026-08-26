@@ -4,8 +4,12 @@ import { PENDLE_API_BASE_URL } from './constants';
 import type {
   PendleConvertRequest,
   PendleConvertResponseRaw,
+  PendleDashboardChainPositionsRaw,
+  PendleDashboardPositionsResponseRaw,
   PendleMarketSummaryRaw,
   PendleMarketsAllResponseRaw,
+  PendlePnlGainedPositionRaw,
+  PendlePnlGainedPositionsResponseRaw,
   PendlePnlTransactionRaw,
   PendlePnlTransactionsResponseRaw
 } from './pendle';
@@ -121,4 +125,46 @@ export async function fetchPendlePnlTransactionsForUser(
   }
   const json = (await response.json()) as PendlePnlTransactionsResponseRaw;
   return json.results || [];
+}
+
+/**
+ * GET /v1/pnl/gained/{user}/positions
+ *
+ * Lifetime per-market PnL summary (netGain, totalSpent) across the user's
+ * whole activity in each market. No query params on purpose: the endpoint
+ * IGNORES chainId (verified live 2026-08-19 — four chains came back with the
+ * param set), so callers must filter on each position's `chainId` field.
+ */
+export async function fetchPendlePnlGainedPositions(
+  userAddress: `0x${string}`
+): Promise<PendlePnlGainedPositionRaw[]> {
+  const url = `${PENDLE_API_BASE_URL}/v1/pnl/gained/${userAddress.toLowerCase()}/positions`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Pendle /pnl/gained ${response.status}`);
+  }
+  const json = (await response.json()) as PendlePnlGainedPositionsResponseRaw;
+  return json.positions || [];
+}
+
+/**
+ * GET /v1/dashboard/positions/database/{user}
+ *
+ * Current holdings per market, grouped by chain, with USD `valuation` computed
+ * server-side — the current-value source for the mark-to-market earnings
+ * figure. Chosen over /v1/prices/assets, which would need our own
+ * balance × price math.
+ */
+export async function fetchPendleDashboardPositions(
+  userAddress: `0x${string}`
+): Promise<PendleDashboardChainPositionsRaw[]> {
+  const url = `${PENDLE_API_BASE_URL}/v1/dashboard/positions/database/${userAddress.toLowerCase()}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Pendle /dashboard/positions ${response.status}`);
+  }
+  const json = (await response.json()) as PendleDashboardPositionsResponseRaw;
+  return json.positions || [];
 }

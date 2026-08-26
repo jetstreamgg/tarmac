@@ -16,7 +16,7 @@ import {
   X
 } from 'lucide-react';
 import { BP, MD_MEDIA_QUERY, RiskLevel, useBreakpointIndex, ZERO_ADDRESS } from '@/hooks';
-import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, WAD_PRECISION } from '@/utils';
+import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -25,16 +25,13 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TrendingUpGradient } from '@/modules/icons';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { RiskScaleMeter } from '@/components/product/RiskMeter';
-import { formatStakeAmount } from '../lib/formatStakeAmount';
+import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /** 0.01 in wad — below this the claim chip keeps 4 decimals instead of "<0.01". */
 const CLAIM_DUST_WAD = 10n ** 16n;
-
-const shortenAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
 /** The manage actions F5 implements — rows/CTAs route these to the sheet. */
 export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'reward' | 'delegate';
@@ -439,10 +436,7 @@ export function PositionDetailsModal({
   const dropPercent = liquidationDropPercent(vault?.liquidationProximityPercentage);
   // Price fields pin 4 decimals like the takeover/manage cards — the bare
   // magnitude-driven default would drop to 2 the moment a price crosses $10.
-  const formattedLiqPrice =
-    vault?.liquidationPrice !== undefined
-      ? `$${formatBigInt(vault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-      : NO_VALUE;
+  const formattedLiqPrice = formatOraclePrice(vault?.liquidationPrice);
   const hasDelegate = !!detail.voteDelegate && detail.voteDelegate !== ZERO_ADDRESS;
 
   const claimDisabled = detail.claimableLoading || detail.claimableTokenAmount === 0n;
@@ -622,7 +616,7 @@ export function PositionDetailsModal({
                       <span className="flex" aria-hidden>
                         <CustomAvatar address={detail.voteDelegate!.toLowerCase()} size={12} />
                       </span>
-                      {shortenAddress(detail.voteDelegate!)}
+                      {formatAddress(detail.voteDelegate!, 6, 4)}
                       <ExternalLink className="h-3 w-3" aria-hidden />
                     </a>
                   ) : (
@@ -793,9 +787,7 @@ export function PositionDetailsModal({
                         </>
                       }
                     >
-                      {vault?.delayedPrice !== undefined
-                        ? `$${formatBigInt(vault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-                        : NO_VALUE}
+                      {formatOraclePrice(vault?.delayedPrice)}
                     </StatCell>
                   </StatPair>
                 </div>
@@ -893,9 +885,7 @@ export function PositionDetailsModal({
                         </>
                       }
                     >
-                      {vault?.delayedPrice !== undefined
-                        ? `$${formatBigInt(vault.delayedPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}`
-                        : NO_VALUE}
+                      {formatOraclePrice(vault?.delayedPrice)}
                     </StatCell>
                   </StatPair>
                 </div>

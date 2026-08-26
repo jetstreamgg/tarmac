@@ -22,11 +22,13 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
+import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { merklAdapter, useClaimRewardsModal } from '@/modules/claim';
 import { useVaultModal } from '../hooks/useVaultModal';
 import { VaultSupplyCard } from './VaultSupplyCard';
-
-const NO_VALUE = '–';
+import { NO_VALUE } from '@/lib/constants';
 
 /**
  * Position-aware action card for the vault product page (ProductDetailTemplate
@@ -80,6 +82,11 @@ export function VaultPositionCard({
 
   const { openSupply, openWithdraw } = useVaultModal({ onSuccess: refresh });
   const { openClaim } = useClaimRewardsModal({ onSuccess: refresh });
+
+  // "Accrued to date" is the same per-row slice the Portfolio renders for this
+  // vault's row (APP-450); react-query shares the underlying fetches.
+  const walletEarnings = useWalletEarnings();
+  const accrued = earningsForPosition(walletEarnings, `vault-morpho-${vaultAddress.toLowerCase()}`);
 
   // Per-vault inputs for the supply/withdraw modal (passed at open time).
   // `provider` drives the analytics module name — omitting it silently fell back
@@ -164,9 +171,16 @@ export function VaultPositionCard({
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
-            {/* No cost-basis source yet → dash (PRD: unavailable values read "–"). */}
             <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <span className="text-fgSecondary">{NO_VALUE}</span>
+              <EarningsFigureValue
+                figure={accrued?.totalEarned ?? null}
+                missing={accrued?.missingFromTotal}
+                coverage={accrued?.coverage}
+                variant="plain"
+                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
+                skeletonClassName="h-4 w-14"
+                testId="vault-accrued-to-date"
+              />
             </ProductStat>
             <ProductStat label={<Trans>Claimable rewards</Trans>}>
               {reward ? (

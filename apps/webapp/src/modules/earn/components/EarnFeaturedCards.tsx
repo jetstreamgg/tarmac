@@ -13,6 +13,9 @@ import { Pendle } from '@/widgets';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
+import { NO_VALUE } from '@/lib/constants';
+import { remainingDaysToMaturity } from '../helpers/daysToMaturity';
+import { FixedYieldTerm } from './FixedYieldTerm';
 
 /** The row's rate, or an inline skeleton while its source is still loading. */
 function RateFigure({ row, className = 'h-4 w-12' }: { row: EarnProductRow; className?: string }) {
@@ -21,9 +24,6 @@ function RateFigure({ row, className = 'h-4 w-12' }: { row: EarnProductRow; clas
   }
   return <>{row.rate.formatted}</>;
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-const NO_VALUE = '–';
 
 /** Render-time context handed to the content hooks of a descriptor. */
 type HighlightedProductContext = {
@@ -253,19 +253,21 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
       </>
     ),
     icon: row => (
-      <IconboxStatus size="l" type="success" dot className="size-14 md:size-16">
+      <IconboxStatus size="l" type="success" className="size-14 md:size-16">
         <TokenIcon token={{ symbol: row.tokenSymbol }} width={52} showChainIcon={false} />
       </IconboxStatus>
     ),
     title: row => row.name,
     description: (row, { now }) => {
-      // Days until PT maturity, for "…for the next N days".
-      const days = row.maturity ? Math.max(0, Math.ceil((row.maturity * 1000 - now) / DAY_MS)) : undefined;
+      const days = row.maturity ? remainingDaysToMaturity(row.maturity, now) : undefined;
       return (
-        <Trans>
-          Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
-          maturity. Fix your yield at {row.rate.formatted} APY for the next {days} days.
-        </Trans>
+        <>
+          <Trans>
+            Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
+            maturity.
+          </Trans>{' '}
+          <FixedYieldTerm rate={row.rate.formatted} days={days} />
+        </>
       );
     },
     stats: row => (

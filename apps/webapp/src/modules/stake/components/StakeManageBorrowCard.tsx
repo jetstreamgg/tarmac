@@ -1,12 +1,12 @@
-import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
-import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
+import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider, SliderTicks } from '@/components/ui/slider';
+import { RiskMeter } from '@/components/product/RiskMeter';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
@@ -17,18 +17,21 @@ import {
   UpdatedHourlyBadge
 } from './StakeManageCard';
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
+import { NO_VALUE } from '@/lib/constants';
+import { formatOraclePrice } from '../lib/formatStakeAmount';
 
-const NO_VALUE = '–';
 const WAD = 10n ** 18n;
 
 // Badges/Risk dash mapping (comp 1036:213853) — the F3 table-meter levels on
-// the boxed three-dash pill the redesign comps draw (dashes only, no text; the
-// level name stays on the aria-label).
+// the shared RiskMeter pill (dashes only, no text; the level name stays on the
+// aria-label). This used to redraw the pill chrome by hand off a non-DS palette
+// (bullish / orange-400 / error at slightly wrong dash geometry); it now takes
+// the one pill and the DS Badges/Risk colors like every other risk surface.
 const RISK_DOTS: Record<RiskLevel, { lit: number; color: string }> = {
-  [RiskLevel.LOW]: { lit: 1, color: 'bg-bullish' },
-  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-orange-400' },
-  [RiskLevel.HIGH]: { lit: 3, color: 'bg-error' },
-  [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-error' }
+  [RiskLevel.LOW]: { lit: 1, color: 'bg-riskLow' },
+  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-riskMedium' },
+  [RiskLevel.HIGH]: { lit: 3, color: 'bg-riskHigh' },
+  [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-riskHigh' }
 };
 
 // In-card risk value (comp 1036:213950): the text pill on the DS
@@ -57,18 +60,10 @@ function RiskPill({ riskLevel }: { riskLevel: RiskLevel }) {
 export function RiskBadge({ riskLevel }: { riskLevel: RiskLevel }) {
   const dots = RISK_DOTS[riskLevel];
   return (
-    <span
-      role="img"
-      aria-label={capitalizeFirstLetter(riskLevel.toLowerCase())}
-      className="border-glassBorder flex h-4 w-fit items-center gap-0.5 rounded-full border px-1.5"
-    >
-      {[0, 1, 2].map(dot => (
-        <span
-          key={dot}
-          className={cn('h-[3px] w-[7px] rounded-full', dot < dots.lit ? dots.color : 'bg-textSecondary/30')}
-        />
-      ))}
-    </span>
+    <RiskMeter
+      label={capitalizeFirstLetter(riskLevel.toLowerCase())}
+      segments={[0, 1, 2].map(dot => (dot < dots.lit ? dots.color : null))}
+    />
   );
 }
 
@@ -190,9 +185,6 @@ export function StakeManageBorrowCard({
 
   const currentRisk = existingVault?.riskLevel;
   const nextRisk = isFullRepay ? null : simulatedVault?.riskLevel;
-
-  const formatPrice = (value: bigint | undefined): ReactNode =>
-    value !== undefined ? `$${formatBigInt(value, { unit: WAD_PRECISION, maxDecimals: 4 })}` : NO_VALUE;
 
   return (
     <StakeManageCard
@@ -383,7 +375,7 @@ export function StakeManageBorrowCard({
               positionLoading && existingVault?.liquidationPrice === undefined ? (
                 <Skeleton className="h-4 w-14" />
               ) : (
-                formatPrice(existingVault?.liquidationPrice)
+                formatOraclePrice(existingVault?.liquidationPrice)
               )
             }
             next={
@@ -392,7 +384,7 @@ export function StakeManageBorrowCard({
                   ? '$0.0'
                   : simulatedVault?.liquidationPrice !== undefined &&
                       simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
-                    ? formatPrice(simulatedVault.liquidationPrice)
+                    ? formatOraclePrice(simulatedVault.liquidationPrice)
                     : undefined
                 : undefined
             }
@@ -413,7 +405,7 @@ export function StakeManageBorrowCard({
                 (simulatedVault?.delayedPrice ?? existingVault?.delayedPrice) === undefined ? (
                   <Skeleton className="h-4 w-14" />
                 ) : (
-                  formatPrice(simulatedVault?.delayedPrice ?? existingVault?.delayedPrice)
+                  formatOraclePrice(simulatedVault?.delayedPrice ?? existingVault?.delayedPrice)
                 )}
                 <UpdatedHourlyBadge />
               </>

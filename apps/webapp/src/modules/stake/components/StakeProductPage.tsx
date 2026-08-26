@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useChains, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
-import { BP, productNetworks, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex, useProductNetworks } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -41,15 +41,7 @@ function parseStakeTab(value: string | null, fallback: StakeTab): StakeTab {
  * not a ProductDetailTemplate consumer — the tabs compose L1 pieces directly.
  */
 export function StakeProductPage() {
-  const chains = useChains();
-  const networks = useMemo(
-    () =>
-      productNetworks(
-        Intent.STAKE_INTENT,
-        chains.map(chain => chain.id)
-      ),
-    [chains]
-  );
+  const networks = useProductNetworks(Intent.STAKE_INTENT);
 
   const [searchParams, setSearchParams] = useAppSearchParams();
   // While the positions query is still loading the default stays `positions`
@@ -119,10 +111,12 @@ export function StakeProductPage() {
           Iconbox / Status beside a Heading 2 title; the DS 17px icon-title gap
           is normalized to 16. The brand glow was dropped from product icons in
           the latest design iterations (APP-416). */}
-      <div className="flex items-center justify-between gap-4">
+      {/* From md up the title row carries 72px of its own padding-bottom on
+          top of the column's 24px gap — 96px of clearance to the tab strip. */}
+      <div className="flex items-center justify-between gap-4 md:pb-18">
         <div className="flex items-center gap-3 md:gap-4">
           <div className="shrink-0" data-testid="stake-header-icon">
-            <IconboxStatus size="l" className="size-14 border-[1.75px] md:size-16 md:border-2">
+            <IconboxStatus size="l" className="size-14 md:size-16">
               <TokenIcon token={{ symbol: 'SKY' }} width={52} showChainIcon={false} />
             </IconboxStatus>
           </div>

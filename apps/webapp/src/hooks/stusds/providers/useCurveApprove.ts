@@ -2,8 +2,7 @@ import { useChainId } from 'wagmi';
 import { usdsAddress, stUsdsAddress, curveStUsdsUsdsPoolAddress } from '../../generated';
 import { WriteHook, WriteHookParams } from '../../hooks';
 import { useApproveToken } from '../../tokens/useApproveToken';
-import { isTestnetId } from '@/utils';
-import { TENDERLY_CHAIN_ID } from '../../constants';
+import { familyMainnetId } from '@/utils';
 
 export type CurveApproveParams = WriteHookParams & {
   /** Which token to approve */
@@ -28,7 +27,7 @@ export function useCurveApprove({
   onStart = () => null
 }: CurveApproveParams): WriteHook {
   const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? TENDERLY_CHAIN_ID : 1;
+  const chainId = familyMainnetId(connectedChainId);
 
   // Determine which token contract to approve
   const tokenAddress =
