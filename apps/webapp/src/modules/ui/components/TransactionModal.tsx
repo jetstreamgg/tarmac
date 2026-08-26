@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, ReactNode } from 'react';
+import { useState, useCallback, useEffect, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus } from '@/widgets';
 import { ArrowLeft } from 'lucide-react';
@@ -21,8 +21,10 @@ import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TriangleAlert } from 'lucide-react';
 import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
+import type { GateStatusCopy, TransactionPreflight } from '@/modules/ui/context/preTransactionGate';
 import { cn } from '@/lib/cn';
 
 // The step-list shape lives with its derivation; re-exported so the contract and
@@ -48,6 +50,13 @@ export type TransactionModalProps = {
    * its editable inputs here). Called with the node on mount and null on unmount.
    */
   registerEntrySlot?: (el: HTMLElement | null) => void;
+  /**
+   * Registers the modal's back-to-first-screen action while mounted (null on
+   * unmount). The pre-transaction gate drives it on an enhanced-screening
+   * denial (APP-517): the first screen — where the preflight renders the
+   * blocked message above the disabled CTAs — is that denial's surface.
+   */
+  registerReturnToFirstScreen?: (fn: (() => void) | null) => void;
   onClose: () => void;
   /**
    * Hide the modal while keeping the transaction running. When provided, dismissing
@@ -103,6 +112,20 @@ export type TransactionModalProps = {
   errorLabel?: string;
   steps?: TransactionStep[];
   currentStep?: number;
+  /**
+   * Gate-owned status copy (APP-501): while set, replaces the status row's
+   * message and the status-keyed subtitle — the flow's copy narrates on-chain
+   * writes, which is wrong while the gate is screening or collecting the
+   * terms signature.
+   */
+  gateCopy?: GateStatusCopy | null;
+  /**
+   * Enhanced-screening preflight for $250k+ transactions (APP-517). While not
+   * 'clear', the CTAs that would FIRE the transaction are held (pending →
+   * loading, blocked → disabled with the message rendered above them); CTAs
+   * that only advance screens (a three-screen entry's Review) stay live.
+   */
+  preflight?: TransactionPreflight;
 };
 
 // Figma review (badge restyle, "Confirm in the wallet" 2376:225580): the old
@@ -155,7 +178,10 @@ export function TransactionModal({
   successLabel,
   errorLabel,
   steps,
-  currentStep = 0
+  currentStep = 0,
+  gateCopy,
+  preflight,
+  registerReturnToFirstScreen
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
   // read-only review. Initialised per mount (the provider remounts the modal on
@@ -166,8 +192,6 @@ export function TransactionModal({
   // Entry-only and review-only configs keep their two screens.
   const hasReviewStage = !!(entry && transactionContent);
   const [step, setStep] = useState<TransactionModalStep>(firstStep);
-  const [contentHeight, setContentHeight] = useState<number | undefined>();
-  const reviewRef = useRef<HTMLDivElement>(null);
   const chainId = useChainId();
   const isSafeWallet = useIsSafeWallet();
   const explorerName = getExplorerName(chainId, isSafeWallet);
@@ -181,6 +205,11 @@ export function TransactionModal({
   const isFirstScreen = isEntry || isReview;
   const isTransaction = step === 'transaction';
   const hasMultipleSteps = steps && steps.length > 1;
+  // A gate-mounted signature prelude must be visible even when it is the ONLY
+  // step (flows like the claim panel launch without a steps array): the step
+  // row is where its explanatory copy, links, and inline retry live (APP-501).
+  const hasSignatureStep = !!steps?.some(step => typeof step === 'object' && step.kind === 'signature');
+  const showStepList = !!hasMultipleSteps || hasSignatureStep;
   // Same expression the launch hooks use for `shouldUseBatch` — when true the
   // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
   // steps active together, "Bundled" header badge).
@@ -190,7 +219,7 @@ export function TransactionModal({
   // "Try again", Figma 1030:139111) and drop the bottom status row/buttons —
   // the header back arrow still returns to the first screen. Single-step flows
   // have no list, so they keep the bottom treatment.
-  const showInlineFailure = !!hasMultipleSteps && isTransaction && txStatus === TxStatus.ERROR;
+  const showInlineFailure = showStepList && isTransaction && txStatus === TxStatus.ERROR;
   // The status chip's content (Figma 2376:225580: leading dots + label). The
   // dots only hop while a status is genuinely in-flight (awaiting signature or
   // pending broadcast) — `isTransacting` already draws exactly that line for
@@ -199,10 +228,14 @@ export function TransactionModal({
   // always mounts with something; the guard stays as a belt-and-braces against
   // a future status arriving without a label. Dots ride along while the
   // transaction is genuinely in flight, including the IDLE prepare window.
-  const badgeContent = statusBadgeLabel[txStatus] ? (
+  // A gate phase owns the label while it holds the floor: both of its phases
+  // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
+  // in the wallet" during an HTTP address check (APP-501).
+  const badgeLabel = gateCopy?.badgeLabel ?? statusBadgeLabel[txStatus];
+  const badgeContent = badgeLabel ? (
     <>
       {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
-      {statusBadgeLabel[txStatus]}
+      {badgeLabel}
     </>
   ) : undefined;
 
@@ -210,6 +243,16 @@ export function TransactionModal({
   // live by the in-modal body); the review screen uses the top-level config.
   const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
   const firstScreenConfirmDisabled = isEntry ? entry?.confirmDisabled : confirmDisabled;
+  // Which first-screen primary CTA actually FIRES the transaction: the review
+  // confirm, or an entry-only flow's confirm. A three-screen entry's confirm
+  // only advances to the review (and a `confirmAction` override runs in
+  // place), so neither is held by the preflight — the review's confirm is.
+  const primaryConfirmFiresTx = isReview || (isEntry && !entry?.confirmAction && !hasReviewStage);
+  // Enhanced-screening hold (APP-517): blocked disables the firing CTAs (the
+  // message renders above them); pending renders them in the DS loading state
+  // unless something else already disables them.
+  const preflightBlocked = preflight?.kind === 'blocked';
+  const preflightPending = preflight?.kind === 'pending';
   const firstScreenErrorMessage = isEntry ? entry?.errorMessage : errorMessage;
   // The wallet/status screen shows a compact summary when supplied; otherwise it
   // falls back to the review body (review path only), so consumers that pass only
@@ -222,7 +265,7 @@ export function TransactionModal({
     [TxStatus.SUCCESS]: subtitles?.success,
     [TxStatus.ERROR]: subtitles?.error
   };
-  const subtitle = isFirstScreen ? subtitles?.review : subtitleByStatus[txStatus];
+  const subtitle = isFirstScreen ? subtitles?.review : (gateCopy?.subtitle ?? subtitleByStatus[txStatus]);
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
   // and the three-screen review stage its own (e.g. "Review supply"); both fall back
@@ -251,9 +294,6 @@ export function TransactionModal({
       onReviewStage?.();
       return;
     }
-    if (reviewRef.current) {
-      setContentHeight(reviewRef.current.offsetHeight);
-    }
     setStep('transaction');
     onConfirm();
   }, [isEntry, hasReviewStage, onConfirm, entryConfirmAction, onReviewStage]);
@@ -261,9 +301,6 @@ export function TransactionModal({
   // The entry's secondary CTA (entry-only flows — see the contract): same
   // advance to the wallet screen, firing the secondary action's handler.
   const handleSecondaryConfirm = useCallback(() => {
-    if (reviewRef.current) {
-      setContentHeight(reviewRef.current.offsetHeight);
-    }
     setStep('transaction');
     onSecondaryConfirm?.();
   }, [onSecondaryConfirm]);
@@ -288,7 +325,6 @@ export function TransactionModal({
   const handleClose = useCallback(() => {
     if (txStatus === TxStatus.LOADING) return;
     setStep(firstStep);
-    setContentHeight(undefined);
     onClose();
   }, [txStatus, onClose, firstStep]);
 
@@ -306,8 +342,15 @@ export function TransactionModal({
   const handleBack = useCallback(() => {
     onBack?.();
     setStep(firstStep);
-    setContentHeight(undefined);
   }, [onBack, firstStep]);
+
+  // Hand the provider the same back-to-first-screen the header arrow uses, so
+  // the gate's returnToFirstScreen control (enhanced-screening denials) lands
+  // on an identical screen state — onBack's progress reset included.
+  useEffect(() => {
+    registerReturnToFirstScreen?.(handleBack);
+    return () => registerReturnToFirstScreen?.(null);
+  }, [registerReturnToFirstScreen, handleBack]);
 
   // Header back arrow (Figma chrome on every screen): on the flow's first screen
   // it closes (there's nothing before it — the inputs live on the page/entry); on
@@ -399,11 +442,7 @@ export function TransactionModal({
           </div>
         </div>
 
-        <div
-          ref={isFirstScreen ? reviewRef : undefined}
-          className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}
-          style={isTransaction ? { minHeight: contentHeight } : undefined}
-        >
+        <div className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}>
           {/* Subtitle */}
           <AnimatePresence mode="wait" initial={false}>
             {subtitle && (
@@ -447,14 +486,14 @@ export function TransactionModal({
               the hero behind a hairline divider (Figma confirm comps, 1310:130531).
               The per-row states (including the failure treatment with its inline
               "Try again") come from the derivation in ./transactionStepsModel. */}
-          {hasMultipleSteps && isTransaction && (
+          {showStepList && isTransaction && (
             <>
               {/* Figma 859:36229: the steps section splits from the hero on a border-primary hairline, 24px above the header. */}
               {transactionScreenBody && <div className="border-borderPrimary border-t" />}
               <Steps className="pt-2" bundled={isBundled} badge={badgeContent}>
                 {(() => {
                   const items = deriveTransactionStepItems({
-                    steps,
+                    steps: steps ?? [],
                     currentStep,
                     txStatus,
                     bundled: isBundled
@@ -500,11 +539,6 @@ export function TransactionModal({
             </>
           )}
 
-          {/* Pushes the status row/buttons to the held height on the wallet screen.
-              A zero-height child still consumes two column gaps, so it must not
-              render on the first screens (their card hugs content, Figma 859:36036). */}
-          {isTransaction && <div className="grow" />}
-
           {/* Bottom section: animates on step/status change */}
           <AnimatePresence mode="wait" initial={false}>
             {isFirstScreen ? (
@@ -516,6 +550,14 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
+                {/* Enhanced-screening failure (APP-517): rendered above the CTAs,
+                    which stay visible but disabled — the transaction is blocked. */}
+                {preflight?.kind === 'blocked' && (
+                  <div className="flex items-start gap-2" data-testid="transaction-preflight-blocked">
+                    <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
+                    <Text className="text-error text-sm">{preflight.message}</Text>
+                  </div>
+                )}
                 {/* Explanatory only — the flow's confirmDisabled does the actual blocking. */}
                 {firstScreenErrorMessage && (
                   <div role="alert">
@@ -532,7 +574,8 @@ export function TransactionModal({
                       size="xl"
                       className="flex-1"
                       onClick={handleSecondaryConfirm}
-                      disabled={entry?.secondaryConfirmDisabled}
+                      disabled={entry?.secondaryConfirmDisabled || preflightBlocked}
+                      loading={!entry?.secondaryConfirmDisabled && preflightPending}
                     >
                       {entry?.secondaryConfirmLabel}
                     </Button>
@@ -541,7 +584,8 @@ export function TransactionModal({
                       size="xl"
                       className="flex-1"
                       onClick={handleConfirm}
-                      disabled={firstScreenConfirmDisabled}
+                      disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
+                      loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
                     >
                       {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
                     </Button>
@@ -552,7 +596,8 @@ export function TransactionModal({
                     size="xl"
                     className="w-full"
                     onClick={handleConfirm}
-                    disabled={firstScreenConfirmDisabled}
+                    disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
+                    loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
                   >
                     {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
                   </Button>
@@ -567,19 +612,23 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
-                {/* Status row: the icon + generic sentence are gone (Figma review) —
-                    multi-step flows already show the status chip in the Steps header
-                    above, so this row is just the explorer link there. Single-step
-                    flows have no Steps header, so the chip renders inline here, in
-                    the slot the old icon/message/loading-button treatment used to
-                    occupy (Figma 2376:225580). */}
-                {((!hasMultipleSteps && badgeContent) || externalLink) && (
+                {/* Status row: the icon and the per-status sentence are gone (Figma
+                    review) — flows that render a Steps header already show the status
+                    chip there, so this row is just the explorer link for them. Flows
+                    without a step list have no Steps header, so the chip renders
+                    inline here, in the slot the old icon/message/loading-button
+                    treatment used to occupy (Figma 2376:225580). The gate's own copy
+                    is the one sentence that survives: it narrates an off-chain phase
+                    (screening, terms signature) that the chip's txStatus-keyed label
+                    cannot describe (APP-501). */}
+                {((!showStepList && badgeContent) || gateCopy?.message || externalLink) && (
                   <div className="flex items-center gap-3 pt-4">
-                    {!hasMultipleSteps && badgeContent && (
+                    {!showStepList && badgeContent && (
                       <StepsBadge variant="brand" dataTestId="transaction-status-badge">
                         {badgeContent}
                       </StepsBadge>
                     )}
+                    {gateCopy?.message && <Text className="text-textSecondary">{gateCopy.message}</Text>}
                     {externalLink && (
                       <ExternalLink
                         href={externalLink}

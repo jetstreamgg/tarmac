@@ -62,3 +62,5 @@ Returns an object containing:
   - Any error that occurred during the check.
 - `isLoading`: `boolean`
   - Whether the check is currently loading.
+- `refetch`: `() => void`
+  - Manually re-runs the check (used by the "check again" path on the screening-unavailable state).

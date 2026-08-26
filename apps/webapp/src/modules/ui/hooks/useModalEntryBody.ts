@@ -42,6 +42,16 @@ type ModalEntryBodyLive = {
   /** Per-state minimized-toast titles. */
   toast?: TransactionConfig['toast'];
   /**
+   * Live USD notional of the transaction, for the enhanced-screening
+   * threshold (APP-517; see `TransactionConfig.usdValue`). REQUIRED, like
+   * the launch-time field, and always pushed: an editable body owns the live
+   * amount, so it must state its valuation every render — `undefined` means
+   * "unknown" and is treated as above-threshold (fail closed). Were this
+   * optional, a future form could compile while silently screening a $300k
+   * transaction on the standard tier through its stale launch value.
+   */
+  usdValue: number | undefined;
+  /**
    * Analytics attribution for the lifecycle events the provider emits. Pass a
    * MEMOIZED object (the sync effect below depends on its identity). The last
    * IDLE push is what the confirm-click's `onMutate` reads, so it always
@@ -85,6 +95,7 @@ export function useModalEntryBody({
   transactionScreenContent,
   steps,
   toast,
+  usdValue,
   analytics
 }: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
   const { updateModalContent, txStatus } = useTransaction();
@@ -129,6 +140,9 @@ export function useModalEntryBody({
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
       ...(toast !== undefined ? { toast } : {}),
+      // Always pushed: `undefined` means "unknown" and must reach the config
+      // (it flips the enhanced-screening path on).
+      usdValue,
       ...(analytics !== undefined ? { analytics } : {})
     });
   }, [
@@ -142,6 +156,7 @@ export function useModalEntryBody({
     transactionScreenContent,
     steps,
     toast,
+    usdValue,
     analytics,
     onConfirm,
     updateModalContent

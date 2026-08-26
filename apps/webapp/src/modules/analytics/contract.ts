@@ -10,6 +10,7 @@ import type {
   ConnectReason,
   ConnectMethod,
   GatedActionOutcome,
+  TermsSignatureDeclineMethod,
   NetworkSwitchSource,
   NetworkSwitchStatus,
   AutoSwitchTrigger,
@@ -138,6 +139,27 @@ export interface GatedActionResolvedProps extends CommonEventProps {
   connect_reason: ConnectReason;
 }
 
+/**
+ * A US/VPN user declined the per-transaction terms signature (APP-501) —
+ * either rejecting the sign request in the wallet or walking away from the
+ * pending step. Deliberately NOT an `app_widget_flow_completed`: no
+ * transaction was started (`app_widget_flow_started` never fired), so a
+ * cancelled completion would corrupt the started↔completed pairing. One
+ * event per decline; a user may decline and later sign in the same flow —
+ * `flow_id` joins the two.
+ */
+export interface TermsSignatureDeclinedProps extends CommonEventProps {
+  method: TermsSignatureDeclineMethod;
+  chain_id: number;
+  chain_name: string;
+  wallet_address?: string;
+  timestamp: string;
+  /** Attribution of the transaction that was gated — absent when its config carried no analytics. */
+  widget_name?: string;
+  flow?: string;
+  action?: string;
+}
+
 export interface NetworkSwitchRequestedProps extends CommonEventProps {
   source: NetworkSwitchSource;
   from_chain_id: number;
@@ -201,6 +223,7 @@ export type AppEventContract = {
   app_wallet_connect_attempted: WalletConnectAttemptProps;
   app_wallet_connect_rejected: WalletConnectAttemptProps;
   app_gated_action_resolved: GatedActionResolvedProps;
+  app_terms_signature_declined: TermsSignatureDeclinedProps;
   app_network_switch_requested: NetworkSwitchRequestedProps;
   app_network_switch_completed: NetworkSwitchCompletedProps;
   app_network_auto_switched: NetworkAutoSwitchedProps;

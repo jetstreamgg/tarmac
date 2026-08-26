@@ -79,6 +79,11 @@ vi.mock('@/hooks/stake/useStakeAllowance', () => ({
 }));
 
 // The managed urn's live selections — the gating baseline (M12).
+// SKY spot for the enhanced-screening USD notional (APP-517).
+vi.mock('@/hooks/prices/useSkyPrice', () => ({
+  useSkyPrice: () => ({ data: 50000000000000000n, priceString: '0.05', isLoading: false, error: null })
+}));
+
 vi.mock('@/hooks/stake/useUrnSelectedRewardContract', () => ({
   useUrnSelectedRewardContract: () => ({ data: REWARD_CONTRACT, error: null, isLoading: false })
 }));

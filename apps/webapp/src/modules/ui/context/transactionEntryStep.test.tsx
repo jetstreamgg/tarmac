@@ -110,6 +110,7 @@ describe('TransactionModal — editable entry step', () => {
   it('renders the entry content first (not a review) when an entry descriptor is present', () => {
     renderModal(() => ({
       title: 'Supply to Sky Savings',
+      usdValue: 0,
       // The read-only review content must NOT be what shows first in entry mode.
       transactionContent: <div data-testid="review-body">review</div>,
       entry: {
@@ -131,6 +132,7 @@ describe('TransactionModal — editable entry step', () => {
     renderModal(() => ({
       title: 'Supply to Sky Savings',
       transactionContent: <div>review</div>,
+      usdValue: 0,
       onConfirm: () => {}
     }));
     expect(screen.getByRole('dialog').className).toContain('app-loader-cover-hidden');
@@ -140,6 +142,7 @@ describe('TransactionModal — editable entry step', () => {
     const onConfirm = vi.fn();
     renderModal(() => ({
       title: 'Supply to Sky Savings',
+      usdValue: 0,
       entry: { content: <div>fields</div>, confirmLabel: 'Supply', confirmDisabled: true },
       onConfirm
     }));
@@ -154,6 +157,7 @@ describe('TransactionModal — editable entry step', () => {
     const onConfirm = vi.fn();
     const get = renderModal(cb => ({
       title: 'Supply to Sky Savings',
+      usdValue: 0,
       entry: {
         content: <div data-testid="entry-fields">fields</div>,
         confirmLabel: 'Supply',
@@ -188,6 +192,7 @@ describe('TransactionModal — editable entry step', () => {
     const SESSION = 'savings-supply-1';
     const get = renderModal(() => ({
       title: 'Supply to Sky Savings',
+      usdValue: 0,
       sessionId: SESSION,
       // Start disabled with a placeholder confirm — the in-modal body takes over.
       entry: {
@@ -222,6 +227,7 @@ describe('TransactionModal — editable entry step', () => {
     const SESSION = 'upgrade-1';
     const get = renderModal(cb => ({
       title: 'Upgrade DAI/MKR',
+      usdValue: 0,
       sessionId: SESSION,
       entry: {
         content: <div>fields</div>,
@@ -261,6 +267,7 @@ describe('TransactionModal — editable entry step', () => {
     const onSecondaryConfirm = vi.fn();
     renderModal(cb => ({
       title: 'Claim rewards',
+      usdValue: 0,
       entry: {
         content: <div>rewards</div>,
         confirmLabel: 'Claim & Restake SKY',
@@ -290,6 +297,7 @@ describe('TransactionModal — editable entry step', () => {
     const SESSION = 'stake-claim-1';
     const get = renderModal(() => ({
       title: 'Claim rewards',
+      usdValue: 0,
       sessionId: SESSION,
       entry: {
         content: <div>rewards</div>,
@@ -314,6 +322,7 @@ describe('TransactionModal — editable entry step', () => {
     const onConfirm = vi.fn();
     renderModal(cb => ({
       title: 'Upgrade',
+      usdValue: 0,
       transactionContent: <div data-testid="review-body">review</div>,
       confirmLabel: 'Confirm',
       onConfirm: () => {
@@ -343,6 +352,7 @@ describe('TransactionModal — engine error slot', () => {
         confirmDisabled: true,
         errorMessage: 'Something went wrong preparing the transaction. Please try again.'
       },
+      usdValue: 0,
       onConfirm: () => {}
     }));
 
@@ -364,6 +374,7 @@ describe('TransactionModal — engine error slot', () => {
       confirmLabel: 'Confirm',
       confirmDisabled: true,
       errorMessage: 'Something went wrong preparing the transaction. Please try again.',
+      usdValue: 0,
       onConfirm: () => {}
     }));
 
@@ -379,6 +390,7 @@ describe('TransactionModal — engine error slot', () => {
       title: 'Withdraw',
       sessionId: SESSION,
       entry: { content: <div>fields</div>, confirmLabel: 'Review', confirmDisabled: false },
+      usdValue: 0,
       onConfirm: () => {}
     }));
 
