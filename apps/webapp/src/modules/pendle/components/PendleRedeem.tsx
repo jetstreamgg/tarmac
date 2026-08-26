@@ -1,8 +1,7 @@
-import { Trans } from '@lingui/react/macro';
+import type { ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
-import { ArrowDown } from 'lucide-react';
 import { mainnet } from 'viem/chains';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatBigInt, formatNumber } from '@/utils';
 import {
   formatPendleAggregatorName,
   getTokenDecimals,
@@ -10,28 +9,46 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import { getTooltipById, TokenDropdown, TransactionOverview } from '@/widgets';
-import { Skeleton } from '@/components/ui/skeleton';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { HStack } from '@/modules/layout/components/HStack';
-import { Text } from '@/modules/layout/components/Typography';
+import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
+import { BundleSavingsPromo } from '@/modules/ui/components/BundleSavingsPromo';
+import { toGridCells, type ModalGridFee } from '@/components/product/ModalGridCells';
+import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
+import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
+import { NO_VALUE } from '@/lib/constants';
+import { formatPriceImpact } from '../utils/priceImpact';
+import { buildPendleRedeemRows } from './pendleModalRows';
 
 type PendleRedeemProps = {
   market: PendleMarketConfig;
   /** Read-only PT input — full balance, not editable. */
   ptBalance: bigint;
-  /** Token list for the output dropdown (underlying / USDS / USDC). */
+  /** Token list for the Claim-token selector (underlying / USDS / USDC). */
   outputTokenList: Token[];
   selectedOutputToken: Token;
   onOutputTokenChange: (token: Token) => void;
   quote?: PendleConvertQuote;
   isFetchingQuote: boolean;
-  /** Slippage tolerance as a decimal (e.g. 0.01 = 1%). */
-  slippage: number;
-  /** User-friendly inline-banner copy for prepare/verify failures. */
-  prepareErrorMessage?: string;
+  /** Current slippage, formatted (e.g. "0.50%"). */
+  slippageDisplay: string;
+  /** Slippage mode badge text — "Auto" at the flow default, "Custom" otherwise. */
+  slippageMode: string;
+  /** Inline gear opening the slippage menu. */
+  slippageAction?: ReactNode;
+  /** Network the transaction runs on. */
+  network: string;
+  /** Chain the engine runs on, for the Network cell's icon. */
+  networkChainId?: number;
+  /** Live gas estimate for the Network fee cell. */
+  feeCell?: ModalGridFee;
 };
 
+/**
+ * Body of the matured-claim modal: the receive hero over the shared summary
+ * grid. No comp exists for this flow — the layout follows the withdraw comps
+ * (Figma 2193:73598 / 2193:73807). Slippage and its floor render on every
+ * route — even the pure burn signs a slippage-adjusted minTokenOut; only the
+ * price-impact/route row is aggregator-only.
+ */
 export const PendleRedeem = ({
   market,
   ptBalance,
@@ -40,170 +57,77 @@ export const PendleRedeem = ({
   onOutputTokenChange,
   quote,
   isFetchingQuote,
-  slippage,
-  prepareErrorMessage
+  slippageDisplay,
+  slippageMode,
+  slippageAction,
+  network,
+  networkChainId,
+  feeCell
 }: PendleRedeemProps) => {
   const ptSymbol = `PT-${market.underlyingSymbol}`;
-  const ptDecimals = market.underlyingDecimals;
   const outDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
-
-  const formattedPt = formatBigInt(ptBalance, { unit: ptDecimals, maxDecimals: 4 });
   const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
-  // Pendle returns the breakdown on no-aggregator routes too; only show it when an aggregator is used.
-  const breakdown = aggregatorName ? quote?.priceImpactBreakdown : undefined;
+  // Aggregator-ness derives from the token, not the quote: the route row must
+  // stay stable while a quote is in flight, and only non-SY-accepted outputs
+  // route through one.
+  const outputAddress = selectedOutputToken.address[mainnet.id]?.toLowerCase();
+  const aggregator = market.syAcceptedTokens
+    ? !market.syAcceptedTokens.some(accepted => accepted.toLowerCase() === outputAddress)
+    : !!aggregatorName;
+  const quoteLoading = isFetchingQuote && !quote;
 
-  // Pendle's API uses positive = favorable; we display with the inverse
-  // convention so positive = unfavorable (matching TradeWidget/StUSDSWidget
-  // and broader DeFi conventions). The raw quote.priceImpact stays unflipped
-  // for analytics/debugging.
-
-  // Section 1 "Transaction overview" (expanded by default): the two numbers
-  // the user came for — how much PT they're redeeming, and how much USDS/USDC
-  // they're getting. Per APP-268.
-  const pinnedData = quote
-    ? [
-        {
-          label: t`You redeem`,
-          value: `${formattedPt} ${ptSymbol}`
-        },
-        {
-          label: t`You receive`,
-          value: `${formatBigInt(quote.amountOut, { unit: outDecimals, maxDecimals: 4 })} ${selectedOutputToken.symbol}`
-        }
-      ]
-    : undefined;
-
-  // Section 2 "Transaction details" (collapsed by default).
-  const transactionData = quote
-    ? [
-        // Slippage / price impact / Min. received only matter on aggregator
-        // hops; pure PT-burn at the SY's expiry-frozen rate has no swap math.
-        ...(aggregatorName
-          ? [
-              {
-                label: t`Min. received`,
-                value: `${formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 4 })} ${selectedOutputToken.symbol}`
-              },
-              {
-                label: t`Slippage tolerance`,
-                value: `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`
-              },
-              {
-                label: t`Price impact`,
-                value: `${formatNumber(-quote.priceImpact * 100, { maxDecimals: 3 })}%`
-              }
-            ]
-          : []),
-        ...(breakdown
-          ? [
-              {
-                label: t`Pendle redeem`,
-                value: `${formatNumber(-breakdown.internalPriceImpact * 100, { maxDecimals: 3 })}%`,
-                labelClassName: 'pl-4 opacity-70',
-                className: 'opacity-70',
-                containerClassName: '-mt-2'
-              },
-              {
-                // breakdown is only populated when aggregatorName is truthy
-                label: aggregatorName!,
-                value: `${formatNumber(-breakdown.externalPriceImpact * 100, { maxDecimals: 3 })}%`,
-                labelClassName: 'pl-4 opacity-70',
-                className: 'opacity-70',
-                containerClassName: '-mt-2'
-              }
-            ]
-          : []),
-        {
-          label: t`Routed via`,
-          // Post-maturity, PT is burned via SY at the expiry-frozen rate — no
-          // AMM pool. When an aggregator is in the route, it then swaps the
-          // underlying into the user's chosen output token.
-          value: aggregatorName ? `Pendle redeem → ${aggregatorName}` : 'Pendle redeem'
-        },
-        {
-          label: t`Pendle fee`,
-          value:
-            quote.feeUsd !== undefined
-              ? `$${formatNumber(quote.feeUsd, { maxDecimals: quote.feeUsd >= 1 ? 2 : 4 })}`
-              : t`Included in quote`
-        },
-        ...(quote.effectiveApy !== 0
-          ? [
-              {
-                label: t`Effective APY`,
-                value: formatDecimalPercentage(quote.effectiveApy),
-                className: 'text-bullish',
-                tooltipTitle: getTooltipById('effective-apy')?.title || '',
-                tooltipText: getTooltipById('effective-apy')?.tooltip || ''
-              }
-            ]
-          : [])
-      ]
-    : undefined;
+  const rows = buildPendleRedeemRows({
+    product: `Pendle ${market.underlyingSymbol} (${ptSymbol})`,
+    productSymbol: market.underlyingSymbol,
+    claimAmount: formatBigInt(ptBalance, { unit: market.underlyingDecimals, maxDecimals: 2 }),
+    ptSymbol,
+    aggregator,
+    quoteLoading,
+    slippage: slippageDisplay,
+    slippageMode,
+    slippageAction,
+    // Floored: the contractual minimum must not display optimistically.
+    minReceived: quote
+      ? formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 2, roundingMode: 'floor' })
+      : NO_VALUE,
+    receiveSymbol: selectedOutputToken.symbol,
+    priceImpact: formatPriceImpact(quote?.priceImpact) ?? NO_VALUE,
+    routedVia: aggregatorName ? `Pendle redeem → ${aggregatorName}` : NO_VALUE,
+    pendleFee:
+      quote?.feeUsd !== undefined
+        ? `$${formatNumber(quote.feeUsd, { maxDecimals: quote.feeUsd >= 1 ? 2 : 4 })}`
+        : t`Included in quote`,
+    network,
+    networkChainId,
+    networkFee: NO_VALUE
+  });
 
   return (
-    <div className="flex flex-col gap-3">
-      <div
-        className="bg-card flex items-center justify-between rounded-2xl px-4 py-3"
-        data-testid="pendle-redeem-input"
-      >
-        <div>
-          <Text variant="medium" className="text-textSecondary">
-            <Trans>You redeem</Trans>
-          </Text>
-          <Text className="text-lg">{formattedPt}</Text>
-        </div>
-        <HStack className="items-center" gap={2}>
-          <TokenIcon className="h-6 w-6" token={{ symbol: ptSymbol }} showChainIcon={false} />
-          <Text>{ptSymbol}</Text>
-        </HStack>
-      </div>
-
-      <div className="flex justify-center">
-        <ArrowDown className="text-textSecondary h-4 w-4" />
-      </div>
-
-      <div
-        className="bg-card flex items-center justify-between rounded-2xl px-4 py-3"
-        data-testid="pendle-redeem-output"
-      >
-        <div>
-          <Text variant="medium" className="text-textSecondary">
-            <Trans>You receive</Trans>
-          </Text>
-          {quote === undefined && isFetchingQuote ? (
-            <Skeleton className="h-7 w-24" data-testid="pendle-redeem-output-loading" />
-          ) : (
-            <Text className="text-lg">
-              {formatBigInt(quote?.amountOut ?? 0n, { unit: outDecimals, maxDecimals: 4 })}
-            </Text>
-          )}
-        </div>
-        <TokenDropdown
-          token={selectedOutputToken}
-          tokenList={outputTokenList}
-          onTokenSelected={onOutputTokenChange}
-          dataTestId="pendle-redeem-output-token"
-        />
-      </div>
-
-      {prepareErrorMessage && (
-        <div
-          className="bg-error/10 text-error rounded-xl px-3 py-2 text-sm"
-          data-testid="pendle-redeem-prepare-error"
-          role="alert"
-        >
-          {prepareErrorMessage}
-        </div>
-      )}
-
-      <TransactionOverview
-        title={t`Transaction overview`}
-        isFetching={isFetchingQuote && !quote}
-        fetchingMessage={t`Fetching quote from Pendle`}
-        pinnedData={pinnedData}
-        transactionData={transactionData}
+    <div className="flex flex-col gap-8 sm:gap-12" data-testid="pendle-redeem">
+      <TransactionAmountHero
+        // "Claim" is the PT side throughout the section's comps ("Claim at
+        // maturity", "You'll claim"); "receive" is what a trade pays out, as
+        // the withdraw comps use it. The hero is the payout, so it receives.
+        label={t`You'll receive`}
+        amount={quote ? formatBigInt(quote.amountOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE}
+        symbol={selectedOutputToken.symbol}
+        loading={quoteLoading}
+        // The claim has no amount field, so the payout token is chosen here —
+        // beside the figure it denominates, rather than parked in the grid.
+        badge={
+          <TokenSelectorPill
+            tokens={outputTokenList}
+            selected={selectedOutputToken}
+            onSelect={onOutputTokenChange}
+            testId="pendle-redeem-output-token"
+          />
+        }
+        dataTestId="pendle-redeem-hero"
       />
+
+      <ModalSummaryGrid rows={toGridCells(rows, 'pendle-redeem-row', feeCell)} dividerClassName="h-6" />
+
+      {feeCell?.state.promoVisible && <BundleSavingsPromo saving={feeCell.fee!.batchSaving!} />}
     </div>
   );
 };

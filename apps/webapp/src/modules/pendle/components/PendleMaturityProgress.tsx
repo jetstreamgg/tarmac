@@ -1,9 +1,9 @@
-import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { Progress } from '@/components/ui/progress';
 import { usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
 import { computeMaturityWindow } from '../utils/maturityWindow';
+import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 
 /**
  * Elapsed-maturity body for the detail page's "Maturity" section (Figma
@@ -26,7 +26,7 @@ export function PendleMaturityProgress({ market }: { market: PendleMarketConfig 
     nowSec: Math.floor(Date.now() / 1000)
   });
 
-  const maturityDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
+  const maturityDateLabel = formatMaturity(expirySec);
 
   return (
     <div className="flex flex-col gap-3" data-testid="pendle-maturity-progress">

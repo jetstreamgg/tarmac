@@ -5,9 +5,8 @@ import { t } from '@lingui/core/macro';
  * buy/sell and redeem modal flows so users see consistent guidance everywhere.
  *
  * `slippageHint` replaces the slippage-exceeded copy for flows where the
- * default "gear icon" guidance doesn't match where the slippage control
- * actually lives (the buy/sell modal keeps it on the review screen; the redeem
- * modal's header gear matches the default).
+ * default guidance doesn't fit; the redeem and review grids both keep the
+ * control on the Slippage cell's gear, which the default copy points at.
  */
 export function pendlePrepareErrorMessage(
   raw: string | undefined,
@@ -17,7 +16,7 @@ export function pendlePrepareErrorMessage(
   if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
     return (
       slippageHint ??
-      t`Current market price exceeds your slippage tolerance. Increase slippage via the gear icon, or wait for the quote to refresh.`
+      t`Current market price exceeds your slippage tolerance. Increase slippage via the gear icon on the Slippage row, or wait for the quote to refresh.`
     );
   }
   if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
