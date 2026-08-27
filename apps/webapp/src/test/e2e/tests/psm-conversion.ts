@@ -253,7 +253,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await reviewAndConfirm(isolatedPage);
 
-      await expectTransactionSuccess(isolatedPage, { title: 'USDC converted!' });
+      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted to USDC!' });
 
       // onSuccess resets the form for the next conversion
       await expect(isolatedPage.getByTestId('convert-from-amount')).toHaveValue('');
@@ -267,7 +267,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await reviewAndConfirm(isolatedPage);
 
-      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted!' });
+      await expectTransactionSuccess(isolatedPage, { title: 'USDC converted to USDS!' });
     });
 
     test('Transaction screen shows the approve and convert steps', async ({ isolatedPage }) => {
@@ -377,13 +377,13 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       // USDS → USDC
       await isolatedPage.getByTestId('convert-from-amount').fill('3');
       await reviewAndConfirm(isolatedPage);
-      await expectTransactionSuccess(isolatedPage, { title: 'USDC converted!' });
+      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted to USDC!' });
 
       // USDC → USDS
       await isolatedPage.getByTestId('convert-flip').click();
       await isolatedPage.getByTestId('convert-from-amount').fill('3');
       await reviewAndConfirm(isolatedPage);
-      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted!' });
+      await expectTransactionSuccess(isolatedPage, { title: 'USDC converted to USDS!' });
     });
   });
 };
