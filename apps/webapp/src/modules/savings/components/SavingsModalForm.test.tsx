@@ -174,6 +174,15 @@ vi.mock('./SavingsOriginSelect', async importOriginal => {
 });
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+// Savings is multi-chain, so its entry grid's Network cell is the switch
+// dropdown. The real one wants a router (it writes the network= param) and a
+// query client (the Safe probe); these renders have neither, and what they are
+// about is the row set, so stand it in with its chain list.
+vi.mock('@/modules/ui/components/NetworkSelect', () => ({
+  NetworkSelect: ({ chainIds }: { chainIds: number[] }) => (
+    <div data-testid="modal-network-select">{chainIds.join(',')}</div>
+  )
+}));
 
 import { SavingsModalForm } from './SavingsModalForm';
 import { TOKENS } from '@/hooks';
@@ -225,6 +234,17 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     for (const label of FIGMA_ROWS) {
       expect(screen.queryByTestId(`savings-modal-row-${label}`)).not.toBeNull();
     }
+  });
+
+  it('makes the entry Network cell a switch dropdown over the chains Savings runs on', () => {
+    renderForm('supply');
+
+    // Multi-chain product → the Network value is the control, not a label
+    // (Figma 2682:77695). Mainnet-only products resolve to one chain and keep
+    // the static value, which is why the dropdown is opt-in per builder.
+    const select = screen.getByTestId('modal-network-select');
+    expect(select.textContent).toContain('1');
+    expect(select.textContent).toContain('8453');
   });
 
   it('routes the supply flow to useSavingsLaunch', () => {
