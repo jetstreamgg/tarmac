@@ -55,12 +55,20 @@ export default defineConfig({
         '**/app-loader.spec.ts',
         '**/landing.spec.ts',
         '**/network-switching.spec.ts',
+        '**/shell-mobile.spec.ts',
+        '**/portfolio.spec.ts',
+        '**/earn-marketplace.spec.ts',
         '**/mainnet-psm.spec.ts',
         '**/base-psm.spec.ts',
         '**/arbitrum-psm.spec.ts',
         '**/optimism-psm.spec.ts',
         '**/unichain-psm.spec.ts',
         '**/mainnet-savings.spec.ts',
+        '**/mainnet-savings-parallel.spec.ts',
+        '**/rewards.spec.ts',
+        '**/vaults-morpho.spec.ts',
+        '**/pendle.spec.ts',
+        '**/stusds.spec.ts',
         '**/terms-signature-gate.spec.ts',
         '**/base-savings.spec.ts',
         '**/arbitrum-savings.spec.ts',
@@ -73,8 +81,7 @@ export default defineConfig({
         // '**/optimism-trade.spec.ts',
         // '**/unichain-trade.spec.ts',
         // '**/upgrade.spec.ts',
-        // '**/vaults-spark.spec.ts' — nav fixed; blocked on the mainnet fork
-        // container predating the sUSDT vault deployment
+        // '**/vaults-spark.spec.ts' — legacy widget UI; enable when fork has sUSDT vault + flag
       ]
     }
     // {
@@ -90,9 +97,10 @@ export default defineConfig({
   ],
 
   webServer: {
+    // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
     // VITE_SUSDT_VAULT_ENABLED unhides the Spark Tether Savings vault so
     // vaults-spark.spec.ts has a surface to drive once it is re-enabled.
-    command: `VITE_PARALLEL_TEST=true VITE_SUSDT_VAULT_ENABLED=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
+    command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true VITE_SUSDT_VAULT_ENABLED=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,

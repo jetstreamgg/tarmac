@@ -9,6 +9,22 @@ this file records only objective coverage and verdicts.
 
 ## 1. Figma coverage map
 
+**Node ID refresh (2026-08-26):** Legacy hi-fi section `486:31150` (“Core Screens”) was
+reorganized into four live sections under App UI (`386:35313`):
+
+| Section | Node |
+| ------- | ---- |
+| 🟢 Stake SKY - Empty state | `1030:133634` |
+| 🟢 Stake SKY - Opening a new position | `1030:133792` |
+| 🟢 Stake SKY - Active states & position management | `1030:134505` |
+| 🟢 Stake SKY - Edge cases/More states | `1030:136203` |
+
+Key frame migrations (`486:*` → `1036:*`): My positions `486:31830` → `1036:208665` /
+`1036:214050`; Statistics empty `486:31955` → `1036:208698`; Open takeover `486:32657` →
+`1036:209698`; Position details `486:32506` → `1036:214176`; Bundled confirm
+`486:33469` → `1036:207162`. Rows below retain legacy IDs where unchanged in meaning;
+use the mapping table when linking Figma from contracts.
+
 Swept 2026-07-08 by walking both design files page-by-page (not by following previously shared
 node links). Every stake-related frame in the live pages is listed; nothing else stake-shaped
 exists outside them.
@@ -203,6 +219,10 @@ delta → finding) · **fail** (defect) · **n/e** (not exercisable end-to-end; 
 ## 3. e2e promotion table
 
 Curated 2026-07-08 (pass 3), extended 2026-07-09 (PR #1710 review round: mixed-flow specs 9–10).
+Gate 4 contracts added 2026-08-26: `stake-product-default`, `stake-open-flow`,
+`stake-manage-flow`, `stake-deep-link` · page object `pages/StakePage.ts` (helpers re-exported
+from `utils/stakeV2.ts` for existing specs).
+
 The suite is **`src/test/e2e/tests/stake-onchain.spec.ts`** — 10 specs
 (2 read smokes + 8 write specs, one per contract-write path plus the two cross combos), backed by
 `src/test/e2e/utils/stakeOnChain.ts` (on-chain oracles + liquidation staging). Registered in
@@ -214,6 +234,20 @@ asserts `vat.urns` ink/art, farm `earned()`, and ERC-20 balances directly. Run i
 All 8 specs green on a fresh vnet, 2026-07-08 (~2–3 min wall-clock, 1 worker). One vnet-RPC flake
 observed across four runs (a dropped HTTP request failed a _setup_ transaction, not an assertion;
 same spec green on re-run) — the class `run-tests-with-retry.sh` absorbs in CI.
+
+**Gate 7 refresh (2026-08-27, local sequential `workers=1`):**
+
+| Spec | Result |
+| ---- | ------ |
+| `stake.spec.ts` | **6/6** |
+| `stake-onchain.spec.ts` | **10/10** |
+| `stake-mobile.spec.ts` | **5/5** — footer scrolls with column (TakeoverShell); e2e scrolls to Confirm |
+| `unstake-repay.spec.ts` | **2/2** |
+| `capped-osm-unstake.spec.ts` | **1/1** |
+
+Gate 4 contracts: `src/test/e2e/contracts/stake-*.contract.ts` · `pages/StakePage.ts`.
+
+**Module complete (Gates 1–7):** Gold-standard §1 Figma map · §2 matrix · **24/24** stake e2e (incl. onchain oracle suite) · contracts + `StakePage` · partial/deferred rows dispositioned (APP-312, AUD-19) · theming §4.
 
 ### Promotions
 
