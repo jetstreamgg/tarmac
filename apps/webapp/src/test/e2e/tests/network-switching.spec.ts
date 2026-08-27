@@ -1,7 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms';
-import { switchWalletNetwork } from '../utils/switchWalletNetwork';
+import { switchNetworkOnProductPage, switchWalletNetwork } from '../utils/switchWalletNetwork';
 
 // Centralized navigate-and-switch behavior (docs/network-switching-test-matrix.md):
 // navigation to a module always lands; if the module isn't available on the
@@ -157,6 +157,37 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     await expect(isolatedPage).toHaveURL(/\/earn\/savings\?.*network=tenderlybase/);
     await expect(isolatedPage.getByText(GENERIC_COPY).first()).toBeVisible();
     await expect(isolatedPage.getByText('Savings is also supported on:')).toBeVisible();
+  });
+
+  // The in-app switch path that replaced the wallet drawer's chain modal: a
+  // product page's network dropdown. Savings runs on every chain, so its
+  // selector is the one that offers a real choice.
+  test('the Savings network dropdown switches the wallet and syncs the param', async ({ isolatedPage }) => {
+    await isolatedPage.goto('/portfolio');
+    await connectMockWalletAndAcceptTerms(isolatedPage);
+    await isolatedPage.getByTestId('nav-earn').click();
+    await isolatedPage.getByTestId('earn-row-savings').click();
+    await expect(isolatedPage.getByTestId('product-detail-network')).toBeVisible();
+
+    await switchNetworkOnProductPage(isolatedPage, 'Tenderly Base');
+
+    await expect(isolatedPage).toHaveURL(/\/earn\/savings\?.*network=tenderlybase/);
+    // The pill names where the product now is, and the page stayed put —
+    // Savings runs on Base.
+    await expect(isolatedPage.getByTestId('product-detail-network')).toContainText('Tenderly Base');
+  });
+
+  // A mainnet-only product has nothing to choose between, so its pill is a
+  // plain label — no dropdown to open.
+  test('the Stake network pill is static — one supported chain', async ({ isolatedPage }) => {
+    await isolatedPage.goto('/portfolio');
+    await connectMockWalletAndAcceptTerms(isolatedPage);
+    await isolatedPage.getByTestId('nav-stake').click();
+
+    const pill = isolatedPage.getByTestId('stake-network');
+    await expect(pill).toBeVisible();
+    await pill.click();
+    await expect(isolatedPage.getByRole('listbox')).toHaveCount(0);
   });
 
   // C2: a disconnected deep link at an L2 param is corrected silently — the
