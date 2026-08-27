@@ -170,7 +170,11 @@ export function VaultProductDetail({
         </span>
       }
       networkSelector={
-        <NetworkSelect chainIds={networks} labelClassName="hidden sm:block" dataTestId="vault-detail-network" />
+        <NetworkSelect
+          chainIds={networks}
+          labelClassName="hidden sm:block"
+          dataTestId="vault-detail-network"
+        />
       }
       chart={<VaultDetailChart vaultAddress={vaultAddress} assetToken={vault.assetToken} />}
       position={
