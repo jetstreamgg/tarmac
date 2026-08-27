@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
   entry: undefined as { confirmDisabled: boolean } | undefined,
   screenContents: [] as unknown[],
   analytics: undefined as unknown,
+  toast: undefined as { success: string } | undefined,
   restakeSeen: false
 }));
 
@@ -111,10 +112,12 @@ vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
     confirmDisabled: boolean;
     transactionScreenContent?: unknown;
     analytics?: unknown;
+    toast?: { success: string };
   }) => {
     h.entry = { confirmDisabled: params.confirmDisabled };
     h.screenContents.push(params.transactionScreenContent);
     h.analytics = params.analytics;
+    h.toast = params.toast;
     return (body: unknown) => body;
   }
 }));
@@ -157,6 +160,7 @@ describe('ClaimRewardsPanel', () => {
     h.entry = undefined;
     h.screenContents = [];
     h.analytics = undefined;
+    h.toast = undefined;
     h.restakeSeen = false;
   });
   afterEach(() => cleanup());
@@ -226,6 +230,20 @@ describe('ClaimRewardsPanel', () => {
     expect(screen.getByText(/MORPHO/)).toBeTruthy();
   });
 
+  it('names the amount in the success toast when exactly one reward is in scope', () => {
+    h.sky = [reward('sky-rewards', '0xb', 'SPK')];
+    renderPanel({ kind: 'reward-contract', address: '0xb' });
+
+    expect(h.toast?.success).toBe('Claimed 10.00 SPK');
+  });
+
+  it('keeps the generic success toast for a stacked claim — one headline cannot carry several amounts', () => {
+    h.merkl = [reward('merkl', '0xa', 'MORPHO'), reward('merkl', '0xb', 'SKY')];
+    renderPanel({ kind: 'merkl' });
+
+    expect(h.toast?.success).toBe('Rewards claimed');
+  });
+
   it('pairs [Network fee | Network] in the summary grid (Figma 1036:190091)', () => {
     h.merkl = [reward('merkl', '0xa', 'MORPHO')];
     renderPanel({ kind: 'vault', vaultAddress: '0xvault' });
@@ -287,6 +305,7 @@ describe('ClaimRewardsPanel — analytics attribution by scope (APP-444 B4/B8)',
     h.entry = undefined;
     h.screenContents = [];
     h.analytics = undefined;
+    h.toast = undefined;
     h.restakeSeen = false;
   });
   afterEach(() => cleanup());

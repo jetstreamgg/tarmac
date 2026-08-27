@@ -187,11 +187,25 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     }
   }, [scope, allRewards, rewardContracts, chainId, flow.isBatch]);
 
+  // Toast headlines (the launch sets none, so the toast fell back to the
+  // success SUBTITLE sentence). A single in-scope reward names its amount —
+  // "Claimed 300 SPK"; a stacked claim keeps a generic line, since one
+  // headline can't carry several amounts. Memoized: it's a sync-effect dep.
+  const toast = useMemo(() => {
+    const single = allRewards.length === 1 ? allRewards[0] : undefined;
+    return {
+      loading: t`Claiming rewards`,
+      success: single ? t`Claimed ${single.formattedAmount} ${single.tokenSymbol}` : t`Rewards claimed`,
+      error: t`Claim failed`
+    };
+  }, [allRewards]);
+
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute: flow.execute,
     confirmDisabled: disabled,
     transactionScreenContent,
+    toast,
     // USD notional of the whole claim set for the enhanced-screening
     // threshold (APP-517). Unknown (undefined) while the sources are still
     // resolving — the launch config carries no value either, so the check

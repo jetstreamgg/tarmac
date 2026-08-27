@@ -11,6 +11,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { connectAndVerify } from '../utils/connectAndVerify';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import {
   interceptAndAllowTransactions,
   interceptAndRejectSecondTransaction
@@ -62,10 +63,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     // Approve and Supply run as two sequential wallet confirmations
     await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
 
-    await expect(isolatedPage.getByText("You've successfully supplied to Sky Savings.")).toBeVisible({
-      timeout: 60_000
-    });
-    await isolatedPage.getByRole('button', { name: 'Done' }).click();
+    await expectTransactionSuccess(isolatedPage);
   });
 
   // FIXME(stale-state): this canary currently catches what looks like a REAL V2
@@ -108,10 +106,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     await expect(retry).toBeEnabled({ timeout: 60_000 });
     await retry.click();
 
-    await expect(isolatedPage.getByText("You've successfully supplied to Sky Savings.")).toBeVisible({
-      timeout: 60_000
-    });
-    await isolatedPage.getByRole('button', { name: 'Done' }).click();
+    await expectTransactionSuccess(isolatedPage);
 
     // The position reflects the NEW amount (5), not the rejected one (3)
     const card = isolatedPage.getByTestId('savings-position-card');
@@ -149,10 +144,7 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await expect(confirm).toBeEnabled({ timeout: 60_000 });
     await confirm.click();
 
-    await expect(isolatedPage.getByText("You've successfully supplied to SPK Rewards.")).toBeVisible({
-      timeout: 60_000
-    });
-    await isolatedPage.getByRole('button', { name: 'Done' }).click();
+    await expectTransactionSuccess(isolatedPage);
   });
 
   // FIXME(stale-state): this canary currently catches what looks like a REAL V2
@@ -195,10 +187,7 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await expect(retry).toBeEnabled({ timeout: 60_000 });
     await retry.click();
 
-    await expect(isolatedPage.getByText("You've successfully supplied to SPK Rewards.")).toBeVisible({
-      timeout: 60_000
-    });
-    await isolatedPage.getByRole('button', { name: 'Done' }).click();
+    await expectTransactionSuccess(isolatedPage);
 
     // The position reflects the NEW amount (7), not the rejected one (3)
     const card = isolatedPage.getByTestId('rewards-position-card');

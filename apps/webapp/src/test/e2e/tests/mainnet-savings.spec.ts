@@ -1,6 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { connectAndVerify } from '../utils/connectAndVerify';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 
 // V2 rewrite (see e2e-migration.md): mainnet savings on the /earn/savings
 // product page. Supply/withdraw run through the editable savings modal
@@ -27,20 +28,15 @@ const openSupplyModal = async (page: Page) => {
   await expect(page.getByText('Supply to Sky Savings')).toBeVisible();
 };
 
-/** Clicks Review, confirms in the modal and waits for the success status. */
+/** Clicks Review, confirms in the modal and waits for the transaction to confirm. */
 const reviewAndConfirm = async (page: Page) => {
   await page.getByText('Review').first().click();
   const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
   await expect(confirm).toBeEnabled({ timeout: 60_000 });
   await confirm.click();
-  // The old generic success sentence is gone — status now lives only in the
-  // status badge (`data-testid="transaction-status-badge"`), which cycles through
-  // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
-  // so this waits for the terminal text rather than whatever the badge reads first.
-  await expect(page.getByTestId('transaction-status-badge')).toHaveText('Success', {
-    timeout: 60_000
-  });
-  await page.getByText('Done').first().click();
+  // A confirmed transaction closes its own modal and hands the outcome to a
+  // toast — there is no success screen, and no Done button to click.
+  await expectTransactionSuccess(page);
 };
 
 test('Savings product page renders the chart, details and transactions', async ({ isolatedPage }) => {

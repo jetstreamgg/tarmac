@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { parseUnits } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess.ts';
 import {
   BORROW_SPEC_SKY,
   confirmTransactionModal,
@@ -385,14 +386,9 @@ test('claim pays rewards out and claim & restake locks them back into the urn', 
   await expect(isolatedPage.getByTestId('stake-claim-form')).toBeVisible();
   await expect(isolatedPage.getByTestId('stake-claim-reward-sky')).toBeVisible({ timeout: 15_000 });
   await isolatedPage.getByRole('button', { name: 'Claim', exact: true }).click();
-  // The old generic success sentence is gone — status now lives only in the
-  // status badge (`data-testid="transaction-status-badge"`), which cycles through
-  // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
-  // so this waits for the terminal text rather than whatever the badge reads first.
-  await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
-    timeout: 60_000
-  });
-  await isolatedPage.getByRole('button', { name: 'Done' }).click();
+  // A confirmed transaction closes its own modal and hands the outcome to a
+  // toast — there is no success screen, and no Done button to click.
+  await expectTransactionSuccess(isolatedPage);
 
   expect(await getEarned(USDS_FARM, urn)).toBe(0n);
   expect((await getTokenBalance(USDS_TOKEN, testAccount)) - usdsBefore).toBe(parseUnits('22.9', 18));
@@ -410,14 +406,9 @@ test('claim pays rewards out and claim & restake locks them back into the urn', 
   await isolatedPage.getByTestId('stake-manage-menu-claim').click();
   await expect(isolatedPage.getByTestId('stake-claim-reward-sky')).toBeVisible({ timeout: 15_000 });
   await isolatedPage.getByRole('button', { name: 'Claim & Restake SKY' }).click();
-  // The old generic success sentence is gone — status now lives only in the
-  // status badge (`data-testid="transaction-status-badge"`), which cycles through
-  // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
-  // so this waits for the terminal text rather than whatever the badge reads first.
-  await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
-    timeout: 60_000
-  });
-  await isolatedPage.getByRole('button', { name: 'Done' }).click();
+  // A confirmed transaction closes its own modal and hands the outcome to a
+  // toast — there is no success screen, and no Done button to click.
+  await expectTransactionSuccess(isolatedPage);
 
   expect(await getEarned(SKY_FARM, urn)).toBeLessThan(WAD); // re-accrual epsilon while staked
   const inkDelta = (await getUrnInkArt(urn)).ink - inkBefore;

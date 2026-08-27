@@ -15,6 +15,7 @@ import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
+import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSuccessToast';
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
@@ -44,6 +45,8 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
 const MINIMIZED_TOAST_ID = 'transaction-minimized';
+// The confirmed-transaction toast the modal hands off to on its way out.
+const SUCCESS_TOAST_ID = 'transaction-success';
 const ABANDONED_TOAST_ID = 'transaction-abandoned';
 const PENDING_BLOCK_TOAST_ID = 'transaction-pending-block';
 
@@ -109,7 +112,6 @@ export function useEntrySlot() {
 type TransactionModalView = {
   config: TransactionConfig;
   txStatus: TxStatus;
-  externalLink: string | undefined;
   currentStep: number;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
@@ -159,7 +161,6 @@ export function TransactionProvider({
   // changing key, per the React guidance on resetting all state.
   const [launchCount, setLaunchCount] = useState(0);
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
-  const [externalLink, setExternalLink] = useState<string | undefined>();
   const [currentStep, setCurrentStep] = useState(0);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
@@ -372,7 +373,6 @@ export function TransactionProvider({
       setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
       txStatusRef.current = TxStatus.IDLE;
-      setExternalLink(undefined);
       txHashRef.current = undefined;
       setCurrentStep(0);
       preludeStepsRef.current = null;
@@ -446,7 +446,6 @@ export function TransactionProvider({
   );
 
   const resetTransactionProgress = useCallback(() => {
-    setExternalLink(undefined);
     setCurrentStep(0);
   }, []);
 
@@ -468,7 +467,6 @@ export function TransactionProvider({
       setExitingView({
         config: configRef.current,
         txStatus: txStatusRef.current,
-        externalLink,
         currentStep,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
@@ -486,7 +484,6 @@ export function TransactionProvider({
     setMinimized(false);
     setTxStatus(TxStatus.IDLE);
     txStatusRef.current = TxStatus.IDLE;
-    setExternalLink(undefined);
     setCurrentStep(0);
     preludeStepsRef.current = null;
     setPreludeSteps(null);
@@ -497,7 +494,7 @@ export function TransactionProvider({
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [handleInitializedAbandon, externalLink, currentStep]);
+  }, [handleInitializedAbandon, currentStep]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -536,13 +533,14 @@ export function TransactionProvider({
     const config = configRef.current;
     if (!config) return;
     // Amount-aware title when the flow supplied one, else the subtitle sentence, else the title.
-    const titleFor = (state: 'loading' | 'success' | 'error') =>
+    const titleFor = (state: 'loading' | 'error') =>
       config.toast?.[state] ?? config.subtitles?.[state] ?? config.title;
 
+    // SUCCESS never reaches here: it closes the session (see onSuccess), which
+    // clears `minimized` in the same commit and posts its own toast.
     const inFlight = txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED;
-    const state =
-      txStatus === TxStatus.SUCCESS ? 'success' : txStatus === TxStatus.ERROR ? 'error' : 'loading';
-    if (txStatus !== TxStatus.SUCCESS && txStatus !== TxStatus.ERROR && !inFlight) return;
+    const state = txStatus === TxStatus.ERROR ? 'error' : 'loading';
+    if (txStatus !== TxStatus.ERROR && !inFlight) return;
 
     toastWithClose(
       () => (
@@ -744,7 +742,6 @@ export function TransactionProvider({
       }
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
-      setExternalLink(undefined);
       txHashRef.current = undefined;
 
       // Track transaction started; approve legs report action 'approve' (dev parity)
@@ -770,7 +767,6 @@ export function TransactionProvider({
       setTxStatus(TxStatus.LOADING);
       txStatusRef.current = TxStatus.LOADING;
       if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         txHashRef.current = hash;
       }
     },
@@ -783,7 +779,6 @@ export function TransactionProvider({
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;
       if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         txHashRef.current = hash;
       }
 
@@ -802,11 +797,41 @@ export function TransactionProvider({
         });
       }
 
+      // Captured alongside `analytics`, BEFORE the consumer callback: the
+      // close below tears the session down (configRef included), and a
+      // consumer that relaunched from its own onSuccess would otherwise put
+      // the new flow's copy on this transaction's toast.
+      const config = configRef.current;
+
       configRef.current?.onSuccess?.();
       // Rotate AFTER the consumer callback so anything it emits joins this flow
       if (analytics) {
         startNewFlow();
       }
+
+      // A confirmed transaction no longer holds the modal: it closes itself and
+      // the outcome moves to a toast (Figma 859:35901). Dismiss any minimized
+      // toast first, so the two never sit stacked.
+      if (config) {
+        toast.dismiss(MINIMIZED_TOAST_ID);
+        const successTitle = config.toast?.success ?? config.subtitles?.success ?? config.title;
+        const txHash = hash ?? txHashRef.current;
+        toastWithClose(
+          () => (
+            <TransactionSuccessToast
+              title={successTitle}
+              hash={txHash}
+              href={txHash ? getTransactionLink(chainId, address, txHash, isSafeWallet) : undefined}
+            />
+          ),
+          { id: SUCCESS_TOAST_ID, duration: 10000 }
+        );
+      }
+      // Via the ref so this callback doesn't churn on every currentStep
+      // change (it is handed to every engine hook). The close
+      // snapshots the SUCCESS screen for the modal's 300ms exit, so the
+      // handoff reads as the modal leaving, not blinking out.
+      handleCloseRef.current();
     },
     [
       sessionGen,
@@ -826,7 +851,6 @@ export function TransactionProvider({
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
       if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         txHashRef.current = hash;
       }
 
@@ -892,7 +916,7 @@ export function TransactionProvider({
   );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, externalLink, currentStep, preludeSteps, gateCopy }
+    ? { config: activeConfig, txStatus, currentStep, preludeSteps, gateCopy }
     : exitingView;
 
   // The gate's prelude steps render ahead of the flow's own list. Composed at
@@ -968,7 +992,6 @@ export function TransactionProvider({
             onRetry={handleRetry}
             onBack={resetTransactionProgress}
             txStatus={modalView.txStatus}
-            externalLink={modalView.externalLink}
             confirmLabel={modalView.config.confirmLabel}
             confirmDisabled={modalView.config.confirmDisabled}
             errorMessage={modalView.config.errorMessage}

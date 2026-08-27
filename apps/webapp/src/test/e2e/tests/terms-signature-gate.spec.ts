@@ -15,6 +15,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { openSavingsSupplyConfirm } from '../utils/openSavingsSupplyConfirm';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import {
   forceAuthChecks,
   mockAddressScreening,
@@ -49,14 +50,10 @@ test('US user without a signature gets the signature step, then the transaction 
   // must not satisfy this.
   await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true }).first()).toBeVisible();
 
-  // The generic success sentence is gone — status now lives only in the
-  // status badge, which cycles "Confirm in the wallet" → "Processing" →
-  // "Success". toHaveText auto-retries, so this waits for the terminal text.
-  await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
-    timeout: 60_000
-  });
-  // The completed signature row survives into the success view.
-  await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true }).first()).toBeVisible();
+  // A confirmed transaction closes its own modal and hands the outcome to a
+  // toast, so the toast is the terminal signal — and the step rows are gone
+  // with the modal, which is why the row is asserted above and not here.
+  await expectTransactionSuccess(isolatedPage);
 });
 
 test('Rejecting the signature fails the step in place and retry recovers', async ({ isolatedPage }) => {
@@ -76,15 +73,14 @@ test('Rejecting the signature fails the step in place and retry recovers', async
   // The wallet cooperates on the second attempt; retry re-runs the whole gate.
   signControl.mode = 'sign';
   await isolatedPage.getByRole('button', { name: 'Try again' }).click();
-  await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
-    timeout: 60_000
-  });
+  await expectTransactionSuccess(isolatedPage);
 });
 
 // The two no-step verdicts share one body: an already-recorded signature and a
-// non-US non-VPN origin both mean the transaction runs untouched. The
-// assertion waits for settlement first — checking for the step's absence at
-// click-time would pass before the gate had rendered anything at all.
+// non-US non-VPN origin both mean the transaction runs untouched. Checking for
+// the step's absence at click-time would pass before the gate had rendered
+// anything at all, and checking after settlement is vacuous (success closes the
+// modal), so the two outcomes race: whichever lands first decides.
 for (const { title, setup } of [
   {
     title: 'US user already signed for the current version sees no added step',
@@ -101,9 +97,16 @@ for (const { title, setup } of [
     const confirm = await openSavingsSupplyConfirm(isolatedPage, { connect: { expectTerms: true } });
     await confirm.click();
 
-    await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
-      timeout: 60_000
-    });
-    await expect(isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true })).toHaveCount(0);
+    // Wait for whichever lands first, then take a NON-retrying count: a
+    // retrying matcher would happily wait out a step that did render, since
+    // success closes the modal and drops the count back to 0 a beat later.
+    // `.first()` on both sides keeps the race locator single-element even
+    // when both are present (strict mode).
+    const signatureStep = isolatedPage.getByText(SIGNATURE_STEP_LABEL, { exact: true });
+    const successToast = isolatedPage.getByTestId('transaction-success-toast');
+    await expect(signatureStep.first().or(successToast.first())).toBeVisible({ timeout: 60_000 });
+    expect(await signatureStep.count()).toBe(0);
+
+    await expectTransactionSuccess(isolatedPage);
   });
 }

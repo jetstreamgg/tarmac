@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { Toaster as Sonner, type ToastClassnames } from 'sonner';
 import { Failure } from '@/modules/icons';
-import { Check, Info, X } from 'lucide-react';
+import { Info, X } from 'lucide-react';
+import { ToastSuccessIcon } from '@/components/toast/ToastSuccessIcon';
 import { cn } from '@/lib/cn';
 import { useCookieConsent } from '@/modules/analytics/context/CookieConsentContext';
 
@@ -83,11 +84,7 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
       mobileOffset={{ bottom: bottomOffset }}
       closeButton={true}
       icons={{
-        success: (
-          <span className="border-statusSuccessBorder bg-statusSuccessBg text-statusSuccess flex items-center justify-center rounded-full border p-2">
-            <Check size={16} />
-          </span>
-        ),
+        success: <ToastSuccessIcon />,
         error: <Failure />,
         info: <Info size={20} className="text-textEmphasis" />,
         close: <X size={16} className="text-text" />
