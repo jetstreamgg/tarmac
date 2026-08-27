@@ -57,13 +57,14 @@ Specs: `pendle.spec.ts` · contracts `pendle-*.contract.ts` · page object `page
 | 2 | slug deep-link | `pendle-deep-link` | A-3 | Public slug route |
 | 3 | legacy address redirect | `pendle-deep-link` | A-3 | Back-compat deep link |
 | 4 | unknown slug → marketplace | `pendle-deep-link` | A-4 | G6 guard |
-| 5 | supply modal + slippage gear | `pendle-supply-flow` | A-6 | Modal opens without quote write |
+| 5 | supply modal opens | `pendle-supply-flow` | B-1 | Entry screen without quote write |
 | 6 | buy/sell write | `pendle-supply-flow` | B-2 | **skipped** — Pendle quote API + router on vnet |
 
 ### Rejections
 
 | Candidate | Why not e2e |
 | --------- | ----------- |
+| Slippage gear on review grid | Gear only mounts after Review; Review needs prepared quote (same vnet limit as B-2). `SlippageMenu.test.tsx`, `pendleSlippagePersistence.test.tsx`, `PendleModalForm.test.tsx` |
 | Slippage persistence across reload | `pendleSlippagePersistence.test.tsx` |
 | Modal validation / price impact copy | `PendleModalForm.test.tsx` |
 | Matured redeem end-to-end | Needs `evm_increaseTime`; `usePendleRedeemModal.test.tsx` |
