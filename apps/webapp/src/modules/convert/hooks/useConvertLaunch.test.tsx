@@ -166,7 +166,7 @@ describe('useConvertLaunch', () => {
       steps: [{ label: 'Convert', tokenSymbol: 'USDS', targetTokenSymbol: 'USDC' }],
       toast: {
         loading: 'Converting 100 USDS',
-        success: 'USDC converted!',
+        success: '100 USDS converted to USDC!',
         error: 'Conversion failed'
       },
       analytics: {

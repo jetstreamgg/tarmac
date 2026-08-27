@@ -16,7 +16,7 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import { familyMainnetId, isTestnetId } from '@/utils';
+import { familyMainnetId, formatBigInt, isTestnetId } from '@/utils';
 import { Intent } from '@/lib/enums';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -234,6 +234,27 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     };
   }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
 
+  // Toast headlines — without them the toast falls back to the success
+  // SUBTITLE above, a full sentence where the toast wants a label. Success
+  // names the quoted receive leg ("Claimed 1,012.30 USDS"), formatted like the
+  // review's receive row. Live like `usdValue`/`analytics` (the output token
+  // stays changeable after launch) and frozen with them once the tx leaves
+  // IDLE, so it states the quote the signed tx was built from — the app never
+  // reads the fill off the receipt, so this is the quote, not the settled amount.
+  const toast = useMemo(() => {
+    const received = quote
+      ? formatBigInt(quote.amountOut, {
+          unit: getTokenDecimals(selectedOutputToken, mainnet.id),
+          maxDecimals: 2
+        })
+      : undefined;
+    return {
+      loading: t`Claiming your matured position`,
+      success: received ? t`Claimed ${received} ${selectedOutputToken.symbol}` : t`Position claimed`,
+      error: t`Claim failed`
+    };
+  }, [quote, selectedOutputToken]);
+
   // Wrong chain: switch on click, then open — the Portfolio supply actions'
   // pattern (usePortfolioSupplyActions). The auto flags make the shell toast
   // explain the change; a rejected switch opens nothing and stays retryable.
@@ -289,16 +310,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
         success: t`You've successfully claimed your matured position.`,
         error: t`An error occurred while claiming your matured position.`
       },
-      // Short headlines for the success/minimized toast — without them it
-      // falls back to the success SUBTITLE above, a full sentence where the
-      // toast wants a label. Deliberately output-token-independent: the
-      // selection stays changeable after launch, and this copy would otherwise
-      // need pushing on every switch.
-      toast: {
-        loading: t`Claiming your matured position`,
-        success: t`Position claimed`,
-        error: t`Claim failed`
-      },
+      toast,
       transactionContent,
       errorMessage: prepareErrorMessage,
       steps,
@@ -325,7 +337,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     confirmDisabled,
     sessionId,
     analytics,
-    usdValue
+    usdValue,
+    toast
   ]);
 
   useEffect(() => {
@@ -340,7 +353,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       steps,
       confirmDisabled,
       analytics,
-      usdValue
+      usdValue,
+      toast
     });
   }, [
     isModalOpen,
@@ -352,7 +366,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     steps,
     confirmDisabled,
     analytics,
-    usdValue
+    usdValue,
+    toast
   ]);
 
   return {

@@ -64,6 +64,7 @@ const hoisted = vi.hoisted(() => ({
         steps?: string[];
         rightHeaderComponent?: unknown;
         transactionContent?: ReactNode;
+        toast?: { loading: string; success: string; error: string };
       }
     ) => void
   >(() => hoisted.onPush?.()),
@@ -205,6 +206,11 @@ const lastEntryUpdate = () => {
   const calls = hoisted.updateModalContent.mock.calls.filter(([, partial]) => partial.entry !== undefined);
   return calls.at(-1)?.[1];
 };
+
+/** The last toast titles the form pushed to the shared modal. */
+const lastToastUpdate = () =>
+  hoisted.updateModalContent.mock.calls.filter(([, partial]) => partial.toast !== undefined).at(-1)?.[1]
+    .toast;
 
 /** Renders the review-stage grid the form pushed to the shared modal. */
 const renderLastReviewContent = () => {
@@ -390,6 +396,17 @@ describe('PendleModalForm', () => {
       expect(lastEntryUpdate()?.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDG' }]);
     });
 
+    it('pushes an amount-aware success title for the toast — the input leg, not the quoted PT', () => {
+      renderForm('supply');
+      typeAmount('100');
+
+      expect(lastToastUpdate()).toEqual({
+        loading: 'Supplying 100 USDG',
+        success: '100 USDG supplied!',
+        error: 'Supply failed'
+      });
+    });
+
     it('keeps the slippage control out of the modal header — it lives in the review grid now', () => {
       renderForm('supply');
 
@@ -428,6 +445,17 @@ describe('PendleModalForm', () => {
         { label: 'Approve', tokenSymbol: 'PT-USDG' },
         { label: 'Withdraw', tokenSymbol: 'PT-USDG' }
       ]);
+    });
+
+    it('pushes an amount-aware success title for the toast — the PT sold, not the quoted receive', () => {
+      renderForm('withdraw');
+      typeAmount('200');
+
+      expect(lastToastUpdate()).toEqual({
+        loading: 'Withdrawing 200 PT-USDG',
+        success: '200 PT-USDG withdrawn!',
+        error: 'Withdrawal failed'
+      });
     });
 
     it('shows what the early sell returns and forfeits in the entry grid', () => {
