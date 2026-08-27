@@ -272,6 +272,13 @@ export type TransactionContextValue = {
   restore: () => void;
   /** Whether the modal is currently minimized (hidden but still tracking a tx). */
   isMinimized: boolean;
+  /**
+   * Called by the app shell on every route (pathname) change: closes the
+   * session unless a write is in flight, the modal is minimized, or the
+   * session was launched on the destination route itself. Modals don't
+   * survive app navigation.
+   */
+  closeOnNavigation: (pathname: string) => void;
   /** Transaction lifecycle callbacks to spread into write hooks. */
   txCallbacks: TxCallbacks;
   /**

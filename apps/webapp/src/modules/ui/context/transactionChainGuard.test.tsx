@@ -159,16 +159,18 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('guards, disables the CTA, and does NOT fire onConfirm when the wallet is on an unsupported chain', () => {
+  it('guards: the primary CTA becomes the switch action, and nothing fires onConfirm, when the wallet is on an unsupported chain', () => {
     mockChainId = 8453; // Base — not in the mainnet-only flow's supported set
     const onConfirm = vi.fn();
     renderModal(() => mainnetOnlyConfig(onConfirm));
 
     expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
-    const confirm = screen.getByRole('button', { name: 'Confirm' });
-    expect((confirm as HTMLButtonElement).disabled).toBe(true);
-    // Even a forced click can't start the transaction.
-    fireEvent.click(confirm);
+    // One CTA, not a disabled Confirm beside a switch button.
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
+    const switchBtn = screen.getByRole('button', { name: 'Switch to Ethereum' });
+    expect((switchBtn as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(switchBtn);
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
@@ -227,14 +229,43 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
       onConfirm: onReviewReached
     }));
 
-    const advance = screen.getByRole('button', { name: 'Review' });
-    expect((advance as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(advance);
+    // The advancing CTA is gone — the switch stands in its place.
+    expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
+    fireEvent.click(screen.getByTestId('transaction-chain-guard-switch'));
     // Still on the entry — the review body never mounted.
     expect(screen.queryByTestId('review-body')).toBeNull();
   });
 
-  it('also disables the secondary CTA of a two-action entry when guarded', () => {
+  it('a three-screen flow guarded on its review returns to the entry (the review was built for the old chain)', () => {
+    mockChainId = 1;
+    renderTestTree(() => ({
+      title: 'Supply (three-screen)',
+      usdValue: 0,
+      supportedChainIds: [1, 314310],
+      transactionContent: <div data-testid="review-body">review</div>,
+      entry: {
+        content: <div data-testid="entry-body">fields</div>,
+        confirmLabel: 'Review',
+        confirmDisabled: false
+      },
+      onConfirm: vi.fn()
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }));
+    expect(screen.queryByTestId('review-body')).not.toBeNull();
+
+    act(() => {
+      mockChainId = 8453;
+      forceRerender();
+    });
+
+    expect(screen.queryByTestId('review-body')).toBeNull();
+    expect(screen.queryByTestId('entry-body')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+  });
+
+  it('collapses a two-action entry to the single switch CTA when guarded', () => {
     mockChainId = 8453;
     renderModal(() => ({
       title: 'Claim & Restake',
@@ -251,10 +282,9 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
       onSecondaryConfirm: vi.fn()
     }));
 
-    expect((screen.getByRole('button', { name: 'Claim & Restake' }) as HTMLButtonElement).disabled).toBe(
-      true
-    );
-    expect((screen.getByRole('button', { name: 'Claim' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Claim & Restake' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Claim' })).toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
   });
 
   it('an empty supportedChainIds opts out of the guard (chain-agnostic flows)', () => {
@@ -288,8 +318,8 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     });
 
     expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
-    expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
@@ -317,18 +347,19 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
       forceRerender();
     });
 
-    // Retry would rebuild the calldata against Base: held, and the guard says why.
+    // Retry would rebuild the calldata against Base: replaced by the switch,
+    // and the guard says why.
     expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
-    expect((screen.getByRole('button', { name: 'Retry' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
     expect(onConfirm).toHaveBeenCalledTimes(1);
 
     // Back reaches the entry at ERROR (it never resets the status) — still
     // guarded. The footer's Back is the last one (the header carries its own).
     fireEvent.click(screen.getAllByRole('button', { name: 'Back' }).at(-1)!);
     expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
-    expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
@@ -358,7 +389,7 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     // first screen, guarded, with the switch offered.
     expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
     expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
-    expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
   });
 
   it('a guarded two-action entry shows no loading spinner while screening is pending, and the screening is told nothing is actionable', () => {
@@ -386,16 +417,70 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
       { usePreflight }
     );
 
-    const secondary = screen.getByRole('button', { name: 'Claim' }) as HTMLButtonElement;
-    expect(secondary.disabled).toBe(true);
-    // Disabled by the guard, not "loading": no dots loader inside the CTA.
-    expect(secondary.querySelector('[data-testid="loader"]')).toBeNull();
+    // The flow's CTAs are replaced by the switch; the screening's pending
+    // state must not leak a dots loader into it.
+    expect(screen.queryByRole('button', { name: 'Claim' })).toBeNull();
+    const switchBtn = screen.getByTestId('transaction-chain-guard-switch');
+    expect(switchBtn.querySelector('[data-testid="loader"]')).toBeNull();
+    expect((switchBtn as HTMLButtonElement).disabled).toBe(false);
     // The guard is folded into `actionable`, so no screening call is spent on
     // a transaction that cannot fire (only the live session's reads count —
     // before launch there is no config to guard).
     const live = contexts.filter(c => c.active);
     expect(live.length).toBeGreaterThan(0);
     expect(live.every(c => c.actionable === false)).toBe(true);
+  });
+});
+
+// Modals don't survive app navigation: the shell reports every pathname change
+// and the provider closes the session unless something is at stake.
+describe('TransactionProvider — idle sessions close on navigation', () => {
+  // happy-dom's location: the pathname `launch` records for the session.
+  const launchedAt = () => window.location.pathname;
+
+  it('closes an idle session when the route changes', () => {
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(() => mainnetOnlyConfig(vi.fn()), { onReady: a => (api = a) });
+    expect(api.isModalOpen).toBe(true);
+
+    act(() => api.closeOnNavigation('/portfolio'));
+    expect(api.isModalOpen).toBe(false);
+  });
+
+  it('keeps a session the destination page itself launched (same pathname)', () => {
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(() => mainnetOnlyConfig(vi.fn()), { onReady: a => (api = a) });
+
+    act(() => api.closeOnNavigation(launchedAt()));
+    expect(api.isModalOpen).toBe(true);
+  });
+
+  it('keeps an in-flight session (the wallet prompt / broadcast must settle)', () => {
+    let api!: ReturnType<typeof useTransaction>;
+    let cb!: TxCallbacks;
+    renderTestTree(
+      liveCb => {
+        cb = liveCb;
+        return mainnetOnlyConfig(vi.fn());
+      },
+      { onReady: a => (api = a) }
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    act(() => cb.onMutate());
+
+    act(() => api.closeOnNavigation('/portfolio'));
+    expect(api.isModalOpen).toBe(true);
+  });
+
+  it('keeps a minimized session (minimize exists to move around the app)', () => {
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(() => mainnetOnlyConfig(vi.fn()), { onReady: a => (api = a) });
+    act(() => api.minimize());
+    expect(api.isMinimized).toBe(true);
+
+    act(() => api.closeOnNavigation('/portfolio'));
+    expect(api.isModalOpen).toBe(true);
+    expect(api.isMinimized).toBe(true);
   });
 });
 
@@ -406,7 +491,11 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
 // here (not via `children`) so bumping state actually re-invokes it.
 let forceRerender: () => void = () => {};
 
-type ProviderOptions = { gate?: PreTransactionGate; usePreflight?: PreflightHook };
+type ProviderOptions = {
+  gate?: PreTransactionGate;
+  usePreflight?: PreflightHook;
+  onReady?: (api: ReturnType<typeof useTransaction>) => void;
+};
 
 function RerenderHost({
   build,
@@ -423,7 +512,7 @@ function RerenderHost({
   }, []);
   return (
     <TransactionProvider gate={options?.gate} usePreflight={options?.usePreflight}>
-      <Harness build={build} onReady={() => {}} />
+      <Harness build={build} onReady={options?.onReady ?? (() => {})} />
     </TransactionProvider>
   );
 }

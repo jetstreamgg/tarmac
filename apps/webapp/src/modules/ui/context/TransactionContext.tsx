@@ -161,6 +161,15 @@ export function TransactionProvider({
   // Minimized = modal hidden but the transaction keeps running. Distinct from
   // closed (which tears the transaction down); see minimize()/restore() below.
   const [minimized, setMinimized] = useState(false);
+  // Ref twin of `minimized`, written in the same callbacks that set the state,
+  // so closeOnNavigation (called from a route effect) reads the live value.
+  const minimizedRef = useRef(false);
+  // Where the session was launched (window.location — the provider sits above
+  // the router). A route change closes an idle session, but never one the
+  // destination page itself just opened: a page that launches on mount does so
+  // in a child effect, i.e. AFTER the router committed the new location and
+  // BEFORE the shell's route effect asks us to close.
+  const launchPathnameRef = useRef<string | null>(null);
   // The entry-screen portal target, registered by the modal (see EntrySlotContext).
   const [entrySlotEl, setEntrySlotEl] = useState<HTMLElement | null>(null);
   // Bumped on every launch and used as the modal + host `key`, so each launch gets a
@@ -263,7 +272,7 @@ export function TransactionProvider({
   }, [chainId]);
   const { address } = useConnection();
   const chains = useChains();
-  const { handleSwitchChain } = useChainModalContext();
+  const { handleSwitchChain, isPending: switchPending, variables: switchVariables } = useChainModalContext();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
@@ -391,6 +400,8 @@ export function TransactionProvider({
       flowIdRef.current = getFlowId();
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
+      launchPathnameRef.current = window.location.pathname;
+      minimizedRef.current = false;
       setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
       txStatusRef.current = TxStatus.IDLE;
@@ -503,6 +514,7 @@ export function TransactionProvider({
     setSessionGen(sessionGenRef.current);
     setOpen(false);
     setMinimized(false);
+    minimizedRef.current = false;
     setTxStatus(TxStatus.IDLE);
     txStatusRef.current = TxStatus.IDLE;
     setCurrentStep(0);
@@ -523,6 +535,26 @@ export function TransactionProvider({
     handleCloseRef.current = handleClose;
   });
 
+  // A modal does not survive app navigation (APP-528 follow-up): the provider
+  // is mounted above the router, so a route change under an open modal — the
+  // mainnet-only page redirecting home after a wallet chain switch, the browser
+  // back button — used to leave the modal floating over a page that no longer
+  // owns it. The shell calls this on every pathname change. It ends a session
+  // only when nothing is at stake: not while a write is in flight (INITIALIZED
+  // / LOADING — the wallet prompt or the broadcast must settle), not while
+  // minimized (minimize exists precisely so the user can move around the app
+  // with the transaction running), and never for a session launched on the
+  // destination route itself. Stable: the caller keys its effect on the
+  // pathname alone, so this must not change identity as the session does.
+  const closeOnNavigation = useCallback((pathname: string) => {
+    if (!configRef.current) return;
+    if (launchPathnameRef.current === pathname) return;
+    if (minimizedRef.current) return;
+    const status = txStatusRef.current;
+    if (status === TxStatus.INITIALIZED || status === TxStatus.LOADING) return;
+    handleCloseRef.current();
+  }, []);
+
   // The modal's back-to-first-screen action, registered while it is mounted
   // (the screen is modal-internal state the provider can't reach otherwise).
   // Driven by the gate's returnToFirstScreen control on an enhanced-screening
@@ -539,8 +571,14 @@ export function TransactionProvider({
   // Hide the modal without ending the transaction. Unlike handleClose this keeps
   // activeConfig + txStatus intact (and fires no 'cancelled' analytics), so the
   // engine hook keeps running and restore() re-shows the modal mid-flight.
-  const minimize = useCallback(() => setMinimized(true), []);
-  const restore = useCallback(() => setMinimized(false), []);
+  const minimize = useCallback(() => {
+    minimizedRef.current = true;
+    setMinimized(true);
+  }, []);
+  const restore = useCallback(() => {
+    minimizedRef.current = false;
+    setMinimized(false);
+  }, []);
 
   // While minimized the modal is hidden, so surface the transaction's progress as a
   // toast (syncing with the toast system — a legitimate external-system effect). A
@@ -1000,7 +1038,10 @@ export function TransactionProvider({
     ? {
         currentName: chains.find(c => c.id === chainId)?.name,
         targetName: guardTargetName,
-        onSwitch: guardCanSwitch ? switchGuardChain : undefined
+        onSwitch: guardCanSwitch ? switchGuardChain : undefined,
+        // The guard's CTA shows the DS loading state while the wallet is
+        // answering OUR switch request (not some other surface's).
+        switching: switchPending && switchVariables?.chainId === guardTargetChainId
       }
     : null;
 
@@ -1025,10 +1066,11 @@ export function TransactionProvider({
       minimize,
       restore,
       isMinimized: minimized,
+      closeOnNavigation,
       txCallbacks,
       txStatus
     }),
-    [launch, updateModalContent, open, minimize, restore, minimized, txCallbacks, txStatus]
+    [launch, updateModalContent, open, minimize, restore, minimized, closeOnNavigation, txCallbacks, txStatus]
   );
 
   return (
