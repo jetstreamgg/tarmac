@@ -51,7 +51,7 @@ export default defineConfig({
   ],
   // Run your local dev server before starting the tests.
   webServer: {
-    command: 'VITE_SKIP_AUTH_CHECK=true pnpm dev:mock',
+    command: 'pnpm dev:mock',
     //running dev:mock is faster, but building and serving like below more closely mimics the production environment
     //command: 'pnpm build:mock && pnpm exec serve dist -sL -p 3000',
     port: 3000,

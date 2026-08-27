@@ -17,7 +17,7 @@ import {
 } from '../utils/rejectTransaction';
 
 // With: USDS Get: SPK — usdsSpkRewardAddress on the tenderly fork
-import { SPK_REWARD_CONTRACT } from '../utils/rewardsE2e';
+const SPK_REWARD_CONTRACT = '0x173e314C7635B45322cd8Cb14f44b312e079F3af';
 
 const connectOn = async (page: Page, path: string) => {
   // Connect AFTER the goto — a full navigation resets the mock connector.

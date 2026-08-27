@@ -1,21 +1,41 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
-import { ConvertPage } from '../pages/ConvertPage';
 import { connectAndVerify } from '../utils/connectAndVerify';
+import { switchWalletNetwork } from '../utils/switchWalletNetwork';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction';
 import { NetworkName } from '../utils/constants';
 
-// V2 rewrite (see convert/QA-CASES.md §3): the PSM flow IS the /convert page
+// V2 rewrite (see e2e-migration.md): the PSM flow IS the /convert page now
 // (page-as-widget, E2). The form lives on the page (`convert-*` testids), and
 // Review launches the shared TransactionModal ("Review conversion" → Confirm →
 // step list → success). Default direction is USDS → USDC; `convert-flip` (or
 // `?source_token=`) switches it. The engine routes mainnet (UsdsPsmWrapper)
 // vs L2 (PSM3 swapExactIn) internally, so the same tests run on every network.
 
-const openConvert = async (page: Page, networkName: NetworkName) => {
-  const convert = new ConvertPage(page);
-  await convert.gotoConnected(networkName);
-  return convert;
+const navigateToConvert = async (page: Page, networkName: NetworkName, options?: { batch?: boolean }) => {
+  const { batch = true } = options || {};
+  // Connect AFTER the goto — a full navigation resets the mock connector.
+  await page.goto('/convert');
+  await connectAndVerify(page, { batch });
+  if (networkName !== NetworkName.mainnet) {
+    await switchWalletNetwork(page, `Tenderly ${networkName}`);
+  }
+  await expect(page.getByTestId('convert-page')).toBeVisible();
+};
+
+/** Clicks Review, confirms in the modal and waits for the success status. */
+const reviewAndConfirm = async (page: Page) => {
+  await page.getByTestId('convert-review-cta').click();
+  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
+  await confirm.click();
+  // The old generic success sentence is gone — status now lives only in the
+  // status badge (`data-testid="transaction-status-badge"`), which cycles through
+  // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
+  // so this waits for the terminal text rather than whatever the badge reads first.
+  await expect(page.getByTestId('transaction-status-badge')).toHaveText('Success', {
+    timeout: 60_000
+  });
 };
 
 /**
@@ -45,37 +65,37 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Navigation & UI', () => {
     test('The /convert destination shows the swap surface', async ({ isolatedPage }) => {
-      const convert = await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await expect(isolatedPage.getByRole('heading', { name: 'Convert stablecoins' })).toBeVisible();
-      await expect(convert.card()).toBeVisible();
-      await expect(convert.network()).toBeVisible();
+      await expect(isolatedPage.getByTestId('convert-card')).toBeVisible();
+      await expect(isolatedPage.getByTestId('convert-network')).toBeVisible();
     });
 
     test('Review is disabled when no amount is entered', async ({ isolatedPage }) => {
-      const convert = await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
-      const reviewCta = convert.reviewCta();
+      const reviewCta = isolatedPage.getByTestId('convert-review-cta');
       await expect(reviewCta).toHaveText('Review');
       await expect(reviewCta).toBeDisabled();
     });
 
     test('Shows from and to inputs with the default USDS → USDC direction', async ({ isolatedPage }) => {
-      const convert = await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
-      await expect(convert.fromToken()).toContainText('USDS');
-      await expect(convert.toToken()).toContainText('USDC');
-      await expect(convert.fromAmount()).toBeEditable();
-      await expect(convert.toAmount()).not.toBeEditable();
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
+      await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDC');
+      await expect(isolatedPage.getByTestId('convert-from-amount')).toBeEditable();
+      await expect(isolatedPage.getByTestId('convert-to-amount')).not.toBeEditable();
     });
 
     test('Shows wallet balances when connected', async ({ isolatedPage }) => {
-      const convert = await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       // Funded pool accounts hold both tokens — the balance line must show a
       // number, not the "–" placeholder.
-      await expect(convert.fromBalance()).toHaveText(/Balance: [\d,.]+/);
-      await expect(convert.toBalance()).toHaveText(/Balance: [\d,.]+/);
+      await expect(isolatedPage.getByTestId('convert-from-balance')).toHaveText(/Balance: [\d,.]+/);
+      await expect(isolatedPage.getByTestId('convert-to-balance')).toHaveText(/Balance: [\d,.]+/);
     });
   });
 
@@ -85,7 +105,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Amount entry', () => {
     test('Entering an amount enables the Review button', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('10');
 
@@ -93,7 +113,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('Target amount mirrors origin amount 1:1', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('225');
 
@@ -101,7 +121,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('Percentage buttons set correct amounts', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-percent-100').click();
 
@@ -112,7 +132,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('Shows "Insufficient funds" when amount exceeds balance', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('999999999');
 
@@ -121,7 +141,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('Clearing the amount disables Review again', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('100');
       await expect(isolatedPage.getByTestId('convert-review-cta')).toBeEnabled();
@@ -138,7 +158,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Direction switching', () => {
     test('Flip changes USDS→USDC to USDC→USDS', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
       await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDC');
@@ -150,7 +170,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('Flip preserves the typed amount', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('50');
       await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveValue('50');
@@ -161,7 +181,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('Double flip returns to the original direction', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
 
@@ -179,7 +199,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Review modal', () => {
     test('Review modal shows the conversion breakdown', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('225');
       await isolatedPage.getByTestId('convert-review-cta').click();
@@ -193,7 +213,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('Review modal shows the breakdown for the flipped direction', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-flip').click();
       await isolatedPage.getByTestId('convert-from-amount').fill('100');
@@ -204,7 +224,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('Closing the review modal returns to the editable form', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('100');
       await isolatedPage.getByTestId('convert-review-cta').click();
@@ -223,10 +243,10 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Bundled transaction', () => {
     test('USDS to USDC bundled conversion completes successfully', async ({ isolatedPage }) => {
-      const convert = await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
-      await convert.reviewAndConfirm();
+      await reviewAndConfirm(isolatedPage);
 
       await expect(isolatedPage.getByText("You've successfully converted 5 USDS to USDC.")).toBeVisible();
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
@@ -237,21 +257,21 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     });
 
     test('USDC to USDS bundled conversion completes successfully', async ({ isolatedPage }) => {
-      const convert = await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-flip').click();
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
-      await convert.reviewAndConfirm();
+      await reviewAndConfirm(isolatedPage);
 
       await expect(isolatedPage.getByText("You've successfully converted 5 USDC to USDS.")).toBeVisible();
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });
 
     test('Transaction screen shows the approve and convert steps', async ({ isolatedPage }) => {
-      const convert = await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
-      await convert.reviewAndConfirm();
+      await reviewAndConfirm(isolatedPage);
 
       // The DS step list renders on the wallet/status screen and persists
       // through success (all steps completed).
@@ -267,7 +287,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Sequential transaction', () => {
     test('Conversion with bundling toggled off completes in two steps', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await isolatedPage.getByTestId('convert-review-cta').click();
@@ -302,7 +322,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Error handling', () => {
     test('Rejected transaction shows the error state with Back and Retry', async ({ isolatedPage }) => {
-      await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await isolatedPage.getByTestId('convert-review-cta').click();
@@ -356,18 +376,18 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   test.describe('PSM Conversion — Round-trip', () => {
     test('Convert USDS to USDC, then USDC back to USDS', async ({ isolatedPage }) => {
-      const convert = await openConvert(isolatedPage, networkName);
+      await navigateToConvert(isolatedPage, networkName);
 
       // USDS → USDC
       await isolatedPage.getByTestId('convert-from-amount').fill('3');
-      await convert.reviewAndConfirm();
+      await reviewAndConfirm(isolatedPage);
       await expect(isolatedPage.getByText("You've successfully converted 3 USDS to USDC.")).toBeVisible();
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
 
       // USDC → USDS
       await isolatedPage.getByTestId('convert-flip').click();
       await isolatedPage.getByTestId('convert-from-amount').fill('3');
-      await convert.reviewAndConfirm();
+      await reviewAndConfirm(isolatedPage);
       await expect(isolatedPage.getByText("You've successfully converted 3 USDC to USDS.")).toBeVisible();
       await isolatedPage.getByRole('button', { name: 'Done' }).click();
     });

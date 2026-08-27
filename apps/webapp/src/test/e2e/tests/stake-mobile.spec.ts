@@ -30,9 +30,6 @@ test.beforeEach(async ({ isolatedPage }) => {
   // visitors (APP-295), where the mock-mode topbar (two extra mock connect
   // buttons) overflows the 393px viewport and the tap can't land.
   await isolatedPage.goto('/portfolio');
-  await isolatedPage.evaluate(() => {
-    localStorage.setItem('governance-migration-notice-shown', 'true');
-  });
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
 });
@@ -63,19 +60,13 @@ test('mobile takeover renders the full-overlay comp presentation', async ({ isol
   await isolatedPage.getByTestId('stake-takeover-borrow-card-toggle').click();
   await expect(isolatedPage.getByTestId('stake-takeover-min-stake')).toBeVisible({ timeout: 30_000 });
 
-  // Enable Delegate so the overlay is at its tallest. TakeoverShell scrolls the
-  // footer with the card column (not a sticky bar — see TakeoverShell.tsx), so
-  // scroll to the footer before asserting the Confirm CTA is reachable.
+  // Enable Delegate so the overlay is at its tallest, then check the footer
+  // stays pinned: Confirm is inside the viewport without scrolling.
   await isolatedPage.getByTestId('stake-takeover-delegate-card-toggle').click();
   await expect(isolatedPage.getByTestId('stake-takeover-delegate-list')).toBeVisible({ timeout: 15_000 });
-  const scrollArea = takeover.locator('.flex-1.overflow-y-auto');
-  await scrollArea.evaluate(el => {
-    el.scrollTop = el.scrollHeight;
-  });
-  const confirm = isolatedPage.getByTestId('stake-takeover-confirm');
-  await expect(confirm).toBeInViewport();
-  const confirmBox = await confirm.boundingBox();
+  const confirmBox = await isolatedPage.getByTestId('stake-takeover-confirm').boundingBox();
   expect(confirmBox).not.toBeNull();
+  expect(confirmBox!.y + confirmBox!.height).toBeLessThanOrEqual(MOBILE_VIEWPORT.height);
   // Comp footer CTA is the 48px L button (desktop keeps the 56px XL).
   expect(confirmBox!.height).toBe(48);
 });

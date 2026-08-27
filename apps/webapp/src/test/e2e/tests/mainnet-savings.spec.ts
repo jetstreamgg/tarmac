@@ -1,63 +1,107 @@
+import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
-import { SavingsProductPage } from '../pages/SavingsProductPage';
+import { connectAndVerify } from '../utils/connectAndVerify';
 
-// V2 rewrite: mainnet savings on /earn/savings. See savings/QA-CASES.md §3.
+// V2 rewrite (see e2e-migration.md): mainnet savings on the /earn/savings
+// product page. Supply/withdraw run through the editable savings modal
+// (`savings-modal-*`); mainnet origins are USDS and DAI (a DAI supply routes
+// through the upgrade+supply bundle inside the same flow).
+
+const navigateToSavings = async (page: Page) => {
+  // Connect AFTER the goto — a full navigation resets the mock connector.
+  await page.goto('/earn/savings');
+  await connectAndVerify(page, { batch: true });
+  await expect(
+    page.getByTestId('savings-supply-card').or(page.getByTestId('savings-position-card'))
+  ).toBeVisible({ timeout: 15_000 });
+};
+
+const openSupplyModal = async (page: Page) => {
+  // Whichever card the account shows (position vs no-position) — wait for
+  // either supply trigger instead of racing a fixed-timeout probe.
+  await page
+    .getByTestId('savings-position-supply')
+    .or(page.getByTestId('savings-supply-cta'))
+    .first()
+    .click();
+  await expect(page.getByText('Supply to Sky Savings')).toBeVisible();
+};
+
+/** Clicks Review, confirms in the modal and waits for the success status. */
+const reviewAndConfirm = async (page: Page) => {
+  await page.getByText('Review').first().click();
+  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
+  await confirm.click();
+  // The old generic success sentence is gone — status now lives only in the
+  // status badge (`data-testid="transaction-status-badge"`), which cycles through
+  // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
+  // so this waits for the terminal text rather than whatever the badge reads first.
+  await expect(page.getByTestId('transaction-status-badge')).toHaveText('Success', {
+    timeout: 60_000
+  });
+  await page.getByText('Done').first().click();
+};
 
 test('Savings product page renders the chart, details and transactions', async ({ isolatedPage }) => {
-  const savings = new SavingsProductPage(isolatedPage);
-  await savings.gotoConnected();
-  await savings.expectReadOnlyShell();
+  await navigateToSavings(isolatedPage);
+
+  await expect(isolatedPage.getByTestId('savings-detail-chart')).toBeVisible();
+  await expect(isolatedPage.getByTestId('savings-transactions')).toBeVisible();
 });
 
 test('Supply modal validates the amount before enabling Supply', async ({ isolatedPage }) => {
-  const savings = new SavingsProductPage(isolatedPage);
-  await savings.gotoConnected();
-  await savings.openSupplyModal();
+  await navigateToSavings(isolatedPage);
+  await openSupplyModal(isolatedPage);
 
-  const review = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Review', exact: true });
-  await expect(review).toBeDisabled();
+  const confirm = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Review', exact: true });
+  await expect(confirm).toBeDisabled();
 
-  await savings.fillAmount('999999999');
-  await expect(savings.amountError()).toHaveText('Insufficient balance');
-  await expect(review).toBeDisabled();
+  // Over-balance shows the inline error and keeps Supply disabled
+  await isolatedPage.getByTestId('savings-modal-amount-input').fill('999999999');
+  await expect(isolatedPage.getByTestId('savings-modal-amount-error')).toHaveText('Insufficient balance');
+  await expect(confirm).toBeDisabled();
 
-  await savings.fillAmount('10');
-  await expect(savings.amountError()).not.toBeVisible();
+  // A valid amount clears the error and shows the before→after breakdown
+  await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
+  await expect(isolatedPage.getByTestId('savings-modal-amount-error')).not.toBeVisible();
   await expect(isolatedPage.getByTestId('savings-modal-row-Supply')).toBeVisible();
-  await expect(review).toBeEnabled({ timeout: 60_000 });
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
 });
 
 test('Max fills the full wallet balance', async ({ isolatedPage }) => {
-  const savings = new SavingsProductPage(isolatedPage);
-  await savings.gotoConnected();
-  await savings.openSupplyModal();
+  await navigateToSavings(isolatedPage);
+  await openSupplyModal(isolatedPage);
 
-  await savings.amountMax().click();
-  const value = await savings.amountInput().inputValue();
+  await isolatedPage.getByTestId('savings-modal-amount-max').click();
+
+  const value = await isolatedPage.getByTestId('savings-modal-amount-input').inputValue();
   expect(parseFloat(value)).toBeGreaterThan(0);
 });
 
 test('Supplies USDS and withdraws it back', async ({ isolatedPage }) => {
-  const savings = new SavingsProductPage(isolatedPage);
-  await savings.gotoConnected();
+  await navigateToSavings(isolatedPage);
 
-  await savings.openSupplyModal();
-  await savings.fillAmount('10');
-  await savings.reviewAndConfirm();
+  await openSupplyModal(isolatedPage);
+  await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
+  await reviewAndConfirm(isolatedPage);
 
-  await expect(savings.positionCard()).toBeVisible({ timeout: 15_000 });
+  // The position card replaces the supply CTA once a position exists
+  await expect(isolatedPage.getByTestId('savings-position-card')).toBeVisible({ timeout: 15_000 });
 
-  await savings.openWithdrawModal();
-  await savings.fillAmount('9');
-  await savings.reviewAndConfirm();
+  await isolatedPage.getByTestId('savings-position-withdraw').click();
+  await expect(isolatedPage.getByText('Withdraw from Sky Savings')).toBeVisible();
+  // Withdraw 9, not 10 — rounding can leave less than the full supply
+  await isolatedPage.getByTestId('savings-modal-amount-input').fill('9');
+  await reviewAndConfirm(isolatedPage);
 });
 
 test('Supplies DAI through the upgrade-and-supply bundle', async ({ isolatedPage }) => {
-  const savings = new SavingsProductPage(isolatedPage);
-  await savings.gotoConnected();
+  await navigateToSavings(isolatedPage);
 
-  await savings.openSupplyModal();
-  await savings.selectOrigin('DAI');
-  await savings.fillAmount('10');
-  await savings.reviewAndConfirm();
+  await openSupplyModal(isolatedPage);
+  await isolatedPage.getByTestId('savings-origin-select').click();
+  await isolatedPage.getByTestId('savings-origin-dai').click();
+  await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
+  await reviewAndConfirm(isolatedPage);
 });
