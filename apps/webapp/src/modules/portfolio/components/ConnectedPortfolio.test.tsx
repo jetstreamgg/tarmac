@@ -54,6 +54,7 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn()
 }));
 vi.mock('@/hooks', () => ({
+  useNetworkFilter: () => ({ chainId: null, setChainId: vi.fn(), supportedChainIds: [1, 8453] }),
   useEarnMarketplace: () => h.marketplace,
   useOverallSkyData: () => ({ data: h.skyData.data, isLoading: h.skyData.isLoading }),
   isPendleChain: (id: number) => id === 1

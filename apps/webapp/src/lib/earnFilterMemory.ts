@@ -16,8 +16,11 @@ import { QueryParams } from '@/lib/constants';
 
 const STORAGE_KEY = 'earnFilterSearch';
 
-/** Only the URL-driven filters; `risk` is a localStorage preference and survives on its own. */
-const FILTER_PARAMS: string[] = [QueryParams.Token, QueryParams.Chain, QueryParams.Product];
+/**
+ * Only the URL-driven filters; `risk` and the app-wide network filter are
+ * stored preferences and survive on their own.
+ */
+const FILTER_PARAMS: string[] = [QueryParams.Token, QueryParams.Product];
 
 export type EarnFilterSearch = Record<string, string>;
 

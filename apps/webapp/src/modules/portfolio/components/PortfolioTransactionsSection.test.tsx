@@ -13,6 +13,9 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
+    // The network filter is the app-wide one now, so the toolbar reads the
+    // connected chain to decide which family it offers.
+    useChainId: () => 1,
     useChains: () => [
       { id: 1, name: 'Ethereum' },
       { id: 8453, name: 'Base' }

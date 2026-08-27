@@ -45,10 +45,8 @@ const ROWS: EarnProductRow[] = [
   row({ id: 'rewards-cle', kind: 'rewards', name: 'Chronicle Points', tokenSymbol: 'USDS' })
 ];
 
-const SLUGS: Record<number, string> = { 1: 'ethereum', 8453: 'base' };
-
 describe('sanitizeFilters', () => {
-  const valid = { networks: ['ethereum', 'base'], stablecoins: ['usds', 'usdt'], products: ['savings'] };
+  const valid = { stablecoins: ['usds', 'usdt'], products: ['savings'] };
 
   it('returns defaults for malformed input', () => {
     expect(sanitizeFilters(null, valid)).toEqual(DEFAULT_FILTERS);
@@ -58,33 +56,38 @@ describe('sanitizeFilters', () => {
   it('drops values the table no longer offers', () => {
     expect(
       sanitizeFilters(
-        { risk: ['advanced', 'bogus'], network: 'polygon', stablecoin: 'usdt', product: 'retired' },
+        { risk: ['advanced', 'bogus'], network: 8453, stablecoin: 'usdt', product: 'retired' },
         valid
       )
-    ).toEqual({ risk: ['advanced'], network: 'all', stablecoin: 'usdt', product: 'all' });
+    ).toEqual({ risk: ['advanced'], network: 8453, stablecoin: 'usdt', product: 'all' });
+  });
+
+  it('reads a non-numeric network as "All networks"', () => {
+    // Legacy storage held the chain slug; the filter is a chain id now.
+    expect(sanitizeFilters({ network: 'ethereum' }, valid).network).toBeNull();
   });
 });
 
 describe('filterEarnRows', () => {
   it('shows every tier when no risk tier is selected', () => {
-    expect(filterEarnRows(ROWS, DEFAULT_FILTERS, SLUGS)).toHaveLength(ROWS.length);
+    expect(filterEarnRows(ROWS, DEFAULT_FILTERS)).toHaveLength(ROWS.length);
   });
 
   it('filters by selected risk tiers', () => {
-    const visible = filterEarnRows(ROWS, { ...DEFAULT_FILTERS, risk: ['advanced'] }, SLUGS);
+    const visible = filterEarnRows(ROWS, { ...DEFAULT_FILTERS, risk: ['advanced'] });
     expect(visible.map(r => r.id)).toEqual(['stusds']);
   });
 
   it('filters by network membership', () => {
-    const visible = filterEarnRows(ROWS, { ...DEFAULT_FILTERS, network: 'base' }, SLUGS);
+    const visible = filterEarnRows(ROWS, { ...DEFAULT_FILTERS, network: 8453 });
     expect(visible.map(r => r.id)).toEqual(['savings']);
   });
 
   it('filters by supply token and product kind', () => {
-    expect(filterEarnRows(ROWS, { ...DEFAULT_FILTERS, stablecoin: 'usdt' }, SLUGS).map(r => r.id)).toEqual([
+    expect(filterEarnRows(ROWS, { ...DEFAULT_FILTERS, stablecoin: 'usdt' }).map(r => r.id)).toEqual([
       'vault-morpho-0xa'
     ]);
-    expect(filterEarnRows(ROWS, { ...DEFAULT_FILTERS, product: 'rewards' }, SLUGS).map(r => r.id)).toEqual([
+    expect(filterEarnRows(ROWS, { ...DEFAULT_FILTERS, product: 'rewards' }).map(r => r.id)).toEqual([
       'rewards-cle'
     ]);
   });
