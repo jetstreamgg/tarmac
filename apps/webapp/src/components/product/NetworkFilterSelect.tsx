@@ -40,24 +40,20 @@ export function NetworkFilterSelect({
   const chains = useChains();
   const { chainId, setChainId, supportedChainIds } = useNetworkFilter();
 
-  const iconSize = size === 'm' ? 'h-6 w-6' : 'h-4 w-4';
-  const chainName = (id: number) => chains.find(chain => chain.id === id)?.name ?? `Chain ${id}`;
-
-  const options: FilterOption[] = useMemo(
-    () =>
-      supportedChainIds.map(id => ({
-        value: String(id),
-        label: (
-          <span className={cn('flex items-center', size === 'm' ? 'gap-2' : 'gap-1.5')}>
-            <span className={cn('flex shrink-0', iconSize)}>{getChainIcon(id, 'h-full w-full')}</span>
-            {chainName(id)}
-          </span>
-        )
-      })),
-    // `chains` is the wagmi config's stable chain list; naming it keeps the
-    // labels correct if a config swap ever renames one (dev's "Tenderly …").
-    [supportedChainIds, chains, size]
-  );
+  const options: FilterOption[] = useMemo(() => {
+    const iconSize = size === 'm' ? 'h-6 w-6' : 'h-4 w-4';
+    return supportedChainIds.map(id => ({
+      value: String(id),
+      label: (
+        <span className={cn('flex items-center', size === 'm' ? 'gap-2' : 'gap-1.5')}>
+          <span className={cn('flex shrink-0', iconSize)}>{getChainIcon(id, 'h-full w-full')}</span>
+          {/* Named from the wagmi config, not the static map, so a config swap
+              that renames a chain (dev's "Tenderly …") stays correct. */}
+          {chains.find(chain => chain.id === id)?.name ?? `Chain ${id}`}
+        </span>
+      )
+    }));
+  }, [supportedChainIds, chains, size]);
 
   // The stack is decoration on an "All networks" label, so it shows the
   // leading three chains rather than every supported one (Figma 2376:225130,

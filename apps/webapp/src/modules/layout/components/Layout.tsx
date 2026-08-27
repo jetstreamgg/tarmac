@@ -2,11 +2,8 @@ import React, { useContext } from 'react';
 import { ConfigContext } from '../../config/context/ConfigContext';
 import { ErrorBoundary } from './ErrorBoundary';
 import { InsideLayoutContext } from './InsideLayoutContext';
-import { useConnection } from 'wagmi';
 import { AuthWrapper } from './AuthWrapper';
 import { VStack } from './VStack';
-import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { UnsupportedNetworkPage } from './UnsupportedNetworkPage';
 import { Text } from '@/modules/layout/components/Typography';
 import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
 import { Banner } from '@/components/extensible';
@@ -28,8 +25,6 @@ export function Layout({
   metaDescription?: string;
 }): React.ReactElement {
   const { siteConfig } = useContext(ConfigContext);
-  const { chain } = useConnection();
-  const { isConnectedAndAcceptedTerms } = useConnectedContext();
   // First-visit loader (APP-419): while it covers, the chrome and content
   // wear opacity-0 and the logomark overlay plays; on reveal they run their
   // one-shot entrances. `off` leaves every className exactly as it was. On a
@@ -100,11 +95,14 @@ export function Layout({
             )}
           >
             <ErrorBoundary>
-              {isConnectedAndAcceptedTerms && !chain ? (
-                <UnsupportedNetworkPage>{children}</UnsupportedNetworkPage>
-              ) : (
-                <AuthWrapper>{children}</AuthWrapper>
-              )}
+              {/* A wallet on a chain the app doesn't configure used to raise a
+                blocking dialog here. It no longer does: wagmi pins its chainId
+                to the last configured chain, so every read still resolves and
+                the page renders correctly — and the route's chain resolution
+                (getRouteChainAction rule c) switches the wallet back on the
+                user's behalf. If they decline, the transaction modal's chain
+                guard is what stops a transaction, where it actually matters. */}
+              <AuthWrapper>{children}</AuthWrapper>
             </ErrorBoundary>
 
             <ErrorBoundary variant="small">

@@ -19,6 +19,9 @@ import type { PreflightHook, PreTransactionGate } from './preTransactionGate';
 // wagmi mock reads through these — vi.mock is hoisted, so a plain closure over
 // module-level `let`s is the way to vary a mocked hook per test.
 let mockChainId = 1;
+// The wallet's own chain, which differs from wagmi's `useChainId()` only when
+// the wallet has left the app's configured set. undefined = the two agree.
+let mockConnectedChainId: number | undefined;
 const mockChains = [
   { id: 1, name: 'Ethereum' },
   { id: 8453, name: 'Base' },
@@ -29,7 +32,11 @@ vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => mockChainId,
   useChains: () => mockChains,
-  useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
+  useConnection: () => ({
+    address: '0x0000000000000000000000000000000000000001',
+    chainId: mockConnectedChainId,
+    isConnected: true
+  })
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
@@ -141,6 +148,7 @@ const mainnetOnlyConfig = (onConfirm: () => void): TransactionConfig => ({
 
 afterEach(() => {
   mockChainId = 1;
+  mockConnectedChainId = undefined;
   mockIsSafeWallet = false;
   mockHandleSwitchChain.mockReset();
   vi.clearAllMocks();
@@ -171,6 +179,26 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect((switchBtn as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(switchBtn);
     expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('guards a wallet on a chain the app does not configure at all', () => {
+    // wagmi REFUSES to move `config.state.chainId` onto an unconfigured chain,
+    // so `useChainId()` keeps naming the last configured one (mainnet here)
+    // while the wallet sits on, say, Polygon. Reading it would show the guard a
+    // supported chain and let a mainnet-addressed transaction fire at whatever
+    // lives at that address on Polygon. Only `useConnection().chainId` tells
+    // the truth. A blocking dialog used to make this unreachable; it is gone,
+    // so this is the pin that keeps the guard honest.
+    mockChainId = 1;
+    mockConnectedChainId = 137;
+    const onConfirm = vi.fn();
+    renderModal(() => mainnetOnlyConfig(onConfirm));
+
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to Ethereum' }));
+    expect(mockHandleSwitchChain).toHaveBeenCalledWith({ chainId: 1, source: 'transaction_modal' });
     expect(onConfirm).not.toHaveBeenCalled();
   });
 

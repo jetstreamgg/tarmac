@@ -263,15 +263,28 @@ export function TransactionProvider({
   const flowIdRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
+  const { address, chainId: connectedChainId } = useConnection();
+  const chains = useChains();
+
+  // The chain the guard below judges: the wallet's OWN, not wagmi's.
+  //
+  // `useChainId()` reads `config.state.chainId`, which wagmi refuses to move
+  // onto a chain the app doesn't configure — park a wallet on one and it keeps
+  // reporting the last configured chain. The guard would then see a supported
+  // chain and stay silent while the wallet is somewhere else entirely, which is
+  // exactly the calldata-on-the-wrong-chain case it exists to stop. That hole
+  // used to be unreachable because a blocking dialog covered the app; it isn't
+  // any more, so the guard has to read the truth. Falls back to the config
+  // chain when disconnected, where there is no wallet chain to speak of.
+  const guardChainId = connectedChainId ?? chainId;
+
   // Fire-time read for the gate's chain check (see runGated): a verdict that
   // resolves after a wallet chain switch must see the wallet's CURRENT chain,
   // not the one captured when the click happened.
-  const chainIdRef = useRef(chainId);
+  const chainIdRef = useRef(guardChainId);
   useEffect(() => {
-    chainIdRef.current = chainId;
-  }, [chainId]);
-  const { address } = useConnection();
-  const chains = useChains();
+    chainIdRef.current = guardChainId;
+  }, [guardChainId]);
   const { handleSwitchChain, isPending: switchPending, variables: switchVariables } = useChainModalContext();
   const isSafeWallet = useIsSafeWallet();
 
@@ -294,7 +307,7 @@ export function TransactionProvider({
   // either, so no screening call is spent on a transaction that cannot fire.
   const preflightEntry = activeConfig?.entry;
   const actionable =
-    !(activeConfig && offSupportedChains(activeConfig.supportedChainIds, chainId)) &&
+    !(activeConfig && offSupportedChains(activeConfig.supportedChainIds, guardChainId)) &&
     (preflightEntry
       ? !preflightEntry.confirmDisabled ||
         (!!activeConfig?.onSecondaryConfirm && !preflightEntry.secondaryConfirmDisabled)
@@ -1019,7 +1032,7 @@ export function TransactionProvider({
   const guardConfig = modalView?.config;
   const noWriteInFlight = txStatus !== TxStatus.INITIALIZED && txStatus !== TxStatus.LOADING;
   const chainGuardActive =
-    !!guardConfig && noWriteInFlight && offSupportedChains(guardConfig.supportedChainIds, chainId);
+    !!guardConfig && noWriteInFlight && offSupportedChains(guardConfig.supportedChainIds, guardChainId);
   const guardTargetChainId = chainGuardActive
     ? chainSwitchTarget(
         guardConfig.supportedChainIds,
