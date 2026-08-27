@@ -1,31 +1,24 @@
 import { expect, test } from '../fixtures-parallel.ts';
 import { performAction } from '../utils/approveOrPerformAction';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
+import { SPARK_USDT_VAULT, sparkVaultPath } from '../utils/vaultsE2e';
 
-// Spark Tether Savings (sUSDT) vault — registered in slice 02 (APP-266).
-// Copied from expert-morpho.spec.ts and adapted to the Vaults tab + USDT asset.
-// USDT funding comes from global-setup-parallel.ts. The vault is gated behind
-// VITE_SUSDT_VAULT_ENABLED (set by the playwright webServer command).
-// Provider-aware selectors: `sky-vault-stats-card`, `supply-input-sky`,
-// `withdraw-input-sky`.
+// Spark Tether Savings (sUSDT) — legacy widget UI until APP-266 V2 product page.
+// Deep-link navigation (V2 route); supply/withdraw still use legacy widget testids.
+// USDT funding comes from global-setup-parallel.ts. Gated by VITE_SUSDT_VAULT_ENABLED.
 
 const VAULT_NAME = 'Tether Savings';
 
 test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
   test.beforeEach(async ({ isolatedPage }) => {
-    // Deep-link to the vaults surface (the legacy widget-navigation was
-    // removed in B4). Connect AFTER the goto — a full navigation resets the
-    // mock connector, so connecting first would leave the widget disconnected.
-    await isolatedPage.goto('/earn/vaults');
+    await isolatedPage.goto(sparkVaultPath(SPARK_USDT_VAULT));
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.getByTestId('sky-vault-stats-card').click();
   });
 
   test('Renders the Spark vault with the on-chain name and Powered-by-Spark branding', async ({
     isolatedPage
   }) => {
     await expect(isolatedPage.getByText(VAULT_NAME).first()).toBeVisible();
-    // On-chain TVL is shown in the in-widget stats card (no Spark API in slice 02)
     const vaultInfoAccordion = isolatedPage.getByRole('button', { name: 'Vault info' });
     await vaultInfoAccordion.click();
     await expect(isolatedPage.getByTestId('vault-tvl-container')).toBeVisible();
@@ -34,7 +27,6 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
   test('Supply USDT to the Spark vault', async ({ isolatedPage }) => {
     await expect(isolatedPage.getByRole('tab', { name: 'Supply', selected: true })).toBeVisible();
 
-    // Read the starting balance from the in-widget stats card
     const vaultInfoAccordion = isolatedPage.getByRole('button', { name: 'Vault info' });
     await vaultInfoAccordion.click();
     const initialBalanceText = await isolatedPage.getByTestId('vault-balance').textContent();
@@ -53,7 +45,6 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
 
     await performAction(isolatedPage, 'Supply');
 
-    // Return to the vault and verify the supplied balance increased
     await isolatedPage
       .getByRole('button', { name: new RegExp(`Back to ${VAULT_NAME}`, 'i') })
       .first()
@@ -64,7 +55,6 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
   });
 
   test('Withdraw USDT from the Spark vault', async ({ isolatedPage }) => {
-    // Supply first so there's a balance to withdraw
     const supplyAmount = 20;
     await isolatedPage.getByTestId('supply-input-sky').click();
     await isolatedPage.getByTestId('supply-input-sky').fill(supplyAmount.toString());
@@ -74,7 +64,6 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
       .first()
       .click();
 
-    // Partial withdraw
     await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
     const withdrawAmount = 5;
     await isolatedPage.getByTestId('withdraw-input-sky').click();
@@ -87,7 +76,6 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
   });
 
   test('Max withdraw redeems the full position', async ({ isolatedPage }) => {
-    // Supply, then withdraw the max (redeem path)
     const supplyAmount = 30;
     await isolatedPage.getByTestId('supply-input-sky').click();
     await isolatedPage.getByTestId('supply-input-sky').fill(supplyAmount.toString());
