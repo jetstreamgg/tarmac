@@ -3,13 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { QueryParams } from '@/lib/constants';
 import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext
-} from '@/components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem, CarouselArrows } from '@/components/ui/carousel';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,9 +23,6 @@ import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 // Each card spans a fraction of the row so 1 (mobile) → 3 (desktop) show at once.
 // The comp (1030:58713) sets cards 8px apart, not the carousel's default 16.
 const ITEM_BASIS = 'basis-full pl-2 sm:basis-1/2 desktop:basis-1/3';
-// Neutralizes CarouselPrevious/Next's default absolute positioning so the
-// arrows sit inline in the section header instead of flanking the row.
-const INLINE_ARROW = 'static left-auto right-auto top-auto translate-y-0';
 
 /**
  * The Portfolio positions section below the earnings card. Shares the
@@ -125,13 +116,9 @@ export function PortfolioPositionsSection({
         <div className="mb-8 flex items-center justify-between">
           <PortfolioTabs tab={tab} onTabChange={onTabChange} />
           {/* DS Button / Icon pair, secondary at 32px with a 12px glyph and
-              6px between them (1030:58710, APP-443 item 8) — they were the
-              legacy `outline` icon button, whose border all but vanished in
-              light mode. */}
-          <div className="flex gap-1.5">
-            <CarouselPrevious variant="secondary" size="iconS" className={INLINE_ARROW} />
-            <CarouselNext variant="secondary" size="iconS" className={INLINE_ARROW} />
-          </div>
+              6px between them (1030:58710, APP-443 item 8); shown only while
+              the cards overflow the row. */}
+          <CarouselArrows />
         </div>
         <CarouselContent className="-ml-2">
           {/* Matured PT leads the row (Figma 2306:72334): it needs action (Claim)
