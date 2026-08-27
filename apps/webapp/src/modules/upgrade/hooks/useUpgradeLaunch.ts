@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
@@ -31,16 +31,37 @@ export type UseUpgradeLaunchResult = EngineLaunchResult;
  */
 export function useUpgradeLaunch({
   token,
-  amount
+  amount,
+  onSuccess
 }: {
   token: UpgradeSourceToken;
   amount: bigint;
+  /**
+   * Post-success side effect owned by the caller (refetching chain state the
+   * engine doesn't). Runs ahead of the provider's own onSuccess, which closes
+   * the modal and tears the session down.
+   */
+  onSuccess?: () => void;
 }): UseUpgradeLaunchResult {
   const { txCallbacks } = useTransaction();
   const { address } = useConnection();
   const chainId = useChainId();
 
   const shouldUseBatch = useShouldUseBatch();
+
+  // Held in a ref so a caller's inline arrow can't churn the engine's params.
+  const onSuccessRef = useRef(onSuccess);
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
+  const providerOnSuccess = txCallbacks.onSuccess;
+  const handleSuccess = useCallback(
+    (hash?: string) => {
+      onSuccessRef.current?.();
+      providerOnSuccess(hash);
+    },
+    [providerOnSuccess]
+  );
 
   const isDai = token === 'DAI';
   const target = UPGRADE_TARGET[token];
@@ -62,7 +83,8 @@ export function useUpgradeLaunch({
     token,
     amount,
     shouldUseBatch,
-    ...txCallbacks
+    ...txCallbacks,
+    onSuccess: handleSuccess
   });
 
   // Step labels mirror the engine's call count so the indicator advances in

@@ -94,7 +94,9 @@ function renderFlow(steps: string[]): TxCallbacks {
 const stepIncomplete = (n: number) => expect(screen.queryByText(String(n))).not.toBeNull();
 const stepComplete = (n: number) => expect(screen.queryByText(String(n))).toBeNull();
 const noDone = () => expect(screen.queryByRole('button', { name: /done/i })).toBeNull();
-const hasDone = () => expect(screen.queryByRole('button', { name: /done/i })).not.toBeNull();
+// A confirmed transaction closes its own modal (the outcome moves to a toast),
+// so the end state of a completed flow is an empty screen, not a Done button.
+const modalClosed = () => expect(screen.queryByText('Supply')).toBeNull();
 
 describe('TransactionModal step progression', () => {
   beforeEach(() => {
@@ -102,7 +104,7 @@ describe('TransactionModal step progression', () => {
   });
   afterEach(() => vi.clearAllMocks());
 
-  it('sequential flow: completes steps one at a time; Done only after the final success', () => {
+  it('sequential flow: completes steps one at a time; closes only after the final success', () => {
     const cb = renderFlow(['Approve', 'Supply']);
 
     // Step 1 (approve) starts — nothing completed yet, no Done.
@@ -119,12 +121,10 @@ describe('TransactionModal step progression', () => {
     stepIncomplete(2);
     noDone();
 
-    // Final success → both complete + Done.
+    // Final success → the modal closes.
     act(() => cb.onStart('0xsupply'));
     act(() => cb.onSuccess('0xsupply'));
-    stepComplete(1);
-    stepComplete(2);
-    hasDone();
+    modalClosed();
   });
 
   it('batch flow: a single mutation never advances steps until the bundle succeeds', () => {
@@ -137,10 +137,8 @@ describe('TransactionModal step progression', () => {
     stepIncomplete(2);
     noDone();
 
-    // Bundle mined → both complete at once + Done.
+    // Bundle mined → the modal closes.
     act(() => cb.onSuccess('0xbundle'));
-    stepComplete(1);
-    stepComplete(2);
-    hasDone();
+    modalClosed();
   });
 });

@@ -200,7 +200,7 @@ export function useConvertLaunch({
       },
       toast: {
         loading: t`Converting ${amountLabel}`,
-        success: t`${targetSymbol} converted!`,
+        success: t`${amountLabel} converted to ${targetSymbol}!`,
         error: t`Conversion failed`
       },
       transactionContent,

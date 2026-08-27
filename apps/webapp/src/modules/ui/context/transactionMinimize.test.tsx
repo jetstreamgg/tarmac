@@ -196,15 +196,16 @@ describe('TransactionModal minimize', () => {
     act(() => ctx.minimize());
     expect(screen.queryByText('Supply')).toBeNull();
 
-    // The still-running engine resolves while the modal is hidden.
-    act(() => cb.onSuccess('0xhash'));
-
-    // Restore: the modal returns on the transaction screen at its current status
-    // (Done = success), proving the tx kept running and state survived minimize.
+    // Restore: the modal returns on the transaction screen at its live status,
+    // proving the tx kept running and its state survived minimize.
     act(() => ctx.restore());
     expect(screen.queryByText('Supply')).not.toBeNull();
-    expect(screen.queryByRole('button', { name: /done/i })).not.toBeNull();
+    expect(screen.queryByText(/processing/i)).not.toBeNull();
     expect(screen.queryByRole('button', { name: /confirm/i })).toBeNull();
+
+    // Resolving ends the session from either state — the outcome moves to a toast.
+    act(() => cb.onSuccess('0xhash'));
+    expect(screen.queryByText('Supply')).toBeNull();
   });
 
   it('does NOT emit a cancelled completion event when minimizing during the wallet prompt', () => {
@@ -459,16 +460,18 @@ describe('TransactionModal minimize', () => {
     expect(getByText('10,000.00 USDS supplied!')).toBeDefined();
   });
 
-  it('does NOT toast when the transaction resolves with the modal still open', () => {
+  it('toasts exactly once when the tx resolves, minimized or not', () => {
     const ctx = renderFlow(TOAST_CONFIG);
     const cb = cbOf(ctx);
 
     act(() => cb.onMutate());
     act(() => cb.onStart('0xhash'));
-    // Not minimized — the modal itself shows the outcome.
+    // Not minimized — the modal is on screen, and hands the outcome over as it closes.
     toastWithCloseMock.mockClear();
 
     act(() => cb.onSuccess('0xhash'));
-    expect(toastWithCloseMock).not.toHaveBeenCalled();
+    expect(toastWithCloseMock).toHaveBeenCalledTimes(1);
+    const { getByText } = renderLastToast();
+    expect(getByText('10,000.00 USDS supplied!')).toBeDefined();
   });
 });

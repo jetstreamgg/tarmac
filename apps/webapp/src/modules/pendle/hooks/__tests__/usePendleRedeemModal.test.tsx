@@ -247,6 +247,21 @@ describe('usePendleRedeemModal analytics', () => {
     view.unmount();
   });
 
+  it('names the quoted receive amount in the success toast, on launch and in the live push', () => {
+    hoisted.isModalOpen = true;
+    const { unmount } = renderComponent(<TestConsumer />);
+    // QUOTE.amountOut = 1_499_500n at 6dp → 1.5 of the default output (the underlying).
+    const expected = {
+      loading: 'Claiming your matured position',
+      success: 'Claimed 1.5 USDG',
+      error: 'Claim failed'
+    };
+    expect(hoisted.launchMock.mock.calls[0][0].toast).toEqual(expected);
+    const lastPush = hoisted.updateMock.mock.calls.at(-1)?.[1];
+    expect(lastPush.toast).toEqual(expected);
+    unmount();
+  });
+
   it('preserves widgetName=fixed, flow=redeem, action=redeem on launch()', () => {
     const { unmount } = renderComponent(<TestConsumer />);
     expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
