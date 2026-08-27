@@ -12,8 +12,14 @@ const SelectValue = SelectPrimitive.Value;
 
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & { className?: string }
->(({ className, children, ...props }, ref) => (
+  // hideIcon: the trigger draws no chevron of its own — for triggers whose
+  // content already carries one (the network pill, whose chevron has to sit
+  // inside the pill and flip with the panel).
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & {
+    className?: string;
+    hideIcon?: boolean;
+  }
+>(({ className, children, hideIcon = false, ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
@@ -27,9 +33,11 @@ const SelectTrigger = React.forwardRef<
     {...props}
   >
     {children}
-    <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
-    </SelectPrimitive.Icon>
+    {!hideIcon && (
+      <SelectPrimitive.Icon asChild>
+        <ChevronDown className="h-4 w-4 opacity-50" />
+      </SelectPrimitive.Icon>
+    )}
   </SelectPrimitive.Trigger>
 ));
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;

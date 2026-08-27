@@ -6,7 +6,7 @@ import { useProductNetworks } from '@/hooks';
 import { getChainIcon } from '@/utils';
 import { Intent } from '@/lib/enums';
 import { Text } from '@/modules/layout/components/Typography';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { ConvertAmountInput } from './ConvertAmountInput';
 import type { useConvertForm } from '../hooks/useConvertForm';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
@@ -40,7 +40,14 @@ export function ConvertCard({ form }: { form: ConvertFormModel }) {
       className="flex w-full flex-col gap-[2px] overflow-clip rounded-2xl md:rounded-[28px]"
       data-testid="convert-card"
     >
-      <ChainModal variant="wrapper" chainIds={networks} dataTestId="convert-network">
+      {/* The whole row is the trigger, so it supplies its own body — including
+          the chevron, which is dropped when there is only one chain to pick
+          from and the row is inert. */}
+      <NetworkSelect
+        chainIds={networks}
+        dataTestId="convert-network"
+        triggerClassName="h-auto w-full rounded-none border-0 p-0 hover:border-0 hover:bg-transparent"
+      >
         <span className="bg-glassSurface flex w-full items-center justify-between gap-2 p-4 backdrop-blur-[20px] md:px-8 md:py-6">
           <span className="flex items-center gap-3">
             <Text className="text-textSecondary text-sm">
@@ -51,9 +58,15 @@ export function ConvertCard({ form }: { form: ConvertFormModel }) {
               <Text className="text-text font-circle text-xs font-medium">{networkName}</Text>
             </span>
           </span>
-          <ChevronDown width={16} height={16} className="text-textSecondary" />
+          {networks.length > 1 && (
+            <ChevronDown
+              width={16}
+              height={16}
+              className="text-textSecondary transition-transform group-data-[state=open]:rotate-180"
+            />
+          )}
         </span>
-      </ChainModal>
+      </NetworkSelect>
 
       <div className="relative flex flex-col gap-[2px]">
         <ConvertAmountInput

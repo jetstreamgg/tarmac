@@ -17,7 +17,7 @@ import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import {
   ProductDetailTemplate,
@@ -203,7 +203,7 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
       }}
       title={rewardContractDisplayName(contract)}
       networkSelector={
-        <ChainModal
+        <NetworkSelect
           chainIds={networks}
           labelClassName="hidden sm:block"
           dataTestId="product-detail-network"

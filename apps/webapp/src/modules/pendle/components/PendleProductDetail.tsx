@@ -5,7 +5,7 @@ import { Intent } from '@/lib/enums';
 import { type PendleMarketConfig, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import {
@@ -155,7 +155,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         </span>
       }
       networkSelector={
-        <ChainModal
+        <NetworkSelect
           chainIds={networks}
           labelClassName="hidden sm:block"
           dataTestId="product-detail-network"

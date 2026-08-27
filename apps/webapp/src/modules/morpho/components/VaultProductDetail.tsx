@@ -14,7 +14,7 @@ import {
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { Morpho } from '@/widgets';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { VaultDetailChart } from './VaultDetailChart';
@@ -170,7 +170,7 @@ export function VaultProductDetail({
         </span>
       }
       networkSelector={
-        <ChainModal chainIds={networks} labelClassName="hidden sm:block" dataTestId="vault-detail-network" />
+        <NetworkSelect chainIds={networks} labelClassName="hidden sm:block" dataTestId="vault-detail-network" />
       }
       chart={<VaultDetailChart vaultAddress={vaultAddress} assetToken={vault.assetToken} />}
       position={
