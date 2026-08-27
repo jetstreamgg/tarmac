@@ -84,6 +84,12 @@ function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
 }
 
+// Whether the wallet's chain is outside a flow's declared set (APP-528). An
+// empty set is a chain-agnostic flow and never trips the guard.
+function offSupportedChains(supportedChainIds: readonly number[], chainId: number): boolean {
+  return supportedChainIds.length > 0 && !supportedChainIds.includes(chainId);
+}
+
 // The transaction-orchestration contract is frozen in ./transactionContract.
 // Re-exported here so existing import sites keep working.
 export type {
@@ -247,6 +253,13 @@ export function TransactionProvider({
   const flowIdRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
+  // Fire-time read for the gate's chain check (see runGated): a verdict that
+  // resolves after a wallet chain switch must see the wallet's CURRENT chain,
+  // not the one captured when the click happened.
+  const chainIdRef = useRef(chainId);
+  useEffect(() => {
+    chainIdRef.current = chainId;
+  }, [chainId]);
   const { address } = useConnection();
   const chains = useChains();
   const { handleSwitchChain } = useChainModalContext();
@@ -267,11 +280,15 @@ export function TransactionProvider({
   // never the preflight's hold (that lives in the modal's props, not the
   // config), so there is no feedback loop. An entry flow may expose a second
   // CTA; either being enabled means the user can proceed.
+  // A wallet outside the flow's supported set (APP-528, below) can't proceed
+  // either, so no screening call is spent on a transaction that cannot fire.
   const preflightEntry = activeConfig?.entry;
-  const actionable = preflightEntry
-    ? !preflightEntry.confirmDisabled ||
-      (!!activeConfig?.onSecondaryConfirm && !preflightEntry.secondaryConfirmDisabled)
-    : !activeConfig?.confirmDisabled;
+  const actionable =
+    !(activeConfig && offSupportedChains(activeConfig.supportedChainIds, chainId)) &&
+    (preflightEntry
+      ? !preflightEntry.confirmDisabled ||
+        (!!activeConfig?.onSecondaryConfirm && !preflightEntry.secondaryConfirmDisabled)
+      : !activeConfig?.confirmDisabled);
   const preflight = usePreflight({
     usdValue: activeConfig?.usdValue,
     active: open && !!activeConfig,
@@ -639,25 +656,49 @@ export function TransactionProvider({
     [emitTermsSignatureDeclined]
   );
 
+  // The chain guard's enforcement half (APP-528). The modal disables the CTAs
+  // it can see are wrong-chain, but the write can also start from a path the
+  // banner doesn't cover — Retry on the failure view, Confirm after Back from
+  // it, or a gate verdict (screening, terms signature) resolving after the
+  // wallet moved — so the check lives here too, at the single choke point,
+  // read at fire time. An empty set is a chain-agnostic flow (see the contract).
+  const walletOnSupportedChain = useCallback(() => {
+    const config = configRef.current;
+    return !config || !offSupportedChains(config.supportedChainIds, chainIdRef.current);
+  }, []);
+
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
       if (gateInFlightRef.current === sessionGenRef.current) return;
+      if (!walletOnSupportedChain()) return;
       const gen = sessionGenRef.current;
+      const controls = makeGateControls(gen);
       const verdict = gate({
         trigger,
         // Read at fire time (like the config callbacks): editable flows keep
         // this live via updateModalContent until the engine starts.
         usdValue: configRef.current?.usdValue,
-        controls: makeGateControls(gen)
+        controls
       });
       if (verdict instanceof Promise) {
         gateInFlightRef.current = gen;
         verdict
           .then(
             v => {
-              if (gen !== sessionGenRef.current) return;
-              if (v.allow) action();
+              if (gen !== sessionGenRef.current || !v.allow) return;
+              // Re-checked: the wallet may have switched while the verdict
+              // (a screening call, a signature prompt) was pending, and the
+              // form has since rebuilt its calldata against the new chain.
+              // The modal is already on its transaction screen, so hand it
+              // back to the first screen — where the chain guard renders —
+              // rather than leave it on a status with nothing to wait for.
+              if (!walletOnSupportedChain()) {
+                controls.setPreludeSteps(null);
+                controls.returnToFirstScreen();
+                return;
+              }
+              action();
             },
             () => {}
           )
@@ -670,7 +711,7 @@ export function TransactionProvider({
       }
       if (verdict.allow) action();
     },
-    [gate, makeGateControls]
+    [gate, makeGateControls, walletOnSupportedChain]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's
@@ -907,17 +948,16 @@ export function TransactionProvider({
   // attacker-occupied) address. So while a flow's supported set is declared and
   // the connected wallet has left it, block every first-screen CTA and offer a
   // switch back. Read off `modalView.config` (not `activeConfig`) so a modal
-  // animating away doesn't flash the guard as it leaves. Only meaningful before
-  // the write starts — once INITIALIZED/LOADING the calldata is already the
-  // wallet's problem, and wagmi's own connector-chain assertion rejects a send
-  // whose target chain no longer matches the wallet.
+  // animating away doesn't flash the guard as it leaves. Applies whenever no
+  // write is in flight — IDLE, but also ERROR (Retry, or Back to the first
+  // screen, would fire against the new chain) and the terminal states — and
+  // is off only while INITIALIZED/LOADING, when the calldata is already in the
+  // wallet's hands. `runGated` enforces the same check at fire time; this is
+  // the user-facing half.
   const guardConfig = modalView?.config;
-  const isPreWrite = txStatus === TxStatus.IDLE;
+  const noWriteInFlight = txStatus !== TxStatus.INITIALIZED && txStatus !== TxStatus.LOADING;
   const chainGuardActive =
-    !!guardConfig &&
-    isPreWrite &&
-    guardConfig.supportedChainIds.length > 0 &&
-    !guardConfig.supportedChainIds.includes(chainId);
+    !!guardConfig && noWriteInFlight && offSupportedChains(guardConfig.supportedChainIds, chainId);
   const guardTargetChainId = chainGuardActive
     ? chainSwitchTarget(
         guardConfig.supportedChainIds,

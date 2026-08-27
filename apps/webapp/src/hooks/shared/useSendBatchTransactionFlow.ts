@@ -94,12 +94,19 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         // per-call simulation (unlike the sequential flow), so a target address
         // that resolved to `undefined` — the shape a `Record<chainId, address>`
         // takes when read on a chain the product doesn't live on — would sail
-        // straight into the wallet as a call to the zero address. Refuse it. The
-        // modal's chain guard is the user-facing stop; this is the last-resort
-        // invariant so no future flow can reintroduce the bug by omission.
-        console.error(
-          'ERROR: A batch transaction has a call with no target address — refusing to send (likely a cross-chain address resolution miss).'
+        // straight into the wallet as a call to the zero address. Refuse it,
+        // and report it through `onError` like any other failed send: the modal
+        // has already advanced to its transaction screen by the time execute()
+        // runs, so a silent refusal would leave it on an indefinite "Preparing"
+        // loader with no way out — and nothing in Sentry. The provider's
+        // onError lands the flow on ERROR (Back/Retry) and captures the error.
+        // The modal's chain guard is the user-facing stop; this backstop
+        // catches an address-map miss that reaches the engine anyway.
+        const error = new Error(
+          'A batch transaction has a call with no target address — refusing to send (likely a cross-chain address resolution miss).'
         );
+        console.error(error);
+        onError(error, undefined);
       } else {
         // Call is legit, proceed to send the transaction
         sendCalls(sendCallsParameters);

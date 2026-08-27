@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TransactionConfig } from './transactionContract';
+import type { TransactionConfig, TxCallbacks } from './transactionContract';
+import type { PreflightHook, PreTransactionGate } from './preTransactionGate';
 
 // The cross-chain-calldata guard (APP-528). A transaction modal survives a
 // wallet chain switch (the provider lives above the router), and its editable
@@ -291,6 +292,111 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it('guards the failure view too: after a failed write the wallet switches, so Retry is held and Back lands on a guarded first screen', () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    let cb!: TxCallbacks;
+    renderTestTree(liveCb => {
+      cb = liveCb;
+      return mainnetOnlyConfig(onConfirm);
+    });
+
+    // The write starts on mainnet and the wallet rejects it — the modal sits on
+    // its failure view (ERROR), the one state the IDLE-keyed guard used to skip.
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    act(() => {
+      cb.onMutate();
+      cb.onError(new Error('User rejected the request'));
+    });
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeDefined();
+
+    act(() => {
+      mockChainId = 8453;
+      forceRerender();
+    });
+
+    // Retry would rebuild the calldata against Base: held, and the guard says why.
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect((screen.getByRole('button', { name: 'Retry' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+
+    // Back reaches the entry at ERROR (it never resets the status) — still
+    // guarded. The footer's Back is the last one (the header carries its own).
+    fireEvent.click(screen.getAllByRole('button', { name: 'Back' }).at(-1)!);
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('a gate verdict resolving after the wallet moved to an unsupported chain does NOT start the write', async () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    let resolveVerdict!: (v: { allow: boolean }) => void;
+    // An async gate (the screening call / signature prompt shape): it holds
+    // the floor, then allows.
+    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    renderTestTree(() => mainnetOnlyConfig(onConfirm), { gate });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onConfirm).not.toHaveBeenCalled();
+
+    // The wallet switches while the verdict is pending…
+    act(() => {
+      mockChainId = 8453;
+      forceRerender();
+    });
+    // …so the allow must not fire the executor, which by now builds Base calldata.
+    await act(async () => {
+      resolveVerdict({ allow: true });
+    });
+    expect(onConfirm).not.toHaveBeenCalled();
+    // And the user isn't stranded on the transaction screen: back on the
+    // first screen, guarded, with the switch offered.
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+    expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('a guarded two-action entry shows no loading spinner while screening is pending, and the screening is told nothing is actionable', () => {
+    mockChainId = 8453;
+    const contexts: Array<{ active: boolean; actionable: boolean }> = [];
+    const usePreflight: PreflightHook = context => {
+      contexts.push(context);
+      return { kind: 'pending' };
+    };
+    renderTestTree(
+      () => ({
+        title: 'Claim & Restake',
+        usdValue: 300_000,
+        supportedChainIds: [1, 314310],
+        entry: {
+          content: <div>fields</div>,
+          confirmLabel: 'Claim & Restake',
+          confirmDisabled: false,
+          secondaryConfirmLabel: 'Claim',
+          secondaryConfirmDisabled: false
+        },
+        onConfirm: vi.fn(),
+        onSecondaryConfirm: vi.fn()
+      }),
+      { usePreflight }
+    );
+
+    const secondary = screen.getByRole('button', { name: 'Claim' }) as HTMLButtonElement;
+    expect(secondary.disabled).toBe(true);
+    // Disabled by the guard, not "loading": no dots loader inside the CTA.
+    expect(secondary.querySelector('[data-testid="loader"]')).toBeNull();
+    // The guard is folded into `actionable`, so no screening call is spent on
+    // a transaction that cannot fire (only the live session's reads count —
+    // before launch there is no config to guard).
+    const live = contexts.filter(c => c.active);
+    expect(live.length).toBeGreaterThan(0);
+    expect(live.every(c => c.actionable === false)).toBe(true);
+  });
 });
 
 // Forces a re-render of the provider subtree so a changed `mockChainId`
@@ -300,10 +406,14 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
 // here (not via `children`) so bumping state actually re-invokes it.
 let forceRerender: () => void = () => {};
 
+type ProviderOptions = { gate?: PreTransactionGate; usePreflight?: PreflightHook };
+
 function RerenderHost({
-  build
+  build,
+  options
 }: {
   build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig;
+  options?: ProviderOptions;
 }) {
   const [, bump] = useState(0);
   // Assigned in an effect (not during render) so the module-level handle is a
@@ -312,17 +422,20 @@ function RerenderHost({
     forceRerender = () => bump(n => n + 1);
   }, []);
   return (
-    <TransactionProvider>
+    <TransactionProvider gate={options?.gate} usePreflight={options?.usePreflight}>
       <Harness build={build} onReady={() => {}} />
     </TransactionProvider>
   );
 }
 
-function renderTestTree(build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig) {
+function renderTestTree(
+  build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig,
+  options?: ProviderOptions
+) {
   render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
-        <RerenderHost build={build} />
+        <RerenderHost build={build} options={options} />
       </I18nProvider>
     </StrictMode>
   );

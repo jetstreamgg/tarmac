@@ -276,6 +276,41 @@ export function TransactionModal({
   // unless something else already disables them.
   const preflightBlocked = preflight?.kind === 'blocked';
   const preflightPending = preflight?.kind === 'pending';
+  // Cross-chain-calldata guard (APP-528): the wallet is on a chain this product
+  // isn't on. Rendered above the CTAs (all disabled) — on the first screen and
+  // on the failure view, whose Retry would fire too — with a switch action when
+  // the wallet can switch.
+  const chainGuardBlock = chainGuard && (
+    <div className="flex flex-col gap-3" data-testid="transaction-chain-guard">
+      <div className="flex items-start gap-2">
+        <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
+        <Text className="text-error text-sm">
+          {chainGuard.targetName ? (
+            <Trans>
+              This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}. Switch to{' '}
+              {chainGuard.targetName} to continue.
+            </Trans>
+          ) : (
+            <Trans>
+              This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}. Switch
+              networks to continue.
+            </Trans>
+          )}
+        </Text>
+      </div>
+      {chainGuard.onSwitch && chainGuard.targetName && (
+        <Button
+          variant="primary"
+          size="xl"
+          className="w-full"
+          onClick={chainGuard.onSwitch}
+          data-testid="transaction-chain-guard-switch"
+        >
+          <Trans>Switch to {chainGuard.targetName}</Trans>
+        </Button>
+      )}
+    </div>
+  );
   const firstScreenErrorMessage = isEntry ? entry?.errorMessage : errorMessage;
   // The wallet/status screen shows a compact summary when supplied; otherwise it
   // falls back to the review body (review path only), so consumers that pass only
@@ -588,41 +623,9 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
-                {/* Cross-chain-calldata guard (APP-528): the wallet is on a chain
-                    this product isn't on. Rendered above the CTAs (all disabled),
-                    with a switch action when the wallet can switch. Precedes the
-                    screening block — a wrong chain is the more fundamental block. */}
-                {chainGuard && (
-                  <div className="flex flex-col gap-3" data-testid="transaction-chain-guard">
-                    <div className="flex items-start gap-2">
-                      <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
-                      <Text className="text-error text-sm">
-                        {chainGuard.targetName ? (
-                          <Trans>
-                            This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}.
-                            Switch to {chainGuard.targetName} to continue.
-                          </Trans>
-                        ) : (
-                          <Trans>
-                            This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}.
-                            Switch networks to continue.
-                          </Trans>
-                        )}
-                      </Text>
-                    </div>
-                    {chainGuard.onSwitch && chainGuard.targetName && (
-                      <Button
-                        variant="primary"
-                        size="xl"
-                        className="w-full"
-                        onClick={chainGuard.onSwitch}
-                        data-testid="transaction-chain-guard-switch"
-                      >
-                        <Trans>Switch to {chainGuard.targetName}</Trans>
-                      </Button>
-                    )}
-                  </div>
-                )}
+                {/* Precedes the screening block — a wrong chain is the more
+                    fundamental block. */}
+                {chainGuardBlock}
                 {/* Enhanced-screening failure (APP-517): rendered above the CTAs,
                     which stay visible but disabled — the transaction is blocked. */}
                 {preflight?.kind === 'blocked' && (
@@ -648,7 +651,7 @@ export function TransactionModal({
                       className="flex-1"
                       onClick={handleSecondaryConfirm}
                       disabled={entry?.secondaryConfirmDisabled || preflightBlocked || chainGuarded}
-                      loading={!entry?.secondaryConfirmDisabled && preflightPending}
+                      loading={!entry?.secondaryConfirmDisabled && !chainGuarded && preflightPending}
                     >
                       {entry?.secondaryConfirmLabel}
                     </Button>
@@ -726,14 +729,23 @@ export function TransactionModal({
                 )}
 
                 {txStatus === TxStatus.ERROR && (
-                  <div className="flex w-full gap-3">
-                    <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
-                      <Trans>Back</Trans>
-                    </Button>
-                    <Button variant="primary" size="xl" className="flex-1" onClick={handleRetry}>
-                      {errorLabel ?? <Trans>Retry</Trans>}
-                    </Button>
-                  </div>
+                  <>
+                    {chainGuardBlock}
+                    <div className="flex w-full gap-3">
+                      <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
+                        <Trans>Back</Trans>
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="xl"
+                        className="flex-1"
+                        onClick={handleRetry}
+                        disabled={chainGuarded}
+                      >
+                        {errorLabel ?? <Trans>Retry</Trans>}
+                      </Button>
+                    </div>
+                  </>
                 )}
               </motion.div>
             )}

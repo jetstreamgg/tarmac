@@ -76,17 +76,25 @@ describe('useSendBatchTransactionFlow — cross-chain backstop (APP-528)', () =>
     expect(sendCallsSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('refuses a batch whose target address is undefined (wrong-chain resolution miss)', () => {
+  it('refuses a batch whose target address is undefined (wrong-chain resolution miss) and reports it through onError', () => {
     const calls = [nullTargetCall(), goodCall('0x6B175474E89094C44Da98b954EedeAC495271d0F')];
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onError = vi.fn();
     const { result } = renderHook(() =>
-      useSendBatchTransactionFlow({ calls, enabled: true, chainId: 8453 } as never)
+      useSendBatchTransactionFlow({ calls, enabled: true, chainId: 8453, onError } as never)
     );
 
     result.current.execute();
 
     expect(sendCallsSpy).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalled();
+    // Surfaced like any failed send — the modal has already advanced to its
+    // transaction screen, so a silent refusal would strand it on "Preparing".
+    expect(onError).toHaveBeenCalledTimes(1);
+    const [error, hash] = onError.mock.calls[0];
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/no target address/);
+    expect(hash).toBeUndefined();
     errorSpy.mockRestore();
   });
 });
