@@ -27,14 +27,14 @@ test.describe('Shell — mobile navbar (G3)', () => {
   test('navigates all four destinations', async ({ isolatedPage }) => {
     const shell = new ShellPage(isolatedPage);
     const destinations = [
-      { testId: 'mobile-nav-portfolio', url: /\/portfolio(\?|$)/, path: ROUTES.PORTFOLIO },
-      { testId: 'mobile-nav-earn', url: /\/earn(\?|$)/, path: ROUTES.EARN },
-      { testId: 'mobile-nav-stake', url: /\/stake(\?|$)/, path: ROUTES.STAKE },
-      { testId: 'mobile-nav-convert', url: /\/convert(\?|$)/, path: ROUTES.CONVERT }
+      { url: /\/portfolio(\?|$)/, path: ROUTES.PORTFOLIO },
+      { url: /\/earn(\?|$)/, path: ROUTES.EARN },
+      { url: /\/stake(\?|$)/, path: ROUTES.STAKE },
+      { url: /\/convert(\?|$)/, path: ROUTES.CONVERT }
     ] as const;
 
-    for (const { testId, url } of destinations) {
-      await isolatedPage.getByTestId(testId).click();
+    for (const { url, path } of destinations) {
+      await shell.mobileNavLink(path).click();
       await expect(isolatedPage).toHaveURL(url, { timeout: 15_000 });
       await expect(isolatedPage.getByTestId('mobile-nav-active-pill')).toBeVisible();
     }

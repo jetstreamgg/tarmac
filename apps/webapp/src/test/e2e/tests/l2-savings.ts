@@ -1,4 +1,4 @@
-import { expect, test } from '../fixtures-parallel';
+import { test } from '../fixtures-parallel';
 import { SavingsProductPage } from '../pages/SavingsProductPage';
 import { NetworkName } from '../utils/constants';
 
