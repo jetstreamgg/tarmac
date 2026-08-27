@@ -1,5 +1,7 @@
+import { parseUnits } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
+import { getUrnAddress, getUrnDebt, latestUrnIndex } from '../utils/stakeOnChain.ts';
 import {
   BORROW_SPEC_SKY,
   confirmTransactionModal,
@@ -17,6 +19,8 @@ import {
 // The positions table is subgraph-backed and cannot see test-vnet urns, so
 // specs assert the empty-table state for fresh accounts and verify post-tx
 // position state through the on-chain manage deep link instead of table rows.
+// Write paths follow Gate 3: mock-wallet Success is optimistic — assert vat
+// debt via stakeOnChain, not borrowed-amount copy.
 
 test.beforeEach(async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
@@ -79,10 +83,19 @@ test('opens a stake-only position from the empty-state CTA', async ({ isolatedPa
   await expect(isolatedPage.getByTestId('stake-position-delegate-link')).not.toBeVisible();
 });
 
-test('borrows more against an existing position through the manage sheet', async ({ isolatedPage }) => {
+test('borrows more against an existing position through the manage sheet', async ({
+  isolatedPage,
+  testAccount
+}) => {
   await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '30000' });
+  // `--last-failed` can reclaim a dirty pool account that already had urns —
+  // always manage the urn this open just created.
+  const urnIndex = await latestUrnIndex(testAccount);
+  const urn = await getUrnAddress(testAccount, BigInt(urnIndex));
+  expect(await getUrnDebt(urn)).toBeGreaterThanOrEqual(parseUnits('30000', 18));
+  expect(await getUrnDebt(urn)).toBeLessThan(parseUnits('30050', 18));
 
-  await gotoManagePosition(isolatedPage, 0);
+  await gotoManagePosition(isolatedPage, urnIndex);
   await isolatedPage.getByTestId('stake-manage-menu-borrow').click();
   await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
 
@@ -98,10 +111,13 @@ test('borrows more against an existing position through the manage sheet', async
   await confirm.click();
   await confirmTransactionModal(isolatedPage);
 
-  // Back on the details modal, the borrowed figure reflects the new 35K debt
-  // (a hair above 35,000 once the stability fee accrues).
-  await gotoManagePosition(isolatedPage, 0);
-  await expect(isolatedPage.getByText(/35,0\d\d/).first()).toBeVisible({ timeout: 15_000 });
+  // On-chain oracle (Gate 3): success copy is optimistic under wallet_sendCalls.
+  const debt = await getUrnDebt(urn);
+  expect(debt).toBeGreaterThanOrEqual(parseUnits('35000', 18));
+  expect(debt).toBeLessThan(parseUnits('35050', 18));
+
+  await gotoManagePosition(isolatedPage, urnIndex);
+  await expect(isolatedPage.getByTestId('stake-manage-menu-borrow')).toBeVisible();
 });
 
 test('risk slider two-way sync in the takeover borrow card', async ({ isolatedPage }) => {
