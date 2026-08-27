@@ -70,7 +70,7 @@ export function EarnWithSkyCard({ product, onStart }: { product: EarnWithSkyProd
             </RateBadge>
           )}
         </div>
-        <Text variant="small" className="text-textSecondary">
+        <Text variant="medium" className="text-textSecondary leading-[22px]">
           {content.description}
         </Text>
       </div>
@@ -102,7 +102,7 @@ export function EarnWithSkyCard({ product, onStart }: { product: EarnWithSkyProd
 function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <Text variant="medium" className="text-textSecondary">
+      <Text variant="captionSm" className="text-textSecondary leading-[18px]">
         {label}
       </Text>
       {children}
