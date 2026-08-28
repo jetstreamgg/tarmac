@@ -398,6 +398,14 @@
      `--ease-out-expo` above is the steeper house variant. */
   --ease-out-overshoot: cubic-bezier(0.45, 1.45, 0.8, 1);
   --ease-out-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  /* The transaction modal's step timeline (Figma 2685:148222) is drawn on a
+     trio rather than the quint/quart pairing above: size and position carry on
+     the standard curve for 350ms while, inside them, exits accelerate away and
+     entrances decelerate in over 200ms. `modules/ui/animation/modalStepMotion.ts`
+     mirrors these three for the parts of that timeline animated in JS. */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
 
   --transition-duration-250: 250ms;
   --transition-duration-350: 350ms;
