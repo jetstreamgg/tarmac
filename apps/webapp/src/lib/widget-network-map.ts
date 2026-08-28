@@ -110,16 +110,15 @@ export type RouteChainAction =
  * (a) from fighting a user who switched chain by hand on the page, and makes
  * rule (c) fall through to the home redirect rather than re-prompting.
  *
- * Rule (a) is deliberately skipped for `BALANCES_INTENT` — the Portfolio and
- * the Earn marketplace, the two surfaces the filter is FOR. Applying it there
- * would let touching a display filter prompt the wallet, which is precisely
- * what this filter is not.
+ * None of the three apply to `BALANCES_INTENT` — the Portfolio and the Earn
+ * marketplace, which always render (see the early return). They are the
+ * surfaces the filter is FOR, so rule (a) there would let a display filter
+ * prompt the wallet; and they are where a redirect sends you, so rules (b)/(c)
+ * there would prompt on arrival for a chain the surface never needed.
  *
  * A module that is coming-soon on the current chain still redirects home rather
  * than switching: "arriving here shortly" is a promise about *this* chain, so
  * moving the user off it would be the wrong answer.
- *
- * `BALANCES_INTENT` never redirects home — see the tail of the function.
  */
 export function getRouteChainAction(
   intent: Intent,
@@ -148,11 +147,20 @@ export function getRouteChainAction(
     network: normalizeUrlParam(chains?.find(chain => chain.id === id)?.name ?? getChainName(id))
   });
 
+  // Portfolio and the Earn marketplace run on every chain and need none in
+  // particular, so they take no part in any of this: they never move the wallet
+  // and are never redirected. They are also where a user lands after being
+  // redirected OFF a module, which is why the two halves must go together —
+  // switching here would turn "this product isn't on your chain" into a prompt
+  // to change chain anyway, on the surface that had no complaint. Reads run
+  // against the configured chain wagmi keeps pinned, and a transaction is
+  // stopped by the modal's own guard.
+  if (intent === Intent.BALANCES_INTENT) return { kind: 'render' };
+
   // (a) The filter, when this module runs on it.
   if (
     !switchAttempted &&
     !comingSoonHere &&
-    intent !== Intent.BALANCES_INTENT &&
     filterChainId !== null &&
     filterChainId !== currentChainId &&
     supported.includes(filterChainId) &&
@@ -169,14 +177,6 @@ export function getRouteChainAction(
     const target = chainSwitchTarget(supported, configuredIds);
     if (target !== undefined && target !== currentChainId) return switchTo(target);
   }
-
-  // Nowhere to switch to, or this visit already had its chance. Portfolio and
-  // the Earn marketplace stay put: they are the redirect's own destination and
-  // they render on any chain, reading against the configured chain wagmi keeps
-  // pinned. Evicting them is at best a no-op (/portfolio to /portfolio) and at
-  // worst throws the user off /earn for a chain that surface never cared about
-  // — which is what a wallet parked on an unconfigured network used to do.
-  if (intent === Intent.BALANCES_INTENT) return { kind: 'render' };
 
   return { kind: 'redirect-home' };
 }

@@ -124,13 +124,11 @@ describe('getRouteChainAction', () => {
   // unconfigured network looks like once the blocking modal is gone: rule (c)
   // brings it back to a chain the module runs on rather than bouncing home.
   it('switches to the home chain on a chain that hosts no modules at all', () => {
-    for (const intent of [Intent.STAKE_INTENT, Intent.BALANCES_INTENT]) {
-      expect(getRouteChainAction(intent, 999999)).toEqual({
-        kind: 'switch-network',
-        chainId: mainnet.id,
-        network: 'ethereum'
-      });
-    }
+    expect(getRouteChainAction(Intent.STAKE_INTENT, 999999)).toEqual({
+      kind: 'switch-network',
+      chainId: mainnet.id,
+      network: 'ethereum'
+    });
   });
 
   it('redirects home from an unknown chain once the switch chance is spent', () => {
@@ -139,16 +137,44 @@ describe('getRouteChainAction', () => {
     });
   });
 
-  // Portfolio and the Earn marketplace ARE the redirect's destination, and they
-  // render on any chain. A wallet parked on an unconfigured network used to
-  // throw the user off /earn on this path, which is a bug in both directions:
-  // pointless on /portfolio, an eviction on /earn.
-  it('never redirects the balances surfaces home, whatever the chain', () => {
-    for (const current of [999999, base.id, mainnet.id]) {
-      expect(getRouteChainAction(Intent.BALANCES_INTENT, current, { switchAttempted: true })).toEqual({
-        kind: 'render'
-      });
+  // Portfolio and the Earn marketplace run on every chain and need none in
+  // particular, so they take no part in the rules at all — they neither move
+  // the wallet nor get redirected, whatever the chain and whatever else is set.
+  //
+  // The two halves go together. They are the redirect's own DESTINATION, so
+  // switching here would turn "this product isn't on your chain" into a prompt
+  // to change chain anyway, one beat after landing on the surface that had no
+  // complaint. Redirecting is meanwhile pointless from /portfolio and an
+  // eviction from /earn.
+  it('leaves the balances surfaces alone, whatever the chain', () => {
+    const chains = [999999, base.id, mainnet.id, arbitrum.id];
+    for (const current of chains) {
+      for (const opts of [
+        {},
+        { switchAttempted: true },
+        { chains: DEV_CHAINS },
+        { filterChainId: base.id, chains: PROD_CHAINS },
+        { filterChainId: mainnet.id, chains: PROD_CHAINS }
+      ]) {
+        expect(getRouteChainAction(Intent.BALANCES_INTENT, current, opts)).toEqual({
+          kind: 'render'
+        });
+      }
     }
+  });
+
+  // A module route redirects home when the user's own chain change leaves it
+  // stranded. The Portfolio it lands on must not then ask for the chain back —
+  // that is the same prompt the redirect just decided not to make, arriving a
+  // render later under a different intent (the visit's `switchAttempted` resets
+  // with the intent, so nothing else would stop it).
+  it('does not switch on arrival after a module redirected home', () => {
+    // Stake on an unconfigured chain, switch chance already spent → home...
+    expect(getRouteChainAction(Intent.STAKE_INTENT, 999999, { switchAttempted: true })).toEqual({
+      kind: 'redirect-home'
+    });
+    // ...and the Portfolio that receives it asks for nothing, flag reset or not.
+    expect(getRouteChainAction(Intent.BALANCES_INTENT, 999999)).toEqual({ kind: 'render' });
   });
 });
 
