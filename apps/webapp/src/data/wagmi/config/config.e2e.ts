@@ -226,7 +226,12 @@ export const mockWagmiConfig = createConfig({
  */
 if (typeof window !== 'undefined') {
   window.__MOCK_SWITCH_CHAIN__ = async (chainName: string) => {
-    const chain = mockWagmiConfig.chains.find(c => c.name === chainName);
+    // Case-insensitive: callers build the name from the lowercase `NetworkName`
+    // enum (`Tenderly ${networkName}` → "Tenderly arbitrum"), and the URL the
+    // helper then waits on is lowercased anyway. Matching the display string
+    // exactly made the name a case-sensitive key it was never meant to be.
+    const wanted = chainName.toLowerCase();
+    const chain = mockWagmiConfig.chains.find(c => c.name.toLowerCase() === wanted);
     if (!chain) throw new Error(`Mock wallet: no configured chain named "${chainName}".`);
     await switchChain(mockWagmiConfig, { chainId: chain.id });
     return chain.id;
