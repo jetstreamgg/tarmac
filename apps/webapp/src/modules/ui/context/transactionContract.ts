@@ -250,6 +250,8 @@ export type TransactionContextValue = {
   restore: () => void;
   /** Whether the modal is currently minimized (hidden but still tracking a tx). */
   isMinimized: boolean;
+  /** `sessionId` of the live session (open or minimized), null when there is none. */
+  activeSessionId: string | null;
   /** Transaction lifecycle callbacks to spread into write hooks. */
   txCallbacks: TxCallbacks;
   /**

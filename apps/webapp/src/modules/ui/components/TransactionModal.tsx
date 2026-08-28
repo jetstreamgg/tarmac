@@ -93,6 +93,11 @@ export type TransactionModalProps = {
   onReviewStage?: () => void;
   onRetry?: () => void;
   onBack?: () => void;
+  /**
+   * A step has mined, so a failure must resume rather than reopen the inputs:
+   * Back is withheld on the failure screen (APP-448).
+   */
+  backLocked?: boolean;
   txStatus: TxStatus;
   confirmLabel?: string;
   /** Disables the Confirm button (e.g. while a quote is refetching). */
@@ -165,6 +170,7 @@ export function TransactionModal({
   onReviewStage,
   onRetry,
   onBack,
+  backLocked = false,
   txStatus,
   confirmLabel,
   confirmDisabled,
@@ -206,6 +212,7 @@ export function TransactionModal({
   // steps active together, "Bundled" header badge).
   const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
+  const backWithheld = txStatus === TxStatus.ERROR && backLocked;
   // Multi-step failures render inside the step list (retitled step + inline
   // "Try again", Figma 1030:139111) and drop the bottom status row/buttons —
   // the header back arrow still returns to the first screen. Single-step flows
@@ -407,7 +414,7 @@ export function TransactionModal({
                   size="iconM"
                   aria-label={t`Back`}
                   onClick={handleHeaderBack}
-                  disabled={isTransacting}
+                  disabled={isTransacting || backWithheld}
                   data-testid="transaction-modal-back"
                 >
                   <ArrowLeft className="size-4" />
@@ -653,9 +660,11 @@ export function TransactionModal({
 
                 {txStatus === TxStatus.ERROR && (
                   <div className="flex w-full gap-3">
-                    <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
-                      <Trans>Back</Trans>
-                    </Button>
+                    {!backWithheld && (
+                      <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
+                        <Trans>Back</Trans>
+                      </Button>
+                    )}
                     <Button variant="primary" size="xl" className="flex-1" onClick={handleRetry}>
                       {errorLabel ?? <Trans>Retry</Trans>}
                     </Button>

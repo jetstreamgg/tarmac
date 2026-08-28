@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { ChevronLeft, X } from 'lucide-react';
+import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -34,6 +35,8 @@ export function TakeoverShell({
   onBack,
   onClose,
   footer,
+  locked = false,
+  onOpenTransaction,
   children,
   dataTestId = 'takeover-shell'
 }: {
@@ -43,6 +46,12 @@ export function TakeoverShell({
   onBack?: () => void;
   onClose: () => void;
   footer?: ReactNode;
+  /**
+   * The form's own transaction is minimized (APP-448): the card column goes
+   * inert and dimmed, and the footer offers to reopen it instead.
+   */
+  locked?: boolean;
+  onOpenTransaction?: () => void;
   children: ReactNode;
   dataTestId?: string;
 }) {
@@ -177,10 +186,33 @@ export function TakeoverShell({
           exit={{ y: 40, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
           transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
         >
-          {children}
-          {footer && (
+          <div
+            inert={locked}
+            className={locked ? 'flex flex-col gap-3 opacity-50' : 'flex flex-col gap-3'}
+            data-testid={`${dataTestId}-form`}
+          >
+            {children}
+          </div>
+          {(locked || footer) && (
             <div className="flex items-center justify-between gap-4 px-2 py-4 md:gap-6 md:px-6 md:py-6">
-              {footer}
+              {locked ? (
+                <>
+                  <p className="text-textSecondary max-w-xs text-sm">
+                    <Trans>A transaction is in progress. Open it to continue.</Trans>
+                  </p>
+                  <Button
+                    variant="primary"
+                    size="xl"
+                    onClick={onOpenTransaction}
+                    data-testid={`${dataTestId}-open-transaction`}
+                    className="px-10"
+                  >
+                    <Trans>Open transaction</Trans>
+                  </Button>
+                </>
+              ) : (
+                footer
+              )}
             </div>
           )}
         </motion.div>

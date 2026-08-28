@@ -372,6 +372,8 @@ export function ManagePositionTakeover({
 
   const {
     launch,
+    locked,
+    restore,
     prepared,
     isLoading: launchLoading,
     error: launchError
@@ -429,6 +431,8 @@ export function ManagePositionTakeover({
       }
       onBack={onBack}
       onClose={close}
+      locked={locked}
+      onOpenTransaction={restore}
       dataTestId="stake-manage-takeover"
       footer={
         <>

@@ -37,6 +37,9 @@ export function useSequentialTransactionFlow(
   // repeat flow). That re-dispatch sent a second supply tx and double-advanced the
   // modal's step counter, completing the step before its tx mined (APP-417).
   const dispatchedIndexRef = useRef(-1);
+  // For the write callbacks, which fire after the render that dispatched them.
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? transactionsRef.current : calls;
@@ -87,6 +90,10 @@ export function useSequentialTransactionFlow(
       },
       onError: (err: Error) => {
         setHasWriteError(true);
+        // Nothing has mined after a first-call rejection, so there is nothing to
+        // resume — and a snapshot kept here would have the next confirm sign the
+        // pre-rejection call after the user went back and edited it (APP-448).
+        if (currentIndexRef.current === 0) setIsExecuting(false);
         onError(err, mutationHash || '');
       }
     }
