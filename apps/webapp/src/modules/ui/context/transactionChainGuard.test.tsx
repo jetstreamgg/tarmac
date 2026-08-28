@@ -432,6 +432,72 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
   });
 });
 
+// The fallback layers behind the first-screen guard (review 5046511631).
+describe('TransactionProvider — chain guard fallbacks', () => {
+  it('a pre-write refusal (the batch backstop) lands on ERROR even after an earlier session wrote', () => {
+    mockChainId = 1;
+    let cb!: TxCallbacks;
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(
+      liveCb => {
+        cb = liveCb;
+        return mainnetOnlyConfig(vi.fn());
+      },
+      { onReady: a => (api = a) }
+    );
+
+    // Session 1 writes (latching writeGenRef) and fails; the user closes it.
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    act(() => {
+      cb.onMutate();
+      cb.onError(new Error('User rejected the request'));
+    });
+    fireEvent.click(screen.getByTestId('transaction-modal-close'));
+
+    // Session 2: the engine refuses BEFORE sendCalls — no onMutate, no hash.
+    act(() => api.launch(mainnetOnlyConfig(vi.fn())));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    act(() => cb.onError(new Error('A batch transaction has a call with no target address')));
+
+    // The refusal is this session's: it lands on the failure view, not on a
+    // silent "Preparing" (the stale-write test used to drop it).
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeDefined();
+  });
+
+  it('a multi-step failure\'s inline "Try again" while off-chain returns to the guarded first screen (never a dead click)', () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    let cb!: TxCallbacks;
+    renderTestTree(liveCb => {
+      cb = liveCb;
+      return { ...mainnetOnlyConfig(onConfirm), steps: ['Approve', 'Supply'] };
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    act(() => {
+      cb.onMutate();
+      cb.onError(new Error('boom'));
+    });
+    // Multi-step failures render inline, replacing the footer the guard
+    // block lives in — so there is no guard copy on this screen.
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+    expect(screen.queryByTestId('transaction-chain-guard')).toBeNull();
+
+    act(() => {
+      mockChainId = 8453;
+      forceRerender();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    // Back on the first screen, guarded, with the switch offered.
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+  });
+});
+
 // Modals don't survive app navigation: the shell reports every pathname change
 // and the provider closes the session unless something is at stake.
 describe('TransactionProvider — idle sessions close on navigation', () => {
