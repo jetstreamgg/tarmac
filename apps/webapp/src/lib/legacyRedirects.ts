@@ -102,26 +102,41 @@ export function legacySearchToLocation(search: Record<string, string>): LegacyRe
 // their entity path params when they moved under /earn, so `subpath` carries
 // recognised entity segments across; unrecognised ones drop to the overview.
 // Convert needs no entry: its paths survived the flip unchanged.
-type V2Redirect = { to: string; subpath?: (segments: string[]) => string[] };
+type V2Redirect = {
+  to: string;
+  /**
+   * Where a path that carries no recognised entity segment lands, when that
+   * differs from `to`. The rewards/vaults/fixed overviews were retired with
+   * the flip — their bare paths are screenless routes whose only job is to
+   * forward to the marketplace — so naming `/earn` here resolves an old link
+   * in one hop instead of chaining a legacy redirect into a route redirect.
+   * Modules whose destination is a real screen leave it unset.
+   */
+  overview?: string;
+  subpath?: (segments: string[]) => string[];
+};
 
 const V2_REDIRECT_BY_MODULE: Record<string, V2Redirect> = {
   balances: { to: ROUTES.PORTFOLIO },
   savings: { to: ROUTES.EARN_SAVINGS },
   rewards: {
     to: ROUTES.EARN_REWARDS,
+    overview: ROUTES.EARN,
     subpath: ([reward]): string[] => (reward ? [reward] : [])
   },
   vaults: {
     to: ROUTES.EARN_VAULTS,
+    overview: ROUTES.EARN,
     subpath: ([provider, vault]): string[] =>
       // The vault detail route needs both segments; a bare provider has no target.
       provider && vault && providerForVaultModule(provider) ? [provider.toLowerCase(), vault] : []
   },
-  // Market deep links keep their /earn/fixed/market/:address hop (that route
-  // forwards to the slug page); the bare path chains through /earn/fixed,
-  // whose index forwards to /earn (G6 — no overview screen, like rewards/D6).
+  // Market deep links keep their /earn/fixed/market/:address hop — that route
+  // holds the address-to-slug mapping, so the second step is doing work rather
+  // than just forwarding. Everything else lands on the marketplace directly.
   fixed: {
     to: ROUTES.EARN_FIXED,
+    overview: ROUTES.EARN,
     subpath: ([module, market]): string[] =>
       module?.toLowerCase() === FixedIntentMapping[FixedIntent.MARKET_INTENT] && market
         ? [module.toLowerCase(), market]
@@ -149,7 +164,11 @@ export function legacyPathToLocation(
   if (!redirect) return null;
 
   const subpath = redirect.subpath?.(segments.slice(1)) ?? [];
-  const to = [redirect.to, ...subpath].join('/');
+  // With an entity in hand the destination is the detail route under `to`;
+  // without one it is the module's overview, which for the retired overviews
+  // is the marketplace rather than their own screenless path.
+  const base = subpath.length > 0 ? redirect.to : (redirect.overview ?? redirect.to);
+  const to = [base, ...subpath].join('/');
   // input_amount/linked_action are retired in the new IA (plan §4.1).
   const preserved = Object.fromEntries(
     Object.entries(search).filter(([key]) => key !== 'input_amount' && key !== 'linked_action')

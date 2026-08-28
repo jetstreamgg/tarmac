@@ -296,8 +296,11 @@ export function useAppOrchestration(): { intent: Intent } {
       rewardContract !== undefined &&
       !rewardContracts?.some(c => c.contractAddress?.toLowerCase() === rewardContract.toLowerCase())
     ) {
-      trackRouteRedirected({ fromPath: pathname, toPath: '/earn/rewards', reason: 'unknown_reward' });
-      void navigate({ to: '/earn/rewards', search: keepSearch, replace: true });
+      // The marketplace, not `/earn/rewards`: that path lost its overview screen
+      // with the flip and is now a redirect-only route that forwards here, so
+      // aiming at it would resolve this one navigation through two.
+      trackRouteRedirected({ fromPath: pathname, toPath: ROUTES.EARN, reason: 'unknown_reward' });
+      void navigate({ to: ROUTES.EARN, search: keepSearch, replace: true });
     }
   }, [intent, rewardContract, newChainId, networkFilter, rewardContracts, navigate]);
 

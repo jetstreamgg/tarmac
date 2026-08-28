@@ -137,9 +137,12 @@ describe('legacyPathToLocation', () => {
   it('maps pre-flip module paths to their target-IA destinations', () => {
     expect(legacyPathToLocation('/balances')).toEqual({ to: '/portfolio', search: {} });
     expect(legacyPathToLocation('/savings')).toEqual({ to: '/earn/savings', search: {} });
-    expect(legacyPathToLocation('/rewards')).toEqual({ to: '/earn/rewards', search: {} });
-    expect(legacyPathToLocation('/vaults')).toEqual({ to: '/earn/vaults', search: {} });
-    expect(legacyPathToLocation('/fixed')).toEqual({ to: '/earn/fixed', search: {} });
+    // The rewards/vaults/fixed overviews were retired with the flip: their bare
+    // paths are screenless routes that forward to the marketplace, so an old
+    // link resolves straight there rather than through them.
+    expect(legacyPathToLocation('/rewards')).toEqual({ to: '/earn', search: {} });
+    expect(legacyPathToLocation('/vaults')).toEqual({ to: '/earn', search: {} });
+    expect(legacyPathToLocation('/fixed')).toEqual({ to: '/earn', search: {} });
     expect(legacyPathToLocation('/expert')).toEqual({ to: '/earn/stusds', search: {} });
   });
 
@@ -159,8 +162,8 @@ describe('legacyPathToLocation', () => {
       to: `/earn/vaults/sky/${SPARK_VAULT_ADDRESS}`,
       search: {}
     });
-    // A bare provider has no detail route to land on → vaults overview.
-    expect(legacyPathToLocation('/vaults/sky')).toEqual({ to: '/earn/vaults', search: {} });
+    // A bare provider has no detail route to land on → the marketplace.
+    expect(legacyPathToLocation('/vaults/sky')).toEqual({ to: '/earn', search: {} });
   });
 
   it('keeps the fixed market as path segments', () => {
@@ -176,9 +179,9 @@ describe('legacyPathToLocation', () => {
   });
 
   it('drops unrecognised trailing segments and lands on the destination', () => {
-    expect(legacyPathToLocation('/fixed/bogus')).toEqual({ to: '/earn/fixed', search: {} });
+    expect(legacyPathToLocation('/fixed/bogus')).toEqual({ to: '/earn', search: {} });
     expect(legacyPathToLocation(`/vaults/aave/${SPARK_VAULT_ADDRESS}`)).toEqual({
-      to: '/earn/vaults',
+      to: '/earn',
       search: {}
     });
   });
