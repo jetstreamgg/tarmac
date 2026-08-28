@@ -3,6 +3,7 @@ import { stakeDeepLinkContract } from '../contracts/stake-deep-link.contract';
 import { stakeManageFlowContract } from '../contracts/stake-manage-flow.contract';
 import { stakeOpenFlowContract } from '../contracts/stake-open-flow.contract';
 import { stakeProductDefaultContract } from '../contracts/stake-product-default.contract';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { formatContractContext, locate } from './locate';
 
 /** Collateral for borrow-involving specs — see stakeV2.ts comment block. */
@@ -93,10 +94,7 @@ export class StakePage {
     const confirm = this.page.getByRole('button', { name: 'Confirm', exact: true });
     await expect(confirm).toBeEnabled({ timeout: 60_000 });
     await confirm.click();
-    await expect(this.page.getByTestId('transaction-status-badge')).toHaveText('Success', {
-      timeout: 60_000
-    });
-    await this.page.getByRole('button', { name: 'Done' }).click();
+    await expectTransactionSuccess(this.page);
   }
 
   async openPosition({

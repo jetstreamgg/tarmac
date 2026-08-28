@@ -86,6 +86,10 @@ const mockMerklApiWithNoRewards = async (page: Page) => {
   });
 };
 
+// NOTE: this spec drives the LEGACY VaultWidget, which owns its own txStatus
+// via WidgetContext and renders its own success screen. It never touches
+// TransactionProvider, so the shared `expectTransactionSuccess` toast helper
+// does NOT apply here — these text assertions are the right oracle.
 // Helper to check for supply success message
 const expectSupplySuccess = async (isolatedPage: any, amount: string) => {
   const successMessage = isolatedPage.getByText(`You've supplied ${amount} USDS to the Morpho Vault`);

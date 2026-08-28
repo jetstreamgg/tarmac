@@ -4,6 +4,7 @@ import { vaultSupplyFlowContract } from '../contracts/vault-supply-flow.contract
 import { vaultWithdrawFlowContract } from '../contracts/vault-withdraw-flow.contract';
 import { connectAndVerify } from '../utils/connectAndVerify';
 import { type ConnectMockWalletOptions } from '../utils/connectMockWalletAndAcceptTerms';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { morphoVaultPath } from '../utils/vaultsE2e';
 import { formatContractContext, locate } from './locate';
 
@@ -85,10 +86,7 @@ export class VaultProductPage {
     const confirm = this.page.getByRole('button', { name: 'Confirm', exact: true });
     await expect(confirm).toBeEnabled({ timeout: 60_000 });
     await confirm.click();
-    await expect(this.page.getByTestId('transaction-status-badge')).toHaveText('Success', {
-      timeout: 60_000
-    });
-    await this.page.getByText('Done').first().click();
+    await expectTransactionSuccess(this.page);
   }
 
   repairContext(contractId: 'vault-product-default' | 'vault-supply-flow' | 'vault-withdraw-flow') {

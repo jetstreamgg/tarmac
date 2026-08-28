@@ -2,6 +2,7 @@ import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { ConvertPage } from '../pages/ConvertPage';
 import { connectAndVerify } from '../utils/connectAndVerify';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction';
 import { NetworkName } from '../utils/constants';
 
@@ -26,6 +27,12 @@ const openConvert = async (page: Page, networkName: NetworkName) => {
  * whitespace between them, so the row's text content reads "ConvertUSDStoUSDC"
  * and `getByText('Convert USDS to USDC')` can never match. Locate the row, then
  * assert its parts.
+ */
+/*
+ * TIMING: the step list only exists while the modal is open, and a confirmed
+ * transaction closes it. Call this immediately after the confirm click —
+ * Playwright's first poll is synchronous, so the assertion lands well inside
+ * the receipt round-trip, but anything queued ahead of it eats that margin.
  */
 const expectApproveAndConvertSteps = async (page: Page) => {
   await expect(page.getByText('Approve')).toBeVisible({ timeout: 60_000 });
@@ -228,8 +235,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await convert.reviewAndConfirm();
 
-      await expect(isolatedPage.getByText("You've successfully converted 5 USDS to USDC.")).toBeVisible();
-      await isolatedPage.getByRole('button', { name: 'Done' }).click();
+      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted to USDC!' });
 
       // onSuccess resets the form for the next conversion
       await expect(isolatedPage.getByTestId('convert-from-amount')).toHaveValue('');
@@ -243,8 +249,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await convert.reviewAndConfirm();
 
-      await expect(isolatedPage.getByText("You've successfully converted 5 USDC to USDS.")).toBeVisible();
-      await isolatedPage.getByRole('button', { name: 'Done' }).click();
+      await expectTransactionSuccess(isolatedPage, { title: 'USDC converted to USDS!' });
     });
 
     test('Transaction screen shows the approve and convert steps', async ({ isolatedPage }) => {
@@ -253,11 +258,11 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await convert.reviewAndConfirm();
 
-      // The DS step list renders on the wallet/status screen and persists
-      // through success (all steps completed).
+      // The DS step list renders on the wallet/status screen. It has to be
+      // asserted before settlement — success takes the modal with it.
       await expectApproveAndConvertSteps(isolatedPage);
 
-      await isolatedPage.getByRole('button', { name: 'Done' }).click();
+      await expectTransactionSuccess(isolatedPage);
     });
   });
 
@@ -284,15 +289,8 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await expect(confirm).toBeEnabled({ timeout: 60_000 });
       await confirm.click();
 
-      // The old generic success sentence is gone — status now lives only in the
-      // status badge (`data-testid="transaction-status-badge"`), which cycles through
-      // "Confirm in the wallet" → "Processing" → "Success". toHaveText auto-retries,
-      // so this waits for the terminal text rather than whatever the badge reads first.
-      await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Success', {
-        timeout: 60_000
-      });
       await expectApproveAndConvertSteps(isolatedPage);
-      await isolatedPage.getByRole('button', { name: 'Done' }).click();
+      await expectTransactionSuccess(isolatedPage);
     });
   });
 
@@ -361,15 +359,13 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       // USDS → USDC
       await isolatedPage.getByTestId('convert-from-amount').fill('3');
       await convert.reviewAndConfirm();
-      await expect(isolatedPage.getByText("You've successfully converted 3 USDS to USDC.")).toBeVisible();
-      await isolatedPage.getByRole('button', { name: 'Done' }).click();
+      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted to USDC!' });
 
       // USDC → USDS
       await isolatedPage.getByTestId('convert-flip').click();
       await isolatedPage.getByTestId('convert-from-amount').fill('3');
       await convert.reviewAndConfirm();
-      await expect(isolatedPage.getByText("You've successfully converted 3 USDC to USDS.")).toBeVisible();
-      await isolatedPage.getByRole('button', { name: 'Done' }).click();
+      await expectTransactionSuccess(isolatedPage, { title: 'USDC converted to USDS!' });
     });
   });
 };

@@ -21,7 +21,6 @@ const isPending = (status: AsyncOrderStatus) => status === 'presignaturePending'
 export function AsyncOrderModalHarness({ config }: { config: AsyncOrderConfig }) {
   const [open, setOpen] = useState(true);
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
-  const [orderId, setOrderId] = useState<string>();
   const orderIdRef = useRef<string | undefined>(undefined);
 
   const poll = (id: string) => {
@@ -46,7 +45,6 @@ export function AsyncOrderModalHarness({ config }: { config: AsyncOrderConfig })
     setTxStatus(TxStatus.INITIALIZED);
     void config.submitOrder().then(id => {
       orderIdRef.current = id;
-      setOrderId(id);
       poll(id);
     });
   };
@@ -62,7 +60,6 @@ export function AsyncOrderModalHarness({ config }: { config: AsyncOrderConfig })
       onConfirm={start}
       onRetry={start}
       txStatus={txStatus}
-      externalLink={orderId ? config.orderExplorerUrl?.(orderId) : undefined}
       confirmLabel={config.confirmLabel}
       confirmDisabled={config.confirmDisabled}
       successLabel={config.successLabel}

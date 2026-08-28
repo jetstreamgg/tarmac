@@ -482,6 +482,17 @@ export function PendleModalForm({
   // as a cost to the user (PR #1781 review) — see formatPriceImpact.
   const priceImpactDisplay = formatPriceImpact(quote?.priceImpact) ?? NO_VALUE;
   const selectedSymbol = selectedToken.symbol;
+
+  // Amount-aware titles for the success/minimized toast (the savings pattern —
+  // without them the toast falls back to the launch's success SUBTITLE, a
+  // sentence with no amount). Names the INPUT leg, which is exact; the quoted
+  // output is an estimate the fill can drift from, so the toast doesn't assert it.
+  const toast = useMemo(() => {
+    const label = `${formatNumber(inFloat, { maxDecimals: 2 })} ${inputSymbol}`;
+    return isSupply
+      ? { loading: t`Supplying ${label}`, success: t`${label} supplied!`, error: t`Supply failed` }
+      : { loading: t`Withdrawing ${label}`, success: t`${label} withdrawn!`, error: t`Withdrawal failed` };
+  }, [inFloat, inputSymbol, isSupply]);
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`pendle-modal-${flow}-review`}>
@@ -562,6 +573,7 @@ export function PendleModalForm({
     transactionContent,
     transactionScreenContent,
     steps,
+    toast,
     // USD value of the non-PT leg (same number the analytics use). Zero
     // amount is $0 even when prices haven't loaded — an empty input owes no
     // check; `undefined` (unpriceable non-zero amount) is treated as

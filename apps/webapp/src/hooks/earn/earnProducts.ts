@@ -32,7 +32,8 @@ export const RISK_TIER_BY_PROFILE: Record<EarnRiskProfileId, EarnRiskTier> = {
   'vault-tether-savings': 'moderate',
   'vault-risk-capital': 'advanced',
   fixed: 'moderate',
-  stusds: 'advanced'
+  stusds: 'advanced',
+  stake: 'advanced'
 };
 
 /**

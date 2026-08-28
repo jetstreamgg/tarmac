@@ -4,6 +4,7 @@ import { rewardsSupplyFlowContract } from '../contracts/rewards-supply-flow.cont
 import { rewardsWithdrawFlowContract } from '../contracts/rewards-withdraw-flow.contract';
 import { connectAndVerify } from '../utils/connectAndVerify';
 import { type ConnectMockWalletOptions } from '../utils/connectMockWalletAndAcceptTerms';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { formatContractContext, locate } from './locate';
 
 /** Semantic page object for /earn/rewards/:rewardContract (Gate 4). */
@@ -82,10 +83,7 @@ export class RewardsProductPage {
     const confirm = this.page.getByRole('button', { name: 'Confirm', exact: true });
     await expect(confirm).toBeEnabled({ timeout: 60_000 });
     await confirm.click();
-    await expect(this.page.getByTestId('transaction-status-badge')).toHaveText('Success', {
-      timeout: 60_000
-    });
-    await this.page.getByText('Done').first().click();
+    await expectTransactionSuccess(this.page);
   }
 
   repairContext(

@@ -5,6 +5,7 @@ import { savingsSupplyFlowContract } from '../contracts/savings-supply-flow.cont
 import { savingsWithdrawFlowContract } from '../contracts/savings-withdraw-flow.contract';
 import { connectAndVerify } from '../utils/connectAndVerify';
 import { type ConnectMockWalletOptions } from '../utils/connectMockWalletAndAcceptTerms';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 import { NetworkName } from '../utils/constants';
 import { formatContractContext, locate } from './locate';
@@ -101,10 +102,7 @@ export class SavingsProductPage {
     const confirm = this.page.getByRole('button', { name: 'Confirm', exact: true });
     await expect(confirm).toBeEnabled({ timeout: 60_000 });
     await confirm.click();
-    await expect(this.page.getByTestId('transaction-status-badge')).toHaveText('Success', {
-      timeout: 60_000
-    });
-    await this.page.getByText('Done').first().click();
+    await expectTransactionSuccess(this.page);
   }
 
   repairContext(

@@ -88,9 +88,6 @@ export class ConvertPage {
     const confirm = this.page.getByRole('button', { name: 'Confirm', exact: true });
     await expect(confirm).toBeEnabled({ timeout: 60_000 });
     await confirm.click();
-    await expect(this.page.getByTestId('transaction-status-badge')).toHaveText('Success', {
-      timeout: 60_000
-    });
   }
 
   repairContext(contractId: 'convert-psm-default' | 'convert-psm-flow' | 'convert-deep-link') {
