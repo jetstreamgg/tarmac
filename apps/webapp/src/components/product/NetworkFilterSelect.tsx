@@ -62,8 +62,10 @@ export function NetworkFilterSelect({
   // below still offers every chain.
   const allLabel =
     allLabelStyle === 'stack' ? (
-      <span className="flex items-center gap-2">
-        <IconStack size={24}>
+      <span className={cn('flex items-center', size === 'm' ? 'gap-2' : 'gap-1.5')}>
+        {/* Disc diameter tracks the pill's own icon size, like the per-chain
+            rows above — the header's 24px, 16px on the compact tier. */}
+        <IconStack size={size === 'm' ? 24 : 16}>
           {supportedChainIds.slice(0, 3).map(id => getChainIcon(id, 'h-full w-full'))}
         </IconStack>
         <Trans>All networks</Trans>

@@ -15,10 +15,16 @@ export function NetworkSelector({ compact = false }: { compact?: boolean }) {
   // so its label and chevron take fg-text-consistent-light (Figma 1030:138802)
   // rather than the Dropdown variant's theme-following text-text — that one
   // flips to the dark #2f2d40 in light mode and all but disappears here.
+  //
+  // It wears the Portfolio header's treatment — the overlapped chain discs on
+  // the "All networks" label rather than the toolbars' globe. The two are the
+  // page-level statements of the same filter; the globe belongs to the table
+  // toolbars, where it reads as one of a row of three domain filters.
   return (
     <NetworkFilterSelect
       testId="wallet-drawer-network"
       size={compact ? 's' : 'm'}
+      allLabelStyle="stack"
       triggerClassName="text-fgConsistent [&>svg]:text-fgConsistent"
     />
   );
