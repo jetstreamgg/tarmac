@@ -1,14 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useChainId, useChains } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { QueryParams, mapQueryParamToIntent, isNewIntent, SUSDT_VAULT_ENABLED } from '@/lib/constants';
+import { QueryParams, isNewIntent, SUSDT_VAULT_ENABLED } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
-import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { ROUTES } from '@/lib/routes';
-import { getMainnetTargetName, isMultichain } from '@/lib/widget-network-map';
-import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import {
@@ -397,31 +394,6 @@ export function BalancesSuggestedActions({
 }) {
   const navigate = useNavigate();
   const chainId = useChainId();
-  const chains = useChains();
-  const { setIsSwitchingNetwork } = useNetworkSwitch();
-
-  const connectedChain = chains.find(c => c.id === chainId);
-  const networkName = connectedChain ? normalizeUrlParam(connectedChain.name) : 'ethereum';
-
-  // Determine the target network name based on module's network requirements
-  const getTargetNetworkName = useCallback(
-    (module: string | undefined): string => {
-      if (!module) return networkName;
-
-      const targetIntent = mapQueryParamToIntent(module);
-
-      // For multichain intents, use current network; for mainnet-only, the
-      // shared mainnet-family target (the config's tenderly fork in non-prod
-      // builds, Ethereum in production).
-      if (isMultichain(targetIntent)) {
-        return networkName;
-      }
-
-      return normalizeUrlParam(getMainnetTargetName(chainId, chains));
-    },
-    [networkName, chains, chainId]
-  );
-
   const { isModuleEnabled } = useGeoConfig();
 
   const stableActions = useMemo(() => {
@@ -455,18 +427,15 @@ export function BalancesSuggestedActions({
 
   const handleClick = useCallback(
     (action: BalancesAction) => {
-      // Determine target network based on module's network requirements
-      const targetNetworkName = getTargetNetworkName(action.module);
-      const isNetworkChange = targetNetworkName !== networkName;
-
       const url = new URL(action.url, 'http://internal');
       const actionSearch = Object.fromEntries(url.searchParams);
 
-      // Show switching UI if changing networks
-      if (isNetworkChange) {
-        setIsSwitchingNetwork(true);
-      }
-
+      // The destination's chain used to ride along in `network=`, which both
+      // performed the switch and justified showing the switching state from the
+      // click. Neither is ours to do now: the route guard resolves the chain on
+      // arrival and raises its own feedback — and raising it here would leave it
+      // set if the guard decides not to switch, since only a real chain change
+      // clears it.
       void navigate({
         to: url.pathname as '/',
         search: prev => {
@@ -476,12 +445,11 @@ export function BalancesSuggestedActions({
             if (value !== undefined) next[param] = value;
           });
           Object.assign(next, actionSearch);
-          next[QueryParams.Network] = targetNetworkName;
           return next;
         }
       });
     },
-    [networkName, getTargetNetworkName, setIsSwitchingNetwork, navigate]
+    [navigate]
   );
 
   if (actions.length === 0) return null;

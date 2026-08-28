@@ -110,9 +110,11 @@ describe('BalancesSuggestedActions', () => {
 
     expect(setIsSwitchingNetworkMock).not.toHaveBeenCalled();
     expect(lastNavigation?.to).toBe('/convert/psm');
+    // No `network`: the destination's chain used to ride along in the search,
+    // which both performed the switch and justified the switching feedback from
+    // the click. The route guard owns both on arrival now.
     expect(lastNavigation?.search).toEqual({
       source_token: 'USDC',
-      network: 'ethereum',
       lang: 'en'
     });
   });
@@ -131,7 +133,7 @@ describe('BalancesSuggestedActions', () => {
     fireEvent.click(screen.getByRole('button', { name: /Tether Savings \(sUSDT\)/i }));
 
     expect(lastNavigation?.to).toBe(`/earn/vaults/sky/${SPARK_USDT_VAULT_ADDRESS}`);
-    expect(lastNavigation?.search).toEqual({ network: 'ethereum', lang: 'en' });
+    expect(lastNavigation?.search).toEqual({ lang: 'en' });
   });
 
   // The Tether Savings action links to the vault by address (it bypasses the

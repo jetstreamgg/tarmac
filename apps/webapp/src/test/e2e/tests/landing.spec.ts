@@ -37,9 +37,10 @@ test.describe('Deep links', () => {
     await isolatedPage.goto('/earn/savings?network=tenderlybase');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
 
-    // Savings runs on Base, so the param is honoured rather than corrected —
-    // and the product pill names the chain the product is actually on.
+    // `?network=` is retired as app state and honoured exactly once, so links
+    // minted while it was live keep working. Savings runs on Base, so nothing
+    // overrules it — and the param is spent rather than left in the URL.
     await expect(isolatedPage.getByTestId('product-detail-network')).toContainText('Tenderly Base');
-    await expect(isolatedPage).toHaveURL(/network=tenderlybase/);
+    await expect(isolatedPage).not.toHaveURL(/network=/);
   });
 });

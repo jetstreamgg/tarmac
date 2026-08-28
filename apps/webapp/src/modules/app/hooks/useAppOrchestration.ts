@@ -8,8 +8,8 @@ import { getRouteChainAction } from '@/lib/widget-network-map';
 import { pathToIntent, ROUTES } from '@/lib/routes';
 
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
-import { useAvailableTokenRewardContracts, useNetworkFilter } from '@/hooks';
-import { useConnection, useConnectionEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
+import { useAppChainId, useAvailableTokenRewardContracts, useNetworkFilter } from '@/hooks';
+import { useConnection, useChainId, useChains, useSwitchChain } from 'wagmi';
 import { useSafeAppNotification } from './useSafeAppNotification';
 import { useGovernanceMigrationToast } from './useGovernanceMigrationToast';
 import { useSpkStakingRewardsToast } from './useSpkStakingRewardsToast';
@@ -24,7 +24,6 @@ import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useUpgradeDeepLink } from '@/modules/upgrade/hooks/useUpgradeDeepLink';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
-import type { AutoSwitchTrigger } from '@/modules/analytics/constants';
 
 /**
  * App-level orchestration that must run once for every module route: route
@@ -59,7 +58,7 @@ export function useAppOrchestration(): { intent: Intent } {
   // `autoSwitchAttempted` guard is what keeps it from re-prompting.
   const { chainId: networkFilter } = useNetworkFilter();
 
-  const { connector, chainId: walletChainId } = useConnection();
+  const { connector, chainId: walletChainId, status } = useConnection();
   const { trackNetworkAutoSwitched } = useAppAnalytics();
 
   // Modals don't survive app navigation: a transaction modal open when the
@@ -75,32 +74,6 @@ export function useAppOrchestration(): { intent: Intent } {
     lastPathnameRef.current = pathname;
     closeOnNavigation(pathname);
   }, [pathname, closeOnNavigation]);
-
-  // Attribution hand-off between the route guard (which writes the network
-  // param) and the param-driven switch effect below that acts on it (D-2).
-  const autoSwitchTriggerRef = useRef<AutoSwitchTrigger | null>(null);
-
-  useConnectionEffect({
-    // Once the user connects their wallet, check if the network param is set and switch chains if necessary
-    onConnect(data) {
-      const parsedChainId = chains.find(
-        chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network || '')
-      )?.id;
-      if (parsedChainId) {
-        if (parsedChainId !== chainId) {
-          // Fires on silent auto-reconnects too — is_reconnect keeps those
-          // distinguishable from a fresh connect's prompt (APP-444 D-2).
-          trackNetworkAutoSwitched({
-            trigger: 'connect',
-            fromChainId: chainId,
-            toChainId: parsedChainId,
-            isReconnect: data.isReconnected
-          });
-        }
-        switchChain({ chainId: parsedChainId });
-      }
-    }
-  });
 
   const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
 
@@ -127,51 +100,36 @@ export function useAppOrchestration(): { intent: Intent } {
         setPendingSwitch(undefined);
 
         // Whether the user rejected the request or the wallet failed to honor
-        // it (e.g. a pending-request error while a popup sits unanswered),
-        // sync the network param back to the actual chain so the URL never
-        // claims a network the wallet isn't on. Route validation then falls
-        // back home for mainnet-only modules — the visit already had its
-        // switch chance — instead of stranding a half-switched page.
+        // it (e.g. a pending-request error while a popup sits unanswered), the
+        // visit has had its switch chance. Route validation then falls back
+        // home for mainnet-only modules instead of stranding a half-switched
+        // page, or re-prompting against an answer already given.
         autoSwitchAttempted.current = true;
-        const chainName = chains.find(c => c.id === chainId)?.name;
-        if (chainName) {
-          const normalizedChainName = normalizeUrlParam(chainName);
-          const currentNetwork = searchParams.get(QueryParams.Network);
-          // Only update if the network actually changed (compare normalized to avoid case-only diffs)
-          if (normalizeUrlParam(currentNetwork || '') !== normalizedChainName) {
-            setSearchParams(params => {
-              params.set(QueryParams.Network, normalizedChainName);
-              return params;
-            });
-          }
-        }
       }
     }
   });
 
-  const network = searchParams.get(QueryParams.Network) || undefined;
-
   // A wallet parked on a chain the app doesn't configure. wagmi refuses to
   // move `config.state.chainId` onto an unconfigured chain, so `useChainId()`
-  // (and with it the network param, which mirrors it) keeps naming the last
-  // configured one — the app reads and renders perfectly well against it while
-  // the wallet is somewhere else entirely. `useConnection().chainId` is the
-  // only place that truth surfaces, and the resolver needs it: this is what
-  // used to raise the blocking "unsupported network" modal, and is now just
-  // case (c) — switch the wallet back to a chain the module runs on.
-  const offConfigChainId =
-    walletChainId !== undefined && !chains.some(chain => chain.id === walletChainId)
-      ? walletChainId
-      : undefined;
+  // keeps naming the last configured one — the app reads and renders perfectly
+  // well against it while the wallet is somewhere else entirely.
+  // `useConnection().chainId` is the only place that truth surfaces, and the
+  // resolver needs it: this is what used to raise the blocking "unsupported
+  // network" modal, and is now just case (c) — switch the wallet back to a
+  // chain the module runs on.
+  const appChainId = useAppChainId();
 
-  // The chain an off-config switch below has asked the wallet for and is still
-  // waiting on. A normal switch gets this for free: it goes out by writing
-  // `network=`, so the param names the target from the moment it is requested
-  // and every render in between validates against where the app is HEADED. An
-  // off-config switch has no param to write (see below), so without this the
-  // in-flight renders validate against the chain being left — and any unrelated
-  // re-render during that window (a query settling, say) bounces the user home
-  // a beat before the wallet answers.
+  // The chain a switch below has asked the wallet for and is still waiting on.
+  //
+  // This is the whole job the `network=` param used to do besides being a URL.
+  // A switch went out by WRITING the param, so from the moment it was requested
+  // the param named the target and every render in between validated against
+  // where the app was HEADED. Take the param away and the in-flight renders
+  // validate against the chain being left, and any unrelated re-render during
+  // that window (a query settling, say) bounces the user home a beat before the
+  // wallet answers. So the pending target is held here instead — one mechanism
+  // for both paths, where the off-config path already needed its own because it
+  // had no param to write.
   //
   // Held as {from, to} rather than the target alone so the wait can be ended by
   // ANY move, not just the requested one: a user shown a switch prompt can open
@@ -189,16 +147,9 @@ export function useAppOrchestration(): { intent: Intent } {
     }
   }, [walletChainId, pendingSwitch]);
 
-  // The chain the app is pointed at: a switch we are waiting on wins, then the
-  // network param (so navigation validates against the target network while a
-  // wallet switch is in flight), then the off-config wallet chain — which no
-  // param can describe — and finally the config's own.
-  const newChainId =
-    pendingSwitch?.to ??
-    offConfigChainId ??
-    (network
-      ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)
-      : chainId);
+  // The chain the app is pointed at: a switch we are waiting on wins, then
+  // wherever the wallet actually is.
+  const newChainId = pendingSwitch?.to ?? appChainId;
 
   const rewardContracts = useAvailableTokenRewardContracts(newChainId);
 
@@ -241,55 +192,35 @@ export function useAppOrchestration(): { intent: Intent } {
     // The module belongs on a different chain than the app is pointed at —
     // either the user's network filter names one this module runs on, or the
     // current chain can't host it at all. Switch on the user's behalf instead
-    // of bouncing home: in-app links retain the current network param and deep
-    // links can carry anything. Writing the param triggers the wallet switch
-    // below; the auto flags make the shell toast explain the change. The flags
-    // are skipped when the wallet is already on the target chain (param merely
-    // stale) — no switch would run to clear them. useNetworkChangeToast owns
-    // the user-facing feedback and clears isSwitchingNetwork once the wallet
-    // settles.
+    // of bouncing home. The auto flags make the shell toast explain the change;
+    // they are skipped when the config chain won't move, because only
+    // `useNetworkChangeToast` clears them and it watches that chain — raise
+    // them with nothing to move and the flag leaks into the user's next manual
+    // switch, mislabelling it as automatic.
     if (action.kind === 'switch-network') {
       autoSwitchAttempted.current = true;
       const targetChainId = action.chainId;
 
-      // An off-config wallet can't be moved through the network param: the
-      // param already names `chainId`, which wagmi pinned to a configured chain
-      // while the wallet went elsewhere, so there is no param change for the
-      // switch effect below to react to. Ask the wallet directly.
-      if (offConfigChainId !== undefined) {
-        setIsSwitchingNetwork(true);
-        // Same condition the configured branch below uses, and for the same
-        // reason: `isAutoSwitching` exists to label a toast that fires on a
-        // change of the CONFIG chain, and only `useNetworkChangeToast` clears
-        // it. An off-config wallet leaves the config chain pinned where it was,
-        // so when the target is already that chain nothing moves, no toast
-        // fires, and the flag would stay raised — labelling the user's NEXT
-        // manual switch "we've switched your network automatically".
-        if (targetChainId !== chainId) setIsAutoSwitching(true);
-        // Stand in for the `network=` write the configured path gets: from here
-        // until the wallet answers, the app is pointed at the target.
-        setPendingSwitch({ from: offConfigChainId, to: targetChainId });
-        trackNetworkAutoSwitched({
-          trigger: 'off_config_chain',
-          fromChainId: offConfigChainId,
-          toChainId: targetChainId
-        });
-        switchChain({ chainId: targetChainId });
-        return;
-      }
-
       if (targetChainId !== chainId) {
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
-        autoSwitchTriggerRef.current = 'route_guard';
       }
-      setSearchParams(
-        params => {
-          params.set(QueryParams.Network, action.network);
-          return params;
-        },
-        { replace: true }
-      );
+      // Only while a wallet is attached. Disconnected, `switchChain` moves the
+      // config chain synchronously — there is no in-flight window to cover, and
+      // a pending entry keyed on a `from` that never changes would never clear.
+      if (walletChainId !== undefined) {
+        setPendingSwitch({ from: walletChainId, to: targetChainId });
+      }
+      trackNetworkAutoSwitched({
+        // `appChainId` parts from the config's only for a wallet on a chain the
+        // app doesn't configure — a distinct story from a module simply wanting
+        // another chain, since it is what used to raise the blocking
+        // "unsupported network" dialog.
+        trigger: appChainId !== chainId ? 'off_config_chain' : 'route_guard',
+        fromChainId: appChainId,
+        toChainId: targetChainId
+      });
+      switchChain({ chainId: targetChainId });
       return;
     }
 
@@ -327,78 +258,66 @@ export function useAppOrchestration(): { intent: Intent } {
     });
   }, [searchParams, intent, newChainId]);
 
+  // `?network=` is retired as app state. It is still HONOURED once, so the
+  // bookmarks, support links and shared URLs minted while it was live keep
+  // working, and then stripped — it is a migration affordance now, not a
+  // channel. Everything that used to write it calls `switchChain` directly.
+  //
+  // Waits for the connection to settle rather than firing on mount: wagmi
+  // reconnects asynchronously, and a link opened cold would otherwise be
+  // honoured against the config chain and then overruled a beat later by the
+  // chain the wallet actually reconnects on — the param spent on nothing. This
+  // is what the old `onConnect` handler was for.
+  const networkParamHonoured = useRef(false);
   useEffect(() => {
-    // If there's no network param, default to the current chain
-    if (!network) {
-      const chainName = chains.find(c => c.id === chainId)?.name;
-      if (chainName) {
-        const normalizedChainName = normalizeUrlParam(chainName);
-        // Only set if not already present (double-check in case of race condition)
-        if (!searchParams.get(QueryParams.Network)) {
-          setSearchParams(params => {
-            params.set(QueryParams.Network, normalizedChainName);
-            return params;
-          });
-        }
-      }
-    } else {
-      // If the network param doesn't match the current chain, switch chains
-      const parsedChainId = chains.find(
-        chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network)
-      )?.id;
-      if (parsedChainId && parsedChainId !== chainId) {
-        // Read-and-clear: 'route_guard' when the mainnet-only guard wrote the
-        // param this effect is reacting to, else a deep link / stale URL.
-        const trigger = autoSwitchTriggerRef.current ?? 'url_param';
-        autoSwitchTriggerRef.current = null;
-        trackNetworkAutoSwitched({ trigger, fromChainId: chainId, toChainId: parsedChainId });
-        switchChain({ chainId: parsedChainId });
-      }
-    }
-  }, [network]);
+    if (networkParamHonoured.current) return;
+    if (status === 'connecting' || status === 'reconnecting') return;
+
+    const param = searchParams.get(QueryParams.Network);
+    if (!param) return;
+    networkParamHonoured.current = true;
+
+    // Spent either way: an unknown or garbage value has had its one chance and
+    // should not sit in the URL implying the app is listening to it.
+    setSearchParams(
+      params => {
+        params.delete(QueryParams.Network);
+        return params;
+      },
+      { replace: true }
+    );
+
+    const target = chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(param))?.id;
+    if (target === undefined || target === chainId) return;
+    trackNetworkAutoSwitched({ trigger: 'url_param', fromChainId: chainId, toChainId: target });
+    if (walletChainId !== undefined) setPendingSwitch({ from: walletChainId, to: target });
+    switchChain({ chainId: target });
+  }, [status, searchParams, chains, chainId, walletChainId, setSearchParams, switchChain]);
 
   useEffect(() => {
-    // If the user changes the network in their wallet, update the `network` query param
-    const handleChainChange = ({ chainId: newChainId }: { chainId?: number | undefined }) => {
-      // The wallet's chain choice is explicit — never auto-revert it. Marking
-      // the visit as attempted makes route validation redirect home when the
-      // new chain doesn't offer the current module, instead of prompting the
-      // user to switch straight back. (The change event also fires for
-      // account-only changes, with no chainId.)
-      //
-      // This holds for a chain the app doesn't configure at all, which is worth
-      // saying because the switch-back that replaced the blocking "unsupported
-      // network" dialog makes it tempting to fire here. It shouldn't: reaching
-      // for the wallet and changing its network is a deliberate act, and
-      // answering it with an immediate prompt to undo it is the app arguing
-      // with the user. What earns a prompt is the user then asking for
-      // something that NEEDS a chain — navigating to a product — and the reset
-      // above, keyed on the module, is what grants it. Until then the app just
-      // renders: reads run against the configured chain wagmi keeps pinned, and
-      // a transaction is stopped by the modal's own guard, which offers the
-      // switch as a button rather than taking it.
-      if (newChainId !== undefined) {
+    // The wallet's chain choice is explicit — never auto-revert it. Marking the
+    // visit as attempted makes route validation redirect home when the new
+    // chain doesn't offer the current module, instead of prompting the user to
+    // switch straight back. (The change event also fires for account-only
+    // changes, with no chainId.)
+    //
+    // This holds for a chain the app doesn't configure at all, which is worth
+    // saying because the switch-back that replaced the blocking "unsupported
+    // network" dialog makes it tempting to fire here. It shouldn't: reaching
+    // for the wallet and changing its network is a deliberate act, and
+    // answering it with an immediate prompt to undo it is the app arguing with
+    // the user. What earns a prompt is the user then asking for something that
+    // NEEDS a chain — navigating to a product — and the reset above, keyed on
+    // the module, is what grants it. Until then the app just renders: reads run
+    // against the configured chain wagmi keeps pinned, and a transaction is
+    // stopped by the modal's own guard, which offers the switch as a button
+    // rather than taking it.
+    //
+    // This listener used to mirror the chain into `network=` as well. That is
+    // gone with the param; the one line left is the load-bearing half.
+    const handleChainChange = ({ chainId: changedTo }: { chainId?: number | undefined }) => {
+      if (changedTo !== undefined) {
         autoSwitchAttempted.current = true;
-      }
-      const newChainName = chains.find(c => c.id === newChainId)?.name;
-      if (newChainName) {
-        const normalizedNewChainName = normalizeUrlParam(newChainName);
-        const currentNetwork = searchParams.get(QueryParams.Network);
-        // Only update if the network actually changed (compare normalized to avoid case-only diffs)
-        if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
-          // `replace`: a chain switch is not a place in the history. Back from
-          // one would restore the previous `network=`, which this app reads as
-          // an instruction to switch straight back. This is now the ONLY writer
-          // of the param on a switch — the network dropdowns used to write it
-          // themselves (with replace) and no longer touch the router at all.
-          setSearchParams(
-            params => {
-              params.set(QueryParams.Network, normalizedNewChainName);
-              return params;
-            },
-            { replace: true }
-          );
-        }
       }
     };
 
@@ -409,7 +328,7 @@ export function useAppOrchestration(): { intent: Intent } {
     return () => {
       emitter?.off('change', handleChainChange);
     };
-  }, [chains, connector, setSearchParams]);
+  }, [connector]);
 
   return { intent };
 }

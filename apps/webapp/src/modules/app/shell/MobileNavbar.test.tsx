@@ -139,34 +139,27 @@ describe('MobileNavbar active destination', () => {
 
 // Parity with TopNav: both navs share the destination link plumbing, so the
 // mainnet-only override and the switch feedback must behave identically.
-describe('MobileNavbar network override', () => {
-  it('carries network=ethereum on the mainnet-only Stake link when on an L2', async () => {
+// A mainnet-only destination used to carry `?network=ethereum` in its href, and
+// clicking one raised the switching feedback on the spot. `network=` is retired,
+// so a nav link is just a path: the route guard resolves the chain on arrival
+// and raises its own feedback.
+describe('MobileNavbar destination links carry no chain', () => {
+  it('links Stake plainly from an L2', async () => {
     mocks.chainId = 8453;
     renderMobileNavbar();
 
-    expect((await screen.findByTestId('mobile-nav-stake')).getAttribute('href')).toBe(
-      `${ROUTES.STAKE}?network=ethereum`
-    );
+    expect((await screen.findByTestId('mobile-nav-stake')).getAttribute('href')).toBe(ROUTES.STAKE);
     expect(screen.getByTestId('mobile-nav-convert').getAttribute('href')).toBe(ROUTES.CONVERT);
   });
 
-  it('flags the auto-switch when plainly clicking a mainnet-only destination from an L2', async () => {
+  it('does not flag a switch when clicking a mainnet-only destination from an L2', async () => {
     mocks.chainId = 8453;
     renderMobileNavbar();
 
     fireEvent.click(await screen.findByTestId('mobile-nav-stake'));
 
-    expect(mocks.setIsSwitchingNetwork).toHaveBeenCalledWith(true);
-    expect(mocks.setIsAutoSwitching).toHaveBeenCalledWith(true);
-  });
-
-  it('skips the side effect on modified clicks (new tab: this tab does not navigate)', async () => {
-    mocks.chainId = 8453;
-    renderMobileNavbar();
-
-    fireEvent.click(await screen.findByTestId('mobile-nav-stake'), { metaKey: true });
-
     expect(mocks.setIsSwitchingNetwork).not.toHaveBeenCalled();
+    expect(mocks.setIsAutoSwitching).not.toHaveBeenCalled();
   });
 });
 

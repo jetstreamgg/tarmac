@@ -33,10 +33,7 @@ export const getRetainedQueryParams = (
   return `${urlObj.pathname}${urlObj.search}`;
 };
 
-export const useRetainedQueryParams = (
-  url: string,
-  retainedParams: QueryParams[] = [QueryParams.Locale, QueryParams.Network]
-) => {
+export const useRetainedQueryParams = (url: string, retainedParams: QueryParams[] = [QueryParams.Locale]) => {
   const [searchParams] = useAppSearchParams();
 
   const retainedQueryParams = useMemo(() => {

@@ -1,12 +1,5 @@
-import { ALLOWED_EXTERNAL_DOMAINS, QueryParams } from './constants';
-import { Intent } from './enums';
-import { INTENT_PATHS } from './navigation';
-import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
-import { getMainnetChainName } from '@/data/wagmi/config/config.default';
-import { getMainnetTargetName } from './widget-network-map';
-import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { ALLOWED_EXTERNAL_DOMAINS } from './constants';
 import { reportError } from '@/modules/sentry/reportError';
-import { Chain } from 'viem';
 
 export { cn } from './cn';
 
@@ -95,58 +88,3 @@ export function sanitizeUrl(url: string | undefined) {
     return undefined;
   }
 }
-
-const getQueryParams = (url: string, searchParams: URLSearchParams) => {
-  const { Locale } = QueryParams;
-  const retainedParams = [Locale];
-
-  return getRetainedQueryParams(url, retainedParams, searchParams);
-};
-
-export const getRewardsUrl = (searchParams: URLSearchParams, chainId: number, chains?: readonly Chain[]) =>
-  getQueryParams(
-    `${INTENT_PATHS[Intent.REWARDS_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
-    searchParams
-  );
-
-export const getSavingsUrl = (
-  searchParams: URLSearchParams,
-  chainId: number,
-  chains: readonly [Chain, ...Chain[]]
-) =>
-  getQueryParams(
-    `${INTENT_PATHS[Intent.SAVINGS_INTENT]}?network=${normalizeUrlParam(
-      chains.find(c => c.id === chainId)?.name ?? getMainnetChainName(chainId)
-    )}`,
-    searchParams
-  );
-
-export const getStakeUrl = (searchParams: URLSearchParams, chainId: number, chains?: readonly Chain[]) =>
-  getQueryParams(
-    `${INTENT_PATHS[Intent.STAKE_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
-    searchParams
-  );
-export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number, chains?: readonly Chain[]) =>
-  getQueryParams(
-    `${INTENT_PATHS[Intent.EXPERT_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
-    searchParams
-  );
-export const getVaultsOverviewUrl = (
-  searchParams: URLSearchParams,
-  chainId: number,
-  chains?: readonly Chain[]
-) =>
-  getQueryParams(
-    `${INTENT_PATHS[Intent.VAULTS_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
-    searchParams
-  );
-export const getFixedYieldUrl = (searchParams: URLSearchParams, chainId: number, chains?: readonly Chain[]) =>
-  getQueryParams(
-    `${INTENT_PATHS[Intent.FIXED_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
-    searchParams
-  );
-export const getConvertUrl = (searchParams: URLSearchParams, chainId: number) =>
-  getQueryParams(
-    `${INTENT_PATHS[Intent.CONVERT_INTENT]}?network=${getMainnetChainName(chainId)}`,
-    searchParams
-  );

@@ -18,7 +18,7 @@ export const BORROW_SPEC_SKY = '25000000';
  * Navigation caveat: the mock-wallet connection does not survive a full page
  * load, so after connecting these helpers never call `page.goto()`. Deep links
  * are staged in-app via `history.pushState` + a synthetic `popstate`, which
- * TanStack Router picks up without reloading (`network=` preserved).
+ * TanStack Router picks up without reloading.
  *
  * Positions-table caveat: the My positions table is subgraph-backed
  * (useStakeUserPositions), and test-vnet urns are invisible to the indexer, so

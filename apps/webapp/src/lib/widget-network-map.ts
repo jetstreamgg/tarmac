@@ -1,7 +1,5 @@
-import { mainnet } from 'viem/chains';
 import { Intent } from './enums';
-import { getChainName, isL2ChainId, isMainnetId, isTestnetId } from '@/utils';
-import { normalizeUrlParam } from './helpers/string/normalizeUrlParam';
+import { isTestnetId } from '@/utils';
 import { chainIdsForIntent, chainSwitchTarget, COMING_SOON_MAP } from './chainAvailability';
 
 /** The subset of a wagmi chain the network-target helpers need. */
@@ -39,50 +37,9 @@ export function isMultichain(intent: Intent): boolean {
   return WIDGET_NETWORK_REQUIREMENTS[intent] === 'multichain';
 }
 
-/**
- * The mainnet-family chain name navigation targets from an L2: the active
- * wagmi config's testnet mainnet when one exists (dev and mock builds work
- * against Tenderly forks; production configs carry no testnet chain), falling
- * back to Ethereum mainnet. A current chain that is already mainnet-family is
- * its own target. Deriving the name from the config keeps the value
- * resolvable by the network-param machinery in every environment — the mock
- * config names its fork "Tenderly Mainnet", not "Tenderly".
- */
-export function getMainnetTargetName(currentChainId: number, chains?: readonly ChainRef[]): string {
-  if (isMainnetId(currentChainId)) {
-    return (
-      chains?.find(c => c.id === currentChainId)?.name ??
-      (isTestnetId(currentChainId) ? 'Tenderly' : 'Ethereum')
-    );
-  }
-  const target = chains?.find(c => isTestnetId(c.id)) ?? chains?.find(c => c.id === mainnet.id);
-  return target?.name ?? 'Ethereum';
-}
-
-/**
- * Network search-param override for navigating to a module: mainnet-only
- * modules force the mainnet-family network (see getMainnetTargetName) when
- * the current chain is an L2 (they're not available there). Testnets are
- * exempt so navigation never disrupts a testing session. Returns undefined
- * when no switch is needed.
- */
-export function getNetworkOverrideForIntent(
-  targetIntent: Intent,
-  currentChainId?: number,
-  chains?: readonly ChainRef[]
-): string | undefined {
-  if (!currentChainId || isTestnetId(currentChainId)) return undefined;
-  if (requiresMainnet(targetIntent) && isL2ChainId(currentChainId)) {
-    return normalizeUrlParam(getMainnetTargetName(currentChainId, chains));
-  }
-  return undefined;
-}
-
 /** What landing on a module route should do given the chain the app points at. */
 export type RouteChainAction =
-  | { kind: 'render' }
-  | { kind: 'switch-network'; chainId: number; network: string }
-  | { kind: 'redirect-home' };
+  { kind: 'render' } | { kind: 'switch-network'; chainId: number } | { kind: 'redirect-home' };
 
 /**
  * Which chain a module route should run on, and whether getting there needs a
@@ -141,11 +98,7 @@ export function getRouteChainAction(
   const configuredIds = chains?.map(chain => chain.id) ?? supported.filter(id => !isTestnetId(id));
   const comingSoonHere = (COMING_SOON_MAP[currentChainId] ?? []).includes(intent);
 
-  const switchTo = (id: number): RouteChainAction => ({
-    kind: 'switch-network',
-    chainId: id,
-    network: normalizeUrlParam(chains?.find(chain => chain.id === id)?.name ?? getChainName(id))
-  });
+  const switchTo = (id: number): RouteChainAction => ({ kind: 'switch-network', chainId: id });
 
   // Portfolio and the Earn marketplace run on every chain and need none in
   // particular, so they take no part in any of this: they never move the wallet
