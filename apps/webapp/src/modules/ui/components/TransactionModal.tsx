@@ -94,8 +94,9 @@ export type TransactionModalProps = {
   onRetry?: () => void;
   onBack?: () => void;
   /**
-   * A step has mined, so a failure must resume rather than reopen the inputs:
-   * Back is withheld on the failure screen (APP-448).
+   * A step of this flow has mined. From here the run must resume, never reopen
+   * the inputs, so Back is withheld: the header arrow stays disabled and the
+   * failure screen offers Retry alone (APP-448).
    */
   backLocked?: boolean;
   txStatus: TxStatus;
@@ -233,7 +234,6 @@ export function TransactionModal({
   // steps active together, "Bundled" header badge).
   const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
-  const backWithheld = txStatus === TxStatus.ERROR && backLocked;
   // Multi-step failures render inside the step list (retitled step + inline
   // "Try again", Figma 1030:139111) and drop the bottom status row/buttons —
   // the header back arrow still returns to the first screen. Single-step flows
@@ -483,7 +483,7 @@ export function TransactionModal({
                   size="iconM"
                   aria-label={t`Back`}
                   onClick={handleHeaderBack}
-                  disabled={isTransacting || backWithheld}
+                  disabled={isTransacting || backLocked}
                   data-testid="transaction-modal-back"
                 >
                   <ArrowLeft className="size-4" />
@@ -736,7 +736,7 @@ export function TransactionModal({
                   <>
                     {chainGuardBlock}
                     <div className="flex w-full gap-3">
-                      {!backWithheld && (
+                      {!backLocked && (
                         <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
                           <Trans>Back</Trans>
                         </Button>
