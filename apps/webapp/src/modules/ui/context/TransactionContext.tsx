@@ -496,7 +496,6 @@ export function TransactionProvider({
   // the review showing the rejected values (APP-448).
   const handleBack = useCallback(() => {
     setCurrentStep(0);
-    setHasMinedStep(false);
     setTxStatus(TxStatus.IDLE);
     txStatusRef.current = TxStatus.IDLE;
   }, []);

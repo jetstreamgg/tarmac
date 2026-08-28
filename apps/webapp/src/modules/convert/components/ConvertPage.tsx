@@ -123,28 +123,16 @@ export function ConvertPage() {
           )
         )}
 
-        {locked ? (
-          <Button
-            variant="primary"
-            size="xl"
-            className={CTA_CLASSES}
-            onClick={restore}
-            data-testid="convert-open-transaction"
-          >
-            <Trans>Open transaction</Trans>
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            size="xl"
-            className={CTA_CLASSES}
-            disabled={reviewDisabled}
-            onClick={launchOrConnect}
-            data-testid="convert-review-cta"
-          >
-            <Trans>Review</Trans>
-          </Button>
-        )}
+        <Button
+          variant="primary"
+          size="xl"
+          className={CTA_CLASSES}
+          disabled={!locked && reviewDisabled}
+          onClick={locked ? restore : launchOrConnect}
+          data-testid={locked ? 'convert-open-transaction' : 'convert-review-cta'}
+        >
+          {locked ? <Trans>Open transaction</Trans> : <Trans>Review</Trans>}
+        </Button>
       </div>
     </div>
   );
