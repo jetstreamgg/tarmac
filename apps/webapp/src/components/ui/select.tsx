@@ -72,11 +72,16 @@ SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayNam
 
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
+  // matchTriggerWidth: the panel is at least as wide as its trigger, which is
+  // what a normal select wants. Turn it off when the trigger is a layout row
+  // rather than a control (Convert's full-width Network row) — the panel would
+  // otherwise stretch across the whole card.
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & {
     className?: string;
     position?: 'item-aligned' | 'popper';
+    matchTriggerWidth?: boolean;
   }
->(({ className, children, position = 'popper', ...props }, ref) => (
+>(({ className, children, position = 'popper', matchTriggerWidth = true, ...props }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
@@ -96,8 +101,8 @@ const SelectContent = React.forwardRef<
       <SelectPrimitive.Viewport
         className={cn(
           'px-px py-1',
-          position === 'popper' &&
-            'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]'
+          position === 'popper' && 'h-[var(--radix-select-trigger-height)] w-full',
+          position === 'popper' && matchTriggerWidth && 'min-w-[var(--radix-select-trigger-width)]'
         )}
       >
         {children}

@@ -42,12 +42,10 @@ export function ConvertCard({ form }: { form: ConvertFormModel }) {
     >
       {/* The whole row is the trigger, so it supplies its own body — including
           the chevron, which is dropped when there is only one chain to pick
-          from and the row is inert. */}
-      <NetworkSelect
-        chainIds={networks}
-        dataTestId="convert-network"
-        triggerClassName="h-auto w-full rounded-none border-0 p-0 hover:border-0 hover:bg-transparent"
-      >
+          from and the row is inert. Passing children also tells NetworkSelect
+          to keep its pill recipe off this row and to size the panel to its own
+          content rather than to a trigger that spans the card. */}
+      <NetworkSelect chainIds={networks} dataTestId="convert-network">
         <span className="bg-glassSurface flex w-full items-center justify-between gap-2 p-4 backdrop-blur-[20px] md:px-8 md:py-6">
           <span className="flex items-center gap-3">
             <Text className="text-textSecondary text-sm">
