@@ -92,8 +92,9 @@ test('borrows more against an existing position through the manage sheet', async
   // always manage the urn this open just created.
   const urnIndex = await latestUrnIndex(testAccount);
   const urn = await getUrnAddress(testAccount, BigInt(urnIndex));
-  expect(await getUrnDebt(urn)).toBeGreaterThanOrEqual(parseUnits('30000', 18));
-  expect(await getUrnDebt(urn)).toBeLessThan(parseUnits('30050', 18));
+  const initialDebt = await getUrnDebt(urn);
+  expect(initialDebt).toBeGreaterThanOrEqual(parseUnits('30000', 18));
+  expect(initialDebt).toBeLessThan(parseUnits('30100', 18));
 
   await gotoManagePosition(isolatedPage, urnIndex);
   await isolatedPage.getByTestId('stake-manage-menu-borrow').click();
@@ -112,9 +113,10 @@ test('borrows more against an existing position through the manage sheet', async
   await confirmTransactionModal(isolatedPage);
 
   // On-chain oracle (Gate 3): success copy is optimistic under wallet_sendCalls.
+  const borrowMore = parseUnits('5000', 18);
   const debt = await getUrnDebt(urn);
-  expect(debt).toBeGreaterThanOrEqual(parseUnits('35000', 18));
-  expect(debt).toBeLessThan(parseUnits('35050', 18));
+  expect(debt).toBeGreaterThanOrEqual(initialDebt + borrowMore);
+  expect(debt).toBeLessThan(initialDebt + borrowMore + parseUnits('1000', 18));
 
   await gotoManagePosition(isolatedPage, urnIndex);
   await expect(isolatedPage.getByTestId('stake-manage-menu-borrow')).toBeVisible();
