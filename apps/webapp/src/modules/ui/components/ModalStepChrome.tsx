@@ -52,10 +52,11 @@ export function ModalStepLabel({
   }
 
   return (
-    // Centred labels fill their box (a full-width CTA) so both copies share one
-    // centre and the outgoing one doesn't jump when the incoming string resizes
-    // the container. Start-aligned ones hug their text and truncate.
-    <span className={cn('relative inline-flex min-w-0', align === 'center' && 'w-full', className)}>
+    // The box always hugs its content, centred or not: a `w-full` centred label
+    // would claim the CTA's whole remaining width and centre its text within
+    // THAT, so the wording visibly shifts sideways the moment a loading spinner
+    // joins it in the button. Both copies share a centre via the pin below.
+    <span className={cn('relative inline-flex min-w-0', className)}>
       <AnimatePresence initial={false}>
         <ModalStepLabelCopy key={labelKey} align={align}>
           {children}
@@ -73,10 +74,19 @@ function ModalStepLabelCopy({ children, align }: { children: ReactNode; align: '
   return (
     <motion.span
       className={cn(
-        'block min-w-0 truncate',
-        align === 'center' && 'w-full text-center',
-        !isPresent && 'pointer-events-none absolute top-0 left-0',
-        !isPresent && align === 'center' && 'right-0'
+        'block min-w-0',
+        // A start-aligned label WRAPS, as the plain title did before it was
+        // routed through here — a `truncate` would silently ellipsize any title
+        // that outgrows one line, which the mobile sheet and longer translations
+        // both reach. A centred one is a CTA's wording, which never wraps.
+        align === 'center' && 'whitespace-nowrap',
+        !isPresent && 'pointer-events-none absolute top-0',
+        // Pinned on the box's centre rather than its edges, so the outgoing copy
+        // stays centred even though the incoming string has already resized the
+        // box around it. (Tailwind's `-translate-x-1/2` lands on `translate`,
+        // which composes with the `transform` motion animates — they don't
+        // clobber each other.)
+        !isPresent && (align === 'center' ? 'left-1/2 -translate-x-1/2' : 'left-0')
       )}
       initial={{ opacity: 0, y: MODAL_LABEL_SHIFT_PX, filter: `blur(${MODAL_LABEL_BLUR_PX}px)` }}
       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -107,7 +117,11 @@ export function ModalStepBackSlot({ open, children }: { open: boolean; children:
 
   return (
     <motion.div
-      className="shrink-0 overflow-hidden"
+      // The clip is what makes the width animation read as a slot opening, but
+      // it also sits right on the button's left edge — hence `clip` with a
+      // margin wide enough for its focus ring (2px ring + 2px offset) rather
+      // than `hidden`, which would shear the ring off for keyboard users.
+      className="shrink-0 overflow-clip [overflow-clip-margin:4px]"
       initial={false}
       animate={{ width: open ? MODAL_BACK_SLOT_PX : 0 }}
       transition={{ duration: MODAL_CARRIER_S, ease: easeStandard }}

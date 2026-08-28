@@ -35,13 +35,21 @@ describe('ModalStepLabel', () => {
     expect(screen.queryByText('Review')).toBeNull();
   });
 
-  it('fills its box when centred, so both copies share one centre', () => {
-    render(
+  it('hugs its content when centred, so a loading spinner cannot shift the wording', () => {
+    const { container } = render(
       <ModalStepLabel labelKey="entry" align="center">
         Review
       </ModalStepLabel>
     );
-    expect(screen.getByText('Review').className).toContain('text-center');
+    // A `w-full` box would claim the CTA's remaining width and re-centre the
+    // text inside it the moment a spinner joined the button.
+    expect((container.firstElementChild as HTMLElement).className).not.toContain('w-full');
+    expect(screen.getByText('Review').className).toContain('whitespace-nowrap');
+  });
+
+  it('lets a start-aligned title wrap rather than ellipsizing it', () => {
+    render(<ModalStepLabel labelKey="entry">Supply to Sky Savings</ModalStepLabel>);
+    expect(screen.getByText('Supply to Sky Savings').className).not.toContain('truncate');
   });
 });
 

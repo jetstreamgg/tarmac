@@ -108,6 +108,17 @@ describe('ModalStepCarrier', () => {
     expect(box.className).toContain('transition-[height]');
   });
 
+  it('transitions `translate`, the property Tailwind v4 actually animates', () => {
+    // `translate-y-*` compiles to the standalone `translate` property in v4, so
+    // a list naming only `transform` leaves the 20px rise and fall snapping.
+    const { rerender } = render(<ModalStepCarrier activeKey="entry" layers={layers()} />);
+    rerender(<ModalStepCarrier activeKey="review" layers={layers()} />);
+
+    const entry = layerFor('entry-body');
+    expect(entry.className).toContain('translate-y-5');
+    expect(entry.className).toContain('transition-[opacity,translate,visibility]');
+  });
+
   it('clips, so a parked layer taller than the current screen cannot add a scrollbar', () => {
     // A parked layer is out of flow but still has a box: without a clip on the
     // carrier, the tall entry body behind the short wallet screen joins the modal

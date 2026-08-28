@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useIsPresent } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/cn';
 import {
   MODAL_CARRIER_MS,
@@ -143,7 +143,12 @@ function PersistentLayer({ layer, active }: { layer: ModalStepCarrierLayer; acti
   return (
     <div
       className={cn(
-        'group/step transition-[opacity,transform,visibility] motion-reduce:transition-none',
+        // `translate`, not `transform`: Tailwind v4 compiles `translate-y-*` to
+        // the standalone `translate` property, so a transition list naming only
+        // `transform` leaves the 20px rise and fall to snap on frame 0.
+        // (`MODAL_STEP_EXIT_CLASSES` escapes this because v4 expands
+        // `transition-transform` to `transform, translate, scale, rotate`.)
+        'group/step transition-[opacity,translate,visibility] motion-reduce:transition-none',
         active
           ? `visible translate-y-0 opacity-100 ${ENTER_CLASSES}`
           : `pointer-events-none invisible absolute inset-x-0 top-0 translate-y-5 opacity-0 ${EXIT_CLASSES}`,
@@ -163,6 +168,12 @@ function TransientLayer({ layer }: { layer: ModalStepCarrierLayer }) {
   // `useIsPresent` is false for the whole exit — exactly the window this layer
   // must not take part in layout, so the incoming one sizes the carrier alone.
   const isPresent = useIsPresent();
+  // `motion` honours no reduced-motion preference on its own (the app sets no
+  // `MotionConfig`), and its CSS-driven sibling above does — so without this the
+  // two halves of one swap disagree. Zero duration, not no animation, so
+  // AnimatePresence still gets the exit it needs to unmount on.
+  const reducedMotion = useReducedMotion();
+  const transition = reducedMotion ? { duration: 0 } : isPresent ? modalEnterTransition : modalExitTransition;
   return (
     <motion.div
       className={cn(
@@ -174,7 +185,7 @@ function TransientLayer({ layer }: { layer: ModalStepCarrierLayer }) {
       initial={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX }}
-      transition={isPresent ? modalEnterTransition : modalExitTransition}
+      transition={transition}
       aria-hidden={!isPresent}
     >
       {layer.content}
