@@ -10,8 +10,10 @@
  *
  * Bundling is a persisted user setting. It cannot be seeded through
  * localStorage — the mock wagmi config clears all of it at boot — so the tests
- * turn it off through the review screen's bundle badge, which persists for the
- * rest of the page's life. The modal runs the three-screen flow: entry (Review)
+ * turn it off through the nav menu's switch right after connecting; it persists
+ * for the rest of the page's life. (The review screen's bundle badge is not an
+ * anchor: it only renders when the flow needs an approve, which a funded account
+ * with leftover allowance does not.) The modal runs the three-screen flow: entry (Review)
  * → review (Confirm) → wallet/status screen, whose multi-step failures render
  * inline in the step list with a "Try again" pill. A success closes the modal
  * itself and hands the outcome to a 10s toast, so completion is asserted on the
@@ -29,10 +31,25 @@ import {
 // With: USDS Get: SPK — usdsSpkRewardAddress on the tenderly fork
 const SPK_REWARD_CONTRACT = '0x173e314C7635B45322cd8Cb14f44b312e079F3af';
 
+/** Turns the persisted bundling preference off from the nav menu's switch. */
+const disableBundling = async (page: Page) => {
+  await page.getByTestId('nav-more').click();
+  const toggle = page.getByTestId('batch-transactions-switch');
+  await toggle.waitFor({ state: 'visible', timeout: 30_000 });
+  if (await toggle.isChecked()) {
+    await toggle.click();
+  }
+  await expect(toggle).not.toBeChecked();
+  // The trigger toggles the menu; Escape does not close it.
+  await page.getByTestId('nav-more').click();
+  await expect(toggle).toBeHidden();
+};
+
 const connectOn = async (page: Page, path: string) => {
   // Connect AFTER the goto — a full navigation resets the mock connector.
   await page.goto(path);
   await connectAndVerify(page, { batch: true });
+  await disableBundling(page);
 };
 
 /**
@@ -56,35 +73,11 @@ const positionAmount = async (page: Page, market: 'savings' | 'rewards') => {
   return parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
 };
 
-/**
- * Turns bundling off from the review screen's badge (a click-opened popover
- * holding the switch). The switch writes the app-wide preference, so it stays
- * off for every later modal on this page.
- */
-const disableBundling = async (page: Page) => {
-  const dialog = page.getByRole('dialog');
-  // The review screen holds more than one badge, not all of them rendered; any visible one opens the panel.
-  const badge = dialog.getByTestId('bundle-toggle-badge').filter({ visible: true }).first();
-  await badge.waitFor({ state: 'visible', timeout: 60_000 });
-  await badge.click();
-  const toggle = page.getByTestId('bundle-panel-switch');
-  await toggle.waitFor({ state: 'visible' });
-  if (await toggle.isChecked()) {
-    await toggle.click();
-  }
-  // Escape dismisses the topmost layer only — the popover, not the dialog.
-  await page.keyboard.press('Escape');
-  await expect(toggle).toBeHidden();
-  await expect(dialog).toBeVisible();
-  await expect(badge).toHaveText(/Not bundled/);
-};
-
-/** Advances the three-screen modal: entry's Review, bundling off, then the review's Confirm. */
+/** Advances the three-screen modal: entry's Review, then the review's Confirm. */
 const reviewAndConfirm = async (page: Page) => {
   const review = page.getByRole('dialog').getByRole('button', { name: 'Review', exact: true });
   await expect(review).toBeEnabled({ timeout: 60_000 });
   await review.click();
-  await disableBundling(page);
   const confirm = page.getByRole('dialog').getByRole('button', { name: 'Confirm', exact: true });
   await expect(confirm).toBeEnabled({ timeout: 60_000 });
   await confirm.click();
