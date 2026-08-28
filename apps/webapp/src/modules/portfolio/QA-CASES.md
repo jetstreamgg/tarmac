@@ -50,7 +50,7 @@ section `🟢 Portfolio` (`772:36720`).
 | A-9 | Donut chart empty vs populated bands | **pass** | `PortfolioDonutChart.test.tsx` |
 | A-10 | Geo-restricted products hidden from all surfaces | **pass** | `useGeoVisibleRows.test.tsx`, `ConnectedPortfolio.test.tsx` |
 | A-11 | Supply from position card (network auto-switch) | **n/e** | `usePortfolioSupplyActions.test.tsx`; product-modal e2e deferred |
-| A-12 | Matured Pendle redeem section | **partial** | Component tests; Pendle matured e2e skipped in `pendle.spec.ts` |
+| A-12 | Matured Pendle redeem section | **pass** | `portfolio.spec.ts` (cheat-mint + UI clock + chain warp) |
 
 ---
 
@@ -66,6 +66,7 @@ page object `pages/PortfolioPage.ts`.
 | 1 | smoke: disconnected portfolio shell | `portfolio-disconnected` | A-1 | Public route; no wallet required |
 | 2 | smoke: connected portfolio shell | `portfolio-connected` | A-2, A-3 | Core destination mount + tab contract |
 | 3 | smoke: network filter visible when connected | `portfolio-network-filter` | A-4 | Header filter is portfolio-specific shell |
+| 4 | matured PT-sUSDS in Supplied carousel | `portfolio-pendle-matured` | A-12 | UI clock + chain warp; PT via on-chain storage-slot mint |
 
 ### Rejections
 
@@ -82,7 +83,7 @@ page object `pages/PortfolioPage.ts`.
 
 | Spec | State | Notes |
 | ---- | ----- | ----- |
-| `portfolio.spec.ts` | rewritten-V2 | First Portfolio e2e; **Gate 7: 3/3** (2026-08-27) |
+| `portfolio.spec.ts` | rewritten-V2 | **Gate 7: 4/4** (2026-08-27); matured Pendle via cheat-mint + time warp |
 
 **Module complete (Gates 1–7):** Figma map §1 · behavioral matrix §2 · `portfolio.spec.ts` smokes · Gate 4 contracts + `PortfolioPage` · rejected paths in component tests · theming §4 · Gate 7 green.
 

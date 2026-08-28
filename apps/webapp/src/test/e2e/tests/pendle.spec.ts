@@ -48,6 +48,4 @@ test.fixme('buy PT completes successfully on-chain', async () => {
   // Pending Pendle quote API wiring on the Tenderly fork + router write oracle.
 });
 
-test.fixme('matured markets land on Portfolio redeem section', async () => {
-  // Requires evm_increaseTime past market expiry — defer to Portfolio module e2e.
-});
+// Matured PT Portfolio coverage: portfolio.spec.ts (cheat-mint + UI clock + chain warp).

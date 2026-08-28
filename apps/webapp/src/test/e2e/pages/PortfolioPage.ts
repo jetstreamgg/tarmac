@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { portfolioConnectedContract } from '../contracts/portfolio-connected.contract';
 import { portfolioDisconnectedContract } from '../contracts/portfolio-disconnected.contract';
 import { portfolioNetworkFilterContract } from '../contracts/portfolio-network-filter.contract';
+import { portfolioPendleMaturedContract } from '../contracts/portfolio-pendle-matured.contract';
 import { formatContractContext, locate } from './locate';
 
 /** Semantic page object for /portfolio (Gate 4). */
@@ -34,6 +35,15 @@ export class PortfolioPage {
   positionsSection = () => locate(this.page, { testId: 'portfolio-positions' }, portfolioConnectedContract);
 
   idleTable = () => locate(this.page, { testId: 'idle-stablecoins-table' }, portfolioConnectedContract);
+
+  maturedPendleCard = () =>
+    locate(this.page, { testId: 'pendle-matured-position-card' }, portfolioPendleMaturedContract);
+
+  maturedPendleBadge = () =>
+    locate(this.page, { testId: 'pendle-matured-badge' }, portfolioPendleMaturedContract);
+
+  maturedPendleRedeemButton = () =>
+    locate(this.page, { testId: 'pendle-matured-redeem-button' }, portfolioPendleMaturedContract);
 
   async expectDisconnectedShell() {
     await expect(this.root()).toBeVisible({ timeout: 15_000 });

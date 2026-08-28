@@ -1,12 +1,15 @@
 import { expect, test } from '../fixtures-parallel';
 import { portfolioConnectedContract } from '../contracts/portfolio-connected.contract';
 import { portfolioDisconnectedContract } from '../contracts/portfolio-disconnected.contract';
+import { portfolioPendleMaturedContract } from '../contracts/portfolio-pendle-matured.contract';
 import { PortfolioPage } from '../pages/PortfolioPage';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms';
+import { stageMaturedPtSusdsPosition } from '../utils/pendleOnChain';
 
 /**
  * Portfolio destination smoke suite (V2).
- * Contracts: portfolio-disconnected, portfolio-connected, portfolio-network-filter
+ * Contracts: portfolio-disconnected, portfolio-connected, portfolio-network-filter,
+ * portfolio-pendle-matured
  */
 test.describe('Portfolio — disconnected', () => {
   test('smoke: shell renders connect prompt and statistics', async ({ isolatedPage }) => {
@@ -40,5 +43,26 @@ test.describe('Portfolio — connected', () => {
 
     await portfolio.tabSupplied().click();
     await expect(portfolio.tabSupplied()).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+test.describe('Portfolio — matured Pendle', () => {
+  test('matured PT-sUSDS renders in Supplied carousel with Claim CTA', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    await stageMaturedPtSusdsPosition(isolatedPage, testAccount);
+
+    const portfolio = new PortfolioPage(isolatedPage);
+    await portfolio.goto();
+    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
+    await portfolio.expectConnectedShell();
+
+    await expect(portfolio.maturedPendleCard()).toBeVisible({ timeout: 30_000 });
+    await expect(portfolio.maturedPendleBadge()).toContainText('Matured');
+    await expect(portfolio.maturedPendleRedeemButton()).toBeVisible();
+    // Claim stays disabled until the Pendle convert quote API resolves (same vnet
+    // limit as the buy fixme) — this spec covers the matured card read surface.
+    expect(portfolioPendleMaturedContract.id).toBe('portfolio-pendle-matured');
   });
 });

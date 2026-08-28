@@ -40,7 +40,7 @@ No `missing` frames in the swept section.
 | A-6 | Slippage gear opens popover; custom persists per flow | **pass** | `pendleSlippagePersistence.test.tsx` |
 | B-1 | Buy modal: amount validation + insufficient balance | **pass** | `PendleModalForm.test.tsx` |
 | B-2 | Buy/sell write paths (router + quote API) | **n/e** | Mainnet Pendle quote API — e2e deferred (see §3) |
-| B-3 | Matured redeem write on Portfolio | **pass** | `usePendleRedeemModal.test.tsx`; Portfolio e2e deferred |
+| B-3 | Matured redeem write on Portfolio | **pass** | `usePendleRedeemModal.test.tsx`; read path e2e in `portfolio.spec.ts` |
 | B-4 | Price impact / min-received rows | **pass** | `PendleModalForm.test.tsx`, `priceImpact.test.ts` |
 
 ---
@@ -67,20 +67,20 @@ Specs: `pendle.spec.ts` · contracts `pendle-*.contract.ts` · page object `page
 | Slippage gear on review grid | Gear only mounts after Review; Review needs prepared quote (same vnet limit as B-2). `SlippageMenu.test.tsx`, `pendleSlippagePersistence.test.tsx`, `PendleModalForm.test.tsx` |
 | Slippage persistence across reload | `pendleSlippagePersistence.test.tsx` |
 | Modal validation / price impact copy | `PendleModalForm.test.tsx` |
-| Matured redeem end-to-end | Needs `evm_increaseTime`; `usePendleRedeemModal.test.tsx` |
+| Matured redeem end-to-end | Read path in `portfolio.spec.ts` (`portfolio-pendle-matured`); on-chain redeem write still unit-tested |
 | FAQ accordion copy | Static content |
 | Earn marketplace matured row | `EarnPage.test.tsx` |
 
 ### Cross-module coverage
 
-- Portfolio matured redeem section: Portfolio module (future e2e)
+- Portfolio matured redeem section: `portfolio.spec.ts` (`portfolio-pendle-matured` contract)
 - Legacy Expert Pendle widget: retired with D7
 
 ### Migration (`e2e-migration.md`)
 
 | Spec | State | Notes |
 | ---- | ----- | ----- |
-| `pendle.spec.ts` | rewritten-V2 | **Gate 7: 5/5 active green**, 2 write cases fixme (Pendle quote vnet) |
+| `pendle.spec.ts` | rewritten-V2 | **Gate 7: 5/5 active green**, 1 write fixme (Pendle quote vnet); matured read in `portfolio.spec.ts` |
 
 **Module complete (Gates 1–7):** §1–§2 · read/deep-link e2e green · contracts + `PendleProductPage` · buy/sell writes fixme (vnet quote API) documented · Gate 7 green for promoted cases.
 
