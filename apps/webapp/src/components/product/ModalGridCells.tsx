@@ -7,7 +7,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
-import { ModalNetworkSelect } from '@/modules/ui/components/NetworkSelect';
+import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
 import { useChainImage } from '@/widgets';
 import type { ModalSummaryCell } from './ModalSummaryGrid';
@@ -303,7 +303,7 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
   // but branching here keeps every one-chain cell byte-identical to before.
   if (cell.network && cell.networkChainIds && cell.networkChainIds.length > 1) {
     return (
-      <ModalNetworkSelect
+      <NetworkSelect
         chainIds={cell.networkChainIds}
         size="xs"
         dataTestId="modal-network-select"

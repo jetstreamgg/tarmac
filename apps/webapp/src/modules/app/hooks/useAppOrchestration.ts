@@ -333,10 +333,18 @@ export function useAppOrchestration(): { intent: Intent } {
         const currentNetwork = searchParams.get(QueryParams.Network);
         // Only update if the network actually changed (compare normalized to avoid case-only diffs)
         if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
-          setSearchParams(params => {
-            params.set(QueryParams.Network, normalizedNewChainName);
-            return params;
-          });
+          // `replace`: a chain switch is not a place in the history. Back from
+          // one would restore the previous `network=`, which this app reads as
+          // an instruction to switch straight back. This is now the ONLY writer
+          // of the param on a switch — the network dropdowns used to write it
+          // themselves (with replace) and no longer touch the router at all.
+          setSearchParams(
+            params => {
+              params.set(QueryParams.Network, normalizedNewChainName);
+              return params;
+            },
+            { replace: true }
+          );
         }
       }
     };

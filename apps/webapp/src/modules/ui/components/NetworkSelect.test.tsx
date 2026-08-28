@@ -1,18 +1,17 @@
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ModalNetworkSelect, NetworkSelect } from './NetworkSelect';
+import { NetworkSelect } from './NetworkSelect';
 
 // The two rules this control adds over the ChainModal it replaced: a
 // single-chain product offers no dropdown, and the pill names the chain the
-// PRODUCT is on rather than the wallet's. Plus the split between the page and
-// modal variants, which exists for a runtime reason nothing else catches.
+// PRODUCT is on rather than the wallet's.
+//
+// NOTE the router is deliberately NOT mocked here, and that absence is itself
+// an assertion. A transaction modal renders above RouterProvider, so the moment
+// this control reaches for router context these renders start throwing — which
+// is the bug where the savings modal never opened and the page just re-rendered.
 
-const mocks = vi.hoisted(() => ({ walletChainId: 1, isSafeWallet: false, routerMounted: true }));
-
-/** Router hooks throw outside a RouterProvider, exactly as the real ones do. */
-const requireRouter = (hook: string) => {
-  if (!mocks.routerMounted) throw new Error(`${hook} called outside a router`);
-};
+const mocks = vi.hoisted(() => ({ walletChainId: 1, isSafeWallet: false }));
 
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
@@ -24,20 +23,6 @@ vi.mock('wagmi', async io => ({
   ]
 }));
 vi.mock('@/hooks', () => ({ useIsSafeWallet: () => mocks.isSafeWallet }));
-vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => {
-    requireRouter('useNavigate');
-    return vi.fn();
-  }
-}));
-vi.mock('@/lib/navigation', () => ({
-  useAppSearchParams: () => {
-    requireRouter('useAppSearchParams');
-    return [new URLSearchParams(), vi.fn()];
-  },
-  INTENT_PATHS: {},
-  keepSearch: (prev: unknown) => prev
-}));
 
 const mockHandleSwitchChain = vi.fn();
 vi.mock('@/modules/ui/context/ChainModalContext', () => ({
@@ -51,7 +36,6 @@ vi.mock('@/modules/ui/context/ChainModalContext', () => ({
 beforeEach(() => {
   mocks.walletChainId = 1;
   mocks.isSafeWallet = false;
-  mocks.routerMounted = true;
   mockHandleSwitchChain.mockClear();
 });
 afterEach(cleanup);
@@ -99,24 +83,16 @@ describe('NetworkSelect', () => {
   });
 });
 
-// The transaction modal renders ABOVE the router: TransactionProvider wraps
-// RouterProvider in pages/App.tsx. A control that reaches for router context
-// from in there throws, the error boundary catches it, and the modal never
-// appears — the page just seems to re-render. Hence the two variants.
-describe('ModalNetworkSelect — usable where there is no router', () => {
-  it('renders and switches with no router mounted', () => {
-    mocks.routerMounted = false;
-
-    render(<ModalNetworkSelect chainIds={[1, 8453]} dataTestId="net" />);
+// The savings modal never opened because this control reached for router
+// context from inside a modal, which renders above RouterProvider. Nothing in
+// this file mocks the router, so the render below is the pin: re-introduce a
+// useNavigate/useAppSearchParams call and these tests start failing.
+describe('NetworkSelect — needs no router', () => {
+  it('renders and switches with no router in the tree', () => {
+    render(<NetworkSelect chainIds={[1, 8453]} dataTestId="net" />);
     fireEvent.keyDown(screen.getByTestId('net'), { key: 'Enter' });
     fireEvent.click(screen.getByText('Base'));
 
-    expect(mockHandleSwitchChain).toHaveBeenCalledWith(expect.objectContaining({ chainId: 8453 }));
-  });
-
-  it('is the page variant that cannot — which is what makes the split load-bearing', () => {
-    mocks.routerMounted = false;
-
-    expect(() => render(<NetworkSelect chainIds={[1, 8453]} dataTestId="net" />)).toThrow(/outside a router/);
+    expect(mockHandleSwitchChain).toHaveBeenCalledWith({ chainId: 8453 });
   });
 });

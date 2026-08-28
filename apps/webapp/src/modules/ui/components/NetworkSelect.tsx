@@ -1,17 +1,12 @@
 import { useCallback } from 'react';
 import { useChainId, useChains } from 'wagmi';
 import { ChevronDown } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { getChainIcon } from '@/utils';
-import { Intent } from '@/lib/enums';
 import { useIsSafeWallet } from '@/hooks';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
-import { INTENT_PATHS, keepSearch, useAppSearchParams } from '@/lib/navigation';
-import { QueryParams } from '@/lib/constants';
-import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 type NetworkSelectProps = {
   /** The chains this surface may switch between — the product's supported set. */
@@ -54,9 +49,6 @@ type NetworkSelectProps = {
  * Safe wallets get the static pill too: a Safe's chain is fixed by the Safe
  * app it runs inside, so there is nothing this control could do.
  *
- * `onSelect` is the only half that varies by mount point — see `NetworkSelect`
- * (which mirrors the choice into the `network=` param) and `ModalNetworkSelect`
- * (which cannot, and doesn't need to).
  */
 function NetworkSelectView({
   chainIds,
@@ -167,8 +159,12 @@ function NetworkSelectView({
       >
         {children ?? pillContent}
       </SelectTrigger>
-      {/* A full-width row trigger must not stretch the panel across the card. */}
-      <SelectContent matchTriggerWidth={!children}>
+      {/* A full-width row trigger must not stretch the panel across the card,
+          and the panel hangs from the end of it — that is where the row's
+          chevron sits, so it is the edge the affordance points from. A pill
+          trigger is narrow enough that either edge reads the same, and keeps
+          the default start alignment. */}
+      <SelectContent matchTriggerWidth={!children} align={children ? 'end' : 'start'}>
         {chainIds.map(id => (
           <SelectItem key={id} value={String(id)}>
             <span className="flex items-center gap-3">
@@ -183,75 +179,24 @@ function NetworkSelectView({
 }
 
 /**
- * The page-level control: switching also mirrors the new chain into the
- * `network=` search param (and, with `nextIntent`, moves to the module that
- * chain choice implies).
- */
-export function NetworkSelect({
-  nextIntent,
-  ...props
-}: NetworkSelectProps & {
-  /** Route to move to alongside the switch (the module a chain choice implies). */
-  nextIntent?: Intent;
-}) {
-  const chains = useChains();
-  const [searchParams, setSearchParams] = useAppSearchParams();
-  const navigate = useNavigate();
-  const { handleSwitchChain } = useChainModalContext();
-
-  const onSelect = useCallback(
-    (nextChainId: number) => {
-      handleSwitchChain({
-        chainId: nextChainId,
-        onSuccess: (_, { chainId: newChainId }) => {
-          const newChainName = chains.find(c => c.id === newChainId)?.name;
-          if (!newChainName) return;
-          const normalizedNewChainName = normalizeUrlParam(newChainName);
-          const currentNetwork = searchParams.get(QueryParams.Network);
-          // Only act if the network actually changed (compare normalized to
-          // avoid case-only diffs).
-          if (normalizeUrlParam(currentNetwork || '') === normalizedNewChainName) return;
-          if (nextIntent) {
-            void navigate({
-              to: INTENT_PATHS[nextIntent],
-              search: prev => ({
-                ...keepSearch(prev),
-                [QueryParams.Network]: normalizedNewChainName
-              }),
-              replace: true
-            });
-          } else {
-            setSearchParams(
-              (params: URLSearchParams) => {
-                params.set(QueryParams.Network, normalizedNewChainName);
-                return params;
-              },
-              { replace: true }
-            );
-          }
-        }
-      });
-    },
-    [handleSwitchChain, chains, searchParams, nextIntent, navigate, setSearchParams]
-  );
-
-  return <NetworkSelectView {...props} onSelect={onSelect} />;
-}
-
-/**
- * The transaction-modal control. Identical, minus the search-param mirroring —
- * and that omission is load-bearing, not a simplification.
+ * Selecting a network does one thing: ask the wallet to switch.
  *
+ * It deliberately does NOT touch the router. The `network=` search param
+ * follows on its own — `useAppOrchestration` listens to the connector's `change`
+ * event and mirrors whatever chain the wallet lands on, whatever asked for it.
+ * (The predecessor `ChainModal` wrote the param itself from the switch's
+ * `onSuccess`. That was redundant: if the connector never emitted, `useChainId`
+ * wouldn't have moved either and the whole app would be stale, param included.)
+ *
+ * Staying router-free is also what lets this render inside a transaction modal.
  * `TransactionProvider` wraps `RouterProvider` (pages/App.tsx), so a modal body
- * renders ABOVE the router and has no router context: calling `useNavigate` or
- * `useAppSearchParams` from here throws, the error boundary catches it, and the
- * page appears to re-render instead of the modal opening.
- *
- * Nothing is lost. `useAppOrchestration` listens to the connector's own
- * `change` event and mirrors whatever chain the wallet lands on into `network=`
- * — including a switch made from in here.
+ * sits ABOVE the router: a `useNavigate` / `useAppSearchParams` call from in
+ * there throws, the error boundary swallows it, and the modal never appears —
+ * the page just seems to re-render.
  */
-export function ModalNetworkSelect(props: NetworkSelectProps) {
+export function NetworkSelect(props: NetworkSelectProps) {
+  // The shared switch: wagmi's `switchChain` plus this app's analytics and its
+  // rejected/unsupported-chain toasts.
   const { handleSwitchChain } = useChainModalContext();
   const onSelect = useCallback((chainId: number) => handleSwitchChain({ chainId }), [handleSwitchChain]);
   return <NetworkSelectView {...props} onSelect={onSelect} />;

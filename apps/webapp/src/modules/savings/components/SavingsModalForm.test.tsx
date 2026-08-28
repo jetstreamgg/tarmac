@@ -179,7 +179,7 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 // query client (the Safe probe); these renders have neither, and what they are
 // about is the row set, so stand it in with its chain list.
 vi.mock('@/modules/ui/components/NetworkSelect', () => ({
-  ModalNetworkSelect: ({ chainIds }: { chainIds: number[] }) => (
+  NetworkSelect: ({ chainIds }: { chainIds: number[] }) => (
     <div data-testid="modal-network-select">{chainIds.join(',')}</div>
   )
 }));
