@@ -717,13 +717,27 @@ export function TransactionProvider({
     return !config || !offSupportedChains(config.supportedChainIds, chainIdRef.current);
   }, []);
 
+  // A wrong-chain refusal hands the modal back to its first screen, where the
+  // guard's copy and switch CTA render. Never a bare no-op: the surfaces that
+  // can still reach the gate while guarded — a multi-step failure's inline
+  // "Try again" (which replaces the footer the guard block lives in), a gate
+  // verdict resolving after the wallet moved — would otherwise leave the user
+  // on a screen with nothing to wait for and no explanation.
+  const refuseOffChain = useCallback((controls: GateControls) => {
+    controls.setPreludeSteps(null);
+    controls.returnToFirstScreen();
+  }, []);
+
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
       if (gateInFlightRef.current === sessionGenRef.current) return;
-      if (!walletOnSupportedChain()) return;
       const gen = sessionGenRef.current;
       const controls = makeGateControls(gen);
+      if (!walletOnSupportedChain()) {
+        refuseOffChain(controls);
+        return;
+      }
       const verdict = gate({
         trigger,
         // Read at fire time (like the config callbacks): editable flows keep
@@ -740,12 +754,8 @@ export function TransactionProvider({
               // Re-checked: the wallet may have switched while the verdict
               // (a screening call, a signature prompt) was pending, and the
               // form has since rebuilt its calldata against the new chain.
-              // The modal is already on its transaction screen, so hand it
-              // back to the first screen — where the chain guard renders —
-              // rather than leave it on a status with nothing to wait for.
               if (!walletOnSupportedChain()) {
-                controls.setPreludeSteps(null);
-                controls.returnToFirstScreen();
+                refuseOffChain(controls);
                 return;
               }
               action();
@@ -761,7 +771,7 @@ export function TransactionProvider({
       }
       if (verdict.allow) action();
     },
-    [gate, makeGateControls, walletOnSupportedChain]
+    [gate, makeGateControls, walletOnSupportedChain, refuseOffChain]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's
@@ -944,7 +954,20 @@ export function TransactionProvider({
 
   const onError = useCallback(
     (error: Error, hash?: string) => {
-      if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
+      // A refusal BEFORE any write (the batch engine's cross-chain backstop,
+      // APP-528) arrives hashless at IDLE: no onMutate latched writeGenRef for
+      // this session, so the stale-write test — which exists to drop a
+      // PREVIOUS session's late settle — would drop it on any page that has
+      // already sent a transaction, leaving the modal on "Preparing". For a
+      // refusal the session generation alone says whether it is ours.
+      const preWriteRefusal = !hash && txStatusRef.current === TxStatus.IDLE;
+      if (
+        preWriteRefusal
+          ? sessionGen !== sessionGenRef.current
+          : isStaleWrite(sessionGen) || isForeignHash(hash)
+      ) {
+        return;
+      }
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
       if (hash) {
@@ -953,8 +976,9 @@ export function TransactionProvider({
 
       // Track transaction completed (error). Bounded classification props only —
       // never the raw message, which can embed addresses and calldata. A wallet
-      // rejection is the user backing out, not a failure (APP-444 D1).
-      const analytics = configRef.current?.analytics;
+      // rejection is the user backing out, not a failure (APP-444 D1). A
+      // pre-write refusal never started a transaction, so it completes none.
+      const analytics = preWriteRefusal ? undefined : configRef.current?.analytics;
       if (analytics) {
         const classification = classifyTransactionError(error, !!hash);
         trackTransactionCompleted({
@@ -972,17 +996,18 @@ export function TransactionProvider({
       const normalizedError = toError(error);
 
       if (shouldCaptureTransactionError(normalizedError)) {
+        const flowAnalytics = configRef.current?.analytics;
         reportError(normalizedError, {
           module: 'transactions',
-          flow: analytics?.flow ?? 'unknown',
-          action: analytics?.action ?? 'unknown',
-          type: 'transaction_error',
+          flow: flowAnalytics?.flow ?? 'unknown',
+          action: flowAnalytics?.action ?? 'unknown',
+          type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
           extra: {
             chainId,
             txHash: hash,
             isSafeWallet,
-            widget: analytics?.widgetName ?? 'unknown',
-            analyticsData: analytics?.data ?? null
+            widget: flowAnalytics?.widgetName ?? 'unknown',
+            analyticsData: flowAnalytics?.data ?? null
           }
         });
       }

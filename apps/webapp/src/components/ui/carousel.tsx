@@ -256,6 +256,31 @@ function CarouselDots({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * Inline Previous/Next pair for a section header: the arrows sit in flow (no
+ * absolute placement) and the pair renders nothing while every slide already
+ * fits, so a carousel that cannot scroll at the current width carries no dead
+ * chrome. Embla re-evaluates on resize (reInit), so the pair comes and goes as
+ * the viewport crosses the slides' basis breakpoints.
+ */
+function CarouselArrows({
+  className,
+  variant = 'secondary',
+  size = 'iconS',
+  ...props
+}: React.ComponentProps<'div'> & Pick<React.ComponentProps<typeof Button>, 'variant' | 'size'>) {
+  const { canScrollPrev, canScrollNext } = useCarousel();
+  if (!canScrollPrev && !canScrollNext) return null;
+
+  const inline = 'static left-auto right-auto top-auto translate-y-0';
+  return (
+    <div className={cn('flex gap-1.5', className)} data-slot="carousel-arrows" {...props}>
+      <CarouselPrevious variant={variant} size={size} className={inline} />
+      <CarouselNext variant={variant} size={size} className={inline} />
+    </div>
+  );
+}
+
 function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) {
   const { api, selectedIndex, scrollTo, scrollPrev, scrollNext, canScrollPrev, canScrollNext } =
     useCarousel();
@@ -321,6 +346,7 @@ export {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
+  CarouselArrows,
   CarouselDots,
   CarouselControls
 };
