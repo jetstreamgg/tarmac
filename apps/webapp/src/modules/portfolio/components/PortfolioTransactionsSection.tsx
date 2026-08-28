@@ -14,8 +14,7 @@ import {
 import { formatAddress, getChainIcon } from '@/utils';
 import { cn } from '@/lib/cn';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
-import { ConvertArrows } from '@/modules/icons';
+import { TransactionActionIcon } from '@/components/product/TransactionActionIcon';
 import {
   ALL_NETWORKS_LABEL,
   ALL_PRODUCTS_LABEL,
@@ -65,15 +64,6 @@ function productName(module: ModuleEnum): string {
   return groupForModule(module)?.label() ?? '';
 }
 
-function actionIcon(row: PortfolioTxRow): ReactNode {
-  if (row.module === ModuleEnum.TRADE) return <ConvertArrows width={16} height={16} />;
-  return row.positive === false ? (
-    <ArrowUpToLine className="size-4" />
-  ) : (
-    <ArrowDownToLine className="size-4" />
-  );
-}
-
 const tokenIcon = (symbol: string, width = 12) => (
   <TokenIcon
     token={{ symbol }}
@@ -87,7 +77,7 @@ const tokenIcon = (symbol: string, width = 12) => (
 // and the mobile card header.
 const actionCell = (row: PortfolioTxRow) => (
   <CellAction
-    icon={actionIcon(row)}
+    icon={<TransactionActionIcon module={row.module} positive={row.positive} />}
     label={row.action}
     sublabel={formatDistanceToNowStrict(row.timestamp, { addSuffix: true })}
   />

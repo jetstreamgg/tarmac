@@ -32,7 +32,8 @@ const WITHDRAWAL_AVAILABILITY: Record<
   'vault-tether-savings': { sheet: msg`Instant`, supply: msg`Anytime` },
   'vault-risk-capital': { sheet: msg`Liquidity based` },
   fixed: { sheet: msg`At maturity or via market sell`, withdraw: msg`Instant` },
-  stusds: { sheet: msg`Liquidity based` }
+  stusds: { sheet: msg`Liquidity based` },
+  stake: { sheet: msg`Instant` }
 };
 
 /**
