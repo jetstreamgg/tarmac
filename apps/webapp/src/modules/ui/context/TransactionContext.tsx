@@ -1095,8 +1095,16 @@ export function TransactionProvider({
   useEffect(() => {
     if (autoSwitchedSessionRef.current === sessionGen) return;
     autoSwitchedSessionRef.current = sessionGen;
+    // `activeConfig`, not the guard's own `guardConfig`: closing ALSO bumps the
+    // generation (so late engine callbacks see themselves as stale) while the
+    // view lingers as `exitingView` for its exit animation. The guard is still
+    // live against the closing flow's config through that window, so keying on
+    // the generation alone reads a close as an open and prompts the wallet for
+    // a modal the user just dismissed — including on the route guard's own
+    // redirect, which closes modals as it navigates.
+    if (!activeConfig) return;
     if (chainGuardActive && guardCanSwitch) switchGuardChain('transaction_modal_auto');
-  }, [sessionGen, chainGuardActive, guardCanSwitch, switchGuardChain]);
+  }, [sessionGen, activeConfig, chainGuardActive, guardCanSwitch, switchGuardChain]);
   const chainGuard = chainGuardActive
     ? {
         // The chain the guard is judging, not the one wagmi has pinned. Reading

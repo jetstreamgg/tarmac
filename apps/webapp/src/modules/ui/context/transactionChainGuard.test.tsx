@@ -121,11 +121,17 @@ function Harness({
 }
 
 function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig) {
+  let api: ReturnType<typeof useTransaction> | null = null;
   const tree = () => (
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <TransactionProvider>
-          <Harness build={build} onReady={() => {}} />
+          <Harness
+            build={build}
+            onReady={latest => {
+              api = latest;
+            }}
+          />
         </TransactionProvider>
       </I18nProvider>
     </StrictMode>
@@ -135,7 +141,15 @@ function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks'
   // lets. That is how a test moves the wallet under an open modal without
   // remounting it — a remount would start a new modal session. The element has
   // to be rebuilt: React bails out of a re-render given the same reference.
-  return { ...result, refresh: () => result.rerender(tree()) };
+  return {
+    ...result,
+    refresh: () => result.rerender(tree()),
+    // The provider owns closing; the reachable public trigger is the shell's
+    // per-navigation close, which is also the path the route guard's own
+    // redirect-home takes. `launchPathnameRef` latches window.location at
+    // launch, so any other pathname ends the session.
+    close: () => act(() => api?.closeOnNavigation('/somewhere-else'))
+  };
 }
 
 // A mainnet-only entry-only flow (the vault/upgrade/rewards shape): one Confirm
@@ -274,6 +288,37 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
 
     expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
     expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+  });
+
+  // Closing is the most ordinary thing a user does with a modal, and it must
+  // not be read as opening a new one. The session generation bumps on close
+  // (so late engine callbacks see themselves as stale) while the view lingers
+  // for its exit animation — which leaves the guard live against the closing
+  // flow's config for a render. A latch keyed on the generation alone fires
+  // there, prompting the wallet for a modal the user just dismissed.
+  it('asks for nothing when the modal is closed', () => {
+    mockChainId = 8453; // Base — the flow is mainnet-only, so it asks on open
+    const { close } = renderModal(() => mainnetOnlyConfig(vi.fn()));
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+
+    close();
+
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+  });
+
+  // The same hole from the other side, and the worse half: here the user got no
+  // prompt on open, changed network deliberately with the modal up, and closing
+  // it would ask them to undo that.
+  it('asks for nothing when a modal the user moved the wallet under is closed', () => {
+    mockChainId = 1;
+    const { refresh, close } = renderModal(() => mainnetOnlyConfig(vi.fn()));
+    mockChainId = 8453;
+    act(() => refresh());
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+
+    close();
+
     expect(mockHandleSwitchChain).not.toHaveBeenCalled();
   });
 

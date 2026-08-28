@@ -124,7 +124,7 @@ export function useAppOrchestration(): { intent: Intent } {
         setIsSwitchingNetwork(false);
         setIsAutoSwitching(false);
         // The app stops pointing at a chain the wallet refused to move to.
-        setPendingSwitchChainId(undefined);
+        setPendingSwitch(undefined);
 
         // Whether the user rejected the request or the wallet failed to honor
         // it (e.g. a pending-request error while a popup sits unanswered),
@@ -172,20 +172,29 @@ export function useAppOrchestration(): { intent: Intent } {
   // in-flight renders validate against the chain being left — and any unrelated
   // re-render during that window (a query settling, say) bounces the user home
   // a beat before the wallet answers.
-  const [pendingSwitchChainId, setPendingSwitchChainId] = useState<number | undefined>(undefined);
+  //
+  // Held as {from, to} rather than the target alone so the wait can be ended by
+  // ANY move, not just the requested one: a user shown a switch prompt can open
+  // their wallet and pick a third chain, and that answers the request as surely
+  // as honouring it. Waiting for the target specifically would leave the app
+  // pointed at a chain the wallet is not on for the rest of the session — every
+  // later navigation, and the reward contracts routes resolve, reading a frozen
+  // value with no way back.
+  const [pendingSwitch, setPendingSwitch] = useState<{ from: number; to: number } | undefined>(undefined);
   useEffect(() => {
-    // Landed. Cleared on failure by the switch's own onError.
-    if (pendingSwitchChainId !== undefined && walletChainId === pendingSwitchChainId) {
-      setPendingSwitchChainId(undefined);
+    // Moved — wherever to. A disconnect (undefined) ends the wait as well.
+    // Cleared on an outright failure by the switch's own onError.
+    if (pendingSwitch !== undefined && walletChainId !== pendingSwitch.from) {
+      setPendingSwitch(undefined);
     }
-  }, [walletChainId, pendingSwitchChainId]);
+  }, [walletChainId, pendingSwitch]);
 
   // The chain the app is pointed at: a switch we are waiting on wins, then the
   // network param (so navigation validates against the target network while a
   // wallet switch is in flight), then the off-config wallet chain — which no
   // param can describe — and finally the config's own.
   const newChainId =
-    pendingSwitchChainId ??
+    pendingSwitch?.to ??
     offConfigChainId ??
     (network
       ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)
@@ -249,10 +258,17 @@ export function useAppOrchestration(): { intent: Intent } {
       // switch effect below to react to. Ask the wallet directly.
       if (offConfigChainId !== undefined) {
         setIsSwitchingNetwork(true);
-        setIsAutoSwitching(true);
+        // Same condition the configured branch below uses, and for the same
+        // reason: `isAutoSwitching` exists to label a toast that fires on a
+        // change of the CONFIG chain, and only `useNetworkChangeToast` clears
+        // it. An off-config wallet leaves the config chain pinned where it was,
+        // so when the target is already that chain nothing moves, no toast
+        // fires, and the flag would stay raised — labelling the user's NEXT
+        // manual switch "we've switched your network automatically".
+        if (targetChainId !== chainId) setIsAutoSwitching(true);
         // Stand in for the `network=` write the configured path gets: from here
         // until the wallet answers, the app is pointed at the target.
-        setPendingSwitchChainId(targetChainId);
+        setPendingSwitch({ from: offConfigChainId, to: targetChainId });
         trackNetworkAutoSwitched({
           trigger: 'off_config_chain',
           fromChainId: offConfigChainId,

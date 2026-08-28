@@ -211,6 +211,26 @@ describe('useAppOrchestration — chain resolution', () => {
     expect(mockSwitchChain).not.toHaveBeenCalled();
   });
 
+  // The wallet's answer to "please switch to X" is not always X. A user shown
+  // the prompt can open their wallet and pick something else entirely, and that
+  // ends the wait just as much as honouring it. Matching only the requested
+  // chain leaves the app pointed at a chain the wallet is not on for the rest
+  // of the session — every later navigation, and the reward contracts the
+  // routes resolve, all read the frozen value.
+  it('stops waiting when the wallet lands somewhere other than the chain asked for', () => {
+    mockPathname = '/stake';
+    mockWalletChainId = POLYGON;
+    const { refresh } = mount();
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: TENDERLY });
+    mockNavigate.mockClear();
+
+    // The user picks Base instead. Stake does not run there.
+    walletEmitsChainChange(BASE);
+    refresh();
+
+    expect(redirectedHome()).toBe(true);
+  });
+
   it('does not re-ask after the user declines the switch, and gives way instead', () => {
     // Landing on a mainnet-only module with the wallet already off-config: the
     // arrival is the ask, so this one does prompt.

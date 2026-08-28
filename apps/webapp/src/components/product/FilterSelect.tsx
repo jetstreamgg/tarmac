@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Globe, Vault } from 'lucide-react';
+import { Vault } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
@@ -43,13 +43,6 @@ export function filterTriggerClasses(size: 's' | 'm' = 's') {
  * APP-443 item 9) can't drift apart.
  */
 const FILTER_ICON = 'text-fgBrand shrink-0';
-
-export const ALL_NETWORKS_LABEL = (
-  <span className="flex items-center gap-1.5">
-    <Globe className={cn('h-3 w-3', FILTER_ICON)} />
-    <Trans>All networks</Trans>
-  </span>
-);
 
 export const ALL_STABLECOINS_LABEL = (
   <span className="flex items-center gap-1.5">
