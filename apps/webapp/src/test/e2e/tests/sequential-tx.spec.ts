@@ -63,7 +63,8 @@ const positionAmount = async (page: Page, market: 'savings' | 'rewards') => {
  */
 const disableBundling = async (page: Page) => {
   const dialog = page.getByRole('dialog');
-  const badge = page.getByTestId('bundle-toggle-badge');
+  // The review screen draws the badge twice (fee row + actions header); either opens the panel.
+  const badge = dialog.getByTestId('bundle-toggle-badge').first();
   await badge.waitFor({ state: 'visible', timeout: 60_000 });
   await badge.click();
   const toggle = page.getByTestId('bundle-panel-switch');
