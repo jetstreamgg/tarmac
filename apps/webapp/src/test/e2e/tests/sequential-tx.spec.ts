@@ -57,7 +57,8 @@ const connectOn = async (page: Page, path: string) => {
  * and the page shows the supply CTA instead. The CTA also renders while the
  * balance is still loading, so a card is given a moment to replace it. Funded
  * accounts already hold a position in some markets, so the canaries assert
- * DELTAS, never absolutes.
+ * DELTAS, never absolutes — and poll for them, since the card refetches its
+ * balance a beat after the modal closes.
  */
 const positionAmount = async (page: Page, market: 'savings' | 'rewards') => {
   const card = page.getByTestId(`${market}-position-card`);
@@ -114,7 +115,9 @@ test.describe('Sequential transactions — Savings supply', () => {
     await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
 
     await expectFlowCompleted(isolatedPage);
-    expect((await positionAmount(isolatedPage, 'savings')) - positionBefore).toBeCloseTo(2, 0);
+    await expect
+      .poll(async () => (await positionAmount(isolatedPage, 'savings')) - positionBefore, { timeout: 30_000 })
+      .toBeCloseTo(2, 0);
   });
 
   test('Sequential stale-state regression: changed amount is used after step-2 rejection, close and reopen', async ({
@@ -151,7 +154,9 @@ test.describe('Sequential transactions — Savings supply', () => {
     await expectFlowCompleted(isolatedPage);
 
     // The position grew by the NEW amount (5), not the rejected one (3)
-    expect((await positionAmount(isolatedPage, 'savings')) - positionBefore).toBeCloseTo(5, 0);
+    await expect
+      .poll(async () => (await positionAmount(isolatedPage, 'savings')) - positionBefore, { timeout: 30_000 })
+      .toBeCloseTo(5, 0);
   });
 });
 
@@ -178,7 +183,9 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await reviewAndConfirm(isolatedPage);
 
     await expectFlowCompleted(isolatedPage);
-    expect((await positionAmount(isolatedPage, 'rewards')) - positionBefore).toBeCloseTo(2, 0);
+    await expect
+      .poll(async () => (await positionAmount(isolatedPage, 'rewards')) - positionBefore, { timeout: 30_000 })
+      .toBeCloseTo(2, 0);
   });
 
   test('Sequential stale-state regression: changed amount is used after step-2 rejection, close and reopen', async ({
@@ -215,6 +222,8 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await expectFlowCompleted(isolatedPage);
 
     // The position grew by the NEW amount (7), not the rejected one (3)
-    expect((await positionAmount(isolatedPage, 'rewards')) - positionBefore).toBeCloseTo(7, 0);
+    await expect
+      .poll(async () => (await positionAmount(isolatedPage, 'rewards')) - positionBefore, { timeout: 30_000 })
+      .toBeCloseTo(7, 0);
   });
 });
