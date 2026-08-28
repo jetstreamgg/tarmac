@@ -22,6 +22,7 @@ import { chainSwitchTarget } from '@/lib/chainAvailability';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
@@ -1043,10 +1044,34 @@ export function TransactionProvider({
   // Safe wallets can't switch networks from the dapp (APP-486) — offer no
   // switch button, only the explanatory block; the guard still disables the CTAs.
   const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
-  const switchGuardChain = useCallback(() => {
-    if (guardTargetChainId === undefined) return;
-    handleSwitchChain({ chainId: guardTargetChainId, source: 'transaction_modal' });
-  }, [guardTargetChainId, handleSwitchChain]);
+  const switchGuardChain = useCallback(
+    (source: NetworkSwitchSource = 'transaction_modal') => {
+      if (guardTargetChainId === undefined) return;
+      handleSwitchChain({ chainId: guardTargetChainId, source });
+    },
+    [guardTargetChainId, handleSwitchChain]
+  );
+  const onGuardSwitchClick = useCallback(() => switchGuardChain(), [switchGuardChain]);
+
+  // Opening a product's modal is asking for that product, so it resolves its
+  // chain the way arriving on its page does — the route guard's rule (c), just
+  // without a URL to change. Portfolio is where this matters: its in-place
+  // actions reach mainnet-only products from a surface that runs anywhere, so
+  // without this the user meets a wall in a modal they opened to transact.
+  //
+  // Latched to the modal session, which is the counterpart of the route guard's
+  // one prompt per module visit. The FIRST evaluation of a session is the only
+  // one that can fire, whether or not it does anything: that is what keeps the
+  // guard turning active LATER — the APP-528 case, where the user switches the
+  // wallet with the modal already open — from yanking them back. That change is
+  // deliberate and gets the CTA, not a prompt. A decline is covered by the same
+  // latch, so the guard block stays put rather than asking twice.
+  const autoSwitchedSessionRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (autoSwitchedSessionRef.current === sessionGen) return;
+    autoSwitchedSessionRef.current = sessionGen;
+    if (chainGuardActive && guardCanSwitch) switchGuardChain('transaction_modal_auto');
+  }, [sessionGen, chainGuardActive, guardCanSwitch, switchGuardChain]);
   const chainGuard = chainGuardActive
     ? {
         // The chain the guard is judging, not the one wagmi has pinned. Reading
@@ -1057,7 +1082,7 @@ export function TransactionProvider({
         // undefined is right: the copy says "this network" instead of guessing.
         currentName: chains.find(c => c.id === guardChainId)?.name,
         targetName: guardTargetName,
-        onSwitch: guardCanSwitch ? switchGuardChain : undefined,
+        onSwitch: guardCanSwitch ? onGuardSwitchClick : undefined,
         // The guard's CTA shows the DS loading state while the wallet is
         // answering OUR switch request (not some other surface's).
         switching: switchPending && switchVariables?.chainId === guardTargetChainId

@@ -70,7 +70,15 @@ export type ConnectReason =
 export type ConnectMethod = 'connect' | 'switch';
 export type GatedActionOutcome = 'completed' | 'abandoned';
 export type NetworkSwitchSource =
-  'chain_modal' | 'network_toast' | 'portfolio_supply' | 'pendle_claim' | 'transaction_modal';
+  | 'chain_modal'
+  | 'network_toast'
+  | 'portfolio_supply'
+  | 'pendle_claim'
+  | 'transaction_modal'
+  // The guard's switch taken automatically when the modal opened, rather than
+  // by the user pressing its CTA. Kept separate so a portfolio-launched flow
+  // resolving its own chain doesn't read as a user click.
+  | 'transaction_modal_auto';
 export type NetworkSwitchStatus = 'success' | 'rejected' | 'error';
 // 'off_config_chain': the wallet was sitting on a network the app doesn't
 // configure. This used to surface as its own event behind a blocking dialog

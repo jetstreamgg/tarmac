@@ -121,7 +121,7 @@ function Harness({
 }
 
 function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig) {
-  render(
+  const tree = () => (
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <TransactionProvider>
@@ -130,6 +130,12 @@ function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks'
       </I18nProvider>
     </StrictMode>
   );
+  const result = render(tree());
+  // Re-renders the same tree so the wagmi mocks re-read the module-level chain
+  // lets. That is how a test moves the wallet under an open modal without
+  // remounting it — a remount would start a new modal session. The element has
+  // to be rebuilt: React bails out of a re-render given the same reference.
+  return { ...result, refresh: () => result.rerender(tree()) };
 }
 
 // A mainnet-only entry-only flow (the vault/upgrade/rewards shape): one Confirm
@@ -177,8 +183,15 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
     const switchBtn = screen.getByRole('button', { name: 'Switch to Ethereum' });
     expect((switchBtn as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.click(switchBtn);
+    // One attempt was already made automatically when the modal opened; the
+    // press adds the user's own, attributed to them.
     expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+    fireEvent.click(switchBtn);
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(2);
+    expect(mockHandleSwitchChain).toHaveBeenLastCalledWith({
+      chainId: 1,
+      source: 'transaction_modal'
+    });
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
@@ -212,6 +225,58 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  // Opening a product's modal is asking for that product, so it resolves its
+  // chain the way arriving on its page does. Portfolio is where this bites: its
+  // in-place actions reach mainnet-only products from a surface that runs on
+  // any chain.
+  it('asks for the supported chain by itself when the modal opens off it', () => {
+    mockChainId = 8453; // Base
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+
+    expect(mockHandleSwitchChain).toHaveBeenCalledWith({
+      chainId: 1,
+      source: 'transaction_modal_auto'
+    });
+    // Once per modal session — StrictMode double-invokes effects, and a
+    // re-render must not re-ask either.
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+    // The guard stays up until the wallet actually moves: a request is not an
+    // answer, and the CTA is what the user has if they declined it.
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+  });
+
+  it('asks for nothing when the modal opens on a supported chain', () => {
+    mockChainId = 1;
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+  });
+
+  it('never asks a Safe wallet, which cannot switch from the dapp', () => {
+    mockChainId = 8453;
+    mockIsSafeWallet = true;
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+  });
+
+  // The APP-528 case: the modal is already open and the user changes network in
+  // their wallet. That is deliberate, and the app does not argue with it — the
+  // guard appears with its CTA, but nothing asks for the chain back. Same rule
+  // the route guard follows, where only a navigation earns a prompt.
+  it('does NOT ask when the wallet leaves the supported set with the modal already open', () => {
+    mockChainId = 1;
+    const { refresh } = renderModal(() => mainnetOnlyConfig(vi.fn()));
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+
+    mockChainId = 8453; // the user switches to Base themselves
+    act(() => refresh());
+
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+  });
+
   it('names the current and target chains and switches on click', () => {
     mockChainId = 8453; // Base
     renderModal(() => mainnetOnlyConfig(vi.fn()));
@@ -222,7 +287,12 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
 
     const switchBtn = screen.getByTestId('transaction-chain-guard-switch');
     fireEvent.click(switchBtn);
-    expect(mockHandleSwitchChain).toHaveBeenCalledWith({ chainId: 1, source: 'transaction_modal' });
+    // The user's own press is attributed to them, not to the automatic attempt
+    // that opening the modal already made.
+    expect(mockHandleSwitchChain).toHaveBeenLastCalledWith({
+      chainId: 1,
+      source: 'transaction_modal'
+    });
   });
 
   it('offers NO switch button for a Safe wallet (it cannot switch from the dapp)', () => {
