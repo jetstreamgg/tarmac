@@ -13,6 +13,26 @@ const TENDERLY_CHAIN_LABEL: Record<NetworkName, string> = {
 export const tenderlyChainLabel = (network: NetworkName) => TENDERLY_CHAIN_LABEL[network];
 
 /**
+ * The chain the app is on. Tests used to read this out of `?network=`, which
+ * was the app's chain as much as it was a URL — writing it performed the
+ * switch, so waiting for it in the URL was waiting for the switch to land. The
+ * param is retired; the wagmi store it mirrored is the source now.
+ */
+export const expectAppChain = async (page: Page, chainName: string) => {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const read = window.__MOCK_APP_CHAIN__;
+          if (!read) throw new Error('Mock app-chain hook is not installed (is this the mock build?)');
+          return read().name;
+        }),
+      { timeout: 15000 }
+    )
+    .toBe(chainName);
+};
+
+/**
  * Changes the connected mock wallet's network the way a user does from their
  * wallet's own menu — no app UI involved.
  *
@@ -27,7 +47,7 @@ export const tenderlyChainLabel = (network: NetworkName) => TENDERLY_CHAIN_LABEL
  * dropdown; this one models the wallet.
  *
  * Chain names are the mock config's tenderly-flavoured ones ('Tenderly
- * Mainnet', 'Tenderly Base', …).
+ * Mainnet', 'Tenderly Base', …), matched case-insensitively.
  */
 export const switchWalletNetwork = async (page: Page, chainName: string) => {
   const chainId = await page.evaluate(name => {
@@ -36,14 +56,18 @@ export const switchWalletNetwork = async (page: Page, chainName: string) => {
     return trigger(name);
   }, chainName);
 
-  // The app mirrors the wallet's chain into the network param; waiting on it
-  // means callers can act on the switched state rather than racing it.
-  await expect(page).toHaveURL(new RegExp(`network=${chainSlug(chainName)}`), { timeout: 15000 });
+  // Callers act on the switched state, so wait for the app to have followed the
+  // wallet rather than racing it.
+  await expectAppChain(page, canonicalChainName(chainName));
   return chainId;
 };
 
-/** Chain names normalize to e.g. `tenderlybase` in the URL (normalizeUrlParam). */
-const chainSlug = (chainName: string) => chainName.toLowerCase().replace(/[^a-z0-9]/g, '');
+/**
+ * Callers build the name from the lowercase `NetworkName` enum, so recover the
+ * config's own casing before comparing against what the app reports.
+ */
+const canonicalChainName = (chainName: string) =>
+  chainName.replace(/\b[a-z]/g, letter => letter.toUpperCase());
 
 /**
  * Switches the network the way a user does inside the app: the network dropdown
@@ -53,5 +77,5 @@ const chainSlug = (chainName: string) => chainName.toLowerCase().replace(/[^a-z0
 export const switchNetworkOnProductPage = async (page: Page, chainName: string) => {
   await page.getByTestId('product-detail-network').click();
   await page.getByRole('option', { name: chainName }).click();
-  await expect(page).toHaveURL(new RegExp(`network=${chainSlug(chainName)}`), { timeout: 15000 });
+  await expectAppChain(page, chainName);
 };

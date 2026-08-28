@@ -194,7 +194,7 @@ function MoreMenu() {
 /** Final 4-destination top navigation. */
 export function TopNav() {
   const activePath = useActiveDestinationPath();
-  const { searchForIntent, handleNavClick } = useDestinationLinkProps('header_nav');
+  const { navSearch, handleNavClick } = useDestinationLinkProps('header_nav');
 
   // At the desktop tier the nav box dissolves (display: contents) so the pill
   // group and chip cluster sit directly in the shell header's three-flank grid
@@ -228,8 +228,8 @@ export function TopNav() {
             <Link
               key={destination.path}
               to={destination.path}
-              search={searchForIntent(destination.intents[0])}
-              onClick={handleNavClick(destination.intents[0], destination.path)}
+              search={navSearch}
+              onClick={handleNavClick(destination.path)}
               data-testid={navTestId(destination.path)}
               aria-current={isActive ? 'page' : undefined}
               className={navItemClasses}

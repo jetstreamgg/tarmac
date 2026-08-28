@@ -10,9 +10,6 @@ import { isMultichain, requiresMainnet } from '@/lib/widget-network-map';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
-import { useAppSearchParams, type SetSearchParams } from '@/lib/navigation';
-import { QueryParams } from '@/lib/constants';
-import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { Loader2 } from 'lucide-react';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 
@@ -85,7 +82,6 @@ const NetworkQuickSwitchButtons = ({
   currentIntent,
   chains,
   handleSwitchChain,
-  setSearchParams,
   toastId
 }: {
   currentChainId: number;
@@ -97,7 +93,6 @@ const NetworkQuickSwitchButtons = ({
     onSuccess?: (data: any, variables: { chainId: number }) => void;
     onSettled?: () => void;
   }) => void;
-  setSearchParams: SetSearchParams;
   toastId?: string | number;
 }) => {
   const [switchingTo, setSwitchingTo] = useState<number | null>(null);
@@ -146,19 +141,10 @@ const NetworkQuickSwitchButtons = ({
                 }, 350);
               }
 
-              handleSwitchChain({
-                chainId: chain.id,
-                source: 'network_toast',
-                onSuccess: (_: any, { chainId: newChainId }: { chainId: number }) => {
-                  const newChainName = chains.find(c => c.id === newChainId)?.name;
-                  if (newChainName) {
-                    setSearchParams((params: URLSearchParams) => {
-                      params.set(QueryParams.Network, normalizeUrlParam(newChainName));
-                      return params;
-                    });
-                  }
-                }
-              });
+              // No onSuccess: the switch IS the whole action now. It used to
+              // have to mirror the new chain into `network=` as well, back when
+              // that param was the app's idea of its own chain.
+              handleSwitchChain({ chainId: chain.id, source: 'network_toast' });
             }}
             title={`Switch to ${chain.name}`}
           >
@@ -177,7 +163,6 @@ const NetworkQuickSwitchButtons = ({
 export function useEnhancedNetworkToast() {
   const chains = useChains();
   const { handleSwitchChain } = useChainModalContext();
-  const [, setSearchParams] = useAppSearchParams();
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The show currently parked behind the app-loader cover, if any.
   const deferredShowRef = useRef<MutationObserver | null>(null);
@@ -235,7 +220,6 @@ export function useEnhancedNetworkToast() {
             currentIntent={currentIntent}
             chains={chains}
             handleSwitchChain={handleSwitchChain}
-            setSearchParams={setSearchParams}
             toastId={toastId}
           />
         </div>
@@ -282,7 +266,7 @@ export function useEnhancedNetworkToast() {
         currentIntent === previousIntent ? 700 : 0
       );
     },
-    [chains, handleSwitchChain, setSearchParams]
+    [chains, handleSwitchChain]
   );
 
   return { showNetworkToast };

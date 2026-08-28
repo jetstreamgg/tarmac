@@ -10,6 +10,12 @@ export enum QueryParams {
   UrnIndex = 'urn_index',
   SourceToken = 'source_token',
   TargetToken = 'target_token',
+  /**
+   * Legacy. `network` was the app's chain — it named the current one and, by
+   * being written, performed the switch. That is the wallet's job now. The key
+   * survives so links minted while it was live still work: an incoming one is
+   * honoured once by `useAppOrchestration` and then stripped. Nothing writes it.
+   */
   Network = 'network',
   Flow = 'flow',
   StakeTab = 'stake_tab',

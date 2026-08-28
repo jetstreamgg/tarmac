@@ -14,7 +14,7 @@ import { chainId as chainIdMap } from '@/utils/chainId';
 // module that needs a chain does.
 
 const TENDERLY: number = chainIdMap.tenderly;
-const BASE = 8453; // configured, so a switch to it goes through `network=`
+const BASE = 8453; // configured — wagmi will move the store chain onto it
 const POLYGON = 137; // configured by nothing here — the off-config case
 
 const CHAINS = [
@@ -29,6 +29,7 @@ let mockConfigChainId = TENDERLY;
 let mockWalletChainId: number | undefined = TENDERLY;
 let mockFilterChainId: number | null = null;
 let mockRewardContracts: { contractAddress: string }[] | undefined = [];
+let mockConnectionStatus = 'connected';
 
 const mockNavigate = vi.fn();
 const mockSwitchChain = vi.fn();
@@ -48,8 +49,9 @@ function walletEmitsChainChange(chainId: number) {
   listeners.forEach(fn => fn({ chainId }));
 }
 
-// A real URLSearchParams so `network=` behaves as it does in the app: the
-// route guard writes it and a separate effect reads it back to switch.
+// A real URLSearchParams. `network=` is no longer app state, but an incoming
+// one is still honoured once and then stripped, so the tests need a store that
+// can actually be read and written.
 let search = new URLSearchParams();
 const setSearchParams = vi.fn((updater: (p: URLSearchParams) => URLSearchParams) => {
   search = new URLSearchParams(updater(new URLSearchParams(search)));
@@ -68,8 +70,7 @@ vi.mock('@/lib/navigation', () => ({
 vi.mock('wagmi', () => ({
   useChainId: () => mockConfigChainId,
   useChains: () => CHAINS,
-  useConnection: () => ({ connector: { emitter }, chainId: mockWalletChainId }),
-  useConnectionEffect: () => {},
+  useConnection: () => ({ connector: { emitter }, chainId: mockWalletChainId, status: mockConnectionStatus }),
   useSwitchChain: ({ mutation }: { mutation: typeof switchMutation }) => {
     switchMutation = mutation;
     return { switchChain: mockSwitchChain };
@@ -77,7 +78,13 @@ vi.mock('wagmi', () => ({
 }));
 vi.mock('@/hooks', () => ({
   useNetworkFilter: () => ({ chainId: mockFilterChainId }),
-  useAvailableTokenRewardContracts: () => mockRewardContracts
+  useAvailableTokenRewardContracts: () => mockRewardContracts,
+  // The real one reads the same two wagmi hooks mocked above; inlining its rule
+  // here keeps the mock honest without pulling the whole barrel in.
+  useAppChainId: () =>
+    mockWalletChainId !== undefined && !CHAINS.some(c => c.id === mockWalletChainId)
+      ? mockWalletChainId
+      : mockConfigChainId
 }));
 
 // Everything below is orchestration the chain rules don't touch.
@@ -133,6 +140,7 @@ beforeEach(() => {
   mockWalletChainId = TENDERLY;
   mockFilterChainId = null;
   mockRewardContracts = [];
+  mockConnectionStatus = 'connected';
   search = new URLSearchParams();
   listeners.clear();
   switchMutation = {};
@@ -248,5 +256,73 @@ describe('useAppOrchestration — chain resolution', () => {
     // route gives way rather than asking twice.
     expect(mockSwitchChain).not.toHaveBeenCalled();
     expect(redirectedHome()).toBe(true);
+  });
+});
+
+// `?network=` was the app's chain: it both named the current one and, by being
+// written, performed the switch. It is retired as state, but an incoming one is
+// still honoured — once — so links minted while it was live keep working. These
+// pin that it is spent rather than obeyed.
+describe('useAppOrchestration — the retired network param', () => {
+  it('honours an incoming network param once and strips it', () => {
+    mockPathname = '/earn';
+    search = new URLSearchParams('network=tenderlybase');
+
+    mount();
+
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: BASE });
+    expect(search.get('network')).toBeNull();
+  });
+
+  it('strips a param it cannot resolve rather than leaving it to look live', () => {
+    search = new URLSearchParams('network=polygon');
+
+    mount();
+
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(search.get('network')).toBeNull();
+  });
+
+  it('does not act on the param a second time when it reappears', () => {
+    search = new URLSearchParams('network=tenderlybase');
+    const { refresh } = mount();
+    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+    mockSwitchChain.mockClear();
+
+    // A stale link re-pasted, or a redirect carrying the old search through.
+    // The param has had its chance; obeying it again would let a URL keep
+    // overruling the wallet, which is the behaviour being retired.
+    search = new URLSearchParams('network=tenderlybase');
+    refresh();
+
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+  });
+
+  // The param used to be re-read on connect, which is what made a link opened
+  // cold survive the wallet attaching. Honouring it before the connection
+  // settles would spend it against the config chain and let the reconnect
+  // overrule it a beat later.
+  it('waits for the connection to settle before spending the param', () => {
+    search = new URLSearchParams('network=tenderlybase');
+    mockConnectionStatus = 'reconnecting';
+
+    const { refresh } = mount();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(search.get('network')).toBe('tenderlybase');
+
+    mockConnectionStatus = 'connected';
+    refresh();
+
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: BASE });
+    expect(search.get('network')).toBeNull();
+  });
+
+  it('leaves the wallet alone when the param already names its chain', () => {
+    search = new URLSearchParams('network=tenderlymainnet');
+
+    mount();
+
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(search.get('network')).toBeNull();
   });
 });

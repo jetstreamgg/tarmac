@@ -4,7 +4,7 @@ import { Link, useParams, useRouter, useRouterState } from '@tanstack/react-rout
 import type { FileRouteTypes } from '@/routeTree.gen';
 import { ComponentProps, useCallback, useMemo } from 'react';
 import { ConvertIntent, FixedIntent, Intent, VaultsIntent } from '@/lib/enums';
-import { IS_PRODUCTION_ENV, QueryParams } from '@/lib/constants';
+import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { GEO_OVERRIDE_PARAMS } from '@/modules/geo-config/applyGeoOverrides';
 import { earnProductFilter } from '@/lib/routes';
 
@@ -86,30 +86,16 @@ export const keepSearch = (prev: Record<string, string | undefined>): Record<str
 };
 
 /**
- * `keepSearch` plus the Earn table's product filter for `intent` — the search
- * reducer for every fallback that lands on the marketplace instead of a
- * product page (a bare /earn/vaults, an unknown vault address, a retired
- * overview). Filtering to the family the user asked for beats dropping them on
- * the unfiltered table (APP-542); an intent with its own page is left alone.
- */
-export const keepSearchFilteredTo =
-  (intent: Intent) =>
-  (prev: Record<string, string | undefined>): Record<string, string> => {
-    const product = earnProductFilter(intent);
-    const next = keepSearch(prev);
-    return product ? { ...next, [QueryParams.Product]: product } : next;
-  };
-
-/**
- * Search params preserved when navigating between modules. Mirrors the legacy
- * deleteSearchParams behavior: keep network (and valid geo overrides in
- * non-production), drop module-specific state like flow or source_token.
+ * Search params preserved when navigating between modules: the valid geo
+ * overrides, in non-production only. Module-specific state like flow or
+ * source_token is dropped.
+ *
+ * `network=` used to be retained here — it was the app's chain, so carrying it
+ * across a navigation is what kept the chain from resetting. The chain lives in
+ * the wallet now and needs nothing from the URL to survive a route change.
  */
 export function retainOnNavigate(prev: Record<string, string | undefined>): Record<string, string> {
   const retained: Record<string, string> = {};
-  for (const key of [QueryParams.Network] as string[]) {
-    if (prev[key] !== undefined) retained[key] = prev[key];
-  }
   if (!IS_PRODUCTION_ENV) {
     for (const key of GEO_OVERRIDE_PARAMS) {
       if (prev[key] !== undefined) retained[key] = prev[key];

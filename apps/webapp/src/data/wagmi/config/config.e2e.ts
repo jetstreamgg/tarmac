@@ -112,6 +112,7 @@ declare global {
   interface Window {
     __MOCK_SWITCH_CHAIN_ERROR__?: 'reject' | 'error';
     __MOCK_SWITCH_CHAIN__?: (chainName: string) => Promise<number>;
+    __MOCK_APP_CHAIN__?: () => { id: number; name: string };
   }
 }
 
@@ -224,7 +225,20 @@ export const mockWagmiConfig = createConfig({
  * must honour the wallet's choice and send the user somewhere the module works,
  * rather than prompting them straight back.
  */
+/**
+ * The chain the app is on, for tests that used to read it out of `?network=`.
+ *
+ * That param was the app's chain — it named the current one and, by being
+ * written, performed the switch — which made `toHaveURL(/network=…/)` a
+ * legitimate way to wait for a switch to land. It is retired, so the store it
+ * mirrored is what tests read now.
+ */
 if (typeof window !== 'undefined') {
+  window.__MOCK_APP_CHAIN__ = () => {
+    const id = mockWagmiConfig.state.chainId;
+    return { id, name: mockWagmiConfig.chains.find(c => c.id === id)?.name ?? String(id) };
+  };
+
   window.__MOCK_SWITCH_CHAIN__ = async (chainName: string) => {
     // Case-insensitive: callers build the name from the lowercase `NetworkName`
     // enum (`Tenderly ${networkName}` → "Tenderly arbitrum"), and the URL the
