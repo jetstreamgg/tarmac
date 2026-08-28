@@ -45,14 +45,16 @@ describe('useSavingsAllowance', () => {
 
     await waitFor(() => expect(result.current.account.isConnected).toBeTruthy());
 
+    // Test 1 may have cached a zero allowance — refetch after the approve mines.
+    await result.current.savings.mutate();
+
     await waitFor(
       () => {
-        expect(result.current.savings.isLoading).toBe(false);
+        expect(result.current.savings.data).toBe(10000000000000000000n);
       },
-      { timeout: 10000 }
+      { timeout: 15000 }
     );
 
-    expect(result.current.savings.data).toBe(10000000000000000000n);
     expect(result.current.savings.dataSources.length).toEqual(1);
     unmount();
   });
