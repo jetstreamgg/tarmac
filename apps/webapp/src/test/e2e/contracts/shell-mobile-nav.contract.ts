@@ -15,5 +15,6 @@ export const shellMobileNavContract: TestContract = {
     { action: 'tap Earn', locator: { testId: 'mobile-nav-earn' } },
     { action: 'assert active pill', locator: { testId: 'mobile-nav-active-pill' } }
   ],
-  oracle: 'mobile-navbar visible; top-nav absent from layout flow; each tap lands correct /portfolio|/earn|/stake|/convert'
+  oracle:
+    'mobile-navbar visible; top-nav absent from layout flow; each tap lands correct /portfolio|/earn|/stake|/convert'
 };

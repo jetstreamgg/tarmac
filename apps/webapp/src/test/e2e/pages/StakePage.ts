@@ -18,8 +18,7 @@ export const BORROW_SPEC_SKY = '25000000';
 export class StakePage {
   constructor(private readonly page: Page) {}
 
-  productPage = () =>
-    locate(this.page, { testId: 'stake-product-page' }, stakeProductDefaultContract);
+  productPage = () => locate(this.page, { testId: 'stake-product-page' }, stakeProductDefaultContract);
 
   tabs = () => locate(this.page, { testId: 'stake-tabs' }, stakeProductDefaultContract);
 
@@ -27,8 +26,7 @@ export class StakePage {
 
   engineCard = () => locate(this.page, { testId: 'stake-engine-card' }, stakeProductDefaultContract);
 
-  positionsEmpty = () =>
-    locate(this.page, { testId: 'stake-positions-empty' }, stakeProductDefaultContract);
+  positionsEmpty = () => locate(this.page, { testId: 'stake-positions-empty' }, stakeProductDefaultContract);
 
   openPositionCta = () =>
     locate(this.page, { testId: 'stake-open-position-cta' }, stakeProductDefaultContract);
@@ -57,14 +55,11 @@ export class StakePage {
 
   takeoverRiskPill = () => locate(this.page, { testId: 'stake-takeover-risk-pill' }, stakeOpenFlowContract);
 
-  positionDetails = () =>
-    locate(this.page, { testId: 'stake-position-details' }, stakeManageFlowContract);
+  positionDetails = () => locate(this.page, { testId: 'stake-position-details' }, stakeManageFlowContract);
 
-  manageTakeover = () =>
-    locate(this.page, { testId: 'stake-manage-takeover' }, stakeManageFlowContract);
+  manageTakeover = () => locate(this.page, { testId: 'stake-manage-takeover' }, stakeManageFlowContract);
 
-  manageMenuBorrow = () =>
-    locate(this.page, { testId: 'stake-manage-menu-borrow' }, stakeManageFlowContract);
+  manageMenuBorrow = () => locate(this.page, { testId: 'stake-manage-menu-borrow' }, stakeManageFlowContract);
 
   manageBorrowAmount = () =>
     locate(this.page, { testId: 'stake-manage-borrow-amount' }, stakeManageFlowContract);
@@ -97,15 +92,7 @@ export class StakePage {
     await expectTransactionSuccess(this.page);
   }
 
-  async openPosition({
-    sky,
-    usds,
-    delegate = false
-  }: {
-    sky: string;
-    usds?: string;
-    delegate?: boolean;
-  }) {
+  async openPosition({ sky, usds, delegate = false }: { sky: string; usds?: string; delegate?: boolean }) {
     await this.deepLink('flow=open');
     await expect(this.takeover()).toBeVisible({ timeout: 15_000 });
 

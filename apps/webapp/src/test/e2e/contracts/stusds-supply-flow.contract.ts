@@ -8,11 +8,10 @@ export const stusdsSupplyFlowContract: TestContract = {
     fileKey: SKY_APP_UI_FILE,
     frames: ['859:38102', '859:38550']
   },
-  intent: 'User supplies USDS to stUSDS through the expert-risk modal',
-  preconditions: ['connected wallet with USDS', 'risk acknowledgement accepted', 'on /earn/stusds'],
+  intent: 'User validates supply amount in the stUSDS expert-risk modal',
+  preconditions: ['connected wallet with USDS', 'on /earn/stusds'],
   steps: [
     { action: 'open supply modal', locator: { testId: 'stusds-supply-cta' } },
-    { action: 'provider notice', locator: { testId: 'stusds-provider-notice' } },
     { action: 'enter amount', locator: { testId: 'stusds-modal-amount-input' } },
     { action: 'review', locator: { role: { type: 'button', name: 'Review' } } }
   ],

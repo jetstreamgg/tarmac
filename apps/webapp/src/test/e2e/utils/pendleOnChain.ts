@@ -44,11 +44,7 @@ export async function cheatMintPtSusds(
 
   const wad = parseUnits(amount, 18);
   const slot = keccak256(encodeAbiParameters([{ type: 'address' }, { type: 'uint256' }], [account, 0n]));
-  await cheat(rpcUrl, 'tenderly_setStorageAt', [
-    PT_SUSDS_PT_TOKEN,
-    slot,
-    numberToHex(wad, { size: 32 })
-  ]);
+  await cheat(rpcUrl, 'tenderly_setStorageAt', [PT_SUSDS_PT_TOKEN, slot, numberToHex(wad, { size: 32 })]);
   await cheat(rpcUrl, 'evm_mine', []);
 
   const balance = await pub.readContract({
@@ -79,10 +75,7 @@ export async function advanceChainPastPendleExpiry(
 }
 
 /** Pendle UI maturity uses `Date.now()` — freeze one day past expiry before goto. */
-export async function installPendleUiMaturity(
-  page: Page,
-  expirySec = PT_SUSDS_EXPIRY_SEC
-): Promise<void> {
+export async function installPendleUiMaturity(page: Page, expirySec = PT_SUSDS_EXPIRY_SEC): Promise<void> {
   // Prefer Date override over page.clock — fake clocks freeze timers and stall
   // React Query / wagmi settlement on Portfolio.
   await page.addInitScript(expiry => {
@@ -101,7 +94,9 @@ export async function installPendleUiMaturity(
       parse: RealDate.parse,
       UTC: RealDate.UTC
     });
-    (globalThis as { Date: typeof Date }).Date = FrozenDate;
+    // Browser init script — FrozenDate only needs now() + construction override.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).Date = FrozenDate;
   }, expirySec);
 }
 

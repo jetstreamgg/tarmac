@@ -29,8 +29,7 @@ export class PortfolioPage {
   tabSupplied = () =>
     locate(this.page, { testId: 'portfolio-tab-supplied' }, portfolioConnectedContract).first();
 
-  tabIdle = () =>
-    locate(this.page, { testId: 'portfolio-tab-idle' }, portfolioConnectedContract).first();
+  tabIdle = () => locate(this.page, { testId: 'portfolio-tab-idle' }, portfolioConnectedContract).first();
 
   positionsSection = () => locate(this.page, { testId: 'portfolio-positions' }, portfolioConnectedContract);
 

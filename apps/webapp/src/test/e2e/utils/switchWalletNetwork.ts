@@ -24,11 +24,7 @@ export const tenderlyChainLabel = (network: NetworkName) => TENDERLY_CHAIN_LABEL
  * next assertion (balance reads, tx flows). Waits for `network=tenderly*` in
  * the URL, matching `switchToL2`.
  */
-export const switchWalletNetwork = async (
-  page: Page,
-  chainName: string,
-  network?: NetworkName
-) => {
+export const switchWalletNetwork = async (page: Page, chainName: string, network?: NetworkName) => {
   await page.getByTestId('wallet-chip').getByRole('button').first().click();
   await page.getByTestId('wallet-drawer-network').click();
   await page.getByRole('button', { name: chainName }).click();

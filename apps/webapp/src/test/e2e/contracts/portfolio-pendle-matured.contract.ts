@@ -20,5 +20,6 @@ export const portfolioPendleMaturedContract: TestContract = {
     { action: 'Matured badge', locator: { testId: 'pendle-matured-badge' } },
     { action: 'Claim CTA', locator: { testId: 'pendle-matured-redeem-button' } }
   ],
-  oracle: 'pendle-matured-position-card visible in Supplied with Matured badge and Claim CTA (quote-gated enablement out of scope)'
+  oracle:
+    'pendle-matured-position-card visible in Supplied with Matured badge and Claim CTA (quote-gated enablement out of scope)'
 };

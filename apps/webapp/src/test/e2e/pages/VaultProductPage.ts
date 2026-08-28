@@ -39,7 +39,8 @@ export class VaultProductPage {
 
   positionSupply = () => locate(this.page, { testId: 'vault-position-supply' }, vaultSupplyFlowContract);
 
-  positionWithdraw = () => locate(this.page, { testId: 'vault-position-withdraw' }, vaultWithdrawFlowContract);
+  positionWithdraw = () =>
+    locate(this.page, { testId: 'vault-position-withdraw' }, vaultWithdrawFlowContract);
 
   amountInput = () => locate(this.page, { testId: 'vault-modal-amount-input' }, vaultSupplyFlowContract);
 

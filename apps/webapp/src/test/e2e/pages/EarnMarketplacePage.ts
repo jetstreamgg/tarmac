@@ -12,20 +12,16 @@ export class EarnMarketplacePage {
     await this.page.goto(`/earn${search ? `?${search}` : ''}`);
   }
 
-  opportunities = () =>
-    locate(this.page, { testId: 'earn-opportunities' }, earnMarketplaceDefaultContract);
+  opportunities = () => locate(this.page, { testId: 'earn-opportunities' }, earnMarketplaceDefaultContract);
 
-  featuredCards = () =>
-    locate(this.page, { testId: 'earn-featured-cards' }, earnMarketplaceDefaultContract);
+  featuredCards = () => locate(this.page, { testId: 'earn-featured-cards' }, earnMarketplaceDefaultContract);
 
   opportunitiesTable = () =>
     locate(this.page, { testId: 'earn-opportunities-table' }, earnMarketplaceDefaultContract);
 
-  clearFilters = () =>
-    locate(this.page, { testId: 'earn-clear-filters' }, earnMarketplaceFilterContract);
+  clearFilters = () => locate(this.page, { testId: 'earn-clear-filters' }, earnMarketplaceFilterContract);
 
-  row = (id: string) =>
-    locate(this.page, { testId: `earn-row-${id}` }, earnMarketplaceDrilldownContract);
+  row = (id: string) => locate(this.page, { testId: `earn-row-${id}` }, earnMarketplaceDrilldownContract);
 
   async expectDefaultShell() {
     await expect(this.opportunities()).toBeVisible({ timeout: 30_000 });

@@ -86,9 +86,7 @@ export class RewardsProductPage {
     await expectTransactionSuccess(this.page);
   }
 
-  repairContext(
-    contractId: 'rewards-product-default' | 'rewards-supply-flow' | 'rewards-withdraw-flow'
-  ) {
+  repairContext(contractId: 'rewards-product-default' | 'rewards-supply-flow' | 'rewards-withdraw-flow') {
     const map = {
       'rewards-product-default': rewardsProductDefaultContract,
       'rewards-supply-flow': rewardsSupplyFlowContract,

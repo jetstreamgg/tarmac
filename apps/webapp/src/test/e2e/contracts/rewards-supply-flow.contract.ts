@@ -16,5 +16,6 @@ export const rewardsSupplyFlowContract: TestContract = {
     { action: 'review', locator: { role: { type: 'button', name: 'Review' } } },
     { action: 'confirm', locator: { role: { type: 'button', name: 'Confirm' } } }
   ],
-  oracle: 'Transaction completed successfully; position card replaces supply CTA; on-chain staked balance increases'
+  oracle:
+    'Transaction completed successfully; position card replaces supply CTA; on-chain staked balance increases'
 };

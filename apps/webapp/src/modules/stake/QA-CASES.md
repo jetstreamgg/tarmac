@@ -12,12 +12,12 @@ this file records only objective coverage and verdicts.
 **Node ID refresh (2026-08-26):** Legacy hi-fi section `486:31150` (“Core Screens”) was
 reorganized into four live sections under App UI (`386:35313`):
 
-| Section | Node |
-| ------- | ---- |
-| 🟢 Stake SKY - Empty state | `1030:133634` |
-| 🟢 Stake SKY - Opening a new position | `1030:133792` |
+| Section                                            | Node          |
+| -------------------------------------------------- | ------------- |
+| 🟢 Stake SKY - Empty state                         | `1030:133634` |
+| 🟢 Stake SKY - Opening a new position              | `1030:133792` |
 | 🟢 Stake SKY - Active states & position management | `1030:134505` |
-| 🟢 Stake SKY - Edge cases/More states | `1030:136203` |
+| 🟢 Stake SKY - Edge cases/More states              | `1030:136203` |
 
 Key frame migrations (`486:*` → `1036:*`): My positions `486:31830` → `1036:208665` /
 `1036:214050`; Statistics empty `486:31955` → `1036:208698`; Open takeover `486:32657` →
@@ -237,13 +237,13 @@ same spec green on re-run) — the class `run-tests-with-retry.sh` absorbs in CI
 
 **Gate 7 refresh (2026-08-27, local sequential `workers=1`):**
 
-| Spec | Result |
-| ---- | ------ |
-| `stake.spec.ts` | **6/6** |
-| `stake-onchain.spec.ts` | **10/10** |
-| `stake-mobile.spec.ts` | **5/5** — footer scrolls with column (TakeoverShell); e2e scrolls to Confirm |
-| `unstake-repay.spec.ts` | **2/2** |
-| `capped-osm-unstake.spec.ts` | **1/1** |
+| Spec                         | Result                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `stake.spec.ts`              | **6/6**                                                                      |
+| `stake-onchain.spec.ts`      | **10/10**                                                                    |
+| `stake-mobile.spec.ts`       | **5/5** — footer scrolls with column (TakeoverShell); e2e scrolls to Confirm |
+| `unstake-repay.spec.ts`      | **2/2**                                                                      |
+| `capped-osm-unstake.spec.ts` | **1/1**                                                                      |
 
 Gate 4 contracts: `src/test/e2e/contracts/stake-*.contract.ts` · `pages/StakePage.ts`.
 

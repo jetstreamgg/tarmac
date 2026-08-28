@@ -14,11 +14,13 @@ export class ShellPage {
   topNav = () => this.page.getByTestId('top-nav');
   mobileNavbar = () => locate(this.page, { testId: 'mobile-navbar' }, shellMobileNavContract);
 
-  navLink = (path: typeof ROUTES.PORTFOLIO | typeof ROUTES.EARN | typeof ROUTES.STAKE | typeof ROUTES.CONVERT) =>
-    this.page.getByTestId(`nav-${path.slice(1)}`);
+  navLink = (
+    path: typeof ROUTES.PORTFOLIO | typeof ROUTES.EARN | typeof ROUTES.STAKE | typeof ROUTES.CONVERT
+  ) => this.page.getByTestId(`nav-${path.slice(1)}`);
 
-  mobileNavLink = (path: typeof ROUTES.PORTFOLIO | typeof ROUTES.EARN | typeof ROUTES.STAKE | typeof ROUTES.CONVERT) =>
-    this.page.getByTestId(`mobile-nav-${path.slice(1)}`);
+  mobileNavLink = (
+    path: typeof ROUTES.PORTFOLIO | typeof ROUTES.EARN | typeof ROUTES.STAKE | typeof ROUTES.CONVERT
+  ) => this.page.getByTestId(`mobile-nav-${path.slice(1)}`);
 
   walletChip = () => locate(this.page, { testId: 'wallet-chip' }, shellWalletDrawerContract);
 

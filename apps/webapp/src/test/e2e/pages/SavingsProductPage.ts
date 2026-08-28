@@ -48,7 +48,8 @@ export class SavingsProductPage {
 
   positionSupply = () => locate(this.page, { testId: 'savings-position-supply' }, savingsSupplyFlowContract);
 
-  positionWithdraw = () => locate(this.page, { testId: 'savings-position-withdraw' }, savingsWithdrawFlowContract);
+  positionWithdraw = () =>
+    locate(this.page, { testId: 'savings-position-withdraw' }, savingsWithdrawFlowContract);
 
   amountInput = () => locate(this.page, { testId: 'savings-modal-amount-input' }, savingsSupplyFlowContract);
 
@@ -107,10 +108,7 @@ export class SavingsProductPage {
 
   repairContext(
     contractId:
-      | 'savings-product-default'
-      | 'savings-supply-flow'
-      | 'savings-withdraw-flow'
-      | 'savings-l2-origin'
+      'savings-product-default' | 'savings-supply-flow' | 'savings-withdraw-flow' | 'savings-l2-origin'
   ) {
     const map = {
       'savings-product-default': savingsProductDefaultContract,

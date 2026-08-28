@@ -14,12 +14,13 @@ test('redirects legacy /earn/expert to /earn/stusds', async ({ isolatedPage }) =
   await expect(isolatedPage).toHaveURL(/\/earn\/stusds(\?|$)/);
 });
 
-test('Supply modal validates the amount and shows provider notice', async ({ isolatedPage }) => {
+test('Supply modal validates the amount before enabling Review', async ({ isolatedPage }) => {
   const stusds = new StUsdsProductPage(isolatedPage);
   await stusds.gotoConnected();
   await stusds.openSupplyModal();
 
-  await expect(stusds.providerNotice()).toBeVisible();
+  // Provider notice is Curve/blocked/loading only — native route is intentionally silent
+  // (see StUsdsProviderNotice). A-4 copy/oracle is covered in component tests.
 
   const review = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Review', exact: true });
   await expect(review).toBeDisabled();

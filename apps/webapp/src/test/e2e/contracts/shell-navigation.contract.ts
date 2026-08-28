@@ -8,7 +8,8 @@ export const shellNavigationContract: TestContract = {
     fileKey: SKY_APP_UI_FILE,
     frames: ['5010:29059', '1030:138558']
   },
-  intent: 'Navigate to a mainnet-only destination from an L2 wallet; app switches network and explains via toast',
+  intent:
+    'Navigate to a mainnet-only destination from an L2 wallet; app switches network and explains via toast',
   preconditions: ['connected wallet on Tenderly Base', 'clean toast state'],
   steps: [
     { action: 'click Stake in TopNav', locator: { testId: 'nav-stake' } },
