@@ -48,6 +48,7 @@ vi.mock('wagmi', async importOriginal => {
   return {
     ...actual,
     useChainId: () => 1,
+    useChains: () => [{ id: 1, name: 'Ethereum' }],
     useConnection: () => ({
       isConnected: !!mocks.address,
       address: mocks.address,

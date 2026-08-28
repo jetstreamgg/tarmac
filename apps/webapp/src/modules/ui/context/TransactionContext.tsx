@@ -17,7 +17,9 @@ import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTran
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
 import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSuccessToast';
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
-import { useChainId, useConnection } from 'wagmi';
+import { useChainId, useConnection, useChains } from 'wagmi';
+import { chainSwitchTarget } from '@/lib/chainAvailability';
+import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
@@ -83,6 +85,12 @@ function notifySignatureRequestAbandoned() {
 
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
+}
+
+// Whether the wallet's chain is outside a flow's declared set (APP-528). An
+// empty set is a chain-agnostic flow and never trips the guard.
+function offSupportedChains(supportedChainIds: readonly number[], chainId: number): boolean {
+  return supportedChainIds.length > 0 && !supportedChainIds.includes(chainId);
 }
 
 // The transaction-orchestration contract is frozen in ./transactionContract.
@@ -155,6 +163,15 @@ export function TransactionProvider({
   // Minimized = modal hidden but the transaction keeps running. Distinct from
   // closed (which tears the transaction down); see minimize()/restore() below.
   const [minimized, setMinimized] = useState(false);
+  // Ref twin of `minimized`, written in the same callbacks that set the state,
+  // so closeOnNavigation (called from a route effect) reads the live value.
+  const minimizedRef = useRef(false);
+  // Where the session was launched (window.location — the provider sits above
+  // the router). A route change closes an idle session, but never one the
+  // destination page itself just opened: a page that launches on mount does so
+  // in a child effect, i.e. AFTER the router committed the new location and
+  // BEFORE the shell's route effect asks us to close.
+  const launchPathnameRef = useRef<string | null>(null);
   // The entry-screen portal target, registered by the modal (see EntrySlotContext).
   const [entrySlotEl, setEntrySlotEl] = useState<HTMLElement | null>(null);
   // Bumped on every launch and used as the modal + host `key`, so each launch gets a
@@ -254,7 +271,16 @@ export function TransactionProvider({
   const flowIdRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
+  // Fire-time read for the gate's chain check (see runGated): a verdict that
+  // resolves after a wallet chain switch must see the wallet's CURRENT chain,
+  // not the one captured when the click happened.
+  const chainIdRef = useRef(chainId);
+  useEffect(() => {
+    chainIdRef.current = chainId;
+  }, [chainId]);
   const { address } = useConnection();
+  const chains = useChains();
+  const { handleSwitchChain, isPending: switchPending, variables: switchVariables } = useChainModalContext();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
@@ -272,11 +298,15 @@ export function TransactionProvider({
   // never the preflight's hold (that lives in the modal's props, not the
   // config), so there is no feedback loop. An entry flow may expose a second
   // CTA; either being enabled means the user can proceed.
+  // A wallet outside the flow's supported set (APP-528, below) can't proceed
+  // either, so no screening call is spent on a transaction that cannot fire.
   const preflightEntry = activeConfig?.entry;
-  const actionable = preflightEntry
-    ? !preflightEntry.confirmDisabled ||
-      (!!activeConfig?.onSecondaryConfirm && !preflightEntry.secondaryConfirmDisabled)
-    : !activeConfig?.confirmDisabled;
+  const actionable =
+    !(activeConfig && offSupportedChains(activeConfig.supportedChainIds, chainId)) &&
+    (preflightEntry
+      ? !preflightEntry.confirmDisabled ||
+        (!!activeConfig?.onSecondaryConfirm && !preflightEntry.secondaryConfirmDisabled)
+      : !activeConfig?.confirmDisabled);
   const preflight = usePreflight({
     usdValue: activeConfig?.usdValue,
     active: open && !!activeConfig,
@@ -379,6 +409,8 @@ export function TransactionProvider({
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveSessionId(config.sessionId ?? null);
+      launchPathnameRef.current = window.location.pathname;
+      minimizedRef.current = false;
       setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
       txStatusRef.current = TxStatus.IDLE;
@@ -503,6 +535,7 @@ export function TransactionProvider({
     setSessionGen(sessionGenRef.current);
     setOpen(false);
     setMinimized(false);
+    minimizedRef.current = false;
     setTxStatus(TxStatus.IDLE);
     txStatusRef.current = TxStatus.IDLE;
     setCurrentStep(0);
@@ -525,6 +558,26 @@ export function TransactionProvider({
     handleCloseRef.current = handleClose;
   });
 
+  // A modal does not survive app navigation (APP-528 follow-up): the provider
+  // is mounted above the router, so a route change under an open modal — the
+  // mainnet-only page redirecting home after a wallet chain switch, the browser
+  // back button — used to leave the modal floating over a page that no longer
+  // owns it. The shell calls this on every pathname change. It ends a session
+  // only when nothing is at stake: not while a write is in flight (INITIALIZED
+  // / LOADING — the wallet prompt or the broadcast must settle), not while
+  // minimized (minimize exists precisely so the user can move around the app
+  // with the transaction running), and never for a session launched on the
+  // destination route itself. Stable: the caller keys its effect on the
+  // pathname alone, so this must not change identity as the session does.
+  const closeOnNavigation = useCallback((pathname: string) => {
+    if (!configRef.current) return;
+    if (launchPathnameRef.current === pathname) return;
+    if (minimizedRef.current) return;
+    const status = txStatusRef.current;
+    if (status === TxStatus.INITIALIZED || status === TxStatus.LOADING) return;
+    handleCloseRef.current();
+  }, []);
+
   // The modal's back-to-first-screen action, registered while it is mounted
   // (the screen is modal-internal state the provider can't reach otherwise).
   // Driven by the gate's returnToFirstScreen control on an enhanced-screening
@@ -541,8 +594,14 @@ export function TransactionProvider({
   // Hide the modal without ending the transaction. Unlike handleClose this keeps
   // activeConfig + txStatus intact (and fires no 'cancelled' analytics), so the
   // engine hook keeps running and restore() re-shows the modal mid-flight.
-  const minimize = useCallback(() => setMinimized(true), []);
-  const restore = useCallback(() => setMinimized(false), []);
+  const minimize = useCallback(() => {
+    minimizedRef.current = true;
+    setMinimized(true);
+  }, []);
+  const restore = useCallback(() => {
+    minimizedRef.current = false;
+    setMinimized(false);
+  }, []);
 
   // While minimized the modal is hidden, so surface the transaction's progress as a
   // toast (syncing with the toast system — a legitimate external-system effect). A
@@ -656,25 +715,59 @@ export function TransactionProvider({
     [emitTermsSignatureDeclined]
   );
 
+  // The chain guard's enforcement half (APP-528). The modal disables the CTAs
+  // it can see are wrong-chain, but the write can also start from a path the
+  // banner doesn't cover — Retry on the failure view, Confirm after Back from
+  // it, or a gate verdict (screening, terms signature) resolving after the
+  // wallet moved — so the check lives here too, at the single choke point,
+  // read at fire time. An empty set is a chain-agnostic flow (see the contract).
+  const walletOnSupportedChain = useCallback(() => {
+    const config = configRef.current;
+    return !config || !offSupportedChains(config.supportedChainIds, chainIdRef.current);
+  }, []);
+
+  // A wrong-chain refusal hands the modal back to its first screen, where the
+  // guard's copy and switch CTA render. Never a bare no-op: the surfaces that
+  // can still reach the gate while guarded — a multi-step failure's inline
+  // "Try again" (which replaces the footer the guard block lives in), a gate
+  // verdict resolving after the wallet moved — would otherwise leave the user
+  // on a screen with nothing to wait for and no explanation.
+  const refuseOffChain = useCallback((controls: GateControls) => {
+    controls.setPreludeSteps(null);
+    controls.returnToFirstScreen();
+  }, []);
+
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
       if (gateInFlightRef.current === sessionGenRef.current) return;
       const gen = sessionGenRef.current;
+      const controls = makeGateControls(gen);
+      if (!walletOnSupportedChain()) {
+        refuseOffChain(controls);
+        return;
+      }
       const verdict = gate({
         trigger,
         // Read at fire time (like the config callbacks): editable flows keep
         // this live via updateModalContent until the engine starts.
         usdValue: configRef.current?.usdValue,
-        controls: makeGateControls(gen)
+        controls
       });
       if (verdict instanceof Promise) {
         gateInFlightRef.current = gen;
         verdict
           .then(
             v => {
-              if (gen !== sessionGenRef.current) return;
-              if (v.allow) action();
+              if (gen !== sessionGenRef.current || !v.allow) return;
+              // Re-checked: the wallet may have switched while the verdict
+              // (a screening call, a signature prompt) was pending, and the
+              // form has since rebuilt its calldata against the new chain.
+              if (!walletOnSupportedChain()) {
+                refuseOffChain(controls);
+                return;
+              }
+              action();
             },
             () => {}
           )
@@ -687,7 +780,7 @@ export function TransactionProvider({
       }
       if (verdict.allow) action();
     },
-    [gate, makeGateControls]
+    [gate, makeGateControls, walletOnSupportedChain, refuseOffChain]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's
@@ -873,7 +966,20 @@ export function TransactionProvider({
 
   const onError = useCallback(
     (error: Error, hash?: string) => {
-      if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
+      // A refusal BEFORE any write (the batch engine's cross-chain backstop,
+      // APP-528) arrives hashless at IDLE: no onMutate latched writeGenRef for
+      // this session, so the stale-write test — which exists to drop a
+      // PREVIOUS session's late settle — would drop it on any page that has
+      // already sent a transaction, leaving the modal on "Preparing". For a
+      // refusal the session generation alone says whether it is ours.
+      const preWriteRefusal = !hash && txStatusRef.current === TxStatus.IDLE;
+      if (
+        preWriteRefusal
+          ? sessionGen !== sessionGenRef.current
+          : isStaleWrite(sessionGen) || isForeignHash(hash)
+      ) {
+        return;
+      }
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
       if (hash) {
@@ -882,8 +988,9 @@ export function TransactionProvider({
 
       // Track transaction completed (error). Bounded classification props only —
       // never the raw message, which can embed addresses and calldata. A wallet
-      // rejection is the user backing out, not a failure (APP-444 D1).
-      const analytics = configRef.current?.analytics;
+      // rejection is the user backing out, not a failure (APP-444 D1). A
+      // pre-write refusal never started a transaction, so it completes none.
+      const analytics = preWriteRefusal ? undefined : configRef.current?.analytics;
       if (analytics) {
         const classification = classifyTransactionError(error, !!hash);
         trackTransactionCompleted({
@@ -901,17 +1008,18 @@ export function TransactionProvider({
       const normalizedError = toError(error);
 
       if (shouldCaptureTransactionError(normalizedError)) {
+        const flowAnalytics = configRef.current?.analytics;
         reportError(normalizedError, {
           module: 'transactions',
-          flow: analytics?.flow ?? 'unknown',
-          action: analytics?.action ?? 'unknown',
-          type: 'transaction_error',
+          flow: flowAnalytics?.flow ?? 'unknown',
+          action: flowAnalytics?.action ?? 'unknown',
+          type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
           extra: {
             chainId,
             txHash: hash,
             isSafeWallet,
-            widget: analytics?.widgetName ?? 'unknown',
-            analyticsData: analytics?.data ?? null
+            widget: flowAnalytics?.widgetName ?? 'unknown',
+            analyticsData: flowAnalytics?.data ?? null
           }
         });
       }
@@ -945,6 +1053,49 @@ export function TransactionProvider({
     ? { config: activeConfig, txStatus, currentStep, hasMinedStep, preludeSteps, gateCopy }
     : exitingView;
 
+  // Chain guard (APP-528): the modal survives a wallet chain switch (the
+  // provider is mounted above the router, so a mainnet-only product page can
+  // redirect underneath while its modal stays open), and its editable body then
+  // rebuilds calldata against the new chain — resolving a product address on a
+  // chain it doesn't live on. Sending that succeeds against a codeless (or
+  // attacker-occupied) address. So while a flow's supported set is declared and
+  // the connected wallet has left it, block every first-screen CTA and offer a
+  // switch back. Read off `modalView.config` (not `activeConfig`) so a modal
+  // animating away doesn't flash the guard as it leaves. Applies whenever no
+  // write is in flight — IDLE, but also ERROR (Retry, or Back to the first
+  // screen, would fire against the new chain) and the terminal states — and
+  // is off only while INITIALIZED/LOADING, when the calldata is already in the
+  // wallet's hands. `runGated` enforces the same check at fire time; this is
+  // the user-facing half.
+  const guardConfig = modalView?.config;
+  const noWriteInFlight = txStatus !== TxStatus.INITIALIZED && txStatus !== TxStatus.LOADING;
+  const chainGuardActive =
+    !!guardConfig && noWriteInFlight && offSupportedChains(guardConfig.supportedChainIds, chainId);
+  const guardTargetChainId = chainGuardActive
+    ? chainSwitchTarget(
+        guardConfig.supportedChainIds,
+        chains.map(c => c.id)
+      )
+    : undefined;
+  const guardTargetName = chains.find(c => c.id === guardTargetChainId)?.name;
+  // Safe wallets can't switch networks from the dapp (APP-486) — offer no
+  // switch button, only the explanatory block; the guard still disables the CTAs.
+  const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
+  const switchGuardChain = useCallback(() => {
+    if (guardTargetChainId === undefined) return;
+    handleSwitchChain({ chainId: guardTargetChainId, source: 'transaction_modal' });
+  }, [guardTargetChainId, handleSwitchChain]);
+  const chainGuard = chainGuardActive
+    ? {
+        currentName: chains.find(c => c.id === chainId)?.name,
+        targetName: guardTargetName,
+        onSwitch: guardCanSwitch ? switchGuardChain : undefined,
+        // The guard's CTA shows the DS loading state while the wallet is
+        // answering OUR switch request (not some other surface's).
+        switching: switchPending && switchVariables?.chainId === guardTargetChainId
+      }
+    : null;
+
   // The gate's prelude steps render ahead of the flow's own list. Composed at
   // render (not written into the config) so a retry that no longer needs the
   // prelude — the signature landed on a previous attempt — restarts with the
@@ -967,10 +1118,22 @@ export function TransactionProvider({
       restore,
       isMinimized: minimized,
       activeSessionId,
+      closeOnNavigation,
       txCallbacks,
       txStatus
     }),
-    [launch, updateModalContent, open, minimize, restore, minimized, activeSessionId, txCallbacks, txStatus]
+    [
+      launch,
+      updateModalContent,
+      open,
+      minimize,
+      restore,
+      minimized,
+      activeSessionId,
+      closeOnNavigation,
+      txCallbacks,
+      txStatus
+    ]
   );
 
   return (
@@ -1029,6 +1192,7 @@ export function TransactionProvider({
             currentStep={modalView.currentStep}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
+            chainGuard={chainGuard}
           />
         )}
       </EntrySlotContext.Provider>

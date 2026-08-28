@@ -1,6 +1,7 @@
 import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { ClaimRewardsPanel } from '../components/ClaimRewardsPanel';
 import type { ClaimScope } from '../types';
 
@@ -48,6 +49,8 @@ export function useClaimRewardsModal({ onSuccess }: UseClaimRewardsModalOptions 
         // sum) — treated as above-threshold, so the enhanced check runs
         // rather than being skipped (APP-517).
         usdValue: undefined,
+        // Reward claims are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         entry: { confirmLabel: t`Claim`, confirmDisabled: true },
         backgroundContent: <ClaimRewardsPanel sessionId={sessionId} scope={scope} />,
         onConfirm: () => {},

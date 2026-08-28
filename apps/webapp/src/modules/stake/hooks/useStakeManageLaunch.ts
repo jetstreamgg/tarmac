@@ -15,6 +15,7 @@ import {
 } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
@@ -329,6 +330,8 @@ export function useStakeManageLaunch({
 
     launchModal({
       usdValue,
+      // Staking is mainnet-only — guard the modal off any L2 (APP-528).
+      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
       // Confirm-modal titles by staged action set (M7, UX 1104:*).
       title: isDelegateOnly
         ? t`Confirm delegate change`

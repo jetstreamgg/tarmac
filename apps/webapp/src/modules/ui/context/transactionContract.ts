@@ -188,6 +188,28 @@ export type TransactionConfig = {
    * safe (it forces the enhanced check); omitting the field is a type error.
    */
   usdValue: number | undefined;
+  /**
+   * The chains this flow's calldata may be built for and sent on. The provider
+   * guards the modal whenever the connected wallet is on a chain OUTSIDE this
+   * set: the firing/advancing CTAs are disabled and a "switch network" prompt
+   * takes their place. This is the cross-chain-calldata defense (APP-528) — a
+   * product address resolved on chain A must never be sent as calldata on chain
+   * B, which silently succeeds against a codeless address (or, worse, an
+   * attacker-occupied one).
+   *
+   * - Single-chain products (vaults, rewards, stUSDS, Pendle, upgrade, stake,
+   *   claim): `MAINNET_FAMILY_CHAIN_IDS` (`[mainnet, tenderly]`).
+   * - Multi-chain products (savings, convert): every chain the product runs on,
+   *   from `useProductNetworks(intent)`. Switching WITHIN the set is legitimate
+   *   (the planned in-modal chain switch) — the guard stays silent and the form
+   *   re-resolves its addresses against the new chain; only leaving the set guards.
+   *
+   * DELIBERATELY REQUIRED (like `usdValue`): a new launch site must state which
+   * chains it is safe on at compile time, so this class of bug cannot be
+   * reintroduced by omission. An empty array disables the guard (chain-agnostic
+   * flows only) and must be justified at the call site.
+   */
+  supportedChainIds: number[];
   /** Identity used to gate updateModalContent calls to the active session. */
   sessionId?: string;
 };
@@ -252,6 +274,13 @@ export type TransactionContextValue = {
   isMinimized: boolean;
   /** `sessionId` of the live session (open or minimized), null when there is none. */
   activeSessionId: string | null;
+  /**
+   * Called by the app shell on every route (pathname) change: closes the
+   * session unless a write is in flight, the modal is minimized, or the
+   * session was launched on the destination route itself. Modals don't
+   * survive app navigation.
+   */
+  closeOnNavigation: (pathname: string) => void;
   /** Transaction lifecycle callbacks to spread into write hooks. */
   txCallbacks: TxCallbacks;
   /**
@@ -299,6 +328,7 @@ export type AsyncOrderConfig = Pick<
   | 'steps'
   | 'analytics'
   | 'sessionId'
+  | 'supportedChainIds'
   | 'onSuccess'
   | 'onError'
 > & {

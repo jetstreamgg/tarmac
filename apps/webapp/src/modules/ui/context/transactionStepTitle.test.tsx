@@ -10,6 +10,7 @@ import type { TransactionConfig } from './transactionContract';
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -88,6 +89,7 @@ describe('TransactionModal — per-step title', () => {
     renderModal(cb => ({
       title: 'Review supply',
       usdValue: 0,
+      supportedChainIds: [1],
       transactionTitle: 'Confirm in the wallet',
       transactionContent: <div data-testid="review-body">review</div>,
       confirmLabel: 'Supply',
@@ -113,6 +115,7 @@ describe('TransactionModal — per-step title', () => {
     renderModal(cb => ({
       title: 'Supply to Sky Savings',
       usdValue: 0,
+      supportedChainIds: [1],
       transactionTitle: 'Confirm in the wallet',
       entry: {
         content: <div data-testid="entry-fields">fields</div>,
@@ -136,6 +139,7 @@ describe('TransactionModal — per-step title', () => {
     renderModal(cb => ({
       title: 'Upgrade',
       usdValue: 0,
+      supportedChainIds: [1],
       transactionContent: <div data-testid="review-body">review</div>,
       confirmLabel: 'Confirm',
       onConfirm: () => cb.onMutate()

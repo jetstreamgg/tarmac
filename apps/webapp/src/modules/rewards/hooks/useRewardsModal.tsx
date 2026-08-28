@@ -2,6 +2,7 @@ import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
 import { type Token } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { RewardsModalForm, type RewardsModalPreset } from '../components/RewardsModalForm';
 
 /** Per-contract inputs the launcher needs to open the modal for a specific farm. */
@@ -58,6 +59,8 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // Reward farms are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
@@ -96,6 +99,8 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // Reward farms are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         backgroundContent: (
           <RewardsModalForm

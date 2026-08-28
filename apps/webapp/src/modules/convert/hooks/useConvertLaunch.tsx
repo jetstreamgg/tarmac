@@ -6,6 +6,8 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { formatNumber } from '@/utils';
 import { TxStatus } from '@/widgets';
 import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
+import { Intent } from '@/lib/enums';
+import { chainIdsForIntent } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
@@ -52,6 +54,11 @@ export interface UseConvertLaunchResult {
  * read-only `transactionContent` — no `entry`, no `backgroundContent`. While the
  * modal is open, `updateModalContent` keeps the confirm gating live.
  */
+// Convert is a multi-chain product; the guard only fires on a chain that offers
+// no Convert at all (APP-528). The page IS the widget, so a chain switch
+// re-renders it against the new chain — the guard is a backstop.
+const CONVERT_SUPPORTED_CHAIN_IDS = chainIdsForIntent(Intent.CONVERT_INTENT);
+
 export function useConvertLaunch({
   direction,
   amount,
@@ -216,6 +223,7 @@ export function useConvertLaunch({
       // Both legs are $1-pegged (USDC/USDS); the amount is fixed at launch
       // (enhanced screening, APP-517).
       usdValue: Number(formatUnits(amount, originDecimals)),
+      supportedChainIds: CONVERT_SUPPORTED_CHAIN_IDS,
       analytics: {
         widgetName: 'convert',
         flow: direction === 'USDC_TO_USDS' ? 'usdc-to-usds' : 'usds-to-usdc',

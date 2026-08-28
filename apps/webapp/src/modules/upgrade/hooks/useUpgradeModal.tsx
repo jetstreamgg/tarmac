@@ -2,6 +2,7 @@ import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
 import type { UpgradeSourceToken } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { UpgradeModalForm } from '../components/UpgradeModalForm';
 
 /**
@@ -31,6 +32,8 @@ export function useUpgradeModal() {
         entry: { confirmLabel: t`Continue`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // Upgrade is a mainnet-only product — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
         // Keyed by the source token so a relaunch with a different preselection

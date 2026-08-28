@@ -11,6 +11,7 @@ import type { PreflightHook, PreTransactionGate, TransactionPreflight } from './
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -99,7 +100,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
   afterEach(() => vi.clearAllMocks());
 
   it('hands the hook the live usdValue and session activity', () => {
-    renderWithPreflight({ title: 'Supply', usdValue: 300_000, onConfirm: vi.fn() });
+    renderWithPreflight({ title: 'Supply', usdValue: 300_000, supportedChainIds: [1], onConfirm: vi.fn() });
 
     const last = preflightContexts.at(-1);
     expect(last).toEqual({ usdValue: 300_000, active: true, actionable: true });
@@ -109,6 +110,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
     renderWithPreflight({
       title: 'Supply',
       usdValue: 300_000,
+      supportedChainIds: [1],
       confirmDisabled: true,
       onConfirm: vi.fn()
     });
@@ -120,6 +122,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
     renderWithPreflight({
       title: 'Claim rewards',
       usdValue: undefined,
+      supportedChainIds: [1],
       entry: { content: <div>claim body</div>, confirmLabel: 'Claim', confirmDisabled: true },
       onConfirm: vi.fn()
     });
@@ -131,6 +134,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
     renderWithPreflight({
       title: 'Claim rewards',
       usdValue: 300_000,
+      supportedChainIds: [1],
       entry: {
         content: <div>claim body</div>,
         confirmLabel: 'Claim & Restake',
@@ -147,7 +151,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
 
   it('clear: the review confirm fires normally and no message is shown', () => {
     const onConfirm = vi.fn();
-    renderWithPreflight({ title: 'Supply', usdValue: 100, onConfirm });
+    renderWithPreflight({ title: 'Supply', usdValue: 100, supportedChainIds: [1], onConfirm });
 
     expect(screen.queryByTestId('transaction-preflight-blocked')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
@@ -157,7 +161,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
   it('blocked: the review confirm is disabled and the message renders above it', () => {
     preflightState = blocked();
     const onConfirm = vi.fn();
-    renderWithPreflight({ title: 'Supply', usdValue: 300_000, onConfirm });
+    renderWithPreflight({ title: 'Supply', usdValue: 300_000, supportedChainIds: [1], onConfirm });
 
     expect(screen.getByTestId('transaction-preflight-blocked').textContent).toContain(
       'didn’t pass the enhanced verification'
@@ -171,7 +175,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
   it('pending: the review confirm is held (disabled), no message yet', () => {
     preflightState = { kind: 'pending' };
     const onConfirm = vi.fn();
-    renderWithPreflight({ title: 'Supply', usdValue: 300_000, onConfirm });
+    renderWithPreflight({ title: 'Supply', usdValue: 300_000, supportedChainIds: [1], onConfirm });
 
     expect(screen.queryByTestId('transaction-preflight-blocked')).toBeNull();
     const confirm = screen.getByRole('button', { name: /confirm/i });
@@ -187,6 +191,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
     renderWithPreflight({
       title: 'Claim rewards',
       usdValue: 300_000,
+      supportedChainIds: [1],
       entry: {
         content: <div>claim body</div>,
         confirmLabel: 'Claim & Restake',
@@ -213,6 +218,7 @@ describe('TransactionProvider enhanced-screening preflight', () => {
       title: 'Supply',
       reviewTitle: 'Review supply',
       usdValue: 300_000,
+      supportedChainIds: [1],
       entry: { content: <div>amount input</div>, confirmLabel: 'Review' },
       transactionContent: <div>review breakdown</div>,
       onConfirm
@@ -235,7 +241,10 @@ describe('TransactionProvider enhanced-screening preflight', () => {
 
   it('the gate receives the config usdValue at fire time', async () => {
     const gate = vi.fn(() => ({ allow: true }));
-    renderWithPreflight({ title: 'Supply', usdValue: 275_000, onConfirm: vi.fn() }, gate);
+    renderWithPreflight(
+      { title: 'Supply', usdValue: 275_000, supportedChainIds: [1], onConfirm: vi.fn() },
+      gate
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     await flush();

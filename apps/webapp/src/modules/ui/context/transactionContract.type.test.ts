@@ -7,13 +7,20 @@ import {
   type TransactionConfig
 } from './transactionContract';
 
-// `usdValue` is deliberately required (APP-517): a config without it must not
-// compile — see the field's doc in the contract.
-const onchain: TransactionConfig = { title: 'Supply', usdValue: 0, onConfirm: () => {} };
+// `usdValue` (APP-517) and `supportedChainIds` (APP-528) are deliberately
+// required: a config missing either must not compile — see the fields' docs in
+// the contract. Both variants must carry `supportedChainIds`.
+const onchain: TransactionConfig = {
+  title: 'Supply',
+  usdValue: 0,
+  supportedChainIds: [1],
+  onConfirm: () => {}
+};
 
 const order: AsyncOrderConfig = {
   kind: 'async-order',
   title: 'Swap',
+  supportedChainIds: [1],
   submitOrder: () => Promise.resolve('0xuid'),
   pollOrderStatus: () => Promise.resolve('open')
 };
@@ -48,5 +55,20 @@ describe('transactionContract types', () => {
     // @ts-expect-error submitOrder + pollOrderStatus are required
     const incomplete: AsyncOrderConfig = { kind: 'async-order', title: 'Swap' };
     void incomplete;
+  });
+
+  it('supportedChainIds is required on both config variants (APP-528)', () => {
+    // @ts-expect-error a launch config without supportedChainIds must not compile
+    const _noChainsOnchain: TransactionConfig = { title: 'Supply', usdValue: 0, onConfirm: () => {} };
+    void _noChainsOnchain;
+
+    // @ts-expect-error an async-order config without supportedChainIds must not compile
+    const _noChainsOrder: AsyncOrderConfig = {
+      kind: 'async-order',
+      title: 'Swap',
+      submitOrder: () => Promise.resolve('0xuid'),
+      pollOrderStatus: () => Promise.resolve('open')
+    };
+    void _noChainsOrder;
   });
 });

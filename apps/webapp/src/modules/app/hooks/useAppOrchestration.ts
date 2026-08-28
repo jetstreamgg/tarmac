@@ -19,6 +19,7 @@ import { useNotificationQueue } from './useNotificationQueue';
 import { usePageLoadNotifications } from './usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useUpgradeDeepLink } from '@/modules/upgrade/hooks/useUpgradeDeepLink';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
@@ -55,6 +56,20 @@ export function useAppOrchestration(): { intent: Intent } {
 
   const { connector } = useConnection();
   const { trackNetworkAutoSwitched } = useAppAnalytics();
+
+  // Modals don't survive app navigation: a transaction modal open when the
+  // route changes (a mainnet-only page redirecting home after a wallet chain
+  // switch, browser back) is closed unless something is at stake — the
+  // provider decides (in-flight, minimized, or launched by the new page).
+  // Keyed on the pathname alone; search-param churn (network=) is not a
+  // navigation. Skips the mount, which is not a change.
+  const { closeOnNavigation } = useTransaction();
+  const lastPathnameRef = useRef(pathname);
+  useEffect(() => {
+    if (lastPathnameRef.current === pathname) return;
+    lastPathnameRef.current = pathname;
+    closeOnNavigation(pathname);
+  }, [pathname, closeOnNavigation]);
 
   // Attribution hand-off between the route guard (which writes the network
   // param) and the param-driven switch effect below that acts on it (D-2).

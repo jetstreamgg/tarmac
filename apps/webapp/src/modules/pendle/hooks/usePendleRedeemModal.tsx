@@ -18,6 +18,7 @@ import {
 } from '@/hooks';
 import { familyMainnetId, formatBigInt, isTestnetId } from '@/utils';
 import { Intent } from '@/lib/enums';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
@@ -305,6 +306,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     }
     launch({
       usdValue,
+      // Pendle redemption is mainnet-only — guard the modal off any L2 (APP-528).
+      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
       title: t`Claim matured position`,
       transactionTitle: t`Confirm in the wallet`,
       subtitles: {
