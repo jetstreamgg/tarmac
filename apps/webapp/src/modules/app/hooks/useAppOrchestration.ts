@@ -350,19 +350,19 @@ export function useAppOrchestration(): { intent: Intent } {
       // user to switch straight back. (The change event also fires for
       // account-only changes, with no chainId.)
       //
-      // Only for a chain the app configures, though. A chain it doesn't hosts
-      // no module ANYWHERE, so there is no choice among the app's networks to
-      // defer to — honouring it just strands the user. Landing on one instead
-      // CLEARS the flag, which hands rule (c) the one switch-back attempt that
-      // replaced the blocking "unsupported network" dialog. Clearing rather
-      // than merely not setting matters: the flag is scoped to a module visit,
-      // and the surfaces a wallet is most likely to be sitting on when the user
-      // reaches for their wallet — Portfolio and Earn — are one long visit that
-      // spent its chance on the connect event. A decline puts the flag back up
-      // (see the switch's onError), so this is one prompt per arrival, not a
-      // loop.
+      // This holds for a chain the app doesn't configure at all, which is worth
+      // saying because the switch-back that replaced the blocking "unsupported
+      // network" dialog makes it tempting to fire here. It shouldn't: reaching
+      // for the wallet and changing its network is a deliberate act, and
+      // answering it with an immediate prompt to undo it is the app arguing
+      // with the user. What earns a prompt is the user then asking for
+      // something that NEEDS a chain — navigating to a product — and the reset
+      // above, keyed on the module, is what grants it. Until then the app just
+      // renders: reads run against the configured chain wagmi keeps pinned, and
+      // a transaction is stopped by the modal's own guard, which offers the
+      // switch as a button rather than taking it.
       if (newChainId !== undefined) {
-        autoSwitchAttempted.current = chains.some(chain => chain.id === newChainId);
+        autoSwitchAttempted.current = true;
       }
       const newChainName = chains.find(c => c.id === newChainId)?.name;
       if (newChainName) {
