@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/cn';
 import {
@@ -71,8 +71,36 @@ function ModalStepLabelCopy({ children, align }: { children: ReactNode; align: '
   // outgoing copy must not take part in layout — pinning it here keeps the
   // container sized by the incoming string alone.
   const isPresent = useIsPresent();
+
+  // ...but out of flow it would still be SIZED by that container, and the
+  // incoming string is usually the shorter one: "Supply to Sky Savings" was
+  // being squeezed into "Review supply"'s 114px and re-wrapping to two lines
+  // halfway through its own fade. So each copy records the width it occupies
+  // while it is the one in flow, and wears it on the way out. Measured from the
+  // render before the swap, which is the last one where this copy sized the box.
+  const nodeRef = useRef<HTMLSpanElement>(null);
+  const flowWidth = useRef<number>(undefined);
+  // Promoted to state for the render to read: a ref read during render isn't
+  // safe to replay. The handover happens in a layout effect, so the width is on
+  // the element before the browser paints the frame it left flow on.
+  const [exitWidth, setExitWidth] = useState<number>();
+  // Re-measured on every render it is present for, not just on mount: the same
+  // copy can be re-worded in place (a live `updateModalContent` retitle, a CTA
+  // label swapping to "Connect wallet") or reflow when the webfont lands.
+  useLayoutEffect(() => {
+    if (isPresent && nodeRef.current) flowWidth.current = nodeRef.current.getBoundingClientRect().width;
+  });
+  // Handed over once, on the commit that takes this copy out of flow.
+  useLayoutEffect(() => {
+    if (!isPresent && exitWidth === undefined && flowWidth.current !== undefined) {
+      setExitWidth(flowWidth.current);
+    }
+  }, [isPresent, exitWidth]);
+
   return (
     <motion.span
+      ref={nodeRef}
+      style={!isPresent && exitWidth !== undefined ? { width: exitWidth } : undefined}
       className={cn(
         'block min-w-0',
         // A start-aligned label WRAPS, as the plain title did before it was

@@ -47,6 +47,26 @@ describe('ModalStepLabel', () => {
     expect(screen.getByText('Review').className).toContain('whitespace-nowrap');
   });
 
+  it('holds the outgoing copy at its own width so it cannot re-wrap on the way out', () => {
+    // Out of flow it is still SIZED by the container, and the incoming string is
+    // usually shorter — "Supply to Sky Savings" was being squeezed into "Review
+    // supply"'s box and wrapping to two lines halfway through its own fade.
+    const { rerender } = render(<ModalStepLabel labelKey="entry">Supply to Sky Savings</ModalStepLabel>);
+    const outgoing = screen.getByText('Supply to Sky Savings');
+    // happy-dom reports 0 for every box, so stub the measurement the effect
+    // takes, then re-render on the SAME key to let it record the stubbed width
+    // while this copy is still the one in flow.
+    outgoing.getBoundingClientRect = () => ({ width: 173, height: 22 }) as DOMRect;
+    rerender(<ModalStepLabel labelKey="entry">Supply to Sky Savings</ModalStepLabel>);
+
+    rerender(<ModalStepLabel labelKey="review">Review supply</ModalStepLabel>);
+
+    const stillThere = screen.queryByText('Supply to Sky Savings');
+    if (stillThere) expect(stillThere.style.width).toBe('173px');
+    // The incoming copy is never pinned to a width — it sizes the box.
+    expect(screen.getByText('Review supply').style.width).toBe('');
+  });
+
   it('lets a start-aligned title wrap rather than ellipsizing it', () => {
     render(<ModalStepLabel labelKey="entry">Supply to Sky Savings</ModalStepLabel>);
     expect(screen.getByText('Supply to Sky Savings').className).not.toContain('truncate');
