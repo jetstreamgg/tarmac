@@ -138,6 +138,18 @@ describe('getRouteChainAction', () => {
       kind: 'redirect-home'
     });
   });
+
+  // Portfolio and the Earn marketplace ARE the redirect's destination, and they
+  // render on any chain. A wallet parked on an unconfigured network used to
+  // throw the user off /earn on this path, which is a bug in both directions:
+  // pointless on /portfolio, an eviction on /earn.
+  it('never redirects the balances surfaces home, whatever the chain', () => {
+    for (const current of [999999, base.id, mainnet.id]) {
+      expect(getRouteChainAction(Intent.BALANCES_INTENT, current, { switchAttempted: true })).toEqual({
+        kind: 'render'
+      });
+    }
+  });
 });
 
 // Rule (a): the app-wide network filter decides which chain a module opens on,

@@ -1049,7 +1049,13 @@ export function TransactionProvider({
   }, [guardTargetChainId, handleSwitchChain]);
   const chainGuard = chainGuardActive
     ? {
-        currentName: chains.find(c => c.id === chainId)?.name,
+        // The chain the guard is judging, not the one wagmi has pinned. Reading
+        // `chainId` here named the config's fallback — so a wallet parked on an
+        // unconfigured network produced "isn't available on Tenderly. Switch to
+        // Tenderly", naming the same chain twice. An unconfigured chain has no
+        // name to give (the config is the only registry the app carries), and
+        // undefined is right: the copy says "this network" instead of guessing.
+        currentName: chains.find(c => c.id === guardChainId)?.name,
         targetName: guardTargetName,
         onSwitch: guardCanSwitch ? switchGuardChain : undefined,
         // The guard's CTA shows the DS loading state while the wallet is

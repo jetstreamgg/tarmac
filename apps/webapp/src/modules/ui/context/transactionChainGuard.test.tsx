@@ -195,7 +195,17 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     const onConfirm = vi.fn();
     renderModal(() => mainnetOnlyConfig(onConfirm));
 
-    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    const guard = screen.getByTestId('transaction-chain-guard');
+    expect(guard).not.toBeNull();
+    // ...and it must not NAME the pinned chain either. Reading `useChainId()`
+    // for the copy produced "isn't available on Ethereum. Switch to Ethereum",
+    // naming the target as the problem. The config is the only chain registry
+    // the app carries, so an unconfigured chain has no name to give — the copy
+    // falls back to "this network" rather than guessing.
+    expect(guard.textContent).not.toContain('available on Ethereum');
+    expect(guard.textContent).toContain('this network');
+    expect(guard.textContent).toContain('Switch to Ethereum');
+
     expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Switch to Ethereum' }));
     expect(mockHandleSwitchChain).toHaveBeenCalledWith({ chainId: 1, source: 'transaction_modal' });

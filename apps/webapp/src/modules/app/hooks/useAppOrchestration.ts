@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useRouterState } from '@tanstack/react-router';
 import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/navigation';
@@ -123,6 +123,8 @@ export function useAppOrchestration(): { intent: Intent } {
         // Clear switching state when network switch fails
         setIsSwitchingNetwork(false);
         setIsAutoSwitching(false);
+        // The app stops pointing at a chain the wallet refused to move to.
+        setPendingSwitchChainId(undefined);
 
         // Whether the user rejected the request or the wallet failed to honor
         // it (e.g. a pending-request error while a popup sits unanswered),
@@ -162,11 +164,28 @@ export function useAppOrchestration(): { intent: Intent } {
       ? walletChainId
       : undefined;
 
-  // The chain the app is pointed at: the network param wins over the connected
-  // chain so navigation validates against the target network while a wallet
-  // switch is still in flight. An off-config wallet outranks both — no param
-  // can describe it.
+  // The chain an off-config switch below has asked the wallet for and is still
+  // waiting on. A normal switch gets this for free: it goes out by writing
+  // `network=`, so the param names the target from the moment it is requested
+  // and every render in between validates against where the app is HEADED. An
+  // off-config switch has no param to write (see below), so without this the
+  // in-flight renders validate against the chain being left — and any unrelated
+  // re-render during that window (a query settling, say) bounces the user home
+  // a beat before the wallet answers.
+  const [pendingSwitchChainId, setPendingSwitchChainId] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    // Landed. Cleared on failure by the switch's own onError.
+    if (pendingSwitchChainId !== undefined && walletChainId === pendingSwitchChainId) {
+      setPendingSwitchChainId(undefined);
+    }
+  }, [walletChainId, pendingSwitchChainId]);
+
+  // The chain the app is pointed at: a switch we are waiting on wins, then the
+  // network param (so navigation validates against the target network while a
+  // wallet switch is in flight), then the off-config wallet chain — which no
+  // param can describe — and finally the config's own.
   const newChainId =
+    pendingSwitchChainId ??
     offConfigChainId ??
     (network
       ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)
@@ -231,6 +250,9 @@ export function useAppOrchestration(): { intent: Intent } {
       if (offConfigChainId !== undefined) {
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
+        // Stand in for the `network=` write the configured path gets: from here
+        // until the wallet answers, the app is pointed at the target.
+        setPendingSwitchChainId(targetChainId);
         trackNetworkAutoSwitched({
           trigger: 'off_config_chain',
           fromChainId: offConfigChainId,
@@ -324,8 +346,20 @@ export function useAppOrchestration(): { intent: Intent } {
       // new chain doesn't offer the current module, instead of prompting the
       // user to switch straight back. (The change event also fires for
       // account-only changes, with no chainId.)
+      //
+      // Only for a chain the app configures, though. A chain it doesn't hosts
+      // no module ANYWHERE, so there is no choice among the app's networks to
+      // defer to — honouring it just strands the user. Landing on one instead
+      // CLEARS the flag, which hands rule (c) the one switch-back attempt that
+      // replaced the blocking "unsupported network" dialog. Clearing rather
+      // than merely not setting matters: the flag is scoped to a module visit,
+      // and the surfaces a wallet is most likely to be sitting on when the user
+      // reaches for their wallet — Portfolio and Earn — are one long visit that
+      // spent its chance on the connect event. A decline puts the flag back up
+      // (see the switch's onError), so this is one prompt per arrival, not a
+      // loop.
       if (newChainId !== undefined) {
-        autoSwitchAttempted.current = true;
+        autoSwitchAttempted.current = chains.some(chain => chain.id === newChainId);
       }
       const newChainName = chains.find(c => c.id === newChainId)?.name;
       if (newChainName) {

@@ -118,6 +118,8 @@ export type RouteChainAction =
  * A module that is coming-soon on the current chain still redirects home rather
  * than switching: "arriving here shortly" is a promise about *this* chain, so
  * moving the user off it would be the wrong answer.
+ *
+ * `BALANCES_INTENT` never redirects home — see the tail of the function.
  */
 export function getRouteChainAction(
   intent: Intent,
@@ -167,6 +169,14 @@ export function getRouteChainAction(
     const target = chainSwitchTarget(supported, configuredIds);
     if (target !== undefined && target !== currentChainId) return switchTo(target);
   }
+
+  // Nowhere to switch to, or this visit already had its chance. Portfolio and
+  // the Earn marketplace stay put: they are the redirect's own destination and
+  // they render on any chain, reading against the configured chain wagmi keeps
+  // pinned. Evicting them is at best a no-op (/portfolio to /portfolio) and at
+  // worst throws the user off /earn for a chain that surface never cared about
+  // — which is what a wallet parked on an unconfigured network used to do.
+  if (intent === Intent.BALANCES_INTENT) return { kind: 'render' };
 
   return { kind: 'redirect-home' };
 }
