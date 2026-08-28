@@ -10,6 +10,7 @@ import type { TransactionConfig } from './transactionContract';
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -81,6 +82,7 @@ const clickConfirm = () => fireEvent.click(screen.getByRole('button', { name: /^
 const reviewConfig = (): TransactionConfig => ({
   title: 'Review supply',
   usdValue: 0,
+  supportedChainIds: [1],
   transactionTitle: 'Confirm in the wallet',
   steps: ['Approve USDS', 'Supply USDS'],
   transactionContent: <div data-testid="review-breakdown">breakdown rows</div>,

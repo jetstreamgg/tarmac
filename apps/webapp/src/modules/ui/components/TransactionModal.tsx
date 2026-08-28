@@ -121,6 +121,26 @@ export type TransactionModalProps = {
    * that only advance screens (a three-screen entry's Review) stay live.
    */
   preflight?: TransactionPreflight;
+  /**
+   * Cross-chain-calldata guard (APP-528). Non-null while the connected wallet is
+   * on a chain outside the flow's `supportedChainIds`: every first-screen CTA
+   * (advance and fire alike) is disabled and this explanatory block — with a
+   * "Switch to <network>" action when the wallet can switch — takes their place,
+   * so a product address resolved on another chain can never be sent here.
+   */
+  chainGuard?: ChainGuard | null;
+};
+
+/** The transaction modal's chain-guard descriptor (see `chainGuard` prop). */
+export type ChainGuard = {
+  /** Name of the chain the wallet is wrongly on (may be undefined if unknown). */
+  currentName?: string;
+  /** Name of the chain to switch to; undefined when none is offerable. */
+  targetName?: string;
+  /** Switches the wallet to the supported chain; undefined for Safe wallets. */
+  onSwitch?: () => void;
+  /** True while the wallet is answering the guard's own switch request. */
+  switching?: boolean;
 };
 
 // Figma review (badge restyle, "Confirm in the wallet" 2376:225580): the old
@@ -175,6 +195,7 @@ export function TransactionModal({
   currentStep = 0,
   gateCopy,
   preflight,
+  chainGuard,
   registerReturnToFirstScreen
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
@@ -233,7 +254,11 @@ export function TransactionModal({
   // The entry screen sources its label/gating from the entry descriptor (kept
   // live by the in-modal body); the review screen uses the top-level config.
   const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
-  const firstScreenConfirmDisabled = isEntry ? entry?.confirmDisabled : confirmDisabled;
+  // The chain guard (APP-528) disables EVERY first-screen CTA — advancing ones
+  // too, not just the firing one — so a wrong-chain flow can't even reach its
+  // review. It takes precedence over the flow's own gating, hence the `||`.
+  const chainGuarded = !!chainGuard;
+  const firstScreenConfirmDisabled = (isEntry ? entry?.confirmDisabled : confirmDisabled) || chainGuarded;
   // Which first-screen primary CTA actually FIRES the transaction: the review
   // confirm, or an entry-only flow's confirm. A three-screen entry's confirm
   // only advances to the review (and a `confirmAction` override runs in
@@ -244,6 +269,50 @@ export function TransactionModal({
   // unless something else already disables them.
   const preflightBlocked = preflight?.kind === 'blocked';
   const preflightPending = preflight?.kind === 'pending';
+  // Cross-chain-calldata guard (APP-528): the wallet is on a chain this product
+  // isn't on. The explanation renders above the CTA row — on the first screen
+  // and on the failure view, whose Retry would fire too — and the flow's own
+  // primary CTA is REPLACED by the switch action (one button, not a second one
+  // beside a disabled Confirm). The switch has no path to the executor, and
+  // the provider refuses a wrong-chain fire at the gate anyway; when the wallet
+  // can't switch (Safe), the flow's CTAs stay, disabled, under the message.
+  const chainGuardBlock = chainGuard && (
+    <div className="flex items-start gap-2" data-testid="transaction-chain-guard">
+      <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
+      <Text className="text-error text-sm">
+        {chainGuard.targetName ? (
+          <Trans>
+            This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}. Switch to{' '}
+            {chainGuard.targetName} to continue.
+          </Trans>
+        ) : (
+          <Trans>
+            This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}. Switch networks
+            to continue.
+          </Trans>
+        )}
+      </Text>
+    </div>
+  );
+  const guardCta =
+    chainGuard?.onSwitch && chainGuard.targetName ? (
+      <Button
+        variant="primary"
+        size="xl"
+        className="w-full"
+        onClick={chainGuard.onSwitch}
+        loading={chainGuard.switching}
+        data-testid="transaction-chain-guard-switch"
+      >
+        <Trans>Switch to {chainGuard.targetName}</Trans>
+      </Button>
+    ) : null;
+  // A three-screen flow guarded on its review goes back to the entry: the
+  // review's summary (amounts, product address, fee) was built for the chain
+  // the wallet just left, and the entry is where the form re-resolves.
+  useEffect(() => {
+    if (chainGuarded && isReview && hasReviewStage) setStep('entry');
+  }, [chainGuarded, isReview, hasReviewStage]);
   const firstScreenErrorMessage = isEntry ? entry?.errorMessage : errorMessage;
   // The wallet/status screen shows a compact summary when supplied; otherwise it
   // falls back to the review body (review path only), so consumers that pass only
@@ -556,6 +625,9 @@ export function TransactionModal({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4"
               >
+                {/* Precedes the screening block — a wrong chain is the more
+                    fundamental block. */}
+                {chainGuardBlock}
                 {/* Enhanced-screening failure (APP-517): rendered above the CTAs,
                     which stay visible but disabled — the transaction is blocked. */}
                 {preflight?.kind === 'blocked' && (
@@ -572,7 +644,9 @@ export function TransactionModal({
                     </Text>
                   </div>
                 )}
-                {hasSecondaryConfirm ? (
+                {chainGuarded && guardCta ? (
+                  guardCta
+                ) : hasSecondaryConfirm ? (
                   // Comp 1036:214001: two flex-1 CTAs with a 20px gutter.
                   <div className="flex w-full gap-5">
                     <Button
@@ -580,8 +654,8 @@ export function TransactionModal({
                       size="xl"
                       className="flex-1"
                       onClick={handleSecondaryConfirm}
-                      disabled={entry?.secondaryConfirmDisabled || preflightBlocked}
-                      loading={!entry?.secondaryConfirmDisabled && preflightPending}
+                      disabled={entry?.secondaryConfirmDisabled || preflightBlocked || chainGuarded}
+                      loading={!entry?.secondaryConfirmDisabled && !chainGuarded && preflightPending}
                     >
                       {entry?.secondaryConfirmLabel}
                     </Button>
@@ -652,14 +726,27 @@ export function TransactionModal({
                 )}
 
                 {txStatus === TxStatus.ERROR && (
-                  <div className="flex w-full gap-3">
-                    <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
-                      <Trans>Back</Trans>
-                    </Button>
-                    <Button variant="primary" size="xl" className="flex-1" onClick={handleRetry}>
-                      {errorLabel ?? <Trans>Retry</Trans>}
-                    </Button>
-                  </div>
+                  <>
+                    {chainGuardBlock}
+                    <div className="flex w-full gap-3">
+                      <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
+                        <Trans>Back</Trans>
+                      </Button>
+                      {chainGuarded && guardCta ? (
+                        guardCta
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="xl"
+                          className="flex-1"
+                          onClick={handleRetry}
+                          disabled={chainGuarded}
+                        >
+                          {errorLabel ?? <Trans>Retry</Trans>}
+                        </Button>
+                      )}
+                    </div>
+                  </>
                 )}
               </motion.div>
             )}
