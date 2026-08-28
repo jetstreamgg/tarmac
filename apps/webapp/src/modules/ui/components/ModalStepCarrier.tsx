@@ -1,7 +1,8 @@
-import { ReactNode, TransitionEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { cn } from '@/lib/cn';
 import {
+  MODAL_CARRIER_MS,
   MODAL_LAYER_SHIFT_PX,
   modalEnterTransition,
   modalExitTransition
@@ -32,11 +33,14 @@ const ENTER_CLASSES = 'duration-200 delay-150 ease-decelerate';
  * screens inside it — the outgoing one falling away as the incoming one rises.
  *
  * The active layer stays in normal flow, so the box's resting height is simply
- * its content height (no measurement guesswork, and it follows live content
- * changes such as an error message appearing). Every inactive layer — including
- * one still playing its exit — is pulled out of flow, which is what lets two
- * screens overlap for the length of the swap without the modal jumping to the
- * sum of their heights.
+ * its content height — no measurement guesswork, and it tracks live content
+ * changes for free. Every inactive layer — including one still playing its exit
+ * — is pulled out of flow, which is what lets two screens overlap for the length
+ * of the swap without the modal jumping to the sum of their heights.
+ *
+ * Only a step change is EASED, though. The box also has to follow heights that
+ * move for ordinary reasons (the opening measurement, a fee resolving, an error
+ * message arriving); those land instantly, as they did before this box existed.
  *
  * A persistent layer is animated in CSS rather than by `motion`: wrapping that
  * subtree in a motion component remounts it across re-renders, and the entry
@@ -53,19 +57,29 @@ export function ModalStepCarrier({
 }) {
   const innerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number>();
-  const [animating, setAnimating] = useState(false);
-  // The opening measurement is the modal's own size, not a change to ease
-  // between — the same skip-first-measure guard `RollingValue` uses. Held in a
-  // ref beside the state so `measure` can compare without depending on either.
+  // Held in a ref beside the state so `measure` can compare without depending on it.
   const lastHeight = useRef<number>(undefined);
+
+  // ONLY a step change eases the box. A height that moves for any other reason —
+  // the opening measurement, a fee resolving, an error message arriving — lands
+  // instantly, the way it did before this box existed. Easing those too made the
+  // modal appear to unfold as its content settled in.
+  const [previousKey, setPreviousKey] = useState(activeKey);
+  const [stepping, setStepping] = useState(false);
+  if (previousKey !== activeKey) {
+    // Adjusted during render rather than in an effect: the transition has to be
+    // on the element BEFORE the layout effect below writes the new height, or
+    // the change lands in the same recalc with nothing to interpolate. The
+    // previous key is held in state, not a ref, so this stays safe to replay.
+    setPreviousKey(activeKey);
+    setStepping(true);
+  }
 
   const measure = useCallback(() => {
     const next = innerRef.current?.offsetHeight;
     if (next === undefined || next === lastHeight.current) return;
-    const isFirst = lastHeight.current === undefined;
     lastHeight.current = next;
     setHeight(next);
-    if (!isFirst) setAnimating(true);
   }, []);
 
   useLayoutEffect(measure);
@@ -78,11 +92,13 @@ export function ModalStepCarrier({
     return () => observer.disconnect();
   }, [measure]);
 
-  // Only clip while the box is actually easing — at rest the carrier is exactly
-  // its content's height, and a permanent clip would cut off focus rings.
-  const onTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
-    if (event.propertyName === 'height' && event.target === event.currentTarget) setAnimating(false);
-  };
+  useEffect(() => {
+    if (!stepping) return;
+    // A timer rather than `transitionend`: two steps can share a height, and
+    // then no transition runs and no event ever arrives to close the window.
+    const id = setTimeout(() => setStepping(false), MODAL_CARRIER_MS + 50);
+    return () => clearTimeout(id);
+  }, [stepping, activeKey]);
 
   const persistent = layers.filter(layer => layer.persistent);
   const activeTransient = layers.find(layer => !layer.persistent && layer.key === activeKey);
@@ -90,14 +106,19 @@ export function ModalStepCarrier({
   return (
     <div
       className={cn(
-        'ease-standard relative transition-[height] duration-350 motion-reduce:transition-none',
-        animating && 'overflow-hidden',
+        // `clip`, and always — not `hidden`, and not only while easing. A parked
+        // layer is out of flow but still has a box, so a taller one (the entry
+        // body behind the short wallet screen) reaches past the carrier and adds
+        // itself to the modal card's scrollable area, which is a scrollbar on a
+        // screen that fits. `clip` establishes no scroll container of its own,
+        // and the margin leaves room for a focus ring on a child at the edge.
+        'ease-standard relative overflow-clip [overflow-clip-margin:4px]',
+        stepping && 'transition-[height] duration-350 motion-reduce:transition-none',
         className
       )}
       // `auto` until the first measurement lands, so the body is never boxed to
       // zero on the frame before the observer reports.
       style={{ height: height ?? 'auto' }}
-      onTransitionEnd={onTransitionEnd}
     >
       <div ref={innerRef}>
         {persistent.map(layer => (

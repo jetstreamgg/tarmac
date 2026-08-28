@@ -28,6 +28,8 @@ export const easeLabelCross = cubicBezier(0.4, 0, 0.25, 1);
 
 /** Seconds, matching `motion`'s unit. */
 export const MODAL_CARRIER_S = 0.35;
+/** The same figure in ms, for the CSS half and its timers. */
+export const MODAL_CARRIER_MS = MODAL_CARRIER_S * 1000;
 export const MODAL_LEG_S = 0.2;
 export const MODAL_LABEL_DELAY_S = 0.1;
 export const MODAL_ENTER_DELAY_S = 0.15;

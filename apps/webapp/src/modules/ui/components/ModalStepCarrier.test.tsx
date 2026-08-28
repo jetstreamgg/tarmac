@@ -83,4 +83,39 @@ describe('ModalStepCarrier', () => {
     render(<ModalStepCarrier activeKey="review" layers={layers()} />);
     expect(layerFor('review-body').className).toContain('group/step');
   });
+
+  it('eases its height only across a step change, never as content settles', () => {
+    // Easing every height change made the modal appear to unfold on open, as its
+    // opening measurement and then its async content (fees, rates) landed.
+    const { container, rerender } = render(<ModalStepCarrier activeKey="entry" layers={layers()} />);
+    const box = container.firstElementChild as HTMLElement;
+    expect(box.className).not.toContain('transition-[height]');
+
+    // A content change on the same screen still doesn't ease...
+    rerender(
+      <ModalStepCarrier
+        activeKey="entry"
+        layers={[
+          { key: 'entry', persistent: true, content: <div data-testid="entry-body">taller entry</div> },
+          ...layers().slice(1)
+        ]}
+      />
+    );
+    expect(box.className).not.toContain('transition-[height]');
+
+    // ...but a step change does.
+    rerender(<ModalStepCarrier activeKey="review" layers={layers()} />);
+    expect(box.className).toContain('transition-[height]');
+  });
+
+  it('clips, so a parked layer taller than the current screen cannot add a scrollbar', () => {
+    // A parked layer is out of flow but still has a box: without a clip on the
+    // carrier, the tall entry body behind the short wallet screen joins the modal
+    // card's scrollable area and puts a scrollbar on a screen that fits.
+    const { container } = render(<ModalStepCarrier activeKey="transaction" layers={layers()} />);
+    const box = container.firstElementChild as HTMLElement;
+    expect(box.className).toContain('overflow-clip');
+    // `clip`, not `hidden` — `hidden` would make the carrier its own scroll container.
+    expect(box.className).not.toContain('overflow-hidden');
+  });
 });
