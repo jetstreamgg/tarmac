@@ -2,6 +2,7 @@ import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
 import type { PendleMarketConfig } from '@/hooks/pendle/pendle';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { PendleModalForm } from '../components/PendleModalForm';
 
 export type UsePendleModalOptions = {
@@ -47,6 +48,8 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // Pendle PT markets are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
@@ -78,6 +81,8 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // Pendle PT markets are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         backgroundContent: <PendleModalForm sessionId={withdrawSessionId} flow="withdraw" market={market} />,
         onConfirm: () => {},

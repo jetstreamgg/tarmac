@@ -10,6 +10,7 @@ import type { TransactionConfig, TransactionContextValue, TxCallbacks } from './
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -107,6 +108,7 @@ const baseConfig = (overrides: Partial<TransactionConfig> = {}): TransactionConf
   title: 'Supply USDS',
   steps: ['Supply'],
   usdValue: 100,
+  supportedChainIds: [1],
   analytics: { widgetName: 'savings', flow: 'supply', action: 'supply', data: { module: 'savings' } },
   onConfirm: () => {},
   ...overrides
