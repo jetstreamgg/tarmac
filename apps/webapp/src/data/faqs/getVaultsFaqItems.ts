@@ -2,7 +2,7 @@ export const getVaultsFaqItems = () => {
   const items = [
     {
       question: 'What are Vaults, and how do they work?',
-      answer: `Vaults allow to earn yield on supported stablecoins by depositing into strategies curated by Sky on Morpho, a third-party lending protocol. Sky, as vault curator, defines the strategy and risk profile for each vault.
+      answer: `Vaults allow to earn yield on supported stablecoins by depositing into strategies curated by Skybase on Morpho, a third-party lending protocol. Skybase, as vault curator, defines the strategy and risk profile for each vault.
 
 When you deposit a supported stablecoin into a vault, you receive vault shares representing your proportional ownership of the vault's assets. Sky allocates deposited capital across overcollateralized lending markets to generate yield. As interest accrues from lending activities, your shares appreciate in value, allowing you to withdraw more than you initially deposited.
 
@@ -24,9 +24,9 @@ Vaults have different stablecoins that can be used as a deposit, depending on th
     },
     {
       question: 'What is the difference between Vaults and the Sky Savings Rate?',
-      answer: `The [Sky Savings Rate](#tooltip-sky-savings-rate) is a first-party feature of the Sky Protocol. It supports USDS only, offers a single strategy, and provides a variable rate determined by Sky Ecosystem Governance.
+      answer: `The [Sky Savings Rate](#tooltip-sky-savings-rate) is a first-party feature of the Sky Protocol. It supports USDS only, offers a single strategy, and provides a variable rate set by SKY token holders through decentralized onchain voting.
 
-Vaults are curated by Sky on Morpho, a third-party lending protocol. They support multiple stablecoins (USDS, USDT, and USDC), offer variable strategies defined by Sky as curator, and have distinct risk and return profiles depending on the allocation approach.`,
+Vaults are curated by Skybase on Morpho, a third-party lending protocol. They support multiple stablecoins (USDS, USDT, and USDC), offer variable strategies defined by Skybase as curator, and have distinct risk and return profiles depending on the allocation approach.`,
       index: 2
     }
   ];

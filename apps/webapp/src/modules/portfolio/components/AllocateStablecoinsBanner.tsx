@@ -59,7 +59,7 @@ export function AllocateStablecoinsBanner({
       subtitle={
         <p className="text-fgSecondary max-w-[248px] text-xs leading-[18px]">
           <Trans>
-            That&apos;s what your idle stablecoins can earn at today&apos;s{' '}
+            That&apos;s what your idle stablecoins could accrue at today&apos;s{' '}
             <span
               className={cn(
                 'text-fgPrimary',
@@ -68,9 +68,9 @@ export function AllocateStablecoinsBanner({
               aria-hidden={savingsRate === undefined || undefined}
               data-testid={savingsRate === undefined ? 'allocate-banner-rate-skeleton' : undefined}
             >
-              {formatDecimalPercentage(savingsRate ?? 0.045)} Sky Savings Rate
-            </span>
-            .
+              {formatDecimalPercentage(savingsRate ?? 0.045)} Sky Savings Rate{' '}
+            </span>{' '}
+            , if the current variable rate held constant.
           </Trans>
         </p>
       }

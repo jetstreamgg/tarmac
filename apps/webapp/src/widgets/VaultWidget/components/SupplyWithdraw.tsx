@@ -211,15 +211,15 @@ export const SupplyWithdraw = ({
                 >
                   {!isVaultDataLoading && availableLiquidity === 0n ? (
                     <Trans>
-                      I understand that {assetToken.symbol} deposited into this vault is used to fund
-                      borrowing, and that I will not be able to withdraw as long as the available liquidity is
-                      0
+                      I understand that {assetToken.symbol} supplied to this vault is allocated to a Morpho
+                      lending market, and that I will not be able to withdraw as long as the available
+                      liquidity is 0
                     </Trans>
                   ) : (
                     <Trans>
-                      I understand that {assetToken.symbol} deposited into this vault is used to fund
-                      borrowing, and that I will not be able to withdraw if the available liquidity becomes
-                      exhausted
+                      I understand that {assetToken.symbol} supplied to this vault is allocated to a Morpho
+                      lending market, and that I will not be able to withdraw if the available liquidity
+                      becomes exhausted
                     </Trans>
                   )}
                 </Text>

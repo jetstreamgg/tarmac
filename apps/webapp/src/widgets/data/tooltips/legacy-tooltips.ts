@@ -33,8 +33,7 @@ const legacyTooltips: Tooltip[] = [
   {
     id: 'borrow-rate',
     title: 'Borrow Rate',
-    tooltip:
-      'The Borrow Rate is determined by Sky Ecosystem Governance through a process of community-driven, decentralized onchain voting.'
+    tooltip: 'The Borrow Rate is determined by SKY token holders through decentralized onchain voting.'
   },
   {
     id: 'available-to-borrow',
@@ -107,14 +106,13 @@ const legacyTooltips: Tooltip[] = [
   {
     id: 'borrow-rate-seal',
     title: 'Borrow Rate',
-    tooltip:
-      'The Borrow Rate is determined by Sky Ecosystem Governance through a process of community-driven, decentralized onchain voting.'
+    tooltip: 'The Borrow Rate is determined by SKY token holders through decentralized onchain voting.'
   },
   {
     id: 'staking-rewards',
     title: 'Staking Rewards',
     tooltip:
-      'Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized, non-custodial Sky Protocol. Currently, all Staking Rewards take the form of USDS. Staking Reward rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting.'
+      'Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized, non-custodial Sky Protocol. Currently, all Staking Rewards take the form of USDS. Staking Reward rates are determined by SKY token holders through decentralized onchain voting. Staking Reward rates are variable, can change at any time, and are not guaranteed.'
   },
 
   // Morpho tooltips

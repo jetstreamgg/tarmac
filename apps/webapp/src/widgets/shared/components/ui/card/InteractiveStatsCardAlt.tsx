@@ -69,7 +69,7 @@ export const InteractiveStatsCardAlt = ({
             data-testid="start-earning-cta"
             className="absolute right-4 bottom-4 z-10 rounded-full bg-[#6161FF] px-3 py-1 text-xs leading-4 text-[#1C1655] opacity-0 transition-opacity group-hover/asset-row:opacity-100 focus-visible:opacity-100"
           >
-            <Trans>Start earning</Trans>
+            <Trans>Get started</Trans>
           </AppLink>
         </>
       )}

@@ -62,13 +62,13 @@ export function RewardsSupplyCard({
   // farm credits Chronicle with distribution.
   const description = isPointsFarm ? (
     <Trans>
-      Supply to Sky Protocol and earn Chronicle Points. Point distribution and related opportunities are
+      Supply to Sky Protocol to receive Chronicle Points. Point distribution and related opportunities are
       managed by Chronicle.
     </Trans>
   ) : (
     <Trans>
-      Supply to Sky Protocol and earn {rewardSymbol} tokens. The reward rate is set by Sky Protocol governance
-      and distributed proportionally to the supplied USDS.
+      Supply to Sky Protocol to receive {rewardSymbol} tokens. The reward rate is set by Sky Protocol
+      governance and distributed proportionally to the supplied USDS.
     </Trans>
   );
 
