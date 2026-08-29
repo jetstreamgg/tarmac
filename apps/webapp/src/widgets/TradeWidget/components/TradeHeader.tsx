@@ -38,7 +38,7 @@ export const TradeHeader = ({
 
 export const TradeSubHeader = () => (
   <Text className="text-textSecondary" variant="small">
-    <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
+    <Trans>Trade popular tokens for Sky Protocol tokens</Trans>
   </Text>
 );
 

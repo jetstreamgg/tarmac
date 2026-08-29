@@ -97,7 +97,7 @@ export function VaultsWidgetPane() {
             }
             subHeader={
               <Text className="text-textSecondary" variant="small">
-                <Trans>Third-party vault integrations with Sky Ecosystem tokens</Trans>
+                <Trans>Third-party vault integrations with Sky Protocol tokens</Trans>
               </Text>
             }
           >

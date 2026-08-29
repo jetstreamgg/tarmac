@@ -474,7 +474,8 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
           </Heading>
           <Text className="text-textSecondary" variant="small">
             <Trans>
-              Know your return by a pre-set maturity date. Each PT redeems 1:1 for USDS at maturity.
+              Fix your rate to a pre-set maturity date. Each PT redeems 1:1 for USDS at maturity; early exits
+              settle at the current market price.
             </Trans>
           </Text>
         </div>

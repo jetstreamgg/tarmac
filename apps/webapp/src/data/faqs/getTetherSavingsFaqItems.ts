@@ -2,7 +2,7 @@ export const getTetherSavingsFaqItems = () => {
   const items = [
     {
       question: 'What is the Tether Savings (sUSDT) Vault?',
-      answer: `Tether Savings (sUSDT) is a non-custodial, permissionless stablecoin savings vault offered through the Sky.money web app. It is a first-party Sky product, managed by Sky using Spark infrastructure.
+      answer: `Tether Savings (sUSDT) is a non-custodial, permissionless stablecoin savings vault offered through the Sky.money web app. It is a first-party Sky product, built on Spark infrastructure.
 
 When you deposit USDT, you receive sUSDT vault shares representing your proportional ownership of the vault's assets. As the vault earns yield, your shares appreciate in value, allowing you to withdraw more USDT than you initially deposited. The savings rate is variable and set by Sky. Please see the [User Risk Documentation](https://docs.sky.money/user-risks) and [Terms of Use](https://docs.sky.money/legal-terms) for more information.`,
       index: 0
@@ -10,7 +10,7 @@ When you deposit USDT, you receive sUSDT vault shares representing your proporti
     {
       question: "How is the Tether Savings Vault different from Sky's other Vaults?",
       answer:
-        "Sky's other Vaults are curated by Sky on Morpho, a third-party lending protocol, and can carry exposure to a range of lending markets and collateral types. The Tether Savings Vault is a first-party Sky savings product, managed by Sky using Spark infrastructure rather than Morpho. It accepts USDT deposits and pays a single variable savings rate set by Sky.",
+        "Sky's other Vaults are curated by Skybase on Morpho, a third-party lending protocol, and can carry exposure to a range of lending markets and collateral types. The Tether Savings Vault is a first-party Sky savings product, built on Spark infrastructure rather than Morpho. It accepts supplied USDT and pays a single variable savings rate set by Sky.",
       index: 1
     },
     {

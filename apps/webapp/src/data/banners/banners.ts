@@ -163,7 +163,7 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'upgrade-banners',
     description:
-      'SKY is a native governance token of the decentralised Sky Ecosystem and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
+      'SKY is the governance token of Sky Protocol and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
     display: ['connected', 'disconnected']
   },
   {
@@ -171,7 +171,7 @@ export const banners: Banner[] = [
     title: 'About Convert',
     module: 'convert-banners',
     description:
-      'Convert USDC to USDS at a fixed 1:1 rate, trade popular tokens for Sky Ecosystem tokens, or upgrade your DAI to USDS and MKR to SKY.',
+      'Convert USDC to USDS at a fixed 1:1 rate, trade popular tokens for Sky Protocol tokens, or upgrade your DAI to USDS and MKR to SKY.',
     display: ['disconnected']
   },
   {
@@ -195,7 +195,7 @@ export const banners: Banner[] = [
     title: 'About Trade',
     module: 'trade-banners',
     description:
-      'Directly trade eligible tokens for Sky Ecosystem tokens using permissionless and non-custodial rails. With the Sky.money web app, you can access the decentralized Sky Protocol to trade via smart contracts on the blockchain instead of relying on centralized entities.',
+      'Directly trade eligible tokens for Sky Protocol tokens using permissionless and non-custodial rails. With the Sky.money web app, you can access the decentralized Sky Protocol to trade via smart contracts on the blockchain instead of relying on centralized entities.',
     display: ['disconnected']
   },
   {
@@ -251,7 +251,7 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'rewards-banners',
     description:
-      'Sky is a native governance token of the decentralized Sky Ecosystem and the upgraded version of MKR. Depending also on your location and other criteria, you can trade USDS for SKY using the Sky.money app, and then use your SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
+      'SKY is the governance token of Sky Protocol and the upgraded version of MKR. Depending also on your location and other criteria, you can trade USDS for SKY using the Sky.money app, and then use your SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
     display: ['connected', 'disconnected']
   },
   {
@@ -323,7 +323,7 @@ export const banners: Banner[] = [
     title: 'Tether Savings Vault',
     module: 'vaults-banners',
     description:
-      'Tether Savings (sUSDT) is a non-custodial, permissionless stablecoin savings vault backed by USDS, managed by Sky using Spark infrastructure. Deposit USDT to earn a variable savings rate set by Sky.',
+      'Tether Savings (sUSDT) is a non-custodial, permissionless stablecoin savings vault backed by USDS, built on Spark infrastructure. Supply USDT to access a variable savings rate set by Sky.',
     display: ['connected', 'disconnected']
   },
   {

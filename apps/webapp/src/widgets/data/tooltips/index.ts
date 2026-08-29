@@ -21,9 +21,11 @@ Open Safe[Wallet]`
 
 stUSDS Rate = Utilization * (SKY Borrow Rate - stUSDS Accessibility Reward) + (1 - Utilization) * Sky Savings Rate
 
-The rate is derived from the SKY Borrow Rate less the stUSDS Accessibility Reward on the utilized portion of your capital and the Sky Savings Rate on the unutilized portion. Utilization is the percentage of funds in the stUSDS contract that are used to fund borrowing against staked SKY.
+The rate is derived from the SKY Borrow Rate less the stUSDS Accessibility Reward on the utilized portion of the module's liquidity and the Sky Savings Rate on the unutilized portion. Utilization is the percentage of funds in the stUSDS contract that are used to fund borrowing against staked SKY.
 
-The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers and is dynamic and market-driven, based on the utilization of funds within the stUSDS contract.`
+The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers and is dynamic and market-driven, based on the utilization of funds within the stUSDS contract.
+
+The rate is variable and does not guarantee future results.`
   },
   {
     id: 'utilization',
@@ -52,7 +54,7 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     id: 'remaining-capacity',
     title: 'Remaining capacity',
     tooltip:
-      'Remaining capacity is the amount of additional USDS that can be deposited until the maximum capacity is reached.'
+      'Remaining capacity is the amount of additional USDS that can be supplied until the maximum capacity is reached.'
   },
   {
     id: 'total-staking-engine-debt',
@@ -106,8 +108,7 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
   {
     id: 'borrow-rate',
     title: 'Borrow Rate',
-    tooltip:
-      'The Borrow Rate is determined by Sky Ecosystem Governance through a process of community-driven, decentralized onchain voting.'
+    tooltip: 'The Borrow Rate is determined by SKY token holders through decentralized onchain voting.'
   },
   {
     id: 'borrow',
@@ -149,13 +150,13 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     id: 'debt-ceiling',
     title: 'Debt ceiling',
     tooltip:
-      'The debt ceiling is the maximum amount of debt or tokens that can be issued within the SKY Protocol, serving as a risk management tool to ensure stability and limit overexposure. It is a parameter subject to change by Sky Ecosystem Governance.'
+      'The debt ceiling is the maximum amount of debt or tokens that can be issued within the SKY Protocol, serving as a risk management tool to ensure stability and limit overexposure. It is a parameter set by SKY token holders through decentralized onchain voting and subject to change.'
   },
   {
     id: 'debt-ceiling-utilization',
     title: 'Debt ceiling utilization',
     tooltip:
-      'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by Sky Ecosystem Governance through a process of decentralized onchain voting.'
+      'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by SKY token holders through decentralized onchain voting.'
   },
   {
     id: 'max-permitted-risk',
@@ -190,9 +191,9 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
   {
     id: 'choose-your-delegate',
     title: 'Choose your delegate',
-    tooltip: `When you hold SKY tokens, you may participate in the process of Sky Ecosystem Governance voting. That means that you have the ability to contribute to the community-driven, decentralized ecosystem decision-making process, which occurs through onchain voting.
+    tooltip: `When you hold SKY tokens, you may participate in Sky Protocol governance voting alongside other SKY token holders. That means that you have the ability to contribute to the community-driven, decentralized ecosystem decision-making process, which occurs through onchain voting.
 
-The voting power delegation feature of the Staking Engine of the Sky Protocol enables you to entrust your voting power to a delegate of your choosing, who can then vote in the Sky Ecosystem Governance process on your behalf. You can choose one delegate per SKY position. If you want to entrust your SKY to two delegates using the Staking Engine, you will need to create two separate positions.
+The voting power delegation feature of the Staking Engine of the Sky Protocol enables you to entrust your voting power to a delegate of your choosing, who can then vote in Sky Protocol governance on your behalf. You can choose one delegate per SKY position. If you want to entrust your SKY to two delegates using the Staking Engine, you will need to create two separate positions.
 
 Delegates granted voting power can never directly access any tokens delegated to them, including staked tokens. Throughout the delegation process, you always own and are in control of your staked tokens, and you can change your delegate at any time.Staking to delegate your voting power may be a useful option for governance token holders who have limited time to allocate to the process, who want to save on the cost of gas involved in voting on their own, and who also want to access Staking Rewards.`
   },
@@ -274,7 +275,7 @@ Bundled transaction: Active`
     id: 'sky-savings-rate',
     title: 'Sky Savings Rate',
     tooltip:
-      'The Sky Savings Rate is variable, determined by decentralized, onchain Sky Ecosystem Governance, and configured on the Ethereum blockchain. Sky Ecosystem Governance is able to adapt the SSR and other relevant parameters at any time at its discretion and without notice, based on market conditions, protocol surplus and other factors. The rate shown here is an estimate of the Sky Savings Rate representing the expected compounded rate per annum. It should be automatically updated every 5 minutes, and is powered by data provided by a third party ([Block Analitica](https://blockanalitica.com/)). This figure does not promise or guarantee future results.'
+      'The Sky Savings Rate is variable and can change over time. It is set by SKY token holders through decentralized onchain voting and can be adjusted at any time, based on market conditions, aggregate protocol surplus and other factors. It is a protocol rate funded from aggregate Sky protocol surplus. sUSDS is not exposure to any specific Agent, borrower, collateral pool, or asset strategy. The rate shown is an estimate of the Sky Savings Rate representing the expected compounded rate per annum, updated every 5 minutes using data provided by a third party ([Block Analitica](https://blockanalitica.com/)). This figure does not promise or guarantee future results.'
   },
   {
     id: 'vault-rate',
@@ -286,7 +287,7 @@ Bundled transaction: Active`
     id: 'vault-rates',
     title: 'Vault Rates',
     tooltip:
-      "The rates shown reflect the range of variable rates currently offered across the vaults available here, from lowest to highest. These vaults come from different sources: some are curated by Sky on third-party lending protocols such as Morpho, while others are first-party vaults managed by Sky. Each vault's rate is variable and depends on that specific vault - its underlying strategy, the market conditions and supply-and-demand dynamics of the lending markets or products it uses, and its risk profile. Sky.money does not control or guarantee vault performance. The rates shown are estimated annual rates, updated using data from the relevant protocols, for informational purposes only, and do not guarantee future results."
+      "The rates shown reflect the range of variable rates currently offered across the vaults available here, from lowest to highest. These vaults come from different sources: some are curated by Skybase on third-party lending protocols such as Morpho, while others are first-party vaults built on Spark infrastructure. Each vault's rate is variable and depends on that specific vault - its underlying strategy, the market conditions and supply-and-demand dynamics of the lending markets or products it uses, and its risk profile. Sky.money does not control or guarantee vault performance. The rates shown are estimated annual rates, updated using data from the relevant protocols, for informational purposes only, and do not guarantee future results."
   },
   {
     id: 'susdt-vault-rate',
@@ -304,7 +305,7 @@ Bundled transaction: Active`
     id: 'fixed-yield-rate',
     title: 'Fixed Yield Rate',
     tooltip:
-      'The Fixed Yield Rate is the annualized return set when you supply USDS, calculated based on the discount at which the resulting PT-sUSDS is purchased on the Pendle market. This rate is guaranteed only if your PT-sUSDS is held to or past maturity. The rate is determined by the Pendle market, not by Sky.money, and may differ from the displayed rate before you complete the transaction.'
+      'The Fixed Yield Rate is the annualized return set when you supply USDS, calculated based on the discount at which the resulting PT-sUSDS is purchased on the Pendle market. This rate is fixed only if your PT-sUSDS is held to or past maturity. Exiting before maturity means selling at the prevailing market price, which may be above or below your entry. The rate is determined by the Pendle market, not by Sky.money, and may differ from the displayed rate before you complete the transaction.'
   },
   {
     id: 'maturity-date',
@@ -322,7 +323,7 @@ Bundled transaction: Active`
     id: 'early-withdrawal-impact',
     title: 'Early Withdrawal Impact',
     tooltip:
-      'Withdrawing before the Maturity Date requires selling PT-sUSDS on the Pendle market rather than redeeming it for the fixed amount. The realized APY on an early withdrawal depends on the prevailing PT-sUSDS market price and may be higher or lower than the Fixed Yield Rate locked in at supply. The advertised fixed APY is guaranteed only if PT-sUSDS is held to or past maturity.'
+      'Withdrawing before the Maturity Date requires selling PT-sUSDS on the Pendle market rather than redeeming it for the fixed amount. The realized APY on an early withdrawal depends on the prevailing PT-sUSDS market price and may be higher or lower than the Fixed Yield Rate locked in at supply. The displayed APY is fixed only if PT-sUSDS is held to or past maturity.'
   },
   {
     id: 'early-withdrawal-loss',
@@ -334,7 +335,7 @@ Bundled transaction: Active`
     id: 'rewards-rate',
     title: 'Rewards Rate',
     tooltip:
-      "The Sky Ecosystem Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors: the issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance; the market price of the token rewarded; and the user's proportional supply within the total pool of assets linked to the Sky Ecosystem Rewards module. Sky.money does not control the issuance, determination, or distribution of these rewards. The Sky Ecosystem Rewards rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results."
+      "The Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors: the issuance rate of the token rewarded, which is determined by SKY token holders through decentralized onchain voting; the market price of the token rewarded; and the user's proportional supply within the total pool of assets linked to the Rewards module. Sky.money does not control the issuance, determination, or distribution of these rewards. The Sky Ecosystem Rewards rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results."
   }
 ];
 

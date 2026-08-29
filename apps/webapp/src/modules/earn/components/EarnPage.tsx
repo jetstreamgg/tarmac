@@ -43,7 +43,7 @@ import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
 import { partitionByGeoAvailability } from '../helpers/geoAvailability';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';
-import { formatCirculation, formatCirculationCoarse, protocolStartYear } from '../helpers/protocolStats';
+import { formatCirculation, formatCirculationCoarse } from '../helpers/protocolStats';
 import { useEarnTableState } from '../hooks/useEarnTableState';
 import { EarnFeaturedCards } from './EarnFeaturedCards';
 import { ProtocolLineageBadge } from './ProtocolLineageBadge';
@@ -399,15 +399,15 @@ export function EarnPage() {
             <ProtocolLineageBadge />
           </>
         }
-        title={<Trans>Only the best ways to put your stablecoins to work</Trans>}
+        title={<Trans>How hard your stablecoins work is up to you</Trans>}
         subtitleClassName="max-w-[271px] md:max-w-[513px]"
         // Three standalone sentences, so each is its own translation unit — the
         // middle one carries the live figure and can drop out entirely.
         subtitle={
           <>
             <Trans>
-              Sky Protocol is where stablecoins go to work - and where they&apos;ve been going since{' '}
-              {protocolStartYear}.
+              Sky.money is where you get non-custodial access to the largest yield-bearing stablecoin and a
+              set of features to put it to work.
             </Trans>{' '}
             {circulationIsLoading ? (
               <Skeleton className="inline-block h-3 w-16 rounded-full align-[-1px]" />

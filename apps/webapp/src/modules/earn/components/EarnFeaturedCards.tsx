@@ -152,8 +152,8 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
         </h3>
         <p className="text-fgSecondary max-w-[479px] text-xs leading-[18px]">
           <Trans>
-            Governed by Sky Ecosystem to deliver the best risk-adjusted yield, sUSDS allows you to grow your
-            holdings with instant liquidity and zero fees.
+            sUSDS gives you simple access to the Sky Savings Rate, with instant liquidity and zero fees. The
+            rate is variable, funded from Sky&apos;s protocol surplus.
           </Trans>
         </p>
       </div>
@@ -220,8 +220,8 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     title: () => <Trans>Sky Savings</Trans>,
     description: () => (
       <Trans>
-        Governed by Sky Ecosystem to deliver the best risk-adjusted yield, sUSDS allows you to grow your
-        holdings with instant liquidity and zero fees.
+        sUSDS gives you simple access to the Sky Savings Rate, with instant liquidity and zero fees. The rate
+        is variable, funded from Sky&apos;s protocol surplus.
       </Trans>
     ),
     stats: row => (
@@ -262,10 +262,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
       const days = row.maturity ? remainingDaysToMaturity(row.maturity, now) : undefined;
       return (
         <>
-          <Trans>
-            Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
-            maturity.
-          </Trans>{' '}
+          <Trans>Your rate is fixed when you supply.</Trans>{' '}
           <FixedYieldTerm rate={row.rate.formatted} days={days} />
         </>
       );

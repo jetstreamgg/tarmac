@@ -62,9 +62,9 @@ const VAULT_ABOUT: Record<string, ReactNode> = {
   ),
   'USDC Risk Capital': (
     <Trans>
-      USDC Risk Capital vault accepts USDC deposits and deploys them exclusively into an stUSDS-USDC Morpho
-      market. Vault performance is driven by the underlying markets&apos; borrowing demand and is not
-      controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
+      USDC Risk Capital vault allocates supplied USDC exclusively to an stUSDS-USDC Morpho market. Vault
+      performance is driven by the underlying markets&apos; borrowing demand and is not controlled by
+      Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
     </Trans>
   )
 };

@@ -133,7 +133,7 @@ const BalancesWidgetWrapped = ({
             <NoFundsCopy />
             <LoadingButton
               onClick={onExploreVaults}
-              buttonText={t`Explore new Vaults and start earning`}
+              buttonText={t`Explore new Vaults`}
               variant="primaryAlt"
               className="font-circle h-full w-full px-6 py-4 text-base"
             />
