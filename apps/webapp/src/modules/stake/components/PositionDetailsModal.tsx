@@ -797,8 +797,8 @@ export function PositionDetailsModal({
                     <StatCell
                       label={
                         <>
-                          <Trans>Protocol SKY Price</Trans>
-                          <StatInfoIcon />
+                          <Trans>Capped OSM SKY price</Trans>
+                          <RateInfo type="cappedOsmSkyPrice" size={12} />
                         </>
                       }
                     >
@@ -902,8 +902,8 @@ export function PositionDetailsModal({
                     <StatCell
                       label={
                         <>
-                          <Trans>Protocol SKY Price</Trans>
-                          <StatInfoIcon />
+                          <Trans>Capped OSM SKY price</Trans>
+                          <RateInfo type="cappedOsmSkyPrice" size={12} />
                         </>
                       }
                     >

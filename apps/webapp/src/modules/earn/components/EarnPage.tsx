@@ -32,7 +32,6 @@ import { ROW_COLLAPSE_MS } from '@/modules/ui/animation/presets';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
-import { rateInfoFor } from '@/components/product/RateInfo';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
 import {
   isMorphoVault,
@@ -109,8 +108,6 @@ function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem 
       <Pendle className="h-4 w-4" />
     ) : undefined,
     supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
-    // Unavailable rows show a dash rate, so there is nothing to explain.
-    rateInfo: unavailable ? undefined : rateInfoFor(row),
     maturityLabel: row.maturity ? formatMaturity(row.maturity) : undefined,
     network: <CellNetworks>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</CellNetworks>,
     rate: row.rate.formatted,

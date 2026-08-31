@@ -36,7 +36,10 @@ const TOOLTIP_ID_MAP = {
   remainingCapacity: 'remaining-capacity',
   withdrawalLiquidity: 'withdrawal-liquidity',
   maximumCapacity: 'maximum-capacity',
-  fixedYield: 'fixed-yield-rate'
+  fixedYield: 'fixed-yield-rate',
+  cappedOsmSkyPrice: 'capped-osm-sky-price',
+  earnRates: 'earn-rates',
+  earnRates30d: 'earn-rates-30d'
 } as const;
 
 type TooltipContent = {

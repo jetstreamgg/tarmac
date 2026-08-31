@@ -400,8 +400,8 @@ export function StakeManageBorrowCard({
           <StakeManageStatCell
             label={
               <>
-                <Trans>Protocol SKY Price</Trans>
-                <Info className="h-3 w-3" aria-hidden />
+                <Trans>Capped OSM SKY price</Trans>
+                <RateInfo type="cappedOsmSkyPrice" size={12} />
               </>
             }
             // Single value on purpose: the OSM price ignores user input (M13).

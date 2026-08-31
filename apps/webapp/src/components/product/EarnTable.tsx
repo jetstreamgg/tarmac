@@ -1,7 +1,7 @@
 import { KeyboardEvent, ReactNode, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
-import { RateInfo, type RateInfoType } from './RateInfo';
+import { RateInfo } from './RateInfo';
 import { Trans } from '@lingui/react/macro';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { rowCollapseAnimations, rowCollapseContainerAnimations } from '@/modules/ui/animation/presets';
@@ -52,8 +52,6 @@ export type EarnTableRowItem = {
   /** Mobile expanded-card primary CTA label; defaults to "Supply". */
   ctaLabel?: ReactNode;
   rate: string;
-  /** Product rate explainer drawn after the Rate figure (APP-540); omit on dash rows. */
-  rateInfo?: RateInfoType;
   rate30d: string;
   tvl: string;
   position: string;
@@ -84,17 +82,14 @@ function NumericValue({ value, isLoading }: { value: string; isLoading?: boolean
   return value;
 }
 
-/** The Rate figure with its product explainer glyph beside it (APP-540). */
-function RateValue({ row }: { row: EarnTableRowItem }) {
-  const figure = <NumericValue value={row.rate} isLoading={row.isLoading} />;
-  // Nothing to explain on a dash placeholder (a rate the app cannot source).
-  if (!row.rateInfo || row.isLoading || row.rate === '–' || row.rate === '—') return figure;
-  return (
-    <span className="flex items-center gap-1">
-      {figure}
-      <RateInfo type={row.rateInfo} size={12} />
-    </span>
-  );
+/**
+ * One explainer for the whole Rate column (APP-540 follow-up): the rows mix
+ * products, so a per-row glyph repeated the same affordance six times over.
+ * The column header carries it on desktop; the mobile cards' expanded grid
+ * label does, since the collapsed header is itself a button.
+ */
+function RateColumnInfo({ column }: { column: 'rate' | 'rate30d' }) {
+  return <RateInfo type={column === 'rate' ? 'earnRates' : 'earnRates30d'} size={12} />;
 }
 
 export type EarnTableProps = {
@@ -262,7 +257,7 @@ function EarnCardList({
                           dimmed && 'text-fgTertiary'
                         )}
                       >
-                        <RateValue row={row} />
+                        <NumericValue value={row.rate} isLoading={row.isLoading} />
                       </span>
                     </span>
                     <ChevronDown
@@ -301,11 +296,21 @@ function EarnCardList({
                           )
                         },
                         {
-                          label: <Trans>Rate</Trans>,
-                          value: <RateValue row={row} />
+                          label: (
+                            <span className="flex items-center gap-1">
+                              <Trans>Rate</Trans>
+                              <RateColumnInfo column="rate" />
+                            </span>
+                          ),
+                          value: <NumericValue value={row.rate} isLoading={row.isLoading} />
                         },
                         {
-                          label: <Trans>30D Rate</Trans>,
+                          label: (
+                            <span className="flex items-center gap-1">
+                              <Trans>30D Rate</Trans>
+                              <RateColumnInfo column="rate30d" />
+                            </span>
+                          ),
                           value: <NumericValue value={row.rate30d} isLoading={row.isLoading} />
                         },
                         {
@@ -399,29 +404,37 @@ export function EarnTable({
                 className={cn(column.key === 'token' && 'w-[34%]')}
                 aria-sort={isSorted ? (sort?.direction === 'asc' ? 'ascending' : 'descending') : undefined}
               >
-                {onSortChange ? (
-                  <button
-                    type="button"
-                    data-testid={`${tid}-sort-${column.key}`}
-                    onClick={() => onSortChange(column.key)}
-                    className={cn(
-                      'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
-                      isSorted && 'text-fgPrimary'
-                    )}
-                  >
-                    {column.label}
-                    <ChevronDown
-                      size={12}
+                {/* The explainer sits beside the sort button, not inside it:
+                    a popover trigger nested in a button is invalid markup and
+                    would fight the sort click. */}
+                <span className="inline-flex items-center gap-1">
+                  {onSortChange ? (
+                    <button
+                      type="button"
+                      data-testid={`${tid}-sort-${column.key}`}
+                      onClick={() => onSortChange(column.key)}
                       className={cn(
-                        'transition-transform',
-                        isSorted ? 'opacity-100' : 'opacity-40',
-                        isSorted && sort?.direction === 'asc' && 'rotate-180'
+                        'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
+                        isSorted && 'text-fgPrimary'
                       )}
-                    />
-                  </button>
-                ) : (
-                  column.label
-                )}
+                    >
+                      {column.label}
+                      <ChevronDown
+                        size={12}
+                        className={cn(
+                          'transition-transform',
+                          isSorted ? 'opacity-100' : 'opacity-40',
+                          isSorted && sort?.direction === 'asc' && 'rotate-180'
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    column.label
+                  )}
+                  {(column.key === 'rate' || column.key === 'rate30d') && (
+                    <RateColumnInfo column={column.key} />
+                  )}
+                </span>
               </TableHead>
             );
           })}
@@ -475,7 +488,7 @@ export function EarnTable({
                 )}
               </TableCell>
               <TableCell>
-                <RateValue row={row} />
+                <NumericValue value={row.rate} isLoading={row.isLoading} />
               </TableCell>
               <TableCell>
                 <NumericValue value={row.rate30d} isLoading={row.isLoading} />

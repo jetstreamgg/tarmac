@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { AudioLines, Asterisk, Vault, Droplet, UsersRound, Info } from 'lucide-react';
+import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { useStakeHistoricData } from '@/hooks';
 import { formatNumber, formatDecimalPercentage } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,9 +54,9 @@ function StatValue({
 /**
  * Statistics-tab "Details" strip: the hi-fi label/value rows fed entirely by
  * the existing read hooks (comp 1036:208698, APP-399 #7 — Staking Reward Rate /
- * Borrow Rate / Total SKY staked / TVL / Protocol SKY Price / Users). The info
- * glyph on Protocol SKY Price is decorative for now, like the sibling Borrow
- * Utilization heading — tooltip copy arrives via the corpus pipeline.
+ * Borrow Rate / Total SKY staked / TVL / SKY Price / Users). The rate rows
+ * carry the product rate explainers (APP-540); SKY Price has no info glyph -
+ * its copy is not written yet, so a decorative glyph would promise nothing.
  * Read-only — no engine hook is touched here.
  */
 export function StakeDetailsStrip() {
@@ -126,15 +126,7 @@ export function StakeDetailsStrip() {
           </StatValue>
         </DetailRow>
 
-        <DetailRow
-          icon={<Droplet className="h-4 w-4" />}
-          label={
-            <>
-              <Trans>Protocol SKY Price</Trans>
-              <Info className="text-fgSecondary h-3.5 w-3.5" aria-hidden />
-            </>
-          }
-        >
+        <DetailRow icon={<Droplet className="h-4 w-4" />} label={<Trans>SKY Price</Trans>}>
           <StatValue isLoading={historicLoading} error={historicError}>
             {mostRecent ? `$${formatNumber(mostRecent.skyPrice, { maxDecimals: 4 })}` : NO_VALUE}
           </StatValue>

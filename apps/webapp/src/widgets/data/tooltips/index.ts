@@ -326,6 +326,17 @@ Bundled transaction: Active`
       'The difference between what you would claim at maturity and what you receive by withdrawing now.'
   },
   {
+    id: 'earn-rates',
+    title: 'Rate',
+    tooltip:
+      'All rates are variable, and their mechanics depend on the particular product. Sky.money does not control, set, or guarantee these rates. Refer to the product pages for further details.'
+  },
+  {
+    id: 'earn-rates-30d',
+    title: '30D Rate',
+    tooltip: 'Average rates over the past 30 days. Past performance is not indicative of future results.'
+  },
+  {
     id: 'rewards-rate',
     title: 'Rewards Rate',
     tooltip:

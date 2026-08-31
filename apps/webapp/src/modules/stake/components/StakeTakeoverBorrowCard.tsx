@@ -263,12 +263,8 @@ export function StakeTakeoverBorrowCard({
           <StatItem
             label={
               <>
-                <Trans>Protocol SKY Price</Trans>
-                <InfoTooltip
-                  iconSize={12}
-                  iconClassName="shrink-0"
-                  content={t`Sky uses a stale price that updates hourly to protect the system from short-term manipulation. Your liquidation level and borrow limit are based on this price, not the live market price.`}
-                />
+                <Trans>Capped OSM SKY price</Trans>
+                <RateInfo type="cappedOsmSkyPrice" size={12} />
               </>
             }
           >
