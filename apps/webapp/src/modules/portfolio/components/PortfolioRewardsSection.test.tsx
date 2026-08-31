@@ -40,14 +40,16 @@ function renderSection({
   rewards,
   isLoading = false,
   onClaim = vi.fn(),
-  onClaimAll = vi.fn()
+  onClaimAll = vi.fn(),
+  canClaimAll = true
 }: {
   rewards: ClaimableReward[];
   isLoading?: boolean;
   onClaim?: (reward: ClaimableReward) => void;
   onClaimAll?: () => void;
+  canClaimAll?: boolean;
 }) {
-  render(
+  const utils = render(
     <I18nProvider i18n={i18n}>
       <PortfolioRewardsSection
         title="Ecosystem rewards"
@@ -55,11 +57,12 @@ function renderSection({
         isLoading={isLoading}
         onClaim={onClaim}
         onClaimAll={onClaimAll}
+        canClaimAll={canClaimAll}
         testId="eco"
       />
     </I18nProvider>
   );
-  return { onClaim, onClaimAll };
+  return { ...utils, onClaim, onClaimAll };
 }
 
 describe('PortfolioRewardsSection', () => {
@@ -68,6 +71,7 @@ describe('PortfolioRewardsSection', () => {
   it('renders the skeleton while the read is in flight', () => {
     renderSection({ rewards: [], isLoading: true });
     expect(screen.getByTestId('eco-skeleton')).toBeTruthy();
+    expect(screen.getByTestId('eco-claim-all-skeleton')).toBeTruthy();
     expect(screen.queryByTestId('eco')).toBeNull();
   });
 
@@ -101,6 +105,24 @@ describe('PortfolioRewardsSection', () => {
 
     fireEvent.click(claimAll);
     expect(onClaimAll).toHaveBeenCalled();
+  });
+
+  it('drops Claim all and restores primary row CTAs when the section cannot claim in one tx', () => {
+    renderSection({ rewards: [SPK, GROVE], canClaimAll: false });
+
+    expect(screen.queryByTestId('eco-claim-all')).toBeNull();
+    screen
+      .getAllByTestId('reward-claim-button')
+      .forEach(row => expect(row.className).toContain('from-button-gradient-start'));
+  });
+
+  it('leaves the Claim all placeholder out of the skeleton when it cannot claim in one tx', () => {
+    renderSection({ rewards: [], isLoading: true, canClaimAll: false });
+
+    // Only the table-height bar remains — the button-sized pill beside the
+    // heading goes with the button it stood in for.
+    expect(screen.getByTestId('eco-skeleton')).toBeTruthy();
+    expect(screen.queryByTestId('eco-claim-all-skeleton')).toBeNull();
   });
 
   it('lists the token symbol, name and both amounts per row', () => {

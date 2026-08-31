@@ -4,6 +4,7 @@ import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useAvailableTokenRewardContracts, useTransactionFlow } from '@/hooks';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { formatUsd } from '@/utils';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -96,7 +97,12 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     [merklCalls.calls, skyCalls.calls, stakeCalls.calls]
   );
 
-  const flow = useTransactionFlow({ calls, chainId, shouldUseBatch: true, ...txCallbacks });
+  // Honour the app-wide bundle toggle (and the wallet's support for it), like
+  // every module launch hook does — hardcoding `true` here bundled a multi-call
+  // claim into one EIP-5792 send even with bundling switched off. With it off
+  // the calls go out sequentially instead.
+  const shouldUseBatch = useShouldUseBatch();
+  const flow = useTransactionFlow({ calls, chainId, shouldUseBatch, ...txCallbacks });
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
