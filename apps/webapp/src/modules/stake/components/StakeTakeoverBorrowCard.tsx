@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { RateInfo } from '@/components/product/RateInfo';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
@@ -199,7 +200,14 @@ export function StakeTakeoverBorrowCard({
             middle divider only exists in the row: `hidden` drops it out of the
             grid's flow entirely, so the mobile 2×2 keeps its centre rule. */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:flex md:flex-wrap md:gap-4">
-          <StatItem label={<Trans>Borrow rate</Trans>}>
+          <StatItem
+            label={
+              <>
+                <Trans>Borrow rate</Trans>
+                <RateInfo type="sbr" size={12} />
+              </>
+            }
+          >
             {collateralData?.stabilityFee ? (
               formatPercent(collateralData.stabilityFee)
             ) : collateralLoading ? (
@@ -255,12 +263,8 @@ export function StakeTakeoverBorrowCard({
           <StatItem
             label={
               <>
-                <Trans>Protocol SKY Price</Trans>
-                <InfoTooltip
-                  iconSize={12}
-                  iconClassName="shrink-0"
-                  content={t`Sky uses a stale price that updates hourly to protect the system from short-term manipulation. Your liquidation level and borrow limit are based on this price, not the live market price.`}
-                />
+                <Trans>Capped OSM SKY price</Trans>
+                <RateInfo type="cappedOsmSkyPrice" size={12} />
               </>
             }
           >

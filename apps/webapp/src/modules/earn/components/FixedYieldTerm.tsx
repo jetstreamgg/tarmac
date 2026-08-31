@@ -11,10 +11,17 @@ import { Trans } from '@lingui/react/macro';
 export function FixedYieldTerm({ rate, days }: { rate: string; days?: number }) {
   if (days === undefined) return null;
   if (days === 0) return <Trans>This market matures in less than a day.</Trans>;
-  if (days === 1) return <Trans>Fix your yield at {rate} APY for one more day.</Trans>;
+  if (days === 1)
+    return (
+      <Trans>
+        Supply USDS at {rate} APY for one more day. The rate applies only if you hold to the maturity date,
+        and exiting early means selling at the current market price.
+      </Trans>
+    );
   return (
     <Trans>
-      Fix your yield at {rate} APY for the next {days} days.
+      Supply USDS at {rate} APY for the next {days} days. The rate applies only if you hold to the maturity
+      date, and exiting early means selling at the current market price.
     </Trans>
   );
 }

@@ -69,8 +69,8 @@ const RISK_PROFILE_DETAILS: Record<
   savings: {
     description: (
       <Trans>
-        Funds secured by Sky Protocol, with instant liquidity and zero fees on access and exit. The Sky
-        Savings Rate is determined by governance through a DAO vote.
+        Assets held in Sky Protocol smart contracts, with instant liquidity and zero fees on access and exit.
+        The Sky Savings Rate is variable and set by SKY token holders through onchain vote.
       </Trans>
     ),
     exposureTokens: ['USDS'],
@@ -96,7 +96,7 @@ const RISK_PROFILE_DETAILS: Record<
   'rewards-spk': {
     description: (
       <Trans>
-        Supply to Sky Protocol and earn SPK tokens. The reward rate is set by Sky Protocol governance and
+        Supply to Sky Protocol to receive SPK tokens. The reward rate is set by Sky Protocol governance and
         distributed proportionally to the supplied USDS.
       </Trans>
     ),
@@ -106,7 +106,7 @@ const RISK_PROFILE_DETAILS: Record<
   'rewards-grove': {
     description: (
       <Trans>
-        Supply to Sky Protocol and earn GROVE tokens. The reward rate is set by Sky Protocol governance and
+        Supply to Sky Protocol to receive GROVE tokens. The reward rate is set by Sky Protocol governance and
         distributed proportionally to the supplied USDS.
       </Trans>
     ),
@@ -116,7 +116,7 @@ const RISK_PROFILE_DETAILS: Record<
   'rewards-cle': {
     description: (
       <Trans>
-        Supply to Sky Protocol and earn Chronicle Points. Point distribution and related opportunities are
+        Supply to Sky Protocol to receive Chronicle Points. Point distribution and related opportunities are
         managed by Chronicle.
       </Trans>
     ),

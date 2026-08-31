@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
@@ -7,6 +8,7 @@ import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { RateBadge } from '@/components/ui/RateBadge';
+import { PopoverRateInfo, type PopoverTooltipType } from '@/widgets';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { Vaults } from '@/widgets/shared/components/icons/Vaults';
 import type { EarnWithSkyProduct, EarnWithSkyProductId } from '../helpers/earnWithSky';
@@ -46,6 +48,17 @@ const CARD_CONTENT: Record<
  * One product-group card of the Portfolio "Earn with Sky" section.
  * Presentational — the caller routes the CTA via `onStart`.
  */
+/**
+ * Rate explainer behind each card's badge (APP-540): the whole pill is the
+ * trigger, no separate glyph. Vaults open the same vault-rate copy as the
+ * product pages, even though the badge advertises the best of several vaults.
+ */
+const RATE_INFO: Record<EarnWithSkyProductId, PopoverTooltipType> = {
+  savings: 'ssr',
+  vaults: 'morpho',
+  stake: 'srr'
+};
+
 export function EarnWithSkyCard({ product, onStart }: { product: EarnWithSkyProduct; onStart: () => void }) {
   const content = CARD_CONTENT[product.id];
   return (
@@ -65,9 +78,25 @@ export function EarnWithSkyCard({ product, onStart }: { product: EarnWithSkyProd
           </Text>
           {/* DS Badges / Special — the green rate pill (5320:41752). */}
           {product.rate.value !== undefined && (
-            <RateBadge data-testid="earn-with-sky-card-rate">
-              {product.isBestOf ? <Trans>up to {product.rate.formatted}</Trans> : product.rate.formatted}
-            </RateBadge>
+            <PopoverRateInfo
+              type={RATE_INFO[product.id]}
+              trigger={
+                // A real button so the pill is focusable and opens on Enter/Space too.
+                <button
+                  type="button"
+                  className="focus-visible:ring-ring inline-flex cursor-pointer rounded-full focus-visible:ring-2 focus-visible:outline-hidden"
+                  aria-label={t`About this rate`}
+                >
+                  <RateBadge data-testid="earn-with-sky-card-rate">
+                    {product.isBestOf ? (
+                      <Trans>up to {product.rate.formatted}</Trans>
+                    ) : (
+                      product.rate.formatted
+                    )}
+                  </RateBadge>
+                </button>
+              }
+            />
           )}
         </div>
         <Text variant="medium" className="text-textSecondary leading-[22px]">

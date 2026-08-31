@@ -103,7 +103,7 @@ describe('SavingsSupplyCard — no-position entry card', () => {
   it('falls back to generic "stablecoins" copy with no per-token symbols at 3+ origins (mainnet)', () => {
     renderCard();
 
-    expect(screen.getByText('Supply stablecoins and earn 3.75% APY')).toBeTruthy();
+    expect(screen.getByText('Supply stablecoins at 3.75% APY')).toBeTruthy();
     // TokenIcon is mocked to null, so the enumerated span (icon + symbol per
     // origin) is only observable via its symbol text — absent here confirms
     // the whole enumerated tree, icons included, isn't mounted on this path.

@@ -50,7 +50,7 @@ const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
   'merkl-monthly-unsupported': <Trans>Merkl doesn&apos;t break rewards down by month.</Trans>,
   'source-error': <Trans>Temporarily unavailable.</Trans>,
   'reconciliation-failed': <Trans>We couldn&apos;t verify this figure, so it&apos;s hidden.</Trans>,
-  disconnected: <Trans>Connect your wallet to see earnings.</Trans>,
+  disconnected: <Trans>Connect your wallet to see what you&apos;ve accrued.</Trans>,
   loading: <Trans>Loading…</Trans>
 };
 
@@ -215,7 +215,8 @@ export function CombinedEarningsStat({
   field,
   className,
   testId,
-  untrackedNames = []
+  untrackedNames = [],
+  showGapGlyph = true
 }: {
   earnings: WalletEarnings;
   field: 'total' | 'month';
@@ -224,6 +225,8 @@ export function CombinedEarningsStat({
   /** Supplied positions with no earnings source — the combined figure excludes
    * them, so it must say so (review finding #2). An announced gap, never an error. */
   untrackedNames?: string[];
+  /** Set false to render the bare figure without the missing-source info glyph. */
+  showGapGlyph?: boolean;
 }) {
   if (earnings.isLoading) {
     return <Skeleton data-testid="earnings-stat-skeleton" className="h-[18px] w-24 rounded" />;
@@ -250,7 +253,7 @@ export function CombinedEarningsStat({
   return (
     <span data-testid={testId} className={STAT_ROW}>
       <GainValue value={usd} signed className={className} />
-      {(missing.length > 0 || untrackedNames.length > 0) && (
+      {showGapGlyph && (missing.length > 0 || untrackedNames.length > 0) && (
         <GapGlyph missing={missing} untrackedNames={untrackedNames} />
       )}
     </span>
@@ -272,6 +275,7 @@ export function EarningsFigureValue({
   missing = [],
   coverage,
   pendleSplit,
+  showGapGlyph = true,
   skeletonClassName = 'h-[18px] w-16 rounded'
 }: {
   figure: Maybe<EarningsFigure> | null;
@@ -284,6 +288,8 @@ export function EarningsFigureValue({
   /** Coverage caveat for an otherwise-complete figure (review finding #3). */
   coverage?: EarningsCoverage;
   pendleSplit?: PendleSplit;
+  /** Set false to render the bare figure without the missing-source info glyph. */
+  showGapGlyph?: boolean;
   skeletonClassName?: string;
 }) {
   if (figure?.status === 'notAvailable' && figure.reason === 'loading') {
@@ -317,7 +323,10 @@ export function EarningsFigureValue({
       </span>
     );
 
-  const gapGlyph = missing.length > 0 || coverage ? <GapGlyph missing={missing} coverage={coverage} /> : null;
+  const gapGlyph =
+    showGapGlyph && (missing.length > 0 || coverage) ? (
+      <GapGlyph missing={missing} coverage={coverage} />
+    ) : null;
 
   if (pendleSplit) {
     return (

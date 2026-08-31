@@ -12,11 +12,7 @@ const renderTerm = (days?: number) =>
   render(
     <I18nProvider i18n={i18n}>
       <p data-testid="blurb">
-        <Trans>
-          Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
-          maturity.
-        </Trans>{' '}
-        <FixedYieldTerm rate="5.20%" days={days} />
+        <Trans>Your rate is fixed when you supply.</Trans> <FixedYieldTerm rate="5.20%" days={days} />
       </p>
     </I18nProvider>
   );
@@ -28,12 +24,12 @@ afterEach(cleanup);
 describe('FixedYieldTerm', () => {
   it('states the term in days when the market is more than a day out', () => {
     renderTerm(49);
-    expect(blurb()).toContain('Fix your yield at 5.20% APY for the next 49 days.');
+    expect(blurb()).toContain('Supply USDS at 5.20% APY for the next 49 days.');
   });
 
   it('never renders "1 days"', () => {
     renderTerm(1);
-    expect(blurb()).toContain('Fix your yield at 5.20% APY for one more day.');
+    expect(blurb()).toContain('Supply USDS at 5.20% APY for one more day.');
     expect(blurb()).not.toContain('1 days');
   });
 
@@ -49,7 +45,7 @@ describe('FixedYieldTerm', () => {
 
   it('drops the sentence when no maturity is known', () => {
     renderTerm(undefined);
-    expect(blurb()).not.toContain('Fix your yield');
+    expect(blurb()).not.toContain('Supply USDS at');
     expect(blurb()).not.toContain('days');
   });
 
@@ -57,6 +53,6 @@ describe('FixedYieldTerm', () => {
   // swallow or double the space between the sentences.
   it('keeps exactly one space between the two sentences', () => {
     renderTerm(49);
-    expect(blurb()).toContain('at the market maturity. Fix your yield');
+    expect(blurb()).toContain('when you supply. Supply USDS at');
   });
 });

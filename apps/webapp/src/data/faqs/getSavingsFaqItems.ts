@@ -32,7 +32,7 @@ When you supply USDS to the Sky Savings Rate module, you access the Sky Savings 
 
 The Sky Protocol dynamically adds USDS tokens to the pool every few seconds, in accordance with the Sky Savings Rate percentage. As those tokens auto-accumulate in the pool over time, the value of the sUSDS you hold may gradually increase. Therefore, when you choose to redeem your sUSDS for USDS—which you can do anytime—the total USDS you will receive will equal the amount you originally supplied, plus any additional USDS accumulated.
 
-The Sky Savings Rate percentage is variable, determined by Sky Ecosystem Governance through a process of decentralized onchain voting.
+The Sky Savings Rate percentage is variable, determined by SKY token holders through decentralized onchain voting.
 
 The conversion rate between USDS and sUSDS is determined programmatically by smart contracts, but the dollar value should match given that there are no fees involved. When redeeming sUSDS for USDS, one would expect an increase in net USDS tokens in accordance with the Sky Savings Rate multiplied by the duration.`,
     index: 0
@@ -48,9 +48,9 @@ If you have shied away from the Ethereum blockchain due to the high price of gas
     question: 'How is the Sky Savings Rate determined?',
     answer: `The Sky Savings Rate takes into account the effect of accumulated USDS compounded in real time. In other words, the USDS you supply to the Sky Savings Rate module of the decentralized Sky Protocol enables you to accumulate more USDS over time.
 
-The Sky Savings Rate percentage is variable, determined by Sky Ecosystem Governance through a process of decentralized onchain voting. It is calculated based on various risk parameters evaluated and monitored by the Sky Risk Management Team. Through the voting process, Sky Ecosystem Governance is able, at any time, at its sole discretion, and without notice, to adapt the Sky Savings Rate and other relevant Sky Protocol parameters based on market conditions, the Surplus Buffer of the Sky Protocol, and other factors.
+The Sky Savings Rate percentage is variable, determined by SKY token holders through decentralized onchain voting. It is calculated based on various risk parameters evaluated and monitored by the Sky Risk Management Team. Through the voting process, SKY token holders are able, at any time, at its sole discretion, and without notice, to adapt the Sky Savings Rate and other relevant Sky Protocol parameters based on market conditions, the Surplus Buffer of the Sky Protocol, and other factors.
 
-The Sky Savings Rate is one of the most impactful Sky Ecosystem Governance-controlled parameters related to USDS demand. The Risk Management Team analyzes systemic decentralized finance (DeFi) risks, uses risk models and other tools to evaluate and monitor the Sky project's effectiveness, and performs regular market research. Based on its findings, the team might propose a change to the Sky Savings Rate percentage. Any such proposal is first debated in the [Sky Forum](https://forum.skyeco.com/), and later voted on by Sky Ecosystem Governance.`,
+The Sky Savings Rate is one of the most impactful parameters set by SKY token holders related to USDS demand. The Risk Management Team analyzes systemic decentralized finance (DeFi) risks, uses risk models and other tools to evaluate and monitor the Sky project's effectiveness, and performs regular market research. Based on its findings, the team might propose a change to the Sky Savings Rate percentage. Any such proposal is first debated in the [Sky Forum](https://forum.skyeco.com/), and later voted on by SKY token holders.`,
     index: 2
   },
   {

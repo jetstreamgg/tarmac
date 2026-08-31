@@ -1,10 +1,11 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { AudioLines, Asterisk, Vault, Droplet, UsersRound, Info } from 'lucide-react';
+import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { useStakeHistoricData } from '@/hooks';
 import { formatNumber, formatDecimalPercentage } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { RateInfo } from '@/components/product/RateInfo';
 import { useStakeRewardsRate } from '../hooks/useStakeRewardsRate';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -53,9 +54,9 @@ function StatValue({
 /**
  * Statistics-tab "Details" strip: the hi-fi label/value rows fed entirely by
  * the existing read hooks (comp 1036:208698, APP-399 #7 — Staking Reward Rate /
- * Borrow Rate / Total SKY staked / TVL / Protocol SKY Price / Users). The info
- * glyph on Protocol SKY Price is decorative for now, like the sibling Borrow
- * Utilization heading — tooltip copy arrives via the corpus pipeline.
+ * Borrow Rate / Total SKY staked / TVL / SKY Price / Users). The rate rows
+ * carry the product rate explainers (APP-540); SKY Price has no info glyph -
+ * its copy is not written yet, so a decorative glyph would promise nothing.
  * Read-only — no engine hook is touched here.
  */
 export function StakeDetailsStrip() {
@@ -78,13 +79,29 @@ export function StakeDetailsStrip() {
       </h3>
 
       <div className="grid grid-cols-1 gap-x-5 gap-y-6 md:grid-cols-2">
-        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Staking Reward Rate</Trans>}>
+        <DetailRow
+          icon={<AudioLines className="h-4 w-4" />}
+          label={
+            <>
+              <Trans>Staking Reward Rate</Trans>
+              <RateInfo type="srr" size={12} />
+            </>
+          }
+        >
           <StatValue isLoading={rewardsLoading} error={rewardsError}>
             {currentRate !== null ? formatDecimalPercentage(currentRate) : NO_VALUE}
           </StatValue>
         </DetailRow>
 
-        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Borrow Rate</Trans>}>
+        <DetailRow
+          icon={<AudioLines className="h-4 w-4" />}
+          label={
+            <>
+              <Trans>Borrow Rate</Trans>
+              <RateInfo type="sbr" size={12} />
+            </>
+          }
+        >
           <StatValue isLoading={historicLoading} error={historicError}>
             {mostRecent ? formatDecimalPercentage(mostRecent.borrowRate) : NO_VALUE}
           </StatValue>
@@ -109,15 +126,7 @@ export function StakeDetailsStrip() {
           </StatValue>
         </DetailRow>
 
-        <DetailRow
-          icon={<Droplet className="h-4 w-4" />}
-          label={
-            <>
-              <Trans>Protocol SKY Price</Trans>
-              <Info className="text-fgSecondary h-3.5 w-3.5" aria-hidden />
-            </>
-          }
-        >
+        <DetailRow icon={<Droplet className="h-4 w-4" />} label={<Trans>SKY Price</Trans>}>
           <StatValue isLoading={historicLoading} error={historicError}>
             {mostRecent ? `$${formatNumber(mostRecent.skyPrice, { maxDecimals: 4 })}` : NO_VALUE}
           </StatValue>

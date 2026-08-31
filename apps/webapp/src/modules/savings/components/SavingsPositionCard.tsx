@@ -18,6 +18,7 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { RateInfo } from '@/components/product/RateInfo';
 import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
 import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
@@ -157,7 +158,10 @@ export function SavingsPositionCard() {
               {rateValue === undefined && rateLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : (
-                <ProductPercent value={currentRate} />
+                <>
+                  <ProductPercent value={currentRate} />
+                  <RateInfo type="ssr" size={12} />
+                </>
               )}
             </ProductStat>
           </ProductStatPair>

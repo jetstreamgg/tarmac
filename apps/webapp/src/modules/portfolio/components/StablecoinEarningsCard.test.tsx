@@ -264,14 +264,18 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     expect(screen.getAllByTestId('earnings-stat-skeleton')).toHaveLength(2);
   });
 
-  it('marks announced gaps with the info glyph, never the partial-data indicator', () => {
+  // The footer stats render the bare figures: the gap glyph beside
+  // "Total accrued" / "Accrued this month" was dropped (2026-08-31), even when
+  // a source is missing from the sum. The position cards still carry it.
+  it('renders announced gaps without the info glyph or the partial-data indicator', () => {
     renderCard();
-    // Month misses Merkl (announced); the total is complete, so no glyph there.
-    expect(screen.getAllByTestId('earnings-info')).toHaveLength(1);
+    // Month misses Merkl (announced): the figure still shows, with no glyph.
+    expect(monthText()).toBe('+$25.00');
+    expect(screen.queryByTestId('earnings-info')).toBeNull();
     expect(screen.queryByTestId('earnings-partial')).toBeNull();
   });
 
-  it('flips to the partial-data indicator when a source errors, excluding it from the sum', () => {
+  it('excludes an errored source from the sum without a partial-data indicator', () => {
     const morphoDown = walletEarnings([
       proto(
         'morpho-vault-0xflagship',
@@ -283,9 +287,9 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     ]);
     renderCard({ earnings: morphoDown });
     // 4 + 70 + 46.4 + 30 = 150.4; month 7 + 5 + 3 = 15.
-    expect(totalText()).toContain('+$150.40');
-    expect(monthText()).toContain('+$15.00');
-    expect(screen.getAllByTestId('earnings-partial')).toHaveLength(2);
+    expect(totalText()).toBe('+$150.40');
+    expect(monthText()).toBe('+$15.00');
+    expect(screen.queryByTestId('earnings-partial')).toBeNull();
   });
 
   it('renders dashes, not $0.00, when every source is unavailable', () => {
@@ -342,7 +346,7 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     expect(dash.getAttribute('tabindex')).toBe('0');
   });
 
-  it('shows the info glyph when a supplied position has no earnings source, even with every source ok', () => {
+  it('shows no glyph when a supplied position has no earnings source', () => {
     const allOk = walletEarnings([proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 }))]);
     const withUntracked = {
       ...SUPPLIED,
@@ -352,8 +356,8 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
       ]
     };
     renderCard({ suppliedView: withUntracked, earnings: allOk });
-    // Both footer stats carry the announced-gap glyph naming the untracked position.
-    expect(screen.getAllByTestId('earnings-info')).toHaveLength(2);
+    expect(totalText()).toBe('+$46.40');
+    expect(screen.queryByTestId('earnings-info')).toBeNull();
     expect(screen.queryByTestId('earnings-partial')).toBeNull();
   });
 
@@ -365,34 +369,39 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
   });
 
   // Review finding #7: the app Tooltip is forced closed on touch devices, so
-  // the gap explanations must open as a tap popover there instead.
-  it('opens the gap explanation as a tap popover on touch devices', () => {
+  // the dash explanation must open as a tap popover there instead.
+  it('opens the dash explanation as a tap popover on touch devices', () => {
     touch.isTouch = true;
-    renderCard();
-    // Month's glyph: Merkl rewards have no monthly breakdown.
-    fireEvent.click(screen.getAllByTestId('earnings-info')[0]);
-    expect(screen.getByText(/break rewards down by month/)).toBeTruthy();
+    const allDown = walletEarnings(
+      EARNINGS.protocols.map(p => ({
+        ...p,
+        totalEarned: notAvailable('source-error'),
+        earnedThisMonth: notAvailable('source-error')
+      }))
+    );
+    renderCard({ earnings: allDown });
+    fireEvent.click(within(screen.getByTestId('earnings-total-value')).getByText('—'));
+    expect(screen.getByText(/Not included:/)).toBeTruthy();
   });
 
-  // Review finding #1: hover-focused figures flag their own missing contributors.
+  // Hover-focused figures render bare too: no glyph for their missing contributors.
 
-  it("flags the hovered position's announced gap with the info glyph", () => {
+  it("shows the hovered position's figure without a glyph for its announced gap", () => {
     const flagship = {
       ...SUPPLIED,
       positions: [{ ...SUPPLIED.positions[0], id: 'vault-morpho-0xflagship', name: 'USDS Flagship' }]
     };
     renderCard({ suppliedView: flagship });
     fireEvent.mouseEnter(screen.getByRole('button', { name: /USDS Flagship/ }));
-    // Total: Morpho + Merkl both ok → clean figure, no glyph.
     expect(within(screen.getByTestId('earnings-total-value')).queryByTestId('earnings-info')).toBeNull();
-    // Month: Morpho's figure shows with the Merkl announced gap flagged beside it.
-    expect(monthText()).toContain('+$10.00');
+    // Month: Morpho's figure shows; the Merkl announced gap is not flagged beside it.
+    expect(monthText()).toBe('+$10.00');
     const month = screen.getByTestId('earnings-month-value');
-    expect(within(month).getByTestId('earnings-info')).toBeTruthy();
+    expect(within(month).queryByTestId('earnings-info')).toBeNull();
     expect(within(month).queryByTestId('earnings-partial')).toBeNull();
   });
 
-  it("flags the hovered position's error gap with the partial-data indicator", () => {
+  it("shows the hovered position's figure without a partial-data indicator for its error gap", () => {
     const flagship = {
       ...SUPPLIED,
       positions: [{ ...SUPPLIED.positions[0], id: 'vault-morpho-0xflagship', name: 'USDS Flagship' }]
@@ -404,8 +413,8 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     );
     renderCard({ suppliedView: flagship, earnings: merklDown });
     fireEvent.mouseEnter(screen.getByRole('button', { name: /USDS Flagship/ }));
-    expect(totalText()).toContain('+$20.00');
-    expect(within(screen.getByTestId('earnings-total-value')).getByTestId('earnings-partial')).toBeTruthy();
+    expect(totalText()).toBe('+$20.00');
+    expect(within(screen.getByTestId('earnings-total-value')).queryByTestId('earnings-partial')).toBeNull();
   });
 
   // Review finding #8 companion: sub-cent combined earnings say so, not $0.00.

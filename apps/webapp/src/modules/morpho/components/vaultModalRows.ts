@@ -9,6 +9,8 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { vaultRateInfo } from '@/components/product/RateInfo';
+import type { VaultProvider } from '@/hooks';
 import {
   EST_EARNINGS_LABEL,
   estEarningsTrendCell,
@@ -25,6 +27,8 @@ export type VaultModalGridRow = ModalGridCell[];
 
 /** Display strings for the vault supply/withdraw entry screens (Figma 859:38105 / 859:38297). */
 export type VaultEntryRowInput = {
+  /** Vault provider - picks the rate explainer (Morpho vs Spark/Tether copy). */
+  provider?: VaultProvider;
   /** Net rate, formatted (e.g. "4.10%"). */
   rate: string;
   /** Append the morpho stars glyph to the rate (rewards-boosted, per the rate popover). */
@@ -55,7 +59,10 @@ export type VaultEntryRowInput = {
  */
 export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRow[] {
   return [
-    [rateCell('Rate', input.rate, input.boostedRate ? 'morpho' : undefined), networkCell(input.network)],
+    [
+      rateCell('Rate', input.rate, input.boostedRate ? 'morpho' : undefined, vaultRateInfo(input.provider)),
+      networkCell(input.network)
+    ],
     [
       singleOrDelta(
         { label: 'Supply', token: input.assetSymbol },
@@ -76,6 +83,8 @@ export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRo
 
 /** Display strings for the vault review stages (Figma 859:38553 supply / 859:38234 withdrawal). */
 export type VaultReviewRowInput = {
+  /** Vault provider - picks the rate explainer (Morpho vs Spark/Tether copy). */
+  provider?: VaultProvider;
   /** Entered amount, formatted (the 12px asset icon carries the denomination). */
   amount: string;
   /** The vault's underlying asset symbol (e.g. "USDC"). */
@@ -118,7 +127,7 @@ export function buildVaultReviewRows(
     ],
     [
       productCell(input.product, input.assetSymbol, 'morpho'),
-      rateCell('Rate', input.rate, input.boostedRate ? 'morpho' : undefined)
+      rateCell('Rate', input.rate, input.boostedRate ? 'morpho' : undefined, vaultRateInfo(input.provider))
     ],
     [withdrawalCell(input.withdrawal), networkCell(input.network)],
     [networkFeeCell(input.networkFee)]

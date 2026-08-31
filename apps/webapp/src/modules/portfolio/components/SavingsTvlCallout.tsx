@@ -65,8 +65,9 @@ export function SavingsTvlCallout({
         </Heading>
         <Text variant="medium" className="text-textSecondary max-w-xl">
           <Trans>
-            Projections assume current rate held constant. Sky Savings Rate is variable and set by Sky
-            Ecosystem governance. Not financial advice.
+            Projections assume the current rate held constant. The Sky Savings Rate is variable and can change
+            over time; it is a protocol rate funded from aggregate Sky protocol surplus. sUSDS is not exposure
+            to any specific Agent, borrower, collateral pool, or asset strategy. Not financial advice.
           </Trans>
         </Text>
       </div>
