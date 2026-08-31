@@ -71,7 +71,7 @@ describe('StakeDetailsStrip', () => {
     expect(screen.getByText('Borrow Rate')).toBeTruthy();
     expect(screen.getByText('Total SKY staked')).toBeTruthy();
     expect(screen.getByText('TVL')).toBeTruthy();
-    expect(screen.getByText('Protocol SKY Price')).toBeTruthy();
+    expect(screen.getByText('SKY Price')).toBeTruthy();
     expect(screen.getByText('Users')).toBeTruthy();
   });
 

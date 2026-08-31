@@ -3,8 +3,8 @@ import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
+import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
-import { Info } from 'lucide-react';
 import {
   getIlkName,
   RISK_LEVEL_THRESHOLDS,
@@ -545,8 +545,8 @@ export function ManagePositionTakeover({
           <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
           <div className="flex flex-col gap-1">
             <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">
-              <Trans>Protocol SKY Price</Trans>
-              <Info className="h-3 w-3" aria-hidden />
+              <Trans>Capped OSM SKY price</Trans>
+              <RateInfo type="cappedOsmSkyPrice" size={12} />
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
               {detail.vaultLoading ? (

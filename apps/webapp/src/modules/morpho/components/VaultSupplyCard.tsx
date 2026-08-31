@@ -19,6 +19,7 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { RateInfo, vaultRateInfo } from '@/components/product/RateInfo';
 import { hasRateIncentives, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 import { Morpho } from '@/widgets';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
@@ -142,6 +143,7 @@ export function VaultSupplyCard({
                   />
                 )}
               </VaultRateTooltip>
+              <RateInfo type={vaultRateInfo(provider)} />
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>

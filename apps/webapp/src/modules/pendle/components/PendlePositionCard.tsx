@@ -18,6 +18,7 @@ import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Pendle, PopoverRateInfo } from '@/widgets';
+import { RateInfo } from '@/components/product/RateInfo';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
@@ -436,6 +437,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
             <ProductStat label={<Trans>Claim date</Trans>}>{claimDateLabel}</ProductStat>
             <ProductStat label={<Trans>Fixed rate</Trans>}>
               <ProductPercent value={fixedRate} />
+              <RateInfo type="fixedYield" size={12} />
             </ProductStat>
           </ProductStatPair>
         </>

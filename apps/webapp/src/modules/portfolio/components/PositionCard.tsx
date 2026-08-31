@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { productStatusType } from '@/components/product/productVisuals';
+import { rateInfoFor, RateInfo } from '@/components/product/RateInfo';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 import type { PositionEarnings } from '../earnings/earningsForPosition';
 import { ProductGlyph } from './ProductGlyph';
@@ -97,8 +98,9 @@ export function PositionCard({
               position.rateLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : (
-                <span className={cn(statValue, 'text-fgPrimary')}>
+                <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>
                   {formatDecimalPercentage(position.rate ?? 0)}
+                  <RateInfo type={rateInfoFor(position)} size={12} />
                 </span>
               )
             }

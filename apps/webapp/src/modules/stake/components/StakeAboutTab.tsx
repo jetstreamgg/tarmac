@@ -1,6 +1,6 @@
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import { FileText, Signature, Landmark } from 'lucide-react';
+import { Signature, Landmark } from 'lucide-react';
 import { stakeModuleAddress } from '@/hooks';
 import { getEtherscanLink } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -47,10 +47,11 @@ export function StakeAboutTab() {
     ? getEtherscanLink(chainId, stakeAddress, 'address')
     : getEtherscanLink(1, stakeModuleAddress[1], 'address');
 
-  // Leading contextual icons per hi-fi 486:32079 (file · signature · landmark),
-  // not a trailing external-link glyph.
+  // Leading contextual icons per hi-fi 486:32079 (signature · landmark), not a
+  // trailing external-link glyph. The comp's third link, Docs
+  // (https://docs.sky.money, FileText icon), is held back until the staking
+  // docs page exists.
   const links = [
-    { label: <Trans>Docs</Trans>, href: 'https://docs.sky.money', icon: <FileText className="h-4 w-4" /> },
     { label: <Trans>View contract</Trans>, href: contractHref, icon: <Signature className="h-4 w-4" /> },
     {
       label: <Trans>Governance</Trans>,

@@ -63,7 +63,7 @@ export type RewardsSupplyModalRowInput = {
 export function buildRewardsSupplyModalRows(input: RewardsSupplyModalRowInput): RewardsModalGridRow[] {
   const networkFee = networkFeeCell(input.networkFee);
   return [
-    [rateCell('Rate', input.rate, 'savings'), networkCell(input.network)],
+    [rateCell('Rate', input.rate, 'savings', 'str'), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: input.supplyToken, loading: input.positionLoading },
@@ -94,7 +94,7 @@ export type RewardsWithdrawModalRowInput = Omit<RewardsSupplyModalRowInput, 'rew
  */
 export function buildRewardsWithdrawModalRows(input: RewardsWithdrawModalRowInput): RewardsModalGridRow[] {
   return [
-    [rateCell('Rate', input.rate, 'savings'), networkCell(input.network)],
+    [rateCell('Rate', input.rate, 'savings', 'str'), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: input.supplyToken, loading: input.positionLoading },
@@ -144,7 +144,10 @@ export function buildRewardsSupplyReviewRows(input: RewardsSupplyReviewRowInput)
     input.rewardsIn
       ? [{ kind: 'single', label: 'Rewards in', value: input.rewardsIn, token: input.rewardsIn }, estEarnings]
       : [estEarnings],
-    [productCell(input.product, input.productToken, 'default'), rateCell('Rate', input.rate, 'savings')],
+    [
+      productCell(input.product, input.productToken, 'default'),
+      rateCell('Rate', input.rate, 'savings', 'str')
+    ],
     [withdrawalCell(input.withdrawal), networkCell(input.network)],
     [networkFeeCell(input.networkFee)]
   ];
@@ -183,7 +186,10 @@ export function buildRewardsWithdrawReviewRows(input: RewardsWithdrawReviewRowIn
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
       estEarningsTrendCell(input.estEarnings)
     ],
-    [productCell(input.product, input.productToken, 'default'), rateCell('Rate', input.rate, 'savings')],
+    [
+      productCell(input.product, input.productToken, 'default'),
+      rateCell('Rate', input.rate, 'savings', 'str')
+    ],
     [withdrawalCell(input.withdrawal), networkCell(input.network)],
     [networkFeeCell(input.networkFee)]
   ];

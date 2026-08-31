@@ -16,6 +16,7 @@ import { formatUsdCompact } from '../helpers/formatUsdCompact';
 import { NO_VALUE } from '@/lib/constants';
 import { remainingDaysToMaturity } from '../helpers/daysToMaturity';
 import { FixedYieldTerm } from './FixedYieldTerm';
+import { rateInfoFor, RateInfo } from '@/components/product/RateInfo';
 
 /** The row's rate, or an inline skeleton while its source is still loading. */
 function RateFigure({ row, className = 'h-4 w-12' }: { row: EarnProductRow; className?: string }) {
@@ -227,7 +228,10 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     stats: row => (
       <>
         <Stat label={<RateLabel />}>
-          <RateFigure row={row} />
+          <span className="flex items-center gap-1.5">
+            <RateFigure row={row} />
+            <RateInfo type={rateInfoFor(row)} />
+          </span>
         </Stat>
         <StatDivider />
         <Stat label={<Trans>Risk</Trans>}>
@@ -270,7 +274,10 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     stats: row => (
       <>
         <Stat label={<RateLabel />}>
-          <RateFigure row={row} />
+          <span className="flex items-center gap-1.5">
+            <RateFigure row={row} />
+            <RateInfo type={rateInfoFor(row)} />
+          </span>
         </Stat>
         <StatDivider />
         {row.maturity && (

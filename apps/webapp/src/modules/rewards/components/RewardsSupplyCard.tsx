@@ -12,6 +12,7 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { RateInfo } from '@/components/product/RateInfo';
 import { NO_VALUE } from '@/lib/constants';
 
 /**
@@ -130,6 +131,7 @@ export function RewardsSupplyCard({
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
+              <RateInfo type="str" />
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>

@@ -17,15 +17,8 @@ Open Safe[Wallet]`
   {
     id: 'stusds-rate',
     title: 'stUSDS Rate',
-    tooltip: `The stUSDS Rate is variable and calculated using the following formula:
-
-stUSDS Rate = Utilization * (SKY Borrow Rate - stUSDS Accessibility Reward) + (1 - Utilization) * Sky Savings Rate
-
-The rate is derived from the SKY Borrow Rate less the stUSDS Accessibility Reward on the utilized portion of the module's liquidity and the Sky Savings Rate on the unutilized portion. Utilization is the percentage of funds in the stUSDS contract that are used to fund borrowing against staked SKY.
-
-The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers and is dynamic and market-driven, based on the utilization of funds within the stUSDS contract.
-
-The rate is variable and does not guarantee future results.`
+    tooltip:
+      'stUSDS yield is generated dynamically through SKY-backed lending within Sky Protocol and is dependent on the Utilization Rate. Sky.money does not control, set, or guarantee the rate. All yields are variable.'
   },
   {
     id: 'utilization',
@@ -93,7 +86,7 @@ The rate is variable and does not guarantee future results.`
     id: 'staking-rewards-rates-srrs',
     title: 'Staking Rewards Rates (SRRs)',
     tooltip:
-      'Staking Rewards Rates are variable and may fluctuate. They are determined by: (1) the current issuance parameter of the rewards set through onchain governance processes, and (2) the market price of the staked SKY at the time of each calculation. The SRRs shown are estimated annual rates, updated using data from a third-party provider (i.e., [BlockAnalitica](https://blockanalitica.com/)). Further, the estimate is for informational purposes only and does not guarantee future results.'
+      'SKY Staking Rewards are rate determined by Sky Governance through decentralized onchain voting. Sky.money does not control, set, or guarantee the rate. All yields are variable.'
   },
   {
     id: 'staked',
@@ -108,7 +101,8 @@ The rate is variable and does not guarantee future results.`
   {
     id: 'borrow-rate',
     title: 'Borrow Rate',
-    tooltip: 'The Borrow Rate is determined by SKY token holders through decentralized onchain voting.'
+    tooltip:
+      'The Borrow Rate is determined by Sky Governance through decentralized onchain voting. Sky.money does not control the borrow rate. Borrowing carries liquidation risk.'
   },
   {
     id: 'borrow',
@@ -275,13 +269,13 @@ Bundled transaction: Active`
     id: 'sky-savings-rate',
     title: 'Sky Savings Rate',
     tooltip:
-      'The Sky Savings Rate is variable and can change over time. It is set by SKY token holders through decentralized onchain voting and can be adjusted at any time, based on market conditions, aggregate protocol surplus and other factors. It is a protocol rate funded from aggregate Sky protocol surplus. sUSDS is not exposure to any specific Agent, borrower, collateral pool, or asset strategy. The rate shown is an estimate of the Sky Savings Rate representing the expected compounded rate per annum, updated every 5 minutes using data provided by a third party ([Block Analitica](https://blockanalitica.com/)). This figure does not promise or guarantee future results.'
+      'The Sky Savings Rate is a variable protocol rate funded from aggregate Sky protocol surplus, and it can change over time. sUSDS is not exposure to any specific Agent, borrower, collateral pool, or asset strategy. Sky.money does not control, set, or guarantee the rate.'
   },
   {
     id: 'vault-rate',
     title: 'Vault Rate',
     tooltip:
-      'Vault rates are variable and depend on market conditions, borrower demand, and the allocation strategy defined by Sky as vault curator on Morpho. Key factors that influence vault rates include the supply and demand dynamics of the underlying lending markets, the utilization rate of each market the vault allocates to, and the specific allocation strategy and risk profile of the vault. Sky.money does not control or guarantee vault performance. The vault rate provided is an estimated annual rate, updated using data from Morpho, a third-party lending protocol. This estimate is for informational purposes only and does not guarantee future results.'
+      'Vaults are curated by Sky.money and run on Morpho vault contracts. Sky.money selects the lending markets each vault may use and sets exposure limits; it does not hold vault assets. The rate is variable and market-set, depending on borrowing demand and conditions in each underlying market. Sky.money does not set or guarantee it, and it is not a protocol rate set by Sky governance.'
   },
   {
     id: 'vault-rates',
@@ -305,7 +299,7 @@ Bundled transaction: Active`
     id: 'fixed-yield-rate',
     title: 'Fixed Yield Rate',
     tooltip:
-      'The Fixed Yield Rate is the annualized return set when you supply USDS, calculated based on the discount at which the resulting PT-sUSDS is purchased on the Pendle market. This rate is fixed only if your PT-sUSDS is held to or past maturity. Exiting before maturity means selling at the prevailing market price, which may be above or below your entry. The rate is determined by the Pendle market, not by Sky.money, and may differ from the displayed rate before you complete the transaction.'
+      'Fixed Yield sUSDS is a third-party integration using Pendle Protocol, with the Sky Savings Rate as the underlying yield source. The rate is market-set; Sky.money does not set, control, or guarantee it. The rate is fixed only if you hold to the maturity date. Exiting before maturity means selling at the prevailing market price, which may be above or below your entry.'
   },
   {
     id: 'maturity-date',
@@ -332,10 +326,21 @@ Bundled transaction: Active`
       'The difference between what you would claim at maturity and what you receive by withdrawing now.'
   },
   {
+    id: 'earn-rates',
+    title: 'Rate',
+    tooltip:
+      'All rates are variable, and their mechanics depend on the particular product. Sky.money does not control, set, or guarantee these rates. Refer to the product pages for further details.'
+  },
+  {
+    id: 'earn-rates-30d',
+    title: '30D Rate',
+    tooltip: 'Average rates over the past 30 days. Past performance is not indicative of future results.'
+  },
+  {
     id: 'rewards-rate',
     title: 'Rewards Rate',
     tooltip:
-      "The Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors: the issuance rate of the token rewarded, which is determined by SKY token holders through decentralized onchain voting; the market price of the token rewarded; and the user's proportional supply within the total pool of assets linked to the Rewards module. Sky.money does not control the issuance, determination, or distribution of these rewards. The Sky Ecosystem Rewards rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results."
+      'Sky Ecosystem Rewards are issued and distributed by independent partners and Agents working with Sky. Sky.money does not control their issuance, rate, or value; all rewards are variable and subject to market conditions.'
   }
 ];
 
