@@ -1,24 +1,24 @@
 import React from 'react';
-import { motion } from 'motion/react';
-import { easeOutExpo } from '@/modules/ui/animation/timingFunctions';
-import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { cn } from '@/lib/cn';
+import { pageGutterClasses } from '@/modules/layout/components/shellLayoutClasses';
 
+/**
+ * The shell's content box: the design-system page container (Figma:
+ * Foundations / Grids & Spacing 5176:33992) — content capped at 1280 and
+ * centered, with a 20px side gutter at the desktop tier (1320 = 1280 + 2×20).
+ * Below it the container is full-width and the gutter follows the DS grid
+ * tiers (pageGutterClasses, shared with the header row). Pages own only their
+ * vertical padding; horizontal lives here.
+ *
+ * No height cap and no `overflow` of its own: pages sit directly on the page
+ * background and scroll on the document (G5). The legacy `card` variant — the
+ * viewport-capped inner-scroll box the two-pane routes lived in — died with
+ * the last two-pane route.
+ */
 export function AppContainer({ children }: { children: React.ReactNode }): React.ReactElement {
-  const { bpi } = useBreakpointIndex();
-
   return (
-    <motion.main
-      className="scrollbar-hidden bg-container group flex h-dvh max-w-[480px] min-w-[375px] flex-col gap-1.5 overflow-x-hidden overflow-y-auto rounded-t-3xl border bg-blend-overlay backdrop-blur-[50px] has-[.details-pane]:w-full md:my-auto md:h-[calc(100dvh-70px)] md:max-w-[1150px] md:flex-row md:overflow-hidden md:rounded-3xl md:p-3 md:pr-1.5 md:pl-[10px] md:has-[.details-pane]:pr-3 lg:pl-3 xl:max-h-[1080px] xl:max-w-[calc(100vw-128px)] 2xl:max-w-[1570px]"
-      layout
-      // This style block is needed so the border radius is not distorted when applying the layout transition
-      style={
-        bpi < 1
-          ? { borderTopLeftRadius: '1.5rem', borderTopRightRadius: '1.5rem' }
-          : { borderRadius: '1.5rem' }
-      }
-      transition={{ duration: 0.83, ease: easeOutExpo }}
-    >
+    <main className={cn('group flex w-full max-w-[1320px] flex-col overflow-x-hidden', pageGutterClasses)}>
       {children}
-    </motion.main>
+    </main>
   );
 }

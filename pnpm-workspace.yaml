@@ -21,8 +21,10 @@ catalog:
   '@radix-ui/react-checkbox': ^1.3.11
   '@radix-ui/react-collapsible': ^1.1.20
   '@radix-ui/react-dialog': ^1.1.23
+  '@radix-ui/react-dismissable-layer': ^1.1.14
   '@radix-ui/react-popover': ^1.1.23
   '@radix-ui/react-progress': ^1.1.16
+  '@radix-ui/react-radio-group': ^1.3.7
   '@radix-ui/react-select': ^2.3.7
   '@radix-ui/react-slider': ^1.4.7
   '@radix-ui/react-slot': ^1.3.3
@@ -37,6 +39,8 @@ catalog:
   '@tailwindcss/vite': ^4.3.3
   '@tanstack/eslint-plugin-query': ^5.101.4
   '@tanstack/react-query': ^5.101.4
+  '@tanstack/react-router': 1.170.9
+  '@tanstack/router-plugin': 1.168.12
   '@testing-library/dom': ^10.4.1
   '@testing-library/react': ^16.3.2
   '@types/react': ^19.2.17
@@ -75,10 +79,8 @@ catalog:
   prettier-plugin-tailwindcss: ^0.8.1
   react: ^19.2.8
   react-dom: ^19.2.8
-  react-intersection-observer: ^9.16.0
   react-jazzicon: ^1.0.4
   react-markdown: ^10.1.0
-  react-router-dom: ^6.30.4
   recharts: ^3.10.1
   rehype-sanitize: ^6.0.0
   sonner: ^2.0.7

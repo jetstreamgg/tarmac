@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -25,7 +25,11 @@ function SheetOverlay({ className, ...props }: React.ComponentProps<typeof Sheet
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50',
+        // Same scrim recipe as DialogOverlay: DS components/modals/bg-overlay +
+        // "background blur-full" (Figma 1292:63542, the mobile Modal Overlay —
+        // CSS blur(100px), Figma halves the stored radius 200). Near-transparent
+        // modal cards (bg-secondary) rely on this frost to be legible.
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart bg-modalOverlay fixed inset-0 z-50 backdrop-blur-[100px] data-[state=closed]:duration-300 data-[state=open]:duration-300',
         className
       )}
       {...props}
@@ -37,21 +41,40 @@ function SheetContent({
   className,
   children,
   side = 'right',
+  hideCloseButton = false,
   closeButtonClassName,
   closeIconClassName,
+  overlayClassName,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
+  hideCloseButton?: boolean;
   closeButtonClassName?: string;
   closeIconClassName?: string;
+  /** Extra classes on the scrim, e.g. to opt a panel out of the frosted overlay. */
+  overlayClassName?: string;
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay className={overlayClassName} />
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition-[transform,opacity] ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
+          // Motion (Figma: Sky App: UI 1598:75751): the panel travels its full
+          // width in 300ms each way, and the two directions are deliberately
+          // different curves — it arrives decisively on quint and leaves evenly
+          // on quart. Opening was 500ms on a blanket ease-in-out.
+          //
+          // The duration is scoped to the state variants, not left bare: a
+          // plain `duration-*` sets the same property `animate-in` does, and
+          // loses to it on source order — measured opening at animate-in's own
+          // 150ms default. The variant outranks it.
+          //
+          // `transition-[transform,opacity]` is gone with it. Nothing here
+          // transitions — enter and exit are keyframe animations — and having
+          // both meant the transform kept moving after the animation ended,
+          // measurably stretching the open past 400ms.
+          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed z-50 flex flex-col gap-4 shadow-lg data-[state=closed]:duration-300 data-[state=open]:duration-300',
           side === 'right' &&
             'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
           side === 'left' &&
@@ -65,15 +88,17 @@ function SheetContent({
         {...props}
       >
         {children}
-        <SheetPrimitive.Close
-          className={cn(
-            'ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none',
-            closeButtonClassName
-          )}
-        >
-          <XIcon className={cn('size-4', closeIconClassName)} />
-          <span className="sr-only">Close</span>
-        </SheetPrimitive.Close>
+        {!hideCloseButton && (
+          <SheetPrimitive.Close
+            className={cn(
+              'ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none',
+              closeButtonClassName
+            )}
+          >
+            <XIcon className={cn('size-4', closeIconClassName)} />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
+        )}
       </SheetPrimitive.Content>
     </SheetPortal>
   );
@@ -93,7 +118,7 @@ function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPr
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      className={cn('text-foreground font-semibold', className)}
+      className={cn('text-foreground font-circle font-medium', className)}
       {...props}
     />
   );

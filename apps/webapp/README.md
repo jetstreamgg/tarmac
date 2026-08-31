@@ -57,9 +57,6 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_TERMS_ENDPOINT`: URL endpoint for submitting and checking terms acceptance
 - `VITE_TERMS_LINK`: Array containing links to terms of use
 - `VITE_FOOTER_LINKS`: Array containing footer links with their URLs and names
-- `VITE_TERMS_MESSAGE_TO_SIGN`: Message that users need to sign to accept the terms and conditions
-- `VITE_TERMS_CHECKBOX_TEXT`: The text displayed next to the checkbox in the terms acceptance modal
-- `VITE_TERMS_MARKDOWN_FILE`: (Optional) Name of a custom terms markdown file in the `/src/content/` directory (e.g., `/src/content/custom-terms.md`). If not specified, uses the default `terms.md` file. This allows external teams to provide their own terms file that will be bundled into the application
 
 #### Feature flags
 
@@ -130,12 +127,6 @@ To lint the project, use `pnpm lint`.
 To format the project, use `pnpm prettier`.
 
 There's also a precommit hook that runs eslint and prettier on all staged files.
-
-## Additional Docs
-
-For more detailed information, you can refer to the following documents in the `docs` folder:
-
-- [User Suggested Actions Construction](docs/generating-user-actions.md): This document explains how the `fetchUserSuggestedActions` function generates personalized actions for users based on their token balances and available reward opportunities.
 
 ## Internationalization and Translation
 

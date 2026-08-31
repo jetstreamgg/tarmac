@@ -1,18 +1,18 @@
 /// <reference types="vite/client" />
 
-import { act, type ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { createRoot } from 'react-dom/client';
-import { describe, expect, it, vi } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mainnet } from 'viem/chains';
+import type { PendleConvertQuote } from '@/hooks';
 
-(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 i18n.load('en', {});
 i18n.activate('en');
 
-const MARKET = {
+const MARKET: import('@/hooks').PendleMarketConfig = {
   name: 'PT-USDG',
+  slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as `0x${string}`,
   ptToken: '0x9db38d74a0d29380899ad354121dfb521adb0548' as `0x${string}`,
   ytToken: '0x4a1294749a70bc32a998b49dd11bf26e9379e3c1' as `0x${string}`,
@@ -39,70 +39,38 @@ const USDS_TOKEN = {
   address: { [mainnet.id]: '0xdc035d45d973e3ec169d2276ddab16f1e407384f' as `0x${string}` }
 };
 
+vi.mock('wagmi', async importOriginal => {
+  const actual = await importOriginal<typeof import('wagmi')>();
+  return {
+    ...actual,
+    useChainId: () => 1
+  };
+});
+
 vi.mock('@/widgets', async importOriginal => {
   const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
     useTokenImage: () => '',
-    useChainImage: () => '',
-    // Stub heavy widget components to keep this a focused unit test.
-    TokenDropdown: ({ token, dataTestId }: { token: { symbol: string }; dataTestId?: string }) => (
-      <button data-testid={`${dataTestId}-menu-button`}>{token.symbol}</button>
-    ),
-    TransactionOverview: ({
-      title,
-      isFetching,
-      fetchingMessage,
-      pinnedData,
-      transactionData
-    }: {
-      title: string;
-      isFetching: boolean;
-      fetchingMessage: string;
-      pinnedData?: { label: string; value: React.ReactNode }[];
-      transactionData?: { label: string; value: React.ReactNode }[];
-    }) => (
-      <div data-testid="transaction-overview-stub">
-        <p>{title}</p>
-        {isFetching ? (
-          <p>{fetchingMessage}</p>
-        ) : (
-          [...(pinnedData ?? []), ...(transactionData ?? [])].map(row => (
-            <div key={row.label}>
-              <span>{row.label}</span>
-              <span>{row.value}</span>
-            </div>
-          ))
-        )}
-      </div>
-    )
+    useChainImage: () => ''
   };
 });
 
+vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+
 import { PendleRedeem } from '../PendleRedeem';
 
-function renderComponent(ui: ReactNode) {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const root = createRoot(container);
-  act(() => {
-    root.render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
-  });
-  return {
-    container,
-    rerender: (next: ReactNode) => {
-      act(() => {
-        root.render(<I18nProvider i18n={i18n}>{next}</I18nProvider>);
-      });
-    },
-    unmount: () => {
-      act(() => {
-        root.unmount();
-      });
-      container.remove();
-    }
-  };
-}
+const baseQuote: PendleConvertQuote = {
+  method: 'redeemPyToToken',
+  amountOut: 1_480_000n, // 1.48 USDG (6 decimals)
+  apiMinOut: 1_465_200n,
+  effectiveApy: 0,
+  impliedApy: 0,
+  priceImpact: -0.0005,
+  fetchedAt: Date.now(),
+  apiContractParams: [],
+  apiContractParamsName: []
+};
 
 const baseProps = {
   market: MARKET,
@@ -110,352 +78,150 @@ const baseProps = {
   outputTokenList: [USDG_TOKEN, USDS_TOKEN],
   selectedOutputToken: USDG_TOKEN,
   onOutputTokenChange: () => undefined,
-  quote: undefined,
+  quote: undefined as PendleConvertQuote | undefined,
   isFetchingQuote: false,
-  slippage: 0.01
+  slippageDisplay: '1%',
+  slippageMode: 'Auto',
+  network: 'Ethereum',
+  networkChainId: 1
 };
 
+const renderRedeem = (props: Partial<typeof baseProps> = {}) =>
+  render(
+    <I18nProvider i18n={i18n}>
+      <PendleRedeem {...baseProps} {...props} />
+    </I18nProvider>
+  );
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
 describe('PendleRedeem', () => {
-  it('renders the full PT balance in the read-only input tile', () => {
-    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} />);
+  it('labels the hero as the payout, not a claim — "claim" names the PT side in the comps', () => {
+    renderRedeem({ quote: baseQuote });
 
-    expect(container.textContent).toContain('1.5');
-    expect(container.textContent).toContain('PT-USDG');
-    // TokenSelector appends `-menu-button` to dataTestId.
+    const hero = screen.getByTestId('pendle-redeem-hero');
+    expect(hero.textContent).toContain("You'll receive");
+    expect(hero.textContent).not.toContain("You'll claim");
+    // The PT side keeps the claim vocabulary.
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount')).toBeTruthy();
+  });
+
+  it('draws the receive hero from the quote, a dash before one arrives', () => {
+    const { rerender } = renderRedeem();
+    expect(screen.getByTestId('pendle-redeem-hero').textContent).toContain('–');
+
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <PendleRedeem {...baseProps} quote={baseQuote} />
+      </I18nProvider>
+    );
+    expect(screen.getByTestId('pendle-redeem-hero').textContent).toContain('1.48');
+    expect(screen.getByTestId('pendle-redeem-hero').textContent).toContain('USDG');
+  });
+
+  it('shows the product and the full PT balance as the claim amount', () => {
+    renderRedeem({ quote: baseQuote });
+
+    expect(screen.getByTestId('pendle-redeem-row-Product').textContent).toContain('Pendle USDG (PT-USDG)');
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('1.5');
+  });
+
+  it('hosts the payout-token selector on the hero pill, not in the read-only grid', () => {
+    renderRedeem();
+
+    const hero = screen.getByTestId('pendle-redeem-hero');
+    expect(hero.querySelector('[data-testid="pendle-redeem-output-token"]')).toBeTruthy();
+    expect(screen.queryByTestId('pendle-redeem-row-Claim token')).toBeNull();
+  });
+
+  it('keeps slippage and its floor on a pure redemption — the signed minTokenOut binds there too', () => {
+    renderRedeem({ quote: baseQuote });
+
+    expect(screen.getByTestId('pendle-redeem-row-Slippage').textContent).toContain('1%');
+    expect(screen.getByTestId('pendle-redeem-row-Min. received')).toBeTruthy();
+    // Only the per-hop route cells are aggregator-only.
+    expect(screen.queryByTestId('pendle-redeem-row-Price impact')).toBeNull();
+    expect(screen.queryByTestId('pendle-redeem-row-Routed via')).toBeNull();
+    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('Included in quote');
+    expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
+  });
+
+  it('draws slippage, min received and sign-flipped price impact on aggregator routes', () => {
+    renderRedeem({ quote: { ...baseQuote, aggregatorType: 'kyberswap' } });
+
+    expect(screen.getByTestId('pendle-redeem-row-Slippage').textContent).toContain('1%');
+    // apiMinOut 1.4652 USDG floors to 1.46 — the figure is a contractual
+    // minimum, so half-up rounding would overstate the guarantee.
+    expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.46');
+    // Raw -0.0005 displays positive (a cost) under the inverse convention.
+    expect(screen.getByTestId('pendle-redeem-row-Price impact').textContent).toContain('0.050%');
+  });
+
+  it('formats the Pendle fee in dollars when the quote carries one', () => {
+    renderRedeem({ quote: { ...baseQuote, feeUsd: 0.0363 } });
+    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$0.0363');
+
+    cleanup();
+    renderRedeem({ quote: { ...baseQuote, feeUsd: 12.345 } });
+    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$12.35');
+  });
+
+  it('names the network in the Network cell', () => {
+    renderRedeem();
+    expect(screen.getByTestId('pendle-redeem-row-Network').textContent).toContain('Ethereum');
+  });
+
+  it('names the aggregator route in the Routed via cell', () => {
+    renderRedeem({ quote: { ...baseQuote, aggregatorType: 'kyberswap' } });
+    expect(screen.getByTestId('pendle-redeem-row-Routed via').textContent).toContain('Pendle redeem →');
+  });
+
+  it('keeps the slippage gear reachable before a quote resolves on a non-SY output', () => {
+    // USDS is outside the market's SY-accepted list here, so the route will
+    // need an aggregator — the gear must exist even while no quote has landed
+    // (a too-tight tolerance can be the reason it doesn't).
+    renderRedeem({
+      market: { ...MARKET, syAcceptedTokens: [MARKET.underlyingToken] },
+      selectedOutputToken: USDS_TOKEN,
+      quote: undefined
+    });
+    expect(screen.getByTestId('pendle-redeem-row-Slippage')).toBeTruthy();
+  });
+
+  it('holds skeletons (not dashes) while the quote is in flight', () => {
+    renderRedeem({
+      market: { ...MARKET, syAcceptedTokens: [MARKET.underlyingToken] },
+      selectedOutputToken: USDS_TOKEN,
+      quote: undefined,
+      isFetchingQuote: true
+    });
+    expect(screen.getByTestId('hero-loading')).toBeTruthy();
     expect(
-      // eslint-disable-next-line testing-library/no-container
-      container.querySelector('[data-testid="pendle-redeem-output-token-menu-button"]')?.textContent
-    ).toContain('USDG');
-
-    unmount();
+      screen.getByTestId('pendle-redeem-row-Min. received').querySelector('[data-testid="cell-loading"]')
+    ).toBeTruthy();
   });
 
-  it('renders the slippage tolerance from the slippage prop and strips trailing zeros', () => {
-    // aggregatorType set so the aggregator-only rows (Min. received,
-    // Slippage tolerance, Price impact) render — they're hidden on the
-    // pure-redeem path. See commit 75402e8c.
-    const quote = {
-      method: 'exitPostExpToToken',
-      amountOut: 1_500_000n,
-      apiMinOut: 1_485_000n,
-      effectiveApy: 0,
-      impliedApy: 0,
-      priceImpact: 0,
-      aggregatorType: 'KYBERSWAP',
-      fetchedAt: Date.now(),
-      apiContractParams: [],
-      apiContractParamsName: []
-    };
-    const { container, rerender, unmount } = renderComponent(
-      <PendleRedeem {...baseProps} slippage={0.01} quote={quote} />
-    );
-    expect(container.textContent).toContain('1%');
-    expect(container.textContent).not.toContain('1.00%');
-
-    rerender(<PendleRedeem {...baseProps} slippage={0.025} quote={quote} />);
-    expect(container.textContent).toContain('2.5%');
-    expect(container.textContent).not.toContain('2.50%');
-
-    unmount();
-  });
-
-  it('renders the dropdown trigger', () => {
-    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} />);
-    // eslint-disable-next-line testing-library/no-container
-    const trigger = container.querySelector(
-      '[data-testid="pendle-redeem-output-token-menu-button"]'
-    ) as HTMLButtonElement | null;
-    expect(trigger).not.toBeNull();
-    unmount();
-  });
-
-  it('renders the inline prepare-error banner when prepareErrorMessage is set', () => {
-    const message = 'Current market price exceeds your slippage tolerance.';
-    const { container, unmount } = renderComponent(
-      <PendleRedeem {...baseProps} prepareErrorMessage={message} />
-    );
-
-    // eslint-disable-next-line testing-library/no-container
-    const banner = container.querySelector('[data-testid="pendle-redeem-prepare-error"]');
-    expect(banner).not.toBeNull();
-    expect(banner?.textContent).toContain(message);
-    expect(banner?.getAttribute('role')).toBe('alert');
-
-    unmount();
-  });
-
-  it('omits the prepare-error banner when prepareErrorMessage is undefined', () => {
-    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} />);
-    // eslint-disable-next-line testing-library/no-container
-    expect(container.querySelector('[data-testid="pendle-redeem-prepare-error"]')).toBeNull();
-    unmount();
-  });
-
-  it('renders the quote-derived rows when a quote is provided', () => {
-    // aggregatorType set so Min. received and Price impact render — those rows
-    // are hidden on the pure-redeem (no-aggregator) path per commit 75402e8c.
-    const quote = {
-      method: 'exitPostExpToToken',
-      amountOut: 1_499_500n,
-      apiMinOut: 1_484_505n,
-      effectiveApy: 0,
-      impliedApy: 0,
-      priceImpact: -0.0012,
-      aggregatorType: 'KYBERSWAP',
-      fetchedAt: Date.now(),
-      apiContractParams: [],
-      apiContractParamsName: []
-    };
-    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} quote={quote} />);
-
-    // Min received is rendered in the overview alongside the underlying symbol.
-    expect(container.textContent).toContain('USDG');
-    expect(container.textContent).toContain('Min. received');
-    expect(container.textContent).toContain('Price impact');
-
-    unmount();
-  });
-
-  // --- APP-268: overview amount/symbol assertions ---------------------------
-  // Verifies the specific values + unit suffixes that appear in the pinned
-  // headline ("You redeem" / "You receive") and details. The stub at the top
-  // of this file renders pinnedData + transactionData inline, so we can read
-  // them out of container.textContent.
-
-  it('overview pins "You redeem" with PT symbol/decimals and "You receive" with output symbol', () => {
-    const quote = {
-      method: 'exitPostExpToToken',
-      amountOut: 1_499_500n, // 1.4995 USDG (6 decimals)
-      apiMinOut: 1_484_505n,
-      effectiveApy: 0,
-      impliedApy: 0,
-      priceImpact: 0,
-      fetchedAt: Date.now(),
-      apiContractParams: [],
-      apiContractParamsName: []
-    };
-    const { container, unmount } = renderComponent(
-      <PendleRedeem {...baseProps} quote={quote} selectedOutputToken={USDG_TOKEN} />
-    );
-
-    // PT side: 1.5 PT-USDG (ptBalance = 1_500_000n, 6 decimals on the fixture market)
-    expect(container.textContent).toContain('You redeem');
-    expect(container.textContent).toContain('1.5 PT-USDG');
-    // Output side: 1.4995 USDG (output token decimals = 6, USDG symbol)
-    expect(container.textContent).toContain('You receive');
-    expect(container.textContent).toContain('1.4995 USDG');
-    // Headline must NOT label "You receive" with the PT symbol.
-    expect(container.textContent).not.toContain('1.4995 PT-USDG');
-    unmount();
-  });
-
-  it('"You receive" reflects the chosen output token symbol/decimals (USDS, 18d)', () => {
-    const quote = {
-      method: 'exitPostExpToToken',
-      amountOut: 1_499_500_000_000_000_000n, // 1.4995 USDS (18 decimals)
-      apiMinOut: 1_484_505_000_000_000_000n,
-      effectiveApy: 0,
-      impliedApy: 0,
-      priceImpact: 0,
-      fetchedAt: Date.now(),
-      apiContractParams: [],
-      apiContractParamsName: []
-    };
-    const { container, unmount } = renderComponent(
-      <PendleRedeem {...baseProps} quote={quote} selectedOutputToken={USDS_TOKEN} />
-    );
-
-    expect(container.textContent).toContain('1.4995 USDS');
-    // Cross-decimals guard: would have rendered as a huge number if the
-    // formatter used 6 decimals (USDG) instead of 18 (USDS).
-    expect(container.textContent).not.toContain('1499500000000');
-    unmount();
-  });
-
-  it('"Min. received" (aggregator path) uses output-token decimals + symbol', () => {
-    const quote = {
-      method: 'exitPostExpToToken',
-      amountOut: 1_499_500n,
-      apiMinOut: 1_484_505n, // 1.4845 USDG
-      effectiveApy: 0,
-      impliedApy: 0,
-      priceImpact: -0.0012,
-      aggregatorType: 'KYBERSWAP', // gates Min. received row
-      fetchedAt: Date.now(),
-      apiContractParams: [],
-      apiContractParamsName: []
-    };
-    const { container, unmount } = renderComponent(
-      <PendleRedeem {...baseProps} quote={quote} selectedOutputToken={USDG_TOKEN} />
-    );
-    expect(container.textContent).toContain('Min. received');
-    expect(container.textContent).toContain('1.4845 USDG');
-    unmount();
-  });
-
-  it('"Slippage tolerance" + "Price impact" render with sign-flipped percentages on aggregator routes', () => {
-    const quote = {
-      method: 'exitPostExpToToken',
-      amountOut: 1_499_500n,
-      apiMinOut: 1_484_505n,
-      effectiveApy: 0,
-      impliedApy: 0,
-      priceImpact: -0.0012, // API negative = unfavorable → displayed positive 0.12%
-      aggregatorType: 'OKX',
-      fetchedAt: Date.now(),
-      apiContractParams: [],
-      apiContractParamsName: []
-    };
-    const { container, unmount } = renderComponent(
-      <PendleRedeem {...baseProps} quote={quote} slippage={0.005} />
-    );
-    expect(container.textContent).toContain('Slippage tolerance');
-    expect(container.textContent).toContain('0.5%');
-    expect(container.textContent).toContain('0.12%');
-    unmount();
-  });
-
-  it('"Routed via" with no aggregator says "Pendle redeem"', () => {
-    const quote = {
-      method: 'exitPostExpToToken',
-      amountOut: 1_499_500n,
-      apiMinOut: 1_484_505n,
-      effectiveApy: 0,
-      impliedApy: 0,
-      priceImpact: 0,
-      fetchedAt: Date.now(),
-      apiContractParams: [],
-      apiContractParamsName: []
-    };
-    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} quote={quote} />);
-    expect(container.textContent).toContain('Pendle redeem');
-    // Should NOT contain the aggregator-arrow variant.
-    expect(container.textContent).not.toContain('→');
-    unmount();
-  });
-
-  it('"Routed via" with aggregator says "Pendle redeem → <aggregator>"', () => {
-    const quote = {
-      method: 'exitPostExpToToken',
-      amountOut: 1_499_500n,
-      apiMinOut: 1_484_505n,
-      effectiveApy: 0,
-      impliedApy: 0,
-      priceImpact: 0,
-      aggregatorType: 'KYBERSWAP', // formats to "KyberSwap"
-      fetchedAt: Date.now(),
-      apiContractParams: [],
-      apiContractParamsName: []
-    };
-    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} quote={quote} />);
-    expect(container.textContent).toContain('Pendle redeem → KyberSwap');
-    unmount();
-  });
-
-  it('"Pendle fee" renders "$0.0363" (small) and "$12.35" (>= 1) and "Included in quote" (undefined)', () => {
-    // Small fee.
-    const small = renderComponent(
-      <PendleRedeem
-        {...baseProps}
-        quote={{
-          method: 'exitPostExpToToken',
-          amountOut: 1_499_500n,
-          apiMinOut: 1_484_505n,
-          effectiveApy: 0,
-          impliedApy: 0,
-          priceImpact: 0,
-          feeUsd: 0.0363,
-          fetchedAt: Date.now(),
-          apiContractParams: [],
-          apiContractParamsName: []
-        }}
-      />
-    );
-    expect(small.container.textContent).toContain('$0.0363');
-    small.unmount();
-
-    // Large fee.
-    const large = renderComponent(
-      <PendleRedeem
-        {...baseProps}
-        quote={{
-          method: 'exitPostExpToToken',
-          amountOut: 1_499_500n,
-          apiMinOut: 1_484_505n,
-          effectiveApy: 0,
-          impliedApy: 0,
-          priceImpact: 0,
-          feeUsd: 12.345,
-          fetchedAt: Date.now(),
-          apiContractParams: [],
-          apiContractParamsName: []
-        }}
-      />
-    );
-    expect(large.container.textContent).toContain('$12.35');
-    large.unmount();
-
-    // Undefined fee → "Included in quote".
-    const none = renderComponent(
-      <PendleRedeem
-        {...baseProps}
-        quote={{
-          method: 'exitPostExpToToken',
-          amountOut: 1_499_500n,
-          apiMinOut: 1_484_505n,
-          effectiveApy: 0,
-          impliedApy: 0,
-          priceImpact: 0,
-          fetchedAt: Date.now(),
-          apiContractParams: [],
-          apiContractParamsName: []
-        }}
-      />
-    );
-    expect(none.container.textContent).toContain('Included in quote');
-    none.unmount();
-  });
-
-  it('"Effective APY" renders only when non-zero (conditional row)', () => {
-    // Zero APY: row hidden.
-    const zero = renderComponent(
-      <PendleRedeem
-        {...baseProps}
-        quote={{
-          method: 'exitPostExpToToken',
-          amountOut: 1_499_500n,
-          apiMinOut: 1_484_505n,
-          effectiveApy: 0,
-          impliedApy: 0,
-          priceImpact: 0,
-          fetchedAt: Date.now(),
-          apiContractParams: [],
-          apiContractParamsName: []
-        }}
-      />
-    );
-    expect(zero.container.textContent).not.toContain('Effective APY');
-    zero.unmount();
-
-    // Non-zero APY: row present with percentage formatting.
-    const nonZero = renderComponent(
-      <PendleRedeem
-        {...baseProps}
-        quote={{
-          method: 'exitPostExpToToken',
-          amountOut: 1_499_500n,
-          apiMinOut: 1_484_505n,
-          effectiveApy: 0.0354,
-          impliedApy: 0,
-          priceImpact: 0,
-          fetchedAt: Date.now(),
-          apiContractParams: [],
-          apiContractParamsName: []
-        }}
-      />
-    );
-    expect(nonZero.container.textContent).toContain('Effective APY');
-    expect(nonZero.container.textContent).toContain('3.54%');
-    nonZero.unmount();
+  it('formats the output legs in the selected token decimals (18d), the claim amount in PT decimals (6d)', () => {
+    // Guards the 6-vs-18 mixup: reusing the PT decimals for an 18-decimal
+    // output would print a trillions-scale number.
+    renderRedeem({
+      selectedOutputToken: USDS_TOKEN,
+      quote: {
+        ...baseQuote,
+        amountOut: 1_499_500_000_000_000_000n, // 1.4995 USDS (18 decimals)
+        apiMinOut: 1_450_000_000_000_000_000n,
+        aggregatorType: 'kyberswap'
+      }
+    });
+    const hero = screen.getByTestId('pendle-redeem-hero').textContent!;
+    expect(hero).toContain('1.5');
+    expect(hero).toContain('USDS');
+    expect(hero).not.toContain('PT-USDG');
+    expect(hero).not.toContain(',');
+    expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.45');
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('1.5');
   });
 });

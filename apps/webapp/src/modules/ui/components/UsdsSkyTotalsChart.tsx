@@ -122,6 +122,8 @@ export function UsdsSkyTotalsChart() {
           isLoading={activeDataLoading}
           error={activeDataError}
           symbol=""
+          tokenSymbols={activeChart === ChartName.USDS_DAI ? ['USDS', 'DAI'] : ['USDS']}
+          tooltipLabel={activeChart}
           icons={iconsMapping[activeChart]}
           onTimeFrameChange={tf => {
             setTimeFrame(tf);

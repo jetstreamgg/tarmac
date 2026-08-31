@@ -1,40 +1,34 @@
-import { useEffect, useRef } from 'react';
-import { useConnection } from 'wagmi';
+import { useRef } from 'react';
+import { useConnectionEffect } from 'wagmi';
 import { useAppAnalytics } from './useAppAnalytics';
+import { consumeDisconnectSource } from '../lib/disconnectSource';
 
 /**
- * Fires `app_wallet_connected` and `app_wallet_disconnected` events
- * on actual connection state transitions.
- *
- * Skips the initial state on mount — only tracks transitions that happen
- * while the component is mounted (or auto-reconnect on page load).
+ * Fires `app_wallet_connected` and `app_wallet_disconnected` on real connection
+ * transitions. Event- not state-based on purpose: wagmi's silent auto-reconnect
+ * on every refresh must never read as "the user just connected" (APP-444 C1).
  *
  * Call once in a component that's always mounted (e.g. Layout).
  */
 export function useWalletAnalytics() {
-  const { isConnected, connector } = useConnection();
   const { trackWalletConnected, trackWalletDisconnected } = useAppAnalytics();
 
-  const walletName = connector?.name ?? 'unknown';
+  // onDisconnect carries no connector, so remember the last connected wallet's
+  // name (reconnects included — their later disconnect should still be named).
+  const lastWalletRef = useRef('unknown');
 
-  // null = first run (not yet seeded)
-  const prevRef = useRef<{ connected: boolean; walletName: string } | null>(null);
-
-  useEffect(() => {
-    // First run: seed with current state, don't fire an event
-    if (prevRef.current === null) {
-      prevRef.current = { connected: isConnected, walletName };
-      return;
+  useConnectionEffect({
+    onConnect: data => {
+      lastWalletRef.current = data.connector?.name ?? 'unknown';
+      if (!data.isReconnected) {
+        trackWalletConnected({ walletName: lastWalletRef.current });
+      }
+    },
+    onDisconnect: () => {
+      trackWalletDisconnected({
+        walletName: lastWalletRef.current,
+        disconnectSource: consumeDisconnectSource()
+      });
     }
-
-    const prev = prevRef.current;
-
-    if (isConnected && !prev.connected) {
-      trackWalletConnected({ walletName });
-    } else if (!isConnected && prev.connected) {
-      trackWalletDisconnected({ walletName: prev.walletName });
-    }
-
-    prevRef.current = { connected: isConnected, walletName };
-  }, [isConnected, walletName, trackWalletConnected, trackWalletDisconnected]);
+  });
 }

@@ -9,6 +9,7 @@ const defaultGeoConfigContext: GeoConfigContextValue = {
   isModuleEnabled: () => false,
   getModuleRestrictionReason: () => 'Loading...',
   isRegionRestricted: true,
+  isRegionVerified: false,
   isCookieBannerRequired: true
 };
 

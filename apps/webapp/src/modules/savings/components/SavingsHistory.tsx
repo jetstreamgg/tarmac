@@ -13,7 +13,13 @@ import { useChainId } from 'wagmi';
 
 export function SavingsHistory() {
   const indexerUrl = useIndexerUrl();
-  const { data: savingsHistory, isLoading: savingsHistoryLoading, error } = useSavingsHistory(indexerUrl);
+  const {
+    data: savingsHistory,
+    isLoading: savingsHistoryLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useSavingsHistory(indexerUrl);
 
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -31,7 +37,7 @@ export function SavingsHistory() {
       s.type === TransactionTypeEnum.SUPPLY ? (
         <SavingsSupply width={14} height={13} className="mr-1" />
       ) : (
-        <ArrowDown width={10} height={14} className="mr-1 fill-white" />
+        <ArrowDown width={10} height={14} className="light:fill-text mr-1 fill-white" />
       ),
     formattedDate: formattedDates.length > index ? formattedDates[index] : '',
     rawDate: s.blockTimestamp,
@@ -46,6 +52,9 @@ export function SavingsHistory() {
       isLoading={savingsHistoryLoading}
       transactionHeader={t`Amount`}
       typeColumn
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

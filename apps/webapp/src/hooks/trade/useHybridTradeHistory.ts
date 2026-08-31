@@ -3,10 +3,13 @@ import { useCowswapTradeHistory } from './useCowswapTradeHistory';
 import { usePsmTradeHistory } from '../psm/usePsmTradeHistory';
 import { TRADE_CUTOFF_DATES } from '@/utils';
 import { ReadHook } from '../hooks';
+import { PaginatedHistory } from '../shared/useHistoryPagination';
 
 /**
  * Hook that fetches both PSM and CowSwap trade histories and merges them based on a cutoff date
- * PSM trades before the cutoff date and CowSwap trades after the cutoff date
+ * PSM trades before the cutoff date and CowSwap trades after the cutoff date.
+ * Every CoW trade is newer than every PSM trade, so the PSM side's keyset
+ * pagination carries over unchanged: pages only ever append below the CoW rows.
  */
 export function useHybridTradeHistory({
   chainId,
@@ -18,7 +21,7 @@ export function useHybridTradeHistory({
   excludeSUsds?: boolean;
   indexerUrl?: string;
   enabled?: boolean;
-}): ReadHook & { data?: any[] } {
+}): ReadHook & PaginatedHistory & { data?: any[] } {
   const cutoffDate = TRADE_CUTOFF_DATES[chainId];
 
   const shouldFetch = enabled && !!cutoffDate;
@@ -60,6 +63,10 @@ export function useHybridTradeHistory({
       psmHistory.mutate();
       cowswapHistory.mutate();
     },
+    nextCursor: psmHistory.nextCursor,
+    hasNextPage: psmHistory.hasNextPage,
+    fetchNextPage: psmHistory.fetchNextPage,
+    isFetchingNextPage: psmHistory.isFetchingNextPage,
     dataSources: [...(psmHistory.dataSources || []), ...(cowswapHistory.dataSources || [])]
   };
 }

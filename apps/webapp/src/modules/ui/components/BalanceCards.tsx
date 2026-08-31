@@ -114,7 +114,7 @@ function BaseBalanceCardContent({
           <PopoverInfo
             title={labelTooltip.title}
             description={labelTooltip.description}
-            iconClassName="text-textSecondary hover:text-white transition-colors"
+            iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
           />
         </CardTitle>
       ) : (
@@ -130,7 +130,7 @@ function BaseBalanceCardContent({
 function LoadingBalanceCard({ label }: { label: string }) {
   return (
     <BaseBalanceCardContent label={label}>
-      <Skeleton className="h5 w-16" />
+      <Skeleton className="h-5 w-16" />
     </BaseBalanceCardContent>
   );
 }

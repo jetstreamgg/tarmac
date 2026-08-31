@@ -1,41 +1,45 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
+import { useChainId, useChains, useConnection, useSwitchChain } from 'wagmi';
 import {
   getTokenDecimals,
   isMarketMatured,
+  isPendleChain,
+  PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
+  useIsSafeWallet,
   usePendleUserPtBalances,
   useQuotePendleConvert,
+  useTokenAllowance,
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import {
-  PendleConfigMenu,
-  pendleAnalyticsData,
-  pendleNonPtLeg,
-  usePendleSlippage,
-  usePendleTokens,
-  usePendleUsdValue
-} from '@/widgets';
+import { familyMainnetId, formatBigInt, isTestnetId } from '@/utils';
+import { Intent } from '@/lib/enums';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
+import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
+import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
-
-type Options = {
-  /** Called after redeem confirms onchain — for refetching balances etc. */
-  onSuccess?: () => void;
-  /** Toast / notification adapter from the surrounding module. */
-  onNotification?: (msg: { title: string; description: string; status: 'success' | 'error' }) => void;
-};
+import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 /**
  * Matured-PT redeem via the global TransactionContext modal. Routes through
  * the same /convert pipeline as buy/sell so the user can pick the underlying,
  * USDS, or USDC.
  */
-export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options = {}) {
-  const { launch, updateModalContent, isModalOpen, txCallbacks } = useTransaction();
+export function usePendleRedeemModal(market: PendleMarketConfig) {
+  const { launch, updateModalContent, isModalOpen, txStatus, txCallbacks } = useTransaction();
   // Per-instance id so the provider can ignore live updates from sibling cards.
   const sessionId = useId();
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
@@ -47,7 +51,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(withdrawTokenList[0]);
   const outputTokenAddress = selectedOutputToken.address[mainnet.id] as `0x${string}`;
 
-  const { slippage, setSlippage, defaultSlippage } = usePendleSlippage('redeem');
+  const { slippage, slippageDisplay, slippageMode, slippageAction } = usePendleSlippageCell('redeem');
   // Values the redeemed output leg in USD for the analytics `amount` property.
   const valueUsd = usePendleUsdValue();
 
@@ -63,10 +67,14 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     amountIn: isRedeemable ? ptBalance : undefined,
     slippage,
     enabled: isRedeemable,
+    // Fetch once for the card's isPrepared gating; only repoll while the
+    // quote is on screen — this hook mounts once per matured card.
+    poll: isModalOpen,
     maturedExit: true,
     ytToken: market.ytToken
   });
 
+  const shouldUseBatch = useShouldUseBatch();
   const writeHook = useBatchPendleConvert({
     side: PendleConvertSide.WITHDRAW,
     marketAddress: market.marketAddress,
@@ -78,43 +86,57 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     quote,
     slippage,
     enabled: isRedeemable,
-    shouldUseBatch: true,
-    onMutate: () => txCallbacks.onMutate(),
+    shouldUseBatch,
+    // Forward wagmi's write variables so the approve leg reports action 'approve'.
+    onMutate: variables => txCallbacks.onMutate(variables),
     onStart: hash => txCallbacks.onStart(hash),
     onSuccess: hash => {
       mutatePtBalances();
-      opts.onSuccess?.();
       txCallbacks.onSuccess(hash);
-      opts.onNotification?.({
-        title: t`Redemption complete`,
-        description: t`${selectedOutputToken.symbol} delivered to your wallet.`,
-        status: 'success'
-      });
     },
-    onError: (err, hash) => {
-      txCallbacks.onError(err, hash);
-      opts.onNotification?.({
-        title: t`Transaction failed`,
-        description: err.message,
-        status: 'error'
-      });
-    }
+    onError: (err, hash) => txCallbacks.onError(err, hash)
   });
+  useResetPausedRunOnClose(writeHook.reset);
 
-  // Map raw revert messages to user-friendly copy. Mirrors the PendleWidget
-  // mapping so users see consistent guidance whether they're buying, selling,
-  // or redeeming.
-  const prepareErrorMessage = useMemo<string | undefined>(() => {
-    const raw = writeHook.error?.message;
-    if (!raw) return undefined;
-    if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
-      return t`Current market price exceeds your slippage tolerance. Increase slippage via the gear icon, or wait for the quote to refresh.`;
-    }
-    if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
-      return t`Quote expired. Refreshing — please wait a moment.`;
-    }
-    return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
-  }, [writeHook.error]);
+  // Map raw revert messages to user-friendly copy — shared with the buy/sell
+  // modal so users see consistent guidance across all three flows. Only while
+  // unprepared, so a recovered simulation drops the stale message.
+  const prepareErrorMessage = useMemo<string | undefined>(
+    () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
+    [writeHook.prepared, writeHook.error]
+  );
+
+  // The Network cell describes where the trade executes — the engine chain,
+  // which the connected chain only matches while Pendle stays mainnet-gated.
+  const chainId = useChainId();
+  const engineChainId = familyMainnetId(chainId);
+  const networkName = useNetworkName(engineChainId);
+
+  // Steps mirror the engine's call count ([approve?, claim]), like the
+  // buy/sell form — a first-time redeemer signs a PT approval first.
+  const { address } = useConnection();
+  const { data: allowance } = useTokenAllowance({
+    chainId: engineChainId,
+    contractAddress: market.ptToken,
+    owner: address,
+    spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
+  });
+  const ptSymbol = `PT-${market.underlyingSymbol}`;
+  const needsAllowance = allowance !== undefined && ptBalance > 0n && allowance < ptBalance;
+  const steps = useMemo<TransactionStep[]>(() => {
+    const claimStep = { label: t`Claim`, tokenSymbol: ptSymbol };
+    return needsAllowance ? [{ label: t`Approve`, tokenSymbol: ptSymbol }, claimStep] : [claimStep];
+  }, [needsAllowance, ptSymbol]);
+
+  // Simulate on the engine chain (the calldata is mainnet's even when the
+  // wallet sits elsewhere), and only while the modal is up — this hook mounts
+  // once per matured card, and the estimate is only shown inside the modal.
+  const feeCell = useModalFeeCell({
+    calls: writeHook.calls ?? [],
+    chainId: engineChainId,
+    shouldUseBatch: !!writeHook.isBatch,
+    enabled: isModalOpen && isRedeemable && !!quote
+  });
 
   const transactionContent = useMemo(
     () => (
@@ -126,8 +148,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
         onOutputTokenChange={setSelectedOutputToken}
         quote={quote}
         isFetchingQuote={isFetchingQuote}
-        slippage={slippage}
-        prepareErrorMessage={prepareErrorMessage}
+        slippageDisplay={slippageDisplay}
+        slippageMode={slippageMode}
+        slippageAction={slippageAction}
+        network={networkName}
+        networkChainId={engineChainId}
+        feeCell={feeCell}
       />
     ),
     [
@@ -137,16 +163,13 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       selectedOutputToken,
       quote,
       isFetchingQuote,
-      slippage,
-      prepareErrorMessage
+      slippageDisplay,
+      slippageMode,
+      slippageAction,
+      networkName,
+      engineChainId,
+      feeCell
     ]
-  );
-
-  const rightHeaderComponent = useMemo(
-    () => (
-      <PendleConfigMenu slippage={slippage} defaultSlippage={defaultSlippage} setSlippage={setSlippage} />
-    ),
-    [slippage, defaultSlippage, setSlippage]
   );
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
@@ -156,7 +179,30 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const executeRef = useRef<() => void>(() => undefined);
   executeRef.current = () => writeHook.execute();
 
-  const openRedeemModal = useCallback(() => {
+  // USD notional for the enhanced-screening threshold (APP-517): the valued
+  // output leg, live across output-token/quote changes (pushed by the effect
+  // below). A non-empty redeem whose leg can't be valued yet (quote or price
+  // missing) is `undefined` — unknown, treated as above-threshold.
+  const usdValue = useMemo(() => {
+    const leg = pendleNonPtLeg('redeem', {
+      originSymbol: ptToken.symbol,
+      targetSymbol: selectedOutputToken.symbol,
+      amountInBigint: ptBalance,
+      amountOutBigint: quote?.amountOut ?? 0n,
+      fromDecimals: market.underlyingDecimals,
+      toDecimals: getTokenDecimals(selectedOutputToken, mainnet.id)
+    });
+    if (leg.amount === 0) return ptBalance > 0n ? undefined : 0;
+    return valueUsd(leg.symbol, leg.amount);
+  }, [ptToken, selectedOutputToken, ptBalance, quote, market, valueUsd]);
+
+  // `amount` = USD value of the redeemed output leg, negative so dashboard
+  // tiles filtering `properties.amount < 0` count redeem as a withdrawal
+  // alongside SELL; omitted when no price is available rather than emit a
+  // wrong-unit number. amountFrom/amountTo in `data` keep the raw counts.
+  // Memoized so the launch seeds it and the live-update effect keeps it
+  // fresh — the output token stays changeable after launch (APP-444 B14).
+  const analytics = useMemo(() => {
     const toDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
     const data = pendleAnalyticsData({
       market,
@@ -171,15 +217,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       quote,
       isBatchTx: true
     });
-    // `amount` = USD value of the redeemed output leg (the non-PT side), so
-    // sUSDS/PT redeems don't mis-sum the inflow/outflow tiles. amountFrom /
-    // amountTo in `data` keep the raw token counts. useAppAnalytics has no
-    // sign-flip helper, so emit the withdrawal sign explicitly — dashboard
-    // tiles filtering `properties.amount < 0` pick up redeem as a withdrawal
-    // alongside SELL. Omit `amount` when no price is available rather than
-    // emit a wrong-unit number. (pendleNonPtLeg/valueUsd are total — they never
-    // throw — and the eventual capture is guarded by safeCapture, matching the
-    // amount-math-unguarded / capture-guarded pattern in the other widgets.)
     const leg = pendleNonPtLeg('redeem', {
       originSymbol: ptToken.symbol,
       targetSymbol: selectedOutputToken.symbol,
@@ -189,48 +226,161 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       toDecimals
     });
     const usd = valueUsd(leg.symbol, leg.amount);
+    return {
+      widgetName: 'fixed',
+      flow: 'redeem',
+      action: 'redeem',
+      data: {
+        ...data,
+        ...(usd !== undefined ? { amount: -Math.abs(usd) } : {})
+      }
+    };
+  }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
+
+  // Toast headlines — without them the toast falls back to the success
+  // SUBTITLE above, a full sentence where the toast wants a label. Success
+  // names the quoted receive leg ("Claimed 1,012.30 USDS"), formatted like the
+  // review's receive row. Live like `usdValue`/`analytics` (the output token
+  // stays changeable after launch) and frozen with them once the tx leaves
+  // IDLE, so it states the quote the signed tx was built from — the app never
+  // reads the fill off the receipt, so this is the quote, not the settled amount.
+  const toast = useMemo(() => {
+    const received = quote
+      ? formatBigInt(quote.amountOut, {
+          unit: getTokenDecimals(selectedOutputToken, mainnet.id),
+          maxDecimals: 2
+        })
+      : undefined;
+    return {
+      loading: t`Claiming your matured position`,
+      success: received ? t`Claimed ${received} ${selectedOutputToken.symbol}` : t`Position claimed`,
+      error: t`Claim failed`
+    };
+  }, [quote, selectedOutputToken]);
+
+  // Wrong chain: switch on click, then open — the Portfolio supply actions'
+  // pattern (usePortfolioSupplyActions). The auto flags make the shell toast
+  // explain the change; a rejected switch opens nothing and stays retryable.
+  const chains = useChains();
+  const onPendleChain = isPendleChain(chainId);
+  const isSafeWallet = useIsSafeWallet();
+  const { switchChainAsync } = useSwitchChain();
+  const { setIsAutoSwitching, setAutoSwitchIntent } = useNetworkSwitch();
+  const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
+  // A Safe can't switch networks from the dapp (APP-486) — the cards disable
+  // Claim and explain instead of offering a click that always fails.
+  const switchBlocked = !onPendleChain && isSafeWallet;
+
+  const openRedeemModal = useCallback(async () => {
+    if (!onPendleChain) {
+      if (isSafeWallet) return;
+      // The mainnet-family target, preferring the fork in dev configs —
+      // auto-switching a dev wallet onto real Ethereum would mean real fees.
+      const requiredChainId = chains.find(c => isTestnetId(c.id))?.id ?? mainnet.id;
+      setAutoSwitchIntent(Intent.FIXED_INTENT);
+      setIsAutoSwitching(true);
+      trackNetworkSwitchRequested({
+        source: 'pendle_claim',
+        fromChainId: chainId,
+        toChainId: requiredChainId
+      });
+      try {
+        await switchChainAsync({ chainId: requiredChainId });
+      } catch (error) {
+        trackNetworkSwitchCompleted({
+          source: 'pendle_claim',
+          fromChainId: chainId,
+          toChainId: requiredChainId,
+          status: isUserRejectedRequestError(error) ? 'rejected' : 'error'
+        });
+        setIsAutoSwitching(false);
+        setAutoSwitchIntent(null);
+        return;
+      }
+      trackNetworkSwitchCompleted({
+        source: 'pendle_claim',
+        fromChainId: chainId,
+        toChainId: requiredChainId,
+        status: 'success'
+      });
+    }
     launch({
-      title: t`Redeem PT-${market.underlyingSymbol}`,
+      usdValue,
+      // Pendle redemption is mainnet-only — guard the modal off any L2 (APP-528).
+      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+      title: t`Claim matured position`,
+      transactionTitle: t`Confirm in the wallet`,
+      subtitles: {
+        loading: t`Your claim is being processed on the blockchain. Please wait.`,
+        success: t`You've successfully claimed your matured position.`,
+        error: t`An error occurred while claiming your matured position.`
+      },
+      toast,
       transactionContent,
-      rightHeaderComponent,
-      confirmLabel: t`Confirm`,
+      errorMessage: prepareErrorMessage,
+      steps,
+      confirmLabel: t`Claim`,
       confirmDisabled,
       onConfirm: () => executeRef.current(),
       sessionId,
-      analytics: {
-        widgetName: 'fixed',
-        flow: 'redeem',
-        action: 'redeem',
-        data: {
-          ...data,
-          ...(usd !== undefined ? { amount: -Math.abs(usd) } : {})
-        }
-      }
+      analytics
     });
   }, [
+    onPendleChain,
+    isSafeWallet,
+    chains,
+    chainId,
+    setAutoSwitchIntent,
+    setIsAutoSwitching,
+    trackNetworkSwitchRequested,
+    trackNetworkSwitchCompleted,
+    switchChainAsync,
     launch,
-    market,
-    ptToken,
-    ptBalance,
-    selectedOutputToken,
-    quote,
-    slippage,
-    valueUsd,
     transactionContent,
-    rightHeaderComponent,
+    prepareErrorMessage,
+    steps,
     confirmDisabled,
-    sessionId
+    sessionId,
+    analytics,
+    usdValue,
+    toast
   ]);
 
   useEffect(() => {
-    if (!isModalOpen) return;
-    updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled });
-  }, [isModalOpen, sessionId, updateModalContent, transactionContent, rightHeaderComponent, confirmDisabled]);
+    // Freeze once the flow leaves IDLE (same as useModalEntryBody): the quote
+    // repolls mid-flight and must not rewrite the blob the signed tx started
+    // with — and a drifted `usdValue` could downgrade the screening tier a
+    // retry is gated on (APP-517). Pushes resume when a failure returns to IDLE.
+    if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
+    updateModalContent(sessionId, {
+      transactionContent,
+      errorMessage: prepareErrorMessage,
+      steps,
+      confirmDisabled,
+      analytics,
+      usdValue,
+      toast
+    });
+  }, [
+    isModalOpen,
+    txStatus,
+    sessionId,
+    updateModalContent,
+    transactionContent,
+    prepareErrorMessage,
+    steps,
+    confirmDisabled,
+    analytics,
+    usdValue,
+    toast
+  ]);
 
   return {
     openRedeemModal,
     isRedeemable,
     isPrepared: writeHook.prepared,
+    onPendleChain,
+    switchBlocked,
     ptBalance,
     error: writeHook.error
   };

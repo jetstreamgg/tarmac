@@ -10,8 +10,9 @@ import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { Intent } from '@/lib/enums';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
-import { useSearchParams } from 'react-router-dom';
-import { mapIntentToQueryParam, QueryParams } from '@/lib/constants';
+import { useNavigate } from '@tanstack/react-router';
+import { INTENT_PATHS, keepSearch, useAppSearchParams } from '@/lib/navigation';
+import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useIsSafeWallet } from '@/hooks';
 import { Trans } from '@lingui/react/macro';
@@ -38,51 +39,109 @@ const getChainIcon = (chainId: number, className?: string) =>
 
 export function ChainModal({
   showLabel = true,
+  labelClassName,
+  triggerClassName,
   showDropdownIcon = true,
   variant = 'default',
+  size = 'm',
   dataTestId = 'chain-modal-trigger',
   children,
   nextIntent,
-  disabled = false
+  disabled = false,
+  chainIds
 }: {
   showLabel?: boolean;
+  /** Extra classes on the chain-name label, e.g. to hide it per tier. */
+  labelClassName?: string;
+  /** Extra classes on the trigger button, e.g. `w-full justify-between` for the M6.3 full-width row. */
+  triggerClassName?: string;
   showDropdownIcon?: boolean;
   variant?: 'default' | 'widget' | 'wrapper';
+  /** DS Button / Dropdown recipe: Network M (24px icon) or Network XS (16px icon). */
+  size?: 'm' | 'xs';
   dataTestId?: string;
   children?: React.ReactNode;
   nextIntent?: Intent;
   disabled?: boolean;
+  /** Restrict the switchable network list to these chain ids (per-product scoping). */
+  chainIds?: number[];
 }) {
   const [open, setOpen] = useState(false);
   const chainId = useChainId();
   const client = useClient();
   const chains = useChains();
   const isSafeWallet = useIsSafeWallet();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
   const {
     handleSwitchChain,
     isPending: isSwitchChainPending,
     variables: switchChainVariables
   } = useChainModalContext();
 
+  // Non-widget trigger = design-system Button / Dropdown, Network M (Figma
+  // 5019:4105): 24px chain icon, 16px chevron that flips while open (Radix
+  // DialogTrigger supplies data-state). The widget look keeps its legacy
+  // recipe untouched — connectPrimary is just the text-color base; the
+  // className below overrides every gradient/border stop it sets.
   return (
     <Dialog open={open} onOpenChange={disabled ? undefined : setOpen}>
       <DialogTrigger asChild disabled={disabled}>
         {variant === ChainModalVariant.wrapper ? (
-          <button className="h-full w-full">{children}</button>
+          // The testid must render on the wrapper too — e2e drives the network
+          // dialog through it (e.g. `convert-network`).
+          <button className="h-full w-full" data-testid={dataTestId}>
+            {children}
+          </button>
         ) : (
           <Button
-            variant="connect"
+            variant={variant === ChainModalVariant.widget ? 'connectPrimary' : 'dropdown'}
+            size={
+              variant === ChainModalVariant.widget ? 'default' : size === 'xs' ? 'dropdownXs' : 'dropdownM'
+            }
             className={cn(
-              'flex items-center gap-1.5 px-2.5 py-2',
-              variant === ChainModalVariant.widget &&
-                'from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 border-transparent bg-radial-(--gradient-position) px-[9px] bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
+              variant === ChainModalVariant.widget
+                ? 'from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 flex items-center gap-1.5 border-transparent bg-radial-(--gradient-position) px-[9px] py-2 bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
+                : 'group',
+              triggerClassName
             )}
             data-testid={dataTestId}
           >
-            {getChainIcon(chainId, variant === ChainModalVariant.widget ? 'h-5 w-5' : 'h-6 w-6')}
-            {showLabel && <Text className="text-text">{client?.chain.name || 'Ethereum'}</Text>}
-            {showDropdownIcon && <ChevronDown width={14} height={14} />}
+            {getChainIcon(
+              chainId,
+              variant === ChainModalVariant.widget ? 'h-5 w-5' : size === 'xs' ? 'h-4 w-4' : 'h-6 w-6'
+            )}
+            {showLabel &&
+              (variant === ChainModalVariant.widget ? (
+                <Text className={cn('text-text', labelClassName)}>{client?.chain.name || 'Ethereum'}</Text>
+              ) : (
+                // Label 5 / Circular Medium in every dropdown comp (Figma
+                // 1030:60397, 1030:59254) — which is what dropdownM already
+                // sets, so the label is a bare span and inherits it. A <Text>
+                // here would re-declare Graphik at 16px and win, which is how
+                // the network pill drifted off the comps across all products.
+                // XS steps down to Label 6 (Figma 1030:138802).
+                <span
+                  className={cn(
+                    'text-text',
+                    size === 'xs' && 'text-xs leading-[14px] tracking-[-0.24px]',
+                    labelClassName
+                  )}
+                >
+                  {client?.chain.name || 'Ethereum'}
+                </span>
+              ))}
+            {showDropdownIcon &&
+              (variant === ChainModalVariant.widget ? (
+                <ChevronDown width={14} height={14} />
+              ) : (
+                <ChevronDown
+                  className={cn(
+                    'transition-transform group-data-[state=open]:rotate-180',
+                    size === 'xs' ? 'size-3' : 'size-4'
+                  )}
+                />
+              ))}
           </Button>
         )}
       </DialogTrigger>
@@ -107,6 +166,7 @@ export function ChainModal({
             </div>
           )}
           {chains
+            .filter(chain => (chainIds ? chainIds.includes(chain.id) : true))
             .filter(chain => (isSafeWallet ? chain.id === chainId : true))
             .map(chain => (
               <Button
@@ -125,18 +185,24 @@ export function ChainModal({
                         const currentNetwork = searchParams.get(QueryParams.Network);
                         // Only update if the network actually changed (compare normalized to avoid case-only diffs)
                         if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
-                          setSearchParams(
-                            (params: URLSearchParams) => {
-                              if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
+                          if (nextIntent) {
+                            void navigate({
+                              to: INTENT_PATHS[nextIntent],
+                              search: prev => ({
+                                ...keepSearch(prev),
+                                [QueryParams.Network]: normalizedNewChainName
+                              }),
+                              replace: true
+                            });
+                          } else {
+                            setSearchParams(
+                              (params: URLSearchParams) => {
                                 params.set(QueryParams.Network, normalizedNewChainName);
-                              }
-                              if (nextIntent) {
-                                params.set(QueryParams.Widget, mapIntentToQueryParam(nextIntent));
-                              }
-                              return params;
-                            },
-                            { replace: true }
-                          );
+                                return params;
+                              },
+                              { replace: true }
+                            );
+                          }
                         }
                       }
                     },

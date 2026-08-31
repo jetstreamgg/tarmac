@@ -10,7 +10,7 @@ export function ExternalLink({
   className,
   wrapperClassName,
   inline,
-  onExternalLinkClicked
+  dataTestId
 }: {
   href: string;
   children?: React.ReactNode;
@@ -19,7 +19,7 @@ export function ExternalLink({
   className?: string;
   wrapperClassName?: string;
   inline?: boolean;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  dataTestId?: string;
 }): React.ReactElement {
   const content = inline ? (
     <span className={cn(wrapperClassName)}>
@@ -33,19 +33,13 @@ export function ExternalLink({
     </span>
   );
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-    if (onExternalLinkClicked) {
-      onExternalLinkClicked(e);
-    }
-  };
-
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
       className={cn('text-text inline-flex items-center', className)}
-      onClick={handleClick}
+      data-testid={dataTestId}
     >
       {content}
     </a>

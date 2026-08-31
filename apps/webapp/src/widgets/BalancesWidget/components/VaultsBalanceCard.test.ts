@@ -23,7 +23,13 @@ const makeToken = (symbol: string): Token => ({
 const makeBalance = (address: `0x${string}`, name: string, balanceNormalized: bigint): MorphoVaultBalance => {
   const assetToken = makeToken(name);
   return {
-    vault: { provider: 'morpho', name, vaultAddress: { [CHAIN_ID]: address }, assetToken },
+    vault: {
+      provider: 'morpho',
+      name,
+      vaultAddress: { [CHAIN_ID]: address },
+      assetToken,
+      riskProfile: 'vault-flagship'
+    },
     vaultAddress: address,
     balance: balanceNormalized,
     balanceNormalized,

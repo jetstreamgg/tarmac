@@ -4,7 +4,7 @@ export { getSafeTransactionLink } from './getSafeTransactionLink';
 export { getTransactionLink } from './getTransactionLink';
 export { getExplorerName, ExplorerName } from './getExplorerName';
 export { getChainSpecificText } from './getChainSpecificText';
-export { isTestnetId } from './isTestnetId';
+export { isTestnetId, familyMainnetId } from './isTestnetId';
 export { isMainnetId } from './isMainnetId';
 export {
   isBaseChainId,
@@ -22,6 +22,7 @@ export * as math from './math';
 export * from './math/calculateApy';
 export * from './formatDate';
 export * from './formatValue';
+export * from './projectAnnualEarnings';
 export * from './formatUnits';
 export * from './formatTradeAmount';
 export * from './strings';
@@ -29,5 +30,6 @@ export * from './localization';
 export * from './math.constants';
 export * from './collection';
 export * from './getChainIcon';
+export * from './getChainName';
 export * from './i18n';
 export { copyToClipboard } from './clipboard';

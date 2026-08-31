@@ -34,6 +34,7 @@ import { usePendleMaturedPositionEarnings } from './usePendleMaturedPositionEarn
 
 const PEGGED_MARKET: PendleMarketConfig = {
   name: 'PT-USDG',
+  slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
   ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548',
   ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1',

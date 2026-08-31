@@ -42,6 +42,7 @@ export function usePendleMarketsApiData(): PendleMarketsStatsHook {
         map[market.marketAddress] = {
           impliedApy: summary.details.impliedApy ?? 0,
           underlyingApy: summary.details.underlyingApy,
+          liquidity: summary.details.liquidity,
           tvl,
           formattedTvl:
             tvl !== undefined ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined,

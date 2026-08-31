@@ -74,6 +74,7 @@ export const useVaultTransactions = ({
     vaultAddress,
     assetAddress,
     vaultName,
+    provider,
     needsAllowance,
     shouldUseBatch,
     mutateAllowance,

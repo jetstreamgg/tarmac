@@ -6,9 +6,10 @@ import { SiteConfig } from './types/site-config';
 export const defaultConfig: SiteConfig = {
   ...widgetsConfig,
   name: 'Sky',
-  description: 'Get rewarded for saving, without giving up control',
+  description: 'Savings, rewards, staking and borrowing, without giving up control',
   daiSavingsReferral: 0,
-  logo: '/images/header-lg.png',
+  logo: '/images/header-dark-mode.png',
+  logoLight: '/images/header-light-mode.png',
   favicon: '/images/sky.svg',
   locale: 'en'
 };

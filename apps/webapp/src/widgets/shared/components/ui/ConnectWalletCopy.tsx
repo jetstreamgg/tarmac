@@ -3,13 +3,7 @@ import { ConnectWallet } from '../icons/ConnectWallet';
 import { Heading } from './Typography';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
 
-export function ConnectWalletCopy({
-  className,
-  onExternalLinkClicked
-}: {
-  className?: string;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-}) {
+export function ConnectWalletCopy({ className }: { className?: string }) {
   return (
     <div className={className}>
       <div className="flex items-center gap-3 py-1 pr-3 pl-5">
@@ -20,12 +14,7 @@ export function ConnectWalletCopy({
           <Heading variant="small">
             <Trans>Connect to explore Sky Protocol features</Trans>
           </Heading>
-          <ExternalLink
-            href="https://sky.money/"
-            iconSize={16}
-            className="text-textEmphasis"
-            onExternalLinkClicked={onExternalLinkClicked}
-          >
+          <ExternalLink href="https://sky.money/" iconSize={16} className="text-textEmphasis">
             <Trans>Sky Protocol features</Trans>
           </ExternalLink>
         </div>

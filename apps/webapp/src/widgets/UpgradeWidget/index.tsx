@@ -52,7 +52,6 @@ import {
   tokenForSymbol
 } from './lib/helpers';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
@@ -76,7 +75,6 @@ export function UpgradeWidgetWrapped({
 }: UpgradeWidgetProps): React.ReactElement {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const { onExternalLinkClicked } = useConfigContext();
   const onNotification = useNotification();
   const chainId = useChainId();
   const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
@@ -486,7 +484,6 @@ export function UpgradeWidgetWrapped({
           onClickBack={onClickBack}
           showSecondaryButton={showSecondaryButton}
           enabled={enabled}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
       }
     >
@@ -498,7 +495,6 @@ export function UpgradeWidgetWrapped({
               originAmount={originAmount}
               targetToken={targetToken}
               targetAmount={targetAmount}
-              onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={shouldUseBatch}
               needsAllowance={!hasAllowance}
             />

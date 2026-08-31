@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { useReadCurveStUsdsUsdsPoolGetDy, useReadCurveStUsdsUsdsPoolGetDx } from '../../generated';
-import { isTestnetId } from '@/utils';
-import { TENDERLY_CHAIN_ID } from '../../constants';
+import { familyMainnetId } from '@/utils';
 import { useCurvePoolData } from './useCurvePoolData';
 import { RATE_PRECISION } from './constants';
 import { StUsdsDirection } from './types';
@@ -71,7 +70,7 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
   const { direction, amount, enabled = true, userStUsdsBalance, isMax = false, referenceRate } = params;
 
   const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? TENDERLY_CHAIN_ID : 1;
+  const chainId = familyMainnetId(connectedChainId);
 
   // Get pool data to determine token indices
   const { data: poolData, isLoading: isPoolLoading, error: poolError } = useCurvePoolData();

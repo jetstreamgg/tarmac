@@ -1,81 +1,54 @@
-import { useEthereumSavingsHistory } from '../savings/useEthereumSavingsHistory';
-import { useUpgradeHistory } from '../upgrade/useUpgradeHistory';
 import { useCowswapTradeHistory } from '../trade/useCowswapTradeHistory';
-import { useAllRewardsUserHistory } from '../rewards/useAllRewardsUserHistory';
 import { useMemo } from 'react';
-import { useStakeHistory } from '../stake/useStakeHistory';
-import { useStUsdsHistory } from '../stusds/useStUsdsHistory';
+import { useEthereumIndexerHistory } from './useEthereumIndexerHistory';
 import { useMorphoVaultHistory } from '../morpho';
-import { useSusdtVaultHistory } from '../vaults';
 import { usePendleCombinedHistory } from '../pendle/usePendleCombinedHistory';
+import { CombinedHistoryItem } from './shared';
+import { clampHistoryPage } from './historyQueryHelpers';
 
+/**
+ * Mainnet history: one keyset-paginated indexer document (savings, upgrade,
+ * stake, rewards, stUSDS, sUSDT) merged with the REST-backed sources (CoW,
+ * Morpho, Pendle). REST items older than the indexer's completeness floor are
+ * withheld until `fetchNextPage` advances it, so rows never insert mid-list.
+ */
 export function useEthereumCombinedHistory() {
-  const savingsHistory = useEthereumSavingsHistory();
-  const upgradeHistory = useUpgradeHistory();
+  const indexerHistory = useEthereumIndexerHistory();
   const tradeHistory = useCowswapTradeHistory({ chainId: 1 });
-  const combinedRewardHistory = useAllRewardsUserHistory();
-  const stakeHistory = useStakeHistory();
-  const stUsdsHistory = useStUsdsHistory();
   const morphoVaultsHistory = useMorphoVaultHistory();
-  const susdtVaultHistory = useSusdtVaultHistory();
   const pendleHistory = usePendleCombinedHistory();
 
+  const floor = indexerHistory.nextCursor;
+
   const combinedData = useMemo(() => {
-    return [
-      ...(savingsHistory.data || []),
-      ...(upgradeHistory.data || []),
+    const restItems: CombinedHistoryItem[] = [
       ...(tradeHistory.data || []),
-      ...(combinedRewardHistory.data || []),
-      ...(stakeHistory.data || []),
-      ...(stUsdsHistory.data || []),
       ...(morphoVaultsHistory.data || []),
-      ...(susdtVaultHistory.data || []),
       ...(pendleHistory.data || [])
-    ].sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
-  }, [
-    savingsHistory.data,
-    upgradeHistory.data,
-    tradeHistory.data,
-    combinedRewardHistory.data,
-    stakeHistory.data,
-    stUsdsHistory.data,
-    morphoVaultsHistory.data,
-    susdtVaultHistory.data,
-    pendleHistory.data
-  ]);
+    ];
+    return [...(indexerHistory.data || []), ...clampHistoryPage(restItems, floor)].sort(
+      (a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
+    );
+  }, [indexerHistory.data, tradeHistory.data, morphoVaultsHistory.data, pendleHistory.data, floor]);
 
   return {
     data: combinedData,
     isLoading:
-      savingsHistory.isLoading ||
+      indexerHistory.isLoading ||
       tradeHistory.isLoading ||
-      upgradeHistory.isLoading ||
-      combinedRewardHistory.isLoading ||
-      stakeHistory.isLoading ||
-      stUsdsHistory.isLoading ||
       morphoVaultsHistory.isLoading ||
-      susdtVaultHistory.isLoading ||
       pendleHistory.isLoading,
-    error:
-      savingsHistory.error ||
-      upgradeHistory.error ||
-      tradeHistory.error ||
-      combinedRewardHistory.error ||
-      stakeHistory.error ||
-      stUsdsHistory.error ||
-      morphoVaultsHistory.error ||
-      susdtVaultHistory.error ||
-      pendleHistory.error,
+    error: indexerHistory.error || tradeHistory.error || morphoVaultsHistory.error || pendleHistory.error,
     mutate: () => {
-      savingsHistory.mutate();
-      upgradeHistory.mutate();
+      indexerHistory.mutate();
       tradeHistory.mutate();
-      combinedRewardHistory.mutate();
-      stakeHistory.mutate();
-      stUsdsHistory.mutate();
       morphoVaultsHistory.mutate();
-      susdtVaultHistory.mutate();
       pendleHistory.mutate();
-    }
+    },
+    /** Completeness floor (seconds); undefined once indexer history is fully loaded. */
+    nextCursor: floor,
+    hasNextPage: indexerHistory.hasNextPage,
+    fetchNextPage: indexerHistory.fetchNextPage,
+    isFetchingNextPage: indexerHistory.isFetchingNextPage
   };
 }

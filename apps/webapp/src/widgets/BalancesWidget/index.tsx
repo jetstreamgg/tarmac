@@ -16,7 +16,6 @@ import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@/widgets/shared/animation/Wrappers';
 import { useCallback, useMemo, useState } from 'react';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type BalancesWidgetProps = WidgetProps & {
@@ -100,7 +99,6 @@ const BalancesWidgetWrapped = ({
   const onConnect = useCustomConnectModal();
   const { isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
-  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const [allFundsEmpty, setAllFundsEmpty] = useState(false);
   const handleAllFundsEmpty = useCallback((isEmpty: boolean) => setAllFundsEmpty(isEmpty), []);
@@ -121,7 +119,7 @@ const BalancesWidgetWrapped = ({
       footer={
         !isConnectedAndEnabled ? (
           <div className="flex w-full flex-col items-stretch gap-5">
-            {!isConnectedAndEnabled && <ConnectWalletCopy onExternalLinkClicked={onExternalLinkClicked} />}
+            {!isConnectedAndEnabled && <ConnectWalletCopy />}
             <LoadingButton
               onClick={onConnect}
               isLoading={isConnecting}
@@ -135,7 +133,7 @@ const BalancesWidgetWrapped = ({
             <NoFundsCopy />
             <LoadingButton
               onClick={onExploreVaults}
-              buttonText={t`Explore new Vaults and start earning`}
+              buttonText={t`Explore new Vaults`}
               variant="primaryAlt"
               className="font-circle h-full w-full px-6 py-4 text-base"
             />
@@ -146,19 +144,11 @@ const BalancesWidgetWrapped = ({
       <AnimatePresence mode="popLayout" initial={false}>
         {!isConnectedAndEnabled ? (
           <CardAnimationWrapper key="widget-not-connected">
-            <BalancesHeader
-              isConnectedAndEnabled={isConnectedAndEnabled}
-              onExternalLinkClicked={onExternalLinkClicked}
-            />
+            <BalancesHeader isConnectedAndEnabled={isConnectedAndEnabled} />
           </CardAnimationWrapper>
         ) : (
           <CardAnimationWrapper key="widget-connected" className="flex flex-col gap-4">
-            {!hideWalletCard && (
-              <BalancesHeader
-                isConnectedAndEnabled={isConnectedAndEnabled}
-                onExternalLinkClicked={onExternalLinkClicked}
-              />
-            )}
+            {!hideWalletCard && <BalancesHeader isConnectedAndEnabled={isConnectedAndEnabled} />}
             <BalancesContent
               hideRestrictedModules={hideRestrictedModules}
               rewardsCardUrl={rewardsCardUrl}
@@ -167,7 +157,6 @@ const BalancesWidgetWrapped = ({
               stusdsCardUrl={stusdsCardUrl}
               vaultsCardUrl={vaultsCardUrl}
               fixedYieldCardUrl={fixedYieldCardUrl}
-              onExternalLinkClicked={onExternalLinkClicked}
               chainIds={chainIds}
               showAllNetworks={showAllNetworks}
               hideZeroBalances={hideZeroBalances}

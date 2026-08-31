@@ -280,9 +280,13 @@ export async function triggerCappedOsmError(ilkName: string, network = NetworkNa
   console.log(`Current spot price for ${ilkName}: ${currentSpot}`);
   console.log(`Liquidation ratio (mat): ${mat}`);
 
-  // Set spot to a very low value (e.g., 10% of current)
-  // This will cause delayedPrice to be very low, making it easy to hit the cap
-  const newSpot = currentSpot / 10n;
+  // Set spot to 1% of current: the guard compares the position's liquidation
+  // price against min(OSM price, spot-derived cap), so the cut must push the
+  // cap BELOW the position's liquidation price. /10 was calibrated for small
+  // positions (liq price ~$0.019); the OSM-robust 25M-SKY specs carry a
+  // ~$0.0018 liquidation price, which /10 of the (stale) fork spot no longer
+  // undercuts.
+  const newSpot = currentSpot / 100n;
 
   await setOsmSpotPrice(ilkName, newSpot, network);
 

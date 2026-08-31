@@ -25,7 +25,6 @@ export const UpgradeTransactionStatus = ({
   originAmount,
   targetToken,
   targetAmount,
-  onExternalLinkClicked,
   isBatchTransaction,
   needsAllowance
 }: {
@@ -33,7 +32,6 @@ export const UpgradeTransactionStatus = ({
   originToken: Token;
   targetAmount: bigint;
   targetToken: Token;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   isBatchTransaction?: boolean;
   needsAllowance: boolean;
 }) => {
@@ -167,10 +165,5 @@ export const UpgradeTransactionStatus = ({
     }
   }, [txStatus, screen, flow, action, i18n.locale, needsAllowance]);
 
-  return (
-    <BatchTransactionStatus
-      onExternalLinkClicked={onExternalLinkClicked}
-      isBatchTransaction={isBatchTransaction}
-    />
-  );
+  return <BatchTransactionStatus isBatchTransaction={isBatchTransaction} />;
 };

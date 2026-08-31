@@ -18,6 +18,7 @@
 @plugin 'tailwindcss-animate';
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant light (&:is([data-theme='light'] *));
 
 @theme {
   --font-graphik: GraphikStd;
@@ -25,10 +26,17 @@
   --font-sans: GraphikStd;
 
   --color-text: var(--primary-white);
-  --color-textSecondary: rgba(198, 194, 255, 0.8);
+  /* colors/fg/fg-secondary — the same DS variable --color-fgSecondary carries, so
+     the two secondary-text tokens now resolve alike in BOTH modes (light already
+     mapped both onto fg-secondary #3b3952). The pre-redesign value was the
+     translucent lilac rgba(198, 194, 255, 0.8), which left every
+     `text-textSecondary` surface reading a touch more purple — and, being
+     translucent, drifting with whatever sat behind it — than the redesigned
+     `text-fgSecondary` surfaces beside it. textMuted mirrors it, as in light. */
+  --color-textSecondary: #a1a6c4;
   --color-bullish: var(--service-green);
   --color-textEmphasis: var(--primary-pink);
-  --color-textMuted: rgba(198, 194, 255, 0.8);
+  --color-textMuted: #a1a6c4;
   --color-error: var(--service-red);
   --color-textDimmed: rgb(120, 116, 208);
   --color-textDesaturated: rgb(186, 182, 250);
@@ -36,6 +44,7 @@
   --color-containerDark: var(--transparent-black-85);
   --color-surface: rgba(108, 104, 255, 0.3);
   --color-surfaceHover: rgba(68, 45, 125, 0.202);
+  --color-bgHover: transparent; /* nav/menu row hover — no-op in dark (parity); tinted in the light scope */
   --color-surfaceAlt: var(--transparent-white-20);
   --color-panel: var(--transparent-black-20);
   --color-widget: transparent;
@@ -46,6 +55,7 @@
   --color-primaryActive: transparent;
   --color-primaryFocus: transparent;
   --color-primaryDisabled: transparent;
+  /* dark: secondary states intentionally share one value (parity); the light scope differentiates them */
   --color-secondary: var(--transparent-black-20);
   --color-secondaryHover: var(--transparent-black-20);
   --color-secondaryActive: var(--transparent-black-20);
@@ -55,13 +65,212 @@
   --color-tabPrimary: var(--transparent-white-40);
   --color-card: rgba(128, 117, 255, 0.07);
   --color-cardLight: rgba(64, 60, 113, 0.207);
+  /* B5 chrome-surface tokens — dark values are production parity (don't change);
+     G2 filled the light scope from the DS light mode. These replace magic hex
+     in CookieConsentBanner so that surface renders on tokens. */
+  --color-cookieSurface: #1a1a2e;
+  --color-cookieToggleOn: #5116cc;
+  /* E2 convert glass tokens — dark values are the Figma source values
+     (colors/bg/bg-secondary, components/badges/bg-secondary,
+     colors/border/border-secondary, and the flip control's literal fills, which
+     the DS types as components/modals/bg-item + border-item); G2 filled the
+     light scope from the same variables' light mode. */
+  --color-glassSurface: rgba(188, 182, 239, 0.05);
+  --color-glassBadge: rgba(188, 182, 239, 0.1);
+  --color-glassBorder: rgba(188, 182, 239, 0.2);
+  --color-flipSurface: #1b1735;
+  --color-flipRing: #140f2b;
+  /* Dialog/Sheet scrim (Figma components/modals/bg-overlay). Was a hardcoded
+     `bg-black/50` on both overlays, so light inherited dark's black scrim —
+     the light comps (1030:59384) show a pale indigo wash over the blurred page
+     instead. Dark now takes the DS value too (#05041199): APP-416 aligned the
+     transaction-modal scrim with the comps, retiring the frozen black/50. */
+  --color-modalOverlay: rgba(5, 4, 17, 0.6);
+  /* Modal in-card subsection panel (Figma components/modals/bg-subsection) —
+     the position-details manage panel. Light shares surfaceHover's light value;
+     dark can't reuse surfaceHover (its dark value is a hover tint the DS types
+     differently), hence a dedicated token. */
+  --color-modalSubsection: #09042033;
+  /* Design-system button tokens (Figma 5010:7958): dark values are the Figma
+     source values — colors/bg/bg-brand-primary + bg-brand-secondary (primary
+     hover/pressed fills), colors/border/border-focus (focus ring),
+     colors/fg/fg-tertiary (disabled/loading text) and the primary gradient
+     stops. None are overridden in the light scope, and G2 confirmed that is
+     correct rather than incidental: every one of these DS variables resolves to
+     the same value in both modes — fgConsistent
+     (colors/fg/fg-text-consistent-light) stays light on the brand gradient by
+     design, and bg-brand-primary/secondary, border-focus and fg-tertiary are
+     theme-invariant. */
+  --color-brandHover: #504dff;
+  --color-brandPressed: #4836f5;
+  --color-focusRing: #c2ccff;
+  --color-fgTertiary: #636685;
+  --color-fgConsistent: #f2f3f7;
+  --color-button-gradient-start: #2a197d;
+  --color-button-gradient-end: #6a6cfb;
+  /* Design-system tabs tokens (Figma Tabs 5029:51846 / Tabs2 5039:73501 /
+     Tabs3 5043:59408): dark values are the Figma source values —
+     colors/border/border-tertiary (hover border),
+     colors/border/border-brand-dim-quaternary (active border),
+     colors/fg/fg-secondary (Tabs2 resting text), colors/fg/fg-brand-primary
+     (Tabs3 hover text) and the gradient-brand2 stops (the active-tab fill all
+     three families share). G2 filled borderTertiary/fgSecondary/fgBrand in the
+     light scope from the DS light mode; borderBrandDim and the gradient-brand2
+     stops are theme-invariant and stay on these values. */
+  --color-borderTertiary: rgba(188, 182, 239, 0.3);
+  --color-borderBrandDim: rgba(156, 160, 229, 0.4);
+  --color-fgSecondary: #a1a6c4;
+  --color-fgBrand: #757dff;
+  --color-brand2-start: rgba(148, 154, 255, 0.2);
+  --color-brand2-end: rgba(80, 77, 255, 0.2);
+  /* Sticky top bar (Figma Navbar 1036:201581 dark / 1030:61380 light, and
+     Mobile / Topbar 551:10137): the bar's `bg` layer is the gradient-navbar
+     fill — components/navbar/bg-gradient-start → -end, top to bottom — over a
+     background blur-md (Figma radius 12 ⇒ CSS blur(6px)). The fill's own fade
+     to near-transparent is what softens the bar's bottom edge; there is no
+     mask in the spec. */
+  --color-navbarGradientStart: #09042080; /* components/navbar/bg-gradient-start */
+  --color-navbarGradientEnd: #09042014; /* components/navbar/bg-gradient-end */
+  /* Design-system form-control tokens (Figma Sliders 5246:16073 / Switch
+     5044:49116 / Checkbox 5044:49213 / Radio 5044:49317): dark values are the
+     Figma source values — colors/fg/fg-quaternary (disabled thumbs/glyphs),
+     colors/bg/bg-brand-quarternary (pressed checked fills),
+     colors/border/border-brand-dim-tertiary (unchecked control borders),
+     colors/border/border-quarternary (disabled radio center), the
+     gradient-slider stops and the components/slider palette (thumb center
+     dot + ring, max-marker line, min/next-step marker, filled range thumb).
+     G2 filled fgQuaternary, borderQuarternary and the slider dot/ring/line from
+     the DS light mode; brandQuaternary, borderBrandDimTertiary, the gradient
+     stops and the raw-hex marker/amber are theme-invariant. */
+  --color-fgQuaternary: #4d4d6e;
+  --color-brandQuaternary: #3325ae;
+  --color-borderBrandDimTertiary: rgba(156, 160, 229, 0.3);
+  --color-borderQuarternary: rgba(188, 182, 239, 0.4);
+  --color-slider-brand-start: #504dff;
+  --color-slider-brand-end: #757dff;
+  --color-slider-yellow-start: #ff8a5c;
+  --color-slider-yellow-end: #ffc738;
+  --color-sliderDot: #1a192d;
+  --color-sliderRing: rgba(255, 255, 255, 0.2);
+  --color-sliderLine: #2a2a40;
+  --color-sliderMarker: #fe8b5b;
+  --color-sliderAmber: #ffc23b;
+  /* colors/fg/fg-primary (navbar label + hovered nav icon, Figma 5010:29059).
+     G2 filled the light value from the same variable; it still equals
+     --color-text, which is also fg-primary. */
+  --color-fgPrimary: #f2f3f7;
+  /* Design-system table tokens (Figma Patterns/Tables 5178:37455): dark values
+     are the Figma source values — colors/bg/bg-secondary (row/cell surface),
+     colors/bg/bg-tertiary (hovered row) and the components/status palette
+     shared by the Status/Risk/Token-Idle cells: fg/bg/border-success,
+     fg-warning (risk Medium segments) and fg/bg-brand (Pending badge).
+     statusSuccessSolid is colors/system/success (#02c2a1), the active-position
+     dot and the active position-iconbox glyph. G2 filled the row surfaces
+     and the fg/bg status pairs from the DS light mode;
+     statusSuccessBorder and statusSuccessSolid are theme-invariant. */
+  --color-bgSecondary: rgba(188, 182, 239, 0.05);
+  --color-bgTertiary: rgba(188, 182, 239, 0.1);
+  /* components/badges/bg-primary — the action-iconbox disc. Coincides with
+     bg-secondary in dark but diverges in light (periwinkle vs white glass),
+     so it needs its own token. */
+  --color-badgePrimary: rgba(188, 182, 239, 0.05);
+  --color-statusSuccess: #40e3c8;
+  --color-statusSuccessBg: rgba(2, 194, 161, 0.1);
+  --color-statusSuccessBorder: rgba(2, 194, 161, 0.2);
+  --color-statusSuccessSolid: #02c2a1;
+  /* components/iconbox/bg-position-green + border-position-green (Figma
+     Iconbox/Position 5051:145321). Numerically the dark statusSuccessBg/Border
+     pair, but they need their own tokens: the DS holds the position iconbox at
+     0.1/0.2 in BOTH modes, while components/status/bg-success doubles to
+     #02c2a133 in light. Theme-invariant — no light override below. */
+  --color-iconboxPositionBg: rgba(2, 194, 161, 0.1);
+  --color-iconboxPosition: rgba(2, 194, 161, 0.2);
+  --color-statusWarning: #ffc044;
+  /* colors/fg/fg-system-warning-primary. A distinct DS variable from
+     components/status/fg-warning above (#ffc044) — this one tints the
+     info glyph on the borrow-requirement callout (Figma 2376:226246).
+     Theme-invariant in the DS — no light override below. */
+  --color-fgSystemWarning: #f98607;
+  /* components/status/fg-error (APP-432 item 6 — the risk meters' Aggressive
+     tier). Distinct from the legacy `--color-error` (--service-red #ff6d6d),
+     which the pre-redesign widgets still read for validation copy. */
+  --color-statusError: #f83c3b;
+  /* components/badges/bg-risk-low|medium|high (Figma Badges/Risk 5017:7512).
+     The DS split the risk pill off the components/status palette, so it needs
+     its own tokens: risk-low is Green/400→500 where status success goes
+     400→600, risk-medium is Orange/300→400 where status warning goes
+     300→600, and risk-high is Orange/600 in BOTH modes — orange, not the
+     status red the meters used to borrow. */
+  --color-riskLow: #40e3c8;
+  --color-riskMedium: #ffc044;
+  /* Theme-invariant — no light override below. */
+  --color-riskHigh: #e25310;
+  --color-statusBrand: #9ca9ff;
+  --color-statusBrandBg: rgba(156, 160, 229, 0.1);
+  /* components/charts/bg-chart1 + bg-chart2 (Figma DS Charts/Line 5041:7043):
+     the two series tints — brand indigo and teal. Consumed as `var()` from
+     recharts SVG props, not as Tailwind utilities. Theme-invariant: the DS
+     charts carry no light mode. */
+  --color-chart1: #757dff;
+  --color-chart2: #1dd9ba;
+  /* Iconbox status rings (Figma Components/Iconbox 5017:7858).
+     Figma types the rings by product — Pendle mint / Morpho blue — as raw
+     hexes (no variable); promoted here under the system color each pairs
+     with. statusInfoSolid is border-system-info-primary. None are overridden
+     in the light scope: the product rings are raw hexes with no mode dimension,
+     and border-system-info-primary is theme-invariant. */
+  --color-statusSuccessRing: #8bf1ca;
+  --color-statusInfoRing: #60a9ff;
+  --color-statusInfoSolid: #59b1ff;
+  /* Design-system list + accordion tokens (Figma Patterns/Lists 5209:36922 /
+     Patterns/Accordion 5386:66315): colors/border/border-primary (container,
+     item and wallet-row hairlines — the `border-borderPrimary` utility
+     predates this token, so until now it silently fell back to the preflight
+     border color), gradient-brand-border + the gradient-brand3 stops (the
+     selected wallet row) and the loader's brand gradient stops. G2 filled
+     borderPrimary in the light scope from border-primary's light mode; the
+     brand-tinted ones are theme-invariant and read on white as-is. */
+  --color-borderPrimary: rgba(188, 182, 239, 0.1);
+  --color-brandBorder: #504dff;
+  --color-brand3-start: rgba(148, 154, 255, 0.1);
+  --color-brand3-end: rgba(80, 77, 255, 0.1);
+  --color-loader-brand-start: #949aff;
+  --color-loader-brand-end: #504dff;
+  /* Loading skeletons (Figma Portfolio/Skeleton loader 1881:51588). The comp
+     types every placeholder block as colors/bg/bg-secondary, so the track is
+     bgSecondary's value restated under its own name — the two are free to
+     diverge later without dragging the table surfaces along. The sweep has no
+     Figma counterpart (the comp is a static render); it inherits the shipped
+     deep indigo in dark and moves to a periwinkle wash in light, where the
+     indigo read as a dark smear across a near-white block. */
+  --color-skeletonTrack: rgba(188, 182, 239, 0.05);
+  --color-skeletonSweep: rgb(76, 61, 158);
+  /* ChartSkeleton's resting line trace. Dark draws it white through an overlay
+     blend; light has to leave both behind (white on white is nothing) and use
+     the periwinkle the rest of the light hairlines are on. */
+  --color-skeletonTrace: #ffffff;
+  /* The /stake mobile summary-card "Cover" wash (comp 1222:16799): Figma types
+     the gradient's bottom stop as a raw hex; same value in both themes. */
+  --color-brandCover: #756fec;
+  /* DS "gradient-success", the wash the product position cards paint the "%"
+     unit with (Figma 859:41055). The top stop is colors/system/success, i.e.
+     the same value as statusSuccessSolid; only the bottom stop is new. Figma
+     gives the gradient no mode dimension, so it is theme-invariant like the
+     other gradient stop pairs above. */
+  --color-success-gradient-start: #02c2a1;
+  --color-success-gradient-end: #9fde88;
+  /* Design-system Patterns/Headers (Figma 5178:37451): the brand glow behind
+     the Stake header's Iconbox/Status (5043:59189). Figma types it as a raw
+     effect (no variable); same value in both themes for now. */
+  --shadow-brandGlow: 0px 4px 64px 0px rgba(98, 90, 254, 0.3);
   --color-border: var(--transparent-white-15);
-  --color-borderActive: --transparent-white-25;
+  --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
   --color-brand: rgb(var(--brand-purple));
   --color-brandLight: rgb(var(--brand-light-purple));
   --color-brandDark: rgb(var(--brand-dark-purple));
   --color-brandMiddle: rgb(var(--brand-middle-purple));
+  /* --background/--foreground are defined only in the light scope; undefined (invalid) in dark — known issue, fix deferred. See components/ui/THEMING.md */
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-chartSelect: rgba(22, 17, 53, 1);
@@ -81,13 +290,26 @@
   --background-image-primaryActive: var(--service-purple-5);
   --background-image-primaryFocus: var(--primary-purple-40);
   --background-image-primaryTransparent: var(--service-purple-transparent);
-  --background-image-app-background: URL('/images/background.png');
+  /* Page background color (Figma colors/bg/bg-primary). Backs .app-background
+     and rings the stacked-badge icons (IconStack), which must match the page —
+     not the surface they sit on — to read as punched-out circles. Changing the
+     dark value requires re-baking the pre-blended background image below. */
+  --color-pageBackground: #090420;
+  /* Dark page background (Figma 5010:6624): a bottom fade into the solid
+     backdrop over the sky image. The image is pre-baked — sunset sky blended
+     (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
+     Layer geometry (fixed layer, sizes, positions) lives in .app-background. */
+  --background-image-app-background:
+    linear-gradient(to bottom, rgba(9, 4, 32, 0) 58%, #090420 100%), url('/images/background-dark.webp');
   --background-image-nav-light: var(--service-nav-light);
   --background-image-nav-light-vertical: var(--service-nav-light-vertical);
 
   --radius-lg: 10px;
   --radius-md: 8px;
   --radius-sm: 6px;
+  /* V2 destination card radius (Figma radius-2xl); a distinct key avoids
+     clobbering Tailwind's builtin rounded-2xl/rounded-xl utilities. */
+  --radius-card: 28px;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -96,19 +318,94 @@
   --animate-slide-down-fade: slide-down-fade 0.2s ease-out;
   --animate-slide-up-fade: slide-up-fade 0.2s ease-out;
 
+  /* Odometer roll for a live-accruing figure (Figma 1598:76444): one line-height
+     of travel over 200ms on the comp's easeOut. The outgoing glyph holds its end
+     state until the component drops it, so it can't flash back into the window
+     for a frame. */
+  --animate-digit-roll-in: digit-roll-in 200ms cubic-bezier(0, 0, 0.58, 1);
+  --animate-digit-roll-out: digit-roll-out 200ms cubic-bezier(0, 0, 0.58, 1) forwards;
+
+  /* Loader dots (Figma 2238:62221): each dot hops up 1.5 diameters on the
+     overshoot curve, holds a beat, drops back, then rests for the remainder
+     of a 1.6s loop; the three dots run the same track 100ms apart. The 4px
+     travel is in the Loader's 16-unit viewBox (dot = 16/6), so it scales
+     with the glyph. */
+  --animate-loader-dot: loader-dot 1600ms infinite both;
+
+  /* Portfolio donut fill (Figma 2233:61099): the arcs are revealed clockwise
+     from 12 o'clock by a conic-gradient mask whose angle runs 0 → 360deg (the
+     `@property` by `.donut-sweep-mask` makes the angle interpolable). Starts
+     300ms after the data lands, with the rest of the card's entrance. */
+  --animate-donut-sweep: donut-sweep 900ms ease-out 300ms both;
+
+  /* Menu panel (Figma 2134:88604): scales up from 0.9 out of its top-right
+     anchor, 300ms on quart; the close runs the same track backwards. The
+     comp's x/y tracks (14, -20) are just the offset of a centre-scaled frame
+     pinned to its top-right corner — `transform-origin: top right` already
+     accounts for them, so there is no translate here. Reduced motion swaps the tokens
+     for a plain crossfade (see the media query by the `.nav-menu-icon` rules). */
+  --animate-menu-in: menu-in 300ms var(--ease-in-out-quart) both;
+  --animate-menu-out: menu-out 300ms var(--ease-in-out-quart) both;
+
+  /* First-visit AppLoader reveal (Figma 1875:6834): after the logomark
+     timeline, the page content fades in rising 30px and the chrome (navbars)
+     just fades, both on quint-out. Durations are the Figma timeline segments
+     (1.6-1.9s and 1.6-2.23s of the 3s loop).
+
+     The content reveal fills `backwards`, not `both`. The fill is only ever
+     needed *before* the animation starts, to hold the hidden state through the
+     frame between class swap and animation start — exactly what `backwards`
+     does on its own. A forwards fill instead keeps the effect applying the
+     `to` keyframe for the life of the page, and an animated `transform: none`
+     computes to an identity matrix rather than to the `none` keyword. That
+     left this wrapper a permanent backdrop root, so every glass Card inside it
+     carried a `backdrop-filter` with nothing to sample: the page background is
+     a fixed layer painted outside the wrapper (Figma 2376:225134, "Missing
+     blur in main cards"). The animation's end state is the element's base
+     style, so dropping the forwards fill changes nothing visually. */
+  --animate-app-loader-content-reveal: app-loader-content-reveal 300ms var(--ease-out-quint) backwards;
+  --animate-app-loader-chrome-reveal: app-loader-chrome-reveal 625ms var(--ease-out-quint) both;
+
   --max-height-screen-70: calc(100vh - 70px);
 
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 912px;
+  /* `desktop` is the M/L tier of the design-system grid (Figma: Foundations /
+     Grids & Spacing 5176:33992): tiers break at 640 (sm) and 1200. New and
+     redesigned surfaces should branch on `sm:` + `desktop:` only; md/lg/xl/2xl
+     are legacy values kept for the pre-redesign screens and die with them.
+     Full tier strategy + dvh/svh conventions: docs/responsive-breakpoints.md */
+  --breakpoint-desktop: 1200px;
   --breakpoint-xl: 1280px;
   --breakpoint-2xl: 1400px;
-  --breakpoint-3xl: 1680px;
 
   --ease-in-expo: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.03, 1);
   --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
   --ease-bezier-mouse: cubic-bezier(0.4, 0, 0.2, 1);
+  /* The two curves the motion comps are drawn on. Across every comp the
+     pairing is consistent: a surface ARRIVES on quint (decisive, front-loaded)
+     and LEAVES on quart (even), while anything that merely crossfades or
+     travels in both directions uses quart alone. */
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Two more curves the interaction comps (Figma 2238:62221 loader,
+     2233:61099 pie chart, 1598:76582 number roll) are drawn on: a springy
+     overshoot for small things that pop or hop into place (loader dots, badge
+     scale-in, badge slide), and a plain settle for anything that resizes
+     (the rolling number's width). The settle is the textbook easeOutExpo;
+     `--ease-out-expo` above is the steeper house variant. */
+  --ease-out-overshoot: cubic-bezier(0.45, 1.45, 0.8, 1);
+  --ease-out-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  /* The transaction modal's step timeline (Figma 2685:148222) is drawn on a
+     trio rather than the quint/quart pairing above: size and position carry on
+     the standard curve for 350ms while, inside them, exits accelerate away and
+     entrances decelerate in over 200ms. `modules/ui/animation/modalStepMotion.ts`
+     mirrors these three for the parts of that timeline animated in JS. */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
 
   --transition-duration-250: 250ms;
   --transition-duration-350: 350ms;
@@ -146,6 +443,92 @@
     }
     to {
       height: 0;
+    }
+  }
+  @keyframes app-loader-content-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      /* `none`, not translateY(0) — but note this alone is not enough to keep
+         the wrapper transform-free once the animation ends: an animated
+         `transform: none` still computes to an identity matrix, which is a
+         containing block for fixed/sticky descendants and a backdrop root all
+         the same. The animation not filling forwards (see the shorthand above)
+         is what actually clears it. */
+      transform: none;
+    }
+  }
+  @keyframes app-loader-chrome-reveal {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes loader-dot {
+    0% {
+      transform: translateY(0);
+      animation-timing-function: var(--ease-out-overshoot);
+    }
+    18.75% {
+      transform: translateY(-4px);
+      animation-timing-function: linear;
+    }
+    25% {
+      transform: translateY(-4px);
+      animation-timing-function: var(--ease-out-overshoot);
+    }
+    43.75%,
+    100% {
+      transform: translateY(0);
+    }
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes menu-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+  @keyframes donut-sweep {
+    from {
+      --donut-sweep: 0deg;
+    }
+    to {
+      --donut-sweep: 360deg;
+    }
+  }
+  @keyframes digit-roll-in {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes digit-roll-out {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-100%);
     }
   }
   @keyframes slide-down-fade {
@@ -194,18 +577,73 @@
   * {
     @apply border-border;
   }
+  /* `antialiased` = -webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
+     grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
+     canvas, which made every Circular Medium surface read a weight above the comp
+     once the real 500 cut shipped. Affects Graphik too — the comps are the target
+     for both families. */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 
+  /*
+   * Every scrollbar in the app, in one place. `scrollbar-width` and
+   * `scrollbar-color` are INHERITED properties, so this single declaration
+   * reaches every scroll container in the tree — modals, token lists,
+   * tooltips, drawer tabs, the Morpho tables — with no per-container utility
+   * class. It replaces the old scrollbar-thin / scrollbar-thin-always
+   * utilities, which had to be hand-applied at ~20 call sites.
+   *
+   * Deliberately NOT `::-webkit-scrollbar`: declaring that pseudo-element
+   * forces a classic space-taking bar even where the platform would draw an
+   * overlay one, and Chrome ignores it outright once scrollbar-width or
+   * scrollbar-color is set on the same element. The standard properties also
+   * reach Firefox, which has never supported the pseudo family.
+   *
+   * The track is transparent so the bar reads as a thumb floating on the
+   * surface rather than sitting in a groove. There is no way to keep the UA's
+   * default thumb while clearing the track — `scrollbar-color` takes `auto`
+   * or BOTH colors, never one of each — so the thumb is an explicit token.
+   * borderTertiary is theme-aware (lilac 30% dark, periwinkle 75% light),
+   * which is what keeps it visible in light mode; the old utilities hardcoded
+   * --transparent-white-15 and went invisible on light surfaces.
+   *
+   * `:root *` and not `*`: html must NOT match, so the page scrollbar keeps
+   * the UA's own width and colors. Body does match, but that is harmless —
+   * the viewport bar reads its styling from the root element, not from body
+   * (measured: body on `thin` still yields a 15px gutter; `thin` on the root
+   * yields 11px).
+   */
+  :root * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-borderTertiary) transparent;
+  }
+
+  /* Each face declares its real weight. Without the descriptor every face
+     defaults to 400, so the browser has a single candidate per family and
+     resolves every requested weight to it — font-medium et al. render
+     identically to font-normal. The design system uses exactly two weights:
+     Graphik at 400 (body) and Circular at 500 (labels/headings). */
   @font-face {
     font-family: 'GraphikStd';
     src: URL('/fonts/Graphik-Regular-Web.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+  }
+
+  /* Circular XX "Book" is 450 internally, not 400 — hence --font-weight-custom-450. */
+  @font-face {
+    font-family: 'CircleStd';
+    src: URL('/fonts/CircularXXWeb-Book.woff2') format('woff2');
+    font-weight: 450;
+    font-display: swap;
   }
 
   @font-face {
     font-family: 'CircleStd';
-    src: URL('/fonts/CircularXXWeb-Book.woff2') format('woff2');
+    src: URL('/fonts/CircularXXWeb-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-display: swap;
   }
 
   button:not(:disabled),
@@ -214,6 +652,23 @@
   }
 
   :root {
+    /* Tells the UA which set of built-in widgets to draw: scrollbars, form
+       controls, and the document canvas. Without it every browser assumes
+       `light` and paints a light-grey scrollbar track down the side of the dark
+       app. Declared on the root because the *viewport* scrollbar takes its
+       scheme from the root element specifically, and keyed on the same
+       data-theme attribute as the palette so the two can never drift — the
+       pre-paint script in index.html sets that attribute before first paint,
+       so the correct scheme is in place by the time anything renders.
+
+       This does NOT change whether a scrollbar reserves layout space; that
+       stays an OS/browser decision. It only recolors the bar we already get —
+       which is the whole styling the viewport scrollbar gets, since the
+       `:root *` rule below deliberately does not match html. Verified: the
+       viewport bar takes its width from the root, not from body, so body
+       inheriting `thin` does not narrow it (15px vs 11px measured). */
+    color-scheme: dark;
+
     --brand-dark-purple: 26 24 85;
     --brand-middle-purple: 42 25 125;
     --brand-purple: 67 49 233;
@@ -309,7 +764,7 @@
 
     --transparent-white-70: #ffffffb3;
     --transparent-white-40: #ffffff66;
-    /* --transparent-white-25: #ffffff40; */
+    --transparent-white-25: #ffffff40;
     --transparent-white-20: #ffffff33;
     --transparent-white-15: #ffffff26;
     --transparent-white-05: linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
@@ -319,50 +774,174 @@
     --transparent-black-20: #00000033;
     --transparent-black-10: #0c0c0d1a;
   }
+
+  /*
+   * Light "Sky" daytime theme — activated by data-theme="light" on <html>.
+   * Tailwind v4 emits the @theme --color-* tokens as live CSS vars, so overriding
+   * the semantic tokens here re-themes the app at runtime (base --primary-white /
+   * --transparent-* vars are left alone so white overlays/gradients stay intact).
+   *
+   * G2: values are the design system's `1. Color modes` collection, `Light Mode`
+   * (Figma yQTfE5x7NDhjj4vPMoQoEJ), resolved through their alias chains to final
+   * hex; each line cites the DS variable it fills. Parity references are the
+   * `🟢 Lightmode` page in Sky App: UI (1030:58446).
+   *
+   * Two things here carry no DS citation, for different reasons — see the
+   * `primary-*` gradient stops at the bottom of this block (legacy widget-look
+   * surfaces the DS doesn't type), and the `.nav-icon` light rules further down
+   * the file (a deliberate deviation where the DS contradicts itself).
+   *
+   * Only tokens whose DS light value DIFFERS from its dark value appear here —
+   * 48 of the 117 do. The rest are theme-invariant by design (brand ramps, the
+   * system color scale, border-focus, fg-tertiary, fg-text-consistent-*) and are
+   * deliberately left to the @theme dark default rather than restated.
+   *
+   * Light inverts the dark elevation stack: surfaces get LIGHTER as they rise, so
+   * the raised tokens land on white-alpha (bg-secondary/tertiary/quarternary)
+   * while dark's rise on lilac-alpha. Hairlines and low tints likewise move from
+   * dark's lilac (#bcb6ef) to light's periwinkle (#9ca0e5).
+   */
+  :root[data-theme='light'] {
+    /* Counterpart to the `color-scheme: dark` default above. */
+    color-scheme: light;
+
+    /* body base — colors/bg/bg-primary #ecf0ff, colors/fg/fg-primary #2f2d40 */
+    --background: 227 100% 96%;
+    --foreground: 246 17% 21%;
+
+    /* Text ramp — colors/fg/fg-{primary,secondary,tertiary,quaternary}. The app's
+       four text tokens keep their dark ordering (text > textSecondary >
+       textDesaturated > textDimmed) and map onto the DS ramp in that order. */
+    --color-text: #2f2d40; /* fg-primary */
+    --color-textSecondary: #3b3952; /* fg-secondary */
+    --color-textMuted: #3b3952; /* fg-secondary — mirrors textSecondary, as in dark */
+    --color-textEmphasis: #4836f5; /* fg-brand-primary */
+    --color-textDesaturated: #636685; /* fg-tertiary */
+    --color-textDimmed: #a1a6c4; /* fg-quaternary */
+    --color-error: #e51f1d; /* components/status/fg-error */
+    --color-bullish: #00a186; /* components/status/fg-success */
+
+    /* Elevation: page (bg-primary lilac) < panel < card (white glass). */
+    --color-container: #ffffff; /* components/tooltip/bg-primary — opaque so popovers/tooltips/banners read on the lilac page */
+    --color-containerDark: #ecf0ff; /* components/modals/bg-item */
+    --color-surface: #bcb6ef1a; /* components/cards/bg-secondary */
+    --color-surfaceHover: #bcb6ef4d; /* components/modals/bg-subsection */
+    --color-bgHover: #9ca0e533; /* components/badges/bg-secondary — TopNav MoreMenu row hover */
+    --color-surfaceAlt: #9ca0e533; /* components/badges/bg-secondary */
+    --color-panel: #ffffff33; /* colors/bg/bg-quarternary */
+    --color-card: #ffffff99; /* colors/bg/bg-secondary */
+    --color-cardLight: #ffffff; /* utilities/bg-section */
+    --color-selectBackground: #9ca0e533; /* components/badges/bg-secondary */
+    --color-selectActive: #9ca0e54d; /* components/badges/bg-primary */
+    --color-chartSelect: #ecf0ff; /* components/modals/bg-item */
+
+    /* B5 chrome-surface tokens — each mirrors the token it replaced magic hex for.
+       cookieToggleOn has no light value: the toggle track's light:bg-surfaceAlt
+       wins by source order in light, so the accent only shows in dark (parity). */
+    --color-cookieSurface: #ecf0ff; /* components/modals/bg-item — mirrors containerDark */
+
+    /* Secondary buttons — the DS gives the hairline
+       (components/buttons/secondary/border-default, on --color-glassBorder below)
+       but no per-state fills, so the states step through the periwinkle tint scale
+       badges/bg-secondary -> badges/bg-primary -> border-secondary, preserving the
+       dark theme's rest < hover < active ordering. */
+    --color-secondary: #9ca0e533; /* components/badges/bg-secondary */
+    --color-secondaryHover: #9ca0e54d; /* components/badges/bg-primary */
+    --color-secondaryActive: #9ca0e566; /* colors/border/border-secondary */
+    --color-secondaryFocus: #9ca0e54d; /* components/badges/bg-primary */
+    --color-secondaryDisabled: #bcb6ef1a; /* components/cards/bg-secondary */
+
+    /* tabs */
+    --color-tab: #3b3952; /* fg-secondary — resting tab label */
+    --color-tabPrimary: #9ca0e54d; /* components/badges/bg-primary */
+
+    /* borders */
+    --color-border: #9ca0e54d; /* colors/border/border-primary */
+    --color-borderActive: #9ca0e5bf; /* colors/border/border-tertiary */
+    --color-borderPurple: #4836f5; /* colors/border/border-brand-secondary */
+
+    /* E2 convert glass tokens */
+    --color-glassSurface: #ffffff99; /* colors/bg/bg-secondary */
+    --color-glassBadge: #9ca0e533; /* components/badges/bg-secondary */
+    --color-glassBorder: #9ca0e566; /* colors/border/border-secondary */
+
+    /* Sticky top bar fill — same gradient, the light mode's own stops
+       (Figma Navbar 1030:61380). */
+    --color-navbarGradientStart: #bcb6ef4d; /* components/navbar/bg-gradient-start */
+    --color-navbarGradientEnd: #bcb6ef0d; /* components/navbar/bg-gradient-end */
+
+    /* H5 tabs / H15 list + accordion / navbar foreground */
+    --color-borderTertiary: #9ca0e5bf; /* colors/border/border-tertiary */
+    --color-borderPrimary: #9ca0e54d; /* colors/border/border-primary */
+    --color-fgSecondary: #3b3952; /* colors/fg/fg-secondary */
+    --color-fgPrimary: #2f2d40; /* colors/fg/fg-primary */
+    --color-fgQuaternary: #a1a6c4; /* colors/fg/fg-quaternary */
+    --color-fgBrand: #4836f5; /* colors/fg/fg-brand-primary */
+    --color-borderQuarternary: #9ca0e5bf; /* colors/border/border-quarternary */
+    --color-flipSurface: #ecf0ff; /* components/modals/bg-item */
+    --color-flipRing: #cdd9ff; /* components/modals/border-item */
+    --color-modalOverlay: #504dff33; /* components/modals/bg-overlay */
+    --color-modalSubsection: #bcb6ef4d; /* components/modals/bg-subsection — mirrors surfaceHover */
+
+    /* H8 table surfaces + the components/status palette the Status/Risk/Token-Idle
+       cells share. statusSuccessBorder/statusSuccessSolid/statusInfoSolid are
+       theme-invariant in the DS and stay on the @theme default. */
+    --color-bgSecondary: #ffffff99; /* colors/bg/bg-secondary */
+    --color-bgTertiary: #ffffff66; /* colors/bg/bg-tertiary */
+
+    /* Skeletons. Light does NOT follow bg-secondary the way the other surface
+       tokens do: bg-secondary's light value is #ffffff99, which is also
+       --color-card, so a skeleton on a Card came out white-on-white (measured
+       ~4/255 separation — invisible). Light instead inverts the relationship
+       dark uses, putting the track on a periwinkle tint that reads against
+       both the lavender page and the white card, and making the sweep the
+       white highlight passing over it. */
+    --color-skeletonTrack: rgba(156, 160, 229, 0.2);
+    --color-skeletonSweep: rgba(255, 255, 255, 0.75);
+    --color-skeletonTrace: rgba(156, 160, 229, 0.8);
+    --color-badgePrimary: #9ca0e54d; /* components/badges/bg-primary */
+    --color-statusSuccess: #00a186; /* components/status/fg-success */
+    --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */
+    --color-statusWarning: #dd6102; /* components/status/fg-warning */
+    --color-statusError: #e51f1d; /* components/status/fg-error */
+    --color-riskLow: #02c2a1; /* components/badges/bg-risk-low */
+    --color-riskMedium: #ffaa20; /* components/badges/bg-risk-medium */
+    --color-statusBrand: #4836f5; /* components/status/fg-brand */
+    --color-statusBrandBg: #9ca0e54d; /* components/status/bg-brand */
+
+    /* H7 slider palette (components/slider) */
+    --color-sliderDot: #e8ebfe; /* fg-dot */
+    --color-sliderRing: #09042033; /* fg-pointer */
+    --color-sliderLine: #c9cdf4; /* fg-line */
+
+    /* Lighter purple for the legacy widget-look surfaces; dark keeps the deep
+       indigo from :root. No DS citation because these have no DS counterpart and
+       never will: their only consumers are pre-redesign variants the design
+       system doesn't type — Button `connectPrimary`/`pill`/`pagination`/
+       `paginationActive`, the Tabs `icons` variant, Toggle, and the interactive
+       Card hover. Per the Track H convention those die with the widget tree, so
+       these stops are deleted rather than replaced. The DS-adopted variants
+       (Button `primary`/`secondary`, Tabs `segmented`/`nav`) already run on the
+       button-gradient, brandHover and brand2 tokens instead. Nothing to revisit
+       here — when the widget tree goes, these go with it. */
+    --color-primary-start: rgba(125, 108, 242);
+    --color-primary-end: rgba(143, 126, 246);
+    --color-primary-bright-start: rgba(130, 112, 245);
+    --color-primary-bright-end: rgba(148, 131, 248);
+
+    --color-pageBackground: #ecf0ff; /* colors/bg/bg-primary */
+    /* Light page background (Figma 5124:25430): bottom fade + daytime sky
+       image over a pale blue base gradient (visible only while the image
+       loads, since the image is opaque and covers the layer). */
+    --background-image-app-background:
+      linear-gradient(to bottom, rgba(236, 240, 255, 0) 58%, #ecf0ff 100%),
+      url('/images/background-light.webp'), linear-gradient(180deg, #f7fbff 0%, #ecf4ff 100%);
+  }
 }
 
 @utility container {
   margin-inline: auto;
   padding-inline: 2rem;
-}
-
-@utility scrollbar-hidden {
-  /* Hide scrollbar for Chrome, Safari, and Opera */
-  &::-webkit-scrollbar {
-    width: 0;
-  }
-}
-
-@utility scrollbar-thin {
-  &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  scrollbar-gutter: stable;
-
-  &:hover::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-15);
-    border: solid 3px transparent;
-    border-radius: 5px;
-  }
-}
-
-@utility scrollbar-thin-always {
-  &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  scrollbar-gutter: stable;
-
-  &::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-15);
-    border: solid 3px transparent;
-    border-radius: 5px;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    box-shadow: inset 0 0 10px 10px var(--transparent-white-20);
-  }
 }
 
 @utility chevron-down {
@@ -389,18 +968,492 @@
   pointer-events: none;
 }
 
-@utility hide-spin-button {
-  /* InputStyles.module.css */
-  -webkit-appearance: none;
-  -moz-appearance: textfield;
+/* Recharts' accessibility layer (v3, on by default) makes the chart surface
+   focusable (tabindex 0, role application) and its z-index groups
+   click-focusable (tabindex -1), so clicking the plot or the series drew the
+   browser's focus ring — around the whole canvas for the surface, and as a
+   hairline above and below the data for the `g.recharts-zIndex-layer_*` the
+   series lives in. Chrome counts the click-focused role=application svg as
+   :focus-visible, so the ring can't be scoped away to keyboard focus — it
+   goes entirely. Keyboard scrubbing still works; the hover chrome (dot,
+   cursor, tooltip) is the focus indication.
 
-  &::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+   Global rather than per-chart: every recharts surface in the app behaves the
+   same way, and each one is nested somewhere different. */
+svg.recharts-surface:focus,
+svg.recharts-surface [tabindex]:focus,
+.recharts-wrapper [tabindex='-1']:focus {
+  outline: none;
+}
+
+/* App page background (Figma: Backgrounds 5177:37170) ----------------------
+   A viewport-fixed layer behind the shell (rendered once in Layout). Fixed
+   instead of `background-attachment: fixed` because the latter is broken on
+   iOS Safari. The image layers come from --background-image-app-background
+   (dark default in @theme; light override in the [data-theme='light'] block);
+   the sizes/positions below are per-layer: fade gradient, image(, base
+   gradient in light). The dark image keeps the design's top framing on wide
+   viewports and centers when the viewport is taller than the image's aspect. */
+.app-background {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background-color: var(--color-pageBackground);
+  background-image: var(--background-image-app-background);
+  background-repeat: no-repeat;
+  background-size: auto, cover;
+  background-position:
+    center,
+    center top;
+}
+[data-theme='light'] .app-background {
+  background-size: auto, cover, auto;
+  background-position: center;
+}
+
+/* App loader cover (APP-419): surfaces that mount outside Layout (the toast
+   stack) can't wear the reveal classes, so they hide via this document flag
+   instead — useAppLoader sets it on <html> for exactly the cover phase.
+   opacity (not visibility/display) to match the reveal classes' own hiding:
+   layout and toast timers run on, and the subtree stays in the accessibility
+   tree, so aria-live announcements fire and keyboard focus survives the
+   cover; anything still within its lifetime pops back at reveal. */
+html[data-app-loader-cover] .app-loader-cover-hidden {
+  opacity: 0;
+  /* !important: Radix dialog content carries inline pointer-events (APP-515),
+     which would leave an invisible modal card clickable under the cover. */
+  pointer-events: none !important;
+}
+
+/* TopNav icon (H6): the pill itself is the Button navbar variant now, but the
+   selected-icon gradient fill doesn't map to utilities, so it stays here,
+   keyed off the link's [aria-current].
+
+   The DS types components/buttons/navbar/fg-active (#9ca9ff) and the active
+   gradient as theme-invariant, and the light comp's navbar (Sky App: UI
+   1030:58491) binds both — the active treatment is identical in both modes
+   (APP-399 #1; an earlier eyedropper sample of the since-updated light comp
+   concluded otherwise). Only the inactive glyph carries a mode: #9ca9ff in
+   dark, colors/fg/fg-tertiary in light. */
+.nav-icon {
+  color: #9ca9ff;
+  transition: color 250ms var(--ease-out-expo);
+}
+/* Hovering the pill brightens the glyph to fg-primary (Figma hover state).
+   Light mode is unaffected: its .nav-icon rule below ties on specificity and
+   wins by source order. */
+:hover > .nav-icon {
+  color: var(--color-fgPrimary);
+}
+[aria-current='page'] > .nav-icon :where(path) {
+  fill: url(#nav-icon-gradient);
+}
+[data-theme='light'] .nav-icon {
+  color: var(--color-fgTertiary);
+}
+/* Menu trigger glyph (lucide, stroke-based): open gets the brand gradient
+   (Figma Type=Menu State=Active) in both modes — the gradient is
+   theme-invariant like the nav-icon active fill; rest/hover stay fg-primary
+   via currentColor. */
+[data-state='open'] > .nav-menu-icon {
+  /* The icon's own userSpaceOnUse gradient (set inline by MenuToggleIcon), not
+     the shared #nav-icon-gradient: that one is objectBoundingBox, and a
+     horizontal stroke has a zero-height bounding box, which SVG refuses to
+     paint a bbox-relative gradient on — the lines simply vanish. */
+  stroke: var(--nav-menu-icon-active-stroke);
+}
+/* Portfolio donut fill mask — see `--animate-donut-sweep`. Registered so the
+   angle interpolates; without `@property` a custom property animates
+   discretely and the fill would pop in at the halfway mark instead. The
+   initial value is the full circle, so a browser that skips the animation
+   (or the `motion-safe` gate) still shows the whole chart. */
+@property --donut-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 360deg;
+}
+.donut-sweep-mask {
+  mask-image: conic-gradient(#000 var(--donut-sweep), transparent 0);
+}
+
+/* Hamburger → X (Figma 2134:88604). Three steps of 150ms on quart, keyed off
+   the trigger's data-state: opening, the outer strokes first travel 4px to the
+   centre line, then rotate ±45°, and the middle stroke collapses the instant
+   they meet; closing runs rotate → uncollapse → travel. The order is carried
+   by the per-state transition-delay, listed in the same property order as the
+   transition shorthand (translate, rotate, scale). */
+.nav-menu-icon path {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    translate 150ms var(--ease-in-out-quart),
+    rotate 150ms var(--ease-in-out-quart),
+    scale 10ms linear;
+}
+/* Closing: rotate first, travel once it lands. */
+.nav-menu-icon path[data-line='top'],
+.nav-menu-icon path[data-line='bottom'] {
+  transition-delay: 150ms, 0ms, 0ms;
+}
+.nav-menu-icon path[data-line='middle'] {
+  transition-delay: 0ms, 0ms, 140ms;
+}
+/* Opening: travel first, rotate once the strokes meet. */
+[data-state='open'] > .nav-menu-icon path[data-line='top'],
+[data-state='open'] > .nav-menu-icon path[data-line='bottom'] {
+  transition-delay: 0ms, 150ms, 0ms;
+}
+[data-state='open'] > .nav-menu-icon path[data-line='top'] {
+  translate: 0 4px;
+  rotate: 45deg;
+}
+[data-state='open'] > .nav-menu-icon path[data-line='bottom'] {
+  translate: 0 -4px;
+  rotate: -45deg;
+}
+[data-state='open'] > .nav-menu-icon path[data-line='middle'] {
+  scale: 0 1;
+  transition-delay: 0ms, 0ms, 150ms;
+}
+/* The reduced-motion crossfade below. These live at top level, not in
+   `@theme`: Tailwind only emits a themed `@keyframes` when a *used*
+   `--animate-*` utility names it, and nothing names these — the only
+   references are the token re-points inside the media query, which the theme
+   pass never sees. Declared there, both blocks get tree-shaken and the close
+   animation runs with no keyframes at all (opacity pinned at 1 for the full
+   300ms, then the panel vanishes in one frame once Radix unmounts it). */
+@keyframes menu-fade-in {
+  from {
+    opacity: 0;
   }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes menu-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-menu-icon path {
+    transition: none;
+  }
+  /* The menu panel keeps a crossfade but drops the travel and scale. The
+     `animate-menu-*` utilities resolve `var(--animate-menu-*)` at use, so
+     re-pointing the token here is enough. */
+  :root {
+    --animate-menu-in: menu-fade-in 300ms var(--ease-in-out-quart) both;
+    --animate-menu-out: menu-fade-out 300ms var(--ease-in-out-quart) both;
+  }
+}
 
-  &::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+/* Page transitions (Figma: Sky App: UI 1598:75512, view=motion) -------------
+   Navigating between pages crossfades the content while it slides: the
+   outgoing page leaves to the left and the incoming one arrives from the
+   right, or the mirror of that when the navigation runs against the nav's
+   order (APP-457 — the router adds a `reverse` type; see the block below the
+   forward keyframes). The incoming page starts 100ms into the outgoing one so
+   the two overlap — the comp is explicitly a crossfade, not a sequential
+   out-then-in.
+
+   Which navigations animate is decided in pages/router.tsx: it tags real path
+   changes with the `page` transition type, and vetoes search-param-only
+   navigations outright. Everything below is scoped to that type. */
+
+/* ONLY the page content is captured. Suppressing the root's name is what keeps
+   the background, header and navbar genuinely still: an uncaptured element
+   goes on painting live in the DOM for the whole animation, so it cannot move
+   or change. Capturing the root instead is a trap — the root snapshot always
+   includes the document canvas, so it is opaque, which means (a) the page
+   background travels with the page and (b) anything given its own name can
+   only ever sit *below* it and is never visible. Both were tried; both showed
+   up as the background animating along with the navigation. */
+:root {
+  view-transition-name: none;
+}
+
+/* Naming the page is gated on transition *types*, not on view transitions at
+   large, because the router only gets to decide anything when types exist:
+   TanStack tests `CSS.supports('selector(:active-view-transition-type(a))')`
+   and, when that fails, starts the transition in its plain callback form —
+   the `types` callback never runs. So in Chrome 111–124, Safari 18.0–18.1 and
+   Firefox 144–146 the vetoes are silently gone, `--vt-scroll` is never
+   written, and the initial boot render animates too. Withholding the name in
+   exactly those browsers leaves nothing captured (the root is suppressed
+   above), which is what actually delivers the instant swap the fallback is
+   supposed to be — the alternative is a UA-default crossfade of the page's
+   top edge whenever a search param changes. The test mirrors TanStack's own,
+   with our real name substituted for its probe.
+
+   The name is scoped to a *running* transition rather than set permanently.
+   A `view-transition-name` makes its element a backdrop root, and the page
+   background is a fixed layer painted outside this wrapper — so while the name
+   stood at rest, every glass Card in the app carried a `backdrop-filter` with
+   nothing behind it to sample and simply did not frost (Figma 2376:225134,
+   "Missing blur in main cards"). `:active-view-transition-type(page)` matches
+   from the moment the transition is created, which is before either snapshot
+   is captured, so the name is in place for both. */
+@supports selector(:active-view-transition-type(page)) {
+  :root:active-view-transition-type(page) .page-transition {
+    view-transition-name: page;
+  }
+}
+
+/* The snapshots paint in the top layer, above the whole page, and they
+   hit-test there: without this a click during the ~400ms animation lands on a
+   pseudo-element and dies on <html>, so a second navigation fired mid-flight
+   is silently dropped. It must be every pseudo — setting it on
+   `::view-transition` alone does not restore hit-testing in Chromium, which is
+   what made this look unfixable during the route-splitting refactor. */
+::view-transition,
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  pointer-events: none;
+}
+
+/* The page wrapper is tall and in flow, so its viewport-relative box moves
+   when scrollRestoration jumps the document back to the top on a new route.
+   The auto-generated group animation interpolates that box, which dragged the
+   whole scroll delta vertically across the transition. Pin the group to the
+   viewport and place the snapshots by hand instead.
+
+   `--vt-scroll` is the scroll position at the moment of navigation, written by
+   the router (pages/router.tsx) in the same synchronous step that starts the
+   transition. A snapshot is the *entire* tall element, so offsetting the
+   outgoing one by that much is what makes it show the part that was actually
+   on screen rather than its top. The incoming page needs no offset because it
+   is always at scroll 0 — which holds only because the router keeps
+   back/forward out of the transition entirely; those are the navigations
+   scrollRestoration starts at an offset, and the reasoning is over there. */
+::view-transition-group(page) {
+  animation: none;
+  /* Dynamic viewport units so the box tracks the visible area under mobile
+     browser toolbars rather than the largest possible one. */
+  height: 100dvh;
+  /* Group stacking is not inherited from the document — the groups are
+     siblings painted in capture order — so the page's place under the navbar
+     (see the block below) has to be stated here rather than left to the z-30
+     the bar carries in the page. */
+  z-index: 0;
+}
+::view-transition-old(page) {
+  object-position: left calc(-1 * var(--vt-scroll, 0px));
+}
+::view-transition-new(page) {
+  object-position: left top;
+}
+
+/* The default cross-fade blends the two snapshots; we animate opacity
+   ourselves, so opt out and composite them normally. */
+::view-transition-image-pair(page) {
+  isolation: auto;
+}
+::view-transition-old(page),
+::view-transition-new(page) {
+  /* Each snapshot keeps its own size rather than being stretched into the
+     pinned group box. */
+  object-fit: none;
+  mix-blend-mode: normal;
+}
+
+/* The bottom navbar has to be captured too, or the page slides over it -------
+   The page's snapshots paint in the *top layer*, above every stacking context
+   in the document, so the fixed bottom navbar — z-30, but that only ever
+   ranked it against the page's own boxes — spent the whole animation
+   *underneath* the outgoing page. That is the phone bug in APP-518: page
+   content slides across the navbar pill, and the pill looks unfrosted at the
+   same time, because the captured page is no longer painted in the document
+   and the pill's `backdrop-filter` has nothing left to sample.
+
+   Nothing in the document can be raised above a top-layer pseudo, so the fix
+   is to capture the bar as well and order the groups by hand. Naming is scoped
+   to a running `page` transition for the same reason the page's name is (a
+   name standing at rest is a backdrop root, which is what killed the glass the
+   last time — see the block above).
+
+   The sticky header needs none of this: the page group's box starts at the
+   page wrapper's own layout position, which is below the header in flow, so
+   the two never overlap (measured: group at y=88, header 0–72). Leaving it
+   uncaptured also keeps its own frost alive through the transition.
+
+   Note the capture does not restore the pill's blur *during* the animation: a
+   captured element's snapshot is painted in isolation, so its own
+   `backdrop-filter` has no backdrop either, and neither does one applied to
+   the group — both were measured. What it fixes is the layering, which is what
+   made the bar read as broken; the page now passes behind the bar, dimmed by
+   its gradient, instead of over it. */
+@supports selector(:active-view-transition-type(page)) {
+  :root:active-view-transition-type(page) .vt-shell-navbar {
+    view-transition-name: shell-navbar;
+  }
+}
+::view-transition-group(shell-navbar) {
+  z-index: 1;
+  /* The bar holds the same box on both routes, so there is nothing for the
+     UA's group animation to interpolate. */
+  animation: none;
+}
+/* Only the *new* image is kept, and it is the live one: it tracks the real
+   element frame by frame, so motion inside the bar carries on through the
+   transition — the active pill glides to the tab that was just tapped at
+   exactly this moment, and cross-fading it against a frozen picture of where
+   it started would ghost it. */
+::view-transition-old(shell-navbar) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(shell-navbar) {
+  animation: none;
+  opacity: 1;
+}
+/* A snapshot has no backdrop, so for the length of the transition the pill's
+   glass gets a stand-in for what its blur was sampling. The bar's own gradient
+   already carries the page background up behind the pill, so the same tint
+   over that flat colour lands within a hair of the frosted rest state —
+   whereas the bare tint reads as the glass simply switching off, with the page
+   sliding past sharp and unblurred straight through it.
+
+   background-color under background-image, so the tint composites over the
+   colour exactly as the glass composites over its backdrop. */
+:root:active-view-transition-type(page) .vt-navbar-glass {
+  background-color: var(--color-pageBackground);
+  background-image: linear-gradient(var(--color-glassSurface), var(--color-glassSurface));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
+    animation: 300ms var(--ease-in-out-quart) both page-slide-out;
+  }
+  :root:active-view-transition-type(page)::view-transition-new(page) {
+    animation: 300ms var(--ease-in-out-quart) 100ms both page-slide-in;
+  }
+}
+
+/* The comp's 120px travel is measured on a 1512px frame, so it is capped
+   against the viewport — at phone widths a literal 120px reads as the page
+   being flung off screen rather than shifting. */
+@keyframes page-slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-1 * min(120px, 8vw)));
+  }
+}
+@keyframes page-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(min(120px, 8vw));
+  }
+}
+
+/* Drill-down: moving between the Earn marketplace and a product page travels
+   vertically instead of sideways (Figma: Sky App: UI 1598:77307). The router
+   adds a `drill` type alongside `page` for exactly those navigations, so only
+   the keyframes change here — duration, easing and the 100ms overlap are
+   inherited from the rules above, which still match.
+
+   Drilling *in* leaves upward and arrives from below; coming back out plays
+   the mirror (the `reverse` block below). The comp's own travel is 40px, small
+   enough that it needs no viewport cap.
+
+   This must stay above the reduced-motion block, which re-declares the
+   `animation` shorthand and so has to win over this animation-name. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(drill)::view-transition-old(page) {
+    animation-name: page-drill-out;
+  }
+  :root:active-view-transition-type(drill)::view-transition-new(page) {
+    animation-name: page-drill-in;
+  }
+}
+@keyframes page-drill-out {
+  to {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+@keyframes page-drill-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+/* Reverse: the same two moves played the other way, for navigations that run
+   against the app's order — Earn → Portfolio, or a product page back out to
+   the marketplace (APP-457). Only the keyframes change; duration, easing and
+   the 100ms overlap are still inherited from the `page` rules.
+
+   Source order is load-bearing for the lateral pair: it ties on specificity
+   with the `drill` rules above and has to win. The drill pair below carries
+   both type selectors, so its higher specificity wins over the lateral one
+   regardless of order.
+
+   Note this is *not* the browser's back button — traversals get no transition
+   at all, for the scroll-restoration reason recorded in pages/router.tsx. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(reverse)::view-transition-old(page) {
+    animation-name: page-slide-out-reverse;
+  }
+  :root:active-view-transition-type(reverse)::view-transition-new(page) {
+    animation-name: page-slide-in-reverse;
+  }
+  :root:active-view-transition-type(drill):active-view-transition-type(reverse)::view-transition-old(page) {
+    animation-name: page-drill-out-reverse;
+  }
+  :root:active-view-transition-type(drill):active-view-transition-type(reverse)::view-transition-new(page) {
+    animation-name: page-drill-in-reverse;
+  }
+}
+@keyframes page-slide-out-reverse {
+  to {
+    opacity: 0;
+    transform: translateX(min(120px, 8vw));
+  }
+}
+@keyframes page-slide-in-reverse {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * min(120px, 8vw)));
+  }
+}
+@keyframes page-drill-out-reverse {
+  to {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+@keyframes page-drill-in-reverse {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+
+/* Reduced motion (WCAG 2.3.3): keep a crossfade — the page change still needs
+   to register, and an instant full-page repaint reads as a flash — but drop
+   the translate, which is the part that triggers vestibular discomfort. */
+@media (prefers-reduced-motion: reduce) {
+  :root:active-view-transition-type(page)::view-transition-old(page) {
+    animation: 150ms var(--ease-in-out-quart) both page-fade-out;
+  }
+  :root:active-view-transition-type(page)::view-transition-new(page) {
+    animation: 150ms var(--ease-in-out-quart) both page-fade-in;
+  }
+}
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
   }
 }

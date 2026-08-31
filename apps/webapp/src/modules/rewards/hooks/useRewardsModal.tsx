@@ -1,0 +1,126 @@
+import { useCallback, useId } from 'react';
+import { t } from '@lingui/core/macro';
+import { type Token } from '@/hooks';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
+import { RewardsModalForm, type RewardsModalPreset } from '../components/RewardsModalForm';
+
+/** Per-contract inputs the launcher needs to open the modal for a specific farm. */
+export type RewardsModalArgs = {
+  contractAddress: `0x${string}`;
+  /** The token staked into the reward contract (USDS for every current farm). */
+  supplyToken: Token;
+  /** Display title shown in modal titles + the review "Product" row (e.g. "SPK Rewards"). */
+  displayName: string;
+  /** Registry `contract.name`, reported as the analytics `product` (legacy parity). */
+  productName: string;
+  /** Reward-token symbol for the "Rewards in" row; omit for point farms (CLE). */
+  rewardTokenSymbol?: string;
+  /** Reward rate (decimal fraction) for the modal's Rate + 1Y projected-earnings rows. */
+  rate?: number;
+};
+
+type UseRewardsModalOptions = {
+  /** Fires after a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
+};
+
+/**
+ * Reusable trigger for the editable rewards supply/withdraw modal — the rewards
+ * analogue of `useVaultModal`. Any surface (the rewards position card, the
+ * Portfolio cards, …) calls this instead of re-declaring the launch config. Each
+ * opener mints its own session so sibling modals never cross-talk.
+ *
+ * Like vaults, reward farms are many, so the per-contract inputs are passed to
+ * `openSupply`/`openWithdraw` at call time (not hook time) — the same launcher
+ * can open the modal for any farm. Analytics live-merge from the form body
+ * (`useModalEntryBody`), not from this launch config.
+ */
+export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
+  const { launch } = useTransaction();
+  const supplySessionId = useId();
+  const withdrawSessionId = useId();
+
+  const openSupply = useCallback(
+    (args: RewardsModalArgs, preset?: RewardsModalPreset) => {
+      launch({
+        title: t`Supply to ${args.displayName}`,
+        reviewTitle: t`Review supply`,
+        transactionTitle: t`Confirm in the wallet`,
+        subtitles: {
+          loading: t`Your supply is being processed on the blockchain. Please wait.`,
+          success: t`You've successfully supplied to ${args.displayName}.`,
+          error: t`An error occurred while supplying to ${args.displayName}.`
+        },
+        sessionId: supplySessionId,
+        // Three-screen flow per the Savings template: the entry advances to the
+        // review; the review's Confirm fires the engine. The body pushes the
+        // review breakdown (`transactionContent`) live.
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
+        usdValue: 0,
+        // Reward farms are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+        confirmLabel: t`Confirm`,
+        // The editable body lives outside the dialog (hidden host) so its in-flight
+        // hook survives minimize; it portals its inputs into the modal's entry slot.
+        backgroundContent: (
+          <RewardsModalForm
+            sessionId={supplySessionId}
+            flow="supply"
+            contractAddress={args.contractAddress}
+            supplyToken={args.supplyToken}
+            displayName={args.displayName}
+            productName={args.productName}
+            rewardTokenSymbol={args.rewardTokenSymbol}
+            rate={args.rate}
+            preset={preset}
+          />
+        ),
+        onConfirm: () => {},
+        onSuccess
+      });
+    },
+    [launch, supplySessionId, onSuccess]
+  );
+
+  const openWithdraw = useCallback(
+    (args: RewardsModalArgs, preset?: RewardsModalPreset) => {
+      launch({
+        title: t`Withdraw from ${args.displayName}`,
+        reviewTitle: t`Review withdrawal`,
+        transactionTitle: t`Confirm in the wallet`,
+        subtitles: {
+          loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
+          success: t`You've successfully withdrawn from ${args.displayName}.`,
+          error: t`An error occurred while withdrawing from ${args.displayName}.`
+        },
+        sessionId: withdrawSessionId,
+        entry: { confirmLabel: t`Review`, confirmDisabled: true },
+        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
+        usdValue: 0,
+        // Reward farms are mainnet-only — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+        confirmLabel: t`Confirm`,
+        backgroundContent: (
+          <RewardsModalForm
+            sessionId={withdrawSessionId}
+            flow="withdraw"
+            contractAddress={args.contractAddress}
+            supplyToken={args.supplyToken}
+            displayName={args.displayName}
+            productName={args.productName}
+            rewardTokenSymbol={args.rewardTokenSymbol}
+            rate={args.rate}
+            preset={preset}
+          />
+        ),
+        onConfirm: () => {},
+        onSuccess
+      });
+    },
+    [launch, withdrawSessionId, onSuccess]
+  );
+
+  return { openSupply, openWithdraw };
+}

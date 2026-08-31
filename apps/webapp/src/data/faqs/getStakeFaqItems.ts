@@ -4,13 +4,13 @@ export const getStakeFaqItems = () => {
       question: 'What is the Staking Engine?',
       answer: `The Staking Engine is a feature of the decentralized Sky Protocol. When you stake SKY, you can access Staking Rewards and may also choose to create one or more positions, including positions that enable you to generate and [borrow](#tooltip-borrow) USDS against your supplied SKY and to delegate the voting power the SKY token provides.
 
-You may manage your Staking positions at any time. Staking Reward parameters and the Borrow Rate are determined by Sky Ecosystem Governance through the process of decentralized onchain voting. Your SKY, as well as any Staking Rewards that you accumulate, are supplied to a non-custodial smart contract, such that no intermediary ever takes custody of those tokens. With Sky, you always remain in control of your assets.`,
+You may manage your Staking positions at any time. Staking Reward parameters and the Borrow Rate are determined by SKY token holders through decentralized onchain voting. Your SKY, as well as any Staking Rewards that you accumulate, are supplied to a non-custodial smart contract, such that no intermediary ever takes custody of those tokens. With Sky, you always remain in control of your assets.`,
       index: 0
     },
     {
       question: 'What are Staking Rewards?',
       answer:
-        'Staking Rewards can be accessed when you stake SKY to the Staking Engine of the decentralized Sky Protocol. Your SKY, as well as any Staking Rewards that you accumulate, are supplied to a non-custodial smart contract, such that no intermediary ever takes custody of those tokens. Staking Reward rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting.',
+        'Staking Rewards can be accessed when you stake SKY to the Staking Engine of the decentralized Sky Protocol. Your SKY, as well as any Staking Rewards that you accumulate, are supplied to a non-custodial smart contract, such that no intermediary ever takes custody of those tokens. Staking Reward rates are determined by SKY token holders through decentralized onchain voting. Staking Reward rates are variable, can change at any time, and are not guaranteed.',
       index: 1
     },
     {
@@ -32,8 +32,8 @@ You may manage your Staking positions at any time. Staking Reward parameters and
       question: 'How are Staking Rewards rates determined?',
       answer: `[Staking Rewards Rates (SRRs)](#tooltip-staking-rewards-rates-srrs) are variable and may fluctuate.
 
-Staking Rewards rates are determined by: 1) the current issuance parameter of rewards (how many rewards are distributed, as determined by Sky Ecosystem Governance), and 2) the current market price of SKY tokens at the time of calculation.
-The rates shown in Sky.money are estimated annual rates that can change over time due to both Sky Ecosystem Governance decisions on reward issuance and fluctuations in the market price of SKY.
+Staking Rewards rates are determined by: 1) the current issuance parameter of rewards (how many rewards are distributed, as determined by SKY token holders through decentralized onchain voting), and 2) the current market price of SKY tokens at the time of calculation.
+The rates shown in Sky.money are estimated annual rates that can change over time due to both SKY token holders' onchain decisions on reward issuance and fluctuations in the market price of SKY.
 
 Rates are updated using data from a third-party provider (i.e., [BlockAnalitica](https://blockanalitica.com/)). Therefore, rates shown do not guarantee future results.`,
       index: 4
@@ -72,13 +72,13 @@ If you would rather manage your position(s) in the typical way, you would go to 
 
 When you stake SKY governance tokens to the Staking Engine, you can:
 
-• **Access Rewards.** Supply SKY tokens to access Staking Rewards. Staking Reward rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting.
+• **Access Rewards.** Supply SKY tokens to access Staking Rewards. Staking Reward rates are determined by SKY token holders through decentralized onchain voting. Staking Reward rates are variable, can change at any time, and are not guaranteed.
 
-• **Borrow.** Borrow USDS against your supplied SKY. You can exit your borrow position at any time and withdraw or pay back USDS whenever you would like. The USDS [Borrow Rate](#tooltip-borrow-rate) and [debt ceiling](#tooltip-debt-ceiling) are determined by Sky Ecosystem Governance through the process of decentralized onchain voting. Your total debt increases each block according to the Borrow Rate.
+• **Borrow.** Borrow USDS against your supplied SKY. You can exit your borrow position at any time and withdraw or pay back USDS whenever you would like. The USDS [Borrow Rate](#tooltip-borrow-rate) and [debt ceiling](#tooltip-debt-ceiling) are determined by SKY token holders through decentralized onchain voting. Your total debt increases each block according to the Borrow Rate.
 
 • **Delegate.** Transfer the voting power of your supplied SKY tokens to a recognized delegate or a contract that you own. Your chosen delegate can then participate in the Sky Ecosystem Governance voting process on your behalf. You can choose one delegate per position, meaning if you want to entrust your SKY to two different delegates using the Staking Engine, you will need to create two separate positions.
 
-You may exit your Staking positions at any time; no exit fee applies. Staking Reward rates and the Borrow Rate are determined by Sky Ecosystem Governance through the process of decentralized onchain voting.
+You may exit your Staking positions at any time; no exit fee applies. Staking Reward rates and the Borrow Rate are determined by SKY token holders through decentralized onchain voting.
 
 Your SKY, as well as any Staking Rewards that you accumulate, are supplied to a non-custodial smart contract, such that no intermediary ever takes custody of those tokens. With Sky, you always remain in control of your assets.`,
       index: 9
@@ -89,7 +89,7 @@ Your SKY, as well as any Staking Rewards that you accumulate, are supplied to a 
 
 You can manage your borrow position whenever you’d like. You can decide to pay back all of your debt, withdraw your staked SKY, and claim some or all of your rewards at any time. Your SKY and claimed rewards are then released from the Staking Engine smart contract back to your connected wallet.
 
-The USDS Borrow Rate and [debt ceiling](#tooltip-debt-ceiling) are determined by Sky Ecosystem Governance through the process of decentralized onchain voting. Your total debt increases each block according to the [Borrow Rate](#tooltip-borrow-rate).
+The USDS Borrow Rate and [debt ceiling](#tooltip-debt-ceiling) are determined by SKY token holders through decentralized onchain voting. Your total debt increases each block according to the [Borrow Rate](#tooltip-borrow-rate).
 
 Please note that opening a USDS borrow position subjects you to liquidation risk if at any time the value of your supplied collateral drops below the required threshold ([liquidation price](#tooltip-liquidation-price-staking)) and your position becomes undercollateralized. If this were to occur, the smart contract would automatically liquidate and auction your collateral, and any leftover collateral may be claimed through the [Unified Auctions portal](https://unified-auctions.makerdao.com/).
 
@@ -99,7 +99,7 @@ For more information, see the [User Risk Documentation](https://docs.sky.money/u
     {
       question: 'How is the USDS Borrow Rate determined?',
       answer:
-        'The USDS [Borrow Rate](#tooltip-borrow-rate) and [debt ceiling](#tooltip-debt-ceiling) are parameters determined by Sky Ecosystem Governance through a process of decentralized, community-driven onchain voting.',
+        'The USDS [Borrow Rate](#tooltip-borrow-rate) and [debt ceiling](#tooltip-debt-ceiling) are parameters determined by SKY token holders through decentralized onchain voting.',
       index: 12
     },
     {

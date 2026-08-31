@@ -32,6 +32,9 @@ export enum TrustLevelEnum {
 
 export const URL_SKY_INDEXER = 'https://proxy.sky.money/indexer';
 
+// Server-side cap per history entity query; the indexer stores addresses lowercase,
+// so history queries filter with _eq on lowercased addresses (ILIKE defeats the DB indexes).
+export const HISTORY_QUERY_LIMIT = 100;
 // History is append-only; without this every remount/window focus refires the full history fan-out.
 export const HISTORY_STALE_TIME = 60_000;
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
