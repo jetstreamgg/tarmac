@@ -52,7 +52,7 @@ type SupplyEconomicsInput = {
  */
 const supplyEconomicsRows = (input: SupplyEconomicsInput): PendleModalGridRow[] => [
   [
-    { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings' },
+    { kind: 'single', label: 'Fixed rate', value: input.rate, rateAccent: 'savings', rateInfo: 'fixedYield' },
     { kind: 'single', label: 'Claim date', value: input.claimDate }
   ],
   [

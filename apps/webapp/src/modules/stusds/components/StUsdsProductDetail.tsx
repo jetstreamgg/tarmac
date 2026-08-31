@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
+import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Vault, Droplet, Gauge, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
@@ -101,6 +102,7 @@ export function StUsdsProductDetail() {
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
+      info: <RateInfo type="stusds" size={12} />,
       value: currentRate
     },
     {

@@ -1,6 +1,7 @@
 import { KeyboardEvent, ReactNode, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
+import { RateInfo, type RateInfoType } from './RateInfo';
 import { Trans } from '@lingui/react/macro';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { rowCollapseAnimations, rowCollapseContainerAnimations } from '@/modules/ui/animation/presets';
@@ -51,6 +52,8 @@ export type EarnTableRowItem = {
   /** Mobile expanded-card primary CTA label; defaults to "Supply". */
   ctaLabel?: ReactNode;
   rate: string;
+  /** Product rate explainer drawn after the Rate figure (APP-540); omit on dash rows. */
+  rateInfo?: RateInfoType;
   rate30d: string;
   tvl: string;
   position: string;
@@ -79,6 +82,19 @@ function NumericValue({ value, isLoading }: { value: string; isLoading?: boolean
   if (value === '–' || value === '—') return <CellEmpty />;
   if (value.endsWith('%')) return <CellPercent value={value.slice(0, -1)} />;
   return value;
+}
+
+/** The Rate figure with its product explainer glyph beside it (APP-540). */
+function RateValue({ row }: { row: EarnTableRowItem }) {
+  const figure = <NumericValue value={row.rate} isLoading={row.isLoading} />;
+  // Nothing to explain on a dash placeholder (a rate the app cannot source).
+  if (!row.rateInfo || row.isLoading || row.rate === '–' || row.rate === '—') return figure;
+  return (
+    <span className="flex items-center gap-1">
+      {figure}
+      <RateInfo type={row.rateInfo} size={12} />
+    </span>
+  );
 }
 
 export type EarnTableProps = {
@@ -246,7 +262,7 @@ function EarnCardList({
                           dimmed && 'text-fgTertiary'
                         )}
                       >
-                        <NumericValue value={row.rate} isLoading={row.isLoading} />
+                        <RateValue row={row} />
                       </span>
                     </span>
                     <ChevronDown
@@ -286,7 +302,7 @@ function EarnCardList({
                         },
                         {
                           label: <Trans>Rate</Trans>,
-                          value: <NumericValue value={row.rate} isLoading={row.isLoading} />
+                          value: <RateValue row={row} />
                         },
                         {
                           label: <Trans>30D Rate</Trans>,
@@ -459,7 +475,7 @@ export function EarnTable({
                 )}
               </TableCell>
               <TableCell>
-                <NumericValue value={row.rate} isLoading={row.isLoading} />
+                <RateValue row={row} />
               </TableCell>
               <TableCell>
                 <NumericValue value={row.rate30d} isLoading={row.isLoading} />

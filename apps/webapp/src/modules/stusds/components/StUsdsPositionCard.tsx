@@ -4,6 +4,7 @@ import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { PopoverRateInfo } from '@/widgets';
+import { RateInfo } from '@/components/product/RateInfo';
 import { useStUsdsData } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -199,6 +200,7 @@ export function StUsdsPositionCard() {
             </ProductStat>
             <ProductStat label={<Trans>Current rate</Trans>}>
               <ProductPercent value={currentRate} />
+              <RateInfo type="stusds" size={12} />
             </ProductStat>
           </ProductStatPair>
         </>

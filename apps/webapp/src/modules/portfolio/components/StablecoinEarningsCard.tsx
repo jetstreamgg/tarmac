@@ -231,6 +231,7 @@ function SuppliedContent({
                 variant="gain"
                 className={figureClass(activeEarnings?.totalEarned)}
                 testId="earnings-total-value"
+                showGapGlyph={false}
               />
             ) : (
               <CombinedEarningsStat
@@ -239,6 +240,7 @@ function SuppliedContent({
                 className={LABEL_4}
                 testId="earnings-total-value"
                 untrackedNames={untrackedNames}
+                showGapGlyph={false}
               />
             )
           }
@@ -254,6 +256,7 @@ function SuppliedContent({
                 variant="gain"
                 className={figureClass(activeEarnings?.earnedThisMonth)}
                 testId="earnings-month-value"
+                showGapGlyph={false}
               />
             ) : (
               <CombinedEarningsStat
@@ -262,6 +265,7 @@ function SuppliedContent({
                 className={LABEL_4}
                 testId="earnings-month-value"
                 untrackedNames={untrackedNames}
+                showGapGlyph={false}
               />
             )
           }

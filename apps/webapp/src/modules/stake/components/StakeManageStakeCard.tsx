@@ -1,4 +1,5 @@
 import { Trans } from '@lingui/react/macro';
+import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
 import { formatBigInt, formatUsd } from '@/utils';
@@ -159,7 +160,12 @@ export function StakeManageStakeCard({
           />
           <StakeManageStatDivider />
           <StakeManageStatCell
-            label={<Trans>SKY Rewards rate</Trans>}
+            label={
+              <>
+                <Trans>SKY Rewards rate</Trans>
+                <RateInfo type="srr" size={12} />
+              </>
+            }
             current={
               rewardsRate !== null ? (
                 formatDecimalPercentage(rewardsRate)

@@ -1,4 +1,5 @@
 import { Trans } from '@lingui/react/macro';
+import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
@@ -327,7 +328,12 @@ export function StakeManageBorrowCard({
             hugging cells split by hairlines. */}
         <div className="flex flex-wrap items-start gap-4">
           <StakeManageStatCell
-            label={<Trans>Borrow rate</Trans>}
+            label={
+              <>
+                <Trans>Borrow rate</Trans>
+                <RateInfo type="sbr" size={12} />
+              </>
+            }
             current={
               collateralData?.stabilityFee ? (
                 formatPercent(collateralData.stabilityFee)

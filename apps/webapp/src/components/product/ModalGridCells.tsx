@@ -9,6 +9,7 @@ import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
 import { useChainImage } from '@/widgets';
+import { RateInfo, type RateInfoType } from './RateInfo';
 import type { ModalSummaryCell } from './ModalSummaryGrid';
 
 /**
@@ -85,6 +86,8 @@ export type ModalGridCellHints = {
   action?: React.ReactNode;
   /** Interactive element after the label (the upgrade Penalty info popover). */
   labelAction?: React.ReactNode;
+  /** Rate explainer glyph after the label - keyed so the `.ts` row builders stay JSX-free (APP-540). */
+  rateInfo?: RateInfoType;
   /** Draw the skeleton in place of the value while its underlying read is unresolved. */
   loading?: boolean;
 };
@@ -143,12 +146,22 @@ export const networkFeeCell = (networkFee: string): ModalGridCell => ({
   value: networkFee
 });
 
-/** Rate cell — the label varies per module ('Savings rate' / 'Rate' / 'Fixed rate'), the accent per product. */
-export const rateCell = (label: string, rate: string, accent?: 'savings' | 'morpho'): ModalGridCell => ({
+/**
+ * Rate cell - the label varies per module ('Savings rate' / 'Rate' / 'Fixed
+ * rate'), the accent per product, and `info` picks the product's rate
+ * explainer drawn after the label.
+ */
+export const rateCell = (
+  label: string,
+  rate: string,
+  accent?: 'savings' | 'morpho',
+  info?: RateInfoType
+): ModalGridCell => ({
   kind: 'single',
   label,
   value: rate,
-  rateAccent: accent
+  rateAccent: accent,
+  rateInfo: info
 });
 
 /** Review Product cell: display name + 12px token icon inside the ringed iconbox. */
@@ -407,11 +420,12 @@ export const toGridCells = (
       return {
         label: isFeeCell ? (
           <NetworkFeeLabel />
-        ) : cell.labelBadge || cell.labelAction ? (
+        ) : cell.labelBadge || cell.labelAction || cell.rateInfo ? (
           <span className="flex items-center gap-1">
             {cell.label}
             {cell.labelBadge && <LabelBadge text={cell.labelBadge} />}
             {cell.labelAction}
+            {cell.rateInfo && <RateInfo type={cell.rateInfo} size={12} />}
           </span>
         ) : (
           cell.label

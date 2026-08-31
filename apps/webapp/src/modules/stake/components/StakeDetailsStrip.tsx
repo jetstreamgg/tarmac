@@ -5,6 +5,7 @@ import { useStakeHistoricData } from '@/hooks';
 import { formatNumber, formatDecimalPercentage } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { RateInfo } from '@/components/product/RateInfo';
 import { useStakeRewardsRate } from '../hooks/useStakeRewardsRate';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -78,13 +79,29 @@ export function StakeDetailsStrip() {
       </h3>
 
       <div className="grid grid-cols-1 gap-x-5 gap-y-6 md:grid-cols-2">
-        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Staking Reward Rate</Trans>}>
+        <DetailRow
+          icon={<AudioLines className="h-4 w-4" />}
+          label={
+            <>
+              <Trans>Staking Reward Rate</Trans>
+              <RateInfo type="srr" size={12} />
+            </>
+          }
+        >
           <StatValue isLoading={rewardsLoading} error={rewardsError}>
             {currentRate !== null ? formatDecimalPercentage(currentRate) : NO_VALUE}
           </StatValue>
         </DetailRow>
 
-        <DetailRow icon={<AudioLines className="h-4 w-4" />} label={<Trans>Borrow Rate</Trans>}>
+        <DetailRow
+          icon={<AudioLines className="h-4 w-4" />}
+          label={
+            <>
+              <Trans>Borrow Rate</Trans>
+              <RateInfo type="sbr" size={12} />
+            </>
+          }
+        >
           <StatValue isLoading={historicLoading} error={historicError}>
             {mostRecent ? formatDecimalPercentage(mostRecent.borrowRate) : NO_VALUE}
           </StatValue>

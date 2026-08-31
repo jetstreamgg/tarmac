@@ -160,6 +160,7 @@ export function VaultModalForm({
     : undefined;
 
   const rows = buildVaultEntryRows({
+    provider,
     rate,
     boostedRate,
     network: networkName,
@@ -184,6 +185,7 @@ export function VaultModalForm({
         <ModalSummaryGrid
           rows={toGridCells(
             buildVaultReviewRows(flow, {
+              provider,
               amount: amountDisplay,
               assetSymbol: assetToken.symbol,
               estEarnings: earningsAfterDisplay,
