@@ -19,7 +19,13 @@ const SECTION = 'mt-12 flex flex-col gap-5 md:mt-20';
  * The CTA hierarchy follows the row count: more than one reward puts the
  * primary on the heading's "Claim all" and steps the row buttons down to
  * secondary; a single reward hides "Claim all" and promotes its row button to
- * primary. Because that flips as the read settles, the loading state renders a
+ * primary. `canClaimAll` only takes the button away — a section whose claim-all
+ * would take more than one transaction (the Sky farms — one `getReward` per
+ * farm) passes false while bundling is off. The row CTAs stay secondary there:
+ * the hierarchy belongs to the row count, so several rows don't each claim the
+ * primary just because the button above them is gone.
+ *
+ * Because the hierarchy flips as the read settles, the loading state renders a
  * skeleton of the same shape — heading row with a button-sized pill plus one
  * table-height bar — so the section doesn't jump. A settled section with no
  * rewards renders nothing.
@@ -30,6 +36,7 @@ export function PortfolioRewardsSection({
   isLoading,
   onClaim,
   onClaimAll,
+  canClaimAll = true,
   testId
 }: {
   title: ReactNode;
@@ -37,6 +44,8 @@ export function PortfolioRewardsSection({
   isLoading: boolean;
   onClaim: (reward: ClaimableReward) => void;
   onClaimAll: () => void;
+  /** False where claiming the whole section isn't a single transaction. */
+  canClaimAll?: boolean;
   testId: string;
 }) {
   if (isLoading && rewards.length === 0) {
@@ -46,7 +55,12 @@ export function PortfolioRewardsSection({
             so the row doesn't grow when a multi-reward "Claim all" arrives. */}
         <div className="flex min-h-10 items-center justify-between gap-6">
           <Heading>{title}</Heading>
-          <Skeleton className="h-10 w-[92px] shrink-0 rounded-full" />
+          {canClaimAll && (
+            <Skeleton
+              className="h-10 w-[92px] shrink-0 rounded-full"
+              data-testid={`${testId}-claim-all-skeleton`}
+            />
+          )}
         </div>
         <Skeleton className="h-[122px] w-full rounded-[24px]" />
       </section>
@@ -61,7 +75,7 @@ export function PortfolioRewardsSection({
     <section data-testid={testId} className={SECTION}>
       <div className="flex min-h-10 items-center justify-between gap-6">
         <Heading>{title}</Heading>
-        {multiple && (
+        {multiple && canClaimAll && (
           <Button
             variant="primary"
             size="m"

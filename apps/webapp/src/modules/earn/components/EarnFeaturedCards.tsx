@@ -74,7 +74,11 @@ function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="flex h-10 flex-col justify-between md:h-11">
       <span className="text-fgSecondary text-xs leading-[18px]">{label}</span>
-      <span className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
+      {/* The value slot is pinned to its own line height and centres what it
+          holds, rather than letting the content sit on the text baseline: the
+          risk pill is a 15px box with no text in it, so baseline alignment
+          hangs it ~3.5px below the neighbouring figures. */}
+      <span className="text-fgPrimary font-circle flex h-[18px] items-center text-base leading-[18px] font-medium tracking-[-0.32px] md:h-[22px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
         {children}
       </span>
     </div>
@@ -175,11 +179,15 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
             </span>
           </div>
           <div className="bg-borderPrimary h-8 w-px shrink-0" />
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <span className="text-fgSecondary text-xs leading-[18px]">
               <Trans>Risk</Trans>
             </span>
-            <RiskTierDetailsTrigger profile={row.riskProfile} />
+            {/* Same centred value slot as `Stat` — it lines the pill up with
+                the TVL figure beside it instead of nudging it with the gap. */}
+            <span className="flex h-[22px] items-center">
+              <RiskTierDetailsTrigger profile={row.riskProfile} />
+            </span>
           </div>
         </div>
         <Button variant="primary" size="l" className="w-28" onClick={onSupply}>
