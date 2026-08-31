@@ -37,7 +37,7 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
 
     expect(screen.getByText('Risk profile')).toBeTruthy();
     expect(screen.getByText('Core')).toBeTruthy();
-    expect(screen.getByText(/Funds secured by Sky Protocol/)).toBeTruthy();
+    expect(screen.getByText(/Assets held in Sky Protocol smart contracts/)).toBeTruthy();
     expect(screen.getByText('Exposure')).toBeTruthy();
     expect(screen.getByTestId('risk-details-exposure').getAttribute('title')).toBe('USDS');
     expect(screen.getByText('Liquidation risk')).toBeTruthy();
@@ -95,12 +95,12 @@ describe('RiskTierDetailsCard — tier presentation + per-profile copy (APP-396 
 
   it('names the reward per farm: SPK farm promises SPK tokens, Chronicle promises points', () => {
     renderCard('low', 'rewards-spk');
-    expect(screen.getByText(/earn SPK tokens/)).toBeTruthy();
+    expect(screen.getByText(/receive SPK tokens/)).toBeTruthy();
     expect(screen.getByText('Instant')).toBeTruthy();
     cleanup();
 
     renderCard('low', 'rewards-cle');
-    expect(screen.getByText(/earn Chronicle Points/)).toBeTruthy();
+    expect(screen.getByText(/receive Chronicle Points/)).toBeTruthy();
     expect(screen.queryByText(/tokens/)).toBeNull();
   });
 

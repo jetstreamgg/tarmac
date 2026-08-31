@@ -13,6 +13,7 @@ import {
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Usds } from '@/modules/icons';
+import { PopoverRateInfo } from '@/widgets';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import {
   ORIGIN_TOKENS,
@@ -114,7 +115,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
       }
       title={
         hasManyOrigins ? (
-          <Trans>Supply stablecoins and earn {rate} APY</Trans>
+          <Trans>Supply stablecoins at {rate} APY</Trans>
         ) : (
           <Trans>
             Supply {supplyTokens} at {rate} APY
@@ -123,8 +124,8 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
       }
       description={
         <Trans>
-          Governed by Sky Ecosystem to deliver the best risk-adjusted yield, sUSDS allows you to grow your
-          holdings with instant liquidity and zero fees.
+          sUSDS gives you simple access to the Sky Savings Rate, with instant liquidity and zero fees. The
+          rate is variable, funded from Sky&apos;s protocol surplus.
         </Trans>
       }
       stats={
@@ -138,6 +139,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
+              <PopoverRateInfo type="ssr" width={14} height={14} iconClassName="text-fgSecondary" />
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>

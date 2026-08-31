@@ -231,6 +231,7 @@ function SuppliedContent({
                 variant="gain"
                 className={figureClass(activeEarnings?.totalEarned)}
                 testId="earnings-total-value"
+                showGapGlyph={false}
               />
             ) : (
               <CombinedEarningsStat
@@ -239,6 +240,7 @@ function SuppliedContent({
                 className={LABEL_4}
                 testId="earnings-total-value"
                 untrackedNames={untrackedNames}
+                showGapGlyph={false}
               />
             )
           }
@@ -254,6 +256,7 @@ function SuppliedContent({
                 variant="gain"
                 className={figureClass(activeEarnings?.earnedThisMonth)}
                 testId="earnings-month-value"
+                showGapGlyph={false}
               />
             ) : (
               <CombinedEarningsStat
@@ -262,6 +265,7 @@ function SuppliedContent({
                 className={LABEL_4}
                 testId="earnings-month-value"
                 untrackedNames={untrackedNames}
+                showGapGlyph={false}
               />
             )
           }
@@ -275,7 +279,11 @@ function SuppliedContent({
               <span className={STAT_ROW}>
                 <GainValue value={displayProjected} className={LABEL_4} rolling />
                 <StatInfoGlyph testId="projected-yield-info">
-                  <Trans>Using your current rate as a reference</Trans>
+                  <Trans>
+                    Projections use your current rates as a reference. All rates are variable, and their
+                    mechanics depend on the particular product. Sky.money does not control, set, or guarantee
+                    these rates. Refer to the product pages for further details.
+                  </Trans>
                 </StatInfoGlyph>
               </span>
             )
@@ -398,7 +406,10 @@ function IdleContent({
               <span className={STAT_ROW}>
                 <GainValue value={displayProjected} className={LABEL_4} rolling />
                 <StatInfoGlyph testId="projected-yield-info">
-                  <Trans>Using your current rate as a reference</Trans>
+                  <Trans>
+                    Projections assume the current Sky Savings Rate remains constant. They do not guarantee
+                    future results. The Sky Savings Rate is variable and can change over time.
+                  </Trans>
                 </StatInfoGlyph>
               </span>
             }

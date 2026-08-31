@@ -115,15 +115,16 @@ export function ConnectCard({ intent, className, convertOption }: ConnectCardPro
         {isVaults ? (
           <Text variant="small" className="leading-4.5">
             <Trans>
-              Connect your wallet to start using Sky-curated Vaults. Deposit USDS, USDT, or USDC and start
-              earning.
+              Connect your wallet to start using Vaults curated by Skybase on Morpho. Supply USDS, USDT, or
+              USDC.
             </Trans>
           </Text>
         ) : isFixedYield ? (
           <Text variant="small" className="leading-4.5">
             <Trans>
-              When volatility plays against you, get a fixed yield over a pre-set period. The rate is set when
-              you deposit your USDS, while expected returns are available at maturity date, not before.
+              Fix today&apos;s rate on your USDS until a set maturity date. The rate is fixed when you supply;
+              hold to the maturity date and that rate is what you receive. Exiting early means selling at the
+              current market price.
             </Trans>
           </Text>
         ) : (

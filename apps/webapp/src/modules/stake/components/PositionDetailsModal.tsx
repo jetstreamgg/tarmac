@@ -25,6 +25,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TrendingUpGradient } from '@/modules/icons';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { RiskScaleMeter } from '@/components/product/RiskMeter';
+import { RateInfo } from '@/components/product/RateInfo';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
@@ -574,7 +575,14 @@ export function PositionDetailsModal({
                 rebalancing this rhythm shifts every later cell one track over. */}
             <div className="flex flex-col gap-4 md:grid md:grid-cols-[120px_1px_120px_1px_minmax(0,1fr)] md:gap-x-8 md:gap-y-6">
               <StatPair>
-                <StatCell label={<Trans>Rewards rate</Trans>}>
+                <StatCell
+                  label={
+                    <>
+                      <Trans>Rewards rate</Trans>
+                      <RateInfo type="srr" size={12} />
+                    </>
+                  }
+                >
                   {detail.rewardsRate !== null ? formatDecimalPercentage(detail.rewardsRate) : NO_VALUE}
                 </StatCell>
                 <StatPairDivider />
@@ -771,7 +779,14 @@ export function PositionDetailsModal({
 
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-10">
                   <StatPair>
-                    <StatCell label={<Trans>Borrow rate</Trans>}>
+                    <StatCell
+                      label={
+                        <>
+                          <Trans>Borrow rate</Trans>
+                          <RateInfo type="sbr" size={12} />
+                        </>
+                      }
+                    >
                       {detail.stabilityFee !== undefined ? formatPercent(detail.stabilityFee) : NO_VALUE}
                     </StatCell>
                     <StatPairDivider />
@@ -782,8 +797,8 @@ export function PositionDetailsModal({
                     <StatCell
                       label={
                         <>
-                          <Trans>Protocol SKY Price</Trans>
-                          <StatInfoIcon />
+                          <Trans>Capped OSM SKY price</Trans>
+                          <RateInfo type="cappedOsmSkyPrice" size={12} />
                         </>
                       }
                     >
@@ -846,7 +861,14 @@ export function PositionDetailsModal({
                     (comp 1036:214176). */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-10">
                   <StatPair>
-                    <StatCell label={<Trans>Borrow rate</Trans>}>
+                    <StatCell
+                      label={
+                        <>
+                          <Trans>Borrow rate</Trans>
+                          <RateInfo type="sbr" size={12} />
+                        </>
+                      }
+                    >
                       {detail.stabilityFee !== undefined ? formatPercent(detail.stabilityFee) : NO_VALUE}
                     </StatCell>
                     <StatPairDivider />
@@ -880,8 +902,8 @@ export function PositionDetailsModal({
                     <StatCell
                       label={
                         <>
-                          <Trans>Protocol SKY Price</Trans>
-                          <StatInfoIcon />
+                          <Trans>Capped OSM SKY price</Trans>
+                          <RateInfo type="cappedOsmSkyPrice" size={12} />
                         </>
                       }
                     >

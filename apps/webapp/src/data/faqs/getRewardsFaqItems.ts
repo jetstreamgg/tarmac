@@ -19,9 +19,9 @@ export const getRewardsFaqItems = () => {
     },
     {
       question: 'How are Sky Ecosystem Rewards rates calculated?',
-      answer: `The [Sky Ecosystem Rewards Rate](#tooltip-rewards-rate) is different for each type of token rewarded, and always fluctuates, determined by the following factors:
+      answer: `The [Rewards Rate](#tooltip-rewards-rate) is different for each type of token rewarded, and always fluctuates, determined by the following factors:
 
-• The issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance;
+• The issuance rate of the token rewarded, which is determined by SKY token holders through decentralized onchain voting;
 
 • The market price of the token rewarded; and
 

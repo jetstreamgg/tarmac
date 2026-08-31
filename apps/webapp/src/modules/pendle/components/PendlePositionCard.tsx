@@ -17,7 +17,8 @@ import {
 import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
-import { Pendle } from '@/widgets';
+import { Pendle, PopoverRateInfo } from '@/widgets';
+import { RateInfo } from '@/components/product/RateInfo';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
@@ -114,10 +115,7 @@ function PendleSupplyCard({
       }
       description={
         <>
-          <Trans>
-            Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
-            maturity.
-          </Trans>{' '}
+          <Trans>Your rate is fixed when you supply.</Trans>{' '}
           <FixedYieldTerm rate={rate} days={remainingDays} />
         </>
       }
@@ -132,6 +130,7 @@ function PendleSupplyCard({
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
+              <PopoverRateInfo type="fixedYield" width={14} height={14} iconClassName="text-fgSecondary" />
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
@@ -438,6 +437,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
             <ProductStat label={<Trans>Claim date</Trans>}>{claimDateLabel}</ProductStat>
             <ProductStat label={<Trans>Fixed rate</Trans>}>
               <ProductPercent value={fixedRate} />
+              <RateInfo type="fixedYield" size={12} />
             </ProductStat>
           </ProductStatPair>
         </>

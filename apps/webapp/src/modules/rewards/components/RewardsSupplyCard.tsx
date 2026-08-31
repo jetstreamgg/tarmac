@@ -12,6 +12,7 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { RateInfo } from '@/components/product/RateInfo';
 import { NO_VALUE } from '@/lib/constants';
 
 /**
@@ -62,13 +63,13 @@ export function RewardsSupplyCard({
   // farm credits Chronicle with distribution.
   const description = isPointsFarm ? (
     <Trans>
-      Supply to Sky Protocol and earn Chronicle Points. Point distribution and related opportunities are
+      Supply to Sky Protocol to receive Chronicle Points. Point distribution and related opportunities are
       managed by Chronicle.
     </Trans>
   ) : (
     <Trans>
-      Supply to Sky Protocol and earn {rewardSymbol} tokens. The reward rate is set by Sky Protocol governance
-      and distributed proportionally to the supplied USDS.
+      Supply to Sky Protocol to receive {rewardSymbol} tokens. The reward rate is set by Sky Protocol
+      governance and distributed proportionally to the supplied USDS.
     </Trans>
   );
 
@@ -130,6 +131,7 @@ export function RewardsSupplyCard({
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
+              <RateInfo type="str" />
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>

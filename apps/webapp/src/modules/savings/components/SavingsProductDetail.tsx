@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
@@ -99,6 +100,7 @@ export function SavingsProductDetail() {
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
+      info: <RateInfo type="ssr" size={12} />,
       value: currentRate
     },
     {

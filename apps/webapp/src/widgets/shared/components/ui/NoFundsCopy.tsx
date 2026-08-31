@@ -10,7 +10,7 @@ export function NoFundsCopy({ className }: { className?: string }) {
           <EmptyFunds />
         </div>
         <Heading variant="small">
-          <Trans>Put your funds to work</Trans>
+          <Trans>Explore ways to use your assets</Trans>
         </Heading>
       </div>
     </div>

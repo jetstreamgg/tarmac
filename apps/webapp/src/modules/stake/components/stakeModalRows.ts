@@ -173,7 +173,7 @@ export function buildStakeConfirmRows(input: StakeConfirmRowInput): StakeModalGr
   if (borrow) {
     cells.push(
       cell({ label: 'Borrowed', token: 'USDS' }, borrow.borrowedBefore, borrow.borrowedAfter),
-      rateCell('Borrow rate', borrow.borrowRate),
+      rateCell('Borrow rate', borrow.borrowRate, undefined, 'sbr'),
       cell(
         { label: 'Risk level', tone: riskTone(borrow.riskBefore), afterTone: riskTone(borrow.riskAfter) },
         borrow.riskLabelBefore,
@@ -203,7 +203,7 @@ export function buildStakeConfirmRows(input: StakeConfirmRowInput): StakeModalGr
 
   cells.push(
     cell(
-      { label: 'Reward rate', rateAccent: 'savings', loading: input.rateLoading },
+      { label: 'Reward rate', rateAccent: 'savings', rateInfo: 'srr', loading: input.rateLoading },
       input.rewardRateBefore,
       input.rewardRateAfter
     ),

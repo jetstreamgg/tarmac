@@ -36,7 +36,10 @@ const TOOLTIP_ID_MAP = {
   remainingCapacity: 'remaining-capacity',
   withdrawalLiquidity: 'withdrawal-liquidity',
   maximumCapacity: 'maximum-capacity',
-  fixedYield: 'fixed-yield-rate'
+  fixedYield: 'fixed-yield-rate',
+  cappedOsmSkyPrice: 'capped-osm-sky-price',
+  earnRates: 'earn-rates',
+  earnRates30d: 'earn-rates-30d'
 } as const;
 
 type TooltipContent = {
@@ -91,7 +94,8 @@ export const PopoverRateInfo = ({
   iconClassName,
   width = 16,
   height = 15,
-  popoverClassName
+  popoverClassName,
+  trigger
 }: {
   type: PopoverTooltipType;
   tooltipOverride?: TooltipOverride;
@@ -99,6 +103,11 @@ export const PopoverRateInfo = ({
   width?: number;
   height?: number;
   popoverClassName?: string;
+  /**
+   * Custom trigger rendered in place of the info glyph (e.g. a whole rate
+   * badge). Must be a single element that accepts a ref and click handler.
+   */
+  trigger?: React.ReactElement;
 }) => {
   const content = getContent();
 
@@ -117,9 +126,11 @@ export const PopoverRateInfo = ({
   return (
     <Popover>
       <PopoverTrigger asChild onClick={e => e.stopPropagation()} className="z-10">
-        <span className="inline-flex cursor-pointer items-center">
-          <Info className={iconClassName} width={width} height={height} />
-        </span>
+        {trigger ?? (
+          <span className="inline-flex cursor-pointer items-center">
+            <Info className={iconClassName} width={width} height={height} />
+          </span>
+        )}
       </PopoverTrigger>
       <PopoverContent
         align="center"

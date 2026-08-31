@@ -17,6 +17,13 @@ import { t } from '@lingui/core/macro';
 import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ModalStepBackSlot, ModalStepDivider, ModalStepLabel } from './ModalStepChrome';
+import { ModalStepCarrier, type ModalStepCarrierLayer } from './ModalStepCarrier';
+import {
+  MODAL_LAYER_SHIFT_PX,
+  modalEnterTransition,
+  modalExitTransition
+} from '@/modules/ui/animation/modalStepMotion';
 import { TriangleAlert } from 'lucide-react';
 import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
@@ -261,6 +268,14 @@ export function TransactionModal({
   // The entry screen sources its label/gating from the entry descriptor (kept
   // live by the in-modal body); the review screen uses the top-level config.
   const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
+  // The CTA element itself survives entry → review (both are first screens), so
+  // only its wording rolls — keyed on the step so a live label edit mid-screen
+  // doesn't (Figma 2685:148222 rolls "Review" up into "Continue").
+  const firstScreenConfirmLabelNode = (
+    <ModalStepLabel labelKey={step} align="center">
+      {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
+    </ModalStepLabel>
+  );
   // The chain guard (APP-528) disables EVERY first-screen CTA — advancing ones
   // too, not just the firing one — so a wrong-chain flow can't even reach its
   // review. It takes precedence over the flow's own gating, hence the `||`.
@@ -434,144 +449,55 @@ export function TransactionModal({
     }
   }, [isReview, hasReviewStage, isFirstScreen, handleClose, handleBack]);
 
-  return (
-    <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
-      <ResponsiveModalContent
-        // Popovers, tooltips and selects opened from inside the modal are portalled to
-        // the document root, so Radix sees a pointer-down on them as outside the dialog
-        // and closes it — which killed the transaction when the bundling switch was used.
-        onPointerDownOutside={event => {
-          // Figma review: click-outside is disabled while a transaction is actually
-          // pending (wallet-signature + broadcast window) so an accidental outside
-          // click can't dismiss it mid-flight — entry/review stay dismissable.
-          if (isTransacting) {
-            event.preventDefault();
-            return;
-          }
-          if ((event.target as HTMLElement | null)?.closest('[data-radix-popper-content-wrapper]')) {
-            event.preventDefault();
-          }
-        }}
-        aria-describedby={undefined}
-        // DS Modal card (Figma 1310:130558 desktop, 1292:63543 mobile):
-        // colors/bg/bg-secondary tint at radius-2xl over the frosted scrim at
-        // every tier — the mobile comp ships the same bg-overlay +
-        // blur-full scrim under the same near-transparent card, and the
-        // SheetOverlay carries that frost. Radius only at md+; the mobile
-        // bottom Sheet keeps its own top-only rounding. 610px wide with 48px
-        // section gaps on the first screens per the comp; the wallet/status
-        // screen spaces its sections with per-section padding instead.
-        className={cn(
-          // app-loader-cover-hidden: a first connect from inside this modal arms
-          // the app loader's held cover (APP-515) — the card hides for the play
-          // and pops back at reveal; the frosted scrim stays as the backdrop.
-          'app-loader-cover-hidden bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
-          !isTransaction && 'sm:gap-12'
-        )}
-        onOpenAutoFocus={e => e.preventDefault()}
-        onCloseAutoFocus={e => e.preventDefault()}
-      >
-        <div className={cn('flex justify-between', firstScreenSubtitle ? 'items-start' : 'items-center')}>
-          <div className="flex min-w-0 flex-1 flex-col gap-4">
-            <div className="flex items-center gap-4">
-              {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph.
-                The flow's initial screen has no back arrow (Figma 859:36036 draws
-                title + close only); later screens gain it. */}
-              {step !== firstStep && (
-                <Button
-                  variant="secondary"
-                  size="iconM"
-                  aria-label={t`Back`}
-                  onClick={handleHeaderBack}
-                  disabled={isTransacting || backLocked}
-                  data-testid="transaction-modal-back"
-                >
-                  <ArrowLeft className="size-4" />
-                </Button>
-              )}
-              {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking, fg-primary. */}
-              <ResponsiveModalTitle className="text-fgPrimary font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
-                {displayTitle}
-              </ResponsiveModalTitle>
-              {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
-                the wallet/status screen relabels the title. */}
-              {isFirstScreen && titleBadge}
-            </div>
-            {/* Body 6 (Figma 2413:67012): a flow's pre-transaction disclosure hugs
-                the title inside the header block, 12/18 on fg-secondary. The
-                status subtitles below keep the content column's treatment. */}
-            {firstScreenSubtitle && (
-              <Text
-                variant="captionSm"
-                className="text-fgSecondary leading-[18px]"
-                dataTestId="transaction-modal-subtitle"
-              >
-                {firstScreenSubtitle}
-              </Text>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {rightHeaderComponent}
-            <Button
-              variant="secondary"
-              size="iconM"
-              aria-label={txStatus === TxStatus.LOADING ? t`Minimize` : t`Close`}
-              onClick={handleDismiss}
-              data-testid="transaction-modal-close"
-            >
-              <Close className="size-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}>
-          {/* Subtitle */}
-          <AnimatePresence mode="wait" initial={false}>
-            {subtitle && !isFirstScreen && (
-              <motion.div
-                key={subtitle}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Text className="text-textSecondary">{subtitle}</Text>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* The editable entry body stays MOUNTED for the modal's lifetime — it can
-              own the in-flight engine hook whose onSuccess completes the transaction,
-              so unmounting it on the transaction screen would strand the modal in
-              LOADING. It is only shown on the entry screen (hidden otherwise). */}
-          {entry && (
-            <div className={isEntry ? 'text-text' : 'hidden'} aria-hidden={!isEntry}>
-              {entry.content}
-              {/* Portal target for a flow's backgroundContent inputs (see registerEntrySlot). */}
-              <div ref={slotRef} />
-            </div>
-          )}
-
-          {/* Read-only review breakdown — the review-path first screen, or the
-              three-screen flow's middle stage. Owns no hook, so it can unmount on
-              the transaction screen. */}
-          {isReview && transactionContent && <div className="text-text">{transactionContent}</div>}
-
+  // One layer per screen for the height carrier. A layer is listed only while its
+  // screen is current — AnimatePresence holds the outgoing one for the length of
+  // its exit, so nothing has to stay in the array to animate away.
+  const bodyLayers: ModalStepCarrierLayer[] = [];
+  if (entry) {
+    bodyLayers.push({
+      key: 'entry',
+      // The editable entry body stays MOUNTED for the modal's lifetime — it can own
+      // the in-flight engine hook whose onSuccess completes the transaction, so
+      // unmounting it on the transaction screen would strand the modal in LOADING.
+      persistent: true,
+      className: 'text-text',
+      content: (
+        <>
+          {entry.content}
+          {/* Portal target for a flow's backgroundContent inputs (see registerEntrySlot). */}
+          <div ref={slotRef} />
+        </>
+      )
+    });
+  }
+  // Read-only review breakdown — the review-path first screen, or the three-screen
+  // flow's middle stage. Owns no hook, so it can unmount on the transaction screen.
+  if (isReview && transactionContent) {
+    bodyLayers.push({ key: 'review', className: 'text-text', content: transactionContent });
+  }
+  if (isTransaction) {
+    bodyLayers.push({
+      key: 'transaction',
+      className: 'text-text flex flex-col gap-4',
+      content: (
+        <>
           {/* Compact summary on the wallet/status screen (Figma "Confirm in the
-              wallet"): a relabelled amount header in place of the full breakdown. */}
-          {/* pt-4/pb-6 + the column gaps = the comp's 40px breathing room around the hero (1310:130564). */}
-          {isTransaction && transactionScreenBody && (
-            <div className="text-text pt-4 pb-6">{transactionScreenBody}</div>
-          )}
+              wallet"): a relabelled amount header in place of the full breakdown.
+              pt-4/pb-6 + the column gaps = the comp's 40px breathing room around
+              the hero (1310:130564). */}
+          {transactionScreenBody && <div className="pt-4 pb-6">{transactionScreenBody}</div>}
 
           {/* Step list (DS Steps pattern) — wallet/status screen only, drawn BELOW
               the hero behind a hairline divider (Figma confirm comps, 1310:130531).
               The per-row states (including the failure treatment with its inline
               "Try again") come from the derivation in ./transactionStepsModel. */}
-          {showStepList && isTransaction && (
+          {showStepList && (
             <>
-              {/* Figma 859:36229: the steps section splits from the hero on a border-primary hairline, 24px above the header. */}
-              {transactionScreenBody && <div className="border-borderPrimary border-t" />}
+              {/* Figma 859:36229: the steps section splits from the hero on a
+                  border-primary hairline, 24px above the header. It draws itself in
+                  from the left as the Actions panel arrives (2685:148222 animates
+                  the same rule as a path length). */}
+              {transactionScreenBody && <ModalStepDivider />}
               <Steps className="pt-2" bundled={isBundled} badge={badgeContent}>
                 {(() => {
                   const items = deriveTransactionStepItems({
@@ -620,16 +546,140 @@ export function TransactionModal({
               </Steps>
             </>
           )}
+        </>
+      )
+    });
+  }
+
+  return (
+    <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
+      <ResponsiveModalContent
+        // Popovers, tooltips and selects opened from inside the modal are portalled to
+        // the document root, so Radix sees a pointer-down on them as outside the dialog
+        // and closes it — which killed the transaction when the bundling switch was used.
+        onPointerDownOutside={event => {
+          // Figma review: click-outside is disabled while a transaction is actually
+          // pending (wallet-signature + broadcast window) so an accidental outside
+          // click can't dismiss it mid-flight — entry/review stay dismissable.
+          if (isTransacting) {
+            event.preventDefault();
+            return;
+          }
+          if ((event.target as HTMLElement | null)?.closest('[data-radix-popper-content-wrapper]')) {
+            event.preventDefault();
+          }
+        }}
+        aria-describedby={undefined}
+        // DS Modal card (Figma 1310:130558 desktop, 1292:63543 mobile):
+        // colors/bg/bg-secondary tint at radius-2xl over the frosted scrim at
+        // every tier — the mobile comp ships the same bg-overlay +
+        // blur-full scrim under the same near-transparent card, and the
+        // SheetOverlay carries that frost. Radius only at md+; the mobile
+        // bottom Sheet keeps its own top-only rounding. 610px wide with 48px
+        // section gaps on the first screens per the comp; the wallet/status
+        // screen spaces its sections with per-section padding instead.
+        className={cn(
+          // app-loader-cover-hidden: a first connect from inside this modal arms
+          // the app loader's held cover (APP-515) — the card hides for the play
+          // and pops back at reveal; the frosted scrim stays as the backdrop.
+          'app-loader-cover-hidden bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
+          !isTransaction && 'sm:gap-12'
+        )}
+        onOpenAutoFocus={e => e.preventDefault()}
+        onCloseAutoFocus={e => e.preventDefault()}
+      >
+        <div className={cn('flex justify-between', firstScreenSubtitle ? 'items-start' : 'items-center')}>
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            {/* No row gap: the back-arrow slot owns the 16px gutter so it can
+                collapse to nothing on the first screen, and the badge carries its
+                own. That is what lets the title slide sideways instead of jumping
+                when the arrow appears (Figma 2685:148222). */}
+            <div className="flex min-w-0 items-center">
+              {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph.
+                The flow's initial screen has no back arrow (Figma 859:36036 draws
+                title + close only); later screens gain it. */}
+              <ModalStepBackSlot open={step !== firstStep}>
+                <Button
+                  variant="secondary"
+                  size="iconM"
+                  aria-label={t`Back`}
+                  onClick={handleHeaderBack}
+                  disabled={isTransacting || backLocked}
+                  data-testid="transaction-modal-back"
+                >
+                  <ArrowLeft className="size-4" />
+                </Button>
+              </ModalStepBackSlot>
+              {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking, fg-primary. */}
+              <ResponsiveModalTitle className="text-fgPrimary font-circle min-w-0 text-lg leading-5.5 font-medium tracking-[-0.36px]">
+                {/* Keyed on the step, not the string: a live `updateModalContent`
+                    retitle mid-screen should not roll. */}
+                <ModalStepLabel labelKey={step}>{displayTitle}</ModalStepLabel>
+              </ResponsiveModalTitle>
+              {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
+                the wallet/status screen relabels the title. */}
+              {isFirstScreen && titleBadge && <div className="ml-4 shrink-0">{titleBadge}</div>}
+            </div>
+            {/* Body 6 (Figma 2413:67012): a flow's pre-transaction disclosure hugs
+                the title inside the header block, 12/18 on fg-secondary. The
+                status subtitles below keep the content column's treatment. */}
+            {firstScreenSubtitle && (
+              <Text
+                variant="captionSm"
+                className="text-fgSecondary leading-[18px]"
+                dataTestId="transaction-modal-subtitle"
+              >
+                {firstScreenSubtitle}
+              </Text>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {rightHeaderComponent}
+            <Button
+              variant="secondary"
+              size="iconM"
+              aria-label={txStatus === TxStatus.LOADING ? t`Minimize` : t`Close`}
+              onClick={handleDismiss}
+              data-testid="transaction-modal-close"
+            >
+              <Close className="size-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}>
+          {/* Subtitle */}
+          <AnimatePresence mode="wait" initial={false}>
+            {subtitle && !isFirstScreen && (
+              <motion.div
+                key={subtitle}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Text className="text-textSecondary">{subtitle}</Text>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Every screen's body lives in one height-animating box, so a step
+              change eases the modal between their heights while they cross-fade
+              inside it, instead of snapping (Figma 2685:148222). */}
+          <ModalStepCarrier activeKey={step} layers={bodyLayers} />
 
           {/* Bottom section: animates on step/status change */}
           <AnimatePresence mode="wait" initial={false}>
             {isFirstScreen ? (
               <motion.div
                 key="review-bottom"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX }}
+                animate={{ opacity: 1, y: 0 }}
+                // Figma 2685:148222: the CTA does not cross-fade into the Actions
+                // panel — it drops out of the modal on the accelerate curve and the
+                // panel takes the space it left.
+                exit={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX, transition: modalExitTransition }}
+                transition={modalEnterTransition}
                 className="flex flex-col gap-4"
               >
                 {/* Precedes the screening block — a wrong chain is the more
@@ -674,7 +724,7 @@ export function TransactionModal({
                       disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
                       loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
                     >
-                      {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
+                      {firstScreenConfirmLabelNode}
                     </Button>
                   </div>
                 ) : (
@@ -686,17 +736,17 @@ export function TransactionModal({
                     disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
                     loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
                   >
-                    {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
+                    {firstScreenConfirmLabelNode}
                   </Button>
                 )}
               </motion.div>
             ) : showInlineFailure ? null : (
               <motion.div
                 key={`transaction-${txStatus}`}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX, transition: modalExitTransition }}
+                transition={modalEnterTransition}
                 className="flex flex-col gap-4"
               >
                 {/* Status row: the icon, the per-status sentence and the explorer

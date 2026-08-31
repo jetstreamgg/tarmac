@@ -25,6 +25,7 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { RateInfo } from '@/components/product/RateInfo';
 import { useClaimRewardsModal } from '@/modules/claim';
 import { useRewardsModal, type RewardsModalArgs } from '../hooks/useRewardsModal';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
@@ -207,6 +208,7 @@ export function RewardsPositionCard({
             )}
             <ProductStat label={<Trans>Current rate</Trans>}>
               <ProductPercent value={currentRate} />
+              <RateInfo type="str" size={12} />
             </ProductStat>
           </ProductStatPair>
         </>

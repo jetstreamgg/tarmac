@@ -47,9 +47,9 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
       title: <Trans>Fixed vs. variable</Trans>,
       body: (
         <Trans>
-          {variableSymbol} gives you a variable yield that moves with the market. {ptSymbol} gives you a fixed
-          yield, locked in at supply. Pick fixed if you want predictability or expect rates to drop. Pick
-          variable if you want flexibility or expect rates to rise.
+          {variableSymbol} gives you a variable yield that moves with the market. {ptSymbol} gives you a rate
+          fixed at supply. Pick fixed if you want predictability or expect rates to drop. Pick variable if you
+          want flexibility or expect rates to rise.
         </Trans>
       )
     },
@@ -59,8 +59,8 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
       title: <Trans>Withdrawing</Trans>,
       body: (
         <Trans>
-          Hold until maturity to get your fixed yield, guaranteed. Exit early anytime by selling on the market
-          — price depends on current conditions, so you may earn more or less than the locked-in rate.
+          Hold to maturity to receive the rate set when you supplied. Sell before then and you get the market
+          price, which may be more or less than the fixed rate.
         </Trans>
       )
     },
@@ -70,7 +70,7 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
       title: <Trans>APY</Trans>,
       body: (
         <Trans>
-          The fixed APY changes day to day based on the market — your rate is frozen the moment you supply. We
+          The fixed APY changes day to day based on the market - your rate is fixed the moment you supply. We
           offer multiple maturity dates, each with its own rate.
         </Trans>
       )
@@ -81,18 +81,24 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
     <div className="flex flex-col gap-6" data-testid="pendle-detail-about">
       <p>
         {apy === undefined || exampleOut === undefined ? (
-          <Trans>Lock in a fixed yield on your {symbol}.</Trans>
+          <Trans>
+            Fix a rate on your {symbol} until maturity. Supply {symbol} today and redeem at maturity at the
+            rate fixed when you supplied. Early exits settle at the current market price, which may be more or
+            less than the fixed rate. PT positions carry market and smart-contract risk.
+          </Trans>
         ) : remainingDays === 1 ? (
           <Trans>
-            Lock in a fixed yield on your {symbol}, e.g. supply {EXAMPLE_SUPPLY} {symbol} and withdraw{' '}
+            Fix a rate on your {symbol} until maturity, e.g. supply {EXAMPLE_SUPPLY} {symbol} today and redeem{' '}
             {formatNumber(exampleOut, { maxDecimals: 2 })} {symbol} in one day ({formatDecimalPercentage(apy)}{' '}
-            fixed APY).
+            fixed APY). Early exits settle at the current market price, which may be more or less than the
+            fixed rate. PT positions carry market and smart-contract risk.
           </Trans>
         ) : (
           <Trans>
-            Lock in a fixed yield on your {symbol}, e.g. supply {EXAMPLE_SUPPLY} {symbol} and withdraw{' '}
+            Fix a rate on your {symbol} until maturity, e.g. supply {EXAMPLE_SUPPLY} {symbol} today and redeem{' '}
             {formatNumber(exampleOut, { maxDecimals: 2 })} {symbol} in {remainingDays} days (
-            {formatDecimalPercentage(apy)} fixed APY).
+            {formatDecimalPercentage(apy)} fixed APY). Early exits settle at the current market price, which
+            may be more or less than the fixed rate. PT positions carry market and smart-contract risk.
           </Trans>
         )}{' '}
         <Trans>

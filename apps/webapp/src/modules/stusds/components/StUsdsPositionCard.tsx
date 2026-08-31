@@ -3,6 +3,8 @@ import { useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { PopoverRateInfo } from '@/widgets';
+import { RateInfo } from '@/components/product/RateInfo';
 import { useStUsdsData } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -93,6 +95,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
+              <PopoverRateInfo type="stusds" width={14} height={14} iconClassName="text-fgSecondary" />
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
@@ -197,6 +200,7 @@ export function StUsdsPositionCard() {
             </ProductStat>
             <ProductStat label={<Trans>Current rate</Trans>}>
               <ProductPercent value={currentRate} />
+              <RateInfo type="stusds" size={12} />
             </ProductStat>
           </ProductStatPair>
         </>
