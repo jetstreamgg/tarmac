@@ -399,7 +399,14 @@ export function EarnPage() {
             <ProtocolLineageBadge />
           </>
         }
-        title={<Trans>How hard your stablecoins work is up to you</Trans>}
+        // Desktop comp breaks the title before "is up to you"; below md the
+        // heading is text-balance and wraps on its own, so the break is hidden.
+        title={
+          <Trans>
+            How hard your stablecoins work <br className="max-md:hidden" />
+            is up to you
+          </Trans>
+        }
         subtitleClassName="max-w-[271px] md:max-w-[513px]"
         // Three standalone sentences, so each is its own translation unit — the
         // middle one carries the live figure and can drop out entirely.
