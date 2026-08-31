@@ -109,4 +109,36 @@ describe('buildVaultStrategy', () => {
     expect(view.totalUsd).toBe(0);
     expect(view.formattedTotal).toBe('$0');
   });
+
+  it('tags each segment and carries the market caps through for the hover panel', () => {
+    const view = buildVaultStrategy(
+      [
+        market({
+          marketId: '0xa',
+          assetsUsd: 60_000_000,
+          formattedAbsoluteCap: '5M',
+          absoluteCapUtilization: 0.8,
+          formattedRelativeCap: '15%',
+          relativeCapUtilization: 0.4
+        })
+      ],
+      [{ assetSymbol: 'USDC', formattedAssets: '', formattedAssetsUsd: '', idleAssetsUsd: 40_000_000 }],
+      100_000_000
+    );
+
+    expect(view.segments[0]).toMatchObject({
+      kind: 'market',
+      marketId: '0xa',
+      caps: {
+        formattedAbsoluteCap: '5M',
+        absoluteCapUtilization: 0.8,
+        formattedRelativeCap: '15%',
+        relativeCapUtilization: 0.4
+      }
+    });
+    // Idle capital has no market behind it, so no caps and no Morpho link.
+    expect(view.segments[1].kind).toBe('idle');
+    expect(view.segments[1].caps).toBeUndefined();
+    expect(view.segments[1].marketId).toBeUndefined();
+  });
 });
