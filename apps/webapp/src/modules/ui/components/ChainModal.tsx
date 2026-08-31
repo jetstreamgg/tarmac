@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
@@ -79,11 +79,87 @@ export function ChainModal({
     variables: switchChainVariables
   } = useChainModalContext();
 
+  const isWidget = variant === ChainModalVariant.widget;
+
+  // The chains this trigger could actually switch between — the same filter the
+  // dialog list below applies.
+  const selectableChains = chains.filter(chain => (chainIds ? chainIds.includes(chain.id) : true));
+  // Single-chain products (stake, rewards, the vaults, stUSDS, fixed yield — all
+  // mainnet-only) have nowhere to switch to, so the pill is a label rather than a
+  // control: no chevron, no dialog, nothing to click or focus. It stays a live
+  // dropdown wherever a second chain is configured, which includes every one of
+  // those products in dev — the Tenderly fork joins the mainnet family there
+  // (CHAIN_WIDGET_MAP), so the fork is still reachable from the product page.
+  const isSingleChain = selectableChains.length <= 1;
+
   // Non-widget trigger = design-system Button / Dropdown, Network M (Figma
   // 5019:4105): 24px chain icon, 16px chevron that flips while open (Radix
   // DialogTrigger supplies data-state). The widget look keeps its legacy
   // recipe untouched — connectPrimary is just the text-color base; the
   // className below overrides every gradient/border stop it sets.
+  const triggerVariant = isWidget ? 'connectPrimary' : 'dropdown';
+  const triggerSize = isWidget ? 'default' : size === 'xs' ? 'dropdownXs' : 'dropdownM';
+  const triggerClasses = cn(
+    isWidget
+      ? 'from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 flex items-center gap-1.5 border-transparent bg-radial-(--gradient-position) px-[9px] py-2 bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
+      : 'group',
+    triggerClassName
+  );
+
+  const pill = (
+    <>
+      {getChainIcon(chainId, isWidget ? 'h-5 w-5' : size === 'xs' ? 'h-4 w-4' : 'h-6 w-6')}
+      {showLabel &&
+        (isWidget ? (
+          <Text className={cn('text-text', labelClassName)}>{client?.chain.name || 'Ethereum'}</Text>
+        ) : (
+          // Label 5 / Circular Medium in every dropdown comp (Figma
+          // 1030:60397, 1030:59254) — which is what dropdownM already
+          // sets, so the label is a bare span and inherits it. A <Text>
+          // here would re-declare Graphik at 16px and win, which is how
+          // the network pill drifted off the comps across all products.
+          // XS steps down to Label 6 (Figma 1030:138802).
+          <span
+            className={cn(
+              'text-text',
+              size === 'xs' && 'text-xs leading-[14px] tracking-[-0.24px]',
+              labelClassName
+            )}
+          >
+            {client?.chain.name || 'Ethereum'}
+          </span>
+        ))}
+    </>
+  );
+
+  if (isSingleChain) {
+    // `pointer-events-none` is what makes the static pill inert: it also keeps
+    // the dropdown recipe's hover states (fill + border) from firing on what is
+    // now a plain label. The testid stays put — e2e asserts the pill is on the page.
+    return variant === ChainModalVariant.wrapper ? (
+      <div className="h-full w-full" data-testid={dataTestId}>
+        {children}
+      </div>
+    ) : (
+      <div
+        // Wrapped in `cn` exactly like `Button` does it: the variants alone
+        // leave both the base `rounded-xl` and the size's `rounded-full` in the
+        // class list, and the base wins on stylesheet order — tailwind-merge is
+        // what picks the pill radius.
+        className={cn(
+          buttonVariants({
+            variant: triggerVariant,
+            size: triggerSize,
+            className: cn('pointer-events-none', triggerClasses)
+          })
+        )}
+        data-testid={dataTestId}
+      >
+        {pill}
+      </div>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={disabled ? undefined : setOpen}>
       <DialogTrigger asChild disabled={disabled}>
@@ -95,44 +171,14 @@ export function ChainModal({
           </button>
         ) : (
           <Button
-            variant={variant === ChainModalVariant.widget ? 'connectPrimary' : 'dropdown'}
-            size={
-              variant === ChainModalVariant.widget ? 'default' : size === 'xs' ? 'dropdownXs' : 'dropdownM'
-            }
-            className={cn(
-              variant === ChainModalVariant.widget
-                ? 'from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 flex items-center gap-1.5 border-transparent bg-radial-(--gradient-position) px-[9px] py-2 bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
-                : 'group',
-              triggerClassName
-            )}
+            variant={triggerVariant}
+            size={triggerSize}
+            className={triggerClasses}
             data-testid={dataTestId}
           >
-            {getChainIcon(
-              chainId,
-              variant === ChainModalVariant.widget ? 'h-5 w-5' : size === 'xs' ? 'h-4 w-4' : 'h-6 w-6'
-            )}
-            {showLabel &&
-              (variant === ChainModalVariant.widget ? (
-                <Text className={cn('text-text', labelClassName)}>{client?.chain.name || 'Ethereum'}</Text>
-              ) : (
-                // Label 5 / Circular Medium in every dropdown comp (Figma
-                // 1030:60397, 1030:59254) — which is what dropdownM already
-                // sets, so the label is a bare span and inherits it. A <Text>
-                // here would re-declare Graphik at 16px and win, which is how
-                // the network pill drifted off the comps across all products.
-                // XS steps down to Label 6 (Figma 1030:138802).
-                <span
-                  className={cn(
-                    'text-text',
-                    size === 'xs' && 'text-xs leading-[14px] tracking-[-0.24px]',
-                    labelClassName
-                  )}
-                >
-                  {client?.chain.name || 'Ethereum'}
-                </span>
-              ))}
+            {pill}
             {showDropdownIcon &&
-              (variant === ChainModalVariant.widget ? (
+              (isWidget ? (
                 <ChevronDown width={14} height={14} />
               ) : (
                 <ChevronDown
