@@ -34,10 +34,17 @@ function readCookieRaw(): string | null {
  */
 function writeCookie(data: Record<string, boolean>): void {
   if (typeof document === 'undefined') return;
-  const domain = getCookieDomain();
-  const domainAttr = domain ? `; domain=${domain}` : '';
   const value = encodeURIComponent(JSON.stringify(data));
-  document.cookie = `${CONSENT_COOKIE_NAME}=${value}${domainAttr}; path=/; max-age=31536000; SameSite=Lax`; // 1 year
+  const write = (domainAttr: string) => {
+    document.cookie = `${CONSENT_COOKIE_NAME}=${value}${domainAttr}; path=/; max-age=31536000; SameSite=Lax`; // 1 year
+  };
+  const domain = getCookieDomain();
+  write(domain ? `; domain=${domain}` : '');
+  // On public-suffix hosts (e.g. *.pages.dev preview deploys) the browser
+  // silently rejects a cookie whose domain attribute is the suffix itself, so
+  // consent never persisted and the banner returned every load (APP-399 #9).
+  // Verify the write landed; fall back to a host-only cookie when it didn't.
+  if (readCookieRaw() !== value) write('');
 }
 
 /**

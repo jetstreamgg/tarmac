@@ -36,7 +36,10 @@ const TOOLTIP_ID_MAP = {
   remainingCapacity: 'remaining-capacity',
   withdrawalLiquidity: 'withdrawal-liquidity',
   maximumCapacity: 'maximum-capacity',
-  fixedYield: 'fixed-yield-rate'
+  fixedYield: 'fixed-yield-rate',
+  cappedOsmSkyPrice: 'capped-osm-sky-price',
+  earnRates: 'earn-rates',
+  earnRates30d: 'earn-rates-30d'
 } as const;
 
 type TooltipContent = {
@@ -50,25 +53,22 @@ type TooltipOverride = {
 };
 
 // Helper to create tooltip content with consistent styling
-const createTooltipContent = (
-  tooltipId: string,
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void
-): TooltipContent => {
+const createTooltipContent = (tooltipId: string): TooltipContent => {
   const tooltip = getTooltipById(tooltipId);
   return {
     title: tooltip?.title || '',
     description: (
-      <Text variant="small" className="leading-5 text-white/80">
-        {parseMarkdownLinks(tooltip?.tooltip, onExternalLinkClicked)}
+      <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
+        {parseMarkdownLinks(tooltip?.tooltip)}
       </Text>
     )
   };
 };
 
-const getContent = (onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void) => {
+const getContent = () => {
   return Object.entries(TOOLTIP_ID_MAP).reduce(
     (acc, [key, tooltipId]) => {
-      acc[key as keyof typeof TOOLTIP_ID_MAP] = createTooltipContent(tooltipId, onExternalLinkClicked);
+      acc[key as keyof typeof TOOLTIP_ID_MAP] = createTooltipContent(tooltipId);
       return acc;
     },
     {} as Record<keyof typeof TOOLTIP_ID_MAP, TooltipContent>
@@ -90,30 +90,34 @@ export function resolvePopoverTooltipKey(raw: string): PopoverTooltipType | unde
 
 export const PopoverRateInfo = ({
   type,
-  onExternalLinkClicked,
   tooltipOverride,
   iconClassName,
   width = 16,
   height = 15,
-  popoverClassName
+  popoverClassName,
+  trigger
 }: {
   type: PopoverTooltipType;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   tooltipOverride?: TooltipOverride;
   iconClassName?: string;
   width?: number;
   height?: number;
   popoverClassName?: string;
+  /**
+   * Custom trigger rendered in place of the info glyph (e.g. a whole rate
+   * badge). Must be a single element that accepts a ref and click handler.
+   */
+  trigger?: React.ReactElement;
 }) => {
-  const content = getContent(onExternalLinkClicked);
+  const content = getContent();
 
   if (!(type in content)) return null;
 
   const defaultContent = content[type];
   const resolvedTitle = tooltipOverride?.title ?? defaultContent.title;
   const resolvedDescription = tooltipOverride?.description ? (
-    <Text variant="small" className="leading-5 text-white/80">
-      {parseMarkdownLinks(tooltipOverride.description, onExternalLinkClicked)}
+    <Text variant="small" className="light:text-textSecondary leading-5 text-white/80">
+      {parseMarkdownLinks(tooltipOverride.description)}
     </Text>
   ) : (
     defaultContent.description
@@ -122,9 +126,11 @@ export const PopoverRateInfo = ({
   return (
     <Popover>
       <PopoverTrigger asChild onClick={e => e.stopPropagation()} className="z-10">
-        <span className="inline-flex cursor-pointer items-center">
-          <Info className={iconClassName} width={width} height={height} />
-        </span>
+        {trigger ?? (
+          <span className="inline-flex cursor-pointer items-center">
+            <Info className={iconClassName} width={width} height={height} />
+          </span>
+        )}
       </PopoverTrigger>
       <PopoverContent
         align="center"
@@ -135,10 +141,10 @@ export const PopoverRateInfo = ({
           {resolvedTitle}
         </Heading>
         <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
-          <Close className="h-5 w-5 cursor-pointer text-white" />
+          <Close className="text-text h-5 w-5 cursor-pointer" />
         </PopoverClose>
         <div
-          className="mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] scrollbar-thin overflow-y-auto"
+          className="mt-2 max-h-[calc(var(--radix-popover-content-available-height)-64px)] overflow-y-auto"
           // The `onWheel` and `onTouchMove` stopPropagation handlers allow to scroll through the popover
           // content when rendered on top of another focus capturing elements, like modals.
           onWheel={e => {

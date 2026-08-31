@@ -32,6 +32,7 @@ export type ParsedTradeRecord = Pick<TradeRecord, 'id' | 'blockTimestamp' | 'tra
   module: ModuleEnum;
   type: TransactionTypeEnum;
   appCode?: string;
+  chainId: number;
 };
 
 export type TradeHistoryRaw = TradeRecord[];

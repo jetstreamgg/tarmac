@@ -56,7 +56,6 @@ export const TradeTransactionStatus = ({
   lastUpdated,
   isEthFlow,
   ethFlowTxStatus = EthFlowTxStatus.IDLE,
-  onExternalLinkClicked,
   needsUsdtReset,
   isUsdtResetFlow,
   isBatchTransaction
@@ -69,7 +68,6 @@ export const TradeTransactionStatus = ({
   lastUpdated?: TradeSide;
   isEthFlow: boolean;
   ethFlowTxStatus?: EthFlowTxStatus;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   needsUsdtReset: boolean;
   isUsdtResetFlow: boolean;
   isBatchTransaction: boolean;
@@ -265,13 +263,7 @@ export const TradeTransactionStatus = ({
       </>
     );
 
-    return (
-      <TransactionStatus
-        explorerName={chainExplorerName}
-        onExternalLinkClicked={onExternalLinkClicked}
-        transactionDetail={usdtResetSteps}
-      />
-    );
+    return <TransactionStatus explorerName={chainExplorerName} transactionDetail={usdtResetSteps} />;
   }
 
   // Default behavior for everything else that's not a USDT reset flow
@@ -286,7 +278,6 @@ export const TradeTransactionStatus = ({
             ? chainExplorerName
             : ExplorerName.COW_EXPLORER
       }
-      onExternalLinkClicked={onExternalLinkClicked}
     />
   );
 };

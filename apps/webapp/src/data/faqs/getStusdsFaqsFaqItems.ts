@@ -39,7 +39,7 @@ To compensate participants for the added illiquidity risk during the early phase
 
 stUSDS Rate = Utilization * (SKY Borrow Rate - stUSDS Accessibility Reward) + (1 - Utilization) * Sky Savings Rate
 
-The rate is derived from the SKY Borrow Rate less the stUSDS Accessibility Reward on the utilized portion of your capital and the Sky Savings Rate on the unutilized portion. Utilization is the percentage of funds in the stUSDS contract that are used to fund borrowing against staked SKY.
+The rate is derived from the SKY Borrow Rate less the stUSDS Accessibility Reward on the utilized portion of the module's liquidity and the Sky Savings Rate on the unutilized portion. Utilization is the percentage of funds in the stUSDS contract that are used to fund borrowing against staked SKY.
 
 The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers and is dynamic and market-driven, based on the utilization of funds within the stUSDS contract.`,
       index: 4
@@ -72,7 +72,7 @@ Eligible Sky.money web app users accessing the stUSDS module are automatically r
     {
       question: 'Is there a minimum amount of USDS I must supply to access stUSDS rewards?',
       answer:
-        'No minimum supply amount is required to access the [stUSDS Rate](#tooltip-stusds-rate); however, there is a cap, set by Sky Ecosystem Governance, on how much USDS the stUSDS vault can accept. Withdrawals are available as long as the stUSDS pool has sufficient idle USDS. Since deposits fund SKY‑backed loans, withdrawal capacity depends on current [utilization](#tooltip-utilization): when most liquidity is lent out, withdrawals may be limited until repayments occur or liquidity returns.',
+        'No minimum supply amount is required to access the [stUSDS Rate](#tooltip-stusds-rate); however, there is a cap, set by SKY token holders through decentralized onchain voting, on how much USDS the stUSDS vault can accept. Withdrawals are available as long as the stUSDS pool has sufficient idle USDS. Since deposits fund SKY‑backed loans, withdrawal capacity depends on current [utilization](#tooltip-utilization): when most liquidity is lent out, withdrawals may be limited until repayments occur or liquidity returns.',
       index: 9
     },
     {
@@ -93,7 +93,7 @@ sUSDS is the native savings token of the Sky Savings Rate module, reflecting how
       answer: `Generally, yes—deposits and withdrawals are designed to be available at any time, but there are a couple of caveats:
 
 Liquidity availability: Withdrawals depend on the module having enough liquid USDS. If [utilization](#tooltip-utilization) is very high, you may need to wait for borrowers to repay or for liquidity to return, or withdraw partially.
-Rate/fee changes: Sky Ecosystem Governance can update parameters (rates, caps) and may impose temporary safeguards during stress.`,
+Rate/fee changes: SKY token holders can vote to update parameters (rates, caps) and may impose temporary safeguards during stress.`,
       index: 12
     },
     {

@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { MORPHO_API_URL, VAULT_MARKET_DATA_QUERY } from './constants';
+import { MORPHO_API_CHAIN_ID, MORPHO_API_URL, VAULT_MARKET_DATA_QUERY } from './constants';
 import { formatBigInt, formatNumber, formatPercent } from '@/utils';
-import { mainnet } from 'viem/chains';
 import type {
   MorphoIdleLiquidityAllocation,
   MorphoMarketAllocation,
@@ -228,6 +227,7 @@ export async function fetchMorphoVaultMarketData(
       collateralAsset: market.collateralAsset.symbol,
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
       formattedAssetsUsd: `$${formatNumber(vaultAssetsUsd, { compact: true })}`,
+      assetsUsd: vaultAssetsUsd,
       formattedNetApy: `${(market.state.netSupplyApy * 100).toFixed(2)}%`,
       totalSupplyAssets,
       totalBorrowAssets,
@@ -285,8 +285,7 @@ export function useMorphoVaultMarketApiData({
 }: {
   vaultAddress?: `0x${string}`;
 }): MorphoVaultMarketDataHook {
-  // Always use mainnet chainId since the Morpho API only has mainnet data
-  const chainId = mainnet.id;
+  const chainId = MORPHO_API_CHAIN_ID;
 
   const {
     data,

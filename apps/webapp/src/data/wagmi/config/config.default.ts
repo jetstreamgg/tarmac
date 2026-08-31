@@ -97,12 +97,9 @@ export const wagmiConfigMainnet = createConfig({
   multiInjectedProviderDiscovery: true
 });
 
-export const getSupportedChainIds = (chainId: number) => {
-  if (isTestnetId(chainId)) {
-    return [tenderly.id];
-  }
-  return [mainnet.id, base.id, arbitrum.id, optimism.id, unichain.id];
-};
+// Re-exported from its own module so the engine layer can import the family
+// helper without this file's module-scope wallet connectors.
+export { getSupportedChainIds } from './chainFamily';
 
 export const getMainnetChainName = (chainId: number) => {
   if (isTestnetId(chainId)) {

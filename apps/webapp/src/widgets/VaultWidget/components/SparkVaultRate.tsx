@@ -1,4 +1,4 @@
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
 import { useSparkVaultResolvedRate } from '@/hooks';

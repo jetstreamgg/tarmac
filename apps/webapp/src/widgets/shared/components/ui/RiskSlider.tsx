@@ -232,8 +232,12 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
               </TooltipTrigger>
               <TooltipPortal>
                 <TooltipContent side="right" className="max-w-xs">
-                  <p className="text-sm font-medium text-white">{maxPermittedRiskTooltip?.title}</p>
-                  <p className="mt-2 text-xs text-gray-400">{maxPermittedRiskTooltip?.tooltip}</p>
+                  <p className="text-text font-circle text-sm font-medium">
+                    {maxPermittedRiskTooltip?.title}
+                  </p>
+                  <p className="light:text-textSecondary mt-2 text-xs text-gray-400">
+                    {maxPermittedRiskTooltip?.tooltip}
+                  </p>
                 </TooltipContent>
               </TooltipPortal>
             </Tooltip>
@@ -257,8 +261,10 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                   </TooltipTrigger>
                   <TooltipPortal>
                     <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-sm font-medium text-white">{riskFloorTooltip?.title}</p>
-                      <p className="mt-2 text-xs text-gray-400">{riskFloorTooltip?.tooltip}</p>
+                      <p className="text-text font-circle text-sm font-medium">{riskFloorTooltip?.title}</p>
+                      <p className="light:text-textSecondary mt-2 text-xs text-gray-400">
+                        {riskFloorTooltip?.tooltip}
+                      </p>
                     </TooltipContent>
                   </TooltipPortal>
                 </Tooltip>
@@ -283,8 +289,10 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                   </TooltipTrigger>
                   <TooltipPortal>
                     <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-sm font-medium text-white">{riskCeilingTooltip?.title}</p>
-                      <p className="mt-2 text-xs text-gray-400">{riskCeilingTooltip?.tooltip}</p>
+                      <p className="text-text font-circle text-sm font-medium">{riskCeilingTooltip?.title}</p>
+                      <p className="light:text-textSecondary mt-2 text-xs text-gray-400">
+                        {riskCeilingTooltip?.tooltip}
+                      </p>
                     </TooltipContent>
                   </TooltipPortal>
                 </Tooltip>
@@ -321,7 +329,7 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                 </SliderPrimitive.Thumb>
               </TooltipTrigger>
               <TooltipPortal>
-                <TooltipContent arrowPadding={10} className="max-w-75">
+                <TooltipContent className="max-w-75">
                   {isRepayMode ? riskSliderRepayTooltip?.tooltip : riskSliderBorrowTooltip?.tooltip}
                 </TooltipContent>
               </TooltipPortal>

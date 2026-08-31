@@ -53,7 +53,6 @@ type SupplyWithdrawProps = {
   /** Whether the widget is enabled */
   enabled: boolean;
   /** Callback for external link clicks */
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /** Vault contract address for etherscan link */
   vaultAddress?: `0x${string}`;
   /** Display name for the vault */
@@ -97,7 +96,6 @@ export const SupplyWithdraw = ({
   onSetMax,
   tabIndex,
   enabled = true,
-  onExternalLinkClicked,
   vaultAddress,
   vaultName,
   provider = 'morpho',
@@ -158,7 +156,6 @@ export const SupplyWithdraw = ({
           assetDecimals={tokenDecimals}
           shareDecimals={shareDecimals}
           isConnectedAndEnabled={isConnectedAndEnabled}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
 
         <TabsContent value="left">
@@ -178,7 +175,7 @@ export const SupplyWithdraw = ({
               error={
                 error
                   ? isOverDepositCap
-                    ? t`Exceeds the vault's remaining deposit capacity`
+                    ? t`Exceeds the vault's remaining supply capacity`
                     : t`Insufficient funds`
                   : undefined
               }
@@ -192,7 +189,7 @@ export const SupplyWithdraw = ({
               >
                 <Text variant="small">
                   <Trans>
-                    This vault has reached its deposit cap. Deposits are temporarily unavailable until
+                    This vault has reached its supply cap. New supplies are temporarily unavailable until
                     capacity frees up.
                   </Trans>
                 </Text>
@@ -214,15 +211,15 @@ export const SupplyWithdraw = ({
                 >
                   {!isVaultDataLoading && availableLiquidity === 0n ? (
                     <Trans>
-                      I understand that {assetToken.symbol} deposited into this vault is used to fund
-                      borrowing, and that I will not be able to withdraw as long as the available liquidity is
-                      0
+                      I understand that {assetToken.symbol} supplied to this vault is allocated to a Morpho
+                      lending market, and that I will not be able to withdraw as long as the available
+                      liquidity is 0
                     </Trans>
                   ) : (
                     <Trans>
-                      I understand that {assetToken.symbol} deposited into this vault is used to fund
-                      borrowing, and that I will not be able to withdraw if the available liquidity becomes
-                      exhausted
+                      I understand that {assetToken.symbol} supplied to this vault is allocated to a Morpho
+                      lending market, and that I will not be able to withdraw if the available liquidity
+                      becomes exhausted
                     </Trans>
                   )}
                 </Text>
@@ -278,11 +275,11 @@ export const SupplyWithdraw = ({
               </div>
             )}
             {!isVaultDataLoading && isLiquidityDataUnavailable && (
-              <div className="mt-2 ml-3 flex items-start text-white">
+              <div className="text-text mt-2 ml-3 flex items-start">
                 <PopoverRateInfo
                   type="morphoLiquidity"
                   tooltipOverride={liquidityTooltipOverride}
-                  iconClassName="mt-1 shrink-0 text-white"
+                  iconClassName="mt-1 shrink-0 text-text"
                 />
                 <Text variant="small" className="ml-2 flex gap-2">
                   <Trans>
@@ -296,11 +293,11 @@ export const SupplyWithdraw = ({
               isLiquidityConstrained &&
               maxWithdraw !== undefined &&
               maxWithdraw > 0n && (
-                <div className="mt-2 ml-3 flex items-start text-white">
+                <div className="text-text mt-2 ml-3 flex items-start">
                   <PopoverRateInfo
                     type="morphoLiquidity"
                     tooltipOverride={liquidityTooltipOverride}
-                    iconClassName="mt-1 shrink-0 text-white"
+                    iconClassName="mt-1 shrink-0 text-text"
                   />
                   <Text variant="small" className="ml-2 flex gap-2">
                     <Trans>You cannot withdraw your full balance due to current liquidity limits.</Trans>
@@ -316,7 +313,6 @@ export const SupplyWithdraw = ({
           title={t`Transaction overview`}
           isFetching={false}
           fetchingMessage={t`Fetching transaction details`}
-          onExternalLinkClicked={onExternalLinkClicked}
           rateType={provider === 'sky' ? 'sky' : 'morpho'}
           transactionData={[
             {

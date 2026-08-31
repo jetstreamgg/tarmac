@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useConnection, useChainId } from 'wagmi';
+import { useConnection, useChainId, useChains } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import {
   mcdPotAddress,
@@ -31,8 +31,15 @@ export type DsrHook = ReadHook & {
 
 export function useSavingsData(address?: `0x${string}`): DsrHook {
   const connectedChainId = useChainId();
-  // If the connected chain is base, use mainnet instead (except for getting the sUSDS and NST balance)
-  const ethereumChainId = !isL2ChainId(connectedChainId) ? connectedChainId : 1;
+  const chains = useChains();
+  // If the connected chain is an L2, read the pot data from the mainnet-family
+  // chain of the ACTIVE wagmi config: chain 1 in production, the Tenderly
+  // mainnet fork in mock/e2e mode (chain 1 is not configured there, so a
+  // hardcoded 1 fails every pot read while connected to an L2 and the hook
+  // never returns data).
+  const ethereumChainId = !isL2ChainId(connectedChainId)
+    ? connectedChainId
+    : (chains.find(chain => !isL2ChainId(chain.id))?.id ?? 1);
 
   const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress;

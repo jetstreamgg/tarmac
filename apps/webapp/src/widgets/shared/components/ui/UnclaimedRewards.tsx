@@ -9,7 +9,7 @@ interface UnclaimedRewardsProps {
 export const UnclaimedRewards = ({ uniqueRewardTokens }: UnclaimedRewardsProps) => {
   return (
     <div className="flex items-center gap-1.5">
-      <Text variant="small" className="text-white">
+      <Text variant="small" className="text-text">
         {t`Unclaimed rewards`}
       </Text>
       <div className="flex items-center -space-x-0.5">

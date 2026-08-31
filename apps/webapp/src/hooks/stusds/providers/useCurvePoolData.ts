@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId, useReadContracts } from 'wagmi';
 import { curveStUsdsUsdsPoolAddress, curveStUsdsUsdsPoolAbi, usdsAddress } from '../../generated';
-import { isTestnetId } from '@/utils';
-import { TENDERLY_CHAIN_ID } from '../../constants';
+import { familyMainnetId } from '@/utils';
 import { CURVE_POOL_TOKEN_INDICES } from './constants';
 
 /**
@@ -44,7 +43,7 @@ export type CurvePoolDataHookResult = {
  */
 export function useCurvePoolData(): CurvePoolDataHookResult {
   const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? TENDERLY_CHAIN_ID : 1;
+  const chainId = familyMainnetId(connectedChainId);
 
   const poolAddress = curveStUsdsUsdsPoolAddress[chainId as keyof typeof curveStUsdsUsdsPoolAddress];
   const expectedUsdsAddress = usdsAddress[chainId as keyof typeof usdsAddress];

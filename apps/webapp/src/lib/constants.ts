@@ -1,32 +1,41 @@
-import { RewardsModule, Savings, Trade, Upgrade, Stake, Expert, Vaults, Convert } from '@/modules/icons';
-import { ConvertIntent, ExpertIntent, Intent, FixedIntent, VaultsIntent } from './enums';
+import { Intent, FixedIntent, VaultsIntent } from './enums';
 import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { base, mainnet, arbitrum, unichain, optimism } from 'viem/chains';
-import { tenderly } from '@/data/wagmi/config/config.default';
 
+/** The placeholder every product surface shows for a value it cannot source. */
+export const NO_VALUE = '–';
+
+// Navigation state (module, submodule, entity selection) lives in the path;
+// these are the params that remain query-driven.
 export enum QueryParams {
   Locale = 'lang',
-  Widget = 'widget',
-  Details = 'details',
-  Reward = 'reward',
   UrnIndex = 'urn_index',
   SourceToken = 'source_token',
   TargetToken = 'target_token',
-  LinkedAction = 'linked_action',
-  InputAmount = 'input_amount',
-  Timestamp = 'timestamp',
   Network = 'network',
-  Reset = 'reset',
   Flow = 'flow',
   StakeTab = 'stake_tab',
-  ExpertModule = 'expert_module',
-  Vault = 'vault',
-  VaultModule = 'vault_module',
-  ConvertModule = 'convert_module',
-  Market = 'market',
-  FixedModule = 'fixed_module'
+  Tab = 'tab',
+  /**
+   * The three URL-driven Earn Opportunities filters (APP-457). They live in the
+   * search string rather than component state so history restores them — the
+   * browser back button and the product page's "Back to products" both land on
+   * an /earn entry that still carries them — while `retainOnNavigate` drops
+   * them, which is what makes the navbar's Earn button a reset. The risk filter
+   * is a saved preference and stays in localStorage.
+   */
+  /** Earn list supply-token filter, e.g. /earn?token=USDS. */
+  Token = 'token',
+  /** Earn list network filter, a chain slug: /earn?chain=ethereum. */
+  Chain = 'chain',
+  /** Earn list product-kind filter, e.g. /earn?product=savings. */
+  Product = 'product',
+  /**
+   * Deep link to the Upgrade DAI/MKR modal, e.g. /?upgrade=mkr — consumed
+   * (opened + stripped) by useUpgradeDeepLink on any module route.
+   */
+  Upgrade = 'upgrade'
 }
 
 export enum Environment {
@@ -42,7 +51,7 @@ export const IntentMapping = {
   [Intent.SAVINGS_INTENT]: 'savings',
   [Intent.REWARDS_INTENT]: 'rewards',
   [Intent.STAKE_INTENT]: 'stake',
-  [Intent.EXPERT_INTENT]: 'expert',
+  [Intent.EXPERT_INTENT]: 'stusds',
   [Intent.VAULTS_INTENT]: 'vaults',
   [Intent.CONVERT_INTENT]: 'convert',
   [Intent.FIXED_INTENT]: 'fixed'
@@ -52,60 +61,18 @@ export const IntentMapping = {
 export const NEW_INTENTS: Intent[] = [Intent.FIXED_INTENT];
 export const isNewIntent = (intent: Intent): boolean => NEW_INTENTS.includes(intent);
 
-export const ExpertIntentMapping: Record<ExpertIntent, string> = {
-  [ExpertIntent.STUSDS_INTENT]: 'stusds'
-};
-
 export const VaultsIntentMapping: Record<VaultsIntent, string> = {
   [VaultsIntent.MORPHO_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.MORPHO_VAULT_INTENT),
   [VaultsIntent.SKY_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.SKY_VAULT_INTENT)
-};
-
-export const ConvertIntentMapping: Record<ConvertIntent, string> = {
-  [ConvertIntent.PSM_INTENT]: 'psm',
-  [ConvertIntent.UPGRADE_INTENT]: 'upgrade',
-  [ConvertIntent.TRADE_INTENT]: 'trade'
 };
 
 export const FixedIntentMapping: Record<FixedIntent, string> = {
   [FixedIntent.MARKET_INTENT]: 'market'
 };
 
-export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
-  [mainnet.id]: [
-    Intent.BALANCES_INTENT,
-    Intent.REWARDS_INTENT,
-    Intent.SAVINGS_INTENT,
-    Intent.UPGRADE_INTENT,
-    Intent.TRADE_INTENT,
-    Intent.STAKE_INTENT,
-    Intent.EXPERT_INTENT,
-    Intent.VAULTS_INTENT,
-    Intent.CONVERT_INTENT,
-    Intent.FIXED_INTENT
-  ],
-  [tenderly.id]: [
-    Intent.BALANCES_INTENT,
-    Intent.REWARDS_INTENT,
-    Intent.SAVINGS_INTENT,
-    Intent.UPGRADE_INTENT,
-    Intent.TRADE_INTENT,
-    Intent.STAKE_INTENT,
-    Intent.EXPERT_INTENT,
-    Intent.VAULTS_INTENT,
-    Intent.CONVERT_INTENT,
-    Intent.FIXED_INTENT
-  ],
-  [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [unichain.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [optimism.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT]
-};
-
-export const COMING_SOON_MAP: Record<number, Intent[]> = {
-  // Rewards is now treated as a mainnet-only module with auto-switching
-  // [base.id]: [Intent.YOUR_INTENT] // Example of how to add a coming soon intent
-};
+// Moved to a Lingui-free module so the engine layer can import them; re-exported
+// here so existing import sites keep working.
+export { CHAIN_WIDGET_MAP, COMING_SOON_MAP } from './chainAvailability';
 
 export const intentTxt: Record<string, MessageDescriptor> = {
   psm: msg`1:1 conversion`,
@@ -121,23 +88,6 @@ export const intentTxt: Record<string, MessageDescriptor> = {
   pendle: msg`pendle`
 };
 
-export const EXPERT_WIDGET_OPTIONS: {
-  id: ExpertIntent;
-  name: string;
-}[] = [
-  {
-    id: ExpertIntent.STUSDS_INTENT,
-    name: 'stUSDS'
-  }
-];
-
-export const VALID_LINKED_ACTIONS = [
-  IntentMapping[Intent.REWARDS_INTENT],
-  IntentMapping[Intent.SAVINGS_INTENT],
-  IntentMapping[Intent.EXPERT_INTENT],
-  IntentMapping[Intent.VAULTS_INTENT]
-];
-
 export function mapIntentToQueryParam(intent: Intent): string {
   return IntentMapping[intent] || '';
 }
@@ -150,17 +100,6 @@ export function mapQueryParamToIntent(queryParam?: string | null): Intent {
 }
 
 export const REFRESH_DELAY = 1000;
-
-export const linkedActionMetadata = {
-  [IntentMapping[Intent.UPGRADE_INTENT]]: { text: 'Upgrade DAI', icon: Upgrade },
-  [IntentMapping[Intent.TRADE_INTENT]]: { text: 'Trade Tokens', icon: Trade },
-  [IntentMapping[Intent.SAVINGS_INTENT]]: { text: 'Access Savings', icon: Savings },
-  [IntentMapping[Intent.REWARDS_INTENT]]: { text: 'Get Rewards', icon: RewardsModule },
-  [IntentMapping[Intent.STAKE_INTENT]]: { text: 'Stake', icon: Stake },
-  [IntentMapping[Intent.EXPERT_INTENT]]: { text: 'Expert Modules', icon: Expert },
-  [IntentMapping[Intent.VAULTS_INTENT]]: { text: 'Vaults', icon: Vaults },
-  [IntentMapping[Intent.CONVERT_INTENT]]: { text: 'Convert', icon: Convert }
-};
 
 export const ALLOWED_EXTERNAL_DOMAINS = [
   'sky.money',
@@ -185,7 +124,20 @@ export const SUSDT_VAULT_ENABLED = import.meta.env.VITE_SUSDT_VAULT_ENABLED === 
 
 export const REFERRAL_CODE: number = Number(import.meta.env.VITE_REFERRAL_CODE) || 0;
 
-export const BATCH_TX_LEGAL_NOTICE_URL = '/batch-transactions-legal-notice';
+// The bundled-transaction legal notice lives in the docs, not in the app: a
+// standalone page the user was navigated *out of* a transaction flow to reach
+// read as a dead end (APP-456 #3). TODO: repoint at the dedicated bundled-
+// transactions docs page once it is published — until then this lands on the
+// Terms of Use, which is the document the notice itself cited.
+export const BATCH_TX_LEGAL_NOTICE_URL = 'https://docs.sky.money/legal-terms';
+
+// The current legal documents (APP-500). The T&C modal and the transaction
+// signature step both link them.
+export const TERMS_OF_USE_URL = 'https://docs.sky.money/legal/skybase-international/terms-of-use';
+export const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal/skybase-international/privacy-policy';
+
+/** The "Learn more in the User Risk Documentation." target shared by every product About section. */
+export const USER_RISKS_URL = 'https://docs.sky.money/user-risks';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // Deprecated Seal Engine (LockstakeEngine v1, MKR). The UI was removed; this address backs the

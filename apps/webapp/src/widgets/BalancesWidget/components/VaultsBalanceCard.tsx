@@ -6,10 +6,10 @@ import {
   useMerklRewards,
   MorphoVaultBalance
 } from '@/hooks';
-import { formatBigInt, formatNumber, isTestnetId, chainId } from '@/utils';
+import { formatBigInt, formatNumber, familyMainnetId } from '@/utils';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { ModuleCardVariant } from './ModulesBalances';
 import { useChainId } from 'wagmi';
@@ -112,18 +112,16 @@ export const computeVaultBalances = ({
 export const VaultsBalanceCard = ({
   url,
   vaultUrlMap,
-  onExternalLinkClicked,
   variant = ModuleCardVariant.default,
   hideZeroBalances = false
 }: {
   url?: string;
   vaultUrlMap?: Record<string, string>;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   variant?: ModuleCardVariant;
   hideZeroBalances?: boolean;
 }) => {
   const connectedChainId = useChainId();
-  const vaultChainId = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
+  const vaultChainId = familyMainnetId(connectedChainId);
 
   const { data: morphoAssetsData, isLoading: morphoDataLoading } = useAllMorphoVaultsUserAssets();
   // Provider-neutral rates over the whole registry (Morpho API + Spark on-chain vsr)
@@ -212,7 +210,6 @@ export const VaultsBalanceCard = ({
               <RateLineWithArrow
                 rateText={t`Rate: ${(weightedAverageRate * 100).toFixed(2)}%`}
                 popoverType={blendedRatePopoverType}
-                onExternalLinkClicked={onExternalLinkClicked}
                 showArrow={false}
               />
               {url && (
@@ -227,7 +224,6 @@ export const VaultsBalanceCard = ({
               <RateLineWithArrow
                 rateText={t`Rates up to: ${(maxRate * 100).toFixed(2)}%`}
                 popoverType="morpho"
-                onExternalLinkClicked={onExternalLinkClicked}
                 showArrow={false}
               />
               {url && (
@@ -278,6 +274,13 @@ export const VaultsBalanceCard = ({
       icon={vaultsIcon}
       url={url}
       logoName="vaults"
+      apyBadge={
+        weightedAverageRate > 0
+          ? t`Rate: ${(weightedAverageRate * 100).toFixed(2)}%`
+          : maxRate > 0
+            ? t`Rates up to: ${(maxRate * 100).toFixed(2)}%`
+            : undefined
+      }
       content={isBalanceLoading ? <Skeleton className="w-32" /> : <Text>{formatBigInt(morphoSupplied)}</Text>}
     />
   );

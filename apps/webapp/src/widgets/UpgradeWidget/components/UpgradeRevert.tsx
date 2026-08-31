@@ -32,7 +32,6 @@ type Props = WidgetProps & {
   onOriginInputChange: (val: bigint, userTriggered?: boolean) => void;
   onMenuItemChange?: (token: Token) => void;
   isConnectedAndEnabled: boolean;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   disallowedFlow?: string;
   mkrSkyFee?: bigint;
   isFeeLoading?: boolean;
@@ -159,7 +158,10 @@ export function UpgradeRevert({
                           value: isFeeLoading ? '...' : `${upgradePenalty}%`,
                           tooltipTitle: getTooltipById('delayed-upgrade-penalty')?.title || '',
                           tooltipText: (
-                            <Text variant="small" className="leading-5 text-white/80">
+                            <Text
+                              variant="small"
+                              className="light:text-textSecondary leading-5 text-white/80"
+                            >
                               {parseMarkdownLinks(getTooltipById('delayed-upgrade-penalty')?.tooltip)}
                             </Text>
                           )

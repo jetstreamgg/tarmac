@@ -47,7 +47,6 @@ import { getTooltipById } from '../data/tooltips';
 import { useTradeAnalytics } from '../TradeWidget/hooks/useTradeAnalytics';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
@@ -92,7 +91,6 @@ function TradeWidgetWrapped({
 
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
-  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
   const locale = linguiCtx.i18n.locale;
@@ -844,7 +842,7 @@ function TradeWidgetWrapped({
       }
       subHeader={
         <Text className="text-textSecondary" variant="small">
-          <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
+          <Trans>Trade popular tokens for Sky Protocol tokens</Trans>
         </Text>
       }
       rightHeader={rightHeaderComponent}
@@ -854,7 +852,6 @@ function TradeWidgetWrapped({
           onClickBack={onClickBack}
           showSecondaryButton={showSecondaryButton}
           enabled={enabled}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
       }
     >
@@ -866,7 +863,6 @@ function TradeWidgetWrapped({
               originAmount={originAmount}
               targetToken={targetToken as Token}
               targetAmount={targetAmount}
-              onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={shouldUseBatch}
               needsAllowance={needsAllowance}
             />

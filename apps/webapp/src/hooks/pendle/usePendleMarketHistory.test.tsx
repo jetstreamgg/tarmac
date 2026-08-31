@@ -16,6 +16,7 @@ const { SYNTHETIC_MARKET_ADDRESS, syntheticMarket } = vi.hoisted(() => {
   const SYNTHETIC_MARKET_ADDRESS = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as `0x${string}`;
   const syntheticMarket = {
     name: 'PT-TEST',
+    slug: 'pt-test',
     marketAddress: SYNTHETIC_MARKET_ADDRESS,
     ptToken: '0x0000000000000000000000000000000000000001',
     ytToken: '0x0000000000000000000000000000000000000002',

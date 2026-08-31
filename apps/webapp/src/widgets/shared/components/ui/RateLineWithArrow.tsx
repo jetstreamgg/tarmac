@@ -6,27 +6,20 @@ import React from 'react';
 interface RateLineWithArrowProps {
   rateText: string;
   popoverType: 'ssr' | 'srr' | 'str' | 'stusds' | 'expert' | 'morpho' | 'sky' | 'fixedYield';
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   showArrow?: boolean;
 }
 
-export const RateLineWithArrow = ({
-  rateText,
-  popoverType,
-  onExternalLinkClicked,
-  showArrow = true
-}: RateLineWithArrowProps) => {
+export const RateLineWithArrow = ({ rateText, popoverType, showArrow = true }: RateLineWithArrowProps) => {
   return (
     <div className="flex items-center gap-2">
       <div className="flex w-fit items-center gap-1.5">
-        <Text variant="small" className="text-bullish leading-4">
+        <Text
+          variant="small"
+          className="text-bullish light:group-hover/interactive-card:text-[#1dd9ba] leading-4"
+        >
           {rateText}
         </Text>
-        <PopoverRateInfo
-          type={popoverType}
-          onExternalLinkClicked={onExternalLinkClicked}
-          iconClassName="h-[13px] w-[13px]"
-        />
+        <PopoverRateInfo type={popoverType} iconClassName="h-[13px] w-[13px]" />
       </div>
       {showArrow && (
         <div className="h-4 w-4 flex-shrink-0">

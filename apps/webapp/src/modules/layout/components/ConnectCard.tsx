@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { Trans } from '@lingui/react/macro';
 import { GradientShapeCard } from '@/modules/ui/components/GradientShapeCard';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useChainId } from 'wagmi';
 import { getBannerById } from '@/data/banners/banners';
@@ -25,6 +26,7 @@ type ConnectCardProps = {
 export function ConnectCard({ intent, className, convertOption }: ConnectCardProps) {
   const connect = useCustomConnectModal();
   const chainId = useChainId();
+  const { userConfig } = useConfigContext();
 
   // Map intents to banner IDs - all intents have a default, some have additional variants
   const bannerIdMap: Record<Intent, BannerConfig> = {
@@ -82,19 +84,27 @@ export function ConnectCard({ intent, className, convertOption }: ConnectCardPro
   const isVaults = intent === Intent.VAULTS_INTENT;
   const isFixedYield = intent === Intent.FIXED_INTENT;
 
+  // Lighten the dark gradient base in light mode (inline styles can't use the CSS
+  // `light:` variant); the colorMiddle accent stripe stays vibrant in both themes.
+  const isLight = userConfig.theme === 'light';
+  const colorLeft = isVaults
+    ? isLight
+      ? 'radial-gradient(200.08% 406.67% at 5.14% 108.47%, #8E7DF0 0%, #B7ABF1 21.68%)'
+      : 'radial-gradient(200.08% 406.67% at 5.14% 108.47%, #4331E9 0%, #2A197D 21.68%)'
+    : isLight
+      ? 'radial-gradient(100% 177.78% at 100% 0%, #C3B6F8 0%, #9F90F3 100%)'
+      : 'radial-gradient(100% 177.78% at 100% 0%, #A273FF 0%, #4331E9 100%)';
+  const colorRight = isVaults ? (isLight ? '#D6D0F2' : '#1e1a4b') : isLight ? '#C6BDF4' : '#2A197D';
+
   return (
     <GradientShapeCard
-      colorLeft={
-        isVaults
-          ? 'radial-gradient(200.08% 406.67% at 5.14% 108.47%, #4331E9 0%, #2A197D 21.68%)'
-          : 'radial-gradient(100% 177.78% at 100% 0%, #A273FF 0%, #4331E9 100%)'
-      }
+      colorLeft={colorLeft}
       colorMiddle={
         isVaults
           ? 'linear-gradient(360deg, #2470FF 0%, #1B4ECF 300%)'
           : 'radial-gradient(circle at 0% 100%, #FFCD6B 0%, #EB5EDF 150%)'
       }
-      colorRight={isVaults ? '#1e1a4b' : '#2A197D'}
+      colorRight={colorRight}
       className={className}
     >
       <div className="w-[80%] space-y-2 self-start xl:w-2/3" data-testid="connect-wallet-card">
@@ -105,15 +115,16 @@ export function ConnectCard({ intent, className, convertOption }: ConnectCardPro
         {isVaults ? (
           <Text variant="small" className="leading-4.5">
             <Trans>
-              Connect your wallet to start using Sky-curated Vaults. Deposit USDS, USDT, or USDC and start
-              earning.
+              Connect your wallet to start using Vaults curated by Skybase on Morpho. Supply USDS, USDT, or
+              USDC.
             </Trans>
           </Text>
         ) : isFixedYield ? (
           <Text variant="small" className="leading-4.5">
             <Trans>
-              When volatility plays against you, get a fixed yield over a pre-set period. The rate is set when
-              you deposit your USDS, while expected returns are available at maturity date, not before.
+              Fix today&apos;s rate on your USDS until a set maturity date. The rate is fixed when you supply;
+              hold to the maturity date and that rate is what you receive. Exiting early means selling at the
+              current market price.
             </Trans>
           </Text>
         ) : (

@@ -23,7 +23,7 @@ export const LoadingErrorWrapper = ({
   errorClassName
 }: LoadingErrorWrapperProps) => {
   if (isLoading && !error) {
-    return loadingComponent || <Skeleton className={cn('h5 w-full', loadingClassName)} />;
+    return loadingComponent || <Skeleton className={cn('h-5 w-full', loadingClassName)} />;
   }
   if (error) {
     return (

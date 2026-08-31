@@ -1,7 +1,6 @@
 import { useQueries } from '@tanstack/react-query';
-import { mainnet } from 'viem/chains';
 import { math } from '@/utils';
-import { MORPHO_VAULTS } from './constants';
+import { MORPHO_API_CHAIN_ID, MORPHO_VAULTS } from './constants';
 import { fetchMorphoVaultMarketData } from './useMorphoVaultMarketApiData';
 
 export type MorphoVaultsCombinedTvl = {
@@ -28,8 +27,8 @@ export type MorphoVaultsCombinedTvl = {
 export function useMorphoVaultsCombinedTvl(): MorphoVaultsCombinedTvl {
   const results = useQueries({
     queries: MORPHO_VAULTS.map(vault => ({
-      queryKey: ['morpho-vault-market-data', vault.vaultAddress[mainnet.id], mainnet.id],
-      queryFn: () => fetchMorphoVaultMarketData(vault.vaultAddress[mainnet.id], mainnet.id),
+      queryKey: ['morpho-vault-market-data', vault.vaultAddress[MORPHO_API_CHAIN_ID], MORPHO_API_CHAIN_ID],
+      queryFn: () => fetchMorphoVaultMarketData(vault.vaultAddress[MORPHO_API_CHAIN_ID], MORPHO_API_CHAIN_ID),
       staleTime: 30_000,
       gcTime: 60_000
     }))
@@ -41,7 +40,7 @@ export function useMorphoVaultsCombinedTvl(): MorphoVaultsCombinedTvl {
   const totalAssetsScaled = results.reduce((sum, result, index) => {
     if (!result.data) return sum;
     const vault = MORPHO_VAULTS[index];
-    const decimals = math.resolveDecimals(vault.assetToken.decimals, mainnet.id);
+    const decimals = math.resolveDecimals(vault.assetToken.decimals, MORPHO_API_CHAIN_ID);
     return sum + math.scaleToBaseDecimals(result.data.totalAssets, decimals);
   }, 0n);
 

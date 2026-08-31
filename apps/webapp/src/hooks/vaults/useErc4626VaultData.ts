@@ -5,7 +5,7 @@ import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
 import { VaultProvider } from './types';
 import { sharesToAssets } from './sharesToAssets';
-import { chainId, getEtherscanLink, isTestnetId } from '@/utils';
+import { getEtherscanLink, familyMainnetId } from '@/utils';
 
 /** Human-readable data-source label per provider for the on-chain vault contract. */
 const VAULT_CONTRACT_DATA_SOURCE_TITLE: Record<VaultProvider, string> = {
@@ -67,7 +67,7 @@ export function useErc4626VaultData({
 }): Erc4626VaultDataHook {
   const { address: userAddress } = useConnection();
   const connectedChainId = useChainId();
-  const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
+  const chainIdToUse = familyMainnetId(connectedChainId);
 
   const vaultContract = {
     address: vaultAddress,

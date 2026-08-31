@@ -129,6 +129,7 @@ export function MorphoVaultChart({ vaultAddress, assetToken, provider = 'morpho'
           isPercentage={activeChart === ChartName.RATE}
           hidePercentChange={activeChart === ChartName.RATE}
           symbol={activeChart === ChartName.TVL ? assetToken.symbol : undefined}
+          tokenSymbols={activeChart === ChartName.TVL ? [assetToken.symbol] : undefined}
           displayValue={displayValue}
           tooltipLabel={tooltipLabel}
           onTimeFrameChange={tf => {

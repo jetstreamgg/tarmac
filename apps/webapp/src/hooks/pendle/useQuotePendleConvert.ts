@@ -166,6 +166,8 @@ type UseQuotePendleConvertParams = {
   /** Slippage tolerance (decimal, e.g. 0.002 = 0.2%) */
   slippage: number;
   enabled?: boolean;
+  /** When false, the initial fetch still runs but the 60s repoll doesn't. */
+  poll?: boolean;
   /**
    * Matured-market exit. When true, the API's `inputs` is sent as a two-entry
    * array: PT with `amountIn`, plus the YT with `amount: 0`. Pendle's /convert
@@ -206,6 +208,7 @@ export function useQuotePendleConvert({
   amountIn,
   slippage,
   enabled: enabledParam = true,
+  poll = true,
   maturedExit = false,
   ytToken
 }: UseQuotePendleConvertParams): PendleQuoteHook {
@@ -323,8 +326,9 @@ export function useQuotePendleConvert({
     staleTime: 30_000,
     gcTime: 60_000,
     // Disconnected previews fetch once on input change but don't poll — keeps
-    // anonymous-visitor traffic to Pendle bounded.
-    refetchInterval: connectedAddress ? PENDLE_QUOTE_REFETCH_MS : false,
+    // anonymous-visitor traffic to Pendle bounded; `poll` lets callers opt
+    // out while their quote isn't on screen.
+    refetchInterval: poll && connectedAddress ? PENDLE_QUOTE_REFETCH_MS : false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
     retry: 1

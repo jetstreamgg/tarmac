@@ -137,7 +137,7 @@ function generateDataPoints(
   // Sort tvl by timestamp in ascending order to ensure correct processing
   const sortedTvl = [...tvl].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
-  // Use daily interval (86400s) for all timeframes by default
+  // Use daily interval (86400s) for all timeframes by default, 3-daily on 1Y.
   const interval = intervalOverride || getTimeFrameInterval(timeFrame);
   const dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval, decimals);
 

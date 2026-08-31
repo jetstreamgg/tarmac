@@ -19,8 +19,6 @@ const captured = vi.hoisted(() => ({
 
 const mocks = vi.hoisted(() => ({
   chainId: 1, // mainnet.id — literal because vi.hoisted runs before imports
-  updateLinkedActionConfig: vi.fn(),
-  exitLinkedActionMode: vi.fn(),
   setSelectedVaultsOption: vi.fn()
 }));
 
@@ -32,6 +30,9 @@ const setSearchParamsMock = vi.fn(
       typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
   }
 );
+
+const navigateMock = vi.fn();
+let mockEntityParams: Record<string, string | undefined> = {};
 
 vi.mock('@/widgets', () => ({
   MorphoVaultWidget: ({ onWidgetStateChange }: { onWidgetStateChange?: (params: any) => void }) => {
@@ -45,22 +46,24 @@ vi.mock('@/widgets', () => ({
 
 vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   useConfigContext: () => ({
-    linkedActionConfig: { step: undefined, inputAmount: undefined },
-    updateLinkedActionConfig: mocks.updateLinkedActionConfig,
-    exitLinkedActionMode: mocks.exitLinkedActionMode,
     setSelectedVaultsOption: mocks.setSelectedVaultsOption
   })
 }));
 
-vi.mock('@/modules/config/context/ConfigContext', () => ({
-  LinkedActionSteps: { COMPLETED_CURRENT: 'completed_current', COMPLETED_SUCCESS: 'completed_success' }
-}));
-
-vi.mock('react-router-dom', async importOriginal => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('@tanstack/react-router', async importOriginal => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
     ...actual,
-    useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+    useNavigate: () => navigateMock
+  };
+});
+
+vi.mock('@/lib/navigation', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/navigation')>();
+  return {
+    ...actual,
+    useAppSearchParams: () => [mockSearchParams, setSearchParamsMock],
+    useRouteEntityParams: () => mockEntityParams
   };
 });
 
@@ -116,15 +119,16 @@ function renderPane(provider: 'morpho' | 'sky') {
 describe('MorphoVaultWidgetPane state→URL guard', () => {
   beforeEach(() => {
     mocks.chainId = mainnet.id;
-    mocks.updateLinkedActionConfig.mockReset();
-    mocks.exitLinkedActionMode.mockReset();
     mocks.setSelectedVaultsOption.mockReset();
     captured.onWidgetStateChange = undefined;
     setSearchParamsMock.mockClear();
+    navigateMock.mockClear();
+    mockEntityParams = {};
   });
 
-  it('writes amount + flow params for a Spark vault when vault_module=sky', () => {
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=sky');
+  it('writes flow param (and never input_amount) for a Spark vault on the sky provider route', () => {
+    mockSearchParams = new URLSearchParams();
+    mockEntityParams = { provider: 'sky', vaultAddress: VAULT_ADDRESS };
     renderPane('sky');
 
     act(() => {
@@ -135,12 +139,13 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
       });
     });
 
-    expect(mockSearchParams.get('input_amount')).toBe('100');
+    expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(mockSearchParams.get('flow')).toBe('withdraw');
   });
 
-  it('writes amount + flow params for a Morpho vault when vault_module=morpho (unchanged)', () => {
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=morpho');
+  it('writes flow param (and never input_amount) for a Morpho vault on the morpho provider route', () => {
+    mockSearchParams = new URLSearchParams();
+    mockEntityParams = { provider: 'morpho', vaultAddress: VAULT_ADDRESS };
     renderPane('morpho');
 
     act(() => {
@@ -151,28 +156,14 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
       });
     });
 
-    expect(mockSearchParams.get('input_amount')).toBe('250');
+    expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(mockSearchParams.get('flow')).toBe('supply');
   });
 
-  it('clears the amount param when the amount is emptied on a Spark vault', () => {
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=sky&input_amount=100');
-    renderPane('sky');
-
-    act(() => {
-      captured.onWidgetStateChange?.({
-        txStatus: 'idle',
-        widgetState: {},
-        originAmount: ''
-      });
-    });
-
-    expect(mockSearchParams.get('input_amount')).toBeNull();
-  });
-
-  it('does nothing when the vault_module does not match the open vault provider', () => {
-    // Spark vault but URL still carries vault_module=morpho — a stale/foreign module.
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=morpho');
+  it('does nothing when the route provider does not match the open vault provider', () => {
+    // Spark vault but the route still carries the morpho provider segment — a stale/foreign module.
+    mockSearchParams = new URLSearchParams();
+    mockEntityParams = { provider: 'morpho', vaultAddress: VAULT_ADDRESS };
     renderPane('sky');
 
     act(() => {
@@ -183,7 +174,6 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
       });
     });
 
-    expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(mockSearchParams.get('flow')).toBeNull();
   });
 });

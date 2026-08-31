@@ -1,4 +1,5 @@
 import { Token } from '../tokens/types';
+import type { EarnRiskProfileId } from '../earn/types';
 
 /** Vault data provider. Morpho today; Sky (sUSDT) added in APP-266. */
 export type VaultProvider = 'morpho' | 'sky';
@@ -18,4 +19,11 @@ export type VaultConfig = {
   vaultAddress: Record<number, `0x${string}`>;
   /** The underlying asset token */
   assetToken: Token;
+  /**
+   * Risk assessment + details copy for this vault (APP-396). Declared here so
+   * registering a vault forces choosing its profile — vaults on the same
+   * provider sit in different tiers (Flagship: moderate, Risk Capital:
+   * aggressive per the APP-396 risk sheet).
+   */
+  riskProfile: EarnRiskProfileId;
 };

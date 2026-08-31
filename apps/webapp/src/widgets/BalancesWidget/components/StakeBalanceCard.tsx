@@ -10,7 +10,7 @@ import { formatBigInt, formatDecimalPercentage, formatNumber, isMainnetId, chain
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@/widgets/shared/components/ui/card/InteractiveStatsCard';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { useChainId, useAccount } from 'wagmi';
@@ -23,7 +23,6 @@ export const StakeBalanceCard = ({
   loading,
   stakeBalance,
   url,
-  onExternalLinkClicked,
   variant = ModuleCardVariant.default
 }: CardProps) => {
   const currentChainId = useChainId();
@@ -94,7 +93,6 @@ export const StakeBalanceCard = ({
                 : `Rate: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`
             }
             popoverType="srr"
-            onExternalLinkClicked={onExternalLinkClicked}
           />
           {uniqueRewardTokens.length > 0 && <UnclaimedRewards uniqueRewardTokens={uniqueRewardTokens} />}
         </div>
@@ -130,6 +128,13 @@ export const StakeBalanceCard = ({
       }
       url={url}
       logoName="staking"
+      apyBadge={
+        parseFloat(highestRateData?.rate || '0') > 0
+          ? hasMultipleRates
+            ? t`Rates up to: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`
+            : t`Rate: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`
+          : undefined
+      }
       content={
         loading ? (
           <Skeleton className="w-32" />

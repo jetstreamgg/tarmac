@@ -1,101 +1,105 @@
+import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
-import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
-import { switchToL2 } from '../utils/switchToL2.ts';
-import { performAction } from '../utils/approveOrPerformAction.ts';
-import { NetworkName } from '../utils/constants.ts';
+import { connectAndVerify } from '../utils/connectAndVerify';
+import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
+import { switchWalletNetwork } from '../utils/switchWalletNetwork';
+import { NetworkName } from '../utils/constants';
+
+// V2 rewrite (see e2e-migration.md): savings lives on the /earn/savings
+// product page now. Supply/withdraw run through the editable savings modal
+// (`savings-modal-*` testids) launched from the supply CTA (no position) or
+// the position card. The origin token (USDS/USDC on L2s) is picked inside the
+// modal via `savings-origin-select`, replacing the legacy token menu.
+
+const navigateToSavings = async (page: Page, networkName: NetworkName) => {
+  // Connect AFTER the goto — a full navigation resets the mock connector.
+  await page.goto('/earn/savings');
+  await connectAndVerify(page, { batch: true });
+  await switchWalletNetwork(page, `Tenderly ${networkName}`);
+  await expect(
+    page.getByTestId('savings-supply-card').or(page.getByTestId('savings-position-card'))
+  ).toBeVisible({
+    timeout: 15_000
+  });
+};
+
+/** Opens the supply modal from whichever card the account currently shows. */
+const openSupplyModal = async (page: Page) => {
+  // Whichever card the account shows (position vs no-position) — wait for
+  // either supply trigger instead of racing a fixed-timeout probe.
+  await page
+    .getByTestId('savings-position-supply')
+    .or(page.getByTestId('savings-supply-cta'))
+    .first()
+    .click();
+  await expect(page.getByText('Supply to Sky Savings')).toBeVisible();
+};
+
+const openWithdrawModal = async (page: Page) => {
+  const withdraw = page.getByTestId('savings-position-withdraw');
+  await expect(withdraw).toBeVisible({ timeout: 30_000 });
+  await withdraw.click();
+  await expect(page.getByText('Withdraw from Sky Savings')).toBeVisible();
+};
+
+const selectOrigin = async (page: Page, symbol: 'USDS' | 'USDC') => {
+  await page.getByTestId('savings-origin-select').click();
+  await page.getByTestId(`savings-origin-${symbol.toLowerCase()}`).click();
+};
+
+/** Clicks Review, confirms in the modal and waits for the transaction to confirm. */
+const reviewAndConfirm = async (page: Page) => {
+  await page.getByText('Review').first().click();
+  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
+  await confirm.click();
+  // A confirmed transaction closes its own modal and hands the outcome to a
+  // toast — there is no success screen, and no Done button to click.
+  await expectTransactionSuccess(page);
+};
 
 export const runL2SavingsTests = async ({ networkName }: { networkName: NetworkName }) => {
   test(`Go to ${networkName} Savings, deposit usds and usdc, withdraw usdc and usds`, async ({
     isolatedPage
   }) => {
-    await isolatedPage.goto('/');
-    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.waitForTimeout(1000);
-    await isolatedPage
-      .getByTestId('widget-navigation')
-      .getByRole('tab', { name: 'Savings', exact: true })
-      .click();
-    await switchToL2(isolatedPage, networkName);
+    await navigateToSavings(isolatedPage, networkName);
 
-    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+    // supply USDS
+    await openSupplyModal(isolatedPage);
+    await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
+    await reviewAndConfirm(isolatedPage);
 
-    //supply usds
-    await isolatedPage.getByTestId('l2-savings-supply-input').click();
-    await isolatedPage.getByTestId('l2-savings-supply-input').fill('10');
+    // supply USDC
+    await openSupplyModal(isolatedPage);
+    await selectOrigin(isolatedPage, 'USDC');
+    await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
+    await reviewAndConfirm(isolatedPage);
 
-    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    // withdraw USDC
+    await openWithdrawModal(isolatedPage);
+    await selectOrigin(isolatedPage, 'USDC');
+    await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
+    await reviewAndConfirm(isolatedPage);
 
-    await performAction(isolatedPage, 'Supply');
-
-    await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
-
-    //supply usdc
-    await isolatedPage.getByTestId('undefined-menu-button').click();
-    await isolatedPage.getByRole('button', { name: 'USDC USDC USDC' }).click();
-
-    await isolatedPage.getByTestId('l2-savings-supply-input').click();
-    await isolatedPage.getByTestId('l2-savings-supply-input').fill('10');
-
-    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-
-    await performAction(isolatedPage, 'Supply');
-
-    await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
-
-    await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
-
-    //withdraw usdc
-    await isolatedPage.getByTestId('l2-savings-withdraw-input').click();
-    await isolatedPage.getByTestId('l2-savings-withdraw-input').fill('10');
-    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-
-    await performAction(isolatedPage, 'Withdraw');
-
-    await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
-
-    //withdraw usds
-    await isolatedPage.getByTestId('undefined-menu-button').click();
-    await isolatedPage.getByRole('button', { name: 'USDS USDS USDS' }).click();
-
-    await isolatedPage.getByTestId('l2-savings-withdraw-input').click();
-    await isolatedPage.getByTestId('l2-savings-withdraw-input').fill('10');
-    // Due to rounding, sometimes there's not enough sUSDS balance to withdraw the full amount of 10 USDS
-    await isolatedPage.getByTestId('l2-savings-withdraw-input').fill('9');
-
-    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-
-    await performAction(isolatedPage, 'Withdraw');
-
-    await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
+    // withdraw USDS (9, not 10 — rounding can leave less than the full supply)
+    await openWithdrawModal(isolatedPage);
+    await isolatedPage.getByTestId('savings-modal-amount-input').fill('9');
+    await reviewAndConfirm(isolatedPage);
   });
 
   test(`Batch - Go to ${networkName} Savings and perform a batch deposit and a batch withdrawal`, async ({
     isolatedPage
   }) => {
-    await isolatedPage.goto('/');
-    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.waitForTimeout(1000);
-    await isolatedPage
-      .getByTestId('widget-navigation')
-      .getByRole('tab', { name: 'Savings', exact: true })
-      .click();
-    await switchToL2(isolatedPage, networkName);
+    await navigateToSavings(isolatedPage, networkName);
 
-    //supply USDS
-    await isolatedPage.getByTestId('l2-savings-supply-input').click();
-    await isolatedPage.getByTestId('l2-savings-supply-input').fill('10');
-    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-    // This expects to perform the Supply step directly without needing to do the Approve USDS step
-    await performAction(isolatedPage, 'Supply');
-    await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
+    // supply USDS (batch wallet: approve+supply land as one bundle)
+    await openSupplyModal(isolatedPage);
+    await isolatedPage.getByTestId('savings-modal-amount-input').fill('10');
+    await reviewAndConfirm(isolatedPage);
 
-    //withdraw USDS
-    await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
-    await isolatedPage.getByTestId('l2-savings-withdraw-input').click();
-    await isolatedPage.getByTestId('l2-savings-withdraw-input').fill('9');
-    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-    // This expects to perform the Withdraw step directly without needing to do the Approve sUSDS step
-    await performAction(isolatedPage, 'Withdraw');
-    await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
+    // withdraw USDS
+    await openWithdrawModal(isolatedPage);
+    await isolatedPage.getByTestId('savings-modal-amount-input').fill('9');
+    await reviewAndConfirm(isolatedPage);
   });
 };

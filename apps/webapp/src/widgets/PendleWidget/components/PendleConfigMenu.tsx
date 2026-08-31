@@ -13,6 +13,7 @@ import {
   percentStringToDecimalSlippage,
   verifyPendleSlippage
 } from '../lib/utils';
+import { sanitizeAmountInput } from '@/lib/amountInput';
 
 type PendleConfigMenuProps = {
   /** User's current slippage as a decimal (e.g. 0.002 for 0.2%) */
@@ -59,7 +60,12 @@ export const PendleConfigMenu = ({ slippage, defaultSlippage, setSlippage }: Pen
   const isCustom = slippage !== defaultSlippage;
 
   const handleCustomChange = (value: string) => {
-    const verified = verifyPendleSlippage(value, pendleSlippageConfig);
+    // Masked to what this field can mean — digits and one decimal point, at
+    // the two decimals it renders at. That is also what reads a decimal comma
+    // as a point, the only separator iOS's keypad offers under most European
+    // locales (APP-518), and what keeps the text a number now that the control
+    // is text rather than number.
+    const verified = verifyPendleSlippage(sanitizeAmountInput(value, 2), pendleSlippageConfig);
     setRawInput(verified);
     if (verified === '') {
       setSlippage(0);
@@ -126,11 +132,12 @@ export const PendleConfigMenu = ({ slippage, defaultSlippage, setSlippage }: Pen
                   <HStack className="border-selectActive flex items-center rounded-xl border p-2">
                     <input
                       placeholder={t`Custom`}
-                      className="bg-background ring-offset-background placeholder:text-surface text-text w-[55px] [appearance:textfield] text-right text-[14px] leading-tight focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      type="number"
-                      step="any"
-                      min={pendleSlippageConfig.min}
-                      max={pendleSlippageConfig.max}
+                      className="bg-background light:bg-transparent ring-offset-background placeholder:text-surface light:placeholder:text-textDimmed text-text w-[55px] [appearance:textfield] text-right text-[14px] leading-tight focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      // Text, not number: a number control reports anything it
+                      // cannot parse — a decimal comma included — as the empty
+                      // string, so the keystroke never reaches the handler. The
+                      // bounds are enforced by `verifyPendleSlippage` anyway.
+                      type="text"
                       inputMode="decimal"
                       value={rawInput}
                       onChange={e => handleCustomChange(e.target.value)}

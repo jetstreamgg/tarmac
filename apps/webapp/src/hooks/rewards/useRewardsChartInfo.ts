@@ -3,7 +3,7 @@ import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 
-import { formatBaLabsUrl } from '../helpers';
+import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
 
 type RewardsChartInfo = {
   apr: string;
@@ -46,17 +46,8 @@ function transformBaLabsChartData(results: RewardsChartInfo[]): RewardsChartInfo
 
 async function fetchRewardsChartInfo(url: URL): Promise<RewardsChartInfoParsed[]> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    const data: { results: RewardsChartInfo[] } = await response.json();
-
-    const result = transformBaLabsChartData(data?.results || []);
-
-    return result;
+    // Paged: this endpoint caps a response at 1000 rows whatever p_size asks for.
+    return transformBaLabsChartData(await fetchBaLabsPages<RewardsChartInfo>(url));
   } catch (error) {
     console.error('Error fetching BaLabs data:', error);
     return [];

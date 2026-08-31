@@ -8,17 +8,9 @@ import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { SavingsChart } from './SavingsChart';
 import { AboutSUsds } from '@/modules/ui/components/AboutSUsds';
-import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { IntentMapping } from '@/lib/constants';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
-import { filterActionsByIntent } from '@/lib/utils';
 export function SavingsDetails(): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
-  const { linkedActionConfig } = useConfigContext();
-  const { data: actionData } = useUserSuggestedActions();
-  const widget = IntentMapping.SAVINGS_INTENT;
 
   return (
     <DetailSectionWrapper>
@@ -34,15 +26,6 @@ export function SavingsDetails(): React.ReactElement {
           <SavingsInfoDetails />
         </DetailSectionRow>
       </DetailSection>
-      {isConnectedAndAcceptedTerms &&
-        !linkedActionConfig?.showLinkedAction &&
-        (filterActionsByIntent(actionData?.linkedActions || [], widget).length ?? 0) > 0 && (
-          <DetailSection title={t`Combined actions`}>
-            <DetailSectionRow>
-              <ActionsShowcase widget={widget} />
-            </DetailSectionRow>
-          </DetailSection>
-        )}
       {isConnectedAndAcceptedTerms && (
         <DetailSection title={t`Your Savings transaction history`}>
           <DetailSectionRow>

@@ -23,7 +23,6 @@ export const L2TradeTransactionStatus = ({
   originAmount,
   targetToken,
   targetAmount,
-  onExternalLinkClicked,
   isBatchTransaction,
   needsAllowance
 }: {
@@ -31,7 +30,6 @@ export const L2TradeTransactionStatus = ({
   originAmount: bigint;
   targetToken: Token;
   targetAmount: bigint;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   isBatchTransaction?: boolean;
   needsAllowance: boolean;
 }) => {
@@ -126,10 +124,5 @@ export const L2TradeTransactionStatus = ({
     }
   }, [txStatus, flow, action, screen, i18n.locale, needsAllowance]);
 
-  return (
-    <BatchTransactionStatus
-      onExternalLinkClicked={onExternalLinkClicked}
-      isBatchTransaction={isBatchTransaction}
-    />
-  );
+  return <BatchTransactionStatus isBatchTransaction={isBatchTransaction} />;
 };

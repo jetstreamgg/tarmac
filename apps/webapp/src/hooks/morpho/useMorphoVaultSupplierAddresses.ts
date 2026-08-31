@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { MORPHO_API_URL, VAULT_V2_POSITIONS_QUERY } from './constants';
-import { mainnet } from 'viem/chains';
+import { MORPHO_API_CHAIN_ID, MORPHO_API_URL, VAULT_V2_POSITIONS_QUERY } from './constants';
 
 const PAGE_SIZE = 1000;
 
@@ -73,8 +72,7 @@ export function useMorphoVaultSupplierAddresses({
 }: {
   vaultAddress: `0x${string}`;
 }): MorphoVaultSupplierAddressesHook {
-  // Always use mainnet chainId since Morpho vaults are only on mainnet
-  const chainId = mainnet.id;
+  const chainId = MORPHO_API_CHAIN_ID;
 
   const {
     data,

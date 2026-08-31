@@ -3,6 +3,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '../generated';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { MerklTokenReward } from './useMerklRewards';
+import { familyMainnetId } from '@/utils';
 
 /**
  * Hook for claiming selected Merkl rewards from the distributor.
@@ -23,7 +24,9 @@ export function useMerklClaimRewards({
 }: WriteHookParams & {
   rewards: MerklTokenReward[];
 }): WriteHook {
-  const chainId = useChainId();
+  // The distributor lives on the family's Ethereum chain; targeting it makes
+  // wagmi request a network switch when the wallet is on another chain.
+  const chainId = familyMainnetId(useChainId());
   const { address: connectedAddress } = useConnection();
 
   const claimableRewards = rewards.filter(r => r.totalAmount > r.claimed && r.proofs.length > 0);
@@ -37,7 +40,7 @@ export function useMerklClaimRewards({
   const enabled = !!connectedAddress && hasClaimableRewards && activeTabEnabled;
 
   return useWriteContractFlow({
-    address: morphoMerklDistributorAddress[chainId as keyof typeof morphoMerklDistributorAddress],
+    address: morphoMerklDistributorAddress[chainId],
     abi: morphoMerklDistributorImplementationAbi,
     functionName: 'claim',
     args: [users, tokens, amounts, proofs],

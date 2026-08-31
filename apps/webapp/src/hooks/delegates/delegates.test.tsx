@@ -113,6 +113,29 @@ describe('useDelegates', async () => {
     checkDefaultQueryParameters(query, 10);
   });
 
+  it('Should OR name-matched addresses into the search condition', async () => {
+    const { result } = renderHook(
+      () =>
+        useDelegates({
+          chainId: TENDERLY_CHAIN_ID,
+          page: 1,
+          pageSize: 10,
+          search: 'cloaky',
+          nameMatches: ['0xaaaa000000000000000000000000000000000001']
+        }),
+      { wrapper }
+    );
+
+    await waitFor(() => result.current.isLoading === false);
+    expect(request).toHaveBeenCalled();
+
+    const [[, query]] = (request as Mock).mock.calls;
+    expect(query).toContain(
+      '{ _or: [{ address: { _ilike: "%cloaky%" } }, { address: { _ilike: "0xaaaa000000000000000000000000000000000001" } }] }'
+    );
+    checkDefaultQueryParameters(query, 10);
+  });
+
   it('Should build the correct query with exclude parameter', async () => {
     const { result } = renderHook(
       () =>

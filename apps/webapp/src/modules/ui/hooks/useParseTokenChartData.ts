@@ -130,17 +130,13 @@ function generateDataPoints(
   // Sort tvl by timestamp in ascending order to ensure correct processing
   const sortedTvl = [...tvl].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
-  let dataPoints;
-  if (timeFrame === 'all' || timeFrame === 'y') {
-    // Handle 'all' timeframe by generating equidistant points across the entire dataset
-    const totalPoints = 7; // Including start and end, with 5 in between
-    const interval = (endTimestamp - startTimestamp) / (totalPoints - 1);
-    dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval);
-  } else {
-    // For other timeframes, calculate the interval based on the timeframe
-    const interval = getTimeFrameInterval(timeFrame);
-    dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval);
-  }
+  // One sample per timeframe interval — daily, or 3-daily on 1Y. The long
+  // ranges used to be flattened to seven equidistant points instead, which drew
+  // the Total USDS and DAI chart's 1Y and All as a six-segment polyline while
+  // every other chart in the app (all of which run through
+  // `useParseTvlChartData`) plotted the real daily shape (APP-456 #5).
+  const interval = getTimeFrameInterval(timeFrame);
+  const dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval);
 
   //Find min and max points
   let minValue = Number.MAX_VALUE;

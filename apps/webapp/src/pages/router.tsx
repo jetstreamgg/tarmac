@@ -1,88 +1,134 @@
-import * as Sentry from '@sentry/react';
-import { RouteObject, createBrowserRouter, redirect } from 'react-router-dom';
-import Home from './Home';
+import { createRouter, type RouterHistory } from '@tanstack/react-router';
+import type { QueryClient } from '@tanstack/react-query';
+import { routeTree } from '../routeTree.gen';
 import ErrorPage from './ErrorPage';
 import { NotFound } from '../modules/layout/components/NotFound';
-import Dev from './Dev';
-import { SealEngine } from './SealEngine';
-import { BatchTransactionsLegal } from './BatchTransactionsLegal';
-import { rewriteLegacyWidgetParams } from '@/modules/utils/validateSearchParams';
-import { mainnet } from 'viem/chains';
-import { IntentMapping, QueryParams, SUSDT_VAULT_ENABLED } from '@/lib/constants';
-import { Intent } from '@/lib/enums';
-import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
-import { sparkUsdtVaultAddress } from '@/hooks';
+import { queryClient as appQueryClient } from '@/lib/queryClient';
+import { isEarnDrilldown, isReverseNavigation } from '@/lib/routes';
+import type { AppSearchParams } from '../routes/__root';
 
-// TODO: Remove once all references to widget=trade|upgrade are migrated
-const legacyWidgetLoader = ({ request }: { request: Request }) => {
-  const url = new URL(request.url);
-  const before = url.searchParams.toString();
-  rewriteLegacyWidgetParams(url.searchParams);
-  if (url.searchParams.toString() !== before) {
-    return redirect(url.pathname + '?' + url.searchParams.toString());
+export type { AppSearchParams } from '../routes/__root';
+
+// Keep search params as plain strings (URLSearchParams semantics) instead of
+// TanStack's default JSON encoding, so values like `network=ethereum` or token
+// symbols round-trip byte-for-byte with the URLs the app produced before the
+// router migration.
+const parseSearch = (searchStr: string): AppSearchParams =>
+  Object.fromEntries(new URLSearchParams(searchStr));
+
+const stringifySearch = (search: Record<string, unknown>): string => {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(search)) {
+    if (value === undefined || value === null) continue;
+    params.set(key, String(value));
   }
-  return null;
+  const str = params.toString();
+  return str ? `?${str}` : '';
 };
 
-// sUSDT is mainnet-only, so the network is pinned in the deep-link.
-export const susdtRedirectLoader = () => {
-  // The sUSDT vault is feature-flagged (APP-323). While it's hidden, this vanity
-  // route must not deep-link into a vault that no longer resolves — the vault
-  // panes fall back to `VAULTS[0]` (an unrelated Morpho vault), so send visitors
-  // to the app root instead of silently opening the wrong vault.
-  if (!SUSDT_VAULT_ENABLED) {
-    return redirect('/');
-  }
+// Factory so tests can boot the app's real router config on a memory history,
+// with their own query client so route-level cache reads stay hermetic.
+export const createAppRouter = (history?: RouterHistory, queryClient: QueryClient = appQueryClient) => {
+  // Every push and replace mints a fresh `__TSR_key` (@tanstack/history's
+  // assignKeyAndIndex); a back/forward traversal restores the entry's stored
+  // state and so arrives with a key we have already been handed. Recording the
+  // keys as they go by is therefore enough to tell the two apart — the history
+  // index cannot, because a push and a forward traversal both land on
+  // `currentIndex + 1`. Per router instance, and one short string per history
+  // entry.
+  const seenLocationKeys = new Set<string>();
 
-  const params = new URLSearchParams({
-    [QueryParams.Network]: 'ethereum',
-    [QueryParams.Widget]: IntentMapping[Intent.VAULTS_INTENT],
-    [QueryParams.VaultModule]: vaultModuleForProvider('sky'),
-    [QueryParams.Vault]: sparkUsdtVaultAddress[mainnet.id]
+  const isHistoryTraversal = (key: string | undefined): boolean => {
+    if (!key) return false;
+    if (seenLocationKeys.has(key)) return true;
+    seenLocationKeys.add(key);
+    return false;
+  };
+
+  return createRouter({
+    routeTree,
+    history,
+    // Handed to every beforeLoad/loader: those run outside React, so routes that
+    // need the query cache take it from here rather than importing the instance.
+    context: { queryClient },
+    parseSearch,
+    stringifySearch,
+    // Prefetch lazy route chunks when links are hovered/focused
+    defaultPreload: 'intent',
+    // Page transitions (Figma: Sky App: UI 1598:75512, view=motion). The
+    // animation itself is CSS on the `page` view-transition group in
+    // globals.css; this only decides which navigations get a transition.
+    //
+    // Object form rather than `true` so the `types` callback can veto.
+    // Returning `false` skips document.startViewTransition altogether.
+    //
+    // `fromLocation` is undefined on the very first load, and the router
+    // derives `pathChanged` as `fromLocation?.pathname !== toLocation.pathname`
+    // — so it reports true there and the app animated itself in on boot.
+    // Requiring a previous location keeps the transition to real navigations.
+    //
+    // `pathChanged` then excludes navigations that only rewrite search params
+    // (network switch, stake urn index, balance filters): same page, no slide.
+    //
+    // Back/forward is excluded as well, because scrollRestoration hands those
+    // navigations a non-zero starting scroll and the CSS is built on the
+    // incoming page being at the top. The restore lands *before* the incoming
+    // snapshot is captured (measured: window.scrollY already reads the restored
+    // offset when `transition.ready` resolves), which puts the group box that
+    // both snapshots share that far up the viewport — so the outgoing page
+    // jumps up by the restored amount on the transition's first frame. Leaving
+    // traversals to swap instantly is what the browser does natively anyway;
+    // compensating instead would mean placing both snapshots by hand against
+    // an offset only TanStack's private restoration cache knows.
+    defaultViewTransition: {
+      types: ({ pathChanged, fromLocation, toLocation }) => {
+        // Ahead of the vetoes: a key first seen on a navigation that does not
+        // animate still has to count as seen, or returning to it later would
+        // read as a fresh push.
+        if (isHistoryTraversal(toLocation.state.__TSR_key)) return false;
+        if (!fromLocation || !pathChanged) return false;
+        // Hash navigations (the Earn deep links' #earn-opportunities anchor)
+        // arrive scrolled to their target, breaking the same at-the-top
+        // assumption that excludes traversals above — so they swap instantly
+        // too.
+        if (toLocation.hash) return false;
+        // Runs synchronously immediately before startViewTransition, which is
+        // the only moment the pre-navigation scroll position is still readable.
+        // The page's outgoing snapshot is the whole tall element, so the CSS
+        // needs this to show the part that was on screen — see the
+        // ::view-transition-group(page) block in globals.css.
+        document.documentElement.style.setProperty('--vt-scroll', `${window.scrollY}px`);
+        // Drilling between the Earn marketplace and a product page travels
+        // vertically instead (Figma: Sky App: UI 1598:77307). The extra types
+        // are additive — they only swap which keyframes run, so the timing,
+        // easing, overlap and snapshot handling stay shared with every other
+        // navigation.
+        const types = isEarnDrilldown(fromLocation.pathname, toLocation.pathname)
+          ? ['page', 'drill']
+          : ['page'];
+        // Moving against the nav's order (or back up out of a product page)
+        // plays the mirror of the forward move — see isReverseNavigation.
+        if (isReverseNavigation(fromLocation.pathname, toLocation.pathname)) types.push('reverse');
+        return types;
+      }
+    },
+    // Full-width routes scroll on the document (no inner-scroll box), so the
+    // router owns scroll position: reset to top on new navigations, restore on
+    // back/forward. A no-op for boxed routes whose scroll lives in an element.
+    scrollRestoration: true,
+    defaultErrorComponent: ErrorPage,
+    defaultNotFoundComponent: NotFound,
+    // NotFound renders its own full-page Layout, so unmatched paths must surface
+    // at the root; the default fuzzy mode would nest it inside the closest
+    // partially-matching layout (e.g. /earn/bogus inside the app shell).
+    notFoundMode: 'root'
   });
-  return redirect('/?' + params.toString());
 };
 
-const routes: RouteObject[] = [
-  {
-    path: '/',
-    element: <Home />,
-    loader: legacyWidgetLoader,
-    errorElement: <ErrorPage />
-  },
-  {
-    path: '/susdt',
-    loader: susdtRedirectLoader,
-    element: <Home />,
-    errorElement: <ErrorPage />
-  },
-  {
-    path: '/seal-engine',
-    element: <SealEngine />,
-    errorElement: <ErrorPage />
-  },
-  {
-    path: '/batch-transactions-legal-notice',
-    element: <BatchTransactionsLegal />,
-    errorElement: <ErrorPage />
-  },
-  // catch all and show NotFound component
-  {
-    path: '*',
-    element: <NotFound />,
-    errorElement: <ErrorPage />
-  },
-  ...(import.meta.env.DEV
-    ? [
-        {
-          path: '/dev',
-          element: <Dev />,
-          errorElement: <ErrorPage />
-        }
-      ]
-    : [])
-];
+export const router = createAppRouter();
 
-const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV6(createBrowserRouter);
-
-export const router = sentryCreateBrowserRouter(routes);
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}

@@ -19,6 +19,7 @@ export { useSsrAssetsToShares } from './savings/useSsrAssetsToShares';
 export { useMultiChainSavingsBalances } from './savings/useMultiChainSavingsBalances';
 export { useBatchSavingsSupply } from './savings/useBatchSavingsSupply';
 export { useBatchUpgradeAndSavingsSupply } from './savings/useBatchUpgradeAndSavingsSupply';
+export { useBatchPsmSwapAndSavingsSupply } from './savings/useBatchPsmSwapAndSavingsSupply';
 
 // stUSDS
 export {
@@ -97,7 +98,6 @@ export {
   useMerklClaimRewards,
   useMorphoVaultHistory,
   useMorphoVaultChartInfo,
-  useMorphoVaultMultipleChartInfo,
   useMorphoVaultSupplierAddresses,
   useMorphoVaultsCombinedTvl,
   useAllMorphoVaultsUserAssets,
@@ -125,7 +125,6 @@ export type {
   MerklRewardsHook,
   MorphoVaultChartDataPoint,
   MorphoVaultChartInfoHook,
-  MorphoVaultMultipleChartInfoHook,
   MorphoVaultSupplierAddressesHook,
   MorphoVaultsCombinedTvl,
   MorphoVaultBalance,
@@ -190,11 +189,14 @@ export {
   PENDLE_ROUTER_V4_ABI,
   PENDLE_MARKETS,
   getPendleMarketByAddress,
+  getPendleMarketBySlug,
   PendleConvertSide,
   PendleHistoryAction
 } from './pendle/constants';
-export { isMarketMatured, formatPendleAggregatorName } from './pendle/helpers';
+export { isMarketMatured, isPendleChain, formatPendleAggregatorName } from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
+export { usePendleMarketChartData } from './pendle/usePendleMarketChartData';
+export type { PendleMarketChartPoint } from './pendle/usePendleMarketChartData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
 export { useAllPendleUserAssets } from './pendle/useAllPendleUserAssets';
 export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
@@ -237,7 +239,18 @@ export type {
 } from './pendle/pendle';
 
 // Authentication
-export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
+export {
+  useRestrictedAddressCheck,
+  addressScreeningQueryKey,
+  fetchAddressScreening,
+  type AddressScreeningResult
+} from './authentication/useRestrictedAddressCheck';
+export {
+  ENHANCED_SCREENING_THRESHOLD_USD,
+  requiresEnhancedScreening,
+  enhancedAddressScreeningQueryKey,
+  fetchEnhancedAddressScreening
+} from './authentication/enhancedAddressScreening';
 export { useVpnCheck } from './authentication/useVpnCheck';
 
 // Tokens
@@ -249,6 +262,7 @@ export { useTokenBalance, useTokenBalances, type TokenItem } from './tokens/useT
 export { useTokenChartInfo } from './tokens/useTokenChartInfo';
 
 // Rewards
+export { rewardContractDisplayName } from './rewards/rewardContractDisplayName';
 export { useAvailableTokenRewardContracts } from './rewards/useAvailableTokenRewardContracts';
 export { useAvailableTokenRewardContractsForChains } from './rewards/useAvailableTokenRewardContracts';
 export { useRewardContractInfo } from './rewards/useRewardContractInfo';
@@ -283,8 +297,33 @@ export { useCombinedHistory } from './shared/useCombinedHistory';
 export { useAllNetworksCombinedHistory } from './shared/useAllNetworksCombinedHistory';
 export { useL2CombinedHistory } from './shared/useL2CombinedHistory';
 export { useEthereumCombinedHistory } from './shared/useEthereumCombinedHistory';
+export { useEthereumIndexerHistory } from './shared/useEthereumIndexerHistory';
+export { useL2sIndexerHistory } from './shared/useL2sIndexerHistory';
+export { useHistoryFamilyQuery } from './shared/useHistoryFamilyQuery';
+export { useFilteredPortfolioHistory } from './shared/useFilteredPortfolioHistory';
 export { useUsdsDaiData } from './shared/useUsdsDaiData';
 export { useOverallSkyData } from './shared/useOverallSkyData';
+export { trailingAverageRate, type DailyRatePoint } from './shared/trailingRate';
+
+// Earn marketplace (C1 registry + aggregator)
+export { useEarnMarketplace } from './earn/useEarnMarketplace';
+export {
+  buildEarnProducts,
+  productNetworks,
+  rewardsRiskProfile,
+  RISK_TIER_BY_PROFILE
+} from './earn/earnProducts';
+export { useProductNetworks } from './earn/useProductNetworks';
+export type {
+  EarnMarketplaceResult,
+  EarnProductDescriptor,
+  EarnProductKind,
+  EarnRiskProfileId,
+  EarnProductRow,
+  EarnRate,
+  EarnRiskTier,
+  EarnUsdAmount
+} from './earn/types';
 
 // Decentralized Storage
 export { useIpfsStorage } from './decentralizedStorage/useIpfsStorage';
@@ -303,6 +342,8 @@ export { useUpgradeHistory } from './upgrade/useUpgradeHistory';
 export { useUpgradeTotals } from './upgrade/useUpgradeTotals';
 export { useMkrSkyFee } from './upgrade/useMkrSkyFee';
 export { useMigrationStats } from './upgrade/useMigrationStats';
+export { useBatchUpgrade } from './upgrade/useBatchUpgrade';
+export type { UpgradeSourceToken } from './upgrade/useBatchUpgrade';
 
 // Trade
 export { useTradeHistory } from './trade/useTradeHistory';
@@ -427,7 +468,8 @@ export type {
   TrustLevel,
   DataSource,
   ReadHookParams,
-  BatchWriteHookParams
+  BatchWriteHookParams,
+  TxMutateVariables
 } from './hooks';
 export type { PaginationOption } from './filters';
 export type { RewardContract, RewardContractInfo } from './rewards/rewards';
@@ -501,6 +543,8 @@ export { contracts, l2Contracts } from './contracts';
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
+export { useNetworkFee } from './shared/useNetworkFee';
+export type { NetworkFeeData, UseNetworkFeeParameters } from './shared/useNetworkFee';
 
 // UI utility hooks
 export * from './ui';

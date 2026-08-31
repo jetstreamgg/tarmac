@@ -27,17 +27,30 @@ const makeRows = (n: number): HistoryRow[] =>
     transactionHash: `0x${i}`
   }));
 
-const renderTable = (history: HistoryRow[]) =>
+const renderTable = (history: HistoryRow[], onPageChange?: (page: number, totalPages: number) => void) =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <HistoryTable history={history} isLoading={false} />
+        <HistoryTable history={history} isLoading={false} onPageChange={onPageChange} />
       </TooltipProvider>
     </I18nProvider>
   );
 
-describe('HistoryTable — pagination', () => {
+describe('HistoryTable — pagination callback', () => {
   afterEach(cleanup);
+
+  it('reports page changes with the page and total so consumers can fetch more', () => {
+    const onPageChange = vi.fn();
+    // 12 rows / 5 per page → 3 pages.
+    renderTable(makeRows(12), onPageChange);
+
+    fireEvent.click(screen.getByLabelText('Go to next page'));
+    expect(onPageChange).toHaveBeenCalledWith(2, 3);
+
+    fireEvent.click(screen.getByLabelText('Go to next page'));
+    // Landing on the last page is the fetch-more trigger for keyset sources.
+    expect(onPageChange).toHaveBeenCalledWith(3, 3);
+  });
 
   it('keeps rendering rows when the row set shrinks under a stale page (APP-401)', () => {
     // 12 rows / 5 per page → 3 pages; walk to the last one.
@@ -59,9 +72,11 @@ describe('HistoryTable — pagination', () => {
     expect(screen.queryByText('No transactions found')).toBeNull();
   });
 
-  it('renders without pagination when rows fit one page', () => {
-    renderTable(makeRows(3));
+  it('renders without pagination (and never calls back) when rows fit one page', () => {
+    const onPageChange = vi.fn();
+    renderTable(makeRows(3), onPageChange);
 
     expect(screen.queryByLabelText('Go to next page')).toBeNull();
+    expect(onPageChange).not.toHaveBeenCalled();
   });
 });
