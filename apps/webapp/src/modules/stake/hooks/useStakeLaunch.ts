@@ -16,6 +16,8 @@ import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
@@ -101,6 +103,7 @@ export function useStakeLaunch({
 }: UseStakeLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
   const sessionId = useId();
+  const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { address } = useConnection();
   const { priceString: skyPriceString } = useSkyPrice();
 
@@ -158,6 +161,7 @@ export function useStakeLaunch({
     enabled: enabled && currentUrnIndex !== undefined && calldata.length > 0,
     ...txCallbacks
   });
+  useResetPausedRunOnClose(engine.reset);
 
   // Live execute ref: launch() must never snapshot onConfirm state (landmine #2)
   // — the engine hook re-renders between launch and the user's Confirm click.
@@ -283,6 +287,8 @@ export function useStakeLaunch({
 
   return {
     launch,
+    locked,
+    restore,
     execute: engine.execute,
     calls: engine.calls ?? [],
     isBatch: !!engine.isBatch,

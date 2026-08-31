@@ -17,6 +17,8 @@ import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 // Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
@@ -149,6 +151,7 @@ export function useStakeManageLaunch({
 }: UseStakeManageLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
   const sessionId = useId();
+  const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { priceString: skyPriceString } = useSkyPrice();
   const { address } = useConnection();
 
@@ -213,6 +216,7 @@ export function useStakeManageLaunch({
     enabled: enabled && calldata.length > 0,
     ...txCallbacks
   });
+  useResetPausedRunOnClose(engine.reset);
 
   // Live execute ref: launch() must never snapshot onConfirm state.
   const executeRef = useRef(engine.execute);
@@ -401,6 +405,8 @@ export function useStakeManageLaunch({
 
   return {
     launch,
+    locked,
+    restore,
     execute: engine.execute,
     steps,
     calldata,

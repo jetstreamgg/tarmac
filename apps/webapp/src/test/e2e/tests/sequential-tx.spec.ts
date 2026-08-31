@@ -1,17 +1,28 @@
 /*
  * Sequential (non-batch) transaction flow tests — the canary for the
- * useSequentialTransactionFlow retry contract: a changed amount after a
- * step-2 rejection and Back must be used on the next attempt.
+ * useSequentialTransactionFlow retry contract: after a step-2 rejection, a
+ * changed amount (via close and reopen — Back is withheld once a step has
+ * mined, APP-448) must be what the next attempt executes.
  *
  * V2 rewrite (see e2e-migration.md): flows run through the editable entry
  * modal on /earn/savings and /earn/rewards/:rewardContract. The legacy
  * upgrade block was dropped — /convert/upgrade is a parked surface.
+ *
+ * Bundling is a persisted user setting. It cannot be seeded through
+ * localStorage — the mock wagmi config clears all of it at boot — so the tests
+ * turn it off through the nav menu's switch right after connecting; it persists
+ * for the rest of the page's life. (The review screen's bundle badge is not an
+ * anchor: it only renders when the flow needs an approve, which a funded account
+ * with leftover allowance does not.) The modal runs the three-screen flow: entry (Review)
+ * → review (Confirm) → wallet/status screen, whose multi-step failures render
+ * inline in the step list with a "Try again" pill. A success closes the modal
+ * itself and hands the outcome to a 10s toast, so completion is asserted on the
+ * closed dialog and the position delta, not on the toast copy.
  */
 
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { connectAndVerify } from '../utils/connectAndVerify';
-import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import {
   interceptAndAllowTransactions,
   interceptAndRejectSecondTransaction
@@ -20,19 +31,62 @@ import {
 // With: USDS Get: SPK — usdsSpkRewardAddress on the tenderly fork
 const SPK_REWARD_CONTRACT = '0x173e314C7635B45322cd8Cb14f44b312e079F3af';
 
+/** Turns the persisted bundling preference off from the nav menu's switch. */
+const disableBundling = async (page: Page) => {
+  await page.getByTestId('nav-more').click();
+  const toggle = page.getByTestId('batch-transactions-switch');
+  await toggle.waitFor({ state: 'visible', timeout: 30_000 });
+  if (await toggle.isChecked()) {
+    await toggle.click();
+  }
+  await expect(toggle).not.toBeChecked();
+  // The trigger toggles the menu; Escape does not close it.
+  await page.getByTestId('nav-more').click();
+  await expect(toggle).toBeHidden();
+};
+
 const connectOn = async (page: Page, path: string) => {
   // Connect AFTER the goto — a full navigation resets the mock connector.
   await page.goto(path);
   await connectAndVerify(page, { batch: true });
+  await disableBundling(page);
 };
 
-/** Switches the modal's bundle toggle off so the flow runs sequentially. */
-const disableBundling = async (page: Page) => {
-  const toggle = page.getByRole('dialog').getByRole('switch');
-  await toggle.waitFor({ state: 'visible' });
-  if (await toggle.isChecked()) {
-    await toggle.click();
+/**
+ * The position card's leading number, or 0 when the account has no position
+ * and the page shows the supply CTA instead. The CTA also renders while the
+ * balance is still loading, so a card is given a moment to replace it. Funded
+ * accounts already hold a position in some markets, so the canaries assert
+ * DELTAS, never absolutes — and poll for them, since the card refetches its
+ * balance a beat after the modal closes.
+ */
+const positionAmount = async (page: Page, market: 'savings' | 'rewards') => {
+  const card = page.getByTestId(`${market}-position-card`);
+  await expect(card.or(page.getByTestId(`${market}-supply-cta`)).first()).toBeVisible({ timeout: 15_000 });
+  if (!(await card.isVisible())) {
+    const appeared = await card
+      .waitFor({ state: 'visible', timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!appeared) return 0;
   }
+  const cardText = await card.innerText();
+  return parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
+};
+
+/** Advances the three-screen modal: entry's Review, then the review's Confirm. */
+const reviewAndConfirm = async (page: Page) => {
+  const review = page.getByRole('dialog').getByRole('button', { name: 'Review', exact: true });
+  await expect(review).toBeEnabled({ timeout: 60_000 });
+  await review.click();
+  const confirm = page.getByRole('dialog').getByRole('button', { name: 'Confirm', exact: true });
+  await expect(confirm).toBeEnabled({ timeout: 60_000 });
+  await confirm.click();
+};
+
+/** A success closes the modal itself; the toast that follows is too short to anchor on. */
+const expectFlowCompleted = async (page: Page) => {
+  await expect(page.getByRole('dialog')).toBeHidden({ timeout: 90_000 });
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,71 +103,60 @@ test.describe('Sequential transactions — Savings supply', () => {
     await expect(page.getByText('Supply to Sky Savings')).toBeVisible();
   };
 
-  test.fixme('Sequential: supply USDS completes successfully in two steps', async ({ isolatedPage }) => {
+  test('Sequential: supply USDS completes successfully in two steps', async ({ isolatedPage }) => {
     await connectOn(isolatedPage, '/earn/savings');
+    const positionBefore = await positionAmount(isolatedPage, 'savings');
     await openSupplyModal(isolatedPage);
 
     await isolatedPage.getByTestId('savings-modal-amount-input').fill('2');
-    await disableBundling(isolatedPage);
-
-    const confirm = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Supply', exact: true });
-    await expect(confirm).toBeEnabled({ timeout: 60_000 });
-    await confirm.click();
+    await reviewAndConfirm(isolatedPage);
 
     // Approve and Supply run as two sequential wallet confirmations
     await expect(isolatedPage.getByText('Approve')).toBeVisible({ timeout: 60_000 });
 
-    await expectTransactionSuccess(isolatedPage);
+    await expectFlowCompleted(isolatedPage);
+    await expect
+      .poll(async () => (await positionAmount(isolatedPage, 'savings')) - positionBefore, { timeout: 30_000 })
+      .toBeCloseTo(2, 0);
   });
 
-  // FIXME(stale-state): this canary currently catches what looks like a REAL V2
-  // regression — after a step-2 rejection and Back, the retry executed the OLD
-  // amount (rewards position landed at 3, not the re-entered 7). Needs a product
-  // fix in the entry-modal retry path (useSequentialTransactionFlow contract),
-  // not a spec fix. Re-enable once resolved.
-  test.fixme('Sequential stale-state regression: changed amount is used after step-2 rejection and Back', async ({
+  test('Sequential stale-state regression: changed amount is used after step-2 rejection, close and reopen', async ({
     isolatedPage
   }) => {
     await connectOn(isolatedPage, '/earn/savings');
+    const positionBefore = await positionAmount(isolatedPage, 'savings');
+
     await openSupplyModal(isolatedPage);
 
     // ── First attempt: approve succeeds, the supply tx is rejected ──
     await isolatedPage.getByTestId('savings-modal-amount-input').fill('3');
-    await disableBundling(isolatedPage);
-
-    const confirm = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Supply', exact: true });
-    await expect(confirm).toBeEnabled({ timeout: 60_000 });
-
     await interceptAndRejectSecondTransaction(isolatedPage, 200);
-    await confirm.click();
+    await reviewAndConfirm(isolatedPage);
 
-    // The old generic error sentence is gone — status now lives only in the
-    // status badge (`data-testid="transaction-status-badge"`). toHaveText auto-retries,
-    // so this waits for the terminal "Failed" text rather than an in-flight state.
-    await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Failed', {
+    // The failed step renders inline in the step list with a retry pill
+    await expect(isolatedPage.getByRole('button', { name: 'Try again' })).toBeVisible({
       timeout: 60_000
     });
 
-    // ── Back to the editable entry, change the amount ──
-    await isolatedPage.getByRole('button', { name: 'Back', exact: true }).last().click();
+    // ── A step has mined, so Back is withheld: close, reopen, change the amount ──
+    await expect(isolatedPage.getByTestId('transaction-modal-back')).toBeDisabled();
+    await isolatedPage.getByTestId('transaction-modal-close').click();
+    await expect(isolatedPage.getByRole('dialog')).toBeHidden();
+    await openSupplyModal(isolatedPage);
     const amountInput = isolatedPage.getByTestId('savings-modal-amount-input');
     await expect(amountInput).toBeVisible();
     await amountInput.fill('5');
 
     // ── Second attempt succeeds; the allowance from step 1 already covers it ──
     await interceptAndAllowTransactions(isolatedPage);
-    const retry = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Supply', exact: true });
-    await expect(retry).toBeEnabled({ timeout: 60_000 });
-    await retry.click();
+    await reviewAndConfirm(isolatedPage);
 
-    await expectTransactionSuccess(isolatedPage);
+    await expectFlowCompleted(isolatedPage);
 
-    // The position reflects the NEW amount (5), not the rejected one (3)
-    const card = isolatedPage.getByTestId('savings-position-card');
-    await expect(card).toBeVisible({ timeout: 15_000 });
-    const cardText = await card.innerText();
-    const amount = parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
-    expect(amount).toBeCloseTo(5, 0);
+    // The position grew by the NEW amount (5), not the rejected one (3)
+    await expect
+      .poll(async () => (await positionAmount(isolatedPage, 'savings')) - positionBefore, { timeout: 30_000 })
+      .toBeCloseTo(5, 0);
   });
 });
 
@@ -131,69 +174,56 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await expect(page.getByText('Supply to SPK Rewards')).toBeVisible();
   };
 
-  test.fixme('Sequential: supply USDS to rewards completes successfully in two steps', async ({
-    isolatedPage
-  }) => {
+  test('Sequential: supply USDS to rewards completes successfully in two steps', async ({ isolatedPage }) => {
     await connectOn(isolatedPage, `/earn/rewards/${SPK_REWARD_CONTRACT}`);
+    const positionBefore = await positionAmount(isolatedPage, 'rewards');
     await openSupplyModal(isolatedPage);
 
     await isolatedPage.getByTestId('rewards-modal-amount-input').fill('2');
-    await disableBundling(isolatedPage);
+    await reviewAndConfirm(isolatedPage);
 
-    const confirm = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Supply', exact: true });
-    await expect(confirm).toBeEnabled({ timeout: 60_000 });
-    await confirm.click();
-
-    await expectTransactionSuccess(isolatedPage);
+    await expectFlowCompleted(isolatedPage);
+    await expect
+      .poll(async () => (await positionAmount(isolatedPage, 'rewards')) - positionBefore, { timeout: 30_000 })
+      .toBeCloseTo(2, 0);
   });
 
-  // FIXME(stale-state): this canary currently catches what looks like a REAL V2
-  // regression — after a step-2 rejection and Back, the retry executed the OLD
-  // amount (rewards position landed at 3, not the re-entered 7). Needs a product
-  // fix in the entry-modal retry path (useSequentialTransactionFlow contract),
-  // not a spec fix. Re-enable once resolved.
-  test.fixme('Sequential stale-state regression: changed amount is used after step-2 rejection and Back', async ({
+  test('Sequential stale-state regression: changed amount is used after step-2 rejection, close and reopen', async ({
     isolatedPage
   }) => {
     await connectOn(isolatedPage, `/earn/rewards/${SPK_REWARD_CONTRACT}`);
+    const positionBefore = await positionAmount(isolatedPage, 'rewards');
+
     await openSupplyModal(isolatedPage);
 
     // ── First attempt: approve succeeds, the supply tx is rejected ──
     await isolatedPage.getByTestId('rewards-modal-amount-input').fill('3');
-    await disableBundling(isolatedPage);
-
-    const confirm = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Supply', exact: true });
-    await expect(confirm).toBeEnabled({ timeout: 60_000 });
-
     await interceptAndRejectSecondTransaction(isolatedPage, 200);
-    await confirm.click();
+    await reviewAndConfirm(isolatedPage);
 
-    // The old generic error sentence is gone — status now lives only in the
-    // status badge (`data-testid="transaction-status-badge"`). toHaveText auto-retries,
-    // so this waits for the terminal "Failed" text rather than an in-flight state.
-    await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText('Failed', {
+    // The failed step renders inline in the step list with a retry pill
+    await expect(isolatedPage.getByRole('button', { name: 'Try again' })).toBeVisible({
       timeout: 60_000
     });
 
-    // ── Back to the editable entry, change the amount ──
-    await isolatedPage.getByRole('button', { name: 'Back', exact: true }).last().click();
+    // ── A step has mined, so Back is withheld: close, reopen, change the amount ──
+    await expect(isolatedPage.getByTestId('transaction-modal-back')).toBeDisabled();
+    await isolatedPage.getByTestId('transaction-modal-close').click();
+    await expect(isolatedPage.getByRole('dialog')).toBeHidden();
+    await openSupplyModal(isolatedPage);
     const amountInput = isolatedPage.getByTestId('rewards-modal-amount-input');
     await expect(amountInput).toBeVisible();
     await amountInput.fill('7');
 
     // ── Second attempt succeeds ──
     await interceptAndAllowTransactions(isolatedPage);
-    const retry = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Supply', exact: true });
-    await expect(retry).toBeEnabled({ timeout: 60_000 });
-    await retry.click();
+    await reviewAndConfirm(isolatedPage);
 
-    await expectTransactionSuccess(isolatedPage);
+    await expectFlowCompleted(isolatedPage);
 
-    // The position reflects the NEW amount (7), not the rejected one (3)
-    const card = isolatedPage.getByTestId('rewards-position-card');
-    await expect(card).toBeVisible({ timeout: 15_000 });
-    const cardText = await card.innerText();
-    const amount = parseFloat(cardText.replace(/,/g, '').match(/(\d+(\.\d+)?)/)?.[1] ?? '0');
-    expect(amount).toBeCloseTo(7, 0);
+    // The position grew by the NEW amount (7), not the rejected one (3)
+    await expect
+      .poll(async () => (await positionAmount(isolatedPage, 'rewards')) - positionBefore, { timeout: 30_000 })
+      .toBeCloseTo(7, 0);
   });
 });

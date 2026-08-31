@@ -272,6 +272,8 @@ export type TransactionContextValue = {
   restore: () => void;
   /** Whether the modal is currently minimized (hidden but still tracking a tx). */
   isMinimized: boolean;
+  /** `sessionId` of the live session (open or minimized), null when there is none. */
+  activeSessionId: string | null;
   /**
    * Called by the app shell on every route (pathname) change: closes the
    * session unless a write is in flight, the modal is minimized, or the

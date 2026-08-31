@@ -40,9 +40,13 @@ const getDisabledReasonText = (reason?: PsmConversionDisabledReason, targetToken
  * transaction modal via `useConvertLaunch` (review → confirm-in-wallet → status).
  * PSM 1:1 USDC↔USDS only — CoW trading returns in E3 on the async-order contract.
  */
+// Phone tier steps to the L button (48px, comp 1295:25314); XL at md.
+const CTA_CLASSES =
+  'h-12 w-full text-sm leading-4 tracking-[-0.28px] md:h-14 md:text-base md:leading-[18px] md:tracking-[-0.32px]';
+
 export function ConvertPage() {
   const form = useConvertForm();
-  const { launch, conversion } = useConvertLaunch({
+  const { launch, conversion, locked, restore } = useConvertLaunch({
     direction: form.direction,
     amount: form.amount,
     onSuccess: () => {
@@ -98,29 +102,36 @@ export function ConvertPage() {
       {/* Form column: the middle 6 columns of the design grid (624px @1280)
           minus 48px breathing room each side, per the Convert mock. */}
       <div className="flex w-full max-w-[528px] flex-col gap-4">
-        <ConvertCard form={form} />
+        {/* Inert while this flow's transaction is minimized (APP-448). */}
+        <div inert={locked} className={locked ? 'opacity-50' : undefined} data-testid="convert-form">
+          <ConvertCard form={form} />
+        </div>
 
-        {form.insufficient && (
+        {locked ? (
+          <Text className="text-textSecondary text-sm" dataTestId="convert-locked">
+            <Trans>A transaction is in progress. Open it to continue.</Trans>
+          </Text>
+        ) : form.insufficient ? (
           <Text className="text-error text-sm" dataTestId="convert-error">
             <Trans>Insufficient funds</Trans>
           </Text>
-        )}
-        {!form.insufficient && disabledReasonText && (
-          <Text className="text-error text-sm" dataTestId="convert-error">
-            {disabledReasonText}
-          </Text>
+        ) : (
+          disabledReasonText && (
+            <Text className="text-error text-sm" dataTestId="convert-error">
+              {disabledReasonText}
+            </Text>
+          )
         )}
 
         <Button
           variant="primary"
           size="xl"
-          // Phone tier steps to the L button (48px, comp 1295:25314); XL at md.
-          className="h-12 w-full text-sm leading-4 tracking-[-0.28px] md:h-14 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
-          disabled={reviewDisabled}
-          onClick={launchOrConnect}
-          data-testid="convert-review-cta"
+          className={CTA_CLASSES}
+          disabled={!locked && reviewDisabled}
+          onClick={locked ? restore : launchOrConnect}
+          data-testid={locked ? 'convert-open-transaction' : 'convert-review-cta'}
         >
-          <Trans>Review</Trans>
+          {locked ? <Trans>Open transaction</Trans> : <Trans>Review</Trans>}
         </Button>
       </div>
     </div>

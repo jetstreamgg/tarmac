@@ -334,6 +334,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
 
   const {
     launch,
+    locked,
+    restore,
     prepared,
     isLoading: launchLoading,
     error: launchError
@@ -367,6 +369,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         </>
       }
       onClose={close}
+      locked={locked}
+      onOpenTransaction={restore}
       dataTestId="stake-takeover"
       footer={
         <>

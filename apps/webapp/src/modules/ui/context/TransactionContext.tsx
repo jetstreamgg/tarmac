@@ -121,6 +121,8 @@ type TransactionModalView = {
   config: TransactionConfig;
   txStatus: TxStatus;
   currentStep: number;
+  /** A step of this session has mined — see `hasMinedStep` in the provider. */
+  hasMinedStep: boolean;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
   /** Gate-owned status copy override active when the session ended (APP-501). */
@@ -179,6 +181,11 @@ export function TransactionProvider({
   const [launchCount, setLaunchCount] = useState(0);
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
   const [currentStep, setCurrentStep] = useState(0);
+  // An on-chain step of this session has mined: the engine's paused run is the
+  // only memory of it, so a failure must resume, not reopen the inputs — the
+  // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
+  // off-chain prelude.
+  const [hasMinedStep, setHasMinedStep] = useState(false);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
   // in the close snapshot. Reset on every launch and close — a prelude belongs
@@ -205,6 +212,7 @@ export function TransactionProvider({
   const [exitingView, setExitingView] = useState<TransactionModalView | null>(null);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSessionRef = useRef<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   // Session generation: advanced by launch() and handleClose(), so engine
   // callbacks are bound to the session that rendered them (state) and can spot
   // that it has since ended (ref). An in-flight write outlives its host — the
@@ -400,6 +408,7 @@ export function TransactionProvider({
       flowIdRef.current = getFlowId();
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
+      setActiveSessionId(config.sessionId ?? null);
       launchPathnameRef.current = window.location.pathname;
       minimizedRef.current = false;
       setActiveConfig(config);
@@ -407,6 +416,7 @@ export function TransactionProvider({
       txStatusRef.current = TxStatus.IDLE;
       txHashRef.current = undefined;
       setCurrentStep(0);
+      setHasMinedStep(false);
       preludeStepsRef.current = null;
       setPreludeSteps(null);
       gateCopyRef.current = null;
@@ -481,6 +491,15 @@ export function TransactionProvider({
     setCurrentStep(0);
   }, []);
 
+  // Back returns to an editable first screen, so the status returns to IDLE
+  // with it — the entry body's pushes freeze at any other status, which left
+  // the review showing the rejected values (APP-448).
+  const handleBack = useCallback(() => {
+    setCurrentStep(0);
+    setTxStatus(TxStatus.IDLE);
+    txStatusRef.current = TxStatus.IDLE;
+  }, []);
+
   const handleClose = useCallback(() => {
     // Closing at INITIALIZED abandons the pending request — whose semantics
     // depend on who owns the status (see handleInitializedAbandon). Read the
@@ -500,6 +519,7 @@ export function TransactionProvider({
         config: configRef.current,
         txStatus: txStatusRef.current,
         currentStep,
+        hasMinedStep,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
       });
@@ -518,6 +538,7 @@ export function TransactionProvider({
     setTxStatus(TxStatus.IDLE);
     txStatusRef.current = TxStatus.IDLE;
     setCurrentStep(0);
+    setHasMinedStep(false);
     preludeStepsRef.current = null;
     setPreludeSteps(null);
     gateCopyRef.current = null;
@@ -527,7 +548,8 @@ export function TransactionProvider({
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
-  }, [handleInitializedAbandon, currentStep]);
+    setActiveSessionId(null);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -833,6 +855,9 @@ export function TransactionProvider({
       if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
         setCurrentStep(s => s + 1);
       }
+      // A sequential engine dispatches the next call only once the previous
+      // receipt landed, so a write arriving over LOADING means a step mined.
+      if (txStatusRef.current === TxStatus.LOADING) setHasMinedStep(true);
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
       txHashRef.current = undefined;
@@ -1024,7 +1049,7 @@ export function TransactionProvider({
   );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, currentStep, preludeSteps, gateCopy }
+    ? { config: activeConfig, txStatus, currentStep, hasMinedStep, preludeSteps, gateCopy }
     : exitingView;
 
   // Chain guard (APP-528): the modal survives a wallet chain switch (the
@@ -1091,11 +1116,23 @@ export function TransactionProvider({
       minimize,
       restore,
       isMinimized: minimized,
+      activeSessionId,
       closeOnNavigation,
       txCallbacks,
       txStatus
     }),
-    [launch, updateModalContent, open, minimize, restore, minimized, closeOnNavigation, txCallbacks, txStatus]
+    [
+      launch,
+      updateModalContent,
+      open,
+      minimize,
+      restore,
+      minimized,
+      activeSessionId,
+      closeOnNavigation,
+      txCallbacks,
+      txStatus
+    ]
   );
 
   return (
@@ -1142,7 +1179,8 @@ export function TransactionProvider({
             onSecondaryConfirm={modalView.config.onSecondaryConfirm ? gatedSecondaryConfirm : undefined}
             onReviewStage={handleReviewStage}
             onRetry={handleRetry}
-            onBack={resetTransactionProgress}
+            onBack={handleBack}
+            backLocked={modalView.hasMinedStep}
             txStatus={modalView.txStatus}
             confirmLabel={modalView.config.confirmLabel}
             confirmDisabled={modalView.config.confirmDisabled}

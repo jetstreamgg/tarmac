@@ -28,6 +28,7 @@ import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
@@ -95,6 +96,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     },
     onError: (err, hash) => txCallbacks.onError(err, hash)
   });
+  useResetPausedRunOnClose(writeHook.reset);
 
   // Map raw revert messages to user-friendly copy — shared with the buy/sell
   // modal so users see consistent guidance across all three flows. Only while

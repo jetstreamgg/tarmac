@@ -1,7 +1,12 @@
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { i18n } from '@lingui/core';
+import { I18nProvider } from '@lingui/react';
 
 import { TakeoverShell } from './TakeoverShell';
+
+i18n.load('en', {});
+i18n.activate('en');
 
 const renderShell = (onClose = vi.fn()) => {
   render(
@@ -106,5 +111,29 @@ describe('TakeoverShell', () => {
     close.focus();
     fireEvent.keyDown(overlay, { key: 'Tab', shiftKey: true });
     expect(document.activeElement).toBe(footerButton);
+  });
+
+  it('locked: the card column goes inert and the footer offers to reopen the transaction', () => {
+    const onOpenTransaction = vi.fn();
+    render(
+      <I18nProvider i18n={i18n}>
+        <TakeoverShell
+          title="Open a position"
+          onClose={vi.fn()}
+          footer={<button>Confirm</button>}
+          locked
+          onOpenTransaction={onOpenTransaction}
+          dataTestId="stake-takeover"
+        >
+          <button>card control</button>
+        </TakeoverShell>
+      </I18nProvider>
+    );
+
+    expect(screen.getByTestId('stake-takeover-form').hasAttribute('inert')).toBe(true);
+    expect(screen.queryByText('Confirm')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('stake-takeover-open-transaction'));
+    expect(onOpenTransaction).toHaveBeenCalledTimes(1);
   });
 });

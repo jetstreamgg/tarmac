@@ -9,6 +9,8 @@ import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { chainIdsForIntent } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
@@ -33,6 +35,10 @@ export interface UseConvertLaunchResult {
   conversion: UsePsmConversionResult;
   /** Step labels: optional approve → convert, elided when allowance covers it. */
   steps: TransactionStep[];
+  /** The form must not be edited: this flow's session is minimized (see useMinimizedSessionLock). */
+  locked: boolean;
+  /** Brings the minimized modal back. */
+  restore: () => void;
 }
 
 /**
@@ -74,6 +80,8 @@ export function useConvertLaunch({
     shouldUseBatch: !!batchEnabled,
     ...txCallbacks
   });
+  useResetPausedRunOnClose(conversion.reset);
+  const { locked, restore } = useMinimizedSessionLock(sessionId);
 
   const originSymbol = conversion.originToken?.symbol ?? '';
   const targetSymbol = conversion.targetToken?.symbol ?? '';
@@ -276,5 +284,5 @@ export function useConvertLaunch({
     steps
   ]);
 
-  return { launch, conversion, steps };
+  return { launch, conversion, steps, locked, restore };
 }

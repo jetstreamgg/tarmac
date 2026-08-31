@@ -100,6 +100,12 @@ export type TransactionModalProps = {
   onReviewStage?: () => void;
   onRetry?: () => void;
   onBack?: () => void;
+  /**
+   * A step of this flow has mined. From here the run must resume, never reopen
+   * the inputs, so Back is withheld: the header arrow stays disabled and the
+   * failure screen offers Retry alone (APP-448).
+   */
+  backLocked?: boolean;
   txStatus: TxStatus;
   confirmLabel?: string;
   /** Disables the Confirm button (e.g. while a quote is refetching). */
@@ -192,6 +198,7 @@ export function TransactionModal({
   onReviewStage,
   onRetry,
   onBack,
+  backLocked = false,
   txStatus,
   confirmLabel,
   confirmDisabled,
@@ -597,7 +604,7 @@ export function TransactionModal({
                   size="iconM"
                   aria-label={t`Back`}
                   onClick={handleHeaderBack}
-                  disabled={isTransacting}
+                  disabled={isTransacting || backLocked}
                   data-testid="transaction-modal-back"
                 >
                   <ArrowLeft className="size-4" />
@@ -779,9 +786,11 @@ export function TransactionModal({
                   <>
                     {chainGuardBlock}
                     <div className="flex w-full gap-3">
-                      <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
-                        <Trans>Back</Trans>
-                      </Button>
+                      {!backLocked && (
+                        <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
+                          <Trans>Back</Trans>
+                        </Button>
+                      )}
                       {chainGuarded && guardCta ? (
                         guardCta
                       ) : (
