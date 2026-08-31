@@ -19,10 +19,11 @@ const SECTION = 'mt-12 flex flex-col gap-5 md:mt-20';
  * The CTA hierarchy follows the row count: more than one reward puts the
  * primary on the heading's "Claim all" and steps the row buttons down to
  * secondary; a single reward hides "Claim all" and promotes its row button to
- * primary. `canClaimAll` is that same switch from the other side: a section
- * whose claim-all would take more than one transaction (the Sky farms — one
- * `getReward` per farm) passes false while bundling is off, and then renders
- * exactly like a single-reward section.
+ * primary. `canClaimAll` only takes the button away — a section whose claim-all
+ * would take more than one transaction (the Sky farms — one `getReward` per
+ * farm) passes false while bundling is off. The row CTAs stay secondary there:
+ * the hierarchy belongs to the row count, so several rows don't each claim the
+ * primary just because the button above them is gone.
  *
  * Because the hierarchy flips as the read settles, the loading state renders a
  * skeleton of the same shape — heading row with a button-sized pill plus one
@@ -68,13 +69,13 @@ export function PortfolioRewardsSection({
 
   if (rewards.length === 0) return null;
 
-  const showClaimAll = rewards.length > 1 && canClaimAll;
+  const multiple = rewards.length > 1;
 
   return (
     <section data-testid={testId} className={SECTION}>
       <div className="flex min-h-10 items-center justify-between gap-6">
         <Heading>{title}</Heading>
-        {showClaimAll && (
+        {multiple && canClaimAll && (
           <Button
             variant="primary"
             size="m"
@@ -88,7 +89,7 @@ export function PortfolioRewardsSection({
       </div>
       <RewardsClaimTable
         rewards={rewards}
-        ctaVariant={showClaimAll ? 'secondary' : 'primary'}
+        ctaVariant={multiple ? 'secondary' : 'primary'}
         onClaim={onClaim}
         testId={`${testId}-table`}
       />

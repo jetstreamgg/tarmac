@@ -142,11 +142,17 @@ export function ChainModal({
       </div>
     ) : (
       <div
-        className={buttonVariants({
-          variant: triggerVariant,
-          size: triggerSize,
-          className: cn('pointer-events-none', triggerClasses)
-        })}
+        // Wrapped in `cn` exactly like `Button` does it: the variants alone
+        // leave both the base `rounded-xl` and the size's `rounded-full` in the
+        // class list, and the base wins on stylesheet order — tailwind-merge is
+        // what picks the pill radius.
+        className={cn(
+          buttonVariants({
+            variant: triggerVariant,
+            size: triggerSize,
+            className: cn('pointer-events-none', triggerClasses)
+          })
+        )}
         data-testid={dataTestId}
       >
         {pill}

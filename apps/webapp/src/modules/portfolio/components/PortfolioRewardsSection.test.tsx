@@ -107,13 +107,13 @@ describe('PortfolioRewardsSection', () => {
     expect(onClaimAll).toHaveBeenCalled();
   });
 
-  it('drops Claim all and restores primary row CTAs when the section cannot claim in one tx', () => {
+  it('drops Claim all but leaves the row CTAs secondary when the section cannot claim in one tx', () => {
     renderSection({ rewards: [SPK, GROVE], canClaimAll: false });
 
     expect(screen.queryByTestId('eco-claim-all')).toBeNull();
     screen
       .getAllByTestId('reward-claim-button')
-      .forEach(row => expect(row.className).toContain('from-button-gradient-start'));
+      .forEach(row => expect(row.className).toContain('to-white/8'));
   });
 
   it('leaves the Claim all placeholder out of the skeleton when it cannot claim in one tx', () => {
