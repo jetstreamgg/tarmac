@@ -86,7 +86,7 @@ Open Safe[Wallet]`
     id: 'staking-rewards-rates-srrs',
     title: 'Staking Rewards Rates (SRRs)',
     tooltip:
-      'SKY Staking Rewards are rate determined by Sky Governance through decentralized onchain voting. Sky.money does not control, set, or guarantee the rate. All yields are variable.'
+      'Staking Rewards Rates are determined by Sky Governance through decentralized onchain voting. Sky.money does not control, set, or guarantee the rates. All yields are variable.'
   },
   {
     id: 'staked',

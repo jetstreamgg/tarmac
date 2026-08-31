@@ -162,7 +162,7 @@ export function StakeManageStakeCard({
           <StakeManageStatCell
             label={
               <>
-                <Trans>SKY Rewards rate</Trans>
+                <Trans>Staking Rewards Rate</Trans>
                 <RateInfo type="srr" size={12} />
               </>
             }

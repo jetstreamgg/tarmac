@@ -111,7 +111,7 @@ export function RewardList({
                 <span className="flex shrink-0 items-center gap-4 md:gap-6">
                   <span className="flex flex-col items-end gap-0.5">
                     <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">
-                      <Trans>Rewards rate</Trans>
+                      <Trans>Staking Rewards Rate</Trans>
                       <RateInfo type="srr" size={12} />
                     </span>
                     <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
