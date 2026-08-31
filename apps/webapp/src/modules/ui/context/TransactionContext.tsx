@@ -83,6 +83,29 @@ function notifySignatureRequestAbandoned() {
   );
 }
 
+// Abandoning a MULTI-STEP flow whose earlier legs already mined. "Discarded"
+// is true of the request still sitting in the wallet, but on its own it reads
+// as "nothing happened" — and something did: the approve, or the DAI→USDS
+// upgrade leg, is on-chain and the balances have moved. Say so, or the user
+// walks away believing the flow left no trace.
+function notifyPartialAbandon() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Transaction stopped partway</Trans>}
+        description={
+          <Trans>
+            Earlier steps already completed on-chain, so your balances have changed. If your wallet still
+            shows a request, reject it there.
+          </Trans>
+        }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
 }
@@ -184,8 +207,10 @@ export function TransactionProvider({
   // An on-chain step of this session has mined: the engine's paused run is the
   // only memory of it, so a failure must resume, not reopen the inputs — the
   // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
-  // off-chain prelude.
+  // off-chain prelude. State for rendering, ref for the synchronous reads in
+  // the retry and abandon paths, which run from user events.
   const [hasMinedStep, setHasMinedStep] = useState(false);
+  const hasMinedStepRef = useRef(false);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
   // in the close snapshot. Reset on every launch and close — a prelude belongs
@@ -355,6 +380,12 @@ export function TransactionProvider({
       notifySignatureRequestAbandoned();
       return;
     }
+    // A multi-step flow abandoned after one of its legs mined is only a
+    // cancellation of the REMAINDER — the mined legs stand. Both surfaces say
+    // so: the toast warns that balances have already changed, and the event
+    // carries the distinction so a cancelled completion isn't read as "no
+    // on-chain effect".
+    const partiallyCompleted = hasMinedStepRef.current;
     const analytics = configRef.current?.analytics;
     if (analytics) {
       trackTransactionCompleted({
@@ -363,10 +394,14 @@ export function TransactionProvider({
         txStatus: 'cancelled',
         action: analytics.action,
         flow: analytics.flow,
-        data: analytics.data,
+        data: partiallyCompleted ? { ...analytics.data, partially_completed: true } : analytics.data,
         flowId: flowIdRef.current
       });
       startNewFlow();
+    }
+    if (partiallyCompleted) {
+      notifyPartialAbandon();
+      return;
     }
     notifyRequestAbandoned();
   }, [chainId, trackTransactionCompleted, startNewFlow, emitTermsSignatureDeclined]);
@@ -417,6 +452,7 @@ export function TransactionProvider({
       txHashRef.current = undefined;
       setCurrentStep(0);
       setHasMinedStep(false);
+      hasMinedStepRef.current = false;
       preludeStepsRef.current = null;
       setPreludeSteps(null);
       gateCopyRef.current = null;
@@ -539,6 +575,7 @@ export function TransactionProvider({
     txStatusRef.current = TxStatus.IDLE;
     setCurrentStep(0);
     setHasMinedStep(false);
+    hasMinedStepRef.current = false;
     preludeStepsRef.current = null;
     setPreludeSteps(null);
     gateCopyRef.current = null;
@@ -800,7 +837,15 @@ export function TransactionProvider({
     // The reset lives inside the gate: a denied retry must leave the failure
     // view in place, not clear it and then do nothing.
     runGated('retry', () => {
-      resetTransactionProgress();
+      // Only a run that restarts from the beginning goes back to step 0. Once a
+      // step has mined the engine RESUMES the leg it stopped on (APP-448), so
+      // resetting here pointed the step list at the approve while the wallet
+      // was being handed the supply — the list named the wrong transaction.
+      // The resumed onMutate fires at ERROR, not INITIALIZED/LOADING, so it
+      // doesn't advance the index either: leaving it put keeps the two in sync.
+      if (!hasMinedStepRef.current) {
+        resetTransactionProgress();
+      }
 
       if (configRef.current?.onRetry) {
         configRef.current.onRetry();
@@ -857,7 +902,10 @@ export function TransactionProvider({
       }
       // A sequential engine dispatches the next call only once the previous
       // receipt landed, so a write arriving over LOADING means a step mined.
-      if (txStatusRef.current === TxStatus.LOADING) setHasMinedStep(true);
+      if (txStatusRef.current === TxStatus.LOADING) {
+        setHasMinedStep(true);
+        hasMinedStepRef.current = true;
+      }
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
       txHashRef.current = undefined;

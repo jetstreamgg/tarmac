@@ -190,6 +190,58 @@ describe('TransactionModal abandon vs minimize (state-dependent dismissal)', () 
     );
   });
 
+  // Abandoning a multi-step flow after one of its legs mined. "Discarded" alone
+  // reads as "nothing happened", but the approve (or an upgrade leg) is on-chain
+  // and the balances have moved.
+  it('close after a mined step says the earlier steps already completed, and flags the event', () => {
+    const ctx = renderFlow({ ...SUPPLY_CONFIG, steps: ['Approve', 'Supply'] });
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate()); // approve → wallet
+    act(() => cb.onStart('0xapprove')); // approve broadcast
+    act(() => cb.onMutate()); // approve mined, supply → wallet
+    analytics.trackTransactionCompleted.mockClear();
+    toastWithCloseMock.mockClear();
+
+    act(() => fireEvent.click(screen.getByTestId('transaction-modal-close')));
+
+    // The toast names what actually happened rather than implying a clean slate.
+    const notice = renderLastToast();
+    expect(notice.getByText('Transaction stopped partway')).toBeDefined();
+    expect(
+      notice.getByText(
+        'Earlier steps already completed on-chain, so your balances have changed. If your wallet still shows a request, reject it there.'
+      )
+    ).toBeDefined();
+
+    // Still a cancellation, but marked so it is not read as "no on-chain effect".
+    expect(analytics.trackTransactionCompleted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        txStatus: 'cancelled',
+        data: expect.objectContaining({ partially_completed: true })
+      })
+    );
+  });
+
+  it('close before anything mined keeps the plain discarded notice, unflagged', () => {
+    const ctx = renderFlow({ ...SUPPLY_CONFIG, steps: ['Approve', 'Supply'] });
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate()); // approve → wallet, nothing broadcast or mined
+    analytics.trackTransactionCompleted.mockClear();
+    toastWithCloseMock.mockClear();
+
+    act(() => fireEvent.click(screen.getByTestId('transaction-modal-close')));
+
+    const notice = renderLastToast();
+    expect(notice.getByText('Transaction request discarded')).toBeDefined();
+    expect(analytics.trackTransactionCompleted).toHaveBeenCalledWith(
+      expect.objectContaining({ txStatus: 'cancelled' })
+    );
+    const { data } = analytics.trackTransactionCompleted.mock.calls.at(-1)![0];
+    expect(data?.partially_completed).toBeUndefined();
+  });
+
   it('close after broadcast (LOADING) still minimizes — the transaction is not torn down', () => {
     const ctx = renderFlow();
     const cb = cbOf(ctx);

@@ -160,3 +160,53 @@ describe('TransactionModal — Back after a failure (APP-448)', () => {
     expect(headerBack().disabled).toBe(true);
   });
 });
+
+// Which step the list points at once Retry resumes. The engine re-dispatches the
+// leg it stopped on, so a modal that reset to step 0 named the approve while the
+// wallet was holding the supply.
+describe('TransactionModal — the step list after Retry', () => {
+  beforeEach(() => i18n.activate('en'));
+  afterEach(() => vi.clearAllMocks());
+
+  // A step row shows its NUMBER until it completes, when a checkmark replaces it.
+  const stepCompleted = (n: number) => expect(screen.queryByText(String(n))).toBeNull();
+  const stepNotCompleted = (n: number) => expect(screen.queryByText(String(n))).not.toBeNull();
+
+  it('after a mined approve, Retry keeps the supply as the active step', () => {
+    const cb = renderConfirmedFlow(supplySteps);
+    act(() => cb.onMutate()); // approve → wallet
+    act(() => cb.onStart('0xapprove')); // approve broadcast
+    act(() => cb.onMutate()); // approve mined, supply → wallet
+    act(() => cb.onError(new Error('reverted'), '0xsupply'));
+
+    // The failure names the supply, and the approve stays completed.
+    expect(screen.getByText('Supply failed')).toBeDefined();
+    stepCompleted(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    act(() => cb.onMutate()); // the engine resumes the SUPPLY
+
+    // Still the supply in flight: the approve keeps its checkmark and the
+    // failure treatment is gone. A reset to step 0 would light the approve up
+    // again and re-number the rows.
+    stepCompleted(1);
+    stepNotCompleted(2);
+    expect(screen.queryByText('Approve failed')).toBeNull();
+    expect(screen.getByText('Supply')).toBeDefined();
+  });
+
+  it('with nothing mined, Retry still restarts the list at the first step', () => {
+    const cb = renderConfirmedFlow(supplySteps);
+    act(() => cb.onMutate()); // approve → wallet
+    act(() => cb.onError(new Error('User rejected the request'), ''));
+    expect(screen.getByText('Approve failed')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    act(() => cb.onMutate());
+
+    // The run restarts from the approve, so neither step is completed.
+    stepNotCompleted(1);
+    stepNotCompleted(2);
+    expect(screen.getByText('Approve')).toBeDefined();
+  });
+});
