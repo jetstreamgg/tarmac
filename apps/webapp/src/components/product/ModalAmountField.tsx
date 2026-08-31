@@ -4,6 +4,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { sanitizeAmountInput } from '@/lib/amountInput';
 import { cn } from '@/lib/cn';
+import { MODAL_STEP_EXIT_CLASSES } from '@/modules/ui/animation/modalStepMotion';
 import { AmountFieldHairline } from './amountFieldHairline';
 
 const PERCENT_PRESETS = [25, 50, 100] as const;
@@ -91,8 +92,29 @@ export function ModalAmountField({
     <div className="group flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="flex min-w-40 flex-1 flex-col gap-2">
-          <span className="font-graphik text-fgSecondary text-xs leading-[18px]">{label}</span>
-          <div className="flex items-center gap-2">
+          {/* The field's own departure (Figma 2685:148222). It does not simply
+              fade: the label and the value grow into the review hero's type
+              sizes (12→14 and 32→44, so 1.167x and 1.375x) about their shared
+              left edge, so the number appears to swell into the hero that
+              replaces it, while the balance and the chips leak away to the
+              right. Driven off the body layer's `data-step`, which is absent
+              outside the transaction modal — nothing moves there. */}
+          <span
+            className={cn(
+              'font-graphik text-fgSecondary origin-left text-xs leading-[18px]',
+              MODAL_STEP_EXIT_CLASSES,
+              'group-data-[step=exiting]/step:scale-[1.167]'
+            )}
+          >
+            {label}
+          </span>
+          <div
+            className={cn(
+              'flex origin-left items-center gap-2',
+              MODAL_STEP_EXIT_CLASSES,
+              'group-data-[step=exiting]/step:scale-[1.375]'
+            )}
+          >
             <TokenIcon
               token={{ symbol: tokenSymbol }}
               className="size-6 shrink-0"
@@ -112,8 +134,22 @@ export function ModalAmountField({
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2.5">
-          <span className="font-graphik text-fgSecondary text-xs leading-[18px]">{balance}</span>
-          <div className="flex items-center gap-4">
+          <span
+            className={cn(
+              'font-graphik text-fgSecondary text-xs leading-[18px]',
+              MODAL_STEP_EXIT_CLASSES,
+              'group-data-[step=exiting]/step:translate-x-5'
+            )}
+          >
+            {balance}
+          </span>
+          <div
+            className={cn(
+              'flex items-center gap-4',
+              MODAL_STEP_EXIT_CLASSES,
+              'group-data-[step=exiting]/step:translate-x-2.5'
+            )}
+          >
             {!isMobile && percentChips}
             {selector}
           </div>
@@ -127,7 +163,16 @@ export function ModalAmountField({
           chips and token selector above stay in normal colours regardless of
           state — only the hairline (and the error text itself) redden. */}
       <div className="flex flex-col gap-1">
-        <AmountFieldHairline hasError={hasError} />
+        {/* Figma animates the rule as a path length rather than a fade: it
+            retracts to its left edge as the field leaves. */}
+        {/* The transform rides a wrapper, not the rule itself: the hairline owns
+            a `transition-colors` for its own hover/error states, and merging a
+            second transition onto it would replace that one. */}
+        <div
+          className={cn('origin-left', MODAL_STEP_EXIT_CLASSES, 'group-data-[step=exiting]/step:scale-x-0')}
+        >
+          <AmountFieldHairline hasError={hasError} />
+        </div>
         {error}
       </div>
       {isMobile && percentChips}
