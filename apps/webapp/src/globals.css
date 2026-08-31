@@ -178,7 +178,7 @@
      the Strategy legend). Coincides with bg-tertiary in dark, diverges in light. */
   --color-badgeSecondary: rgba(188, 182, 239, 0.1);
   /* Chart track — the unutilized-liquidity tail of the Tokens Composition bar
-     and the empty arc of the cap-utilization pies (Figma 2682:68829). Dark is
+     and the empty ring of the cap-utilization donuts (Figma 2682:68829). Dark is
      colors/bg/bg-quarternary as drawn. Light deliberately is NOT: that variable
      resolves to white/20 there, which all but vanishes on both the lavender page
      and the white card (the same white-on-white trap the skeleton tokens hit) —

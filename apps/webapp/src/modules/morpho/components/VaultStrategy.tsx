@@ -6,14 +6,20 @@ import { Merkl } from '@/modules/icons';
 import { formatDecimalPercentage } from '@/utils';
 import { buildVaultStrategy, UNLIMITED_CAP, type StrategyCaps } from '../helpers/vaultStrategy';
 
+// DS Charts / Pie Chart geometry, measured off the Figma export (10px box):
+// the ring's outer edge sits on the box edge and the stroke is an eighth of the
+// box, which puts the stroke's centre line at 0.4375 — a donut, not a filled
+// pie. Kept as ratios so the glyph stays proportional at any `size`.
+const DONUT_RADIUS_RATIO = 0.4375;
+const DONUT_STROKE_RATIO = 0.125;
+
 /**
- * Cap-utilization pie (DS Charts / Pie Chart, 10px): a filled sweep in the
- * segment's own color over a chart-track disc. `value` is 0..1.
+ * Cap-utilization donut (DS Charts / Pie Chart, 10px): a round-capped sweep in
+ * the segment's own color over a chart-track ring. `value` is 0..1.
  */
-function CapUtilizationPie({ value, color, size = 10 }: { value: number; color: string; size?: number }) {
-  // A stroke of half the box on a quarter-box radius paints solid from the
-  // center to the edge, so one dashed circle draws the whole pie.
-  const radius = size / 4;
+function CapUtilizationDonut({ value, color, size = 10 }: { value: number; color: string; size?: number }) {
+  const radius = size * DONUT_RADIUS_RATIO;
+  const strokeWidth = size * DONUT_STROKE_RATIO;
   const circumference = 2 * Math.PI * radius;
   const filled = Math.min(Math.max(value, 0), 1);
 
@@ -24,18 +30,22 @@ function CapUtilizationPie({ value, color, size = 10 }: { value: number; color: 
         cy={size / 2}
         r={radius}
         fill="none"
-        strokeWidth={size / 2}
+        strokeWidth={strokeWidth}
         className="stroke-chartTrack"
       />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        strokeWidth={size / 2}
-        stroke={color}
-        strokeDasharray={`${circumference * filled} ${circumference}`}
-      />
+      {/* Skipped at zero: a round cap would still paint a dot for "0% filled". */}
+      {filled > 0 && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          stroke={color}
+          strokeDasharray={`${circumference * filled} ${circumference}`}
+        />
+      )}
     </svg>
   );
 }
@@ -58,7 +68,7 @@ function CapStat({
       <span className="text-fgSecondary font-graphik text-[11px] leading-4">{label}</span>
       <span className="text-text font-circle flex items-center gap-1 text-xs leading-[14px] font-medium tracking-[-0.24px]">
         {value}
-        {utilization !== undefined && <CapUtilizationPie value={utilization} color={color} />}
+        {utilization !== undefined && <CapUtilizationDonut value={utilization} color={color} />}
       </span>
     </div>
   );
