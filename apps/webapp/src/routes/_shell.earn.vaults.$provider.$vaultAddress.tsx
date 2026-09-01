@@ -1,14 +1,15 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Intent } from '@/lib/enums';
-import { keepSearch } from '@/lib/navigation';
+import { keepSearchFilteredTo } from '@/lib/navigation';
 import { providerForVaultModule } from '@/lib/vaults/vaultProviderMapping';
 import { VAULTS } from '@/hooks';
 import { VaultDetailPage } from '@/modules/vaults/components/VaultDetailPage';
 import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 
 // An unrecognised provider segment or an address that belongs to no known
-// vault of that provider falls back to the Earn marketplace. Which chain the
-// vault lives on is resolved by the page (chain-dependent).
+// vault of that provider falls back to the Earn marketplace, filtered to
+// vaults (APP-542) — the link asked for a vault, so the table shows vaults.
+// Which chain the vault lives on is resolved by the page (chain-dependent).
 export const Route = createFileRoute('/_shell/earn/vaults/$provider/$vaultAddress')({
   beforeLoad: async ({ context, params, location, search }) => {
     const provider = providerForVaultModule(params.provider);
@@ -19,7 +20,7 @@ export const Route = createFileRoute('/_shell/earn/vaults/$provider/$vaultAddres
         v => v.provider === provider && Object.values(v.vaultAddress).some(a => a?.toLowerCase() === address)
       );
     if (!isKnownVault) {
-      throw redirect({ to: '/earn', search: keepSearch, replace: true });
+      throw redirect({ to: '/earn', search: keepSearchFilteredTo(Intent.VAULTS_INTENT), replace: true });
     }
     // Unknown vaults fall back first, so a restricted region gets the marketplace
     // for a bogus URL rather than a geo redirect that implies the vault exists.

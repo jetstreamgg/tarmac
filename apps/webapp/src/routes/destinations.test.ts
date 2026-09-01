@@ -59,6 +59,12 @@ async function routerAt(path: string): Promise<AnyRouter> {
 const matchedRouteIds = (router: AnyRouter): string[] =>
   router.state.matches.map(match => match.routeId as string);
 
+// `notFoundMode: 'root'` flags the root match rather than clearing the partial
+// ones, so a path that resolves to the 404 screen is read from the flag — the
+// stale ancestor matches below it say nothing about what rendered.
+const isNotFound = (router: AnyRouter): boolean =>
+  router.state.matches.some(match => (match as { globalNotFound?: boolean }).globalNotFound === true);
+
 describe('target-IA destination routes', () => {
   it('boots /portfolio as a shell route', async () => {
     expect(matchedRouteIds(await routerAt(ROUTES.PORTFOLIO))).toContain('/_shell/portfolio');
@@ -82,19 +88,17 @@ describe('target-IA destination routes', () => {
     );
   });
 
-  it('redirects the bare /earn/rewards index to the Earn marketplace (D6 — no overview screen)', async () => {
-    const router = await routerAt(ROUTES.EARN_REWARDS);
+  // The bare family paths have no overview screen (D6 / G6). They land on the
+  // marketplace filtered to the family the URL named, rather than on the
+  // unfiltered table (APP-542).
+  it.each([
+    [ROUTES.EARN_REWARDS, 'rewards'],
+    [ROUTES.EARN_FIXED, 'fixed'],
+    [ROUTES.EARN_VAULTS, 'vault']
+  ])('redirects the bare %s index to the marketplace filtered to %s', async (path, product) => {
+    const router = await routerAt(`${path}?network=ethereum`);
     expect(router.state.location.pathname).toBe(ROUTES.EARN);
-  });
-
-  it('redirects the bare /earn/fixed index to the Earn marketplace (G6 — no overview screen)', async () => {
-    const router = await routerAt(ROUTES.EARN_FIXED);
-    expect(router.state.location.pathname).toBe(ROUTES.EARN);
-  });
-
-  it('redirects the bare /earn/vaults index to the Earn marketplace (G6 — no overview screen)', async () => {
-    const router = await routerAt(ROUTES.EARN_VAULTS);
-    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+    expect(router.state.location.search).toEqual({ network: 'ethereum', product });
   });
 
   it('declares the Balances intent on /portfolio for shell orchestration', async () => {
@@ -178,42 +182,78 @@ describe('root path', () => {
   });
 });
 
-describe('pre-flip module path redirects', () => {
+describe('legacy ?widget= deep links', () => {
+  // The query-param scheme is the only URL generation that ever reached
+  // production, so it is the only one with a compatibility layer. Every case
+  // resolves in one hop through the real router — no chain of path redirects.
   it.each([
-    ['/savings', ROUTES.EARN_SAVINGS],
-    // /rewards, /vaults and /fixed chain through their /earn/* module paths,
-    // whose indexes forward to /earn (D6 / G6).
-    ['/rewards', ROUTES.EARN],
-    ['/vaults', ROUTES.EARN],
-    ['/fixed', ROUTES.EARN],
-    ['/expert', ROUTES.EARN_STUSDS],
-    ['/expert/stusds', ROUTES.EARN_STUSDS]
-  ])('redirects %s to %s', async (from, to) => {
+    ['/?widget=balances', ROUTES.PORTFOLIO],
+    ['/?widget=savings', ROUTES.EARN_SAVINGS],
+    ['/?widget=stake', '/stake'],
+    ['/?widget=trade', ROUTES.CONVERT],
+    ['/?widget=upgrade', ROUTES.CONVERT],
+    ['/?widget=convert&convert_module=psm', ROUTES.CONVERT],
+    ['/?widget=expert', ROUTES.EARN_STUSDS],
+    ['/?widget=expert&expert_module=stusds', ROUTES.EARN_STUSDS]
+  ])('resolves %s to %s', async (from, to) => {
     const router = await routerAt(from);
     expect(router.state.location.pathname).toBe(to);
   });
 
-  // The Expert module collapsed into /earn/stusds (D7) — its old /earn URLs
-  // (both generations could have been bookmarked) forward there.
-  it.each([['/earn/expert'], ['/earn/expert/stusds']])(
-    'redirects the retired %s to /earn/stusds',
-    async from => {
-      const router = await routerAt(from);
-      expect(router.state.location.pathname).toBe(ROUTES.EARN_STUSDS);
-    }
-  );
-
-  it('keeps entity segments in the path and preserves search params', async () => {
+  it('carries an entity deep link through to its product page, preserving search', async () => {
     const reward = '0x0650CAF159C5A49f711e8169D4336ECB9b950275';
-    const router = await routerAt(`/rewards/${reward}?network=ethereum`);
+    const router = await routerAt(`/?widget=rewards&reward=${reward}&network=ethereum`);
     expect(router.state.location.pathname).toBe(`${ROUTES.EARN_REWARDS}/${reward}`);
     expect(router.state.location.search).toEqual({ network: 'ethereum' });
   });
 
-  it('translates legacy ?widget= deep links through to the /earn destination', async () => {
-    const router = await routerAt('/?widget=savings&network=base');
-    expect(router.state.location.pathname).toBe(ROUTES.EARN_SAVINGS);
-    expect(router.state.location.search).toEqual({ network: 'base' });
+  it('resolves a legacy market address to its slug page', async () => {
+    const market = PENDLE_MARKETS[0];
+    const router = await routerAt(`/?widget=fixed&fixed_module=market&market=${market.marketAddress}`);
+    expect(router.state.location.pathname).toBe(`${ROUTES.EARN_FIXED}/${market.slug}`);
+  });
+
+  it('resolves a legacy vault deep link to its detail page', async () => {
+    const vaultAddress = Object.values(MORPHO_VAULTS[0].vaultAddress)[0]!;
+    const router = await routerAt(`/?widget=vaults&vault_module=morpho&vault=${vaultAddress}`);
+    expect(router.state.location.pathname).toBe(`${ROUTES.EARN_VAULTS}/morpho/${vaultAddress}`);
+  });
+
+  // APP-542: the sky.money CTAs used these three widgets, and landing on the
+  // unfiltered marketplace read as a broken link.
+  it.each([
+    ['/?widget=fixed&network=ethereum', 'fixed'],
+    ['/?widget=vaults&network=ethereum', 'vault'],
+    ['/?widget=rewards&network=ethereum', 'rewards']
+  ])('resolves %s to the marketplace filtered to %s', async (from, product) => {
+    const router = await routerAt(from);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+    expect(router.state.location.search).toEqual({ network: 'ethereum', product });
+  });
+
+  it('filters rather than drops when the entity params are unusable', async () => {
+    // `spark` is the pre-rename vault_module value; no provider resolves it.
+    const router = await routerAt('/?widget=vaults&vault_module=spark&vault=0xdead');
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+    expect(router.state.location.search).toEqual({ product: 'vault' });
+  });
+
+  // The path generations between the query-param app and this one never
+  // reached production, so they are deliberately unsupported: no link in the
+  // wild points at them, and carrying them would mean a two-hop redirect.
+  it.each([
+    ['/savings'],
+    ['/rewards'],
+    ['/vaults'],
+    ['/fixed'],
+    ['/expert'],
+    ['/expert/stusds'],
+    ['/earn/expert'],
+    ['/convert/psm'],
+    ['/convert/trade']
+  ])('leaves the never-shipped path %s at the 404 screen', async from => {
+    const router = await routerAt(from);
+    expect(isNotFound(router)).toBe(true);
   });
 });
 
@@ -226,9 +266,10 @@ describe('fixed (Pendle) market detail routes', () => {
     expect(match).toBeDefined();
   });
 
-  it('falls back to the Earn marketplace for an unknown slug', async () => {
+  it('falls back to the Earn marketplace, filtered to fixed, for an unknown slug', async () => {
     const router = await routerAt(`${ROUTES.EARN_FIXED}/pt-does-not-exist`);
     expect(router.state.location.pathname).toBe(ROUTES.EARN);
+    expect(router.state.location.search).toEqual({ product: 'fixed' });
   });
 
   it('keeps a matured market on its detail page — the claim card lives there now', async () => {
@@ -261,14 +302,13 @@ describe('vault detail routes', () => {
     expect(match).toBeDefined();
   });
 
-  it('falls back to the Earn marketplace for an unknown vault address', async () => {
-    const router = await routerAt(`${ROUTES.EARN_VAULTS}/morpho/0x000000000000000000000000000000000000dEaD`);
+  it.each([
+    ['an unknown vault address', `${ROUTES.EARN_VAULTS}/morpho/0x000000000000000000000000000000000000dEaD`],
+    ['an unrecognised provider segment', `${ROUTES.EARN_VAULTS}/bogus/${vaultAddress}`]
+  ])('falls back to the Earn marketplace, filtered to vaults, for %s', async (_case, path) => {
+    const router = await routerAt(path);
     expect(router.state.location.pathname).toBe(ROUTES.EARN);
-  });
-
-  it('falls back to the Earn marketplace for an unrecognised provider segment', async () => {
-    const router = await routerAt(`${ROUTES.EARN_VAULTS}/bogus/${vaultAddress}`);
-    expect(router.state.location.pathname).toBe(ROUTES.EARN);
+    expect(router.state.location.search).toEqual({ product: 'vault' });
   });
 });
 
