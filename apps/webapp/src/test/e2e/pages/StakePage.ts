@@ -100,6 +100,10 @@ export class StakePage {
 
     if (usds) {
       await this.takeoverBorrowToggle().click();
+      // Borrow input stays disabled until the debounced stake simulation clears
+      // the min-collateral gate — the stake card's min-stake stat is the same
+      // readiness signal the mobile comp specs already wait on.
+      await expect(this.page.getByTestId('stake-takeover-min-stake')).toBeVisible({ timeout: 60_000 });
       const borrowAmount = this.takeoverBorrowAmount();
       await expect(borrowAmount).toBeEnabled({ timeout: 60_000 });
       await borrowAmount.fill(usds);

@@ -186,17 +186,21 @@ test('statistics and about tabs lead with the promo card at the phone tier', asy
   const chartBox = await chart.boundingBox();
   expect(engineBox!.y).toBeLessThan(chartBox!.y);
 
-  // Comp 1222:17233 order: promo card above the About copy; links stack as
-  // full-width rows.
+  // Comp 1222:17233 order: promo card above the About copy; the two shipped
+  // links (View contract, Governance) stack as full-width rows — Docs is held
+  // back until staking docs exist (see StakeAboutTab.tsx).
   await stakeDeepLink(isolatedPage, 'tab=about');
   const aboutCopy = isolatedPage.getByTestId('stake-about-copy');
   await expect(aboutCopy).toBeVisible({ timeout: 15_000 });
   const engineBox2 = await isolatedPage.getByTestId('stake-engine-card').boundingBox();
   const aboutBox = await aboutCopy.boundingBox();
   expect(engineBox2!.y).toBeLessThan(aboutBox!.y);
-  const docsLink = isolatedPage.getByRole('link', { name: 'Docs' });
-  const docsBox = await docsLink.boundingBox();
-  expect(docsBox!.width).toBeGreaterThan(300);
+  const governanceLink = isolatedPage.getByTestId('stake-about-links').getByRole('link', {
+    name: 'Governance'
+  });
+  await expect(governanceLink).toBeVisible();
+  const governanceBox = await governanceLink.boundingBox();
+  expect(governanceBox!.width).toBeGreaterThan(300);
 });
 
 test('populated positions tab stacks per the mobile comp', async ({ isolatedPage }) => {
