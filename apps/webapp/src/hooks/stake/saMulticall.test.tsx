@@ -17,7 +17,8 @@ import {
   getStakeOpenCalldata,
   getStakeSelectDelegateCalldata,
   getStakeSelectRewardContractCalldata,
-  getStakeWipeAllCalldata
+  getStakeWipeAllCalldata,
+  getStakeWipeCalldata
 } from './calldata';
 import { skyAddress, lsSkyUsdsRewardAddress } from '../generated';
 import { useUrnSelectedRewardContract } from './useUrnSelectedRewardContract';
@@ -36,6 +37,7 @@ describe('Stake Module Multicall tests', async () => {
   const skyToLockStr = '1200000';
   const SKY_TO_LOCK = parseEther(skyToLockStr);
   const USDS_TO_DRAW = parseEther('30000');
+  const USDS_TO_PARTIALLY_WIPE = parseEther('10000');
   const SELECTED_DELEGATE = '0x173a1c04b79ed9266721c1154daa29addc0b9558'; // BLUE
   const LOADING_TIMEOUT = 15000;
   const ILK_NAME = getIlkName(2);
@@ -364,6 +366,63 @@ describe('Stake Module Multicall tests', async () => {
       () => {
         // SKY balance is full since no exit fee applies
         expect(resultSkyBalance.current.data?.value).toBe(SKY_TO_LOCK);
+        return;
+      },
+      { timeout: 5000 }
+    );
+  });
+
+  // `wipe` (partial repay) is the one stake write the rest of this suite never
+  // executes — every other repay path here goes through `wipeAll`. Covered on
+  // the multicall path so the encoder is exercised against a fork, not just
+  // byte-compared in the useStakeCalldata golden test.
+  it('Can partially repay debt with a wipe calldata', async () => {
+    const urnAddress = await getUrnAddress(URN_INDEX, useUrnAddress);
+
+    const { result: resultVaultBefore } = renderHook(() => useVault(urnAddress, ILK_NAME), {
+      wrapper
+    });
+
+    let debtBefore: bigint | undefined;
+    await waitFor(
+      () => {
+        debtBefore = resultVaultBefore.current.data?.debtValue;
+        expect(debtBefore).toBeDefined();
+        expect(debtBefore).not.toEqual(0n);
+        return;
+      },
+      { timeout: 5000 }
+    );
+
+    const calldataWipe = getStakeWipeCalldata({
+      ownerAddress: TEST_WALLET_ADDRESS,
+      urnIndex: URN_INDEX,
+      amount: USDS_TO_PARTIALLY_WIPE
+    });
+
+    const { result: resultMulticall } = renderHook(
+      () =>
+        useStakeMulticall({
+          calldata: [calldataWipe],
+          gas: GAS
+        }),
+      { wrapper }
+    );
+
+    await waitForPreparedExecuteAndMine(resultMulticall, LOADING_TIMEOUT);
+
+    // Debt drops, but the position stays open — that is what separates `wipe`
+    // from `wipeAll`.
+    const { result: resultVaultAfter } = renderHook(() => useVault(urnAddress, ILK_NAME), {
+      wrapper
+    });
+
+    await waitFor(
+      () => {
+        const debtAfter = resultVaultAfter.current.data?.debtValue;
+        expect(debtAfter).toBeDefined();
+        expect(debtAfter! > 0n).toBe(true);
+        expect(debtAfter! < debtBefore!).toBe(true);
         return;
       },
       { timeout: 5000 }

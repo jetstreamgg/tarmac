@@ -5,24 +5,17 @@ import { SavingsSupply } from './SavingsSupply';
 import { Failure } from './Failure';
 import { RewardsModule } from './RewardsModule';
 import { LinkExternal } from './LinkExternal';
-import { Metrics } from './Metrics';
 import { Rewards } from './Rewards';
 import { RewardsEmpty } from './RewardsEmpty';
 import { Savings } from './Savings';
 import { Usds } from './Usds';
 import { Earn } from './Earn';
-import { Supply } from './Supply';
 import { Supplied } from './Supplied';
 import { SuppliedEmpty } from './SuppliedEmpty';
-import { Success } from './Success';
 import { TransactionsEmpty } from './TransactionsEmpty';
-import { Unavailable } from './Unavailable';
-import { Withdraw } from './Withdraw';
 import { Withdrawn } from './Withdrawn';
 import { WithdrawnEmpty } from './WithdrawnEmpty';
-import { Upgrade } from './Upgrade';
 import { Balances } from './Balances';
-import { Info } from './Info';
 import { LightningFilled } from './LightningFilled';
 import { Close } from './Close';
 import { FilterX } from './FilterX';
@@ -37,8 +30,6 @@ import { Expert } from './Expert';
 import { Delegate } from './Delegate';
 import { Borrow } from './Borrow';
 import { ClaimRewards } from './ClaimRewards';
-import { CurveSavingsSupply } from './CurveSavingsSupply';
-import { CurveSavingsWithdraw } from './CurveSavingsWithdraw';
 import { Liquidated } from './Liquidated';
 import { Repaid } from './Repaid';
 import { SelectRewards } from './SelectRewards';
@@ -47,7 +38,6 @@ import { Convert } from './Convert';
 import { ConvertArrows } from './ConvertArrows';
 import { Wallet } from './Wallet';
 import { Pendle } from './Pendle';
-import { Merkl } from './Merkl';
 import { StarsFilled } from './StarsFilled';
 import { SparklesMorpho } from './SparklesMorpho';
 import { TrendingDown } from './TrendingDown';
@@ -55,7 +45,6 @@ import { TrendingUp } from './TrendingUp';
 import { TrendingUpGradient } from './TrendingUpGradient';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
-import { IllustrationSkyLogomark } from './IllustrationSkyLogomark';
 
 export {
   ArrowDown,
@@ -65,24 +54,17 @@ export {
   Failure,
   RewardsModule,
   LinkExternal,
-  Metrics,
   Rewards,
   RewardsEmpty,
   Savings,
   Usds,
   Earn,
-  Supply,
   Supplied,
   SuppliedEmpty,
-  Success,
   TransactionsEmpty,
-  Unavailable,
-  Withdraw,
   Withdrawn,
   WithdrawnEmpty,
-  Upgrade,
   Balances,
-  Info,
   LightningFilled,
   Close,
   FilterX,
@@ -97,8 +79,6 @@ export {
   Delegate,
   Borrow,
   ClaimRewards,
-  CurveSavingsSupply,
-  CurveSavingsWithdraw,
   Liquidated,
   Repaid,
   SelectRewards,
@@ -107,13 +87,11 @@ export {
   ConvertArrows,
   Wallet,
   Pendle,
-  Merkl,
   StarsFilled,
   SparklesMorpho,
   TrendingDown,
   TrendingUp,
   TrendingUpGradient,
   IllustrationStaked,
-  IllustrationStakingLogomark,
-  IllustrationSkyLogomark
+  IllustrationStakingLogomark
 };

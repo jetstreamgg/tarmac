@@ -35,7 +35,7 @@ const navigateMock = vi.fn();
 let mockEntityParams: Record<string, string | undefined> = {};
 
 vi.mock('@/widgets', () => ({
-  MorphoVaultWidget: ({ onWidgetStateChange }: { onWidgetStateChange?: (params: any) => void }) => {
+  VaultWidget: ({ onWidgetStateChange }: { onWidgetStateChange?: (params: any) => void }) => {
     captured.onWidgetStateChange = onWidgetStateChange;
     return <div>morpho-vault-widget</div>;
   },

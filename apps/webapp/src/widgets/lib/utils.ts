@@ -1,10 +1,6 @@
 import { z } from 'zod';
-import { upgradeTokens } from '@/widgets/UpgradeWidget/lib/constants';
 import { defaultConfig } from '../config/default-config';
-import { SUPPORTED_TOKEN_SYMBOLS } from '..';
 import { SavingsFlow } from '../SavingsWidget/lib/constants';
-import { TradeFlow } from '../TradeWidget/lib/constants';
-import { UpgradeFlow } from '../UpgradeWidget/lib/constants';
 import { ExternalWidgetState } from '@/widgets/shared/types/widgetState';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
 
@@ -61,77 +57,26 @@ const TokenSchema = z.object({
 });
 
 const createExternalWidgetStateSchema = (allowedTokens?: string[]) =>
-  z
-    .object({
-      initialUpgradeToken: z.enum(Object.keys(upgradeTokens) as [string, ...string[]]).optional(),
-      amount: amountValidationRule,
-      selectedRewardContract: z
-        .object({
-          supplyToken: TokenSchema,
-          rewardToken: TokenSchema,
-          contractAddress: z.string(),
-          chainId: z.number(),
-          name: z.string(),
-          description: z.string(),
-          externalLink: z.string(),
-          logo: z.string()
-        })
-        .optional(),
-      targetAmount: amountValidationRule,
-      flow: z
-        .enum([
-          ...Object.values(SavingsFlow),
-          ...Object.values(UpgradeFlow),
-          ...Object.values(TradeFlow),
-          ...Object.values(BalancesFlow)
-        ] as [string, ...string[]])
-        .optional(),
-      token: createTokenValidationRule(allowedTokens),
-      targetToken: createTokenValidationRule(allowedTokens)
-    })
-    .refine(
-      data => {
-        if (
-          data.targetToken === undefined ||
-          data.token === undefined ||
-          defaultConfig.tradeDisallowedPairs === undefined
-        ) {
-          return true;
-        }
-        const input = data.token;
-        const target = data.targetToken;
-        if (
-          defaultConfig.tradeDisallowedPairs[input] &&
-          defaultConfig.tradeDisallowedPairs[input].includes(target as SUPPORTED_TOKEN_SYMBOLS)
-        ) {
-          return false;
-        }
-        if (
-          defaultConfig.tradeDisallowedPairs[target] &&
-          defaultConfig.tradeDisallowedPairs[target].includes(input as SUPPORTED_TOKEN_SYMBOLS)
-        ) {
-          return false;
-        }
-        if (target === input) {
-          return false;
-        }
-        return true;
-      },
-      {
-        error: 'token and targetToken cannot be tradeped'
-      }
-    )
-    .refine(
-      data => {
-        if (data.amount !== undefined && data.targetAmount !== undefined) {
-          return false;
-        }
-        return true;
-      },
-      {
-        error: 'Cannot have both an amount and a targetAmount'
-      }
-    );
+  z.object({
+    amount: amountValidationRule,
+    selectedRewardContract: z
+      .object({
+        supplyToken: TokenSchema,
+        rewardToken: TokenSchema,
+        contractAddress: z.string(),
+        chainId: z.number(),
+        name: z.string(),
+        description: z.string(),
+        externalLink: z.string(),
+        logo: z.string()
+      })
+      .optional(),
+    flow: z
+      .enum([...Object.values(SavingsFlow), ...Object.values(BalancesFlow)] as [string, ...string[]])
+      .optional(),
+    token: createTokenValidationRule(allowedTokens),
+    targetToken: createTokenValidationRule(allowedTokens)
+  });
 
 // returns undefined if any part of validation fails
 // we could update this to return the parts of the state that are valid even if others parts failed
