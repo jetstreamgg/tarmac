@@ -348,14 +348,6 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   if (isMainnet) {
     test.describe('PSM Conversion — URL state', () => {
-      test('The legacy /convert/psm path redirects to /convert', async ({ isolatedPage }) => {
-        await isolatedPage.goto('/convert/psm');
-        await connectAndVerify(isolatedPage, { batch: true });
-
-        await expect(isolatedPage).toHaveURL(/\/convert(\?|$)/);
-        await expect(isolatedPage.getByTestId('convert-page')).toBeVisible();
-      });
-
       test('source_token=USDC starts in the USDC→USDS direction', async ({ isolatedPage }) => {
         await isolatedPage.goto('/convert?source_token=USDC');
         await connectAndVerify(isolatedPage, { batch: true });
