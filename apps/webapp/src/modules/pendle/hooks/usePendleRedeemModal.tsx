@@ -18,6 +18,7 @@ import {
 } from '@/hooks';
 import { familyMainnetId, formatBigInt, isTestnetId } from '@/utils';
 import { Intent } from '@/lib/enums';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
@@ -27,6 +28,7 @@ import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
@@ -94,6 +96,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     },
     onError: (err, hash) => txCallbacks.onError(err, hash)
   });
+  useResetPausedRunOnClose(writeHook.reset);
 
   // Map raw revert messages to user-friendly copy — shared with the buy/sell
   // modal so users see consistent guidance across all three flows. Only while
@@ -303,6 +306,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     }
     launch({
       usdValue,
+      // Pendle redemption is mainnet-only — guard the modal off any L2 (APP-528).
+      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
       title: t`Claim matured position`,
       transactionTitle: t`Confirm in the wallet`,
       subtitles: {

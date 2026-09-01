@@ -64,7 +64,7 @@ export type SupplyModalRowInput = {
 export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalGridRow[] {
   const networkFee = networkFeeCell(input.networkFee);
   return [
-    [rateCell('Savings rate', input.savingsRate, 'savings'), networkCell(input.network)],
+    [rateCell('Savings rate', input.savingsRate, 'savings', 'ssr'), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: 'USDS' },
@@ -113,7 +113,7 @@ export type WithdrawModalRowInput = {
  */
 export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsModalGridRow[] {
   return [
-    [rateCell('Savings rate', input.savingsRate, 'savings'), networkCell(input.network)],
+    [rateCell('Savings rate', input.savingsRate, 'savings', 'ssr'), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: 'USDS' },
@@ -163,7 +163,7 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
       // the vault and stUSDS reviews do.
       estEarningsTrendCell(input.estEarnings, 'USDS')
     ],
-    [productCell(input.product, 'sUSDS', 'default'), rateCell('Rate', input.rate, 'savings')],
+    [productCell(input.product, 'sUSDS', 'default'), rateCell('Rate', input.rate, 'savings', 'ssr')],
     [withdrawalCell(input.withdrawal), networkCell(input.network)],
     [networkFeeCell(input.networkFee)]
   ];
@@ -200,7 +200,7 @@ export function buildWithdrawReviewRows(input: WithdrawReviewRowInput): SavingsM
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
       estEarningsTrendCell(input.estEarnings, 'USDS')
     ],
-    [productCell(input.product, 'sUSDS', 'default'), rateCell('Rate', input.rate, 'savings')],
+    [productCell(input.product, 'sUSDS', 'default'), rateCell('Rate', input.rate, 'savings', 'ssr')],
     [withdrawalCell(input.withdrawal), networkCell(input.network)],
     [networkFeeCell(input.networkFee)]
   ];

@@ -21,6 +21,7 @@ import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RateInfo } from '@/components/product/RateInfo';
 
 // Inline token chip (hi-fi 486:31955). `headline` variant is 24px and flows in
 // the heading text (vertically centered, with breathing room); `stat` variant is
@@ -163,6 +164,7 @@ export function StakeEngineCard() {
             isLoading={rewardsLoading}
           >
             {rewardsRate}
+            <RateInfo type="srr" />
           </Stat>
           <Stat
             label={<Trans>Min. borrow amount</Trans>}

@@ -56,6 +56,8 @@ export interface ProductDetailRow {
   icon: ReactNode;
   label: ReactNode;
   value: ReactNode;
+  /** Info glyph after the label (the rate rows' explainer, APP-540). */
+  info?: ReactNode;
 }
 
 /**
@@ -168,6 +170,7 @@ function DetailsSection({
             <span className="text-fgSecondary flex items-center gap-1.5 text-xs leading-[18px] md:gap-2 md:text-sm md:leading-[22px]">
               {row.icon}
               {row.label}
+              {row.info}
             </span>
             <span className="text-text font-circle text-right text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
               {row.value}

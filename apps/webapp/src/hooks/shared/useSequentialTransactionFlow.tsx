@@ -87,6 +87,10 @@ export function useSequentialTransactionFlow(
       },
       onError: (err: Error) => {
         setHasWriteError(true);
+        // Nothing has mined after a first-call rejection, so there is nothing to
+        // resume — and a snapshot kept here would have the next confirm sign the
+        // pre-rejection call after the user went back and edited it (APP-448).
+        if (currentIndex === 0) setIsExecuting(false);
         onError(err, mutationHash || '');
       }
     }

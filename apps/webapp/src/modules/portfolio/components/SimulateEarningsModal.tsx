@@ -64,8 +64,9 @@ export function SimulateEarningsModal({
           </div>
           <DialogDescription className="text-textSecondary text-sm">
             <Trans>
-              Projections assume current rate held constant. Sky Savings Rate is variable and updates daily.
-              Not financial advice.
+              Projections assume the current rate held constant. The Sky Savings Rate is variable and updates
+              daily; it is a protocol rate funded from aggregate Sky protocol surplus. sUSDS is not exposure
+              to any specific Agent, borrower, collateral pool, or asset strategy. Not financial advice.
             </Trans>
           </DialogDescription>
         </div>

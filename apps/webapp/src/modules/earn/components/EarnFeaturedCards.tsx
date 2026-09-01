@@ -16,6 +16,7 @@ import { formatUsdCompact } from '../helpers/formatUsdCompact';
 import { NO_VALUE } from '@/lib/constants';
 import { remainingDaysToMaturity } from '../helpers/daysToMaturity';
 import { FixedYieldTerm } from './FixedYieldTerm';
+import { rateInfoFor, RateInfo } from '@/components/product/RateInfo';
 
 /** The row's rate, or an inline skeleton while its source is still loading. */
 function RateFigure({ row, className = 'h-4 w-12' }: { row: EarnProductRow; className?: string }) {
@@ -73,7 +74,11 @@ function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="flex h-10 flex-col justify-between md:h-11">
       <span className="text-fgSecondary text-xs leading-[18px]">{label}</span>
-      <span className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
+      {/* The value slot is pinned to its own line height and centres what it
+          holds, rather than letting the content sit on the text baseline: the
+          risk pill is a 15px box with no text in it, so baseline alignment
+          hangs it ~3.5px below the neighbouring figures. */}
+      <span className="text-fgPrimary font-circle flex h-[18px] items-center text-base leading-[18px] font-medium tracking-[-0.32px] md:h-[22px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
         {children}
       </span>
     </div>
@@ -152,8 +157,8 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
         </h3>
         <p className="text-fgSecondary max-w-[479px] text-xs leading-[18px]">
           <Trans>
-            Governed by Sky Ecosystem to deliver the best risk-adjusted yield, sUSDS allows you to grow your
-            holdings with instant liquidity and zero fees.
+            sUSDS gives you simple access to the Sky Savings Rate, with instant liquidity and zero fees. The
+            rate is variable, funded from Sky&apos;s protocol surplus.
           </Trans>
         </p>
       </div>
@@ -174,11 +179,15 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
             </span>
           </div>
           <div className="bg-borderPrimary h-8 w-px shrink-0" />
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <span className="text-fgSecondary text-xs leading-[18px]">
               <Trans>Risk</Trans>
             </span>
-            <RiskTierDetailsTrigger profile={row.riskProfile} />
+            {/* Same centred value slot as `Stat` — it lines the pill up with
+                the TVL figure beside it instead of nudging it with the gap. */}
+            <span className="flex h-[22px] items-center">
+              <RiskTierDetailsTrigger profile={row.riskProfile} />
+            </span>
           </div>
         </div>
         <Button variant="primary" size="l" className="w-28" onClick={onSupply}>
@@ -220,14 +229,17 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     title: () => <Trans>Sky Savings</Trans>,
     description: () => (
       <Trans>
-        Governed by Sky Ecosystem to deliver the best risk-adjusted yield, sUSDS allows you to grow your
-        holdings with instant liquidity and zero fees.
+        sUSDS gives you simple access to the Sky Savings Rate, with instant liquidity and zero fees. The rate
+        is variable, funded from Sky&apos;s protocol surplus.
       </Trans>
     ),
     stats: row => (
       <>
         <Stat label={<RateLabel />}>
-          <RateFigure row={row} />
+          <span className="flex items-center gap-1.5">
+            <RateFigure row={row} />
+            <RateInfo type={rateInfoFor(row)} />
+          </span>
         </Stat>
         <StatDivider />
         <Stat label={<Trans>Risk</Trans>}>
@@ -262,10 +274,7 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
       const days = row.maturity ? remainingDaysToMaturity(row.maturity, now) : undefined;
       return (
         <>
-          <Trans>
-            Fixed yield markets let you supply USDS and walk away with a guaranteed return at the market
-            maturity.
-          </Trans>{' '}
+          <Trans>Your rate is fixed when you supply.</Trans>{' '}
           <FixedYieldTerm rate={row.rate.formatted} days={days} />
         </>
       );
@@ -273,7 +282,10 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
     stats: row => (
       <>
         <Stat label={<RateLabel />}>
-          <RateFigure row={row} />
+          <span className="flex items-center gap-1.5">
+            <RateFigure row={row} />
+            <RateInfo type={rateInfoFor(row)} />
+          </span>
         </Stat>
         <StatDivider />
         {row.maturity && (

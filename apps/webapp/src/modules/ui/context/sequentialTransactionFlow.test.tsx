@@ -35,7 +35,13 @@ const wagmi = vi.hoisted(() => ({
 
 vi.mock('wagmi', () => ({
   useConnection: () => ({ connector: undefined }),
-  useSimulateContract: () => ({ data: { request: { __mock: 'request' } }, isLoading: false, error: null }),
+  // Echo the simulated call back on the request so a test can see WHICH call a
+  // dispatch was prepared from.
+  useSimulateContract: (params: { functionName?: string }) => ({
+    data: { request: { __mock: 'request', functionName: params.functionName } },
+    isLoading: false,
+    error: null
+  }),
   useWriteContract: (opts: {
     mutation: {
       onMutate?: () => void;
@@ -366,5 +372,71 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0][1]).toBe('0xapprove');
+  });
+});
+
+// APP-448 — what a confirm after a wallet rejection executes. The engine
+// rebuilds `calls` from the live form; a stand-in call name plays the part of
+// "same call, edited args".
+describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-448)', () => {
+  beforeEach(resetWagmi);
+  afterEach(() => vi.clearAllMocks());
+
+  const lastDispatchedCall = () =>
+    (wagmi.writeContract.mock.calls.at(-1)?.[0] as { functionName?: string } | undefined)?.functionName;
+
+  it('a rejection of the FIRST call drops the snapshot: the next confirm dispatches the rebuilt call', () => {
+    let calls: Call[] = [SUPPLY];
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }));
+
+    act(() => result.current.execute());
+    expect(lastDispatchedCall()).toBe('supply');
+
+    // The wallet rejects the only call — nothing mined.
+    act(() => {
+      wagmi.mutationHash = undefined;
+      wagmi.onWriteError?.(new Error('User rejected the request'));
+    });
+    // Back, edit the amount: the engine rebuilds the call.
+    calls = [makeCall('supply-edited')];
+    rerender();
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+    expect(lastDispatchedCall()).toBe('supply-edited');
+    expect(result.current.currentCallIndex).toBe(0);
+  });
+
+  it('a rejection AFTER a mined step keeps the snapshot: the retry dispatches the frozen call, not a rebuilt one', () => {
+    let calls: Call[] = [APPROVE, SUPPLY];
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }));
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(result.current.currentCallIndex).toBe(1);
+    expect(lastDispatchedCall()).toBe('supply');
+
+    // The wallet rejects the supply; the live calls have moved on (allowance
+    // landed, and a rebuild would carry whatever the form says now).
+    act(() => {
+      wagmi.mutationHash = undefined;
+      wagmi.onWriteError?.(new Error('User rejected the request'));
+    });
+    calls = [makeCall('supply-edited')];
+    rerender();
+
+    // Try again resumes the paused run — the mined approve is its only memory.
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+    expect(lastDispatchedCall()).toBe('supply');
+    expect(result.current.currentCallIndex).toBe(1);
   });
 });

@@ -33,7 +33,9 @@ const h = vi.hoisted(() => ({
   conversion: {
     disabledReason: undefined as string | undefined,
     targetToken: { symbol: 'USDC' }
-  }
+  },
+  locked: false,
+  restore: vi.fn()
 }));
 
 vi.mock('posthog-js/react', async () => {
@@ -57,7 +59,13 @@ vi.mock('../hooks/useConvertForm', () => ({
 }));
 
 vi.mock('../hooks/useConvertLaunch', () => ({
-  useConvertLaunch: () => ({ launch: h.launch, conversion: h.conversion, steps: [] })
+  useConvertLaunch: () => ({
+    launch: h.launch,
+    conversion: h.conversion,
+    steps: [],
+    locked: h.locked,
+    restore: h.restore
+  })
 }));
 
 // Connect-then-act passes the action through when connected (the real provider
@@ -90,6 +98,7 @@ beforeEach(() => {
   h.form.insufficient = false;
   h.form.isConnected = true;
   h.conversion.disabledReason = undefined;
+  h.locked = false;
 });
 
 afterEach(cleanup);
@@ -139,5 +148,19 @@ describe('ConvertPage', () => {
     h.form.isConnected = false;
     renderPage();
     expect((screen.getByTestId('convert-review-cta') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('locks the form while its own transaction is minimized and offers to reopen it', () => {
+    h.locked = true;
+    h.form.isZero = false;
+    renderPage();
+
+    expect(screen.getByTestId('convert-form').hasAttribute('inert')).toBe(true);
+    expect(screen.getByTestId('convert-locked')).toBeTruthy();
+    expect(screen.queryByTestId('convert-review-cta')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('convert-open-transaction'));
+    expect(h.restore).toHaveBeenCalledTimes(1);
+    expect(h.launch).not.toHaveBeenCalled();
   });
 });

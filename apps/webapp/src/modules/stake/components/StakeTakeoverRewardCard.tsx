@@ -11,6 +11,7 @@ import { cn } from '@/lib/cn';
 import { NO_VALUE } from '@/lib/constants';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RateInfo } from '@/components/product/RateInfo';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { farmRewardSymbol } from '../lib/farmRewardSymbol';
 
@@ -109,8 +110,9 @@ export function RewardList({
                 </span>
                 <span className="flex shrink-0 items-center gap-4 md:gap-6">
                   <span className="flex flex-col items-end gap-0.5">
-                    <span className="text-fgSecondary text-xs leading-[18px]">
-                      <Trans>Rewards rate</Trans>
+                    <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">
+                      <Trans>Staking Rewards Rate</Trans>
+                      <RateInfo type="srr" size={12} />
                     </span>
                     <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
                       {Number.isFinite(rate) ? formatDecimalPercentage(rate) : NO_VALUE}

@@ -11,6 +11,7 @@ import type { PreTransactionGate } from './preTransactionGate';
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -108,7 +109,7 @@ describe('TransactionProvider pre-transaction gate', () => {
   it('a synchronous allow runs onConfirm in the same tick as the confirm click', () => {
     const onConfirm = vi.fn();
     const gate = vi.fn(() => ({ allow: true }));
-    renderWithGate(gate, { title: 'Supply', usdValue: 0, onConfirm });
+    renderWithGate(gate, { title: 'Supply', usdValue: 0, supportedChainIds: [1], onConfirm });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
@@ -120,7 +121,12 @@ describe('TransactionProvider pre-transaction gate', () => {
 
   it('an async allow defers onConfirm to the verdict, then runs it', async () => {
     const onConfirm = vi.fn();
-    renderWithGate(async () => ({ allow: true }), { title: 'Supply', usdValue: 0, onConfirm });
+    renderWithGate(async () => ({ allow: true }), {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     expect(onConfirm).not.toHaveBeenCalled();
@@ -131,7 +137,12 @@ describe('TransactionProvider pre-transaction gate', () => {
 
   it('a denial never runs onConfirm', async () => {
     const onConfirm = vi.fn();
-    renderWithGate(() => ({ allow: false }), { title: 'Supply', usdValue: 0, onConfirm });
+    renderWithGate(() => ({ allow: false }), {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     await flush();
@@ -143,6 +154,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     renderWithGate(() => Promise.reject(new Error('gate exploded')), {
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm
     });
 
@@ -155,7 +167,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     const onConfirm = vi.fn();
     let resolveVerdict!: (v: { allow: boolean }) => void;
     const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
-    renderWithGate(gate, { title: 'Supply', usdValue: 0, onConfirm });
+    renderWithGate(gate, { title: 'Supply', usdValue: 0, supportedChainIds: [1], onConfirm });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     // The user closes the modal while the verdict is still pending…
@@ -170,7 +182,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     const onConfirm = vi.fn();
     // Allow the initial confirm, deny the retry.
     const gate = vi.fn(({ trigger }: { trigger: string }) => ({ allow: trigger !== 'retry' }));
-    const cb = renderWithGate(gate, { title: 'Supply', usdValue: 0, onConfirm });
+    const cb = renderWithGate(gate, { title: 'Supply', usdValue: 0, supportedChainIds: [1], onConfirm });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
@@ -188,7 +200,7 @@ describe('TransactionProvider pre-transaction gate', () => {
   it('a second gated call while a verdict is pending is ignored (in-flight latch)', async () => {
     const onConfirm = vi.fn();
     const gate = vi.fn(async () => ({ allow: true }));
-    renderWithGate(gate, { title: 'Supply', usdValue: 0, onConfirm });
+    renderWithGate(gate, { title: 'Supply', usdValue: 0, supportedChainIds: [1], onConfirm });
 
     const confirm = screen.getByRole('button', { name: /confirm/i });
     fireEvent.click(confirm);
@@ -214,7 +226,13 @@ describe('TransactionProvider pre-transaction gate', () => {
         };
       });
     };
-    const cb = renderWithGate(gate, { title: 'Supply', usdValue: 0, onConfirm, steps: ['Supply USDS'] });
+    const cb = renderWithGate(gate, {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm,
+      steps: ['Supply USDS']
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     // The prelude renders ahead of the config's own step, active, with its copy.
@@ -247,7 +265,7 @@ describe('TransactionProvider pre-transaction gate', () => {
         return v;
       });
     };
-    renderWithGate(gate, { title: 'Claim', usdValue: 0, onConfirm });
+    renderWithGate(gate, { title: 'Claim', usdValue: 0, supportedChainIds: [1], onConfirm });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     expect(screen.getByText('Terms signature')).not.toBeNull();
@@ -271,6 +289,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     renderWithGate(gate, {
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm: vi.fn(),
       subtitles: { pending: 'Supplying your tokens...' },
       steps: ['Supply USDS']
@@ -298,7 +317,13 @@ describe('TransactionProvider pre-transaction gate', () => {
       });
       return new Promise(() => {}); // the screen never resolves
     };
-    renderWithGate(gate, { title: 'Supply', usdValue: 0, onConfirm: vi.fn(), steps: ['Supply USDS'] });
+    renderWithGate(gate, {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm: vi.fn(),
+      steps: ['Supply USDS']
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     await flush();
@@ -321,6 +346,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     const cb = renderWithGate(gate, {
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm: vi.fn(),
       subtitles: { pending: 'Supplying your tokens...' },
       steps: ['Supply USDS']
@@ -361,12 +387,23 @@ describe('TransactionProvider pre-transaction gate', () => {
       const { launch } = useTransaction();
       return (
         <>
-          <button data-testid="launch-a" onClick={() => launch({ title: 'Flow A', usdValue: 0, onConfirm })}>
+          <button
+            data-testid="launch-a"
+            onClick={() => launch({ title: 'Flow A', usdValue: 0, supportedChainIds: [1], onConfirm })}
+          >
             a
           </button>
           <button
             data-testid="launch-b"
-            onClick={() => launch({ title: 'Flow B', usdValue: 0, onConfirm, steps: ['Supply USDS'] })}
+            onClick={() =>
+              launch({
+                title: 'Flow B',
+                usdValue: 0,
+                supportedChainIds: [1],
+                onConfirm,
+                steps: ['Supply USDS']
+              })
+            }
           >
             b
           </button>
@@ -421,6 +458,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     renderWithGate(gate as unknown as PreTransactionGate, {
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm,
       steps: ['Supply USDS']
     });
@@ -456,6 +494,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     renderWithGate(gate, {
       title: 'Supply',
       usdValue: 300_000,
+      supportedChainIds: [1],
       onConfirm,
       steps: ['Approve USDS', 'Supply USDS']
     });
@@ -483,6 +522,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     renderWithGate(gate, {
       title: 'Claim',
       usdValue: 0,
+      supportedChainIds: [1],
       entry: { content: <div />, secondaryConfirmLabel: 'Claim only' },
       onConfirm,
       onSecondaryConfirm
@@ -506,6 +546,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     renderWithGate(gate, {
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm: vi.fn(),
       analytics: { widgetName: 'savings', flow: 'supply', action: 'supply' }
     });
@@ -528,6 +569,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     renderWithGate(gate, {
       title: 'Supply',
       usdValue: 0,
+      supportedChainIds: [1],
       onConfirm: vi.fn(),
       analytics: { widgetName: 'savings', flow: 'supply', action: 'supply' }
     });
@@ -573,6 +615,7 @@ describe('TransactionProvider pre-transaction gate', () => {
               launch({
                 title: 'Flow A',
                 usdValue: 0,
+                supportedChainIds: [1],
                 onConfirm,
                 analytics: { widgetName: 'savings', flow: 'supply', action: 'supply' }
               })
@@ -580,7 +623,10 @@ describe('TransactionProvider pre-transaction gate', () => {
           >
             a
           </button>
-          <button data-testid="launch-b" onClick={() => launch({ title: 'Flow B', usdValue: 0, onConfirm })}>
+          <button
+            data-testid="launch-b"
+            onClick={() => launch({ title: 'Flow B', usdValue: 0, supportedChainIds: [1], onConfirm })}
+          >
             b
           </button>
         </>

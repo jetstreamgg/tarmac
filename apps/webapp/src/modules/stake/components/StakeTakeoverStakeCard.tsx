@@ -6,6 +6,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { RateInfo } from '@/components/product/RateInfo';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
@@ -127,7 +128,14 @@ export function StakeTakeoverStakeCard({
       </div>
 
       <div className="flex items-center gap-4 md:gap-6">
-        <StatItem label={<Trans>SKY Rewards rate</Trans>}>
+        <StatItem
+          label={
+            <>
+              <Trans>Staking Rewards Rate</Trans>
+              <RateInfo type="srr" size={12} />
+            </>
+          }
+        >
           {rewardsRate ?? (rateLoading ? <Skeleton className="h-4 w-14" /> : NO_VALUE)}
         </StatItem>
         <StatDivider />

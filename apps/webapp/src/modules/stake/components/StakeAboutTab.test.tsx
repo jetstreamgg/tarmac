@@ -58,19 +58,19 @@ describe('StakeAboutTab', () => {
     expect(howItWorks.textContent?.match(/\(Optional\)/g)?.length).toBe(2);
   });
 
-  it('renders Docs, View contract, and Governance links with non-empty hrefs', () => {
+  it('renders View contract and Governance links with non-empty hrefs, and no Docs link yet', () => {
     renderTab();
 
     const links = screen.getByTestId('stake-about-links');
     const anchors = links.querySelectorAll('a');
-    expect(anchors.length).toBe(3);
+    expect(anchors.length).toBe(2);
     anchors.forEach(a => {
       expect(a.getAttribute('href')).toBeTruthy();
       expect(a.getAttribute('rel')).toBe('noopener noreferrer');
       expect(a.getAttribute('target')).toBe('_blank');
     });
 
-    expect(screen.getByText('Docs').closest('a')?.getAttribute('href')).toBe('https://docs.sky.money');
+    expect(screen.queryByText('Docs')).toBeNull();
     expect(screen.getByText('Governance').closest('a')?.getAttribute('href')).toBe('https://vote.sky.money/');
     // View contract points at the staking-engine address on Etherscan (mainnet).
     expect(screen.getByText('View contract').closest('a')?.getAttribute('href')).toContain(

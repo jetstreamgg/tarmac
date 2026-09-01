@@ -7,6 +7,7 @@ import {
   type ClaimableReward,
   type ClaimScope
 } from '@/modules/claim';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { PortfolioRewardsSection } from './PortfolioRewardsSection';
 
 // Module-level constants: the adapters memoize their reads on the scope
@@ -28,6 +29,14 @@ const MERKL_SCOPE: ClaimScope = { kind: 'merkl' };
  * one normalized reward model; a row's Claim opens the single-reward scope and
  * "Claim all" the source-wide one. Both sections self-hide when they have
  * nothing to claim.
+ *
+ * The two "Claim all"s cost different numbers of transactions, which is what
+ * decides whether each is offered while bundling is switched off: Merkl claims
+ * every token in ONE distributor `claim(users, tokens, amounts, proofs)`, so it
+ * is never a bundle and always available; the ecosystem farms take one
+ * `getReward()` each, so claiming them together needs the EIP-5792 bundle and
+ * the button steps aside when the user has opted out of it (or the wallet
+ * can't do it), leaving the per-row Claims.
  */
 export function PortfolioRewardsSections() {
   const ecosystem = skyRewardsAdapter.useClaimable(ECOSYSTEM_SCOPE);
@@ -46,6 +55,7 @@ export function PortfolioRewardsSections() {
   }, [refreshEcosystem, refreshMerkl]);
 
   const { openClaim } = useClaimRewardsModal({ onSuccess: refresh });
+  const canBundle = useShouldUseBatch();
 
   const claimEcosystem = (reward: ClaimableReward) =>
     openClaim({ kind: 'reward-contract', address: reward.id as `0x${string}` });
@@ -60,6 +70,7 @@ export function PortfolioRewardsSections() {
         isLoading={ecosystem.isLoading}
         onClaim={claimEcosystem}
         onClaimAll={() => openClaim(ECOSYSTEM_SCOPE)}
+        canClaimAll={canBundle}
         testId="portfolio-ecosystem-rewards"
       />
       <PortfolioRewardsSection

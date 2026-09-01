@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
+import { RateInfo, vaultRateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Vault, Droplet, Percent } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
@@ -62,9 +63,9 @@ const VAULT_ABOUT: Record<string, ReactNode> = {
   ),
   'USDC Risk Capital': (
     <Trans>
-      USDC Risk Capital vault accepts USDC deposits and deploys them exclusively into an stUSDS-USDC Morpho
-      market. Vault performance is driven by the underlying markets&apos; borrowing demand and is not
-      controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
+      USDC Risk Capital vault allocates supplied USDC exclusively to an stUSDS-USDC Morpho market. Vault
+      performance is driven by the underlying markets&apos; borrowing demand and is not controlled by
+      Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
     </Trans>
   )
 };
@@ -101,6 +102,7 @@ export function VaultProductDetail({
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
+      info: <RateInfo type={vaultRateInfo(vault.provider)} size={12} />,
       // Incentive-boosted vaults tag the figure with the DS stars mark and
       // explain it through the breakdown tooltip (APP-443 item 14).
       value: <VaultRateBreakdown rate={rate} value={rate?.formattedNetRate ?? NO_VALUE} />

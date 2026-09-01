@@ -1,6 +1,7 @@
 import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { StUsdsModalForm, type StUsdsModalPreset } from '../components/StUsdsModalForm';
 
 type UseStUsdsModalOptions = {
@@ -41,6 +42,8 @@ export function useStUsdsModal({ onSuccess }: UseStUsdsModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // stUSDS is a mainnet-only product — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         // The editable body lives outside the dialog (hidden host) so its in-flight
         // hook survives minimize; it portals its inputs into the modal's entry slot.
@@ -67,6 +70,8 @@ export function useStUsdsModal({ onSuccess }: UseStUsdsModalOptions = {}) {
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
         usdValue: 0,
+        // stUSDS is a mainnet-only product — guard the modal off any L2 (APP-528).
+        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
         confirmLabel: t`Confirm`,
         backgroundContent: <StUsdsModalForm sessionId={withdrawSessionId} flow="withdraw" preset={preset} />,
         onConfirm: () => {},

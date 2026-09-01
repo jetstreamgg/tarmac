@@ -1,4 +1,5 @@
 import { Trans } from '@lingui/react/macro';
+import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
@@ -51,6 +52,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       id: 'fixed-apy',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Fixed APY</Trans>,
+      info: <RateInfo type="fixedYield" size={12} />,
       value: (
         <DetailValue
           loading={statsLoading}

@@ -100,7 +100,7 @@ export function useWidgetItems(intent: Intent): {
       Pendle,
       false,
       undefined,
-      'Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity.',
+      'Fix your rate to a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity; early exits settle at the current market price.',
       pendleSubItems
     ],
     [
@@ -117,7 +117,7 @@ export function useWidgetItems(intent: Intent): {
       Vaults,
       false,
       undefined,
-      'Third-party vault integrations with Sky Ecosystem tokens',
+      'Third-party vault integrations with Sky Protocol tokens',
       vaultSubItems
     ],
     [

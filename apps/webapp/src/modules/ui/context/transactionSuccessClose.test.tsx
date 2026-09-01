@@ -10,6 +10,7 @@ import type { TransactionConfig, TxCallbacks } from './transactionContract';
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
+  useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -102,6 +103,7 @@ const renderLastToast = () => {
 const CONFIG: TransactionConfig = {
   title: 'Supply',
   usdValue: 0,
+  supportedChainIds: [1],
   steps: ['Supply'],
   subtitles: { success: "You've successfully supplied to Sky Savings." },
   toast: { success: '10,000.00 USDS supplied!' },

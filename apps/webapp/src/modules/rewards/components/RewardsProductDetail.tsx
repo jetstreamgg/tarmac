@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
+import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Vault, UsersRound, Coins } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
@@ -157,6 +158,7 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
+      info: <RateInfo type="str" size={12} />,
       value: currentRate
     },
     {

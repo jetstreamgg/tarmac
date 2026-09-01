@@ -52,7 +52,7 @@ export type StUsdsEntryRowInput = {
  */
 export function buildStUsdsEntryRows(input: StUsdsEntryRowInput): StUsdsModalGridRow[] {
   return [
-    [rateCell('Rate', input.rate), networkCell(input.network)],
+    [rateCell('Rate', input.rate, undefined, 'stusds'), networkCell(input.network)],
     [
       singleOrDelta(
         { label: 'Supply', token: 'USDS' },
@@ -118,7 +118,7 @@ export function buildStUsdsReviewRows(
         ];
   return [
     firstRow,
-    [productCell('stUSDS', 'stUSDS', 'default'), rateCell('Rate', input.rate)],
+    [productCell('stUSDS', 'stUSDS', 'default'), rateCell('Rate', input.rate, undefined, 'stusds')],
     [withdrawalCell(input.withdrawal), networkCell(input.network)],
     [
       { kind: 'single', label: 'Route', labelBadge: input.route, value: input.routeDetail },
