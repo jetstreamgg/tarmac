@@ -1,0 +1,530 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useChainId, useChains } from 'wagmi';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { Trans } from '@lingui/react/macro';
+import { Morpho, Pendle } from '@/widgets';
+import {
+  useEarnMarketplace,
+  EarnProductKind,
+  productNetworks,
+  RISK_TIER_BY_PROFILE,
+  useUsdsDaiData,
+  type EarnProductRow
+} from '@/hooks';
+import { formatUnits } from 'viem';
+import { mainnet } from 'viem/chains';
+import { usePendleUsdValue } from '@/widgets';
+import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { getChainIcon } from '@/utils';
+import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
+import { Intent } from '@/lib/enums';
+import { useGeoConfig } from '@/modules/geo-config';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { retainOnNavigate } from '@/lib/navigation';
+import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
+import { cn } from '@/lib/cn';
+import { Button } from '@/components/ui/button';
+import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FilterX, IllustrationStaked } from '@/modules/icons';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ROW_COLLAPSE_MS } from '@/modules/ui/animation/presets';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { CellNetworks } from '@/components/ui/table-cells';
+import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
+import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
+import {
+  isMorphoVault,
+  isPendleFixed,
+  productIconSymbol,
+  productStatusType
+} from '@/components/product/productVisuals';
+import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
+import { partitionByGeoAvailability } from '../helpers/geoAvailability';
+import { formatMaturity } from '../helpers/formatMaturity';
+import { formatUsdCompact } from '../helpers/formatUsdCompact';
+import { formatCirculation, formatCirculationCoarse } from '../helpers/protocolStats';
+import { useEarnTableState } from '../hooks/useEarnTableState';
+import { EarnFeaturedCards } from './EarnFeaturedCards';
+import { ProtocolLineageBadge } from './ProtocolLineageBadge';
+import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
+import { NO_VALUE } from '@/lib/constants';
+
+/** Stable identity so the geo split doesn't rebuild the tables every render. */
+const EMPTY_ROWS: EarnProductRow[] = [];
+
+const formatUsd = (totalUsd?: number) => (totalUsd !== undefined ? formatUsdCompact(totalUsd) : NO_VALUE);
+
+/**
+ * Products carrying the editorial "NEW" marker in the list (1036:201322).
+ * Intentionally empty: nothing has launched recently enough to earn it
+ * (APP-457). The badge itself stays wired up for the next product — add its
+ * registry id here.
+ */
+const NEW_PRODUCT_IDS: string[] = [];
+
+/** Heading 6 on mobile (486:22121), Heading 5 on desktop (1036:201309, APP-395). */
+const SECTION_HEADING =
+  'text-fgPrimary font-circle mt-6 text-xl leading-[22px] font-medium tracking-[-0.4px] md:mt-14 md:text-2xl md:leading-[26px] md:tracking-[-0.48px]';
+
+const PRODUCT_LABELS: Record<EarnProductKind, React.ReactNode> = {
+  savings: <Trans>Savings</Trans>,
+  rewards: <Trans>Rewards</Trans>,
+  vault: <Trans>Vaults</Trans>,
+  fixed: <Trans>Fixed yield</Trans>,
+  stusds: <Trans>Expert</Trans>
+};
+
+/**
+ * Marketplace row → table row. `unavailable` rows land in the geo-restricted
+ * section: the editorial NEW marker is an invitation to act, so it is dropped
+ * there; everything else renders identically and EarnTable's `dimmed` prop
+ * carries the visual treatment.
+ */
+function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem {
+  return {
+    id: row.id,
+    name: row.name,
+    riskProfile: row.riskProfile,
+    isNew: !unavailable && NEW_PRODUCT_IDS.includes(row.id),
+    // Bare logo — the comp's iconbox holds no chain chip (1036:201236);
+    // networks live in their own column.
+    icon: (
+      <TokenIcon
+        token={{ symbol: productIconSymbol(row) }}
+        width={28}
+        className="h-7 w-7"
+        showChainIcon={false}
+      />
+    ),
+    status: productStatusType(row),
+    // Provider mark beside the name: Morpho for its vaults, Pendle for the
+    // fixed-yield rows (1036:201260 — the Pendle mark was missing). The
+    // bare marks here are the table's treatment; portfolio's `ProductGlyph`
+    // is the smaller tiled variant, so only the predicates are shared.
+    nameSuffix: isMorphoVault(row) ? (
+      <Morpho className="h-4 w-4 rounded-sm" />
+    ) : isPendleFixed(row) ? (
+      <Pendle className="h-4 w-4" />
+    ) : undefined,
+    supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
+    maturityLabel: row.maturity ? formatMaturity(row.maturity) : undefined,
+    network: <CellNetworks>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</CellNetworks>,
+    rate: row.rate.formatted,
+    rate30d: row.rate30d?.formatted ?? NO_VALUE,
+    tvl: formatUsd(row.tvl?.totalUsd),
+    position: formatUsd(row.position?.totalUsd),
+    isLoading: row.isLoading
+  };
+}
+
+/** The /earn destination: the Earn Opportunities marketplace section (C2). */
+export function EarnPage() {
+  const { rows } = useEarnMarketplace();
+  const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
+  const chains = useChains();
+  const connectedChainId = useChainId();
+  const navigate = useNavigate();
+  const hash = useRouterState({ select: state => state.location.hash });
+
+  // On a cold load of a deep-link URL the router's hash scrolling runs before
+  // this lazy route chunk has rendered its target, so the anchor is missed —
+  // catch up on mount. In-app arrivals are already scrolled by the router
+  // (scrollY > 0), and back/forward restores land where the user left; the
+  // guard leaves both alone.
+  useEffect(() => {
+    if (hash !== EARN_OPPORTUNITIES_HASH) return;
+    if (window.scrollY > 0) return;
+    document.getElementById(EARN_OPPORTUNITIES_HASH)?.scrollIntoView();
+  }, [hash]);
+
+  // Geo split (1036:201400, APP-432 item 8): products whose owning module is
+  // restricted in this region drop out of Earn Opportunities and reappear,
+  // dimmed, in the "Products unavailable in the US" section — per the comp's
+  // annotation, we still show them rather than hiding them outright. The
+  // provider reports every module disabled while the lookup is in flight, so
+  // until it settles everything counts as available and the list doesn't
+  // flash through the restricted layout.
+  const { availableRows, unavailableRows } = useMemo(
+    () =>
+      isGeoLoading
+        ? { availableRows: rows, unavailableRows: EMPTY_ROWS }
+        : partitionByGeoAvailability(rows, isModuleEnabled),
+    [rows, isGeoLoading, isModuleEnabled]
+  );
+
+  // Hero stat: total USDS + DAI outstanding, the same BA Labs series the
+  // portfolio totals chart and UsdsTotalSupplyCard read (APP-432 item 3). One
+  // row is all the hero needs — the endpoint returns newest-first.
+  const { data: usdsDaiData, isLoading: circulationIsLoading } = useUsdsDaiData({ limit: 1 });
+  // The fetch helper swallows failures into an empty array, so "loaded but
+  // absent" is the error state too: drop the stat rather than show a zero.
+  const parsedTotal = parseFloat(usdsDaiData?.[0]?.total ?? '');
+  const circulation = Number.isFinite(parsedTotal) ? parsedTotal : undefined;
+
+  // Named so the extracted message ids read "{amount} in circulation" rather
+  // than a positional "{0}".
+  const amount = circulation !== undefined ? formatCirculation(circulation) : undefined;
+  const coarseAmount = circulation !== undefined ? formatCirculationCoarse(circulation) : undefined;
+
+  // Slug ↔ chain mapping for the network filter (same normalized names the
+  // `network` query param uses).
+  const chainSlugById = useMemo(
+    () => Object.fromEntries(chains.map(chain => [chain.id, normalizeUrlParam(chain.name)])),
+    [chains]
+  );
+
+  // Rows carry their chain icon (Figma 1036:201601, APP-432 item 7) at the
+  // dropdown's 16px icon size — the same shape the portfolio filter uses.
+  const networkOptions = useMemo<EarnFilterOption[]>(() => {
+    const ids = [...new Set(rows.flatMap(row => row.networks))];
+    return ids
+      .map(id => ({ id, chain: chains.find(chain => chain.id === id) }))
+      .filter(({ chain }) => chain !== undefined)
+      .map(({ id, chain }) => ({
+        value: chainSlugById[id],
+        label: (
+          <span className="flex items-center gap-2">
+            {getChainIcon(id, 'h-4 w-4 shrink-0')}
+            {chain!.name}
+          </span>
+        )
+      }));
+  }, [rows, chains, chainSlugById]);
+
+  const stablecoinOptions = useMemo<EarnFilterOption[]>(
+    () =>
+      [...new Set(rows.flatMap(row => row.supplyTokens))].map(symbol => ({
+        value: symbol.toLowerCase(),
+        label: (
+          <span className="flex items-center gap-2">
+            {/* Dropdown rows carry the bare token logo — no chain badge
+                (APP-443 item 11): the network is its own filter. */}
+            <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
+            {symbol}
+          </span>
+        )
+      })),
+    [rows]
+  );
+
+  const productOptions = useMemo<EarnFilterOption[]>(
+    () =>
+      [...new Set(rows.map(row => row.kind))].map(kind => ({
+        value: kind,
+        label: PRODUCT_LABELS[kind]
+      })),
+    [rows]
+  );
+
+  // Stable identity so the filter state (and everything derived from it) isn't
+  // rebuilt on every render.
+  const filterOptionValues = useMemo(
+    () => ({
+      networks: networkOptions.map(option => option.value),
+      stablecoins: stablecoinOptions.map(option => option.value),
+      products: productOptions.map(option => option.value)
+    }),
+    [networkOptions, stablecoinOptions, productOptions]
+  );
+
+  const { filters, updateFilters, toggleRiskTier, clearFilters, hasActiveFilters, sort, toggleSort } =
+    useEarnTableState(filterOptionValues);
+
+  // Both tables run through the same filters and share one sort, so the two
+  // sections always read as one list split in two.
+  const visibleRows = useMemo(
+    () => sortEarnRows(filterEarnRows(availableRows, filters, chainSlugById), sort),
+    [availableRows, filters, chainSlugById, sort]
+  );
+
+  const visibleUnavailableRows = useMemo(
+    () => sortEarnRows(filterEarnRows(unavailableRows, filters, chainSlugById), sort),
+    [unavailableRows, filters, chainSlugById, sort]
+  );
+
+  // What the filters are holding back from the main table — the figure the
+  // "Clear filters" control carries.
+  const hiddenRowCount = availableRows.length - visibleRows.length;
+
+  const items = useMemo<EarnTableRowItem[]>(() => visibleRows.map(row => toTableRow(row)), [visibleRows]);
+
+  const unavailableItems = useMemo<EarnTableRowItem[]>(
+    () => visibleUnavailableRows.map(row => toTableRow(row, true)),
+    [visibleUnavailableRows]
+  );
+  // When a filter empties the section, unmounting it in the same tick would
+  // silently kill the rows' collapse — hold it until the table reports the
+  // exit finished (onRowsExitComplete). Completion-gated rather than a timer,
+  // so it's correct at any animation speed: a busy main thread stretches the
+  // hold with the animation, and prefers-reduced-motion's duration-0 exit
+  // releases it immediately instead of parking an empty section for 300ms.
+  const hasUnavailable = unavailableItems.length > 0;
+  const [unavailableExitHold, setUnavailableExitHold] = useState(false);
+  const [prevHasUnavailable, setPrevHasUnavailable] = useState(hasUnavailable);
+  if (prevHasUnavailable !== hasUnavailable) {
+    setPrevHasUnavailable(hasUnavailable);
+    setUnavailableExitHold(!hasUnavailable);
+  }
+  // Backstop: if the presence boundary unmounts mid-exit (a breakpoint swap
+  // replaces the table with the card list), onExitComplete never fires — don't
+  // hold a header over an empty section forever.
+  useEffect(() => {
+    if (!unavailableExitHold) return;
+    const timer = setTimeout(() => setUnavailableExitHold(false), ROW_COLLAPSE_MS * 2);
+    return () => clearTimeout(timer);
+  }, [unavailableExitHold]);
+  const showUnavailable = hasUnavailable || unavailableExitHold;
+
+  const handleRowSelect = (id: string) => {
+    const row = rows.find(r => r.id === id);
+    if (!row) return;
+    setPendingNavIntent('card', row.detailPath);
+    void navigate({ to: row.detailPath as '/', search: retainOnNavigate });
+  };
+
+  // "Requires action" (2251:50832): matured markets the user still holds PT
+  // for — the marketplace filters them out of the opportunities rows, so this
+  // is their only Earn surface. Geo is enforced inside the hook (restricted
+  // positions hide app-wide, APP-484). The table filters apply here like they
+  // do to the geo section — one list, split in three — filtering by the
+  // market's registry attributes (its risk tier, networks, supply tokens),
+  // not the dashed live-market cells. A filtered-out row strands nobody: the
+  // Portfolio matured card stays the primary claim surface. The shared sort is
+  // NOT applied — every sortable column is a dash on these rows.
+  const { maturedPositions } = usePendleMaturedPositions();
+  const valueUsd = usePendleUsdValue();
+  const visibleMaturedPositions = useMemo(
+    () =>
+      filterEarnRows(
+        maturedPositions.map(position => ({
+          ...position,
+          // The registry's fixed entry, restated: its `fixed` descriptor is
+          // built (then discarded) inside useEarnMarketplace, so the matured
+          // row can't borrow it — APP-532 folds these back into the rows.
+          risk: RISK_TIER_BY_PROFILE.fixed,
+          networks: productNetworks(Intent.FIXED_INTENT, getSupportedChainIds(connectedChainId)),
+          supplyTokens: ['USDS', 'USDC', position.market.underlyingSymbol],
+          kind: 'fixed' as const
+        })),
+        filters,
+        chainSlugById
+      ),
+    [maturedPositions, filters, chainSlugById, connectedChainId]
+  );
+  const requiresActionItems = useMemo<EarnTableRowItem[]>(
+    () =>
+      visibleMaturedPositions.map(({ market, ptBalance }) => {
+        // 1 PT redeems 1 underlying (1 USDS on pegged markets) at expiry.
+        const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
+        const usd = valueUsd(displaySymbol, parseFloat(formatUnits(ptBalance, market.underlyingDecimals)));
+        return {
+          id: `matured-${market.marketAddress.toLowerCase()}`,
+          name: `Pendle ${market.underlyingSymbol}`,
+          icon: (
+            <TokenIcon
+              token={{ symbol: market.underlyingSymbol }}
+              width={28}
+              className="h-7 w-7"
+              showChainIcon={false}
+            />
+          ),
+          status: 'success' as const,
+          nameSuffix: <Pendle className="h-4 w-4" />,
+          // What the market accepted while live (the registry's fixed entry).
+          supply: <TokenIconStack symbols={['USDS', 'USDC', market.underlyingSymbol]} size={12} />,
+          statusLabel: (
+            <span className="text-statusWarning">
+              <Trans>Matured</Trans>
+            </span>
+          ),
+          network: <CellNetworks>{[getChainIcon(mainnet.id, 'h-full w-full')]}</CellNetworks>,
+          rate: NO_VALUE,
+          rate30d: NO_VALUE,
+          tvl: NO_VALUE,
+          position: formatUsd(usd),
+          ctaLabel: <Trans>Claim</Trans>
+        };
+      }),
+    [visibleMaturedPositions, valueUsd]
+  );
+
+  // Rows route to the market's detail page, like every other row in this table
+  // — a matured market keeps its page, and the claim card is its position slot.
+  const handleRequiresActionSelect = (id: string) => {
+    const position = maturedPositions.find(
+      ({ market }) => `matured-${market.marketAddress.toLowerCase()}` === id
+    );
+    if (!position) return;
+    const detailPath = `${ROUTES.EARN_FIXED}/${position.market.slug}`;
+    setPendingNavIntent('card', detailPath);
+    void navigate({ to: detailPath as '/', search: retainOnNavigate });
+  };
+
+  // The desktop px-calc insets the page to the middle 10 columns of the design
+  // grid: (100% + gutter)/12 = one column + one gutter, exact at any width.
+  return (
+    <div
+      // Mobile rhythm per 486:22051: 24px base stack gap (the heading and list
+      // margins below stretch the seams the comp draws wider); C2's 20px gap
+      // returns at md.
+      className="desktop:px-[calc((100%+32px)/12)] flex w-full flex-col gap-6 py-4 md:gap-5 md:py-10"
+      data-testid="earn-opportunities"
+    >
+      {/* Patterns/Headers, Earn hero type 5031:52345. Correction: the Figma
+          80px is the gap ABOVE/BELOW the hero relative to its neighbours, not
+          the hero's own padding — the page wrapper's py/gap already
+          contributes spacing there, so it's subtracted out: 0 top, 60px
+          bottom at desktop (Figma Annotations R2 A1, corrected). No own
+          padding below desktop — same recipe as the Convert hero, which
+          relies entirely on this wrapper's py-4/gap-6 for its rhythm. */}
+      <PageHeaderHero
+        className="md:pb-15"
+        badges={
+          <>
+            {/* Pill-shaped placeholder at the badge's own height (28px, 32px
+                from md) so the hero doesn't reflow when the stat lands. Width
+                is the settled badge's (~160px; it drifts a few px with the
+                figure's digit count) rounded to its sibling's, so the pair
+                reads as balanced while loading. */}
+            {circulationIsLoading ? (
+              <Skeleton className="h-7 w-[164px] rounded-full md:h-8" />
+            ) : amount !== undefined ? (
+              <HeaderBadge icon={<IllustrationStaked boxSize={16} />}>
+                <Trans>{amount} in circulation</Trans>
+              </HeaderBadge>
+            ) : null}
+            {/* Owns its own year count — the badge and the lineage tooltip it
+                carries read the same PROTOCOL_START the subtitle does. */}
+            <ProtocolLineageBadge />
+          </>
+        }
+        // Desktop comp breaks the title before "is up to you"; below md the
+        // heading is text-balance and wraps on its own, so the break is hidden.
+        title={
+          <Trans>
+            How hard your stablecoins work <br className="max-md:hidden" />
+            is up to you
+          </Trans>
+        }
+        subtitleClassName="max-w-[271px] md:max-w-[513px]"
+        // Three standalone sentences, so each is its own translation unit — the
+        // middle one carries the live figure and can drop out entirely.
+        subtitle={
+          <>
+            <Trans>
+              Sky.money is where you get non-custodial access to the largest yield-bearing stablecoin and a
+              set of features to put it to work.
+            </Trans>{' '}
+            {circulationIsLoading ? (
+              <Skeleton className="inline-block h-3 w-16 rounded-full align-[-1px]" />
+            ) : coarseAmount !== undefined ? (
+              <Trans>{coarseAmount} in circulation.</Trans>
+            ) : null}{' '}
+            <Trans>Multiple strategies, one place.</Trans>
+          </>
+        }
+      />
+      {/* Restricted products are never featured: their Earn CTA would land on a
+          route that redirects straight back to /portfolio. */}
+      <EarnFeaturedCards rows={availableRows} onSelect={handleRowSelect} />
+      {/* Target of the ?token= deep links' #earn-opportunities anchor
+          (APP-487); scroll-mt clears the sticky frosted header when the hash
+          scroll lands the heading at the top of the viewport. */}
+      <h2 id={EARN_OPPORTUNITIES_HASH} className={cn(SECTION_HEADING, 'scroll-mt-24')}>
+        <Trans>Earn Opportunities</Trans>
+      </h2>
+      <EarnTableFilters
+        selectedRiskTiers={filters.risk}
+        onRiskTierToggle={toggleRiskTier}
+        networks={networkOptions}
+        selectedNetwork={filters.network}
+        onNetworkChange={network => updateFilters({ network })}
+        stablecoins={stablecoinOptions}
+        selectedStablecoin={filters.stablecoin}
+        onStablecoinChange={stablecoin => updateFilters({ stablecoin })}
+        products={productOptions}
+        selectedProduct={filters.product}
+        onProductChange={product => updateFilters({ product })}
+      />
+      {/* No rule between the filter bar and the table — the comp (1030:61244)
+          draws none at either tier (APP-443 item 10); it just runs 32px of
+          clear space from the filters into the table, which is the stack gap
+          plus this margin (24+8 mobile, 20+12 from md). */}
+      <div className="mt-2 md:mt-3">
+        <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
+      </div>
+      {/* Escape hatch under the table (Figma 1980:45477): there once the filters
+          are actually holding rows back, and the count is how many — from the
+          table right above it, the geo-restricted section below keeps its own
+          tally out of it. A filter that hides nothing needs no escape hatch, so
+          the control never reads "(0)". */}
+      {hasActiveFilters && hiddenRowCount > 0 && (
+        <Button
+          variant="secondary"
+          size="m"
+          onClick={clearFilters}
+          data-testid="earn-clear-filters"
+          // The size recipe tucks a leading glyph in by 8px (the DS pads icons
+          // tighter than text); this comp insets it the full 16, so put the
+          // padding back.
+          className="mx-auto pr-6 [&>svg:first-child]:ml-0"
+        >
+          <FilterX className="size-4" />
+          <span>
+            <Trans>Clear filters</Trans> <span className="text-fgSecondary">({hiddenRowCount})</span>
+          </span>
+        </Button>
+      )}
+      {/* "Requires action" (2251:50832) — matured positions that need a claim.
+          Sits between the opportunities and the geo-restricted section; hidden
+          entirely while the user holds nothing matured. */}
+      {requiresActionItems.length > 0 && (
+        <section className="flex flex-col gap-6 md:gap-8" data-testid="earn-requires-action">
+          <h2 className={SECTION_HEADING}>
+            <Trans>Requires action</Trans>
+          </h2>
+          <EarnTable
+            rows={requiresActionItems}
+            onRowSelect={handleRequiresActionSelect}
+            testIdPrefix="earn-requires-action"
+          />
+        </section>
+      )}
+      {/* "Products unavailable in the US" (1036:201473) — same table, dimmed and
+          inert, always last on the page. Hidden entirely when the region (or
+          the active filters) leaves nothing to list. When the geo lookup never
+          resolved a country we fall back to the restrictive config, so the
+          section names no region and says why instead (PR #1776 review). */}
+      {showUnavailable && (
+        <section className="flex flex-col gap-6 md:gap-8" data-testid="earn-unavailable">
+          <div className="flex flex-col gap-2">
+            <h2 className={SECTION_HEADING}>
+              {isRegionVerified ? (
+                <Trans>Products unavailable in the US</Trans>
+              ) : (
+                <Trans>Products unavailable in your region</Trans>
+              )}
+            </h2>
+            {!isRegionVerified && (
+              <p
+                className="text-fgSecondary max-w-[513px] text-xs leading-[18px]"
+                data-testid="earn-unavailable-reason"
+              >
+                <Trans>We couldn&apos;t verify your region, so these products are unavailable.</Trans>
+              </p>
+            )}
+          </div>
+          <EarnTable
+            rows={unavailableItems}
+            sort={sort}
+            onSortChange={toggleSort}
+            onRowsExitComplete={() => setUnavailableExitHold(false)}
+            dimmed
+            testIdPrefix="earn-unavailable"
+          />
+        </section>
+      )}
+    </div>
+  );
+}

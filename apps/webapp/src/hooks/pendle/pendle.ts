@@ -17,6 +17,12 @@ import { PendleHistoryAction } from './constants';
 export type PendleMarketConfig = {
   /** Display name for the market (e.g. "PT-sUSDS") */
   name: string;
+  /**
+   * URL slug for the market's detail route (`/earn/fixed/:slug`). Unique across
+   * PENDLE_MARKETS (enforced by test). Kept short while unambiguous; a second
+   * market on the same underlying disambiguates itself (e.g. by maturity).
+   */
+  slug: string;
   /** The Pendle Market contract address (mainnet) */
   marketAddress: `0x${string}`;
   /** The PT token contract address */
@@ -173,6 +179,8 @@ export type PendleMarketStats = {
   formattedTvl?: string;
   /** Underlying APY of the SY (decimal) */
   underlyingApy?: number;
+  /** Market liquidity in USD (raw number) */
+  liquidity?: number;
   /** Market expiry as a UNIX timestamp in seconds (matches the on-chain expiry()) */
   expirySec?: number;
   /** Market deployment timestamp in seconds (start of the maturity window) */
@@ -329,11 +337,16 @@ export type PendleMarketsAllResponseRaw = {
  * `assetUsd` is the underlying token's USD price at trade time;
  * `txValueAsset * assetUsd` yields the USD-denominated trade value.
  *
- * Fields not consumed (ptData/ytData/lpData, profit, priceInAsset) are
- * intentionally omitted — the wire shape diverges from Pendle's OpenAPI
- * for ptData.unit (claimed delta, actually a running balance / 0 / per-tx
- * delta depending on action), and leaving them off keeps us from being
- * tempted to read unreliable values.
+ * Fields not consumed (ptData/ytData/lpData, priceInAsset) are intentionally
+ * omitted — the wire shape diverges from Pendle's OpenAPI for ptData.unit
+ * (claimed delta, actually a running balance / 0 / per-tx delta depending on
+ * action), and leaving them off keeps us from being tempted to read
+ * unreliable values.
+ *
+ * `profit` is the per-transaction realized profit and covers EVERY action —
+ * including the LP/reward actions the history view filters out — so earnings
+ * math must read it from raw rows, not normalized history rows. Optional and
+ * consumed only behind Number.isFinite guards (computePendleEarnings).
  */
 export type PendlePnlTransactionRaw = {
   chainId: number;
@@ -344,11 +357,67 @@ export type PendlePnlTransactionRaw = {
   txValueAsset: number;
   assetUsd: number;
   effectivePtExchangeRate: number;
+  profit?: { usd?: number; asset?: number; eth?: number };
 };
 
 export type PendlePnlTransactionsResponseRaw = {
   total: number;
   results: PendlePnlTransactionRaw[];
+};
+
+// ---------------------------------------------------------------------------
+// Pendle API transport types (/v1/pnl/gained and /v1/dashboard/positions)
+// ---------------------------------------------------------------------------
+
+/** USD/asset/ETH triple used across Pendle's PnL payloads. */
+export type PendlePnlValueRaw = { usd?: number; asset?: number; eth?: number };
+
+/**
+ * One entry in /v1/pnl/gained/{user}/positions `positions`. Covers the user's
+ * whole activity in the market (PT, YT and LP alike): `netGain` is the
+ * lifetime realized gain, `totalSpent` the open cost basis. The endpoint
+ * IGNORES a chainId query param (verified live 2026-08-19) — every chain
+ * comes back and callers must filter on the `chainId` field.
+ */
+export type PendlePnlGainedPositionRaw = {
+  market: string;
+  chainId: number;
+  pnl: {
+    netGain: PendlePnlValueRaw;
+    totalSpent: PendlePnlValueRaw;
+  };
+  ptBalance?: number;
+  ytBalance?: number;
+  lpBalance?: number;
+};
+
+export type PendlePnlGainedPositionsResponseRaw = {
+  total: number;
+  positions: PendlePnlGainedPositionRaw[];
+};
+
+/**
+ * One market's holdings inside /v1/dashboard/positions/database/{user}.
+ * `marketId` is the "<chainId>-<address>" form; `valuation` is USD directly —
+ * the reason this endpoint was chosen as the current-value source over
+ * /v1/prices/assets (which would need our own balance × price math).
+ */
+export type PendleDashboardMarketPositionRaw = {
+  marketId: string;
+  pt: { valuation: number; balance: string };
+  yt: { valuation: number; balance: string };
+  lp: { valuation: number; balance: string };
+};
+
+/** Per-chain grouping in the dashboard positions response. */
+export type PendleDashboardChainPositionsRaw = {
+  chainId: number;
+  openPositions: PendleDashboardMarketPositionRaw[];
+  closedPositions: PendleDashboardMarketPositionRaw[];
+};
+
+export type PendleDashboardPositionsResponseRaw = {
+  positions: PendleDashboardChainPositionsRaw[];
 };
 
 /**
@@ -408,8 +477,8 @@ export type PendleCombinedMarketHistoryHook = ReadHook & {
  * `ptAmount` is the raw PT integer (PT decimals = underlying decimals per
  * Pendle convention), so `formatBigInt(amount, { unit: decimals })` renders
  * the same number a user would see on a block explorer or the per-market
- * history table. `marketName` ("PT-sUSDS", …) is the unit shown in the row's
- * right-hand text.
+ * history table. `underlyingSymbol` carries the PT ticker ("PT-sUSDS", …)
+ * shown as the row's right-hand unit.
  */
 export interface PendleHistoryItem {
   blockTimestamp: Date;
@@ -427,9 +496,9 @@ export interface PendleHistoryItem {
   assets: bigint;
   /** Underlying-token decimals — used by formatBigInt at render time. */
   underlyingDecimals: number;
-  /** Underlying-token display symbol (e.g. "sUSDS"). */
+  /** PT ticker ("PT-sUSDS") — the row's unit; amounts are PT-denominated. */
   underlyingSymbol: string;
-  /** Market name for breadcrumb context; not used in the row's right-hand unit. */
+  /** Same PT ticker, for breadcrumb context; `market.name` is the product display name, not a ticker. */
   marketName: string;
   /** Source market address — useful for downstream linking; not currently rendered. */
   marketAddress: `0x${string}`;

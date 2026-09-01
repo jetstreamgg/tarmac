@@ -4,18 +4,20 @@ import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAc
 
 // Spark Tether Savings (sUSDT) vault — registered in slice 02 (APP-266).
 // Copied from expert-morpho.spec.ts and adapted to the Vaults tab + USDT asset.
-// NOTE: assumes the Tenderly fork funds the test account with USDT (operator
-// runs e2e). Provider-aware selectors: `sky-vault-stats-card`,
-// `supply-input-sky`, `withdraw-input-sky`.
+// USDT funding comes from global-setup-parallel.ts. The vault is gated behind
+// VITE_SUSDT_VAULT_ENABLED (set by the playwright webServer command).
+// Provider-aware selectors: `sky-vault-stats-card`, `supply-input-sky`,
+// `withdraw-input-sky`.
 
 const VAULT_NAME = 'Tether Savings';
 
 test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
   test.beforeEach(async ({ isolatedPage }) => {
-    await isolatedPage.goto('/');
+    // Deep-link to the vaults surface (the legacy widget-navigation was
+    // removed in B4). Connect AFTER the goto — a full navigation resets the
+    // mock connector, so connecting first would leave the widget disconnected.
+    await isolatedPage.goto('/earn/vaults');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    // Navigate to the Vaults tab and open the Spark vault detail
-    await isolatedPage.getByRole('tab', { name: 'Vaults' }).click();
     await isolatedPage.getByTestId('sky-vault-stats-card').click();
   });
 

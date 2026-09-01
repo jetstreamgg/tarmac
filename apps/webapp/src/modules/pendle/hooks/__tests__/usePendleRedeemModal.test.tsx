@@ -15,6 +15,7 @@ i18n.activate('en');
 
 const MATURED_MARKET: PendleMarketConfig = {
   name: 'PT-USDG',
+  slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
   ptToken: '0x9db38d74a0d29380899ad354121dfb521adb0548',
   ytToken: '0x4a1294749a70bc32a998b49dd11bf26e9379e3c1',
@@ -43,6 +44,9 @@ const QUOTE: PendleConvertQuote = {
 
 const hoisted = vi.hoisted(() => ({
   launchMock: vi.fn(),
+  updateMock: vi.fn(),
+  isModalOpen: false,
+  txStatus: 'idle',
   matured: true,
   // Swappable execute fn so tests can prove the latest one fires through onConfirm.
   currentExecute: (() => undefined) as () => void,
@@ -50,7 +54,48 @@ const hoisted = vi.hoisted(() => ({
   valueUsd: ((_symbol: string, amount: number) => amount) as (
     symbol: string,
     amount: number
-  ) => number | undefined
+  ) => number | undefined,
+  // Click-time network switch collaborators.
+  chainId: 1,
+  isSafeWallet: false,
+  switchChainAsyncMock: vi.fn(async () => undefined as unknown),
+  setIsAutoSwitchingMock: vi.fn(),
+  setAutoSwitchIntentMock: vi.fn(),
+  trackSwitchRequestedMock: vi.fn(),
+  trackSwitchCompletedMock: vi.fn()
+}));
+
+vi.mock('wagmi', async importOriginal => {
+  const actual = await importOriginal<typeof import('wagmi')>();
+  return {
+    ...actual,
+    useChainId: () => hoisted.chainId,
+    useChains: () => [{ id: 1, name: 'Ethereum' }],
+    useSwitchChain: () => ({ switchChainAsync: hoisted.switchChainAsyncMock }),
+    useConnection: () => ({ address: '0x1111111111111111111111111111111111111111' })
+  };
+});
+
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({
+    isSwitchingNetwork: false,
+    setIsSwitchingNetwork: () => undefined,
+    isAutoSwitching: false,
+    setIsAutoSwitching: hoisted.setIsAutoSwitchingMock,
+    autoSwitchIntent: null,
+    setAutoSwitchIntent: hoisted.setAutoSwitchIntentMock
+  })
+}));
+
+vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
+  useAppAnalytics: () => ({
+    trackNetworkSwitchRequested: hoisted.trackSwitchRequestedMock,
+    trackNetworkSwitchCompleted: hoisted.trackSwitchCompletedMock
+  })
+}));
+
+vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
+  useBatchToggle: () => [true, () => undefined]
 }));
 
 vi.mock('@/hooks', async importOriginal => {
@@ -58,6 +103,16 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     isMarketMatured: () => hoisted.matured,
+    useIsSafeWallet: () => hoisted.isSafeWallet,
+    useTokenAllowance: () => ({ data: 0n, isLoading: false, error: null, mutate: () => {} }),
+    useNetworkFee: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => {},
+      dataSources: []
+    }),
+    useIsBatchSupported: () => ({ data: true, isLoading: false }),
     usePendleUserPtBalances: () => ({
       data: { [MATURED_MARKET.marketAddress]: PT_BALANCE },
       isLoading: false,
@@ -109,15 +164,15 @@ vi.mock('@/widgets', async importOriginal => {
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: hoisted.launchMock,
-    updateModalContent: () => undefined,
-    isModalOpen: false,
+    updateModalContent: hoisted.updateMock,
+    isModalOpen: hoisted.isModalOpen,
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
       onSuccess: () => undefined,
       onError: () => undefined
     },
-    txStatus: 'idle'
+    txStatus: hoisted.txStatus
   })
 }));
 
@@ -161,12 +216,50 @@ const TestConsumer = ({ openOnMount = true }: { openOnMount?: boolean }) => {
 describe('usePendleRedeemModal analytics', () => {
   beforeEach(() => {
     hoisted.launchMock.mockClear();
+    hoisted.updateMock.mockClear();
+    hoisted.isModalOpen = false;
+    hoisted.txStatus = 'idle';
     hoisted.matured = true;
     hoisted.valueUsd = (_symbol: string, amount: number) => amount;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('freezes the live analytics push once the flow leaves IDLE', () => {
+    hoisted.isModalOpen = true;
+    const view = renderComponent(<TestConsumer openOnMount={false} />);
+    const idlePushes = hoisted.updateMock.mock.calls.length;
+    expect(idlePushes).toBeGreaterThan(0);
+
+    // Quote repolls mid-flight (valueUsd recompute) while the tx is loading:
+    // the blob the signed tx started with must not be rewritten.
+    hoisted.txStatus = 'loading';
+    hoisted.valueUsd = (_symbol: string, amount: number) => amount * 2;
+    view.rerender(<TestConsumer openOnMount={false} />);
+    expect(hoisted.updateMock.mock.calls.length).toBe(idlePushes);
+
+    // Back to IDLE (reset/retry): pushes resume.
+    hoisted.txStatus = 'idle';
+    view.rerender(<TestConsumer openOnMount={false} />);
+    expect(hoisted.updateMock.mock.calls.length).toBeGreaterThan(idlePushes);
+    view.unmount();
+  });
+
+  it('names the quoted receive amount in the success toast, on launch and in the live push', () => {
+    hoisted.isModalOpen = true;
+    const { unmount } = renderComponent(<TestConsumer />);
+    // QUOTE.amountOut = 1_499_500n at 6dp → 1.5 of the default output (the underlying).
+    const expected = {
+      loading: 'Claiming your matured position',
+      success: 'Claimed 1.5 USDG',
+      error: 'Claim failed'
+    };
+    expect(hoisted.launchMock.mock.calls[0][0].toast).toEqual(expected);
+    const lastPush = hoisted.updateMock.mock.calls.at(-1)?.[1];
+    expect(lastPush.toast).toEqual(expected);
+    unmount();
   });
 
   it('preserves widgetName=fixed, flow=redeem, action=redeem on launch()', () => {
@@ -294,5 +387,76 @@ describe('usePendleRedeemModal onConfirm freshness', () => {
     expect(executeAtLaunch).not.toHaveBeenCalled();
     expect(executeAfterChange).toHaveBeenCalledTimes(1);
     unmount();
+  });
+});
+
+describe('usePendleRedeemModal network switch', () => {
+  beforeEach(() => {
+    hoisted.launchMock.mockClear();
+    hoisted.isModalOpen = false;
+    hoisted.txStatus = 'idle';
+    hoisted.matured = true;
+    hoisted.chainId = 1;
+    hoisted.isSafeWallet = false;
+    hoisted.switchChainAsyncMock.mockReset();
+    hoisted.switchChainAsyncMock.mockResolvedValue(undefined);
+    hoisted.setIsAutoSwitchingMock.mockClear();
+    hoisted.setAutoSwitchIntentMock.mockClear();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // A real click, not a render-time capture — reassigning an outer variable
+  // during render trips react-hooks/globals, and the click path is what ships.
+  const Capture = () => {
+    const { openRedeemModal } = usePendleRedeemModal(MATURED_MARKET);
+    return <button data-testid="open-redeem" onClick={() => void openRedeemModal()} />;
+  };
+  const clickOpen = (container: HTMLElement) =>
+    act(async () => {
+      container
+        .querySelector('[data-testid="open-redeem"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+  it('opens directly on the pendle chain without touching the wallet', async () => {
+    const view = renderComponent(<Capture />);
+    await clickOpen(view.container);
+    expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
+    expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('switches the wallet to mainnet first when clicked off-chain, flagged automatic', async () => {
+    hoisted.chainId = 8453; // Base
+    const view = renderComponent(<Capture />);
+    await clickOpen(view.container);
+    expect(hoisted.setIsAutoSwitchingMock).toHaveBeenCalledWith(true);
+    expect(hoisted.switchChainAsyncMock).toHaveBeenCalledWith({ chainId: 1 });
+    expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('a rejected switch opens nothing and resets the auto flags — the click stays retryable', async () => {
+    hoisted.chainId = 8453;
+    hoisted.switchChainAsyncMock.mockRejectedValueOnce(new Error('User rejected the request'));
+    const view = renderComponent(<Capture />);
+    await clickOpen(view.container);
+    expect(hoisted.launchMock).not.toHaveBeenCalled();
+    expect(hoisted.setIsAutoSwitchingMock).toHaveBeenLastCalledWith(false);
+    expect(hoisted.setAutoSwitchIntentMock).toHaveBeenLastCalledWith(null);
+    view.unmount();
+  });
+
+  it('does nothing off-chain in a Safe — it cannot switch from the dapp (APP-486)', async () => {
+    hoisted.chainId = 8453;
+    hoisted.isSafeWallet = true;
+    const view = renderComponent(<Capture />);
+    await clickOpen(view.container);
+    expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
+    expect(hoisted.launchMock).not.toHaveBeenCalled();
+    view.unmount();
   });
 });

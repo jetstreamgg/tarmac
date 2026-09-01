@@ -9,15 +9,14 @@ import { usePendleAllPnlTransactions } from './usePendleAllPnlTransactions';
  * disabled until a wallet is connected.
  *
  * Backed by a single unfiltered call to /v1/pnl/transactions via the shared
- * usePendleAllPnlTransactions cache. Visiting a market detail then returning
- * to the overview (or vice versa) reuses the same in-memory rows — one
- * TanStack query for both views.
+ * usePendleAllPnlTransactions cache. Every consumer (market detail history,
+ * matured-position earnings) reuses the same in-memory rows — one TanStack
+ * query for all views.
  *
  * Pendle's API doesn't serve Tenderly, so the transport layer rewrites
  * Tenderly chain IDs to mainnet. The PnL feed lags chain tip by ~20s
  * (empirical, n=2, May 2026 — Pendle's docs claim "few minutes" but the
- * observed lag is much tighter); PendleWidgetPane fires a delayed refresh
- * after tx success to bridge that window.
+ * observed lag is much tighter).
  */
 export function usePendleMarketHistory(marketAddress: `0x${string}` | undefined): PendleMarketHistoryHook {
   const { data: allRows, isLoading, error, refetch } = usePendleAllPnlTransactions();

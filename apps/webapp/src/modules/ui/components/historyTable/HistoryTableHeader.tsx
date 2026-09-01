@@ -37,7 +37,7 @@ export function HistoryTableHeader({
               <Trans>Date</Trans>
             </Text>
             <ArrowDown
-              className={`fill-selectActive transition-all ${sortDirection === SortDirection.asc ? 'rotate-180' : ''}`}
+              className={`fill-selectActive light:fill-textSecondary transition-all ${sortDirection === SortDirection.asc ? 'rotate-180' : ''}`}
               width={10}
               height={14}
             />

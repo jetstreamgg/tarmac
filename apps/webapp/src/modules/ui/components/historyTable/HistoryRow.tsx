@@ -12,13 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { LoadingErrorWrapper } from '../LoadingErrorWrapper';
 import { Fragment, useMemo } from 'react';
-import {
-  Tooltip,
-  TooltipArrow,
-  TooltipContent,
-  TooltipPortal,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
 
 type HistoryRowProps = {
   row?: HistoryRowType;
@@ -54,7 +48,7 @@ const BaseRow = ({
       {(typeColumn || statusColumn) && <TableCell className="grow">{content[3]}</TableCell>}
       <TableCell className="h-auto w-full pb-2.5 xl:w-auto xl:pb-4">{content[4]}</TableCell>
       <TableCell className="h-auto w-full pt-2.5 xl:w-auto xl:pt-4">
-        <Text variant="small" className="text-selectActive xl:hidden">
+        <Text variant="small" className="text-selectActive light:text-textSecondary xl:hidden">
           <Trans>Tx hash</Trans>
         </Text>
         <div className="flex justify-between space-x-2 lg:justify-start xl:justify-end">{content[5]}</div>
@@ -124,7 +118,7 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
         {/* "Completed" falback is used for psm trades on networks that now support cow swap*/}
       </Text>,
       <Fragment key="fifth-content">
-        <Text variant="small" className="text-selectActive xl:hidden">
+        <Text variant="small" className="text-selectActive light:text-textSecondary xl:hidden">
           <Trans>Date</Trans>
         </Text>
         <Text className="text-left xl:text-right">{row?.formattedDate}</Text>
@@ -144,7 +138,7 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
               />
             </TooltipTrigger>
             <TooltipPortal>
-              <TooltipContent arrowPadding={10}>
+              <TooltipContent>
                 <Text variant="small">
                   {row?.useCowExplorer ? (
                     <Trans>View transaction on CoW Explorer</Trans>
@@ -152,7 +146,6 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
                     t`View transaction on ${explorerName}`
                   )}
                 </Text>
-                <TooltipArrow width={12} height={8} />
               </TooltipContent>
             </TooltipPortal>
           </Tooltip>
@@ -161,11 +154,10 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
               <CopyToClipboard text={row?.transactionHash || ''} />
             </TooltipTrigger>
             <TooltipPortal>
-              <TooltipContent arrowPadding={10}>
+              <TooltipContent>
                 <Text variant="small">
                   <Trans>Copy transaction hash</Trans>
                 </Text>
-                <TooltipArrow width={12} height={8} />
               </TooltipContent>
             </TooltipPortal>
           </Tooltip>

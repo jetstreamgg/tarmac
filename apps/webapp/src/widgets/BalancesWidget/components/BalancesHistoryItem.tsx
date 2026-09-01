@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getEtherscanLink, formatAddress, getCowExplorerLink, getExplorerName } from '@/utils';
+import { getEtherscanLink, formatAddress, getCowExplorerLink, getExplorerName, getChainIcon } from '@/utils';
 import { Card } from '@/widgets/components/ui/card';
 import { LinkExternal } from '@/widgets/shared/components/icons/LinkExternal';
 import { Text } from '@/widgets/shared/components/ui/Typography';
@@ -11,13 +11,13 @@ import {
   useRewardContractTokens,
   StUsdsProviderType
 } from '@/hooks';
-import { getHistoryIconSource } from '../lib/getHistoryIconSource';
 import { getTitle } from '../lib/getTitle';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
 import { getHistoryRightText } from '../lib/getHistoryRightText';
-import { Avatar, AvatarImage } from '@/widgets/components/ui/avatar';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
-import { useChainImage } from '@/widgets/shared/hooks/useChainImage';
+import { Skeleton } from '@/components/ui/skeleton';
+import { IconboxAction } from '@/components/ui/iconbox';
+import { TransactionActionIcon } from '@/components/product/TransactionActionIcon';
+import { isPositive } from '@/modules/portfolio/helpers/transactionRow';
 
 interface BalancesHistoryItemProps {
   transactionHash: string;
@@ -29,7 +29,6 @@ interface BalancesHistoryItemProps {
   tradeFromToken?: string;
   rewardContract?: `0x${string}`;
   item: CombinedHistoryItem;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }
 
 export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
@@ -41,8 +40,7 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
   savingsToken,
   tradeFromToken,
   rewardContract,
-  item,
-  onExternalLinkClicked
+  item
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const { data: rewardContractTokens, isLoading: isLoadingRewardContractTokens } =
@@ -62,18 +60,9 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
   const positive = getPositive({ type });
   const provider = 'provider' in item ? (item.provider as StUsdsProviderType | undefined) : undefined;
   const isCurveProvider = provider === StUsdsProviderType.CURVE;
-  const iconSrc = getHistoryIconSource({ type, module });
-  const chainImageSrc = useChainImage(chainId || 1);
-  const curveBadgeSrc = 'history-icons/curve-badge.svg';
 
   return (
-    <ExternalLink
-      href={href}
-      showIcon={false}
-      className="w-full"
-      wrapperClassName="w-full justify-stretch"
-      onExternalLinkClicked={onExternalLinkClicked}
-    >
+    <ExternalLink href={href} showIcon={false} className="w-full" wrapperClassName="w-full justify-stretch">
       <Card
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -81,22 +70,20 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
         className="w-full"
       >
         <div className="flex items-center">
-          <div className="mr-3">
-            <Avatar className="relative">
-              <div className="bg-textSecondary/25 mt-0.5 flex h-8 w-8 items-center justify-center rounded-full">
-                <AvatarImage src={iconSrc} alt={getTitle({ type, module })} className="h-4 w-4" />
-              </div>
-              {chainImageSrc && (
-                <Avatar className="absolute right-0 bottom-0.5 h-[40%] w-[40%]">
-                  <AvatarImage src={chainImageSrc} alt="chain-icon" className="h-full w-full" />
-                </Avatar>
-              )}
-              {isCurveProvider && (
-                <Avatar className="absolute top-0 right-0 h-[40%] w-[40%]">
-                  <AvatarImage src={curveBadgeSrc} alt="curve-badge" className="h-full w-full" />
-                </Avatar>
-              )}
-            </Avatar>
+          <div className="relative mr-3 shrink-0">
+            <IconboxAction>
+              <TransactionActionIcon module={module} positive={isPositive(type)} />
+            </IconboxAction>
+            <span className="absolute -right-0.5 -bottom-0.5 flex size-4">
+              {getChainIcon(chainId || 1, 'h-full w-full')}
+            </span>
+            {isCurveProvider && (
+              <img
+                src="/history-icons/curve-badge.svg"
+                alt=""
+                className="absolute -top-0.5 -right-0.5 size-4"
+              />
+            )}
           </div>
           <div className="flex w-full items-center justify-between">
             <div>

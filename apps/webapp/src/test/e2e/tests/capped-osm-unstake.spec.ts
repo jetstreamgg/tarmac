@@ -1,116 +1,77 @@
 import { expect, test } from '../fixtures-parallel';
-import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.js';
-import { triggerCappedOsmError } from '../utils/setOsmSpotPrice.js';
-import { updateStakeModuleDebtCeiling } from '../utils/updateStakeDebtCeiling.js';
+import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
+import { BORROW_SPEC_SKY, gotoManagePosition, openStakePosition } from '../utils/stakeV2.ts';
+import { getOsmSpotPrice, restoreOsmSpotPrice, triggerCappedOsmError } from '../utils/setOsmSpotPrice.ts';
+import { updateStakeModuleDebtCeiling } from '../utils/updateStakeDebtCeiling.ts';
 import { parseUnits } from 'viem';
 
 /**
- * This test validates the feature that blocks unstaking when the capped OSM SKY price
- * would cause the liquidation price to exceed the capped price.
- *
- * The feature prevents users from putting their position in an immediately liquidatable state
- * due to the OSM price cap.
+ * Validates the guard that blocks unstaking when the resulting liquidation
+ * price would exceed the capped OSM SKY price (preventing an immediately
+ * liquidatable position). V2 rewrite (F7): the check lives on the manage
+ * sheet's Withdraw card (ManagePositionTakeover), same error copy as legacy.
  */
 
 test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
-  test.beforeEach(async ({ isolatedPage }) => {
-    console.log('Starting beforeEach - Capped OSM test');
+  // The trigger rewrites the ilk's GLOBAL vat spot — on the shared fork,
+  // every borrow-gated spec running after it would see a 100× lower capped
+  // price (the min-collateral gate becomes unsatisfiable). Restore what we
+  // broke, pass or fail.
+  let originalSpot: bigint | undefined;
+  test.afterEach(async () => {
+    if (originalSpot !== undefined) {
+      await restoreOsmSpotPrice('LSEV2-SKY-A', originalSpot);
+      originalSpot = undefined;
+    }
+  });
 
-    // Ensure debt ceiling is high enough (other tests may have lowered it)
-    // Set to 1 billion USDS in RAD (45 decimals)
+  test.beforeEach(async ({ isolatedPage }) => {
+    // Ensure debt ceiling is high enough (other tests may have lowered it).
     const highCeiling = parseUnits('1000000000', 45);
     await updateStakeModuleDebtCeiling(highCeiling);
-    console.log('✅ Debt ceiling reset to high value');
 
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Stake & Borrow' }).click();
-    console.log('Setup complete');
   });
 
   test('should block unstake when liquidation price exceeds capped OSM price', async ({ isolatedPage }) => {
-    // Step 1: Create a position with SKY staked and USDS borrowed
-    const SKY_AMOUNT_TO_LOCK = '2400000'; // 2.4M SKY
-    const USDS_AMOUNT_TO_BORROW = '38000'; // 38K USDS
+    // Step 1: a position with SKY staked and USDS borrowed.
+    await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '38000' });
 
-    console.log('Step 1: Creating position with borrowed USDS...');
+    // Step 2: withdraw works normally before the OSM price is manipulated.
+    await gotoManagePosition(isolatedPage, 0);
+    await isolatedPage.getByTestId('stake-manage-menu-withdraw').click();
+    await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
 
-    await isolatedPage.getByTestId('supply-first-input-lse').fill(SKY_AMOUNT_TO_LOCK);
-    await isolatedPage.getByTestId('borrow-input-lse').first().fill(USDS_AMOUNT_TO_BORROW);
-    await isolatedPage.waitForTimeout(2000); // Wait for simulation
+    await isolatedPage.getByTestId('stake-manage-stake-amount').fill('100000');
+    await expect(
+      isolatedPage.getByText('Liquidation price is higher than the capped OSM SKY price')
+    ).not.toBeVisible();
+    await expect(isolatedPage.getByTestId('stake-manage-confirm')).toBeEnabled({ timeout: 30_000 });
 
-    // Verify capped OSM price is displayed in the position overview
-    await expect(isolatedPage.getByText('Capped OSM SKY price')).toBeVisible();
-
-    await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled({ timeout: 20000 });
-    await isolatedPage.getByTestId('widget-button').first().click();
-
-    // Select rewards
-    await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-    await isolatedPage.getByTestId('stake-reward-card').first().click();
-    await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled();
-    await isolatedPage.getByTestId('widget-button').first().click();
-
-    // Confirm position
-    await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible();
-    await isolatedPage.getByTestId('widget-button').first().click();
-
-    await expect(isolatedPage.getByRole('heading', { name: 'Success!' })).toBeVisible({
-      timeout: 20000
-    });
-
-    console.log('Position created successfully');
-
-    // Step 2: Navigate to Manage Position
-    await isolatedPage.getByRole('button', { name: 'Manage your position(s)' }).click();
-    await expect(isolatedPage.getByText('Position 1')).toBeVisible();
-    await isolatedPage.getByRole('button', { name: 'Manage Position' }).last().click();
-
-    // Step 3: Switch to "Unstake and pay back" tab
-    await isolatedPage.getByRole('tab', { name: 'Unstake and pay back' }).click();
-
-    // Verify we can unstake initially (before manipulating OSM price)
-    const unstakeInput = isolatedPage.getByTestId('supply-first-input-lse');
-    await unstakeInput.fill('100000'); // Try to unstake 100K SKY
-    await isolatedPage.waitForTimeout(2000);
-
-    // Should not have error initially
-    const errorTextBefore = await unstakeInput.locator('..').locator('..').textContent();
-    expect(errorTextBefore).not.toContain('Liquidation price is higher than the capped OSM SKY price');
-
-    console.log('Unstaking works normally before OSM manipulation');
-
-    // Step 4: Manipulate the OSM spot price to trigger the cap
-    console.log('Step 4: Triggering capped OSM error by lowering spot price...');
-
-    // LSEV2-SKY-A is the staking engine ilk name
+    // Step 3: lower the OSM spot price so the cap binds (LSEV2-SKY-A is the
+    // staking engine ilk). Capture the pre-trigger spot for the afterEach
+    // restore.
+    originalSpot = (await getOsmSpotPrice('LSEV2-SKY-A')).spot;
     await triggerCappedOsmError('LSEV2-SKY-A');
 
-    console.log('OSM spot price manipulated');
-
-    // // Step 5: Refresh the page to get updated prices
-    await isolatedPage.reload();
+    // Step 4: fresh page load for fresh price reads (a plain reload would keep
+    // the manage-flow params in the URL and mount an overlay over the connect
+    // buttons while disconnected), reconnect, deep-link back in.
+    await isolatedPage.goto('/');
     await isolatedPage.waitForTimeout(2000);
-    // connect wallet and accept terms
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
 
-    // Step 6: Try to unstake again - should now show error
-    console.log('Step 6: Attempting to unstake after OSM manipulation...');
+    await gotoManagePosition(isolatedPage, 0);
+    await isolatedPage.getByTestId('stake-manage-menu-withdraw').click();
+    await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+    await isolatedPage.getByTestId('stake-manage-stake-amount').fill('100000');
 
-    await isolatedPage.getByTestId('supply-first-input-lse').fill('100000');
-    await isolatedPage.waitForTimeout(2000); // Wait for simulation
-
-    // Verify the capped OSM error appears
-    const errorMessage = isolatedPage.getByText('Liquidation price is higher than the capped OSM SKY price');
-    await expect(errorMessage).toBeVisible({ timeout: 10000 });
-
-    console.log('Capped OSM error displayed correctly');
-
-    // Verify the button is disabled due to the error
-    const continueButton = isolatedPage.getByTestId('widget-button').first();
-    await expect(continueButton).toBeDisabled();
-
-    console.log('Continue button is disabled when capped OSM error occurs');
+    // Step 5: the capped OSM guard blocks the withdrawal.
+    await expect(
+      isolatedPage.getByText('Liquidation price is higher than the capped OSM SKY price')
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(isolatedPage.getByTestId('stake-manage-confirm')).toBeDisabled();
   });
 });

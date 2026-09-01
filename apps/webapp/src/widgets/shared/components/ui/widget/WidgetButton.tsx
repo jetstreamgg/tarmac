@@ -31,7 +31,7 @@ export const WidgetButton = ({
         loadingText={loadingText}
         dataTestId="widget-button"
         variant="primaryAlt"
-        className="font-circle disabled:text-textMuted h-full px-6 py-4 text-base"
+        className="font-circle disabled:text-textMuted light:disabled:text-[rgba(26,24,85,0.85)] h-full px-6 py-4 text-base"
       />
     </VStack>
   );

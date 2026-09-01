@@ -12,7 +12,15 @@ import { useChainId } from 'wagmi';
 
 export function SusdtVaultHistory() {
   const indexerUrl = useIndexerUrl();
-  const { data: vaultHistory, isLoading, error } = useSusdtVaultHistory({ indexerUrl });
+  const {
+    data: vaultHistory,
+    isLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useSusdtVaultHistory({
+    indexerUrl
+  });
 
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -29,7 +37,7 @@ export function SusdtVaultHistory() {
       h.type === TransactionTypeEnum.SUPPLY ? (
         <SavingsSupply width={14} height={13} className="mr-[17px] shrink-0" />
       ) : (
-        <ArrowDown width={10} height={14} className="mr-[19px] shrink-0 fill-white" />
+        <ArrowDown width={10} height={14} className="light:fill-text mr-[19px] shrink-0 fill-white" />
       ),
     formattedDate: formattedDates.length > index ? formattedDates[index] : '',
     rawDate: h.blockTimestamp,
@@ -44,6 +52,9 @@ export function SusdtVaultHistory() {
       isLoading={isLoading}
       transactionHeader={t`Amount`}
       typeColumn
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

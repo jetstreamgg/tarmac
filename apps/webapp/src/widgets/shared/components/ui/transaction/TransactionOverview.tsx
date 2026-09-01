@@ -33,7 +33,6 @@ type TransactionOverviewParams = {
   isFetching: boolean;
   fetchingMessage: string;
   rateType?: 'str' | 'ssr' | 'srr' | 'dtc' | 'stusds' | 'morpho' | 'sky';
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /**
    * Headline rows. When provided, renders as a TWO-accordion layout:
    *   - Section 1 ("title") — these rows, expanded by default
@@ -49,12 +48,10 @@ type TransactionOverviewParams = {
 
 function OverviewRow({
   row,
-  rateType,
-  onExternalLinkClicked
+  rateType
 }: {
   row: TransactionDataRow;
   rateType?: TransactionOverviewParams['rateType'];
-  onExternalLinkClicked?: TransactionOverviewParams['onExternalLinkClicked'];
 }) {
   const {
     label,
@@ -81,11 +78,7 @@ function OverviewRow({
         </Text>
         {(label === 'Rate' || label === 'stUSDS Rate') && rateType && (
           <span className="mt-1">
-            <PopoverRateInfo
-              type={rateType}
-              onExternalLinkClicked={onExternalLinkClicked}
-              iconClassName="text-textSecondary"
-            />
+            <PopoverRateInfo type={rateType} iconClassName="text-textSecondary" />
           </span>
         )}
         {tooltipText && (
@@ -117,7 +110,6 @@ export function TransactionOverview({
   isFetching,
   fetchingMessage,
   rateType = 'ssr',
-  onExternalLinkClicked,
   pinnedData,
   detailsTitle = 'Transaction details',
   transactionData
@@ -149,18 +141,13 @@ export function TransactionOverview({
             <Accordion type="single" collapsible defaultValue="overview" className="mb-2">
               <AccordionItem value="overview">
                 <AccordionTrigger className="py-1">
-                  <Text variant="medium" className="font-medium">
+                  <Text variant="medium" className="font-circle font-medium">
                     {title}
                   </Text>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
                   {pinnedData!.map(row => (
-                    <OverviewRow
-                      key={row.label}
-                      row={row}
-                      rateType={rateType}
-                      onExternalLinkClicked={onExternalLinkClicked}
-                    />
+                    <OverviewRow key={row.label} row={row} rateType={rateType} />
                   ))}
                 </AccordionContent>
               </AccordionItem>
@@ -168,18 +155,13 @@ export function TransactionOverview({
             <Accordion type="single" collapsible>
               <AccordionItem value="details">
                 <AccordionTrigger className="py-1">
-                  <Text variant="medium" className="font-medium">
+                  <Text variant="medium" className="font-circle font-medium">
                     {detailsTitle}
                   </Text>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
                   {transactionData.map(row => (
-                    <OverviewRow
-                      key={row.label}
-                      row={row}
-                      rateType={rateType}
-                      onExternalLinkClicked={onExternalLinkClicked}
-                    />
+                    <OverviewRow key={row.label} row={row} rateType={rateType} />
                   ))}
                 </AccordionContent>
               </AccordionItem>
@@ -197,18 +179,13 @@ export function TransactionOverview({
           <Accordion type="single" collapsible className="p-4" defaultValue="item-1">
             <AccordionItem value="item-1">
               <AccordionTrigger className="py-1">
-                <Text variant="medium" className="font-medium">
+                <Text variant="medium" className="font-circle font-medium">
                   {title}
                 </Text>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">
                 {transactionData.map(row => (
-                  <OverviewRow
-                    key={row.label}
-                    row={row}
-                    rateType={rateType}
-                    onExternalLinkClicked={onExternalLinkClicked}
-                  />
+                  <OverviewRow key={row.label} row={row} rateType={rateType} />
                 ))}
               </AccordionContent>
             </AccordionItem>

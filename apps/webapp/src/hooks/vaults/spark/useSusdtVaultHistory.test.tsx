@@ -93,6 +93,7 @@ describe('useSusdtVaultHistory — Sky Ecosystem indexer (sUSDT)', () => {
     expect(query).toContain('SusdtWithdraw');
     expect(query).toContain(`owner: { _eq: "${USER}" }`);
     expect(query).toContain('order_by: { blockTimestamp: desc }');
+    expect(query).toContain('limit:');
     expect(query).toContain('chainId: { _eq: 1 }');
   });
 

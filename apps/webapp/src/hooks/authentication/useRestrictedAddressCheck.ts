@@ -1,13 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { ReadHookParams } from '../hooks';
-import { useChainalysisCheck } from './useChainalysisCheck';
-import { DEFAULT_ORACLE_CHAIN_ID } from './chainalysisOracle';
 
-type AuthResponse = {
+export type AddressScreeningResult = {
   addressAllowed: boolean;
 };
 
-const checkAddress = async (address?: string, authUrl?: string): Promise<AuthResponse> => {
+/**
+ * One cache entry per address, shared between the connect-time hook below and
+ * the pre-transaction gate (APP-501), so both read and write the same verdict:
+ * a risky result found at Confirm flips the app-level blocked dialog through
+ * this key, and a fresh connect-time verdict spares Confirm a refetch.
+ */
+export const addressScreeningQueryKey = (address?: string) => ['auth', address];
+
+export const fetchAddressScreening = async (
+  address?: string,
+  authUrl?: string
+): Promise<AddressScreeningResult> => {
   if (!authUrl) {
     throw new Error('Missing auth URL');
   }
@@ -26,51 +35,33 @@ const checkAddress = async (address?: string, authUrl?: string): Promise<AuthRes
   return { addressAllowed };
 };
 
-type Props = ReadHookParams<AuthResponse> & {
+type Props = ReadHookParams<AddressScreeningResult> & {
   address?: string;
   authUrl: string;
   enabled: boolean;
-  chainId?: number;
 };
 
 export const useRestrictedAddressCheck = ({
   address,
   authUrl,
   enabled,
-  chainId = DEFAULT_ORACLE_CHAIN_ID,
+  staleTime = 60000, // a verdict stays fresh for 60 seconds, so tab focus doesn't refetch on every switch
+  refetchInterval = 60000, // re-check every 60 seconds, matching useVpnCheck, so an error state can recover
   ...options
-}: Props): { data: AuthResponse | undefined; error: Error | undefined; isLoading: boolean } => {
-  // Primary: HTTP API check
-  const {
-    data: httpData,
-    error: httpError,
-    isLoading: httpIsLoading
-  } = useQuery({
-    queryKey: ['auth', address],
+}: Props): {
+  data: AddressScreeningResult | undefined;
+  error: Error | undefined;
+  isLoading: boolean;
+  refetch: () => void;
+} => {
+  const { data, error, isLoading, refetch } = useQuery({
+    queryKey: addressScreeningQueryKey(address),
     enabled: !!address && enabled,
-    queryFn: () => checkAddress(address, authUrl),
+    queryFn: () => fetchAddressScreening(address, authUrl),
+    staleTime,
+    refetchInterval,
     ...options
   });
 
-  // Fallback: Chainalysis Oracle (only enabled if HTTP check failed)
-  const {
-    data: oracleData,
-    error: oracleError,
-    isLoading: oracleIsLoading
-  } = useChainalysisCheck({
-    address,
-    chainId,
-    enabled: enabled && !!address && !!httpError
-  });
-
-  // Use HTTP data if available, otherwise fallback to oracle data
-  const data = httpError ? oracleData : httpData;
-
-  // Only report error if both checks failed
-  const error = httpError && oracleError ? oracleError : undefined;
-
-  // Loading if HTTP is loading, or if HTTP failed and oracle is loading
-  const isLoading = httpIsLoading || (!!httpError && oracleIsLoading);
-
-  return { data, error, isLoading: !data && isLoading };
+  return { data, error: error ?? undefined, isLoading: !data && isLoading, refetch };
 };

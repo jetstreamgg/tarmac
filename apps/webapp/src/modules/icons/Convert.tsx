@@ -1,22 +1,12 @@
 import { Icon, IconProps } from './Icon';
 
 export const Convert = (props: IconProps) => (
-  <Icon {...props}>
+  <Icon viewBox="0 0 22 22" {...props}>
     <path
-      d="M4 8H17L13 4"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
-    />
-    <path
-      d="M20 16H7L11 20"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M7.01541 14.9846C3.09911 14.7348 0 11.4793 0 7.5C0 3.35786 3.35786 0 7.5 0C11.4793 0 14.7348 3.09911 14.9846 7.01541C18.9009 7.26516 22 10.5207 22 14.5C22 18.6421 18.6421 22 14.5 22C10.5207 22 7.26516 18.9009 7.01541 14.9846ZM2 7.5C2 4.46243 4.46243 2 7.5 2C10.4208 2 12.8098 4.27669 12.9892 7.15223C10.0592 7.7515 7.7515 10.0592 7.15223 12.9892C4.27669 12.8098 2 10.4208 2 7.5ZM20 14.5C20 17.5376 17.5376 20 14.5 20C11.4624 20 9 17.5376 9 14.5C9 11.4624 11.4624 9 14.5 9C17.5376 9 20 11.4624 20 14.5Z"
+      fill="currentColor"
     />
   </Icon>
 );

@@ -23,7 +23,8 @@ function HistoryTableUiComponents({
   typeColumn = false,
   typeHeader,
   statusColumn = false,
-  dataTestId
+  dataTestId,
+  onPageChange: onExternalPageChange
 }: HistoryTableProps) {
   const { address } = useConnection();
   const chainId = useChainId();
@@ -49,7 +50,7 @@ function HistoryTableUiComponents({
   // paginate clamps out-of-range pages, so a row set that shrinks under a
   // stale page (e.g. wallet switch re-keys the hook) still yields a real
   // slice instead of the "no transactions" state with data present.
-  const { rows: rowsToShow } = useMemo(
+  const { rows: rowsToShow, totalPages } = useMemo(
     () => paginate(sortedHistory, itemsPerPage, page),
     [sortedHistory, itemsPerPage, page]
   );
@@ -60,6 +61,7 @@ function HistoryTableUiComponents({
 
   const onPageChange = (nextPage: number) => {
     setPage(nextPage);
+    onExternalPageChange?.(nextPage, totalPages);
   };
 
   const shouldShowError = !isLoading && (!address || (address && !rowsToShow.length));

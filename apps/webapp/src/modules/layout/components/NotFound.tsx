@@ -1,17 +1,31 @@
-import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useEffect, useRef } from 'react';
 import { Layout } from './Layout';
 import { Heading, Text } from './Typography';
 import { Button } from '@/components/ui/button';
 import { NoResults } from '@/widgets';
+import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
+import { trackNotFoundViewed } from '@/modules/analytics/lib/trackAmbientSurfaces';
 
 export function NotFound() {
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: s => s.location.pathname });
+  // The router updates pathname while this component is still mounted during the
+  // redirect, so reading it live re-fired both events with paths that were never
+  // 404s. Latch the path that actually missed.
+  const notFoundPath = useRef(pathname);
 
   useEffect(() => {
-    setTimeout(() => {
-      navigate('/');
+    trackNotFoundViewed({ path: notFoundPath.current });
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      // The auto-redirect otherwise hides 404s as home traffic (APP-444 A7).
+      trackRouteRedirected({ fromPath: notFoundPath.current, toPath: '/', reason: 'not_found' });
+      navigate({ to: '/' });
     }, 5000);
+    return () => window.clearTimeout(timeoutId);
   }, [navigate]);
 
   return (
@@ -33,7 +47,11 @@ export function NotFound() {
           <Text variant="large" className="text-text/65 mt-3">
             Click the button to find your way back (you will be redirected to the homepage in 5 seconds).
           </Text>
-          <Button variant="primary" className="mt-6 self-center px-6 py-4" onClick={() => navigate('/')}>
+          <Button
+            variant="primary"
+            className="mt-6 self-center px-6 py-4"
+            onClick={() => navigate({ to: '/' })}
+          >
             Go to Homepage
           </Button>
         </div>

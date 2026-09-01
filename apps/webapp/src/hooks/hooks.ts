@@ -27,10 +27,21 @@ export type WriteHook = {
   retryPrepare: () => void;
   prepareError: Error | SimulateContractErrorType | null;
   prepared: boolean;
+  /** The calls this hook will send — read-only, for estimating the flow's network fee. */
+  calls?: Call[];
+  /** Always false: a single contract write is never bundled. Present so flow results are uniform. */
+  isBatch?: boolean;
 };
 
+/**
+ * Variables wagmi hands to the write mutation's onMutate. Sequential legs carry
+ * the functionName being signed (used to discriminate approve legs in analytics);
+ * batched sendCalls carry none.
+ */
+export type TxMutateVariables = { functionName?: string };
+
 export type WriteHookParams = {
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string) => void;
   onError?: (error: Error, hash: string) => void;
@@ -54,7 +65,7 @@ export type UseWriteContractFlowParameters<
 > = UseSimulateContractParameters<abi, functionName, args, config, chainId> & {
   enabled: boolean;
   gcTime?: number;
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string) => void;
   onError?: (error: Error, hash: string) => void;
@@ -70,10 +81,14 @@ export type BatchWriteHook = {
   execute: () => void;
   currentCallIndex: number;
   reset: () => void;
+  /** The calls this hook will send — read-only, for estimating the flow's network fee. */
+  calls?: Call[];
+  /** Whether those calls will go out bundled, which changes what the flow costs. */
+  isBatch?: boolean;
 };
 
 export type BatchWriteHookParams = {
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
@@ -88,7 +103,7 @@ export type UseSendBatchTransactionFlowParameters<
   chainId extends config['chains'][number]['id'] = config['chains'][number]['id']
 > = SendCallsParameters<config, chainId, calls> & {
   enabled?: boolean;
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
@@ -117,7 +132,7 @@ export type UseTransactionFlowParameters = {
   calls: Call[];
   shouldUseBatch?: boolean;
   enabled?: boolean;
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
@@ -128,7 +143,7 @@ export type UseTransactionFlowParameters = {
 export type UseSequentialTransactionFlowParameters = {
   calls: Call[];
   enabled?: boolean;
-  onMutate?: () => void;
+  onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string) => void;
   onError?: (error: Error, hash: string) => void;

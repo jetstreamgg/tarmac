@@ -10,7 +10,7 @@ import { formatBigInt, formatDecimalPercentage, formatNumber, isMainnetId, chain
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@/widgets/shared/components/ui/card/InteractiveStatsCard';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { useChainId, useAccount } from 'wagmi';
@@ -21,7 +21,6 @@ import { InteractiveStatsCardAlt } from '@/widgets/shared/components/ui/card/Int
 
 export const RewardsBalanceCard = ({
   url,
-  onExternalLinkClicked,
   loading,
   totalUserRewardsSupplied,
   variant = ModuleCardVariant.default
@@ -110,7 +109,6 @@ export const RewardsBalanceCard = ({
             <RateLineWithArrow
               rateText={`Rates up to: ${mostRecentRateNumber ? formatDecimalPercentage(mostRecentRateNumber) : '0%'}`}
               popoverType="str"
-              onExternalLinkClicked={onExternalLinkClicked}
             />
           ) : (
             <></>
@@ -150,6 +148,11 @@ export const RewardsBalanceCard = ({
       icon={<img src="/images/rewards_icon_large.svg" alt="Rewards" className="h-full w-full" />}
       url={url}
       logoName="rewards"
+      apyBadge={
+        mostRecentRateNumber && mostRecentRateNumber > 0
+          ? t`Rates up to: ${formatDecimalPercentage(mostRecentRateNumber)}`
+          : undefined
+      }
       content={
         loading ? (
           <Skeleton className="w-32" />

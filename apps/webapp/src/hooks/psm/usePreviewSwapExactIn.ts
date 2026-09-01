@@ -13,7 +13,7 @@ export const usePreviewSwapExactIn = (
 ) => {
   const currentChainId = useChainId();
   const chainId = chainIdParam || currentChainId;
-  const { data: amountOut } = useReadPsm3L2PreviewSwapExactIn({
+  const { data: amountOut, isLoading } = useReadPsm3L2PreviewSwapExactIn({
     args: [
       inToken?.address[chainId] || ZERO_ADDRESS,
       outToken?.address[chainId] || ZERO_ADDRESS,
@@ -22,10 +22,16 @@ export const usePreviewSwapExactIn = (
     chainId: chainId as 8453 | 42161
   });
 
+  // A 0 amount (or missing token) previews to 0 by definition, so only a wanted
+  // read counts as loading. Callers must not render the in-flight 0n fallback
+  // below as a final value.
+  const previewLoading = Boolean(amount && inToken && outToken) && isLoading;
+
   if (!amount || !amountOut || !inToken || !outToken) {
     return {
       formatted: '0',
-      value: 0n
+      value: 0n,
+      isLoading: previewLoading
     };
   }
   // use the correct decimals for the out token
@@ -36,6 +42,7 @@ export const usePreviewSwapExactIn = (
 
   return {
     value: amountOut,
-    formatted: formattedAmount
+    formatted: formattedAmount,
+    isLoading: previewLoading
   };
 };

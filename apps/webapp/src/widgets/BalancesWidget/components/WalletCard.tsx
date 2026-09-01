@@ -12,7 +12,13 @@ const Jazzicon =
 import { CopyToClipboard } from '@/widgets/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';
-import { isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@/utils';
+import {
+  getEtherscanLink,
+  isBaseChainId,
+  isArbitrumChainId,
+  isOptimismChainId,
+  isUnichainChainId
+} from '@/utils';
 import { useIsSafeWallet } from '@/hooks';
 import { cn } from '@/widgets/lib/utils';
 import { SwitchAccountButton } from './SwitchAccountButton';
@@ -24,8 +30,8 @@ export const WalletCard = ({
   ensName,
   walletIcon,
   className,
-  onExternalLinkClicked,
-  onSwitchAccountClick
+  onSwitchAccountClick,
+  showExplorerLink = false
 }: {
   iconSize?: number;
   showEns?: boolean;
@@ -33,8 +39,8 @@ export const WalletCard = ({
   ensAvatar?: string | null;
   walletIcon?: React.ReactElement;
   className?: string;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onSwitchAccountClick?: () => void;
+  showExplorerLink?: boolean;
 }): React.ReactElement => {
   const chainId = useChainId();
   const { address } = useConnection();
@@ -85,6 +91,14 @@ export const WalletCard = ({
             <SwitchAccountButton onSwitchAccountClick={onSwitchAccountClick} />
           )}
           <CopyToClipboard text={address || ''} />
+          {showExplorerLink && address && (
+            <ExternalLink
+              href={getEtherscanLink(chainId, address, 'address')}
+              iconSize={16}
+              className="text-textSecondary hover:text-text"
+              dataTestId="wallet-card-explorer"
+            />
+          )}
         </div>
       </div>
       {isBaseChain && (
@@ -96,7 +110,6 @@ export const WalletCard = ({
               iconSize={11}
               className="text-textEmphasis inline"
               inline
-              onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to Base.</span>
             </ExternalLink>
@@ -112,7 +125,6 @@ export const WalletCard = ({
               iconSize={11}
               className="text-textEmphasis inline"
               inline
-              onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to Arbitrum.</span>
             </ExternalLink>
@@ -128,7 +140,6 @@ export const WalletCard = ({
               iconSize={11}
               className="text-textEmphasis inline"
               inline
-              onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to OP Mainnet.</span>
             </ExternalLink>
@@ -144,7 +155,6 @@ export const WalletCard = ({
               iconSize={11}
               className="text-textEmphasis inline"
               inline
-              onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to Unichain.</span>
             </ExternalLink>

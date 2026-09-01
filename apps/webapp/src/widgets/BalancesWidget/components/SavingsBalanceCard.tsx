@@ -3,7 +3,7 @@ import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCardWithAccordion } from '@/widgets/shared/components/ui/card/InteractiveStatsCardWithAccordion';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { RateLineWithArrow } from '@/widgets/shared/components/ui/RateLineWithArrow';
@@ -13,7 +13,6 @@ import { useChainId } from 'wagmi';
 
 export const SavingsBalanceCard = ({
   urlMap,
-  onExternalLinkClicked,
   savingsBalances,
   loading,
   variant = ModuleCardVariant.default
@@ -45,7 +44,6 @@ export const SavingsBalanceCard = ({
             <RateLineWithArrow
               rateText={`Rate: ${formatDecimalPercentage(skySavingsRate)}`}
               popoverType="ssr"
-              onExternalLinkClicked={onExternalLinkClicked}
               showArrow={false}
             />
             {urlMap[chainId] && (
@@ -86,6 +84,7 @@ export const SavingsBalanceCard = ({
       url={urlMap[chainId]}
       logoName="savings"
       noChain={true}
+      apyBadge={skySavingsRate > 0 ? t`Rate: ${formatDecimalPercentage(skySavingsRate)}` : undefined}
       content={
         loading ? (
           <Skeleton className="w-32" />

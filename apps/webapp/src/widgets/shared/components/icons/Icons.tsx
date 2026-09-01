@@ -219,13 +219,18 @@ export const Cancel = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// Figma pins the copy glyph to Colors/Fg/fg-text-consistent-light (#f2f3f7) —
+// the same token as the address it sits beside — not pure white (Figma
+// 2376:225808, "Different icon color"). Inheriting `currentColor` also fixes
+// the icon in light mode, where the hardcoded white drew invisible on a light
+// surface.
 export const Copy = (props: React.SVGProps<SVGSVGElement>) => (
   <svg width="16" height="16" viewBox="0 0 13 12" {...props}>
     <path
       fillRule="evenodd"
       clipRule="evenodd"
       d="M4.72314 0.00976562C4.30893 0.00976562 3.97314 0.345552 3.97314 0.759766V2.99103H1.73633C1.32211 2.99103 0.986328 3.32681 0.986328 3.74103V11.2527C0.986328 11.667 1.32211 12.0027 1.73633 12.0027H9.24805C9.66226 12.0027 9.99805 11.667 9.99805 11.2527V9.01591H12.2293C12.6435 9.01591 12.9793 8.68012 12.9793 8.26591V0.759766C12.9793 0.345552 12.6435 0.00976562 12.2293 0.00976562H4.72314ZM8.49805 9.01591H4.72314C4.30893 9.01591 3.97314 8.68012 3.97314 8.26591V4.49103H2.48633V10.5027H8.49805V9.01591ZM5.47314 7.51591V1.50977H11.4793V7.51591H5.47314Z"
-      fill="white"
+      fill="currentColor"
     />
   </svg>
 );

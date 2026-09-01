@@ -26,7 +26,8 @@ export default [
       '**/sw.js',
       '**/generated.ts',
       '**/playwright-report/**',
-      'apps/webapp/src/locales/*'
+      'apps/webapp/src/locales/*',
+      'apps/webapp/src/routeTree.gen.ts'
     ]
   },
   ...compat.extends(

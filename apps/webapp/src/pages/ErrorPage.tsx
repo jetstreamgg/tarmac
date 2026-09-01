@@ -1,29 +1,24 @@
-import React, { useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { Layout } from '../modules/layout/components/Layout';
-import { Link, isRouteErrorResponse, useRouteError } from 'react-router-dom';
+import { InsideLayoutContext } from '../modules/layout/components/InsideLayoutContext';
+import { AppLink } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/modules/layout/components/Typography';
 import { reportError } from '@/modules/sentry/reportError';
+import { trackRouteErrorViewed } from '@/modules/analytics/lib/trackAmbientSurfaces';
 
-function ErrorPage(): React.ReactElement {
-  const error = useRouteError();
+function ErrorPage({ error }: { error?: unknown }): React.ReactElement {
+  // Route-level errors surface inside the shell's Layout (header included);
+  // wrapping again there would draw the header twice. Only a boundary above the
+  // shell — where no chrome survived the error — supplies its own Layout.
+  const insideLayout = useContext(InsideLayoutContext);
+
+  useEffect(() => {
+    trackRouteErrorViewed({ path: window.location.pathname });
+  }, []);
 
   useEffect(() => {
     if (!error) return;
-
-    if (isRouteErrorResponse(error)) {
-      reportError(new Error(`${error.status} ${error.statusText}`), {
-        module: 'ui',
-        flow: 'router',
-        action: 'load-route',
-        type: 'route_error',
-        statusCode: error.status,
-        extra: {
-          routeErrorStatusText: error.statusText
-        }
-      });
-      return;
-    }
 
     reportError(error, {
       module: 'ui',
@@ -33,19 +28,19 @@ function ErrorPage(): React.ReactElement {
     });
   }, [error]);
 
-  return (
-    <Layout>
-      <div className="my-6 text-center">
-        <Heading variant="large">Something went wrong</Heading>
+  const content = (
+    <div className="my-6 text-center">
+      <Heading variant="large">Something went wrong</Heading>
 
-        <Link to="/">
-          <Button variant="secondary" className="mt-4 ml-4">
-            Back to homepage
-          </Button>
-        </Link>
-      </div>
-    </Layout>
+      <AppLink to="/">
+        <Button variant="secondary" className="mt-4 ml-4">
+          Back to homepage
+        </Button>
+      </AppLink>
+    </div>
   );
+
+  return insideLayout ? content : <Layout>{content}</Layout>;
 }
 
 export default ErrorPage;

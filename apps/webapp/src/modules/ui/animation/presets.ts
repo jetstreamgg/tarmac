@@ -1,5 +1,5 @@
 import { Transition, Variant, Variants } from 'motion/react';
-import { bezierSkeleton, easeOutExpo } from './timingFunctions';
+import { bezierSkeleton, easeInOutQuart, easeOutExpo } from './timingFunctions';
 import { AnimationLabels } from './constants';
 
 const cardInInitial: Variant = {
@@ -79,4 +79,40 @@ const fadeInAnimate: Variant = {
 export const fadeAnimations: Variants = {
   [AnimationLabels.initial]: fadeInInitial,
   [AnimationLabels.animate]: fadeInAnimate
+};
+
+/** Table filter collapse (Figma 1598:77060) — one duration for the motion and
+ * for every hold that must outlive it (e.g. keeping a section mounted so its
+ * exits can finish). */
+export const ROW_COLLAPSE_MS = 300;
+
+export const rowCollapseTransition: Transition = {
+  duration: ROW_COLLAPSE_MS / 1000,
+  ease: easeInOutQuart
+};
+
+/**
+ * A filtered row collapses to nothing and fades as it goes; a row the filter
+ * re-admits plays the same thing backwards. All affected rows move in unison —
+ * the comp has no stagger. `height: 'auto'` lets one variant set serve both
+ * the fixed-height table cells and the variable-height mobile cards; the
+ * element carrying it must be `overflow-hidden` and hold no vertical
+ * padding/margin of its own (those would survive height 0).
+ */
+export const rowCollapseAnimations: Variants = {
+  [AnimationLabels.initial]: { height: 0, opacity: 0 },
+  [AnimationLabels.animate]: { height: 'auto', opacity: 1 },
+  [AnimationLabels.exit]: { height: 0, opacity: 0 }
+};
+
+/**
+ * Label-only variants for the row container (`motion.tr`): AnimatePresence
+ * needs the labels on its direct child to propagate enter/exit into the cell
+ * wrappers, but the row itself must not move — and must not reuse
+ * fadeAnimations, whose staggerChildren would break the comp's no-stagger rule.
+ */
+export const rowCollapseContainerAnimations: Variants = {
+  [AnimationLabels.initial]: {},
+  [AnimationLabels.animate]: {},
+  [AnimationLabels.exit]: {}
 };

@@ -16,6 +16,7 @@ import { usePendleCombinedHistory } from './usePendleCombinedHistory';
 
 const PT_USDE: PendleMarketConfig = {
   name: 'PT-USDe',
+  slug: 'pt-usde',
   marketAddress: '0xa3336f04f7afbf26714331e395054f33b77c9b8d',
   ptToken: '0xAeBf0Bb9f57E89260d57f31AF34eB58657d96Ce0',
   ytToken: '0x4265ebF36F738D4D623C201BecBbc0f92bE57198',
@@ -29,6 +30,7 @@ const PT_USDE: PendleMarketConfig = {
 
 const PT_USDG: PendleMarketConfig = {
   name: 'PT-USDG',
+  slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
   ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548',
   ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1',

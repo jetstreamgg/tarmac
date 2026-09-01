@@ -1,0 +1,173 @@
+import { useNavigate } from '@tanstack/react-router';
+import { Trans } from '@lingui/react/macro';
+import { QueryParams } from '@/lib/constants';
+import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
+import { retainOnNavigate } from '@/lib/navigation';
+import { Carousel, CarouselContent, CarouselItem, CarouselArrows } from '@/components/ui/carousel';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SuppliedEmpty } from '@/modules/icons';
+import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
+import { type PendleMaturedPosition } from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { PendleMaturedPositionCard } from '@/modules/pendle/components/PendleMaturedPositionCard';
+import type { SuppliedView } from '../helpers/suppliedView';
+import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
+import type { WalletEarnings } from '../earnings/types';
+import { earningsForPosition } from '../earnings/earningsForPosition';
+import { PositionCard } from './PositionCard';
+import { IdleStablecoinsTable } from './IdleStablecoinsTable';
+import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
+import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
+
+// Each card spans a fraction of the row so 1 (mobile) → 3 (desktop) show at once.
+// The comp (1030:58713) sets cards 8px apart, not the carousel's default 16.
+const ITEM_BASIS = 'basis-full pl-2 sm:basis-1/2 desktop:basis-1/3';
+
+/**
+ * The Portfolio positions section below the earnings card. Shares the
+ * Supplied/Idle toggle state with the earnings card: Supplied renders an
+ * arrow-paged carousel of position cards; Idle renders a table of held
+ * stablecoins with a Supply CTA into the Earn list.
+ */
+export function PortfolioPositionsSection({
+  suppliedView,
+  suppliedLoading,
+  maturedPositions,
+  maturedLoading,
+  idleView,
+  idleSupplyInfo,
+  idleLoading,
+  earnings,
+  tab,
+  onTabChange
+}: {
+  suppliedView: SuppliedView;
+  suppliedLoading: boolean;
+  /** Matured PT held (network-scoped by the caller) — leads the Supplied carousel. */
+  maturedPositions: PendleMaturedPosition[];
+  maturedLoading: boolean;
+  idleView: IdleView;
+  idleSupplyInfo: Map<string, IdleSupplyInfo>;
+  idleLoading: boolean;
+  /** APP-450 wallet earnings feeding each card's "Already earned" stat. */
+  earnings: WalletEarnings;
+  tab: PortfolioTab;
+  onTabChange: (tab: PortfolioTab) => void;
+}) {
+  const navigate = useNavigate();
+  // Products with an in-place supply modal open it without navigating —
+  // switching the wallet to the position's chain first when needed; products
+  // without one — and all Manage buttons — route to the product page.
+  const resolveSupplyAction = usePortfolioSupplyActions();
+  const goToProduct = (detailPath: string) => {
+    setPendingNavIntent('card', detailPath);
+    void navigate({ to: detailPath as '/', search: retainOnNavigate });
+  };
+  // Deep-link to the Earn list pre-filtered by the chosen stablecoin (keeps
+  // the active network); the anchor lands it past the hero, at the
+  // opportunities table (APP-487).
+  const goToEarnForToken = (symbol: string) =>
+    void navigate({
+      to: ROUTES.EARN,
+      search: prev => ({ ...retainOnNavigate(prev), [QueryParams.Token]: symbol }),
+      hash: EARN_OPPORTUNITIES_HASH
+    });
+
+  if (tab === 'idle') {
+    return (
+      <section data-testid="portfolio-positions">
+        <PortfolioTabs tab={tab} onTabChange={onTabChange} />
+        {idleLoading && idleView.tokens.length === 0 ? (
+          <TableSkeleton />
+        ) : idleView.tokens.length === 0 ? (
+          <EmptyState className="mt-8" illustration={<SuppliedEmpty aria-hidden />}>
+            <Trans>No idle stablecoins.</Trans>
+          </EmptyState>
+        ) : (
+          <IdleStablecoinsTable
+            tokens={idleView.tokens}
+            supplyInfo={idleSupplyInfo}
+            onSupply={goToEarnForToken}
+          />
+        )}
+      </section>
+    );
+  }
+
+  if (suppliedView.positions.length === 0 && maturedPositions.length === 0) {
+    return (
+      <section data-testid="portfolio-positions">
+        <PortfolioTabs tab={tab} onTabChange={onTabChange} />
+        {suppliedLoading || maturedLoading ? (
+          <CarouselSkeleton />
+        ) : (
+          <EmptyState className="mt-8" illustration={<SuppliedEmpty aria-hidden />}>
+            <Trans>No supplied positions yet.</Trans>
+          </EmptyState>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section data-testid="portfolio-positions">
+      <Carousel opts={{ align: 'start', slidesToScroll: 'auto', containScroll: 'trimSnaps' }}>
+        <div className="mb-8 flex items-center justify-between">
+          <PortfolioTabs tab={tab} onTabChange={onTabChange} />
+          {/* DS Button / Icon pair, secondary at 32px with a 12px glyph and
+              6px between them (1030:58710, APP-443 item 8); shown only while
+              the cards overflow the row. */}
+          <CarouselArrows />
+        </div>
+        <CarouselContent className="-ml-2">
+          {/* Matured PT leads the row (Figma 2306:72334): it needs action (Claim)
+              while the live positions merely accrue. The marketplace filters
+              matured markets out of suppliedView, so these cards are their only
+              surface (G6). */}
+          {maturedPositions.map(({ market, ptBalance }) => (
+            <CarouselItem key={market.marketAddress} className={ITEM_BASIS}>
+              <PendleMaturedPositionCard
+                market={market}
+                ptBalance={ptBalance}
+                onViewDetails={() => goToProduct(`${ROUTES.EARN_FIXED}/${market.slug}`)}
+              />
+            </CarouselItem>
+          ))}
+          {suppliedView.positions.map(position => (
+            <CarouselItem key={position.id} className={ITEM_BASIS}>
+              <PositionCard
+                position={position}
+                alreadyEarned={earningsForPosition(earnings, position.id)}
+                onSupply={resolveSupplyAction(position) ?? (() => goToProduct(position.detailPath))}
+                onManage={() => goToProduct(position.detailPath)}
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+    </section>
+  );
+}
+
+// Skeleton placeholders sized like the loaded cards: an exact-fit grid showing
+// as many cards as the carousel does per tier (1 → 2 → 3), no clipped extras.
+function CarouselSkeleton() {
+  return (
+    <div className="desktop:grid-cols-3 mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <Skeleton className="h-[280px] rounded-[28px]" />
+      <Skeleton className="hidden h-[280px] rounded-[28px] sm:block" />
+      <Skeleton className="desktop:block hidden h-[280px] rounded-[28px]" />
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <Card className="mt-8 flex flex-col gap-4 p-6">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Skeleton key={index} className="h-12 rounded-xl" />
+      ))}
+    </Card>
+  );
+}

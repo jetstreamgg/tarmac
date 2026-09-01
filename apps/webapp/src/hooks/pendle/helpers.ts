@@ -1,6 +1,18 @@
+import { mainnet } from 'viem/chains';
+import { isTestnetId } from '@/utils';
+
 /** Whether a market has matured (expiry timestamp <= now). */
 export function isMarketMatured(expiry: number): boolean {
   return Math.floor(Date.now() / 1000) >= expiry;
+}
+
+/**
+ * Pendle markets exist only on Ethereum mainnet (or its testnet forks in dev),
+ * so pendle transactions must be signed there. Reads stay pinned to mainnet in
+ * the pendle hooks regardless of the connected chain.
+ */
+export function isPendleChain(chainId: number): boolean {
+  return isTestnetId(chainId) || chainId === mainnet.id;
 }
 
 /**

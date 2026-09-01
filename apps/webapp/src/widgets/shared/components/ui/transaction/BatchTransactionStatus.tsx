@@ -62,14 +62,12 @@ export function TransactionDetail() {
 
 export function BatchTransactionStatus({
   explorerName: paramExplorerName,
-  onExternalLinkClicked,
   transactionDetail,
   isBatchTransaction,
   customSteps,
   totalSteps = 2
 }: {
   explorerName?: ExplorerName;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   transactionDetail?: React.ReactElement;
   isBatchTransaction?: boolean;
   customSteps?: React.ReactElement;
@@ -148,12 +146,7 @@ export function BatchTransactionStatus({
                   txStatus === TxStatus.ERROR ||
                   txStatus === TxStatus.CANCELLED) &&
                 externalLink ? (
-                  <ExternalLink
-                    href={externalLink}
-                    iconSize={14}
-                    className="text-text"
-                    onExternalLinkClicked={onExternalLinkClicked}
-                  >
+                  <ExternalLink href={externalLink} iconSize={14} className="text-text">
                     View on {explorerName}
                   </ExternalLink>
                 ) : (

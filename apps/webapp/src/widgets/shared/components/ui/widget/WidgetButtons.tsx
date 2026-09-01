@@ -16,7 +16,6 @@ interface WidgetButtonsProps {
   enabled?: boolean;
   showCancelButton?: boolean;
   cancelLoading?: boolean;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }
 
 export const WidgetButtons: React.FC<WidgetButtonsProps> = ({
@@ -26,17 +25,14 @@ export const WidgetButtons: React.FC<WidgetButtonsProps> = ({
   enabled = true,
   showCancelButton = false,
   onClickCancel,
-  cancelLoading,
-  onExternalLinkClicked
+  cancelLoading
 }) => {
   const { backButtonText, cancelButtonText } = useContext(WidgetContext);
   const { isConnected } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   return (
     <div className="flex w-full flex-col items-stretch gap-5">
-      {!isConnectedAndEnabled && (
-        <ConnectWalletCopy className="hidden md:block" onExternalLinkClicked={onExternalLinkClicked} />
-      )}
+      {!isConnectedAndEnabled && <ConnectWalletCopy className="hidden md:block" />}
       <AnimatePresence mode="popLayout" initial={false}>
         {showSecondaryButton && onClickBack ? (
           <ButtonsAnimationWrapper className="flex flex-row space-x-4" key="two-buttons">

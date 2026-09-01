@@ -1,28 +1,34 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import { LinkedAction } from '@/modules/ui/hooks/useUserSuggestedActions';
-import {
-  ALLOWED_EXTERNAL_DOMAINS,
-  ExpertIntentMapping,
-  VaultsIntentMapping,
-  IntentMapping,
-  mapIntentToQueryParam,
-  QueryParams
-} from './constants';
-import { ExpertIntent, Intent } from './enums';
+import { ALLOWED_EXTERNAL_DOMAINS, QueryParams } from './constants';
+import { Intent } from './enums';
+import { INTENT_PATHS } from './navigation';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
+import { getMainnetTargetName } from './widget-network-map';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { reportError } from '@/modules/sentry/reportError';
 import { Chain } from 'viem';
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from './cn';
 
-export type FooterLink = { url: string; name: string; highlight?: string };
+export type FooterLink = {
+  url: string;
+  name: string;
+  /**
+   * Retired. It only ever marked the promoted Careers button, which APP-456 #4
+   * removed — entries still carrying it are dropped, so the link disappears
+   * without waiting on a deploy-config edit. Kept on the type because the env
+   * var is deployment-owned and may still list it.
+   */
+  highlight?: string;
+};
 
 let footerLinksParseErrorReported = false;
 
+/**
+ * The legal/informational links, parsed from the deployment's
+ * `VITE_FOOTER_LINKS`. Promoted (`highlight`) entries are filtered out — see
+ * {@link FooterLink}.
+ */
 export function getFooterLinks(): FooterLink[] {
   let footerLinks: FooterLink[] = [
     { url: '', name: '' },
@@ -43,37 +49,7 @@ export function getFooterLinks(): FooterLink[] {
       });
     }
   }
-  return footerLinks;
-}
-
-const MODULE_PARENT_LINKED_ACTION_BY_INTENT: Record<string, string> = {
-  ...Object.fromEntries(
-    Object.values(ExpertIntentMapping).map(moduleIntent => [
-      moduleIntent,
-      IntentMapping[Intent.EXPERT_INTENT]
-    ])
-  ),
-  ...Object.fromEntries(
-    Object.values(VaultsIntentMapping).map(moduleIntent => [
-      moduleIntent,
-      IntentMapping[Intent.VAULTS_INTENT]
-    ])
-  )
-};
-
-export function filterActionsByIntent(actions: LinkedAction[], intent: string): LinkedAction[] {
-  const parentLinkedAction = MODULE_PARENT_LINKED_ACTION_BY_INTENT[intent];
-
-  return actions.filter(x => {
-    // Direct match on intent or linked action
-    if (x.intent === intent || (x as LinkedAction)?.la === intent) {
-      return true;
-    }
-    if (parentLinkedAction && (x as LinkedAction)?.la === parentLinkedAction) {
-      return true;
-    }
-    return false;
-  });
+  return footerLinks.filter(link => link.highlight !== 'true');
 }
 
 /**
@@ -121,15 +97,15 @@ export function sanitizeUrl(url: string | undefined) {
 }
 
 const getQueryParams = (url: string, searchParams: URLSearchParams) => {
-  const { Locale, Details } = QueryParams;
-  const retainedParams = [Locale, Details];
+  const { Locale } = QueryParams;
+  const retainedParams = [Locale];
 
   return getRetainedQueryParams(url, retainedParams, searchParams);
 };
 
-export const getRewardsUrl = (searchParams: URLSearchParams, chainId: number) =>
+export const getRewardsUrl = (searchParams: URLSearchParams, chainId: number, chains?: readonly Chain[]) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.REWARDS_INTENT)}`,
+    `${INTENT_PATHS[Intent.REWARDS_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
     searchParams
   );
 
@@ -139,37 +115,38 @@ export const getSavingsUrl = (
   chains: readonly [Chain, ...Chain[]]
 ) =>
   getQueryParams(
-    `/?network=${chains.find(c => c.id === chainId)?.name}&widget=${mapIntentToQueryParam(Intent.SAVINGS_INTENT)}`,
+    `${INTENT_PATHS[Intent.SAVINGS_INTENT]}?network=${normalizeUrlParam(
+      chains.find(c => c.id === chainId)?.name ?? getMainnetChainName(chainId)
+    )}`,
     searchParams
   );
 
-export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
+export const getStakeUrl = (searchParams: URLSearchParams, chainId: number, chains?: readonly Chain[]) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`,
+    `${INTENT_PATHS[Intent.STAKE_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
     searchParams
   );
-export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number) =>
+export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number, chains?: readonly Chain[]) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`,
+    `${INTENT_PATHS[Intent.EXPERT_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
     searchParams
   );
-export const getExpertOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
+export const getVaultsOverviewUrl = (
+  searchParams: URLSearchParams,
+  chainId: number,
+  chains?: readonly Chain[]
+) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}`,
+    `${INTENT_PATHS[Intent.VAULTS_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
     searchParams
   );
-export const getVaultsOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
+export const getFixedYieldUrl = (searchParams: URLSearchParams, chainId: number, chains?: readonly Chain[]) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.VAULTS_INTENT)}`,
-    searchParams
-  );
-export const getFixedYieldUrl = (searchParams: URLSearchParams, chainId: number) =>
-  getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.FIXED_INTENT)}`,
+    `${INTENT_PATHS[Intent.FIXED_INTENT]}?network=${normalizeUrlParam(getMainnetTargetName(chainId, chains))}`,
     searchParams
   );
 export const getConvertUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.CONVERT_INTENT)}`,
+    `${INTENT_PATHS[Intent.CONVERT_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
   );

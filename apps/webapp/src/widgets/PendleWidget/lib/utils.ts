@@ -1,7 +1,10 @@
 type SlippageBounds = { min: number; max: number };
 
 export function verifyPendleSlippage(value: string, config: SlippageBounds): string {
-  if (value === '') return '';
+  // A bare '.' is an in-progress decimal point (a first tap of the keypad's
+  // decimal key, comma or dot): keep it, or the field snaps back to empty and
+  // the next digit lands as a whole percent.
+  if (value === '' || value === '.') return value;
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return '';
   if (numeric < config.min) return String(config.min);

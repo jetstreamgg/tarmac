@@ -13,7 +13,7 @@ import {
   InteractiveStatsCardWithMarketAccordion,
   MarketBalanceForAccordion
 } from '@/widgets/shared/components/ui/card/InteractiveStatsCardWithMarketAccordion';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { RateLineWithArrow } from '@/widgets/shared/components/ui/RateLineWithArrow';
 
@@ -143,6 +143,13 @@ export const FixedYieldBalanceCard = ({
       icon={fixedYieldIcon}
       url={url}
       logoName="fixedYield"
+      apyBadge={
+        maxRate > 0
+          ? activeMarketsCount === 1
+            ? t`Rate: ${formatDecimalPercentage(maxRate)}`
+            : t`Rates up to: ${formatDecimalPercentage(maxRate)}`
+          : undefined
+      }
       content={isBalanceLoading ? <Skeleton className="w-32" /> : <Text>{formatBigInt(total)}</Text>}
     />
   );

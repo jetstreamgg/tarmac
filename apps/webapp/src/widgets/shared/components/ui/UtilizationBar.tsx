@@ -1,7 +1,7 @@
 import { AlertCircle } from 'lucide-react';
 import { HStack } from './layout/HStack';
 import { Text } from './Typography';
-import { Skeleton } from '@/widgets/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/widgets/lib/utils';
 import { PopoverInfo } from './PopoverInfo';
 import { ReactNode } from 'react';
@@ -17,6 +17,8 @@ export interface UtilizationBarProps {
   dataTestId?: string;
   popoverTitle?: string;
   popoverDescription?: ReactNode;
+  /** Fill class for the utilized portion; defaults to the neutral gray. */
+  barColor?: string;
 }
 
 export const UtilizationBar = ({
@@ -29,16 +31,13 @@ export const UtilizationBar = ({
   barHeight = 'h-[5px]',
   dataTestId = 'utilization-bar',
   popoverTitle,
-  popoverDescription
+  popoverDescription,
+  barColor = 'bg-textSecondary'
 }: UtilizationBarProps) => {
   const isHighUtilization = utilizationRate > 90;
   // const utilizationColor =
   //   utilizationRate > 90 ? 'text-error' : utilizationRate > 75 ? 'text-orange-400' : 'text-textSecondary';
   const utilizationColor = 'text-textSecondary';
-
-  // const barColor =
-  //   utilizationRate > 90 ? 'bg-error' : utilizationRate > 75 ? 'bg-orange-400' : 'bg-textSecondary';
-  const barColor = 'bg-textSecondary';
 
   return (
     <div className={cn('w-full', className)} data-testid={dataTestId}>
@@ -50,13 +49,13 @@ export const UtilizationBar = ({
               <PopoverInfo
                 title={popoverTitle}
                 description={popoverDescription}
-                iconClassName="text-textSecondary hover:text-white transition-colors"
+                iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
                 iconSize="medium"
               />
             )}
           </HStack>
           {isLoading ? (
-            <Skeleton className="bg-textSecondary h-6 w-10" />
+            <Skeleton className="h-6 w-10" />
           ) : (
             <HStack className="items-center" gap={1}>
               <Text className={utilizationColor} dataTestId={`${dataTestId}-percentage`}>

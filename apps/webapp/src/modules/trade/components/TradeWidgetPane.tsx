@@ -1,31 +1,22 @@
 import { TradeWidget, TxStatus, TradeAction, WidgetStateChangeParams, L2TradeWidget } from '@/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { restrictedTradeTokenList } from '../../config/tokenListConfig';
-import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
-import { ConvertIntentMapping, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
-import { SharedProps } from '@/modules/app/types/Widgets';
-import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useCustomNavigation } from '@/modules/ui/hooks/useCustomNavigation';
-import { capitalizeFirstLetter } from '@/lib/helpers/string/capitalizeFirstLetter';
-import { useSearchParams } from 'react-router-dom';
-import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTransaction';
+import { useChainId } from 'wagmi';
+import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent } from '@/lib/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
 import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';
 
-export function TradeWidgetPane(sharedProps: SharedProps) {
+export function TradeWidgetPane() {
   const chainId = useChainId();
 
   const queryClient = useQueryClient();
-  const { linkedActionConfig, updateLinkedActionConfig, setSelectedConvertOption } = useConfigContext();
 
-  const wagmiConfig = useWagmiConfig();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useAppSearchParams();
 
-  const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isCowSupported = isCowSupportedChainId(chainId);
 
   const { isRegionRestricted } = useGeoConfig();
@@ -33,55 +24,26 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     ? restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList]
     : defaultConfig.tradeTokenList[chainId];
 
-  const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
-  const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
+  const intent = useRouteIntent();
+  const convertIntent = useRouteConvertIntent();
+  const navigate = useNavigate();
+  const isConvertContext = intent === Intent.CONVERT_INTENT;
 
   const handleBackToConvert = () => {
-    setSearchParams(params => {
-      params.delete(QueryParams.ConvertModule);
-      return params;
-    });
-    setSelectedConvertOption(undefined);
+    void navigate({ to: '/convert', search: keepSearch });
   };
 
   const onTradeWidgetStateChange = ({
-    hash,
     txStatus,
     widgetState,
     originToken,
-    targetToken,
-    executedBuyAmount,
-    originAmount
+    targetToken
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
-    const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
-    const isTradeContext =
-      widgetParam === IntentMapping[Intent.TRADE_INTENT] ||
-      (widgetParam === IntentMapping[Intent.CONVERT_INTENT] &&
-        convertModuleParam === ConvertIntentMapping[ConvertIntent.TRADE_INTENT]);
+    const isTradeContext = intent === Intent.CONVERT_INTENT && convertIntent === ConvertIntent.TRADE_INTENT;
 
     if (!isTradeContext) {
       return;
-    }
-
-    // Update search params
-    if (originAmount && originAmount !== '0') {
-      setSearchParams(
-        prev => {
-          prev.set(QueryParams.InputAmount, originAmount);
-          return prev;
-        },
-        { replace: true }
-      );
-    } else if (originAmount === '') {
-      setSearchParams(
-        prev => {
-          prev.delete(QueryParams.InputAmount);
-          return prev;
-        },
-        { replace: true }
-      );
     }
 
     if (originToken) {
@@ -120,15 +82,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       );
     }
 
-    // After a successful trade, set the linked action step to "success"
-    if (
-      widgetState.action === TradeAction.TRADE &&
-      txStatus === TxStatus.SUCCESS &&
-      linkedActionConfig.step === LinkedActionSteps.CURRENT_FUTURE
-    ) {
-      updateLinkedActionConfig({ step: LinkedActionSteps.SUCCESS_FUTURE });
-    }
-
     if (
       widgetState.action === TradeAction.TRADE &&
       (txStatus === TxStatus.LOADING || txStatus === TxStatus.SUCCESS)
@@ -141,75 +94,15 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
         }
       }, REFRESH_DELAY);
     }
-
-    if (
-      hash &&
-      txStatus === TxStatus.SUCCESS &&
-      widgetState.action === TradeAction.TRADE &&
-      linkedActionConfig?.linkedAction
-    ) {
-      updateParamsFromTransaction(hash, wagmiConfig, setSearchParams);
-      setTimeout(() => {
-        if (isCowSupported) {
-          queryClient.invalidateQueries({ queryKey: ['cowswap-trade-history'] });
-        } else {
-          queryClient.invalidateQueries({ queryKey: ['psm-trade-history'] });
-        }
-      }, REFRESH_DELAY);
-    }
-
-    // When we're ready to proceed with the next LA step, set the href & nav label accordingly
-    if (
-      txStatus === TxStatus.SUCCESS &&
-      widgetState.action === TradeAction.TRADE &&
-      linkedActionConfig?.linkedAction &&
-      linkedActionConfig.step === LinkedActionSteps.SUCCESS_FUTURE
-    ) {
-      const widget = linkedActionConfig.linkedAction;
-      const reward = linkedActionConfig.rewardContract
-        ? `&${QueryParams.Reward}=${linkedActionConfig.rewardContract}`
-        : '';
-      const moduleParam = linkedActionConfig.expertModule
-        ? linkedActionConfig.linkedAction === IntentMapping[Intent.VAULTS_INTENT]
-          ? `&${QueryParams.VaultModule}=${linkedActionConfig.expertModule}`
-          : `&${QueryParams.ExpertModule}=${linkedActionConfig.expertModule}`
-        : '';
-      setCustomHref(
-        `/?${QueryParams.Widget}=${widget}&${QueryParams.InputAmount}=${executedBuyAmount}&${QueryParams.LinkedAction}=${widget}${reward}${moduleParam}`
-      );
-      setCustomNavLabel(`Go to ${capitalizeFirstLetter(linkedActionConfig.linkedAction)}`);
-    } else {
-      setCustomHref(undefined);
-      setCustomNavLabel(undefined);
-    }
   };
-
-  const externalWidgetState = useMemo(
-    () => ({
-      amount: linkedActionConfig?.inputAmount,
-      token: linkedActionConfig?.sourceToken?.toUpperCase(),
-      targetToken: linkedActionConfig?.targetToken?.toUpperCase(),
-      timestamp: linkedActionConfig?.timestamp ? Number(linkedActionConfig?.timestamp) : undefined
-    }),
-    [linkedActionConfig]
-  );
 
   const Widget = isCowSupported ? TradeWidget : L2TradeWidget;
 
-  const shouldLockTokens =
-    linkedActionConfig.showLinkedAction &&
-    !!linkedActionConfig.sourceToken &&
-    !!linkedActionConfig.targetToken;
   return (
     <Widget
-      key={externalWidgetState.timestamp}
-      {...sharedProps}
       disallowedPairs={defaultConfig.tradeDisallowedPairs}
       customTokenList={tradeTokenList}
       onWidgetStateChange={onTradeWidgetStateChange}
-      customNavigationLabel={customNavLabel}
-      onCustomNavigation={onNavigate}
-      externalWidgetState={externalWidgetState}
       widgetTitle={getChainSpecificText(
         {
           base: 'Base Trade',
@@ -220,7 +113,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
         },
         chainId
       )}
-      tokensLocked={shouldLockTokens}
       onBackToConvert={isConvertContext ? handleBackToConvert : undefined}
     />
   );

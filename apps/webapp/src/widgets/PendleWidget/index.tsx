@@ -46,7 +46,6 @@ import { PendlePoweredBy } from './components/PendlePoweredBy';
 import { PendleTransactionReview } from './components/PendleTransactionReview';
 import { PendleTransactionStatus } from './components/PendleTransactionStatus';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
@@ -71,7 +70,6 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
   const valueUsd = usePendleUsdValue();
   const { address, isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
-  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = isConnected && enabled;
 
   const {
@@ -476,7 +474,8 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
           </Heading>
           <Text className="text-textSecondary" variant="small">
             <Trans>
-              Know your return by a pre-set maturity date. Each PT redeems 1:1 for USDS at maturity.
+              Fix your rate to a pre-set maturity date. Each PT redeems 1:1 for USDS at maturity; early exits
+              settle at the current market price.
             </Trans>
           </Text>
         </div>
@@ -493,12 +492,11 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
           onClickBack={showSecondaryButton ? onClickBack : undefined}
           showSecondaryButton={showSecondaryButton}
           enabled={enabled}
-          onExternalLinkClicked={onExternalLinkClicked}
         />
       }
     >
       <div className="-mt-4 space-y-0">
-        <PendlePoweredBy onExternalLinkClicked={onExternalLinkClicked} />
+        <PendlePoweredBy />
       </div>
       <AnimatePresence mode="popLayout" initial={false}>
         {txStatus !== TxStatus.IDLE ? (
@@ -512,7 +510,6 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
               needsAllowance={needsAllowance}
               isBatchTransaction={shouldUseBatch}
               currentCallIndex={writeHook.currentCallIndex}
-              onExternalLinkClicked={onExternalLinkClicked}
             />
           </CardAnimationWrapper>
         ) : screen === PendleScreen.REVIEW ? (
@@ -554,7 +551,6 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
               insufficientFunds={insufficientFunds}
               prepareErrorMessage={prepareErrorMessage}
               quoteErrorMessage={quoteErrorMessage}
-              onExternalLinkClicked={onExternalLinkClicked}
             />
           </CardAnimationWrapper>
         )}

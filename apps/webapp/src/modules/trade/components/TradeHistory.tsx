@@ -9,7 +9,13 @@ import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';
 
 export function TradeHistory() {
-  const { data: tradeHistory, isLoading: tradeHistoryLoading, error } = useTradeHistory();
+  const {
+    data: tradeHistory,
+    isLoading: tradeHistoryLoading,
+    error,
+    hasNextPage,
+    fetchNextPage
+  } = useTradeHistory();
   const chainId = useChainId();
   const { i18n } = useLingui();
   const formatTradeAmount = (input: bigint, decimals: number = 18): string => {
@@ -43,6 +49,9 @@ export function TradeHistory() {
       isLoading={tradeHistoryLoading}
       transactionHeader={t`Trades`}
       statusColumn={isCowSupportedChainId(chainId)}
+      onPageChange={(page, totalPages) => {
+        if (hasNextPage && page >= totalPages) fetchNextPage();
+      }}
     />
   );
 }

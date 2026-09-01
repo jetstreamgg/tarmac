@@ -2,7 +2,7 @@ import * as React from 'react';
 import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-react';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 
 type CarouselApi = UseEmblaCarouselType[1];
@@ -256,6 +256,31 @@ function CarouselDots({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * Inline Previous/Next pair for a section header: the arrows sit in flow (no
+ * absolute placement) and the pair renders nothing while every slide already
+ * fits, so a carousel that cannot scroll at the current width carries no dead
+ * chrome. Embla re-evaluates on resize (reInit), so the pair comes and goes as
+ * the viewport crosses the slides' basis breakpoints.
+ */
+function CarouselArrows({
+  className,
+  variant = 'secondary',
+  size = 'iconS',
+  ...props
+}: React.ComponentProps<'div'> & Pick<React.ComponentProps<typeof Button>, 'variant' | 'size'>) {
+  const { canScrollPrev, canScrollNext } = useCarousel();
+  if (!canScrollPrev && !canScrollNext) return null;
+
+  const inline = 'static left-auto right-auto top-auto translate-y-0';
+  return (
+    <div className={cn('flex gap-1.5', className)} data-slot="carousel-arrows" {...props}>
+      <CarouselPrevious variant={variant} size={size} className={inline} />
+      <CarouselNext variant={variant} size={size} className={inline} />
+    </div>
+  );
+}
+
 function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) {
   const { api, selectedIndex, scrollTo, scrollPrev, scrollNext, canScrollPrev, canScrollNext } =
     useCarousel();
@@ -273,7 +298,7 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
         onClick={scrollPrev}
         disabled={!canScrollPrev}
         className={cn(
-          'text-white/60 transition-colors hover:text-white',
+          'light:text-textSecondary light:hover:text-text text-white/60 transition-colors hover:text-white',
           !canScrollPrev && 'cursor-not-allowed opacity-30'
         )}
         aria-label="Previous slide"
@@ -289,7 +314,9 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
             onClick={() => scrollTo(index)}
             className={cn(
               'h-2 w-2 rounded-full transition-all',
-              selectedIndex === index ? 'w-6 bg-white' : 'bg-white/30 hover:bg-white/60'
+              selectedIndex === index
+                ? 'light:bg-text w-6 bg-white'
+                : 'light:bg-textDimmed light:hover:bg-textSecondary bg-white/30 hover:bg-white/60'
             )}
             aria-label={`Go to slide ${index + 1}`}
           />
@@ -301,7 +328,7 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
         onClick={scrollNext}
         disabled={!canScrollNext}
         className={cn(
-          'text-white/60 transition-colors hover:text-white',
+          'light:text-textSecondary light:hover:text-text text-white/60 transition-colors hover:text-white',
           !canScrollNext && 'cursor-not-allowed opacity-30'
         )}
         aria-label="Next slide"
@@ -319,6 +346,7 @@ export {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
+  CarouselArrows,
   CarouselDots,
   CarouselControls
 };

@@ -3,8 +3,7 @@ import { Abi } from 'viem';
 import { curveStUsdsUsdsPoolAddress, curveStUsdsUsdsPoolAbi } from '../../generated';
 import { WriteHook, WriteHookParams } from '../../hooks';
 import { useWriteContractFlow } from '../../shared/useWriteContractFlow';
-import { isTestnetId } from '@/utils';
-import { TENDERLY_CHAIN_ID } from '../../constants';
+import { familyMainnetId } from '@/utils';
 import { useCurvePoolData } from './useCurvePoolData';
 import { calculateMinOutputWithSlippage } from './rateComparison';
 import { STUSDS_PROVIDER_CONFIG } from './constants';
@@ -44,7 +43,7 @@ export function useCurveSwap({
 }: CurveSwapParams): WriteHook {
   const { address: connectedAddress, isConnected } = useAccount();
   const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? TENDERLY_CHAIN_ID : 1;
+  const chainId = familyMainnetId(connectedChainId);
 
   // Get pool data to determine token indices
   const { data: poolData } = useCurvePoolData();
