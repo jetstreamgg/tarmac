@@ -103,8 +103,8 @@ catalogs:
       specifier: ~9.1.0
       version: 9.1.0
     '@sentry/react':
-      specifier: ^10.68.0
-      version: 10.68.0
+      specifier: ^10.71.0
+      version: 10.71.0
     '@sentry/vite-plugin':
       specifier: ^5.4.0
       version: 5.4.0
@@ -190,8 +190,8 @@ catalogs:
       specifier: ^7.16.2
       version: 7.16.2
     globals:
-      specifier: ^17.8.0
-      version: 17.8.0
+      specifier: ^17.11.0
+      version: 17.11.0
     graphql:
       specifier: ^16.14.2
       version: 16.14.2
@@ -223,8 +223,8 @@ catalogs:
       specifier: ~0.2.37
       version: 0.2.37
     posthog-js:
-      specifier: ^1.407.2
-      version: 1.407.3
+      specifier: ^1.419.2
+      version: 1.419.2
     prettier:
       specifier: ^3.9.6
       version: 3.9.6
@@ -250,8 +250,8 @@ catalogs:
       specifier: ^6.0.0
       version: 6.0.0
     sonner:
-      specifier: ^2.0.7
-      version: 2.0.7
+      specifier: ^2.0.8
+      version: 2.0.8
     tailwind-merge:
       specifier: ^3.6.0
       version: 3.6.0
@@ -375,7 +375,7 @@ importers:
         version: 7.16.2(eslint@10.9.1(jiti@2.7.0))(typescript@6.0.3)
       globals:
         specifier: 'catalog:'
-        version: 17.8.0
+        version: 17.11.0
       happy-dom:
         specifier: 'catalog:'
         version: 20.11.6
@@ -474,7 +474,7 @@ importers:
         version: 9.1.0(typescript@6.0.3)(zod@4.4.3)
       '@sentry/react':
         specifier: 'catalog:'
-        version: 10.68.0(react@19.2.8)
+        version: 10.71.0(react@19.2.8)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.102.3(react@19.2.8)
@@ -531,7 +531,7 @@ importers:
         version: 0.2.37(6afaee199cb79b9c361eb0a9d5b08220)
       posthog-js:
         specifier: 'catalog:'
-        version: 1.407.3
+        version: 1.419.2(@types/react@19.2.18)(react@19.2.8)
       react:
         specifier: 'catalog:'
         version: 19.2.8
@@ -552,7 +552,7 @@ importers:
         version: 6.0.0
       sonner:
         specifier: 'catalog:'
-        version: 2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tiny-invariant:
         specifier: 'catalog:'
         version: 1.3.3
@@ -1479,14 +1479,14 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  '@posthog/browser-common@0.2.2':
-    resolution: {integrity: sha512-4NHumu2lx7pMeucDLfXnDmeP5CV2oVWY8jBpXBwBUjoYwkQxB7Z3A6q9oDydw+/iSAGl6MaPqW9gsnRK8AvqLA==}
+  '@posthog/browser-common@0.5.2':
+    resolution: {integrity: sha512-8GvfEshFdeKIccuy3kpp6mDBxawQtRamMYRCwzy1r1ixLKQVLAGs3afhOf6r75yp59ZQBi5mtXQgUJ2Jz8eHuw==}
 
-  '@posthog/core@1.45.1':
-    resolution: {integrity: sha512-tLtvzomavb2PPWdGYKsusyIzIeL2Px47v348Smibkay7sMy/83TyPk+Ptsp2NdeOgJsbuwSxWkR2+XA0aSCAaA==}
+  '@posthog/core@1.48.11':
+    resolution: {integrity: sha512-fvKbxGaUM8RuCDB1jdhSqAHYjk42INfJDWT1KVezn74sCrfnr1YaUafxzmcS+87D5FzbA2tu7IT0GQRV2WkkRg==}
 
-  '@posthog/types@1.398.0':
-    resolution: {integrity: sha512-sJMkl4k+u8yS/0fjHsKqE9xTdsAh30a2WvgChiptellnVoE0e8QJKFgqOMD2sk8FaEArPdeFklAhXvmENAt3Sg==}
+  '@posthog/types@1.406.0':
+    resolution: {integrity: sha512-JR00vHgZjqWA+d+HwOdGJ/dsWFcQwnnsNiq9SC9HsQK8woefW1jrhiz0top26oxn/y5MsgfKpxtrQYeG2QocIQ==}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -2148,12 +2148,12 @@ packages:
   '@scure/bip39@1.6.0':
     resolution: {integrity: sha512-+lF0BbLiJNwVlev4eKelw1WWLaiKXw7sSl8T6FvBlWkdX+94aGJ4o8XjUdlyhTCjd8c+B3KT3JfS8P0bLRNU6A==}
 
-  '@sentry/browser-utils@10.68.0':
-    resolution: {integrity: sha512-be8VtdjCngKc77cstJeV+gO15iH+blyXpBDk8yOehmtX4BkFO33mfTMNCWVR2LA0oOxjIHWRAhf77fIUEhzxPg==}
+  '@sentry/browser-utils@10.71.0':
+    resolution: {integrity: sha512-Djhb+RdEwSdYTlDaMzc2uRCA+bYDIFsFCtZzKEtB9UR7lJNV/bJ0k3el3ifaVGTRELO8WBll/X0elty1Dk5tTw==}
     engines: {node: '>=18'}
 
-  '@sentry/browser@10.68.0':
-    resolution: {integrity: sha512-8xVgk7oG2lajXnbXF6a7H1xMZ/U6icqSldHGzQu1+bajfrK8Gan9ULG/Xsj1VM1LlNeK6/7znDJ3u1jgvIwznw==}
+  '@sentry/browser@10.71.0':
+    resolution: {integrity: sha512-fTE9tUDoggJSFv8cQ+h1UA9onovOoUNJWu8Var1MXmUVuVG/W3WqzJFVyKArZMj95lizZkq8aiS63SURvrBsFQ==}
     engines: {node: '>=18'}
 
   '@sentry/bundler-plugins@10.68.0':
@@ -2228,22 +2228,26 @@ packages:
     resolution: {integrity: sha512-5Amhx8ltVz7vb1bRGyf3c4J69/iHW8R/H+SJxTRILHlsSOBrnVVc/IQEYDC6PTRdRdZ3x2u7RVjxZi2Mhe525g==}
     engines: {node: '>=18'}
 
-  '@sentry/feedback@10.68.0':
-    resolution: {integrity: sha512-XbdcXiBnpC3vgw46eHOPeD/ZQ+XzluP75ubdUcaPDW02hCh2nsdXiwjZ2DBImbpvIpTbJgjHf/sIlHWvcZJ2Mg==}
+  '@sentry/core@10.71.0':
+    resolution: {integrity: sha512-OIjT7rzcWJjUC6r3eBT3Td1j0afDBMkbbx9jTocSD+ZSfc25eEU7hoIPS0WvfeIOTIN3y8bfQnXavwMReaNVHQ==}
     engines: {node: '>=18'}
 
-  '@sentry/react@10.68.0':
-    resolution: {integrity: sha512-rIq4QR4ScMHHx9JJZv7Jgw31bMdUVJMx+ykHIJb7htjY6mj78sjKs+KpCsMDnvJxDhSmvftGM1KfKD4BggL7OQ==}
+  '@sentry/feedback@10.71.0':
+    resolution: {integrity: sha512-4+zMAmn1DcbYBtFE0pWt6zo8vWoBHTuP/UhtCMTCoGB4sVYvmwRxv9Hc9OpRHSzE9kSl8beD0zKFxuoVHizKQQ==}
+    engines: {node: '>=18'}
+
+  '@sentry/react@10.71.0':
+    resolution: {integrity: sha512-Ab1cFyOpl0PKKgEBlckIq/gCRIP/MD75gc4B85YnifdTAHK3KxgSWxz43GCeyTTyNBCx19XQsd0dti9YCRYCkw==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^16.14.0 || 17.x || 18.x || 19.x
 
-  '@sentry/replay-canvas@10.68.0':
-    resolution: {integrity: sha512-HusYcr+He+ohnUDHunYrc5St6vdDnBXpUAndnT5ReyUMVSCiWKfY3paXowU/0787HwYfxdcpZgwC5u79+XbEIg==}
+  '@sentry/replay-canvas@10.71.0':
+    resolution: {integrity: sha512-YTqesxBh9arExI49LrTm4Y2/xPX40q2GWi0gWRw6lNfYtyNz7/ZfHi8/1N6JEc8dldTslqFhII6ZFecUyU9iaA==}
     engines: {node: '>=18'}
 
-  '@sentry/replay@10.68.0':
-    resolution: {integrity: sha512-ZoG2n16vbkx4GWSCnLIqUUN9xlUmccQFbQ2US2rhruQeHTUnHl/ukr8NHOQXZaEbwKyMkX9bEMwfmZHJm+wSTQ==}
+  '@sentry/replay@10.71.0':
+    resolution: {integrity: sha512-ytEgVg7isvavQL6hgsgYeuSCkcA3EyOKm9lMLQOZTLkiUCtFT/ItWwGNhzS46vQ6wsTv3Uc0Y1JlcJHSFKe/Kg==}
     engines: {node: '>=18'}
 
   '@sentry/vite-plugin@5.4.0':
@@ -4051,8 +4055,8 @@ packages:
     resolution: {integrity: sha512-IGBwjF7tNk3cwypFNH/7bfzBcgSCbaMOD3GsaY1AU/JRrnHnYgEM0+9kQt52iZxjNsjBtJYtao146V+f8jFZNw==}
     engines: {node: '>=10'}
 
-  dompurify@3.4.0:
-    resolution: {integrity: sha512-nolgK9JcaUXMSmW+j1yaSvaEaoXYHwWyGJlkoCTghc97KgGDDSnpoU/PlEnw63Ah+TGKFOyY+X5LnxaWbCSfXg==}
+  dompurify@3.4.14:
+    resolution: {integrity: sha512-dVoH9z+MY+C9IilgGCk3YfFqjLi3fChm2OiKJMzh6axrJ5qwxqWaZamgmHrpv22CN/KdbZJuGEGgfQoL00LTdg==}
 
   dotenv-expand@10.0.0:
     resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
@@ -4443,8 +4447,8 @@ packages:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
 
-  globals@17.8.0:
-    resolution: {integrity: sha512-Zz/LMDZScFmkakeL2cTHzf+PbWKdpU3uclqkZT7TjDG58j5WPt0PpA+n9uPI24fZtlw07q0OtEi84K+umsRzqQ==}
+  globals@17.11.0:
+    resolution: {integrity: sha512-Z2I8hM+PbJDXQDq3Icgpzv+mPdwr68iZUU9d5WW4FuXfDUQfkZaZuvjMv42/5crNyw154+9+VWXbYrUgDXbxNw==}
     engines: {node: '>=18'}
 
   globalthis@1.0.4:
@@ -5702,8 +5706,16 @@ packages:
     resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  posthog-js@1.407.3:
-    resolution: {integrity: sha512-b9Kc7HVN6nh+xsh1JrcLYHv9bbYLwYUM9belJtNVUFZSJWWfFcZRJJP6L+KeanAeu2VxSFSpioVA39pjjolv4A==}
+  posthog-js@1.419.2:
+    resolution: {integrity: sha512-HVm3mPFucLZnT2/ITa/rjn/g4vQNofA+4nlWO6gUXggARPXkUL3Y6Z7WbGk+J++V+Bw1Q/sKucwYjLpWhms02A==}
+    peerDependencies:
+      '@types/react': '>=16.8.0'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      react:
+        optional: true
 
   preact@10.24.2:
     resolution: {integrity: sha512-1cSoF0aCC8uaARATfrlz4VCBqE8LwZwRfLgkxJOQwAlQt6ayTmi0D9OF7nXid1POI5SZidFuG9CnlXbDfLqY/Q==}
@@ -6201,11 +6213,15 @@ packages:
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
 
-  sonner@2.0.7:
-    resolution: {integrity: sha512-W6ZN4p58k8aDKA4XPcx2hpIQXBRAgyiWVkYhT7CvK6D3iAu7xjvVyhQHg2/iaKJZ1XVJ4r7XuwGL+WGEK37i9w==}
+  sonner@2.0.8:
+    resolution: {integrity: sha512-UM/ByIoFra8yzV75n1o0Puu0bw5U/9UNnDacrJNspekBewIfsQ3D6ez1nvlWpt7aTsO6rujQtifBpycwIivqlg==}
     peerDependencies:
+      '@types/react': ^18.0.0 || ^19.0.0
       react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -6779,6 +6795,9 @@ packages:
 
   web-vitals@5.3.0:
     resolution: {integrity: sha512-q6LWsLatGYZp5VGBIOvbTj6JBV2nOmC8KvWztXBmwJcfFAzhwKwbOxhUH306XY3CcaZDUlSmSuNPBsCn0bFu+g==}
+
+  web-vitals@6.0.0:
+    resolution: {integrity: sha512-Guaibvy/+uNtL6Bsu4jmMJGzuSl91oeRH5iO9pPRbYftnFUr3yqT1TUNX/OE4o9HexuEMU3Kb/Wg7iKhlffZUA==}
 
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
@@ -7976,16 +7995,16 @@ snapshots:
     dependencies:
       playwright: 1.62.1
 
-  '@posthog/browser-common@0.2.2':
+  '@posthog/browser-common@0.5.2':
     dependencies:
-      '@posthog/core': 1.45.1
-      '@posthog/types': 1.398.0
+      '@posthog/core': 1.48.11
+      '@posthog/types': 1.406.0
 
-  '@posthog/core@1.45.1':
+  '@posthog/core@1.48.11':
     dependencies:
-      '@posthog/types': 1.398.0
+      '@posthog/types': 1.406.0
 
-  '@posthog/types@1.398.0': {}
+  '@posthog/types@1.406.0': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -8879,19 +8898,19 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
-  '@sentry/browser-utils@10.68.0':
+  '@sentry/browser-utils@10.71.0':
     dependencies:
       '@sentry/conventions': 0.16.0
-      '@sentry/core': 10.68.0
+      '@sentry/core': 10.71.0
 
-  '@sentry/browser@10.68.0':
+  '@sentry/browser@10.71.0':
     dependencies:
-      '@sentry/browser-utils': 10.68.0
+      '@sentry/browser-utils': 10.71.0
       '@sentry/conventions': 0.16.0
-      '@sentry/core': 10.68.0
-      '@sentry/feedback': 10.68.0
-      '@sentry/replay': 10.68.0
-      '@sentry/replay-canvas': 10.68.0
+      '@sentry/core': 10.71.0
+      '@sentry/feedback': 10.71.0
+      '@sentry/replay': 10.71.0
+      '@sentry/replay-canvas': 10.71.0
 
   '@sentry/bundler-plugins@10.68.0':
     dependencies:
@@ -8956,26 +8975,30 @@ snapshots:
     dependencies:
       '@sentry/conventions': 0.16.0
 
-  '@sentry/feedback@10.68.0':
+  '@sentry/core@10.71.0':
     dependencies:
-      '@sentry/core': 10.68.0
-
-  '@sentry/react@10.68.0(react@19.2.8)':
-    dependencies:
-      '@sentry/browser': 10.68.0
       '@sentry/conventions': 0.16.0
-      '@sentry/core': 10.68.0
+
+  '@sentry/feedback@10.71.0':
+    dependencies:
+      '@sentry/core': 10.71.0
+
+  '@sentry/react@10.71.0(react@19.2.8)':
+    dependencies:
+      '@sentry/browser': 10.71.0
+      '@sentry/conventions': 0.16.0
+      '@sentry/core': 10.71.0
       react: 19.2.8
 
-  '@sentry/replay-canvas@10.68.0':
+  '@sentry/replay-canvas@10.71.0':
     dependencies:
-      '@sentry/core': 10.68.0
-      '@sentry/replay': 10.68.0
+      '@sentry/core': 10.71.0
+      '@sentry/replay': 10.71.0
 
-  '@sentry/replay@10.68.0':
+  '@sentry/replay@10.71.0':
     dependencies:
-      '@sentry/browser-utils': 10.68.0
-      '@sentry/core': 10.68.0
+      '@sentry/browser-utils': 10.71.0
+      '@sentry/core': 10.71.0
 
   '@sentry/vite-plugin@5.4.0':
     dependencies:
@@ -11378,7 +11401,7 @@ snapshots:
 
   domain-browser@4.22.0: {}
 
-  dompurify@3.4.0:
+  dompurify@3.4.14:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -11905,7 +11928,7 @@ snapshots:
 
   globals@14.0.0: {}
 
-  globals@17.8.0: {}
+  globals@17.11.0: {}
 
   globalthis@1.0.4:
     dependencies:
@@ -13358,17 +13381,21 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  posthog-js@1.407.3:
+  posthog-js@1.419.2(@types/react@19.2.18)(react@19.2.8):
     dependencies:
-      '@posthog/browser-common': 0.2.2
-      '@posthog/core': 1.45.1
-      '@posthog/types': 1.398.0
+      '@posthog/browser-common': 0.5.2
+      '@posthog/core': 1.48.11
+      '@posthog/types': 1.406.0
       core-js: 3.49.0
-      dompurify: 3.4.0
+      dompurify: 3.4.14
       fflate: 0.4.8
       preact: 10.29.3
       query-selector-shadow-dom: 1.0.1
       web-vitals: 5.3.0
+      web-vitals-soft-navs: web-vitals@6.0.0
+    optionalDependencies:
+      '@types/react': 19.2.18
+      react: 19.2.8
 
   preact@10.24.2: {}
 
@@ -13872,10 +13899,12 @@ snapshots:
     dependencies:
       atomic-sleep: 1.0.0
 
-  sonner@2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  sonner@2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
+    optionalDependencies:
+      '@types/react': 19.2.18
 
   source-map-js@1.2.1: {}
 
@@ -14523,6 +14552,8 @@ snapshots:
   walk-up-path@4.0.0: {}
 
   web-vitals@5.3.0: {}
+
+  web-vitals@6.0.0: {}
 
   webidl-conversions@3.0.1: {}
 
