@@ -105,6 +105,78 @@ describe('SlippageMenu', () => {
     expect(onChange).toHaveBeenLastCalledWith(0.5);
   });
 
+  // APP-533: the field committed on every keystroke, so clearing it or typing
+  // a zero persisted a 0% tolerance — a minOut pinned to the exact quote, and
+  // a revert on any price movement. Nothing sub-floor commits before blur.
+  it('commits nothing while the field holds only a zero', () => {
+    renderMenu();
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    fireEvent.change(screen.getByTestId('slippage-menu-input'), { target: { value: '0' } });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('commits a sub-percent tolerance typed digit by digit', () => {
+    renderMenu();
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    const input = screen.getByTestId('slippage-menu-input');
+    // The sequence a floor clamped per keystroke would rewrite: the leading
+    // '0' snaps to the floor and the '5' lands as a whole percent.
+    fireEvent.change(input, { target: { value: '0' } });
+    fireEvent.change(input, { target: { value: '0.' } });
+    fireEvent.change(input, { target: { value: '0.5' } });
+
+    expect((input as HTMLInputElement).value).toBe('0.5');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(0.005);
+  });
+
+  it('keeps the tolerance in force when the field is cleared, and restores it on blur', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input');
+    fireEvent.change(input, { target: { value: '' } });
+
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.blur(input);
+
+    expect((input as HTMLInputElement).value).toBe('0.5');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('snaps a zeroed field up to the floor on blur', () => {
+    renderMenu();
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    const input = screen.getByTestId('slippage-menu-input');
+    fireEvent.change(input, { target: { value: '0' } });
+    fireEvent.blur(input);
+
+    expect((input as HTMLInputElement).value).toBe('0.01');
+    expect(onChange).toHaveBeenLastCalledWith(0.0001);
+  });
+
+  it('warns when the committed tolerance is high enough to cost real money', () => {
+    renderMenu({ value: 0.02 });
+    openMenu();
+
+    expect(screen.getByTestId('slippage-menu-high-warning')).toBeTruthy();
+  });
+
+  it('does not warn at or below the high-tolerance threshold', () => {
+    renderMenu({ value: 0.01 });
+    openMenu();
+
+    expect(screen.queryByTestId('slippage-menu-high-warning')).toBeNull();
+  });
+
   it('resets to the default when Auto is selected', () => {
     renderMenu({ value: 0.005 });
     openMenu();

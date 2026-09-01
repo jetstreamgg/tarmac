@@ -20,6 +20,9 @@ import { sanitizeAmountInput } from '@/lib/amountInput';
 const AUTO = 'auto';
 const CUSTOM = 'custom';
 
+/** Percent above which a tolerance is worth warning about (APP-533). */
+const HIGH_SLIPPAGE_PERCENT = 1;
+
 /** Decimal slippage (e.g. 0.002 for 0.2%) → percentage string for the input. */
 function decimalToPercentString(decimal: number): string {
   return (decimal * 100).toFixed(2).replace(/\.?0+$/, '');
@@ -32,8 +35,16 @@ function percentStringToDecimal(value: string): number {
   return n / 100;
 }
 
-/** Clamp a raw percent string into [min, max]; empty/NaN normalize to ''. */
-function clampPercentString(value: string, min: number, max: number): string {
+/**
+ * Cap a raw percent string at `max`; empty/NaN normalize to ''.
+ *
+ * Only the ceiling is enforced per keystroke. A floor cannot be: every number
+ * below it is also the prefix of a legal one, so clamping mid-typing rewrites
+ * the leading '0' of '0.5' into the floor and lands the '5' as a whole percent
+ * (APP-533 — the shape of the fix that had to be backed out of #1857). The
+ * floor belongs on blur, once the text has stopped moving.
+ */
+function clampPercentMax(value: string, max: number): string {
   // A bare '.' is a decimal point with nothing after it yet — what a first tap
   // of the keypad's decimal key produces. `Number('.')` is NaN, so clamping it
   // would snap the field back to empty and land the next digit as a whole
@@ -41,9 +52,13 @@ function clampPercentString(value: string, min: number, max: number): string {
   if (value === '' || value === '.') return value;
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return '';
-  if (numeric < min) return String(min);
   if (numeric > max) return String(max);
   return value;
+}
+
+/** Text the field can hold that names no number yet — not a zero tolerance. */
+function isBlankInput(value: string): boolean {
+  return value === '' || value === '.';
 }
 
 export interface SlippageMenuProps {
@@ -52,7 +67,12 @@ export interface SlippageMenuProps {
   /** Default slippage for the active flow as a decimal. */
   defaultValue: number;
   onChange: (decimal: number) => void;
-  /** Custom-input bounds, in percent. */
+  /**
+   * Custom-input bounds, in percent. `min` is the floor a committed tolerance
+   * snaps up to on blur, not a per-keystroke clamp — it sits below every
+   * flow's default (the narrowest is Pendle redeem's 0.02%) so a deliberate
+   * low tolerance stays reachable while 0% is not.
+   */
   min?: number;
   max?: number;
   /** Explainer copy under the heading; a generic default is provided. */
@@ -70,7 +90,7 @@ export function SlippageMenu({
   value,
   defaultValue,
   onChange,
-  min = 0,
+  min = 0.01,
   max = 50,
   description,
   triggerClassName,
@@ -103,6 +123,7 @@ export function SlippageMenu({
   }, [value, defaultValue]);
 
   const isCustom = value !== defaultValue;
+  const isHighSlippage = value * 100 > HIGH_SLIPPAGE_PERCENT;
 
   const handleCustomChange = (raw: string) => {
     // Masked to what this field can mean — digits and one decimal point, at
@@ -110,9 +131,34 @@ export function SlippageMenu({
     // as a point, the only separator iOS's keypad offers under most European
     // locales (APP-518), and what keeps the text a number now that the control
     // is text rather than number.
-    const clamped = clampPercentString(sanitizeAmountInput(raw, 2), min, max);
-    setRawInput(clamped);
-    onChange(clamped === '' ? 0 : percentStringToDecimal(clamped));
+    const masked = clampPercentMax(sanitizeAmountInput(raw, 2), max);
+    setRawInput(masked);
+
+    // Commit only text that already names a usable tolerance. An empty field
+    // means "still typing", and a sub-floor number is the prefix of a longer
+    // one — committing either wrote a 0% tolerance straight to the caller's
+    // storage, which pins the quote's minOut to the exact quoted amount and
+    // reverts on any price movement (APP-533). Blur settles both cases.
+    if (isBlankInput(masked)) return;
+    const numeric = Number(masked);
+    if (!Number.isNaN(numeric) && numeric >= min) onChange(percentStringToDecimal(masked));
+  };
+
+  const handleCustomBlur = () => {
+    const text = rawInputRef.current;
+
+    // Nothing was entered, so there is nothing to settle: put the tolerance
+    // still in force back on screen rather than reading a cleared field as a
+    // request for zero.
+    if (isBlankInput(text)) {
+      setRawInput(isCustom ? decimalToPercentString(value) : '');
+      return;
+    }
+
+    const numeric = Number(text);
+    const belowFloor = Number.isNaN(numeric) || numeric < min;
+    setRawInput(decimalToPercentString(belowFloor ? min / 100 : numeric / 100));
+    if (belowFloor) onChange(min / 100);
   };
 
   return (
@@ -177,7 +223,7 @@ export function SlippageMenu({
                 </span>
               </div>
             </TabsContent>
-            <TabsContent value={CUSTOM} className="mt-4">
+            <TabsContent value={CUSTOM} className="mt-4 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-fgSecondary font-graphik text-xs leading-[18px]">
                   <Trans>Max slippage</Trans>
@@ -196,11 +242,23 @@ export function SlippageMenu({
                     inputMode="decimal"
                     value={rawInput}
                     onChange={e => handleCustomChange(e.target.value)}
+                    onBlur={handleCustomBlur}
                     data-testid={`${dataTestId}-input`}
                   />
                   <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>
                 </span>
               </div>
+              {isHighSlippage && (
+                <p
+                  className="text-statusWarning font-graphik text-xs leading-[18px]"
+                  data-testid={`${dataTestId}-high-warning`}
+                >
+                  <Trans>
+                    A tolerance this high can fill well below the quoted amount. Only raise it if a trade
+                    keeps failing.
+                  </Trans>
+                </p>
+              )}
             </TabsContent>
           </Tabs>
         </div>
