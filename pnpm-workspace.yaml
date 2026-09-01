@@ -2,7 +2,7 @@ packages:
   - apps/*
 
 catalog:
-  '@base-org/account': ~2.5.7
+  '@base-org/account': ~2.4.2
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@coinbase/wallet-sdk': ~4.3.7
   '@eslint/eslintrc': ^3.3.6
