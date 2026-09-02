@@ -473,6 +473,10 @@ describe('TransactionProvider pre-transaction gate', () => {
     expect(onConfirm).not.toHaveBeenCalled();
     // The signature step failed in place: retitled row + inline retry.
     expect(screen.getByText('Terms signature failed')).not.toBeNull();
+    // Nothing reached the chain, so the chip names the signature, not a
+    // rolled-back transaction.
+    expect(screen.getByTestId('transaction-status-badge').textContent).toBe('Signature failed');
+    expect(screen.queryByText('Transaction failed')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /try again/i }));
     await flush();

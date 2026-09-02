@@ -229,6 +229,34 @@ describe('ProductTransactionsTable — rowHref (whole-row explorer link)', () =>
     expect(open).toHaveBeenCalledWith('https://etherscan.io/tx/0', '_blank', 'noopener,noreferrer');
   });
 
+  it('does not open the row link on the click that ends a text-selection drag', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable
+          columns={COLUMNS}
+          rows={makeRows(1)}
+          rowKey={row => row.id}
+          rowHref={row => `https://etherscan.io/tx/${row.id}`}
+          rowTestId={row => `row-${row.id}`}
+        />
+      </I18nProvider>
+    );
+    const row = screen.getByTestId('row-0');
+    const getSelection = vi.spyOn(window, 'getSelection').mockReturnValue({
+      isCollapsed: false,
+      toString: () => '1,000'
+    } as unknown as Selection);
+    try {
+      fireEvent.click(row);
+      expect(open).not.toHaveBeenCalled();
+      // Keyboard activation never carries a selection.
+      fireEvent.keyDown(row, { key: 'Enter' });
+      expect(open).toHaveBeenCalledTimes(1);
+    } finally {
+      getSelection.mockRestore();
+    }
+  });
+
   it('leaves rows without a link inert — no pointer and the hover tint off', () => {
     render(
       <I18nProvider i18n={i18n}>

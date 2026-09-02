@@ -259,8 +259,16 @@ export function TransactionModal({
   // A gate phase owns the label while it holds the floor: both of its phases
   // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
   // in the wallet" during an HTTP address check (APP-501).
-  const badgeLabel = gateCopy?.badgeLabel ?? statusBadgeLabel[txStatus];
   const badgeFailed = txStatus === TxStatus.ERROR;
+  // A declined/failed terms signature is not a transaction — nothing reached
+  // the chain — so the chip names the signature rather than claiming a
+  // rolled-back transaction (the failed row below already says as much).
+  const failedStep = steps?.[currentStep];
+  const failedOnSignature =
+    badgeFailed && typeof failedStep === 'object' && failedStep !== null && failedStep.kind === 'signature';
+  const badgeLabel =
+    gateCopy?.badgeLabel ??
+    (failedOnSignature ? <Trans>Signature failed</Trans> : statusBadgeLabel[txStatus]);
   const badgeVariant = badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>

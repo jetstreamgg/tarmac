@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { LoadingErrorWrapper } from '../LoadingErrorWrapper';
 import { Fragment, useMemo } from 'react';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
-import { openInNewTab } from '@/components/product/ProductTransactionsTable';
+import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
 
 type HistoryRowProps = {
   row?: HistoryRowType;
@@ -180,7 +180,15 @@ export const HistoryRow = ({ row, chainId, index, typeColumn, statusColumn }: Hi
       className={cn('flex flex-wrap xl:table-row', href && 'cursor-pointer')}
       data-hover={href ? undefined : 'off'}
       tabIndex={href ? 0 : undefined}
-      onClick={href ? () => openInNewTab(href) : undefined}
+      onClick={
+        href
+          ? () => {
+              // A click ending a text-selection drag keeps the selection.
+              if (hasTextSelection()) return;
+              openInNewTab(href);
+            }
+          : undefined
+      }
       onKeyDown={
         href
           ? event => {

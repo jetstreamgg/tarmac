@@ -1,3 +1,4 @@
+import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
 import { Fragment, ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
@@ -72,11 +73,6 @@ export interface ProductTransactionsTableProps<T> {
   cardSkeleton?: ReactNode;
 }
 
-/** Opens an explorer link the way the hash cell's anchor does (new tab, no opener). */
-export function openInNewTab(href: string) {
-  window.open(href, '_blank', 'noopener,noreferrer');
-}
-
 // The legacy grid API declared tracks ('1.5fr', '140px'); a <table> wants
 // width hints instead, so fr weights become percentages of the fr total.
 function columnWidths<T>(columns: ProductTransactionColumn<T>[]): string[] {
@@ -134,6 +130,15 @@ export function ProductTransactionsTable<T>({
     const href = rowHref?.(row);
     return href ? () => openInNewTab(href) : undefined;
   };
+  // A click that ends a text-selection drag is the selection, not a request
+  // to open the row; keyboard activation never carries one.
+  const clickAction = (activate: (() => void) | undefined) =>
+    activate
+      ? () => {
+          if (hasTextSelection()) return;
+          activate();
+        }
+      : undefined;
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
   const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
@@ -182,7 +187,7 @@ export function ProductTransactionsTable<T>({
                   <div
                     data-testid={rowTestId?.(row)}
                     tabIndex={activate ? 0 : undefined}
-                    onClick={activate}
+                    onClick={clickAction(activate)}
                     onKeyDown={
                       activate
                         ? event => {
@@ -265,7 +270,7 @@ export function ProductTransactionsTable<T>({
                     // No role="button": overriding the native row role breaks
                     // table navigation for assistive tech (CodeRabbit).
                     tabIndex={activate ? 0 : undefined}
-                    onClick={activate}
+                    onClick={clickAction(activate)}
                     onKeyDown={
                       activate
                         ? event => {

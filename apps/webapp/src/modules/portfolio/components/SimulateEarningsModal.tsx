@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Info, TrendingUp, X } from 'lucide-react';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
@@ -17,14 +17,6 @@ import {
 } from './simulateEarningsScale';
 
 /**
- * How often the rolling figures may take a new value while the thumb is being
- * dragged. A drag changes the balance every frame; a fresh roll per frame
- * would keep the glyphs mid-flight forever, so the figures roll through
- * intermediate values at this cadence and settle on the trailing edge.
- */
-const ROLL_THROTTLE_MS = 180;
-
-/**
  * "Simulate earnings with Sky Savings" modal (Figma 2800:92177): a balance
  * slider on a log-uniform scale whose Daily / Monthly / Yearly figures update
  * live from the current Sky Savings Rate (simple, non-compounded —
@@ -41,9 +33,24 @@ export function SimulateEarningsModal({
 }) {
   const [step, setStep] = useState(() => balanceToStep(INITIAL_BALANCE));
   const balance = stepToBalance(step);
-  const rolled = useThrottledValue(balance, ROLL_THROTTLE_MS);
+  // While the thumb is being dragged the balance changes every frame, and a
+  // roll (600ms / 400ms) would never get to finish — the glyphs would sit
+  // mid-flight for the whole drag. So the figures swap instantly during a
+  // pointer drag and roll again for discrete changes (keyboard steps, a
+  // click on the track).
+  const [dragging, setDragging] = useState(false);
+  useEffect(() => {
+    if (!dragging) return;
+    const stop = () => setDragging(false);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+    return () => {
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+    };
+  }, [dragging]);
 
-  const yearly = projectAnnualEarnings(rolled, savingsRate);
+  const yearly = projectAnnualEarnings(balance, savingsRate);
   const monthly = yearly / 12;
   const daily = yearly / 365;
 
@@ -107,7 +114,7 @@ export function SimulateEarningsModal({
               className="text-text font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px]"
               data-testid="simulate-earnings-balance"
             >
-              <RollingValue value={formatUsd(rolled)} />
+              <RollingValue value={formatUsd(balance)} instant={dragging} />
             </span>
           </div>
 
@@ -118,6 +125,7 @@ export function SimulateEarningsModal({
               max={STEPS}
               step={1}
               onValueChange={([value]) => setStep(value)}
+              onPointerDown={() => setDragging(true)}
               aria-label="Balance supplied"
               valueText={formatUsd(balance)}
             />
@@ -130,9 +138,9 @@ export function SimulateEarningsModal({
         </div>
 
         <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
-          <Stat label={<Trans>Daily</Trans>} value={formatUsd(daily)} />
-          <Stat label={<Trans>Monthly</Trans>} value={formatUsd(monthly)} divided />
-          <Stat label={<Trans>Yearly</Trans>} value={formatUsd(yearly)} divided />
+          <Stat label={<Trans>Daily</Trans>} value={formatUsd(daily)} instant={dragging} />
+          <Stat label={<Trans>Monthly</Trans>} value={formatUsd(monthly)} instant={dragging} divided />
+          <Stat label={<Trans>Yearly</Trans>} value={formatUsd(yearly)} instant={dragging} divided />
         </div>
       </DialogContent>
     </Dialog>
@@ -144,7 +152,17 @@ export function SimulateEarningsModal({
  * trending-up mark over a Body 6 label, and splits the three with 29.5px
  * hairlines rather than full-height column rules.
  */
-function Stat({ label, value, divided }: { label: ReactNode; value: string; divided?: boolean }) {
+function Stat({
+  label,
+  value,
+  divided,
+  instant
+}: {
+  label: ReactNode;
+  value: string;
+  divided?: boolean;
+  instant?: boolean;
+}) {
   return (
     <div className="flex items-center gap-10">
       {divided && <span className="bg-borderPrimary h-[29.5px] w-px shrink-0" aria-hidden />}
@@ -154,33 +172,9 @@ function Stat({ label, value, divided }: { label: ReactNode; value: string; divi
         </Text>
         <span className="text-text font-circle flex items-center gap-1.5 text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <TrendingUp className="text-bullish size-4 shrink-0" aria-hidden />
-          <RollingValue value={value} speed="stat" />
+          <RollingValue value={value} speed="stat" instant={instant} />
         </span>
       </div>
     </div>
   );
-}
-
-/**
- * The latest `value`, but never more often than every `intervalMs`: the first
- * change in a burst passes straight through, later ones wait for the window
- * and the last one always lands (trailing edge).
- */
-function useThrottledValue<T>(value: T, intervalMs: number): T {
-  const [throttled, setThrottled] = useState(value);
-  const lastEmit = useRef(0);
-  useEffect(() => {
-    const elapsed = Date.now() - lastEmit.current;
-    if (elapsed >= intervalMs) {
-      lastEmit.current = Date.now();
-      setThrottled(value);
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      lastEmit.current = Date.now();
-      setThrottled(value);
-    }, intervalMs - elapsed);
-    return () => window.clearTimeout(timer);
-  }, [value, intervalMs]);
-  return throttled;
 }

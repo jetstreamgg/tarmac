@@ -82,7 +82,7 @@ PaginationLink.displayName = 'PaginationLink';
 const arrowClasses =
   'border-glassBorder hover:bg-glassBadge border focus-visible:outline-offset-1 focus-visible:outline-fgBrand disabled:border-glassBadge';
 
-const PaginationPrevious = ({ className, ...props }: PaginationLinkProps) => (
+const PaginationPrevious = ({ className, ...props }: React.ComponentProps<'button'>) => (
   <button
     type="button"
     aria-label="Go to previous page"
@@ -94,7 +94,7 @@ const PaginationPrevious = ({ className, ...props }: PaginationLinkProps) => (
 );
 PaginationPrevious.displayName = 'PaginationPrevious';
 
-const PaginationNext = ({ className, ...props }: PaginationLinkProps) => (
+const PaginationNext = ({ className, ...props }: React.ComponentProps<'button'>) => (
   <button
     type="button"
     aria-label="Go to next page"

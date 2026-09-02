@@ -89,13 +89,13 @@ export function PositionHero({
           <span className="flex items-baseline gap-px">
             <span
               data-testid="position-hero-whole"
-              className="font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
+              className="font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px] tabular-nums md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
             >
               {head}
               {isAccruing && <RollingDigits value={tail} />}
             </span>
             {fraction && (
-              <span className="text-fgSecondary font-circle text-lg leading-5 font-medium tracking-[-0.36px] md:text-xl md:leading-[22px] md:tracking-[-0.4px]">
+              <span className="text-fgSecondary font-circle text-lg leading-5 font-medium tracking-[-0.36px] tabular-nums md:text-xl md:leading-[22px] md:tracking-[-0.4px]">
                 .{isAccruing ? <RollingDigits value={fraction} /> : fraction}
               </span>
             )}
