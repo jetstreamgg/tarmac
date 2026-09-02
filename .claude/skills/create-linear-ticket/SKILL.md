@@ -6,7 +6,7 @@ argument-hint: [brief description of what the ticket is about]
 
 # Create Linear Ticket
 
-Follow this process strictly before creating any Linear issue.
+Creating a ticket is outward-facing, so the user sees and confirms the full draft before anything is written to Linear.
 
 ## 1. Gather Codebase Context
 
@@ -24,11 +24,9 @@ Before creating the ticket, use AskUserQuestion to resolve any ambiguity:
 - Priority if not specified
 - Any other open questions that would change the ticket content
 
-Do NOT create the ticket until questions are answered.
-
 ## 3. Draft the Ticket
 
-Prepare the full ticket content but do NOT create it yet.
+Prepare the full ticket content.
 
 ### Title Guidelines
 
@@ -48,18 +46,21 @@ Always use the **App** team (key: APP).
 - `Legal` — Legal/compliance work
 - `Design` — Visual/design work
 - `UX` — User experience improvements
-- `marketing-site` _(sub-label of app)_ — Marketing site work
+- `Mktg site` — Marketing site work
 - `webapp` _(sub-label of app)_ — Issues in the main webapp
 - `maker-gov-portal` _(sub-label of app)_ — Maker governance portal
 - `sky-gov-portal` _(sub-label of app)_ — Sky governance portal
 
 ### Projects
 
-| Project                  | Status      | Use for                                                         |
-| ------------------------ | ----------- | --------------------------------------------------------------- |
-| App Maintenance          | Backlog     | Ongoing bugs and maintenance                                    |
-| Morpho vaults release    | In Progress | Morpho vault integration, balances page, geoblocking, analytics |
-| Infrastructure Migration | Backlog     | Infrastructure work, target April 2026                          |
+Check the team's project list at ticket time (`mcp__linear-server__list_projects` with team `App`) rather than trusting this table — statuses change. Active projects at the time of writing:
+
+| Project            | Use for                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| Webapp V2 Redesign | The app redesign                                                                     |
+| US Launch          | T&C, screening and geo work for the US launch                                        |
+| App Maintanance    | Ongoing bugs and maintenance (sic — the Linear name is misspelled; match it exactly) |
+| Infrastructure     | Infra, CI, hosting                                                                   |
 
 ### Statuses
 
@@ -115,11 +116,9 @@ Then use AskUserQuestion to ask the user to confirm:
 
 - "Create this ticket?" with options: "Yes, create it", "Edit first" (let the user provide changes)
 
-Do NOT call `mcp__linear-server__save_issue` until the user confirms.
-
 ## 5. Create the Ticket
 
-Only after user confirmation, use `mcp__linear-server__save_issue` to create the issue with:
+After the user confirms, use `mcp__linear-server__save_issue` to create the issue with:
 
 - `title`
 - `team` (team name)
