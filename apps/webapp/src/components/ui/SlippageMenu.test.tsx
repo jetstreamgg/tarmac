@@ -163,20 +163,6 @@ describe('SlippageMenu', () => {
     expect(onChange).toHaveBeenLastCalledWith(0.0001);
   });
 
-  it('warns when the committed tolerance is high enough to cost real money', () => {
-    renderMenu({ value: 0.02 });
-    openMenu();
-
-    expect(screen.getByTestId('slippage-menu-high-warning')).toBeTruthy();
-  });
-
-  it('does not warn at or below the high-tolerance threshold', () => {
-    renderMenu({ value: 0.01 });
-    openMenu();
-
-    expect(screen.queryByTestId('slippage-menu-high-warning')).toBeNull();
-  });
-
   it('resets to the default when Auto is selected', () => {
     renderMenu({ value: 0.005 });
     openMenu();

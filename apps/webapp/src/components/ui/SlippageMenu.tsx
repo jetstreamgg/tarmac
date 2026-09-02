@@ -20,9 +20,6 @@ import { sanitizeAmountInput } from '@/lib/amountInput';
 const AUTO = 'auto';
 const CUSTOM = 'custom';
 
-/** Percent above which a tolerance is worth warning about (APP-533). */
-const HIGH_SLIPPAGE_PERCENT = 1;
-
 /** Decimal slippage (e.g. 0.002 for 0.2%) → percentage string for the input. */
 function decimalToPercentString(decimal: number): string {
   return (decimal * 100).toFixed(2).replace(/\.?0+$/, '');
@@ -123,7 +120,6 @@ export function SlippageMenu({
   }, [value, defaultValue]);
 
   const isCustom = value !== defaultValue;
-  const isHighSlippage = value * 100 > HIGH_SLIPPAGE_PERCENT;
 
   const handleCustomChange = (raw: string) => {
     // Masked to what this field can mean — digits and one decimal point, at
@@ -223,7 +219,7 @@ export function SlippageMenu({
                 </span>
               </div>
             </TabsContent>
-            <TabsContent value={CUSTOM} className="mt-4 flex flex-col gap-2">
+            <TabsContent value={CUSTOM} className="mt-4">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-fgSecondary font-graphik text-xs leading-[18px]">
                   <Trans>Max slippage</Trans>
@@ -248,17 +244,6 @@ export function SlippageMenu({
                   <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>
                 </span>
               </div>
-              {isHighSlippage && (
-                <p
-                  className="text-statusWarning font-graphik text-xs leading-[18px]"
-                  data-testid={`${dataTestId}-high-warning`}
-                >
-                  <Trans>
-                    A tolerance this high can fill well below the quoted amount. Only raise it if a trade
-                    keeps failing.
-                  </Trans>
-                </p>
-              )}
             </TabsContent>
           </Tabs>
         </div>
