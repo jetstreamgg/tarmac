@@ -99,6 +99,28 @@ export async function getUrnAddress(owner: Address, index: bigint): Promise<Addr
   return pub.readContract({ address: STAKE_ENGINE, abi, functionName: 'ownerUrns', args: [owner, index] });
 }
 
+/** Number of urns the owner has opened on the stake engine. */
+export async function getOwnerUrnsCount(owner: Address): Promise<bigint> {
+  const { pub } = await clients();
+  return pub.readContract({
+    address: STAKE_ENGINE,
+    abi,
+    functionName: 'ownerUrnsCount',
+    args: [owner]
+  });
+}
+
+/**
+ * Index of the most recently opened urn. Use after `openStakePosition` so
+ * manage deep-links still hit the urn just created when `--last-failed`
+ * reclaims a dirty pool account that already had urns.
+ */
+export async function latestUrnIndex(owner: Address): Promise<number> {
+  const count = await getOwnerUrnsCount(owner);
+  if (count === 0n) throw new Error(`latestUrnIndex: ${owner} has no urns`);
+  return Number(count - 1n);
+}
+
 export async function getUrnInkArt(urn: Address): Promise<{ ink: bigint; art: bigint }> {
   const { pub } = await clients();
   const [ink, art] = await pub.readContract({

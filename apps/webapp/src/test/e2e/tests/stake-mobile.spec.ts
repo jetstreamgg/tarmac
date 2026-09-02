@@ -30,6 +30,9 @@ test.beforeEach(async ({ isolatedPage }) => {
   // visitors (APP-295), where the mock-mode topbar (two extra mock connect
   // buttons) overflows the 393px viewport and the tap can't land.
   await isolatedPage.goto('/portfolio');
+  await isolatedPage.evaluate(() => {
+    localStorage.setItem('governance-migration-notice-shown', 'true');
+  });
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
 });
@@ -60,13 +63,19 @@ test('mobile takeover renders the full-overlay comp presentation', async ({ isol
   await isolatedPage.getByTestId('stake-takeover-borrow-card-toggle').click();
   await expect(isolatedPage.getByTestId('stake-takeover-min-stake')).toBeVisible({ timeout: 30_000 });
 
-  // Enable Delegate so the overlay is at its tallest, then check the footer
-  // stays pinned: Confirm is inside the viewport without scrolling.
+  // Enable Delegate so the overlay is at its tallest. TakeoverShell scrolls the
+  // footer with the card column (not a sticky bar — see TakeoverShell.tsx), so
+  // scroll to the footer before asserting the Confirm CTA is reachable.
   await isolatedPage.getByTestId('stake-takeover-delegate-card-toggle').click();
   await expect(isolatedPage.getByTestId('stake-takeover-delegate-list')).toBeVisible({ timeout: 15_000 });
-  const confirmBox = await isolatedPage.getByTestId('stake-takeover-confirm').boundingBox();
+  const scrollArea = takeover.locator('.flex-1.overflow-y-auto');
+  await scrollArea.evaluate(el => {
+    el.scrollTop = el.scrollHeight;
+  });
+  const confirm = isolatedPage.getByTestId('stake-takeover-confirm');
+  await expect(confirm).toBeInViewport();
+  const confirmBox = await confirm.boundingBox();
   expect(confirmBox).not.toBeNull();
-  expect(confirmBox!.y + confirmBox!.height).toBeLessThanOrEqual(MOBILE_VIEWPORT.height);
   // Comp footer CTA is the 48px L button (desktop keeps the 56px XL).
   expect(confirmBox!.height).toBe(48);
 });
@@ -177,17 +186,21 @@ test('statistics and about tabs lead with the promo card at the phone tier', asy
   const chartBox = await chart.boundingBox();
   expect(engineBox!.y).toBeLessThan(chartBox!.y);
 
-  // Comp 1222:17233 order: promo card above the About copy; links stack as
-  // full-width rows.
+  // Comp 1222:17233 order: promo card above the About copy; the two shipped
+  // links (View contract, Governance) stack as full-width rows — Docs is held
+  // back until staking docs exist (see StakeAboutTab.tsx).
   await stakeDeepLink(isolatedPage, 'tab=about');
   const aboutCopy = isolatedPage.getByTestId('stake-about-copy');
   await expect(aboutCopy).toBeVisible({ timeout: 15_000 });
   const engineBox2 = await isolatedPage.getByTestId('stake-engine-card').boundingBox();
   const aboutBox = await aboutCopy.boundingBox();
   expect(engineBox2!.y).toBeLessThan(aboutBox!.y);
-  const docsLink = isolatedPage.getByRole('link', { name: 'Docs' });
-  const docsBox = await docsLink.boundingBox();
-  expect(docsBox!.width).toBeGreaterThan(300);
+  const governanceLink = isolatedPage.getByTestId('stake-about-links').getByRole('link', {
+    name: 'Governance'
+  });
+  await expect(governanceLink).toBeVisible();
+  const governanceBox = await governanceLink.boundingBox();
+  expect(governanceBox!.width).toBeGreaterThan(300);
 });
 
 test('populated positions tab stacks per the mobile comp', async ({ isolatedPage }) => {

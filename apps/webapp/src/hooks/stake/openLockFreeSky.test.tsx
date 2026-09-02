@@ -29,6 +29,8 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
   const SKY_AMOUNT = '1200000';
   let URN_INDEX = 0n;
   const ILK_NAME = getIlkName(2);
+  // Match saMulticall: Tenderly draw/wipe can stay isLoading past the 5s default.
+  const LOADING_TIMEOUT = 15000;
 
   await Promise.all([
     setErc20Balance(skyAddress[TENDERLY_CHAIN_ID], SKY_AMOUNT),
@@ -50,7 +52,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
 
     // First open the Urn
     const { result: resultOpenUrn } = renderHook(() => useOpenUrn({ gas: GAS }), { wrapper });
-    await waitForPreparedExecuteAndMine(resultOpenUrn);
+    await waitForPreparedExecuteAndMine(resultOpenUrn, LOADING_TIMEOUT);
 
     // Then lock SKY into the Seal Module
     // Approve token to lock
@@ -65,7 +67,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
       }
     );
 
-    await waitForPreparedExecuteAndMine(resultApproveNgt);
+    await waitForPreparedExecuteAndMine(resultApproveNgt, LOADING_TIMEOUT);
 
     // Lock SKY into the Seal Module
     const { result: resultLockNgt } = renderHook(
@@ -80,7 +82,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
       }
     );
 
-    await waitForPreparedExecuteAndMine(resultLockNgt);
+    await waitForPreparedExecuteAndMine(resultLockNgt, LOADING_TIMEOUT);
 
     const urnAddress = await getUrnAddress(URN_INDEX, useUrnAddress);
 
@@ -130,7 +132,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
         wrapper
       }
     );
-    await waitForPreparedExecuteAndMine(resultDrawNst);
+    await waitForPreparedExecuteAndMine(resultDrawNst, LOADING_TIMEOUT);
 
     // Check the user balance USDS after withdrawing
     const { result: resultNstBalance } = renderHook(
@@ -171,7 +173,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
         }),
       { wrapper }
     );
-    await waitForPreparedExecuteAndMine(resultSelectDelegate);
+    await waitForPreparedExecuteAndMine(resultSelectDelegate, LOADING_TIMEOUT);
 
     // Check selected delegate
     const { result: resultUrnSelectedDelegate } = renderHook(
@@ -196,7 +198,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
         }),
       { wrapper }
     );
-    await waitForPreparedExecuteAndMine(resultSelectRewardContract);
+    await waitForPreparedExecuteAndMine(resultSelectRewardContract, LOADING_TIMEOUT);
 
     // Check selected reward contract
     const { result: resultUrnSelectedRewardContract } = renderHook(
@@ -259,7 +261,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
       }
     );
 
-    await waitForPreparedExecuteAndMine(resultApproveNst);
+    await waitForPreparedExecuteAndMine(resultApproveNst, LOADING_TIMEOUT);
 
     // Repay part of the USDS
     const { result: resultWipeNst } = renderHook(
@@ -273,7 +275,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
         wrapper
       }
     );
-    await waitForPreparedExecuteAndMine(resultWipeNst);
+    await waitForPreparedExecuteAndMine(resultWipeNst, LOADING_TIMEOUT);
 
     resultVaultInfo.current.mutate();
     await waitFor(
@@ -302,7 +304,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
         wrapper
       }
     );
-    await waitForPreparedExecuteAndMine(resultWipeAllNst);
+    await waitForPreparedExecuteAndMine(resultWipeAllNst, LOADING_TIMEOUT);
 
     resultVaultInfo.current.mutate();
     await waitFor(
@@ -356,7 +358,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
       }
     );
 
-    await waitForPreparedExecuteAndMine(resultFreeNgt);
+    await waitForPreparedExecuteAndMine(resultFreeNgt, LOADING_TIMEOUT);
 
     // Check test address' SKY balance after freeing
     const { result: resultNgtBalanceAfter } = renderHook(
