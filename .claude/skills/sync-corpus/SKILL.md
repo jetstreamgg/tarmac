@@ -1,6 +1,6 @@
 ---
 name: sync-corpus
-description: Sync webapp content (banners, FAQs, tooltips, speed-bumps) from the sky-ecosystem/corpus repo
+description: Sync webapp content (banners, FAQs, tooltips) from the sky-ecosystem/corpus repo
 argument-hint: [branch-name] [file-types] — e.g. "vaults-edits banners,faqs" or just "main"
 ---
 
@@ -11,7 +11,7 @@ Syncs webapp content from the `sky-ecosystem/corpus` repo's generated output fil
 ## Arguments
 
 - **First arg**: Branch name in sky-ecosystem/corpus (default: `development`)
-- **Remaining args**: Comma-separated file types to sync (default: all). Options: `banners`, `faqs`, `tooltips`, `speed-bumps`
+- **Remaining args**: Comma-separated file types to sync (default: all). Options: `banners`, `faqs`, `tooltips`
 
 Example invocations:
 
@@ -36,13 +36,7 @@ Example invocations:
 ### Tooltips
 
 - **Corpus**: `output/webapp/tooltips/tooltips.ts`
-- **Tarmac**: `packages/widgets/src/data/tooltips/index.ts`
-
-### Speed-bumps
-
-- **Corpus**: `output/webapp/speed-bumps/*.ts`
-- **Tarmac**: `apps/webapp/src/data/chat/speed-bumps/*.ts`
-- Compare only files that exist in both locations.
+- **Tarmac**: `apps/webapp/src/widgets/data/tooltips/index.ts`
 
 ## Process
 
@@ -107,6 +101,6 @@ node apps/webapp/scripts/record-corpus-sync.mjs \
 It overwrites `apps/webapp/src/data/version.ts` (`CORPUS_VERSION`/`CORPUS_BRANCH`/`CORPUS_COMMIT`) and appends one line to `apps/webapp/src/data/corpus-sync-log.jsonl`.
 
 - `--tag`: best-effort latest corpus release tag — `gh api repos/sky-ecosystem/corpus/releases/latest --jq .tag_name`; omit if none (logs `version: null`).
-- `--file-types`: the types actually synced this run (default: all four).
+- `--file-types`: the types actually synced this run (default: all three).
 - `--changed` / `--in-sync`: from your Step 2 diff. Omit both for a pointer-only update (log `result` is null).
 - Add `--dry-run` to preview both outputs without writing.
