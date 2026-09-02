@@ -6,7 +6,8 @@
  *
  * V2 rewrite (see e2e-migration.md): flows run through the editable entry
  * modal on /earn/savings and /earn/rewards/:rewardContract. The legacy
- * upgrade block was dropped — /convert/upgrade is a parked surface.
+ * upgrade block was dropped — /convert/upgrade is a parked surface (the path
+ * 404s; its redirect stub went in APP-413 and the rest in APP-542).
  *
  * Bundling is a persisted user setting. It cannot be seeded through
  * localStorage — the mock wagmi config clears all of it at boot — so the tests

@@ -6,6 +6,7 @@ import { ComponentProps, useCallback, useMemo } from 'react';
 import { ConvertIntent, FixedIntent, Intent, VaultsIntent } from '@/lib/enums';
 import { IS_PRODUCTION_ENV, QueryParams } from '@/lib/constants';
 import { GEO_OVERRIDE_PARAMS } from '@/modules/geo-config/applyGeoOverrides';
+import { earnProductFilter } from '@/lib/routes';
 
 // Routes declare which module (Intent) and submodule they render via staticData,
 // so components can derive navigation state from the matched route instead of
@@ -23,9 +24,9 @@ declare module '@tanstack/react-router' {
 export type AppRoutePath = FileRouteTypes['to'];
 
 /**
- * Path each module lives at. The TRADE intent renders as a Convert submodule;
- * UPGRADE has no destination — it's the More-menu modal (APP-413) — so its
- * intent lands on Convert.
+ * Path each module lives at. TRADE and UPGRADE have no destination of their
+ * own — CoW trading is parked pending E3 and upgrade is the More-menu modal
+ * (APP-413) — so both intents land on the Convert page.
  */
 export const INTENT_PATHS: Record<Intent, AppRoutePath> = {
   [Intent.BALANCES_INTENT]: '/',
@@ -36,7 +37,7 @@ export const INTENT_PATHS: Record<Intent, AppRoutePath> = {
   [Intent.EXPERT_INTENT]: '/earn/stusds',
   [Intent.VAULTS_INTENT]: '/earn/vaults',
   [Intent.FIXED_INTENT]: '/earn/fixed',
-  [Intent.TRADE_INTENT]: '/convert/trade',
+  [Intent.TRADE_INTENT]: '/convert',
   [Intent.UPGRADE_INTENT]: '/convert'
 };
 
@@ -83,6 +84,21 @@ export const keepSearch = (prev: Record<string, string | undefined>): Record<str
   }
   return next;
 };
+
+/**
+ * `keepSearch` plus the Earn table's product filter for `intent` — the search
+ * reducer for every fallback that lands on the marketplace instead of a
+ * product page (a bare /earn/vaults, an unknown vault address, a retired
+ * overview). Filtering to the family the user asked for beats dropping them on
+ * the unfiltered table (APP-542); an intent with its own page is left alone.
+ */
+export const keepSearchFilteredTo =
+  (intent: Intent) =>
+  (prev: Record<string, string | undefined>): Record<string, string> => {
+    const product = earnProductFilter(intent);
+    const next = keepSearch(prev);
+    return product ? { ...next, [QueryParams.Product]: product } : next;
+  };
 
 /**
  * Search params preserved when navigating between modules. Mirrors the legacy
