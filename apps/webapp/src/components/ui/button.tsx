@@ -10,11 +10,14 @@ import { Loader } from './loader';
 const buttonVariants = cva(
   // --tw-gradient-from/to are @property-registered colors, so listing them
   // here lets gradient-stop changes (the primary/secondary state fills)
-  // cross-fade; background-image itself never interpolates.
+  // cross-fade. background-image must stay OUT of this list: it isn't
+  // interpolable, and WebKit pins a transitioning background-image to its end
+  // value for the whole duration, which overrides the per-frame var()
+  // substitution and snaps the fill instead of fading it (APP-485).
   // font-circle on the base (not only the xl/l/m/s size recipes): defaultVariants
   // sets size='default', so a <Button> with no size prop would otherwise fall
   // through to Graphik. Every button in the comps is Circular.
-  'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-circle text-sm font-medium ring-offset-background transition-[background-color,background-image,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-circle text-sm font-medium ring-offset-background transition-[background-color,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
   {
     variants: {
       variant: {
@@ -167,7 +170,7 @@ export type ButtonVariant =
   | 'ghost';
 
 const buttonWidgetVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-[12px] text-sm font-medium ring-offset-background transition-[background-color,background-image,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-[12px] text-sm font-medium ring-offset-background transition-[background-color,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none',
   {
     variants: {
       variant: {
