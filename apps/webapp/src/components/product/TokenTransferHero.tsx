@@ -1,7 +1,7 @@
 import { MoveDown } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
-import { HeroAmount } from './HeroAmount';
+import { FittedAmount } from './FittedAmount';
 
 export type TokenTransferHeroSide = {
   symbol: string;
@@ -16,7 +16,7 @@ function HeroAmountRow({ symbol, amount, testId }: TokenTransferHeroSide) {
     <div className="flex items-center justify-between gap-3">
       <span className="flex min-w-0 items-center gap-3">
         <TokenIcon token={{ symbol }} width={32} showChainIcon={false} className="size-8 shrink-0" />
-        <HeroAmount amount={amount} testId={testId} />
+        <FittedAmount amount={amount} testId={testId} />
       </span>
       <TokenBadge symbol={symbol} />
     </div>

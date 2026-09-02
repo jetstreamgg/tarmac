@@ -1,13 +1,9 @@
 import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { HeroAmount, fitFontSize } from './HeroAmount';
+import { FittedAmount, fitFontSize } from './FittedAmount';
 
-/**
- * happy-dom does no layout, so every element measures 0. Each test declares the
- * widths flexbox would have produced: `clientWidth` is the slot the row granted
- * the amount, `scrollWidth` is what the digits want at the full 44px.
- */
+/** happy-dom does no layout, so each test declares the widths flexbox would have produced. */
 function stubWidths({ clientWidth, scrollWidth }: { clientWidth: number; scrollWidth: number }) {
   for (const [prop, value] of [
     ['clientWidth', clientWidth],
@@ -36,9 +32,15 @@ describe('fitFontSize', () => {
     expect(fitFontSize({ neededPx: 0, availablePx: 0 })).toBe(44);
     expect(fitFontSize({ neededPx: 285, availablePx: 0 })).toBe(44);
   });
+
+  it('fits from the caller ceiling for the heroes drawn below Heading-2', () => {
+    // The 30px stake-open hero: 1,000,000,000.00 SKY in the 402px slot.
+    expect(fitFontSize({ neededPx: 234, availablePx: 214, maxPx: 30 })).toBe(27);
+    expect(fitFontSize({ neededPx: 180, availablePx: 214, maxPx: 30 })).toBe(30);
+  });
 });
 
-describe('HeroAmount', () => {
+describe('FittedAmount', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'ResizeObserver',
@@ -60,7 +62,7 @@ describe('HeroAmount', () => {
 
   it('renders the amount at the comps size when it fits', () => {
     stubWidths({ clientWidth: 224, scrollWidth: 180 });
-    render(<HeroAmount amount="10,000.00" testId="hero-amount" />);
+    render(<FittedAmount amount="10,000.00" testId="hero-amount" />);
     const el = screen.getByTestId('hero-amount');
     expect(el.textContent).toBe('10,000.00');
     expect(el.style.fontSize).toBe('44px');
@@ -68,14 +70,14 @@ describe('HeroAmount', () => {
 
   it('shrinks a long amount instead of eliding it', () => {
     stubWidths({ clientWidth: 224, scrollWidth: 285 });
-    render(<HeroAmount amount="10,610,108.00" testId="hero-amount" />);
+    render(<FittedAmount amount="10,610,108.00" testId="hero-amount" />);
     const el = screen.getByTestId('hero-amount');
     expect(el.style.fontSize).toBe('34px');
     expect(el.textContent).toBe('10,610,108.00');
   });
 
   it('holds the comps size when the element cannot be measured', () => {
-    render(<HeroAmount amount="10,610,108.00" testId="hero-amount" />);
+    render(<FittedAmount amount="10,610,108.00" testId="hero-amount" />);
     expect(screen.getByTestId('hero-amount').style.fontSize).toBe('44px');
   });
 
@@ -84,9 +86,8 @@ describe('HeroAmount', () => {
     const remove = vi.spyOn(window, 'removeEventListener');
     stubWidths({ clientWidth: 224, scrollWidth: 285 });
 
-    const { unmount } = render(<HeroAmount amount="10,610,108.00" testId="hero-amount" />);
-    // A parent-only ResizeObserver never fires here: the parent is content-sized,
-    // so it shrinks with the amount and stops tracking the widening viewport.
+    const { unmount } = render(<FittedAmount amount="10,610,108.00" testId="hero-amount" />);
+    // A parent-only ResizeObserver never fires here — the parent shrinks with the amount.
     expect(add.mock.calls.filter(([event]) => event === 'resize')).toHaveLength(1);
 
     unmount();
@@ -95,9 +96,21 @@ describe('HeroAmount', () => {
     remove.mockRestore();
   });
 
+  it('measures and fits against a caller ceiling instead of the 44px default', () => {
+    stubWidths({ clientWidth: 214, scrollWidth: 234 });
+    render(<FittedAmount amount="1,000,000,000.00" maxPx={30} testId="hero-amount" />);
+    expect(screen.getByTestId('hero-amount').style.fontSize).toBe('27px');
+  });
+
+  it('holds a caller ceiling when the amount already fits it', () => {
+    stubWidths({ clientWidth: 214, scrollWidth: 180 });
+    render(<FittedAmount amount="10,000.00" maxPx={30} testId="hero-amount" />);
+    expect(screen.getByTestId('hero-amount').style.fontSize).toBe('30px');
+  });
+
   it('scales tracking with the font size rather than pinning it in px', () => {
     stubWidths({ clientWidth: 224, scrollWidth: 285 });
-    render(<HeroAmount amount="10,610,108.00" testId="hero-amount" />);
+    render(<FittedAmount amount="10,610,108.00" testId="hero-amount" />);
     expect(screen.getByTestId('hero-amount').className).toContain('tracking-[-0.02em]');
   });
 });

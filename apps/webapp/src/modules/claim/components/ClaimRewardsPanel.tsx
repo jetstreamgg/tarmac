@@ -20,7 +20,7 @@ import { skyRewardsAdapter } from '../adapters/skyRewardsAdapter';
 import { stakeAdapter } from '../adapters/stakeAdapter';
 import type { ClaimSource, ClaimableReward, ClaimScope } from '../types';
 import { NO_VALUE } from '@/lib/constants';
-import { HeroAmount } from '@/components/product/HeroAmount';
+import { FittedAmount } from '@/components/product/FittedAmount';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 /**
@@ -34,7 +34,7 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
       <div className="flex min-w-0 items-center gap-3">
         {reward.icon}
         <div className="flex min-w-0 items-baseline gap-2">
-          <HeroAmount amount={reward.formattedAmount} />
+          <FittedAmount amount={reward.formattedAmount} />
           <span className="text-fgSecondary text-sm leading-5.5">({formatUsd(reward.amountUsd)})</span>
         </div>
       </div>
