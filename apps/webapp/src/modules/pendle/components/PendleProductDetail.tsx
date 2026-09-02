@@ -89,9 +89,20 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         <span>
           {maturityDateLabel}{' '}
           <span className="text-textSecondary">
-            {/* A matured market reads "(Matured)" — the elapsed-days figure is 0
-                there, which reads as "matures today". */}
-            {remainingSeconds > 0 ? <Trans>({remainingDays} days)</Trans> : <Trans>(Matured)</Trans>}
+            {/* The day count floors, so the last stretch before expiry lands on
+                0 — stated as "less than a day", since "(0 days)" would claim the
+                market matures today, and a matured one already reads
+                "(Matured)". One day gets its own branch so the plural never
+                reads "1 days", matching FixedYieldTerm. */}
+            {remainingSeconds <= 0 ? (
+              <Trans>(Matured)</Trans>
+            ) : remainingDays === 0 ? (
+              <Trans>(less than a day)</Trans>
+            ) : remainingDays === 1 ? (
+              <Trans>(1 day)</Trans>
+            ) : (
+              <Trans>({remainingDays} days)</Trans>
+            )}
           </span>
         </span>
       )
