@@ -39,6 +39,7 @@ pnpm pr:desc [base-branch] -> Copies all code diffs and pull request template to
 To run tests, especially those involving Tenderly, you need to set up the following environment variable:
 
 - `TENDERLY_API_KEY`: Your Tenderly API key. This is required for forking and managing Tenderly testnets during test execution.
+- `MAINNET_FORK_CONTAINER_ID`: Tenderly parent vnet id used when forking mainnet for tests (`pnpm vnet:fork`). Committed default in `.env.example`; override in `.env` if needed.
 
 Make sure to add this to your `.env` file in the root directory of the project. You can refer to the `.env.example` file for the correct format.
 

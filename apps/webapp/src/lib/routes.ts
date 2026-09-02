@@ -1,4 +1,5 @@
 import { Intent } from '@/lib/enums';
+import type { EarnProductKind } from '@/hooks/earn/types';
 
 // Target-IA route map (plan §4.1). Single source of truth: downstream code
 // imports route knowledge from here — never hardcode paths.
@@ -61,6 +62,27 @@ export function intentToPath(intent: Intent, sub?: string): string {
   const base = PATH_BY_INTENT[intent];
   return sub ? `${base}/${sub}` : base;
 }
+
+/**
+ * Earn families with no overview screen of their own: their bare destination is
+ * the marketplace filtered to the family (APP-542). A legacy `?widget=vaults`
+ * link asked for vaults specifically, so it lands on the table pre-filtered
+ * rather than on the unfiltered marketplace — the same place the sky.money CTAs
+ * now point.
+ *
+ * The values are `EarnProductKind`, which `sanitizeFilters` matches exactly
+ * against the live option set — note the singular `vault`, which is the product
+ * kind, not the `vaults` module name.
+ */
+const EARN_PRODUCT_BY_INTENT: Partial<Record<Intent, EarnProductKind>> = {
+  [Intent.VAULTS_INTENT]: 'vault',
+  [Intent.REWARDS_INTENT]: 'rewards',
+  [Intent.FIXED_INTENT]: 'fixed'
+};
+
+/** The Earn table's product filter for `intent`, or undefined when it has its own page. */
+export const earnProductFilter = (intent: Intent): EarnProductKind | undefined =>
+  EARN_PRODUCT_BY_INTENT[intent];
 
 const ALIAS_INTENTS: ReadonlySet<Intent> = new Set([Intent.TRADE_INTENT, Intent.UPGRADE_INTENT]);
 

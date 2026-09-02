@@ -110,7 +110,7 @@ Note that when you try to initiate a transaction using this feature, the transac
 
 In addition to the above, you can also run only a single e2e test by passing along an argument for the test file:
 
-`pnpm e2e upgrade.spec.ts`
+`pnpm e2e stake.spec.ts`
 
 You will need to have the `TEST_CHAIN` env var set. You can set it locally by entering this command: `export TEST_CHAIN=mainnet`
 
