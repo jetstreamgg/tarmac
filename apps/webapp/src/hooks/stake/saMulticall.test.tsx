@@ -408,15 +408,21 @@ describe('Stake Module Multicall tests', async () => {
       wrapper
     });
 
+    // Wait for a read that actually reflects the draw. `> USDS_TO_DRAW` is not
+    // a strong enough guard: the accrued stability fee already puts the
+    // pre-draw debt a wei or two above the round 30000, so a stale read
+    // satisfies it, and the comparison further down then runs against a
+    // baseline that predates the headroom and can never decrease.
     let debtBefore: bigint | undefined;
     await waitFor(
       () => {
+        resultVaultBefore.current.mutate();
         debtBefore = resultVaultBefore.current.data?.debtValue;
         expect(debtBefore).toBeDefined();
-        expect(debtBefore! > USDS_TO_DRAW).toBe(true);
+        expect(debtBefore! >= USDS_TO_DRAW + USDS_HEADROOM_FOR_WIPE).toBe(true);
         return;
       },
-      { timeout: 5000 }
+      { timeout: 20000, interval: 1000 }
     );
 
     const calldataWipe = getStakeWipeCalldata({
@@ -436,22 +442,25 @@ describe('Stake Module Multicall tests', async () => {
 
     await waitForPreparedExecuteAndMine(resultMulticall, LOADING_TIMEOUT);
 
-    // Re-read through the same hook and force the refetch: a second renderHook
-    // would be served the pre-wipe value straight from the query cache, and the
-    // assertion below would then compare `debtBefore` against itself.
-    resultVaultBefore.current.mutate();
-
-    // Debt drops, but the position stays open and above dust — that is what
-    // separates `wipe` from `wipeAll`.
+    // Debt drops by the wiped amount, but the position stays open and above
+    // dust — that is what separates `wipe` from `wipeAll`.
+    //
+    // The refetch has to happen inside the poll, not once before it: a single
+    // `mutate()` races the node, and if that one read lands on the pre-wipe
+    // state there is nothing left to refresh it — `waitFor` then re-checks the
+    // same cached value until it times out. Re-reading through a second
+    // `renderHook` has the same problem, since it is served from the query
+    // cache.
     await waitFor(
       () => {
+        resultVaultBefore.current.mutate();
         const debtAfter = resultVaultBefore.current.data?.debtValue;
         expect(debtAfter).toBeDefined();
         expect(debtAfter! < debtBefore!).toBe(true);
         expect(debtAfter! >= USDS_TO_DRAW).toBe(true);
         return;
       },
-      { timeout: 10000 }
+      { timeout: 20000, interval: 1000 }
     );
   });
 
