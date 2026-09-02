@@ -61,9 +61,10 @@ const matchedRouteIds = (router: AnyRouter): string[] =>
 
 // `notFoundMode: 'root'` flags the root match rather than clearing the partial
 // ones, so a path that resolves to the 404 screen is read from the flag — the
-// stale ancestor matches below it say nothing about what rendered.
+// stale ancestor matches below it say nothing about what rendered. The flag is
+// `_notFound` as of @tanstack/react-router 1.170.32 (was `globalNotFound`).
 const isNotFound = (router: AnyRouter): boolean =>
-  router.state.matches.some(match => (match as { globalNotFound?: boolean }).globalNotFound === true);
+  router.state.matches.some(match => (match as { _notFound?: boolean })._notFound === true);
 
 describe('target-IA destination routes', () => {
   it('boots /portfolio as a shell route', async () => {

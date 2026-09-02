@@ -2,6 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { formatBigInt, formatUsd } from '@/utils';
 import { formatUnits } from 'viem';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { FittedAmount } from '@/components/product/FittedAmount';
 
 function AmountHero({
   label,
@@ -19,9 +20,14 @@ function AmountHero({
   return (
     <div className="flex flex-col gap-1" data-testid={dataTestId}>
       <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text font-circle flex items-center gap-2 text-2xl font-medium tracking-tight">
-        <TokenIcon token={{ symbol }} width={28} className="h-7 w-7" showChainIcon={false} />
-        {formatBigInt(amount)} {symbol}
+      <span className="text-text font-circle flex min-w-0 items-center gap-2 text-2xl font-medium tracking-tight">
+        <TokenIcon token={{ symbol }} width={28} className="h-7 w-7 shrink-0" showChainIcon={false} />
+        {/* The symbol sits inside the hero here, not in a chip, so it is measured too. */}
+        <FittedAmount
+          amount={`${formatBigInt(amount)} ${symbol}`}
+          maxPx={24}
+          className="text-2xl leading-[1.3333] tracking-tight"
+        />
       </span>
       {usdValue !== null && <span className="text-textSecondary text-xs">{formatUsd(usdValue)}</span>}
     </div>
