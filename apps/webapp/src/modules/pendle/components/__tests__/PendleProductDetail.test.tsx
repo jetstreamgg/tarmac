@@ -130,6 +130,35 @@ describe('PendleProductDetail', () => {
     expect(section.textContent).toMatch(/2026/); // maturity date label
   });
 
+  it('says "(1 day)" rather than "(1 days)" in the Maturity row on the last full day', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    h.stats = { [MARKET.marketAddress]: { impliedApy: 0.0486, expirySec: nowSec + 1.5 * 86_400 } };
+    renderDetail();
+
+    const details = screen.getByTestId('product-detail-details');
+    expect(details.textContent).toContain('(1 day)');
+    expect(details.textContent).not.toContain('1 days');
+  });
+
+  it('says "less than a day" rather than "(0 days)" inside the last day', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    h.stats = { [MARKET.marketAddress]: { impliedApy: 0.0486, expirySec: nowSec + 0.5 * 86_400 } };
+    renderDetail();
+
+    const details = screen.getByTestId('product-detail-details');
+    expect(details.textContent).toContain('(less than a day)');
+    expect(details.textContent).not.toContain('0 days');
+    expect(details.textContent).not.toContain('Matured');
+  });
+
+  it('says "(Matured)" once the market has expired', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    h.stats = { [MARKET.marketAddress]: { impliedApy: 0.0486, expirySec: nowSec - 86_400 } };
+    renderDetail();
+
+    expect(screen.getByTestId('product-detail-details').textContent).toContain('(Matured)');
+  });
+
   it('renders the About intro with a worked example from the live rate', () => {
     h.stats = { [MARKET.marketAddress]: { impliedApy: 0.0486 } };
     renderDetail();
