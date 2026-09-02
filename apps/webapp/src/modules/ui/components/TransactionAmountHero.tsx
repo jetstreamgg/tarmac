@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { FittedAmount } from '@/components/product/FittedAmount';
 
 /**
  * Token badge pill (DS Badges / Illustration, 28px): 16px token icon + Label-5
@@ -74,9 +75,7 @@ export function TransactionAmountHero({
             {loading ? (
               <Skeleton className="my-2 h-8 w-40 rounded" data-testid="hero-loading" />
             ) : (
-              <span className="font-circle text-fgPrimary truncate text-[44px] leading-12 font-medium tracking-[-0.88px]">
-                {amount}
-              </span>
+              <FittedAmount amount={amount} />
             )}
             {usd && (
               <span
