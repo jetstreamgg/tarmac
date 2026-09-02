@@ -271,6 +271,7 @@ export function PortfolioTransactionsView({
         columns={COLUMNS}
         rows={filtered}
         rowKey={row => row.id}
+        rowHref={row => row.explorerHref}
         isLoading={isLoading}
         error={error}
         renderCard={renderCard}

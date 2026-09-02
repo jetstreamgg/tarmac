@@ -136,8 +136,13 @@ describe('useConvertLaunch', () => {
     // The approve step carries tokenSymbol so the steps list renders "Approve ◉ USDS" (Figma 1036:205564);
     // the convert step carries a source→target pair so it renders "Convert ◉ USDS to ◉ USDC".
     expect(result.current.steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS' },
-      { label: 'Convert', tokenSymbol: 'USDS', targetTokenSymbol: 'USDC' }
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
+      {
+        label: 'Convert',
+        tokenSymbol: 'USDS',
+        targetTokenSymbol: 'USDC',
+        failureDetail: "The USDS hasn't been converted."
+      }
     ]);
   });
 
@@ -146,7 +151,12 @@ describe('useConvertLaunch', () => {
       useConvertLaunch({ direction: 'USDC_TO_USDS', amount: parseUnits('100', 6) })
     );
     expect(result.current.steps).toEqual([
-      { label: 'Convert', tokenSymbol: 'USDC', targetTokenSymbol: 'USDS' }
+      {
+        label: 'Convert',
+        tokenSymbol: 'USDC',
+        targetTokenSymbol: 'USDS',
+        failureDetail: "The USDC hasn't been converted."
+      }
     ]);
   });
 
@@ -163,7 +173,14 @@ describe('useConvertLaunch', () => {
       transactionTitle: 'Review conversion',
       confirmLabel: 'Confirm',
       confirmDisabled: false,
-      steps: [{ label: 'Convert', tokenSymbol: 'USDS', targetTokenSymbol: 'USDC' }],
+      steps: [
+        {
+          label: 'Convert',
+          tokenSymbol: 'USDS',
+          targetTokenSymbol: 'USDC',
+          failureDetail: "The USDS hasn't been converted."
+        }
+      ],
       toast: {
         loading: 'Converting 100 USDS',
         success: '100 USDS converted to USDC!',
@@ -220,7 +237,14 @@ describe('useConvertLaunch', () => {
     expect(typeof sessionId).toBe('string');
     expect(partial).toMatchObject({
       confirmDisabled: false,
-      steps: [{ label: 'Convert', tokenSymbol: 'USDS', targetTokenSymbol: 'USDC' }]
+      steps: [
+        {
+          label: 'Convert',
+          tokenSymbol: 'USDS',
+          targetTokenSymbol: 'USDC',
+          failureDetail: "The USDS hasn't been converted."
+        }
+      ]
     });
   });
 

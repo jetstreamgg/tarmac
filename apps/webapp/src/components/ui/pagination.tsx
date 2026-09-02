@@ -1,16 +1,37 @@
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trans } from '@lingui/react/macro';
 
 import { cn } from '@/lib/cn';
-import { ButtonProps, buttonVariants, ButtonWidgetProps, buttonWidgetVariants } from '@/components/ui/button';
 
-// App look — canonical, unchanged.
+/**
+ * Design-system Pagination (DS 5984:10221; app placement 2829:140116).
+ *
+ * Three parts, each a DS component:
+ * - `_Pagination number base` (5984:10353): a 32px circle in Label 5. Default
+ *   is bare; hover fills with gradient-brand2; the active page keeps that fill
+ *   and adds the border-secondary hairline; focus draws the 2px border-focus
+ *   ring flush against the edge. The ellipsis is the same base at 24px, radius
+ *   8, in fg-quaternary.
+ * - `_pagination arrow` (5984:10367): a 32px bordered circle around a 24px
+ *   chevron. The DS draws its hover identical to default; focus is the 2px
+ *   fg-brand-primary ring one pixel off the edge.
+ * - The component itself: arrows 24px from the number group on web (gap 2px
+ *   between numbers), and on mobile a "Page 1 of 10" Label 6 pill between the
+ *   arrows instead of the list, 16px apart. `PaginationContent` hides below
+ *   `md` (where the transaction tables fold into cards) and `PaginationLabel`
+ *   shows there, so a caller renders both and the breakpoint picks.
+ *
+ * The strokes are Figma inside-strokes on a 32px frame, so a CSS `border` on
+ * a `size-8` box lands on the same pixels; the focus rings are outside strokes
+ * and go on `outline`, which needs no offset color over the glass surfaces.
+ */
 
 const Pagination = ({ className, ...props }: React.ComponentProps<'nav'> & { className?: string }) => (
   <nav
     role="navigation"
     aria-label="pagination"
-    className={cn('mx-auto mt-4 flex h-8 w-full justify-center', className)}
+    className={cn('mx-auto mt-4 flex w-full items-center justify-center gap-4 md:gap-6', className)}
     {...props}
   />
 );
@@ -20,34 +41,36 @@ const PaginationContent = React.forwardRef<
   HTMLUListElement,
   React.ComponentProps<'ul'> & { className?: string }
 >(({ className, ...props }, ref) => (
-  <ul ref={ref} className={cn('flex flex-row items-center gap-2', className)} {...props} />
+  <ul ref={ref} className={cn('flex flex-row items-center gap-0.5', className)} {...props} />
 ));
 PaginationContent.displayName = 'PaginationContent';
 
 const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentProps<'li'> & { className?: string }>(
-  ({ className, ...props }, ref) => (
-    <li ref={ref} className={cn('mx-1 list-none rounded-full', className)} {...props} />
-  )
+  ({ className, ...props }, ref) => <li ref={ref} className={cn('list-none', className)} {...props} />
 );
 PaginationItem.displayName = 'PaginationItem';
+
+const controlBase =
+  'font-circle text-text inline-flex size-8 shrink-0 items-center justify-center rounded-full text-sm leading-4 font-medium tracking-[-0.28px] bg-origin-border transition-[background-color,--tw-gradient-from,--tw-gradient-to,border-color,color] duration-250 ease-out-expo focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focusRing disabled:pointer-events-none disabled:text-fgTertiary';
 
 type PaginationLinkProps = {
   isActive?: boolean;
   disabled?: boolean;
   className?: string;
-} & Pick<ButtonProps, 'size'> &
-  React.ComponentProps<'button'>;
+} & React.ComponentProps<'button'>;
 
-const PaginationLink = ({ className, isActive, disabled, size = 'icon', ...props }: PaginationLinkProps) => (
+/** `_Pagination number base`: one page number. */
+const PaginationLink = ({ className, isActive, disabled, ...props }: PaginationLinkProps) => (
   <button
+    type="button"
     disabled={disabled}
     aria-current={isActive ? 'page' : undefined}
     className={cn(
-      buttonVariants({
-        variant: isActive ? 'paginationActive' : 'pagination',
-        size
-      }),
-      'h-8 w-8',
+      controlBase,
+      'px-2',
+      isActive
+        ? 'border-glassBorder from-brand2-start to-brand2-end border bg-linear-to-b'
+        : 'hover:from-brand2-start hover:to-brand2-end hover:bg-linear-to-b',
       className
     )}
     {...props}
@@ -55,37 +78,31 @@ const PaginationLink = ({ className, isActive, disabled, size = 'icon', ...props
 );
 PaginationLink.displayName = 'PaginationLink';
 
-const PaginationPrevious = ({
-  className,
-  longFormat,
-  ...props
-}: React.ComponentProps<typeof PaginationLink> & { longFormat?: boolean; className?: string }) => (
-  <PaginationLink
+/** `_pagination arrow`: the bordered chevron circle. */
+const arrowClasses =
+  'border-glassBorder hover:bg-glassBadge border focus-visible:outline-offset-1 focus-visible:outline-fgBrand disabled:border-glassBadge';
+
+const PaginationPrevious = ({ className, ...props }: PaginationLinkProps) => (
+  <button
+    type="button"
     aria-label="Go to previous page"
-    size="default"
-    className={cn(`gap-1 ${longFormat ? 'pl-2.5' : 'px-2'} text-text`, className)}
+    className={cn(controlBase, arrowClasses, className)}
     {...props}
   >
-    <ChevronLeft className="h-6 w-6" />
-    {longFormat && <span>Previous</span>}
-  </PaginationLink>
+    <ChevronLeft className="size-6" aria-hidden />
+  </button>
 );
 PaginationPrevious.displayName = 'PaginationPrevious';
 
-const PaginationNext = ({
-  className,
-  longFormat,
-  ...props
-}: React.ComponentProps<typeof PaginationLink> & { longFormat?: boolean; className?: string }) => (
-  <PaginationLink
+const PaginationNext = ({ className, ...props }: PaginationLinkProps) => (
+  <button
+    type="button"
     aria-label="Go to next page"
-    size="default"
-    className={cn(`gap-1 ${longFormat ? 'pl-2.5' : 'px-2'} text-text`, className)}
+    className={cn(controlBase, arrowClasses, className)}
     {...props}
   >
-    {longFormat && <span>Next</span>}
-    <ChevronRight className="h-6 w-6" />
-  </PaginationLink>
+    <ChevronRight className="size-6" aria-hidden />
+  </button>
 );
 PaginationNext.displayName = 'PaginationNext';
 
@@ -96,128 +113,58 @@ const PaginationEllipsis = ({
   <span
     aria-hidden
     className={cn(
-      'text-selectActive light:text-textSecondary flex h-9 w-9 items-center justify-center text-base leading-normal',
+      'text-fgQuaternary font-circle flex size-6 items-center justify-center rounded-lg text-sm leading-4 font-medium tracking-[-0.28px]',
       className
     )}
     {...props}
   >
-    <MoreHorizontal className="h-4 w-4" />
+    ...
     <span className="sr-only h-0">More pages</span>
   </span>
 );
 PaginationEllipsis.displayName = 'PaginationEllipsis';
 
-// Widget look — relocated under PaginationWidget*; the widgets/pagination shim aliases it back.
-
-const PaginationWidget = ({ className, ...props }: React.ComponentProps<'nav'>) => (
-  <nav
-    role="navigation"
-    aria-label="pagination"
-    className={cn('mx-auto flex h-8 w-full justify-center', className)}
-    {...props}
-  />
-);
-PaginationWidget.displayName = 'Pagination';
-
-const PaginationWidgetItem = React.forwardRef<HTMLLIElement, React.ComponentProps<'li'>>(
-  ({ className, ...props }, ref) => (
-    <li ref={ref} className={cn('mx-1 list-none rounded-full', className)} {...props} />
-  )
-);
-PaginationWidgetItem.displayName = 'PaginationItem';
-
-type PaginationWidgetLinkProps = {
-  isActive?: boolean;
-  disabled?: boolean;
-} & Pick<ButtonWidgetProps, 'size'> &
-  React.ComponentProps<'button'>;
-
-const PaginationWidgetLink = ({
+/** The mobile "Page 1 of 10" pill that stands in for the number list. */
+const PaginationLabel = ({
+  current,
+  total,
   className,
-  isActive,
-  disabled,
-  size = 'icon',
   ...props
-}: PaginationWidgetLinkProps) => (
-  <button
-    disabled={disabled}
-    aria-current={isActive ? 'page' : undefined}
-    className={cn(
-      buttonWidgetVariants({
-        variant: isActive ? 'paginationActive' : 'pagination',
-        size
-      }),
-      'h-8 w-8',
-      className
-    )}
-    {...props}
-  />
-);
-PaginationWidgetLink.displayName = 'PaginationLink';
-
-const PaginationWidgetPrevious = ({
-  className,
-  longFormat,
-  ...props
-}: React.ComponentProps<typeof PaginationWidgetLink> & { longFormat?: boolean }) => (
-  <PaginationWidgetLink
-    aria-label="Go to previous page"
-    size="default"
-    className={cn(`gap-1 ${longFormat ? 'pl-2.5' : 'px-2'} text-text`, className)}
-    {...props}
-  >
-    <ChevronLeft className="h-6 w-6" />
-    {longFormat && <span>Previous</span>}
-  </PaginationWidgetLink>
-);
-PaginationWidgetPrevious.displayName = 'PaginationPrevious';
-
-const PaginationWidgetNext = ({
-  className,
-  longFormat,
-  ...props
-}: React.ComponentProps<typeof PaginationWidgetLink> & { longFormat?: boolean }) => (
-  <PaginationWidgetLink
-    aria-label="Go to next page"
-    size="default"
-    className={cn(`gap-1 ${longFormat ? 'pl-2.5' : 'px-2'} text-text`, className)}
-    {...props}
-  >
-    {longFormat && <span>Next</span>}
-    <ChevronRight className="h-6 w-6" />
-  </PaginationWidgetLink>
-);
-PaginationWidgetNext.displayName = 'PaginationNext';
-
-const PaginationWidgetEllipsis = ({ className, ...props }: React.ComponentProps<'span'>) => (
+}: React.ComponentProps<'span'> & { current: number; total: number; className?: string }) => (
   <span
-    aria-hidden
+    aria-live="polite"
     className={cn(
-      'text-selectActive light:text-textSecondary flex h-9 w-9 items-center justify-center text-base leading-normal',
+      'font-circle text-text flex h-6 items-center rounded-lg px-3 text-xs leading-[14px] font-medium tracking-[-0.24px]',
       className
     )}
     {...props}
   >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only h-0">More pages</span>
+    <Trans>
+      Page {current} of {total}
+    </Trans>
   </span>
 );
-PaginationWidgetEllipsis.displayName = 'PaginationEllipsis';
+PaginationLabel.displayName = 'PaginationLabel';
 
 export {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
   PaginationItem,
+  PaginationLabel,
   PaginationLink,
   PaginationNext,
   PaginationPrevious
 };
+
+// The widget look used to be a second set of primitives (PaginationWidget*);
+// the DS has one Pagination, so those names now alias the app parts. The
+// widgets/pagination shim re-exports them under the plain names.
 export {
-  PaginationWidget,
-  PaginationWidgetEllipsis,
-  PaginationWidgetItem,
-  PaginationWidgetLink,
-  PaginationWidgetNext,
-  PaginationWidgetPrevious
+  Pagination as PaginationWidget,
+  PaginationEllipsis as PaginationWidgetEllipsis,
+  PaginationItem as PaginationWidgetItem,
+  PaginationLink as PaginationWidgetLink,
+  PaginationNext as PaginationWidgetNext,
+  PaginationPrevious as PaginationWidgetPrevious
 };

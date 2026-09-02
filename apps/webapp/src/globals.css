@@ -195,6 +195,9 @@
      tier). Distinct from the legacy `--color-error` (--service-red #ff6d6d),
      which the pre-redesign widgets still read for validation copy. */
   --color-statusError: #f83c3b;
+  /* components/status/bg-error — the "Transaction failed" chip's fill (Figma
+     2800:91683). */
+  --color-statusErrorBg: rgba(248, 60, 59, 0.1);
   /* components/badges/bg-risk-low|medium|high (Figma Badges/Risk 5017:7512).
      The DS split the risk pill off the components/status palette, so it needs
      its own tokens: risk-low is Green/400→500 where status success goes
@@ -904,6 +907,7 @@
     --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */
     --color-statusWarning: #dd6102; /* components/status/fg-warning */
     --color-statusError: #e51f1d; /* components/status/fg-error */
+    --color-statusErrorBg: #e51f1d1a; /* components/status/bg-error */
     --color-riskLow: #02c2a1; /* components/badges/bg-risk-low */
     --color-riskMedium: #ffaa20; /* components/badges/bg-risk-medium */
     --color-statusBrand: #4836f5; /* components/status/fg-brand */

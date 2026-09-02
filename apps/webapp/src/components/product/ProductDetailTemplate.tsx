@@ -353,8 +353,20 @@ export function ProductDetailTemplate({
             {transactions}
           </TransactionsSection>
         </div>
+        {/* Figma 2829:138694 ("Sticky component following the user's viewport"):
+            at the two-pane tier the position card pins while the left pane
+            scrolls past it. `top-32` (128px) = the 88px navbar bar + the same
+            40px inset the page keeps under it (`md:pt-10`), so the stuck card
+            sits exactly where it rested before the scroll. Sticky needs every
+            ancestor up to the document to NOT be a scroll container — which is
+            why AppContainer clips horizontal overflow with `overflow-x-clip`
+            rather than `-hidden` (hidden forces overflow-y to auto). A card
+            taller than the viewport minus that offset still pins at its top;
+            no inner scrolling — the comps don't want it, and no current card
+            gets that tall at this tier. Below desktop the card leads the
+            stack and scrolls normally. */}
         <div
-          className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-1 col-span-full"
+          className="desktop:sticky desktop:top-32 desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-1 col-span-full"
           data-testid="product-detail-right-pane"
         >
           {position}

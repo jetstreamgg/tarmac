@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { LoadingErrorWrapper } from '../LoadingErrorWrapper';
 import { Fragment, useMemo } from 'react';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
+import { openInNewTab } from '@/components/product/ProductTransactionsTable';
 
 type HistoryRowProps = {
   row?: HistoryRowType;
@@ -79,6 +80,11 @@ const LoadingHistoryRow = ({ index, typeColumn }: Omit<HistoryRowProps, 'chainId
   return <BaseRow typeColumn={typeColumn} content={content} />;
 };
 
+const explorerHref = (row: HistoryRowType | undefined, chainId: number) =>
+  row?.useCowExplorer
+    ? getCowExplorerLink(chainId, row?.transactionHash || '')
+    : getEtherscanLink(chainId, row?.transactionHash || '', 'tx');
+
 const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: HistoryRowProps) => {
   const explorerName = getExplorerName(chainId, false);
 
@@ -125,17 +131,12 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
       </Fragment>,
       <div key="sixth-content" className="flex justify-between space-x-2 lg:justify-start xl:justify-end">
         <Text>{formatAddress(row?.transactionHash || '', 6, 4)}</Text>
-        <div className="flex space-x-4 xl:space-x-2">
+        {/* The row itself opens the explorer; the hash actions keep their own
+            behaviour without also firing the row's. */}
+        <div className="flex space-x-4 xl:space-x-2" onClick={event => event.stopPropagation()}>
           <Tooltip>
             <TooltipTrigger>
-              <ExternalLink
-                href={
-                  row?.useCowExplorer
-                    ? getCowExplorerLink(chainId, row?.transactionHash || '')
-                    : getEtherscanLink(chainId, row?.transactionHash || '', 'tx')
-                }
-                iconSize={13}
-              />
+              <ExternalLink href={explorerHref(row, chainId)} iconSize={13} />
             </TooltipTrigger>
             <TooltipPortal>
               <TooltipContent>
@@ -171,8 +172,27 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
 };
 
 export const HistoryRow = ({ row, chainId, index, typeColumn, statusColumn }: HistoryRowProps) => {
+  // The whole row links to the explorer like its hash does (Figma 2800:92277);
+  // a loading row has nothing to open, so it stays inert.
+  const href = row?.transactionHash ? explorerHref(row, chainId) : undefined;
   return (
-    <TableRow className="flex flex-wrap xl:table-row">
+    <TableRow
+      className={cn('flex flex-wrap xl:table-row', href && 'cursor-pointer')}
+      data-hover={href ? undefined : 'off'}
+      tabIndex={href ? 0 : undefined}
+      onClick={href ? () => openInNewTab(href) : undefined}
+      onKeyDown={
+        href
+          ? event => {
+              if (event.target !== event.currentTarget) return;
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openInNewTab(href);
+              }
+            }
+          : undefined
+      }
+    >
       <LoadingErrorWrapper
         isLoading={!row}
         loadingComponent={<LoadingHistoryRow index={index} typeColumn={typeColumn} />}

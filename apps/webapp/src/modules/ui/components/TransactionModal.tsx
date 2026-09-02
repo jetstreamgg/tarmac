@@ -175,7 +175,9 @@ const statusBadgeLabel: Partial<Record<TxStatus, ReactNode>> = {
   [TxStatus.INITIALIZED]: <Trans>Confirm in the wallet</Trans>,
   [TxStatus.LOADING]: <Trans>Processing</Trans>,
   [TxStatus.SUCCESS]: <Trans>Success</Trans>,
-  [TxStatus.ERROR]: <Trans>Failed</Trans>,
+  // The failed chip swaps to the status-error treatment and leads with the
+  // alert triangle (Figma 2800:91683) — see `badgeContent` below.
+  [TxStatus.ERROR]: <Trans>Transaction failed</Trans>,
   [TxStatus.CANCELLED]: <Trans>Cancelled</Trans>
 };
 
@@ -258,9 +260,12 @@ export function TransactionModal({
   // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
   // in the wallet" during an HTTP address check (APP-501).
   const badgeLabel = gateCopy?.badgeLabel ?? statusBadgeLabel[txStatus];
+  const badgeFailed = txStatus === TxStatus.ERROR;
+  const badgeVariant = badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
       {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
+      {badgeFailed && <TriangleAlert className="size-3 shrink-0" aria-hidden="true" />}
       {badgeLabel}
     </>
   ) : undefined;
@@ -347,7 +352,13 @@ export function TransactionModal({
     [TxStatus.SUCCESS]: subtitles?.success,
     [TxStatus.ERROR]: subtitles?.error
   };
-  const subtitle = isFirstScreen ? subtitles?.review : (gateCopy?.subtitle ?? subtitleByStatus[txStatus]);
+  // A gate phase (screening / terms signature) narrates itself through its
+  // subtitle only where there is no step list: with one, the signature step's
+  // own row already says what is being waited on, and the flow's status
+  // subtitle stays hidden too (it narrates an on-chain write that hasn't
+  // started). Figma review 2829:141029: nothing beyond a step's description.
+  const gateSubtitle = gateCopy && !showStepList ? gateCopy.subtitle : undefined;
+  const subtitle = isFirstScreen ? subtitles?.review : gateCopy ? gateSubtitle : subtitleByStatus[txStatus];
   const firstScreenSubtitle = isFirstScreen ? subtitle : undefined;
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
@@ -498,7 +509,7 @@ export function TransactionModal({
                   from the left as the Actions panel arrives (2685:148222 animates
                   the same rule as a path length). */}
               {transactionScreenBody && <ModalStepDivider />}
-              <Steps className="pt-2" bundled={isBundled} badge={badgeContent}>
+              <Steps className="pt-2" bundled={isBundled} badge={badgeContent} badgeVariant={badgeVariant}>
                 {(() => {
                   const items = deriveTransactionStepItems({
                     steps: steps ?? [],
@@ -757,13 +768,17 @@ export function TransactionModal({
                     occupy (Figma 2376:225580). The link left with them — a
                     confirmed transaction hands its hash to the success toast, and
                     a mid-flow link to one leg of a multi-step flow was noise. The
-                    gate's own copy is the one thing that survives: it narrates an
-                    off-chain phase (screening, terms signature) that the chip's
-                    txStatus-keyed label cannot describe (APP-501). */}
-                {((!showStepList && badgeContent) || gateCopy?.message) && (
+                    gate's own copy survives only where there is no step list:
+                    it narrates an off-chain phase (screening, terms signature)
+                    that the chip's txStatus-keyed label cannot describe
+                    (APP-501). With a step list, the signature step's own
+                    description already carries the terms copy, so the extra
+                    sentence under the list goes (Figma review 2829:141028/9:
+                    nothing beyond a step's description on this screen). */}
+                {!showStepList && (badgeContent || gateCopy?.message) && (
                   <div className="flex items-center gap-3 pt-4">
-                    {!showStepList && badgeContent && (
-                      <StepsBadge variant="brand" dataTestId="transaction-status-badge">
+                    {badgeContent && (
+                      <StepsBadge variant={badgeVariant} dataTestId="transaction-status-badge">
                         {badgeContent}
                       </StepsBadge>
                     )}

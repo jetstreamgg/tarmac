@@ -56,6 +56,12 @@ export interface ProductTransactionsTableProps<T> {
   onPageChange?: (page: number, totalPages: number) => void;
   /** Makes rows interactive (button semantics + pointer cursor). */
   onRowClick?: (row: T) => void;
+  /**
+   * Explorer link for a row: the whole row opens it in a new tab, like the
+   * hash cell does (Figma 2800:92277). Rows it returns nothing for stay inert
+   * — no pointer, no hover tint. Ignored on a row `onRowClick` handles.
+   */
+  rowHref?: (row: T) => string | undefined;
   /** Per-row test id, e.g. for row-click specs. */
   rowTestId?: (row: T) => string;
   /** Full-width content rendered as a sibling right after a matching row, outside its click/hover surface. */
@@ -64,6 +70,11 @@ export interface ProductTransactionsTableProps<T> {
   renderCard?: (row: T) => ReactNode;
   /** Loading stand-in matching the consumer's card shape; defaults to a 1-field-row TransactionCardSkeleton. */
   cardSkeleton?: ReactNode;
+}
+
+/** Opens an explorer link the way the hash cell's anchor does (new tab, no opener). */
+export function openInNewTab(href: string) {
+  window.open(href, '_blank', 'noopener,noreferrer');
 }
 
 // The legacy grid API declared tracks ('1.5fr', '140px'); a <table> wants
@@ -110,11 +121,19 @@ export function ProductTransactionsTable<T>({
   pageSize = 7,
   onPageChange,
   onRowClick,
+  rowHref,
   rowTestId,
   renderBelowRow,
   renderCard,
   cardSkeleton = <TransactionCardSkeleton />
 }: ProductTransactionsTableProps<T>) {
+  // One activation per row: the consumer's handler wins, else the explorer
+  // link; undefined leaves the row inert.
+  const rowAction = (row: T): (() => void) | undefined => {
+    if (onRowClick) return () => onRowClick(row);
+    const href = rowHref?.(row);
+    return href ? () => openInNewTab(href) : undefined;
+  };
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
   const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
@@ -156,35 +175,38 @@ export function ProductTransactionsTable<T>({
               </EmptyState>
             </StateCard>
           ) : (
-            pageRows.map((row, index) => (
-              <Fragment key={rowKey(row)}>
-                <div
-                  data-testid={rowTestId?.(row)}
-                  tabIndex={onRowClick ? 0 : undefined}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  onKeyDown={
-                    onRowClick
-                      ? event => {
-                          if (event.target !== event.currentTarget) return;
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            onRowClick(row);
+            pageRows.map((row, index) => {
+              const activate = rowAction(row);
+              return (
+                <Fragment key={rowKey(row)}>
+                  <div
+                    data-testid={rowTestId?.(row)}
+                    tabIndex={activate ? 0 : undefined}
+                    onClick={activate}
+                    onKeyDown={
+                      activate
+                        ? event => {
+                            if (event.target !== event.currentTarget) return;
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              activate();
+                            }
                           }
-                        }
-                      : undefined
-                  }
-                  className={cn(
-                    'overflow-hidden',
-                    index === 0 && 'rounded-t-[20px]',
-                    index === pageRows.length - 1 && 'rounded-b-[20px]',
-                    onRowClick && 'cursor-pointer'
-                  )}
-                >
-                  {renderCard(row)}
-                </div>
-                {renderBelowRow?.(row)}
-              </Fragment>
-            ))
+                        : undefined
+                    }
+                    className={cn(
+                      'overflow-hidden',
+                      index === 0 && 'rounded-t-[20px]',
+                      index === pageRows.length - 1 && 'rounded-b-[20px]',
+                      activate && 'cursor-pointer'
+                    )}
+                  >
+                    {renderCard(row)}
+                  </div>
+                  {renderBelowRow?.(row)}
+                </Fragment>
+              );
+            })
           )}
         </div>
         {showPagination && (
@@ -234,29 +256,31 @@ export function ProductTransactionsTable<T>({
           ) : (
             pageRows.map((row, index) => {
               const belowRow = renderBelowRow?.(row);
+              const activate = rowAction(row);
               return (
                 <Fragment key={rowKey(row)}>
                   <TableRow
                     data-testid={rowTestId?.(row)}
+                    data-hover={activate ? undefined : 'off'}
                     // No role="button": overriding the native row role breaks
                     // table navigation for assistive tech (CodeRabbit).
-                    tabIndex={onRowClick ? 0 : undefined}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    tabIndex={activate ? 0 : undefined}
+                    onClick={activate}
                     onKeyDown={
-                      onRowClick
+                      activate
                         ? event => {
                             // Only activate on the row itself — Enter on a
                             // nested link/button must keep its native action.
                             if (event.target !== event.currentTarget) return;
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault();
-                              onRowClick(row);
+                              activate();
                             }
                           }
                         : undefined
                     }
                     className={cn(
-                      onRowClick && 'cursor-pointer',
+                      activate && 'cursor-pointer',
                       // A banner carrier row (below) becomes tbody's real last
                       // <tr> and takes the shared table selectors' bottom
                       // corners with it — visibly squaring the last data row

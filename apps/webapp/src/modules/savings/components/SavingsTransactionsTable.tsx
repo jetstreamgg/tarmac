@@ -137,6 +137,7 @@ export function SavingsTransactionsTable({ filter = 'all' }: { filter?: SavingsT
       columns={COLUMNS}
       rows={rows}
       rowKey={row => row.id}
+      rowHref={row => row.txHref}
       isLoading={isLoading}
       error={error}
       renderCard={renderCard}

@@ -297,8 +297,10 @@ describe('TransactionProvider pre-transaction gate', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
-    expect(screen.getByText('Sign the confirmation in your wallet.')).not.toBeNull();
-    expect(screen.getByText('Signature needed to continue.')).not.toBeNull();
+    // The gate's message no longer renders under a step list — the signature
+    // step's own description carries that copy (Figma review 2829:141028/9).
+    expect(screen.queryByText('Sign the confirmation in your wallet.')).toBeNull();
+    expect(screen.queryByText('Signature needed to continue.')).toBeNull();
     // The flow's own pending copy stays hidden while the gate copy is set.
     expect(screen.queryByText('Supplying your tokens...')).toBeNull();
     // The chip is the only other status surface. A sign request really is
@@ -353,7 +355,10 @@ describe('TransactionProvider pre-transaction gate', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    expect(screen.getByText('Signature needed to continue.')).not.toBeNull();
+    // Neither the gate's subtitle nor the flow's pending copy narrates under
+    // the step list — the signature row does.
+    expect(screen.queryByText('Signature needed to continue.')).toBeNull();
+    expect(screen.queryByText('Supplying your tokens...')).toBeNull();
 
     act(() => resolveSigned());
     await flush();

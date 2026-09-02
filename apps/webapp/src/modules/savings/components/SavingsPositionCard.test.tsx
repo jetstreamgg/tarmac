@@ -191,7 +191,10 @@ describe('SavingsPositionCard — position routing', () => {
 
     // 100 USDS at 3.75% earns its 7th decimal about once a second, so that's
     // the digit the counter rolls — padded, not trimmed, so it can't reflow.
-    expect(screen.getByTestId('rolling-digits').textContent).toBe('0000000');
+    // The last two integer digits roll too (whale positions tick there), so
+    // the hero mounts two counters: the integer tail, then the fraction.
+    const counters = screen.getAllByTestId('rolling-digits').map(el => el.textContent);
+    expect(counters).toEqual(['00', '0000000']);
   });
 
   it('opens the "Supply to Sky Savings" editable modal (entry descriptor) on Supply', () => {

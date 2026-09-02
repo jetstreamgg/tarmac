@@ -197,3 +197,81 @@ describe('ProductTransactionsTable — mobile cards (M5)', () => {
     expect(screen.queryByRole('table')).toBeNull();
   });
 });
+
+describe('ProductTransactionsTable — rowHref (whole-row explorer link)', () => {
+  afterEach(cleanup);
+
+  const open = vi.fn();
+  beforeEach(() => {
+    open.mockReset();
+    vi.stubGlobal('open', open);
+  });
+
+  it('opens the explorer link in a new tab when the row is clicked or activated by keyboard', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable
+          columns={COLUMNS}
+          rows={makeRows(1)}
+          rowKey={row => row.id}
+          rowHref={row => `https://etherscan.io/tx/${row.id}`}
+          rowTestId={row => `row-${row.id}`}
+        />
+      </I18nProvider>
+    );
+    const row = screen.getByTestId('row-0');
+    expect(row.className).toContain('cursor-pointer');
+    expect(row.getAttribute('data-hover')).toBeNull();
+
+    fireEvent.click(row);
+    fireEvent.keyDown(row, { key: 'Enter' });
+    expect(open).toHaveBeenCalledTimes(2);
+    expect(open).toHaveBeenCalledWith('https://etherscan.io/tx/0', '_blank', 'noopener,noreferrer');
+  });
+
+  it('leaves rows without a link inert — no pointer and the hover tint off', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable
+          columns={COLUMNS}
+          rows={makeRows(1)}
+          rowKey={row => row.id}
+          rowHref={() => undefined}
+          rowTestId={row => `row-${row.id}`}
+        />
+      </I18nProvider>
+    );
+    const row = screen.getByTestId('row-0');
+    expect(row.className).not.toContain('cursor-pointer');
+    expect(row.getAttribute('data-hover')).toBe('off');
+    fireEvent.click(row);
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('does not open the row link on top of a nested anchor that stops propagation', () => {
+    const columns: ProductTransactionColumn<Row>[] = [
+      {
+        id: 'hash',
+        header: 'Hash',
+        width: '1fr',
+        cell: row => (
+          <a href={`https://etherscan.io/tx/${row.id}`} onClick={event => event.stopPropagation()}>
+            hash
+          </a>
+        )
+      }
+    ];
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable
+          columns={columns}
+          rows={makeRows(1)}
+          rowKey={row => row.id}
+          rowHref={row => `https://etherscan.io/tx/${row.id}`}
+        />
+      </I18nProvider>
+    );
+    fireEvent.click(screen.getByText('hash'));
+    expect(open).not.toHaveBeenCalled();
+  });
+});
