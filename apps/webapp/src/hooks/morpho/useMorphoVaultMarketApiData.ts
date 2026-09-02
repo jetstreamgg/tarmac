@@ -239,6 +239,7 @@ export async function fetchMorphoVaultMarketData(
         showPercentageDecimals: false
       }),
       formattedAbsoluteCap,
+      isAbsoluteCapUnlimited: isUnlimitedAbsCap,
       absoluteCapUtilization: Math.min(absoluteCapUtilization, 1),
       formattedRelativeCap,
       relativeCapUtilization: Math.min(relativeCapUtilization, 1)

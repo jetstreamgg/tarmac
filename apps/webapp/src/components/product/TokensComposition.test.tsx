@@ -49,10 +49,34 @@ describe('TokensComposition', () => {
 
   it('adds a track-colored tail when the segments fall short of the total', () => {
     render(<TokensComposition segments={[segments[0]]} valueTotal={100} />);
-    // One filled segment plus the remainder tail, together summing to 100.
+    // One filled segment plus the remainder tail, together summing to 100 — so
+    // the lone segment can't grow into the whole bar.
     const bar = screen.getAllByTestId('composition-segment');
     expect(bar).toHaveLength(1);
     expect(bar[0].style.flex).toBe('75 0 0px');
+    expect(screen.getByTestId('composition-track').style.flex).toBe('25 0 0px');
+  });
+
+  it('omits the tail when the segments cover the total', () => {
+    render(<TokensComposition segments={segments} />);
+    expect(screen.queryByTestId('composition-track')).toBeNull();
+  });
+
+  it('treats float residue as a full bar, not a tail', () => {
+    // Three equal thirds sum to 99.99999999999999, not 100.
+    render(
+      <TokensComposition
+        segments={['a', 'b', 'c'].map(id => ({
+          id,
+          label: id,
+          color: '#000',
+          value: 1 / 3,
+          formattedValue: ''
+        }))}
+        valueTotal={1}
+      />
+    );
+    expect(screen.queryByTestId('composition-track')).toBeNull();
   });
 
   it('reveals the hovered row detail and dims the other bar segments', () => {
@@ -72,13 +96,48 @@ describe('TokensComposition', () => {
     expect(bar[1].className).toContain('opacity-20');
   });
 
-  it('links the hovered label when the segment carries an href', () => {
+  it('clears the hover when the pointer leaves the row itself', () => {
+    render(
+      <TokensComposition
+        segments={[{ ...segments[0], hoverDetail: <span>Absolute Cap</span> }, segments[1]]}
+      />
+    );
+    const row = screen.getAllByTestId('composition-row')[0];
+
+    fireEvent.mouseEnter(row);
+    expect(screen.getByText('Absolute Cap')).toBeTruthy();
+
+    // Leaving into the gap between rows (still inside the legend column) must
+    // not hold the state.
+    fireEvent.mouseLeave(row);
+    expect(screen.queryByText('Absolute Cap')).toBeNull();
+    expect(screen.getAllByTestId('composition-segment')[1].className).not.toContain('opacity-20');
+  });
+
+  it('always mounts the market link so it is reachable without a pointer', () => {
     render(<TokensComposition segments={[{ ...segments[0], href: 'https://example.com/market' }]} />);
 
-    expect(screen.queryByRole('link')).toBeNull();
-
-    fireEvent.mouseEnter(screen.getAllByTestId('composition-row')[0]);
-
     expect(screen.getByRole('link').getAttribute('href')).toBe('https://example.com/market');
+  });
+
+  it('activates the row on keyboard focus and clears it on blur', () => {
+    render(
+      <TokensComposition
+        segments={[
+          { ...segments[0], href: 'https://example.com/market', hoverDetail: <span>Absolute Cap</span> },
+          segments[1]
+        ]}
+      />
+    );
+    const link = screen.getByRole('link');
+
+    expect(screen.queryByText('Absolute Cap')).toBeNull();
+
+    fireEvent.focus(link);
+    expect(screen.getByText('Absolute Cap')).toBeTruthy();
+    expect(screen.getAllByTestId('composition-segment')[1].className).toContain('opacity-20');
+
+    fireEvent.blur(link);
+    expect(screen.queryByText('Absolute Cap')).toBeNull();
   });
 });

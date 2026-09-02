@@ -5,6 +5,7 @@ import { SavingsSupply } from './SavingsSupply';
 import { Failure } from './Failure';
 import { RewardsModule } from './RewardsModule';
 import { LinkExternal } from './LinkExternal';
+import { Merkl } from './Merkl';
 import { Rewards } from './Rewards';
 import { RewardsEmpty } from './RewardsEmpty';
 import { Savings } from './Savings';
@@ -54,6 +55,7 @@ export {
   Failure,
   RewardsModule,
   LinkExternal,
+  Merkl,
   Rewards,
   RewardsEmpty,
   Savings,

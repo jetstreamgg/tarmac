@@ -9,13 +9,12 @@ import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/widgets/shared/
  */
 export const IDLE_COLOR = 'var(--color-chartTrack)';
 
-/** Absolute caps above this are the API's "no cap" sentinel — see the hook. */
-export const UNLIMITED_CAP = 'Unlimited';
-
 /** Per-market supply caps, surfaced on the hovered legend row. */
 export type StrategyCaps = {
   /** Compact absolute cap, e.g. "5M" — or "Unlimited" when uncapped. */
   formattedAbsoluteCap: string;
+  /** Uncapped market (the hook's > 1e30 sentinel) — there is no fill to show. */
+  isAbsoluteCapUnlimited: boolean;
   /** Absolute cap utilization, 0..1 (0 when uncapped). */
   absoluteCapUtilization: number;
   /** Relative cap as a percentage of vault assets, e.g. "15%". */
@@ -43,6 +42,9 @@ export type StrategySegment = {
   kind: 'market' | 'idle';
   /** Morpho market id, for the "view on Morpho" link (markets only). */
   marketId?: string;
+  /** Idle asset symbol, e.g. "USDS" (idle only) — decides whether the row can
+   * claim the Sky Savings Rate. */
+  assetSymbol?: string;
   /** Supply caps (markets only). */
   caps?: StrategyCaps;
 };
@@ -88,7 +90,7 @@ export function buildVaultStrategy(
     label: string,
     usd: number,
     colors: { color: string; hoverColor: string },
-    extra: Pick<StrategySegment, 'kind' | 'marketId' | 'caps'>
+    extra: Pick<StrategySegment, 'kind' | 'marketId' | 'caps' | 'assetSymbol'>
   ): StrategySegment => {
     const share = totalUsd > 0 ? usd / totalUsd : 0;
     return {
@@ -118,6 +120,7 @@ export function buildVaultStrategy(
           marketId: market.marketId,
           caps: {
             formattedAbsoluteCap: market.formattedAbsoluteCap,
+            isAbsoluteCapUnlimited: market.isAbsoluteCapUnlimited,
             absoluteCapUtilization: market.absoluteCapUtilization,
             formattedRelativeCap: market.formattedRelativeCap,
             relativeCapUtilization: market.relativeCapUtilization
@@ -131,7 +134,7 @@ export function buildVaultStrategy(
         'Idle',
         idle.idleAssetsUsd,
         { color: IDLE_COLOR, hoverColor: IDLE_COLOR },
-        { kind: 'idle' }
+        { kind: 'idle', assetSymbol: idle.assetSymbol }
       )
     )
   ];

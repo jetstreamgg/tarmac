@@ -21,6 +21,7 @@ const market = (over: Partial<MorphoMarketAllocation>): MorphoMarketAllocation =
     lltv: 0n,
     formattedLltv: '',
     formattedAbsoluteCap: '',
+    isAbsoluteCapUnlimited: false,
     absoluteCapUtilization: 0,
     formattedRelativeCap: '',
     relativeCapUtilization: 0,
@@ -83,6 +84,7 @@ describe('buildVaultStrategy', () => {
     expect(view.segments[1]).toMatchObject({
       id: 'idle-USDC',
       label: 'Idle',
+      assetSymbol: 'USDC',
       formattedShare: '20%',
       color: IDLE_COLOR
     });
@@ -117,6 +119,7 @@ describe('buildVaultStrategy', () => {
           marketId: '0xa',
           assetsUsd: 60_000_000,
           formattedAbsoluteCap: '5M',
+          isAbsoluteCapUnlimited: false,
           absoluteCapUtilization: 0.8,
           formattedRelativeCap: '15%',
           relativeCapUtilization: 0.4
@@ -131,6 +134,7 @@ describe('buildVaultStrategy', () => {
       marketId: '0xa',
       caps: {
         formattedAbsoluteCap: '5M',
+        isAbsoluteCapUnlimited: false,
         absoluteCapUtilization: 0.8,
         formattedRelativeCap: '15%',
         relativeCapUtilization: 0.4

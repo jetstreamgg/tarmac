@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TokensComposition } from '@/components/product/TokensComposition';
 import { Merkl } from '@/modules/icons';
 import { formatDecimalPercentage } from '@/utils';
-import { buildVaultStrategy, UNLIMITED_CAP, type StrategyCaps } from '../helpers/vaultStrategy';
+import { buildVaultStrategy, type StrategyCaps } from '../helpers/vaultStrategy';
 
 // DS Charts / Pie Chart geometry, measured off the Figma export (10px box):
 // the ring's outer edge sits on the box edge and the stroke is an eighth of the
@@ -76,13 +76,12 @@ function CapStat({
 
 /** The caps block revealed under a hovered market row. */
 function MarketCaps({ caps, color }: { caps: StrategyCaps; color: string }) {
-  const isUncapped = caps.formattedAbsoluteCap === UNLIMITED_CAP;
   return (
     <div className="flex gap-0.5">
       <CapStat
         label={<Trans>Absolute Cap</Trans>}
         value={caps.formattedAbsoluteCap}
-        utilization={isUncapped ? undefined : caps.absoluteCapUtilization}
+        utilization={caps.isAbsoluteCapUnlimited ? undefined : caps.absoluteCapUtilization}
         color={color}
       />
       <CapStat
@@ -118,9 +117,11 @@ function MerklBadge() {
  * Tokens Composition component.
  *
  * Per Figma 2682:68829 / 2682:68931 the unutilized-liquidity row carries the
- * live Sky Savings Rate and a Merkl chip (that yield is distributed via Merkl),
- * and hovering a market row reveals its supply caps — caps that don't exist for
- * idle capital, which is why only market segments get a `hoverDetail`.
+ * live Sky Savings Rate and a Merkl chip (that yield is distributed via Merkl).
+ * Only idle USDS earns that rate — the USDC/USDT vaults' idle balances don't —
+ * so the claim is gated on the idle asset, as the Exposure table it replaced
+ * did. Hovering a market row reveals its supply caps — caps that don't exist
+ * for idle capital, which is why only market segments get a `hoverDetail`.
  */
 export function VaultStrategy({ vaultAddress }: { vaultAddress: `0x${string}` }) {
   const { data, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
@@ -151,29 +152,35 @@ export function VaultStrategy({ vaultAddress }: { vaultAddress: `0x${string}` })
           // bar must not renormalize them — a vault whose reported total
           // exceeds its allocations keeps its short tail of empty track.
           valueTotal={1}
-          segments={strategy.segments.map(segment => ({
-            id: segment.id,
-            label:
-              segment.kind === 'idle' ? (
+          segments={strategy.segments.map(segment => {
+            const earnsSavingsRate = segment.kind === 'idle' && segment.assetSymbol === 'USDS';
+            return {
+              id: segment.id,
+              label: earnsSavingsRate ? (
                 savingsRate ? (
                   <Trans>Unutilized liquidity accrues the Sky Savings Rate ({savingsRate} APY)</Trans>
                 ) : (
                   <Trans>Unutilized liquidity accrues the Sky Savings Rate</Trans>
                 )
+              ) : segment.kind === 'idle' ? (
+                <Trans>Unutilized liquidity</Trans>
               ) : (
                 segment.label
               ),
-            badge: segment.kind === 'idle' ? <MerklBadge /> : undefined,
-            href: segment.marketId ? `https://app.morpho.org/ethereum/market/${segment.marketId}` : undefined,
-            hoverDetail: segment.caps ? (
-              <MarketCaps caps={segment.caps} color={segment.hoverColor} />
-            ) : undefined,
-            color: segment.color,
-            hoverColor: segment.hoverColor,
-            value: segment.share,
-            percent: parseFloat(segment.formattedShare),
-            formattedValue: segment.formattedUsd
-          }))}
+              badge: earnsSavingsRate ? <MerklBadge /> : undefined,
+              href: segment.marketId
+                ? `https://app.morpho.org/ethereum/market/${segment.marketId}`
+                : undefined,
+              hoverDetail: segment.caps ? (
+                <MarketCaps caps={segment.caps} color={segment.hoverColor} />
+              ) : undefined,
+              color: segment.color,
+              hoverColor: segment.hoverColor,
+              value: segment.share,
+              percent: parseFloat(segment.formattedShare),
+              formattedValue: segment.formattedUsd
+            };
+          })}
         />
       )}
     </div>
