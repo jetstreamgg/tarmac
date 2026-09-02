@@ -31,5 +31,7 @@ test('Supply modal validates the amount before enabling Review', async ({ isolat
 });
 
 test.fixme('Supplies USDS and withdraws it back', async () => {
-  // Pending on-chain oracle wiring for stUSDS Curve pool on the parallel vnet.
+  // Deferred: on-chain oracle for stUSDS Curve pool on the parallel vnet
+  // (stusds/QA-CASES.md §3; e2e-migration.md). No APP ticket yet — re-enable
+  // when the write path has a fork-backed oracle.
 });

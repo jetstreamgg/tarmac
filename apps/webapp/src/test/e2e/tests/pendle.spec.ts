@@ -45,7 +45,9 @@ test('supply modal opens for PT-sUSDS', async ({ isolatedPage }) => {
 });
 
 test.fixme('buy PT completes successfully on-chain', async () => {
-  // Pending Pendle quote API wiring on the Tenderly fork + router write oracle.
+  // Deferred: Pendle mainnet quote API + router write on the Tenderly fork
+  // (pendle/QA-CASES.md §2 B-2 / §3; e2e-migration.md). No APP ticket yet —
+  // re-enable when vnet quote wiring lands.
 });
 
 // Matured PT Portfolio coverage: portfolio.spec.ts (cheat-mint + UI clock + chain warp).

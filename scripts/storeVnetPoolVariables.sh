@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# Write tenderlyTestnetData.json + persistent-vnet-snapshots.json into GitHub repo
-# variables used by .github/workflows/e2e-pool.yml (VNET_POOL_DATA / VNET_SNAPSHOT_DATA).
+# Write tenderlyTestnetData.json + persistent-vnet-snapshots.json into GitHub
+# Actions secrets used by .github/workflows/e2e-pool.yml
+# (VNET_POOL_DATA / VNET_SNAPSHOT_DATA).
+#
+# These payloads contain full Tenderly RPC URLs (bearer credentials) — they must
+# stay as secrets, not repo variables (fork PRs can read vars; vars are unmasked).
 #
 # Usage:
 #   pnpm vnet:pool:store
@@ -42,18 +46,18 @@ echo "VNET_POOL_DATA payload: ${#POOL_JSON} bytes"
 echo "VNET_SNAPSHOT_DATA payload: ${#SNAP_JSON} bytes"
 
 if [[ "$DRY_RUN" == true ]]; then
-  echo "Dry run — variables not updated."
+  echo "Dry run — secrets not updated."
   exit 0
 fi
 
 if ! command -v gh >/dev/null 2>&1; then
-  echo "gh CLI not found. Set variables manually in Settings → Secrets and variables → Actions → Variables:" >&2
+  echo "gh CLI not found. Set secrets manually in Settings → Secrets and variables → Actions → Secrets:" >&2
   echo "  VNET_POOL_DATA=<tenderlyTestnetData.json minified>" >&2
   echo "  VNET_SNAPSHOT_DATA=<persistent-vnet-snapshots.json minified>" >&2
   exit 1
 fi
 
-gh variable set VNET_POOL_DATA --body "$POOL_JSON"
-gh variable set VNET_SNAPSHOT_DATA --body "$SNAP_JSON"
+gh secret set VNET_POOL_DATA --body "$POOL_JSON"
+gh secret set VNET_SNAPSHOT_DATA --body "$SNAP_JSON"
 
-echo "Updated repo variables: VNET_POOL_DATA, VNET_SNAPSHOT_DATA"
+echo "Updated repo secrets: VNET_POOL_DATA, VNET_SNAPSHOT_DATA"

@@ -16,6 +16,7 @@ export default defineConfig({
     // flag-on (staging) contract; the flag-off path is stubbed per-test (APP-323).
     env: { VITE_SUSDT_VAULT_ENABLED: 'true' },
     testTimeout: 90000,
+    hookTimeout: 30000,
     setupFiles: ['./test/hooks/setup.ts'],
     globalSetup: ['./test/hooks/globalSetup.ts'],
     pool: 'forks',

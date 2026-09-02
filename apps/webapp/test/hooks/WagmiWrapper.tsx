@@ -102,13 +102,7 @@ export const config = createConfig({
   }
 });
 
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false
-    }
-  }
-});
+export const queryClient = new QueryClient();
 
 export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
   return (
