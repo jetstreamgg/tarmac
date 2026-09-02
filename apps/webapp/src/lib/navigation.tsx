@@ -59,18 +59,6 @@ export function useRouteIntent(): Intent {
   return (useDeepestStaticData('intent') as Intent | undefined) ?? Intent.BALANCES_INTENT;
 }
 
-export function useRouteConvertIntent(): ConvertIntent | undefined {
-  return useDeepestStaticData('convertIntent') as ConvertIntent | undefined;
-}
-
-export function useRouteVaultsIntent(): VaultsIntent | undefined {
-  return useDeepestStaticData('vaultsIntent') as VaultsIntent | undefined;
-}
-
-export function useRouteFixedIntent(): FixedIntent | undefined {
-  return useDeepestStaticData('fixedIntent') as FixedIntent | undefined;
-}
-
 export type RouteEntityParams = {
   rewardContract?: string;
   provider?: string;

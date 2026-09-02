@@ -19,7 +19,6 @@ import {
   stUsdsAddress
 } from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/widgets/shared/constants';
-import { SUPPORTED_TOKEN_SYMBOLS } from '..';
 
 const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk, stusds } = TOKENS;
 
@@ -134,8 +133,5 @@ export const defaultConfig: WidgetsConfig = {
       { ...usds, address: usdsL2Address[optimism.id] },
       { ...susds, address: sUsdsL2Address[optimism.id] }
     ]
-  },
-  tradeDisallowedPairs: {
-    ETH: [weth.symbol as SUPPORTED_TOKEN_SYMBOLS]
   }
 };

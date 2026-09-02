@@ -168,12 +168,6 @@ catalogs:
     dotenv:
       specifier: ^16.6.1
       version: 16.6.1
-    embla-carousel-autoplay:
-      specifier: ^8.6.0
-      version: 8.6.0
-    embla-carousel-fade:
-      specifier: ^8.6.0
-      version: 8.6.0
     embla-carousel-react:
       specifier: ^8.6.0
       version: 8.6.0
@@ -261,9 +255,6 @@ catalogs:
     tailwindcss-animate:
       specifier: ^1.0.7
       version: 1.0.7
-    tiny-invariant:
-      specifier: ^1.3.3
-      version: 1.3.3
     typescript:
       specifier: ^6.0.3
       version: 6.0.3
@@ -503,12 +494,6 @@ importers:
       date-fns:
         specifier: 'catalog:'
         version: 4.4.0
-      embla-carousel-autoplay:
-        specifier: 'catalog:'
-        version: 8.6.0(embla-carousel@8.6.0)
-      embla-carousel-fade:
-        specifier: 'catalog:'
-        version: 8.6.0(embla-carousel@8.6.0)
       embla-carousel-react:
         specifier: 'catalog:'
         version: 8.6.0(react@19.2.8)
@@ -554,9 +539,6 @@ importers:
       sonner:
         specifier: 'catalog:'
         version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tiny-invariant:
-        specifier: 'catalog:'
-        version: 1.3.3
       viem:
         specifier: 'catalog:'
         version: 2.55.19(typescript@6.0.3)(zod@4.4.3)
@@ -4093,16 +4075,6 @@ packages:
 
   elliptic@6.6.1:
     resolution: {integrity: sha512-RaddvvMatK2LJHqFJ+YA4WysVN5Ita9E35botqIYspQ4TkRAlCicdzKOjlyv/1Za5RyTNn7di//eEV0uTAfe3g==}
-
-  embla-carousel-autoplay@8.6.0:
-    resolution: {integrity: sha512-OBu5G3nwaSXkZCo1A6LTaFMZ8EpkYbwIaH+bPqdBnDGQ2fh4+NbzjXjs2SktoPNKCtflfVMc75njaDHOYXcrsA==}
-    peerDependencies:
-      embla-carousel: 8.6.0
-
-  embla-carousel-fade@8.6.0:
-    resolution: {integrity: sha512-qaYsx5mwCz72ZrjlsXgs1nKejSrW+UhkbOMwLgfRT7w2LtdEB03nPRI06GHuHv5ac2USvbEiX2/nAHctcDwvpg==}
-    peerDependencies:
-      embla-carousel: 8.6.0
 
   embla-carousel-react@8.6.0:
     resolution: {integrity: sha512-0/PjqU7geVmo6F734pmPqpyHqiM99olvyecY7zdweCw+6tKEXnrE90pBiBbMMU8s5tICemzpQ3hi5EpxzGW+JA==}
@@ -11454,14 +11426,6 @@ snapshots:
       inherits: 2.0.4
       minimalistic-assert: 1.0.1
       minimalistic-crypto-utils: 1.0.1
-
-  embla-carousel-autoplay@8.6.0(embla-carousel@8.6.0):
-    dependencies:
-      embla-carousel: 8.6.0
-
-  embla-carousel-fade@8.6.0(embla-carousel@8.6.0):
-    dependencies:
-      embla-carousel: 8.6.0
 
   embla-carousel-react@8.6.0(react@19.2.8):
     dependencies:

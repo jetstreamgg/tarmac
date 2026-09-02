@@ -76,12 +76,10 @@ export default defineConfig({
         '**/unichain-savings.spec.ts',
         '**/sequential-tx.spec.ts'
         // needs-V2-rewrite / parked (see e2e-migration.md):
-        // '**/base-trade.spec.ts',
-        // '**/arbitrum-trade.spec.ts',
-        // '**/optimism-trade.spec.ts',
-        // '**/unichain-trade.spec.ts',
-        // '**/upgrade.spec.ts',
         // '**/vaults-spark.spec.ts' — legacy widget UI; enable when fork has sUSDT vault + flag
+        //
+        // The trade and upgrade specs are gone, not parked: their widgets were
+        // deleted, so there is nothing left to rewrite them against.
       ]
     }
     // {

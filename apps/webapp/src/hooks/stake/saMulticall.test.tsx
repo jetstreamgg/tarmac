@@ -17,7 +17,8 @@ import {
   getStakeOpenCalldata,
   getStakeSelectDelegateCalldata,
   getStakeSelectRewardContractCalldata,
-  getStakeWipeAllCalldata
+  getStakeWipeAllCalldata,
+  getStakeWipeCalldata
 } from './calldata';
 import { skyAddress, lsSkyUsdsRewardAddress } from '../generated';
 import { useUrnSelectedRewardContract } from './useUrnSelectedRewardContract';
@@ -36,6 +37,11 @@ describe('Stake Module Multicall tests', async () => {
   const skyToLockStr = '1200000';
   const SKY_TO_LOCK = parseEther(skyToLockStr);
   const USDS_TO_DRAW = parseEther('30000');
+  // `USDS_TO_DRAW` sits exactly on the LSEV2-SKY-A dust floor, so the partial-wipe
+  // test borrows this much headroom first and wipes back less than it drew —
+  // leaving the debt above dust at every step. Draw before wipe, not the reverse.
+  const USDS_HEADROOM_FOR_WIPE = parseEther('2000');
+  const USDS_TO_PARTIALLY_WIPE = parseEther('500');
   const SELECTED_DELEGATE = '0x173a1c04b79ed9266721c1154daa29addc0b9558'; // BLUE
   const LOADING_TIMEOUT = 15000;
   const ILK_NAME = getIlkName(2);
@@ -370,6 +376,94 @@ describe('Stake Module Multicall tests', async () => {
     );
   });
 
+  // `wipe` (partial repay) is the one stake write the rest of this suite never
+  // executes — every other repay path here goes through `wipeAll`. Covered on
+  // the multicall path so the encoder is exercised against a fork, not just
+  // byte-compared in the useStakeCalldata golden test.
+  it('Can partially repay debt with a wipe calldata', async () => {
+    const urnAddress = await getUrnAddress(URN_INDEX, useUrnAddress);
+
+    // Borrow headroom first: the position is parked on the dust floor, and the
+    // Vat rejects any nonzero debt below it, so a wipe against the bare
+    // `USDS_TO_DRAW` position reverts with `Vat/dust` before it can mine.
+    const calldataDrawHeadroom = getStakeDrawCalldata({
+      ownerAddress: TEST_WALLET_ADDRESS,
+      urnIndex: URN_INDEX,
+      toAddress: TEST_WALLET_ADDRESS,
+      amount: USDS_HEADROOM_FOR_WIPE
+    });
+
+    const { result: resultDraw } = renderHook(
+      () =>
+        useStakeMulticall({
+          calldata: [calldataDrawHeadroom],
+          gas: GAS
+        }),
+      { wrapper }
+    );
+
+    await waitForPreparedExecuteAndMine(resultDraw, LOADING_TIMEOUT);
+
+    const { result: resultVaultBefore } = renderHook(() => useVault(urnAddress, ILK_NAME), {
+      wrapper
+    });
+
+    // Wait for a read that actually reflects the draw. `> USDS_TO_DRAW` is not
+    // a strong enough guard: the accrued stability fee already puts the
+    // pre-draw debt a wei or two above the round 30000, so a stale read
+    // satisfies it, and the comparison further down then runs against a
+    // baseline that predates the headroom and can never decrease.
+    let debtBefore: bigint | undefined;
+    await waitFor(
+      () => {
+        resultVaultBefore.current.mutate();
+        debtBefore = resultVaultBefore.current.data?.debtValue;
+        expect(debtBefore).toBeDefined();
+        expect(debtBefore! >= USDS_TO_DRAW + USDS_HEADROOM_FOR_WIPE).toBe(true);
+        return;
+      },
+      { timeout: 20000, interval: 1000 }
+    );
+
+    const calldataWipe = getStakeWipeCalldata({
+      ownerAddress: TEST_WALLET_ADDRESS,
+      urnIndex: URN_INDEX,
+      amount: USDS_TO_PARTIALLY_WIPE
+    });
+
+    const { result: resultMulticall } = renderHook(
+      () =>
+        useStakeMulticall({
+          calldata: [calldataWipe],
+          gas: GAS
+        }),
+      { wrapper }
+    );
+
+    await waitForPreparedExecuteAndMine(resultMulticall, LOADING_TIMEOUT);
+
+    // Debt drops by the wiped amount, but the position stays open and above
+    // dust — that is what separates `wipe` from `wipeAll`.
+    //
+    // The refetch has to happen inside the poll, not once before it: a single
+    // `mutate()` races the node, and if that one read lands on the pre-wipe
+    // state there is nothing left to refresh it — `waitFor` then re-checks the
+    // same cached value until it times out. Re-reading through a second
+    // `renderHook` has the same problem, since it is served from the query
+    // cache.
+    await waitFor(
+      () => {
+        resultVaultBefore.current.mutate();
+        const debtAfter = resultVaultBefore.current.data?.debtValue;
+        expect(debtAfter).toBeDefined();
+        expect(debtAfter! < debtBefore!).toBe(true);
+        expect(debtAfter! >= USDS_TO_DRAW).toBe(true);
+        return;
+      },
+      { timeout: 20000, interval: 1000 }
+    );
+  });
+
   it('Should repay all debt and withdraw SKY in a single transaction', async () => {
     // Get calldata for wipe and free
     const calldataWipeAll = getStakeWipeAllCalldata({
@@ -410,11 +504,19 @@ describe('Stake Module Multicall tests', async () => {
 
     await waitFor(
       () => {
-        // Amount is less than the user started with due to stability fee
+        // The user ends up just short of the 100 USDS they started with: the
+        // accrued stability fee comes out of their balance. That shortfall is
+        // not a fixed wei count — it scales with how much debt was outstanding
+        // and for how long, so the headroom the partial-wipe test borrows moves
+        // it. Assert the direction and an order of magnitude instead.
         const expectedValue = parseEther('100');
         const actualValue = resultUSDSBalance.current.data?.value;
-        const isWithinRange = actualValue === expectedValue - 1n || actualValue === expectedValue - 2n;
-        expect(isWithinRange).toBe(true);
+        expect(actualValue).toBeDefined();
+        const shortfall = expectedValue - actualValue!;
+        expect(
+          shortfall > 0n && shortfall < parseEther('1'),
+          `expected a sub-1-USDS stability-fee shortfall, got ${shortfall} wei`
+        ).toBe(true);
         return;
       },
       { timeout: 5000 }

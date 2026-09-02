@@ -1,11 +1,4 @@
 import { SavingsAction, SavingsFlow, SavingsScreen } from '@/widgets/SavingsWidget/lib/constants';
-import {
-  UpgradeAction,
-  UpgradeFlow,
-  UpgradeScreen,
-  upgradeTokens
-} from '@/widgets/UpgradeWidget/lib/constants';
-import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
 import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
 import { VaultAction, VaultFlow, VaultScreen } from '@/widgets/VaultWidget/lib/constants';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
@@ -32,32 +25,11 @@ export enum PsmConversionScreen {
 }
 
 export type WidgetFlow =
-  | InitialFlow
-  | BalancesFlow
-  | SavingsFlow
-  | UpgradeFlow
-  | TradeFlow
-  | PsmConversionFlow
-  | VaultFlow
-  | PendleFlow;
+  InitialFlow | BalancesFlow | SavingsFlow | PsmConversionFlow | VaultFlow | PendleFlow;
 
-export type WidgetAction =
-  | InitialAction
-  | SavingsAction
-  | UpgradeAction
-  | TradeAction
-  | PsmConversionAction
-  | VaultAction
-  | PendleAction;
+export type WidgetAction = InitialAction | SavingsAction | PsmConversionAction | VaultAction | PendleAction;
 
-export type WidgetScreen =
-  | InitialScreen
-  | SavingsScreen
-  | UpgradeScreen
-  | TradeScreen
-  | PsmConversionScreen
-  | VaultScreen
-  | PendleScreen;
+export type WidgetScreen = InitialScreen | SavingsScreen | PsmConversionScreen | VaultScreen | PendleScreen;
 
 export type WidgetState = {
   flow: WidgetFlow | null;
@@ -75,23 +47,9 @@ type Flow = {
 
 type BalancesWidgetState = Flow;
 
-type UpgradeWidgetState = Amount & {
-  initialUpgradeToken?: keyof typeof upgradeTokens;
-};
-
-type TradeWidgetState = Amount & {
-  token?: string;
-  targetAmount?: string;
-  targetToken?: string;
-  timestamp?: number;
-};
-
 type SavingsWidgetState = Amount & Flow;
 
-export type ExternalWidgetState = BalancesWidgetState &
-  UpgradeWidgetState &
-  TradeWidgetState &
-  SavingsWidgetState;
+export type ExternalWidgetState = BalancesWidgetState & SavingsWidgetState;
 
 export type WidgetMessage = {
   title: string;
