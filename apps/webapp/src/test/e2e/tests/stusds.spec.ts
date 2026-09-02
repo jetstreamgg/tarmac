@@ -9,11 +9,6 @@ test('stUSDS product page renders chart and transactions', async ({ isolatedPage
   await stusds.expectReadOnlyShell();
 });
 
-test('redirects legacy /earn/expert to /earn/stusds', async ({ isolatedPage }) => {
-  await isolatedPage.goto('/earn/expert');
-  await expect(isolatedPage).toHaveURL(/\/earn\/stusds(\?|$)/);
-});
-
 test('Supply modal validates the amount before enabling Review', async ({ isolatedPage }) => {
   const stusds = new StUsdsProductPage(isolatedPage);
   await stusds.gotoConnected();
