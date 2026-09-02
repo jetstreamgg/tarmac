@@ -30,7 +30,7 @@ import {
 } from '../utils/rejectTransaction';
 
 // With: USDS Get: SPK — usdsSpkRewardAddress on the tenderly fork
-const SPK_REWARD_CONTRACT = '0x173e314C7635B45322cd8Cb14f44b312e079F3af';
+import { SPK_REWARD_CONTRACT } from '../utils/rewardsE2e';
 
 /** Turns the persisted bundling preference off from the nav menu's switch. */
 const disableBundling = async (page: Page) => {

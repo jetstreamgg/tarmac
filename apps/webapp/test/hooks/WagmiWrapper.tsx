@@ -102,7 +102,7 @@ export const config = createConfig({
   }
 });
 
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient();
 
 export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
   return (
