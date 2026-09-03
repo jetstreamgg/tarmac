@@ -361,7 +361,6 @@ export function StakePositionsTable({
         error={error}
         emptyLabel={<Trans>No active positions.</Trans>}
         emptyIllustration={<SuppliedEmpty aria-hidden />}
-        minWidth={720}
         renderCard={renderCard}
         cardSkeleton={<TransactionCardSkeleton fieldRows={2} fieldRowGapClassName="gap-6" />}
         renderBelowRow={position => (

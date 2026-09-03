@@ -47,8 +47,6 @@ export interface ProductTransactionsTableProps<T> {
   emptyLabel?: ReactNode;
   /** DS empty illustration above `emptyLabel`; defaults to the transactions pair. */
   emptyIllustration?: ReactNode;
-  /** Min table width before horizontal scroll kicks in (px). */
-  minWidth?: number;
   dataTestId?: string;
   /** Rows per page; the control appears once the set exceeds it (C4). */
   pageSize?: number;
@@ -105,7 +103,6 @@ export function ProductTransactionsTable<T>({
   error,
   emptyLabel,
   emptyIllustration = <TransactionsEmpty aria-hidden />,
-  minWidth = 560,
   dataTestId = 'product-transactions',
   pageSize = 7,
   onPageChange,
@@ -200,7 +197,10 @@ export function ProductTransactionsTable<T>({
 
   return (
     <>
-      <Table style={{ minWidth }} data-testid={dataTestId}>
+      {/* No width floor: the cells' own min-content is the only limit before the
+          wrapper scrolls. A fixed floor forced a scroll inside the tablet-seam
+          pane (912 to 1200), where the design fits this table in 587px. */}
+      <Table data-testid={dataTestId}>
         <TableHeader>
           <TableRow>
             {columns.map((column, index) => (

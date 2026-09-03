@@ -101,6 +101,13 @@ flush with 2px gaps and round only the list's outer corners (20px), mirroring
 the desktop table surface. Shared primitives live in
 `components/product/TransactionCard.tsx`.
 
+From 768 up the `<table>` has no width floor: it fills its pane and the
+cells' own min-content is the only limit before the wrapper scrolls
+sideways. The old 560/720px floors only ever bit inside the two-pane
+product/stake layout at the tablet seam (912 to 1200, pane 522 to 750px),
+where they forced a horizontal scroll the design does not have (the Sky
+Savings tablet-grid frame fits the Transaction Min table in 587px).
+
 ## Widgets & transaction flows (M7, APP-374)
 
 Transaction forms are fluid inside every container they mount in: the mobile
