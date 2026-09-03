@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useTokenBalance } from '@/hooks';
+import { formatNumber } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
@@ -167,7 +168,14 @@ export function useConvertForm() {
     originSymbol: originSymbolFor(direction),
     targetSymbol: originSymbolFor(OPPOSITE[direction]),
     value,
-    targetValue: value === '' ? '' : formatUnits(targetAmount, targetDecimals),
+    // Display-only: the derived figure is grouped ("189,924,037.3125") per the
+    // Design QA note (APP-553). Six fraction digits is exact for the PSM —
+    // both directions bottleneck at USDC's 6 decimals — while keeping a
+    // wider Intl cap from printing a double's binary tail (1.1 → 1.1000…089).
+    targetValue:
+      value === ''
+        ? ''
+        : formatNumber(parseFloat(formatUnits(targetAmount, targetDecimals)), { maxDecimals: 6 }),
     amount,
     targetAmount,
     originDecimals,
