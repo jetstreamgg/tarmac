@@ -191,7 +191,7 @@ function SavingsCardWide({ row, onSupply }: { row: EarnProductRow; onSupply: () 
           </div>
         </div>
         <Button variant="primary" size="l" className="w-28" onClick={onSupply}>
-          <Trans>Earn</Trans>
+          <Trans>Supply</Trans>
         </Button>
       </div>
     </article>
@@ -336,7 +336,7 @@ function FeaturedCard({
       <div className="mt-8 flex flex-1 items-end justify-between gap-6 md:mt-10">
         <div className="flex items-center gap-6">{product.stats(row)}</div>
         <Button variant="primary" size="l" className="hidden w-28 md:inline-flex" onClick={onSupply}>
-          <Trans>Earn</Trans>
+          <Trans>Supply</Trans>
         </Button>
       </div>
       <Button variant="primary" size="m" className="mt-5 w-full md:hidden" onClick={onSupply}>
