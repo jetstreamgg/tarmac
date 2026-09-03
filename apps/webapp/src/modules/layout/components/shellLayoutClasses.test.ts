@@ -88,7 +88,7 @@ describe('shellHeaderContentClasses', () => {
   // wallet extension panel open keeps the pills.
   it('lays the row out as the three-flank grid from the tablet seam', () => {
     const cls = shellHeaderContentClasses();
-    expect(cls).toContain('lg:grid');
+    expect(cls.split(/\s+/)).toContain('lg:grid');
     expect(cls).toContain('lg:grid-cols-[1fr_auto_1fr]');
     expect(cls).not.toContain('desktop:grid');
   });
