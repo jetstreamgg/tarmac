@@ -19,7 +19,7 @@ import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSucc
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
-import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
+import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
@@ -294,7 +294,7 @@ export function TransactionProvider({
   useEffect(() => {
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
-  const { handleSwitchChain, isPending: switchPending, variables: switchVariables } = useChainModalContext();
+  const { handleSwitchChain, isSwitchPending: switchPending, switchVariables } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as

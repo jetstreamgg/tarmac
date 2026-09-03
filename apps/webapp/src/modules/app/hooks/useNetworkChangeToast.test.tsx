@@ -16,7 +16,13 @@ vi.mock('wagmi', () => ({
     { id: 1, name: 'Ethereum' },
     { id: 8453, name: 'Base' }
   ],
-  useAccount: () => ({ isConnected: h.isConnected })
+  useAccount: () => ({ isConnected: h.isConnected }),
+  // The provider under test also hosts the shared switch function.
+  useConnection: () => ({ connector: undefined }),
+  useSwitchChain: () => ({ switchChain: vi.fn(), isPending: false, variables: undefined })
+}));
+vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
+  useAppAnalytics: () => ({ trackNetworkSwitchRequested: vi.fn(), trackNetworkSwitchCompleted: vi.fn() })
 }));
 
 vi.mock('./useEnhancedNetworkToast', () => ({

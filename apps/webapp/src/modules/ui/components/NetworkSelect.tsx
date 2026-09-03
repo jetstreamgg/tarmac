@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { getChainIcon } from '@/utils';
 import { useAppChainId, useIsSafeWallet } from '@/hooks';
-import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
+import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 
 type NetworkSelectProps = {
   /** The chains this surface may switch between — the product's supported set. */
@@ -198,7 +198,7 @@ function NetworkSelectView({
 export function NetworkSelect(props: NetworkSelectProps) {
   // The shared switch: wagmi's `switchChain` plus this app's analytics and its
   // rejected/unsupported-chain toasts.
-  const { handleSwitchChain } = useChainModalContext();
+  const { handleSwitchChain } = useNetworkSwitch();
   const onSelect = useCallback((chainId: number) => handleSwitchChain({ chainId }), [handleSwitchChain]);
   return <NetworkSelectView {...props} onSelect={onSelect} />;
 }

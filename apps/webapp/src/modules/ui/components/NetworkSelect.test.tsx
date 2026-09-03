@@ -30,12 +30,8 @@ vi.mock('@/hooks', () => ({
 }));
 
 const mockHandleSwitchChain = vi.fn();
-vi.mock('@/modules/ui/context/ChainModalContext', () => ({
-  useChainModalContext: () => ({
-    handleSwitchChain: mockHandleSwitchChain,
-    isPending: false,
-    variables: undefined
-  })
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({ handleSwitchChain: mockHandleSwitchChain })
 }));
 
 beforeEach(() => {

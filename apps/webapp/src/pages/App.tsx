@@ -13,7 +13,6 @@ import { ToastCloseAll } from '@/components/toast/ToastCloseAll';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ConnectedProvider } from '@/modules/ui/context/ConnectedContext';
 import { TermsModalProvider } from '@/modules/ui/context/TermsModalContext';
-import { ChainModalProvider } from '@/modules/ui/context/ChainModalContext';
 import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { useTermsSignatureGate } from '@/modules/ui/hooks/useTermsSignatureGate';
 import { useEnhancedScreeningPreflight } from '@/modules/ui/hooks/useEnhancedScreeningPreflight';
@@ -69,13 +68,9 @@ const AppContent = () => {
       <TermsModalProvider>
         <ConnectThenActProvider>
           <TooltipProvider delayDuration={300}>
-            {/* NetworkSwitchProvider sits outside ChainModalProvider: the shared
-                switch function records the chain an in-app control asked for,
-                so the shell toast can tell a manual pick from an automatic one. */}
             <NetworkSwitchProvider>
-              <ChainModalProvider>
-                <GatedTransactionProvider>
-                  {/* Toast tier above the dialog tier (z-50): network/tx
+              <GatedTransactionProvider>
+                {/* Toast tier above the dialog tier (z-50): network/tx
                         toasts must stay readable over a modal's blurred
                         overlay (e.g. the auto-switch toast fires as a supply
                         modal opens). Below the popover (z-100) and tooltip
@@ -89,13 +84,12 @@ const AppContent = () => {
                         app-loader-cover-hidden: this tree mounts outside
                         Layout, so it hides via the loader's document flag
                         while the cover plays (globals.css). */}
-                  <DismissableLayerBranch className="app-loader-cover-hidden pointer-events-auto">
-                    <Toaster className="!z-[60]" />
-                    <ToastCloseAll />
-                  </DismissableLayerBranch>
-                  <RouterProvider router={router} />
-                </GatedTransactionProvider>
-              </ChainModalProvider>
+                <DismissableLayerBranch className="app-loader-cover-hidden pointer-events-auto">
+                  <Toaster className="!z-[60]" />
+                  <ToastCloseAll />
+                </DismissableLayerBranch>
+                <RouterProvider router={router} />
+              </GatedTransactionProvider>
             </NetworkSwitchProvider>
           </TooltipProvider>
         </ConnectThenActProvider>

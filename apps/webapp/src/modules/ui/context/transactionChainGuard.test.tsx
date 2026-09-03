@@ -58,11 +58,11 @@ vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
 // Spy on the chain switch the guard triggers, without a real WagmiProvider.
 const mockHandleSwitchChain = vi.fn();
 let mockIsSafeWallet = false;
-vi.mock('@/modules/ui/context/ChainModalContext', () => ({
-  useChainModalContext: () => ({
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({
     handleSwitchChain: mockHandleSwitchChain,
-    isPending: false,
-    variables: undefined
+    isSwitchPending: false,
+    switchVariables: undefined
   })
 }));
 
