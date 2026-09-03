@@ -558,7 +558,9 @@ function DetailHeaderValue({
  */
 function TrendBadge({ percentage, formatted }: { percentage: number; formatted: string }) {
   const isDown = percentage < 0;
-  const label = `${isDown ? '' : '+'}${formatted}`;
+  // Both directions carry their sign: colour alone left a falling series
+  // reading as a bare "4.14%" (APP-552 review).
+  const label = `${isDown ? '-' : '+'}${formatted}`;
   if (!isDown) {
     return <RateBadge data-testid="chart-trend-badge">{label}</RateBadge>;
   }

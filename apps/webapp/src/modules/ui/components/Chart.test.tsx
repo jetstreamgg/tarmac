@@ -165,3 +165,34 @@ describe('Chart — detail variant header order', () => {
     expect(isBefore(plot, timeframe)).toBe(true);
   });
 });
+
+describe('Chart — trend badge', () => {
+  afterEach(cleanup);
+
+  const renderTrend = (first: number, last: number) =>
+    render(
+      <Chart
+        variant="detail"
+        dataTestId="trend-chart"
+        data={[
+          { value: first, date: new Date('2026-01-01') },
+          { value: last, date: new Date('2026-01-02') }
+        ]}
+        label="Total value locked"
+        metrics={METRICS}
+        activeMetric="tvl"
+        onMetricChange={() => {}}
+        showTrend
+      />
+    );
+
+  it('signs a rising period with a plus', () => {
+    renderTrend(100, 105);
+    expect(screen.getByTestId('chart-trend-badge').textContent).toMatch(/^\+\d/);
+  });
+
+  it('signs a falling period with a minus rather than relying on colour alone', () => {
+    renderTrend(100, 95);
+    expect(screen.getByTestId('chart-trend-badge').textContent).toMatch(/^-\d/);
+  });
+});
