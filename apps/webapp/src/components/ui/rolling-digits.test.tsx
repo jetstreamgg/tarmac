@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { RollingDigits } from './rolling-digits';
+import { RollingDigits, splitRollingTail } from './rolling-digits';
 
 afterEach(cleanup);
 
@@ -72,5 +72,30 @@ describe('RollingDigits', () => {
     render(<RollingDigits value="1,000" />);
     // Four digit windows; the comma is a bare span.
     expect(screen.getAllByTestId('rolling-digit')).toHaveLength(4);
+  });
+});
+
+describe('splitRollingTail', () => {
+  it('peels the last two digits off a grouped figure', () => {
+    expect(splitRollingTail('1,234,567')).toEqual({ head: '1,234,5', tail: '67' });
+  });
+
+  it('hands a short figure over whole', () => {
+    expect(splitRollingTail('99')).toEqual({ head: '', tail: '99' });
+    expect(splitRollingTail('5')).toEqual({ head: '', tail: '5' });
+  });
+
+  it('keeps the hundreds digit in the head at exactly 100', () => {
+    expect(splitRollingTail('100')).toEqual({ head: '1', tail: '00' });
+  });
+
+  it('moves the separator into the head when a carry widens the figure', () => {
+    expect(splitRollingTail('999')).toEqual({ head: '9', tail: '99' });
+    expect(splitRollingTail('1,000')).toEqual({ head: '1,0', tail: '00' });
+  });
+
+  it('carries a separator that falls inside the tail along with it', () => {
+    expect(splitRollingTail('1.2', 2)).toEqual({ head: '', tail: '1.2' });
+    expect(splitRollingTail('12 345', 4)).toEqual({ head: '1', tail: '2 345' });
   });
 });

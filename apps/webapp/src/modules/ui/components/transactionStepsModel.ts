@@ -64,6 +64,25 @@ type DeriveInput = {
   bundled: boolean;
 };
 
+/**
+ * The step-specific consequence sentence appended after the generic rollback
+ * copy when a step fails (Figma 2800:91683: "The network rolled back your
+ * transaction. The USDS hasn't been approved."). Built per call — lingui's `t`
+ * must run after locale activation.
+ */
+export const stepFailureDetail = {
+  approve: (symbol: string) => t`The ${symbol} hasn't been approved.`,
+  supply: (symbol: string) => t`The ${symbol} hasn't been supplied.`,
+  withdraw: (symbol: string) => t`The ${symbol} hasn't been withdrawn.`,
+  stake: (symbol: string) => t`The ${symbol} hasn't been staked.`,
+  restake: (symbol: string) => t`The ${symbol} hasn't been restaked.`,
+  borrow: (symbol: string) => t`The ${symbol} hasn't been borrowed.`,
+  repay: (symbol: string) => t`The ${symbol} hasn't been repaid.`,
+  claim: (symbol: string) => t`The ${symbol} hasn't been claimed.`,
+  convert: (symbol: string) => t`The ${symbol} hasn't been converted.`,
+  upgrade: (symbol: string) => t`The ${symbol} hasn't been upgraded.`
+};
+
 const normalize = (step: TransactionStep) => (typeof step === 'string' ? { label: step } : step);
 type NormalizedStep = ReturnType<typeof normalize>;
 

@@ -32,6 +32,24 @@ function keyCharacters(value: string) {
 }
 
 /**
+ * Splits a formatted integer into a still `head` and the trailing `digits`
+ * digit characters, for a figure whose whole part should roll only at its
+ * low end: "1,234,567" → head "1,234,5", tail "67". The count is of digits,
+ * not characters, so a grouping separator that lands inside the tail travels
+ * with it (RollingDigits renders separators as bare spans anyway). A figure
+ * shorter than the tail is all tail.
+ */
+export function splitRollingTail(formatted: string, digits = 2): { head: string; tail: string } {
+  let seen = 0;
+  let index = formatted.length;
+  while (index > 0 && seen < digits) {
+    index -= 1;
+    if (/\d/.test(formatted[index])) seen += 1;
+  }
+  return { head: formatted.slice(0, index), tail: formatted.slice(index) };
+}
+
+/**
  * Odometer digits (Figma 1598:76444). Each character sits in its own one-line
  * clip window; when a digit changes, the old glyph slides up and out of the
  * window while its replacement rises into it from below.

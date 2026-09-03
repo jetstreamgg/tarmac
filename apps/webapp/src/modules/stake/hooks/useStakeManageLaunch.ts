@@ -20,6 +20,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 // Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
@@ -71,15 +72,21 @@ export function buildStakeManageSteps({
     // Approval steps only render alongside the action that needs them, so a
     // still-loading allowance can't flash a phantom Approve step (the engine
     // still derives the real approve calls itself).
-    needsSkyAllowance && hasLock && { label: t`Approve`, tokenSymbol: 'SKY' },
-    needsUsdsAllowance && hasWipe && { label: t`Approve`, tokenSymbol: 'USDS' },
-    hasWipe && { label: t`Repay`, tokenSymbol: 'USDS' },
-    hasFree && { label: t`Withdraw`, tokenSymbol: 'SKY' },
-    ...(claimSymbols ?? []).map(symbol => ({ label: t`Claim`, tokenSymbol: symbol })),
+    needsSkyAllowance &&
+      hasLock && { label: t`Approve`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.approve('SKY') },
+    needsUsdsAllowance &&
+      hasWipe && { label: t`Approve`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.approve('USDS') },
+    hasWipe && { label: t`Repay`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.repay('USDS') },
+    hasFree && { label: t`Withdraw`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.withdraw('SKY') },
+    ...(claimSymbols ?? []).map(symbol => ({
+      label: t`Claim`,
+      tokenSymbol: symbol,
+      failureDetail: stepFailureDetail.claim(symbol)
+    })),
     hasRewardChange && t`Change reward`,
     hasDelegateChange && t`Change delegate`,
-    hasLock && { label: t`Stake`, tokenSymbol: 'SKY' },
-    hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS' }
+    hasLock && { label: t`Stake`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.stake('SKY') },
+    hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.borrow('USDS') }
   ].filter(Boolean) as TransactionStep[];
 }
 

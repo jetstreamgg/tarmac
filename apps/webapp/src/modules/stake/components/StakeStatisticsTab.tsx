@@ -24,7 +24,7 @@ export function StakeStatisticsTab() {
         <StakeDetailsStrip />
         <BorrowUtilizationBlock />
       </div>
-      <div className="order-1 lg:order-none lg:col-span-1">
+      <div className="order-1 lg:sticky lg:top-32 lg:order-none lg:col-span-1">
         <StakeEngineCard />
       </div>
     </div>
