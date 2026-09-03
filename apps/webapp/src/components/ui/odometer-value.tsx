@@ -101,12 +101,20 @@ export function OdometerValue({ value, className }: { value: string; className?:
   );
 }
 
-// The strip is periodic, so a carry can keep travelling past 9 (or before 0)
-// and the strip snaps back a whole period once it settles — invisibly, since
-// the glyph at row k and row k+10 is the same. Rows -10..19 cover any single
-// travel from a settled row in [0, 10).
+// The strip is periodic — the glyph at row k and row k+10 is the same — so
+// the strip can be re-based by a whole period at any moment without a visible
+// change. Every retarget lands the target in [0, 10) and keeps the spring's
+// current position within MAX_LAG rows of it, so rows -10..19 always cover
+// both, however fast the figure is being driven.
 const STRIP_START = -10;
 const STRIP_ROWS = 30;
+// How far the strip may trail its target before it skips ahead. A units digit
+// under a fast drag changes every frame; left to accumulate, the strip would
+// wind up a backlog of whole turns and spend the drag between rows, where
+// the window shows only the gap between glyphs (a blank figure). Two rows
+// keeps the current glyph mostly in view while the digit still visibly ticks
+// through in the direction of travel.
+const MAX_LAG = 2;
 // Critically damped: a drag retargets this every frame, and any bounce would
 // read as the digit dithering.
 const SPRING = { type: 'spring', duration: 0.75, bounce: 0 } as const;
@@ -122,27 +130,26 @@ function DigitStrip({ digit, trend, width }: { digit: number; trend: number; wid
     const current = target.current;
     const settled = ((current % 10) + 10) % 10;
     if (settled === digit) return;
-    // Nearest row showing `digit` in the direction the figure is moving.
-    const next =
-      trend >= 0 ? current + ((digit - settled + 10) % 10) : current - ((settled - digit + 10) % 10);
+    // Nearest row showing `digit` in the direction the figure is moving…
+    let next = trend >= 0 ? current + ((digit - settled + 10) % 10) : current - ((settled - digit + 10) % 10);
+    // …re-based into [0, 10) — the strip shifts by the same whole periods, so
+    // nothing moves on screen — and never more than MAX_LAG rows from where
+    // the strip is right now.
+    const periods = Math.floor(next / 10) * 10;
+    if (periods !== 0) {
+      row.jump(row.get() - periods);
+      next -= periods;
+    }
+    const position = row.get();
+    if (Math.abs(next - position) > MAX_LAG) {
+      row.jump(next - Math.sign(next - position) * MAX_LAG);
+    }
     target.current = next;
     if (prefersReducedMotion) {
       row.jump(next);
       return;
     }
-    const controls = animate(row, next, {
-      ...SPRING,
-      onComplete: () => {
-        // Snap back into the base period once at rest; a newer target has
-        // already moved on if this isn't ours any more.
-        if (target.current !== next) return;
-        const normalized = ((next % 10) + 10) % 10;
-        if (normalized !== next) {
-          target.current = normalized;
-          row.jump(normalized);
-        }
-      }
-    });
+    const controls = animate(row, next, SPRING);
     return () => controls.stop();
   }, [digit, trend, prefersReducedMotion, row]);
 
@@ -150,11 +157,15 @@ function DigitStrip({ digit, trend, width }: { digit: number; trend: number; wid
     // The invisible glyph sizes the window and sets its baseline; the strip
     // is absolutely positioned over it and clipped to the one line. `lh`
     // rows keep the strip's pitch equal to the window at any font size.
-    // The window is clipped to its line box and softened at the top and
-    // bottom edges so a glyph on its way out fades rather than being cut
-    // flat; the fade stops short of where the figures sit at rest.
+    // The window is clipped to its line box with `contain: paint` — unlike
+    // `clip-path` it also keeps the strip out of the ancestors' scrollable
+    // overflow (the modal grew a scrollbar's worth of blank space under the
+    // figure otherwise), and unlike `overflow: hidden` it leaves the
+    // inline-block's baseline alone. The mask softens the top and bottom
+    // edges so a glyph on its way out fades rather than being cut flat; the
+    // fade stops short of where the figures sit at rest.
     <motion.span
-      className="relative inline-block [mask-image:linear-gradient(to_bottom,transparent,#000_12%,#000_88%,transparent)] [clip-path:inset(0)]"
+      className="relative inline-block [mask-image:linear-gradient(to_bottom,transparent,#000_12%,#000_88%,transparent)] [contain:paint]"
       initial={false}
       animate={width === undefined ? undefined : { width }}
       transition={prefersReducedMotion ? { duration: 0 } : SPRING}
