@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useStUsdsChartInfo, useStUsdsData } from '@/hooks';
 import { calculateApyFromStr } from '@/utils';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { useParseStUsdsChartData } from '../hooks/useParseStUsdsChartData';
@@ -63,7 +64,12 @@ export function StUsdsDetailChart() {
         hidePercentChange={isRate}
         symbol={isRate ? undefined : 'USDS'}
         tokenSymbols={isRate ? undefined : ['USDS']}
-        label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
+        label={isRate ? <Trans>Current Rate</Trans> : <Trans>Total value locked</Trans>}
+        // The TVL metric leads its figure with the token mark instead of a
+        // trailing ticker and tags it with the period's change, the same
+        // recipe the portfolio totals chart wears (APP-552, Figma 2800:92438).
+        icons={isRate ? undefined : <TokenIconStack symbols={['USDS']} size={32} className="shrink-0" />}
+        showTrend={!isRate}
         displayValue={isRate ? liveRate : liveTvl}
         tooltipLabel="Daily average"
         metrics={[

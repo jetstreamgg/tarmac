@@ -89,6 +89,13 @@ describe('useConvertForm', () => {
     expect(result.current.targetValue).toBe('1.5');
   });
 
+  it('groups the derived To figure for display while keeping the raw amount exact (APP-553)', () => {
+    const { result } = renderHook(() => useConvertForm());
+    act(() => result.current.onInput('189924037.3125'));
+    expect(result.current.targetAmount).toBe(parseUnits('189924037.3125', 6));
+    expect(result.current.targetValue).toBe('189,924,037.3125');
+  });
+
   it('rejects non-decimal input and fractions beyond the origin decimals', () => {
     h.searchInit = 'source_token=USDC'; // USDC origin: 6 decimals
     const { result } = renderHook(() => useConvertForm());

@@ -176,17 +176,17 @@ const expectedCalldata = (usdsToBorrow: bigint, delegate?: `0x${string}`) =>
 describe('buildStakeOpenSteps', () => {
   it('derives the step list from the calldata set (A-Q3: delegate shown honestly)', () => {
     expect(buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: true, hasDelegate: true })).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Stake', tokenSymbol: 'SKY' },
-      { label: 'Borrow', tokenSymbol: 'USDS' },
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." },
       'Delegate voting power'
     ]);
     expect(buildStakeOpenSteps({ needsSkyAllowance: false, hasBorrow: false, hasDelegate: false })).toEqual([
-      { label: 'Stake', tokenSymbol: 'SKY' }
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
     ]);
     expect(buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: false, hasDelegate: false })).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Stake', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
     ]);
   });
 });
@@ -253,9 +253,9 @@ describe('useStakeLaunch — launch() config', () => {
     expect(config.title).toBe('Confirm');
     expect(config.transactionTitle).toBe('Confirm your transaction');
     expect(config.steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Stake', tokenSymbol: 'SKY' },
-      { label: 'Borrow', tokenSymbol: 'USDS' },
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." },
       'Delegate voting power'
     ]);
     expect(config.analytics.widgetName).toBe('stake');

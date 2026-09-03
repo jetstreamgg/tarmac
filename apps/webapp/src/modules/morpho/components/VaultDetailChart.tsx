@@ -4,6 +4,7 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { getTokenDecimals, useMorphoVaultChartInfo, useVaultMarketData, type Token } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { useParseVaultChartData } from '../hooks/useParseVaultChartData';
 import { hasRateIncentives, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
@@ -78,7 +79,14 @@ export function VaultDetailChart({
         hidePercentChange={isRate}
         symbol={isRate ? undefined : assetToken.symbol}
         tokenSymbols={isRate ? undefined : [assetToken.symbol]}
-        label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
+        label={isRate ? <Trans>Current Rate</Trans> : <Trans>Total value locked</Trans>}
+        // The TVL metric leads its figure with the token mark instead of a
+        // trailing ticker and tags it with the period's change, the same
+        // recipe the portfolio totals chart wears (APP-552, Figma 2800:92438).
+        icons={
+          isRate ? undefined : <TokenIconStack symbols={[assetToken.symbol]} size={32} className="shrink-0" />
+        }
+        showTrend={!isRate}
         displayValue={isRate ? liveRate : liveTvl}
         // The headline plots the same net rate the card and Details row show,
         // so it wears the same stars mark and breakdown tooltip (APP-443 item

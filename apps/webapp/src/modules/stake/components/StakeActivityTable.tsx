@@ -394,6 +394,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         columns={COLUMNS}
         rows={rows}
         rowKey={row => row.transactionHash}
+        rowHref={row => getEtherscanLink(row.chainId, row.transactionHash, 'tx')}
         isLoading={isLoading}
         error={error}
         renderCard={renderCard}

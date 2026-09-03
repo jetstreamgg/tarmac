@@ -183,9 +183,9 @@ describe('buildStakeManageSteps', () => {
         hasDelegateChange: false
       })
     ).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS' },
-      { label: 'Repay', tokenSymbol: 'USDS' },
-      { label: 'Withdraw', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
+      { label: 'Repay', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been repaid." },
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." }
     ]);
 
     expect(
@@ -200,10 +200,10 @@ describe('buildStakeManageSteps', () => {
         hasDelegateChange: true
       })
     ).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
       'Change delegate',
-      { label: 'Stake', tokenSymbol: 'SKY' },
-      { label: 'Borrow', tokenSymbol: 'USDS' }
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." }
     ]);
 
     expect(
@@ -217,7 +217,7 @@ describe('buildStakeManageSteps', () => {
         hasRewardChange: false,
         hasDelegateChange: false
       })
-    ).toEqual([{ label: 'Borrow', tokenSymbol: 'USDS' }]);
+    ).toEqual([{ label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." }]);
   });
 
   it('places Change reward before Change delegate, matching the manage calldata order', () => {
@@ -232,7 +232,11 @@ describe('buildStakeManageSteps', () => {
         hasRewardChange: true,
         hasDelegateChange: true
       })
-    ).toEqual(['Change reward', 'Change delegate', { label: 'Stake', tokenSymbol: 'SKY' }]);
+    ).toEqual([
+      'Change reward',
+      'Change delegate',
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
+    ]);
 
     expect(
       buildStakeManageSteps({
@@ -262,9 +266,9 @@ describe('buildStakeManageSteps', () => {
         claimSymbols: ['SKY', 'SPK']
       })
     ).toEqual([
-      { label: 'Withdraw', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SPK' }
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
     ]);
 
     // No claimSymbols — untouched (no Claim steps at all).
@@ -279,7 +283,7 @@ describe('buildStakeManageSteps', () => {
         hasRewardChange: false,
         hasDelegateChange: false
       })
-    ).toEqual([{ label: 'Withdraw', tokenSymbol: 'SKY' }]);
+    ).toEqual([{ label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." }]);
   });
 });
 
@@ -465,9 +469,9 @@ describe('useStakeManageLaunch — launch() config', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
     expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS' },
-      { label: 'Repay', tokenSymbol: 'USDS' },
-      { label: 'Withdraw', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
+      { label: 'Repay', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been repaid." },
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." }
     ]);
   });
 
@@ -480,9 +484,9 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
     act(() => result.current.launch());
     expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Withdraw', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SPK' }
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
     ]);
   });
 
