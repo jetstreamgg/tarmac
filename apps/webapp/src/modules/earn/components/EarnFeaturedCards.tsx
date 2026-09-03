@@ -72,21 +72,37 @@ function NetworksBadge({ networks, size = 's' }: { networks: number[]; size?: 's
 
 function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex h-10 flex-col justify-between md:h-11">
-      <span className="text-fgSecondary text-xs leading-[18px]">{label}</span>
-      {/* The value slot is pinned to its own line height and centres what it
+    // The label never wraps, so the stat's minimum width is the wider of the
+    // label and the value's longest unbreakable run; the value may wrap onto
+    // a second line when the row gets tight (see the stats row in
+    // FeaturedCard), so the slot has a minimum height, not a fixed one.
+    <div className="flex flex-col gap-1">
+      <span className="text-fgSecondary text-xs leading-[18px] whitespace-nowrap">{label}</span>
+      {/* The value slot is at least its own line height and centres what it
           holds, rather than letting the content sit on the text baseline: the
           risk pill is a 15px box with no text in it, so baseline alignment
           hangs it ~3.5px below the neighbouring figures. */}
-      <span className="text-fgPrimary font-circle flex h-[18px] items-center text-base leading-[18px] font-medium tracking-[-0.32px] md:h-[22px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
+      <span className="text-fgPrimary font-circle flex min-h-[18px] items-center text-base leading-[18px] font-medium tracking-[-0.32px] md:min-h-[22px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
         {children}
       </span>
     </div>
   );
 }
 
+/**
+ * Hairline between stats, owning the space on either side of it. The comp
+ * puts 24px each side (a 49px slot); the slot is a flexible spacer that
+ * grows to that and shrinks to 8px each side (17px) when the stats row gets
+ * tight, so the spacing gives before any value wraps (see the stats row in
+ * FeaturedCard). The stats themselves don't grow, so only the spacers take up
+ * slack.
+ */
 function StatDivider() {
-  return <div className="bg-borderPrimary h-6 w-px shrink-0" />;
+  return (
+    <div className="flex max-w-[49px] min-w-[17px] flex-1 basis-[17px] justify-center self-center">
+      <div className="bg-borderPrimary h-6 w-px" />
+    </div>
+  );
 }
 
 /** Rate stat label: the mobile comp says "APY" (486:22051), the desktop comps "Rate" (1036:201228). */
@@ -290,7 +306,11 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
         <StatDivider />
         {row.maturity && (
           <>
-            <Stat label={<Trans>Maturity date</Trans>}>{formatMaturity(row.maturity)}</Stat>
+            {/* Day and month are glued so a tight row breaks the date into at
+                most two lines ("26 Nov" / "2026"), never three. */}
+            <Stat label={<Trans>Maturity date</Trans>}>
+              {formatMaturity(row.maturity).replace(' ', '\u00a0')}
+            </Stat>
             <StatDivider />
           </>
         )}
@@ -333,9 +353,27 @@ function FeaturedCard({
       <p className="text-fgSecondary mt-2 text-xs leading-[18px] md:max-w-[370px]">
         {product.description(row, context)}
       </p>
-      <div className="mt-8 flex flex-1 items-end justify-between gap-6 md:mt-10">
-        <div className="flex items-center gap-6">{product.stats(row)}</div>
-        <Button variant="primary" size="l" className="hidden w-28 md:inline-flex" onClick={onSupply}>
+      {/* Stats + CTA stay on one line for as long as possible (APP-549, the
+          two-up grid beside a wallet extension panel). The stats group is
+          `flex-1` from a zero basis with min-width:auto, so the row's wrap
+          decision is made against the group's *min-content* width: as the
+          card narrows the group gives up slack in order — first the spacing
+          around the dividers (24px → 8px, see StatDivider), then the maturity
+          date drops to two lines — and only once even that can't sit beside
+          the CTA does the CTA wrap onto its own line, right-aligned. Stats align at the top
+          so their labels stay on one line while a two-line value hangs below.
+          The row aligns at the bottom so the stats sit on the CTA's baseline
+          when the CTA is the taller item (the one-line case); the CTA centres
+          itself so that when a two-line value makes the stats taller, it sits
+          mid-row instead of hanging off the last line. */}
+      <div className="mt-8 flex flex-1 flex-wrap items-end gap-6 md:mt-10">
+        <div className="flex flex-1 items-start">{product.stats(row)}</div>
+        <Button
+          variant="primary"
+          size="l"
+          className="ml-auto hidden w-28 shrink-0 self-center md:inline-flex"
+          onClick={onSupply}
+        >
           <Trans>Supply</Trans>
         </Button>
       </div>
@@ -351,7 +389,8 @@ function FeaturedCard({
  * `HIGHLIGHTED_PRODUCTS` descriptors (overridable per render for
  * tests/previews). One visible product with a `wide` treatment renders it
  * full-width on desktop; anything else renders the vertical cards — stacked
- * below md, a two-up grid from md.
+ * below lg, a two-up grid from lg (912, the shell's tablet seam, APP-549: a
+ * two-up card at the md tier was too narrow for the stat row).
  */
 export function EarnFeaturedCards({
   rows,
@@ -389,7 +428,7 @@ export function EarnFeaturedCards({
     <div
       className={cn(
         'flex flex-col gap-3',
-        visible.length > 1 && 'md:grid md:grid-cols-2 md:items-stretch md:gap-4'
+        visible.length > 1 && 'lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-4'
       )}
       data-testid="earn-featured-cards"
     >

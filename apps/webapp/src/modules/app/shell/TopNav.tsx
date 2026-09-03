@@ -196,12 +196,16 @@ export function TopNav() {
   const activePath = useActiveDestinationPath();
   const { searchForIntent, handleNavClick } = useDestinationLinkProps('header_nav');
 
-  // At the desktop tier the nav box dissolves (display: contents) so the pill
-  // group and chip cluster sit directly in the shell header's three-flank grid
-  // (APP-415) — the nav landmark itself stays in the accessibility tree. Below
-  // desktop it's the flex row of the DS Mobile / Topbar layout.
+  // From the tablet seam (lg, 912) up the nav box dissolves (display: contents)
+  // so the pill group and chip cluster sit directly in the shell header's
+  // three-flank grid (APP-415) — the nav landmark itself stays in the
+  // accessibility tree. On the phone tier it's the flex row of the DS Mobile /
+  // Topbar layout. The seam used to be `desktop` (1200), which handed a
+  // desktop user with a wallet extension panel open (~1022px of app) the
+  // phone layout; the Design QA tablet-grid frames (2800:91684) keep the pills
+  // there (APP-549).
   return (
-    <nav className="desktop:contents flex w-full min-w-0 items-center gap-3" data-testid="top-nav">
+    <nav className="flex w-full min-w-0 items-center gap-3 lg:contents" data-testid="top-nav">
       {/* Shared gradient for the selected nav icon (dark mode); referenced by
           fill: url(#nav-icon-gradient) in globals.css. Bounding-box units span
           each glyph exactly (Figma's per-icon ramp), which relies on every nav
@@ -217,10 +221,10 @@ export function TopNav() {
       </svg>
       {/* The pill group is the center `auto` track of the header grid, so it
           sits on the page content's center line regardless of how the logo and
-          chip-cluster flanks differ in width. Below the desktop tier the
+          chip-cluster flanks differ in width. On the phone tier the
           destinations live in the bottom MobileNavbar instead (M2), so the
           pill group hides. */}
-      <div className="desktop:flex hidden items-center gap-2">
+      <div className="hidden items-center gap-2 lg:flex">
         {DESTINATIONS.map(destination => {
           const isActive = activePath === destination.path;
           const Icon = destination.icon;
@@ -240,13 +244,15 @@ export function TopNav() {
           );
         })}
       </div>
-      {/* With the pill group hidden on mobile, ml-auto keeps the chip cluster
-          pinned right (the DS Mobile / Topbar layout: logo · wallet · menu).
-          At desktop it's the right grid flank instead, pinned by justify-self.
-          min-w-0 lets the wallet chip shrink-truncate below 340px instead of
-          pushing the row past the viewport (M2.2); the desktop grid keeps
-          min-width:auto so a long chip still nudges the pills (APP-415). */}
-      <div className="desktop:ml-0 desktop:justify-self-end desktop:min-w-[auto] ml-auto flex min-w-0 items-center gap-3">
+      {/* With the pill group hidden on the phone tier, ml-auto keeps the chip
+          cluster pinned right (the DS Mobile / Topbar layout: logo · wallet ·
+          menu). From the tablet seam up it's the right grid flank instead,
+          pinned by justify-self. min-w-0 lets the wallet chip shrink-truncate
+          instead of pushing the row past the viewport (M2.2) — on the tablet
+          tier that also keeps a long chip from stealing the pills' room; the
+          desktop grid restores min-width:auto so a long chip nudges the pills
+          rather than truncating (APP-415). */}
+      <div className="desktop:min-w-[auto] ml-auto flex min-w-0 items-center gap-3 lg:ml-0 lg:justify-self-end">
         <WalletChip />
         {import.meta.env.VITE_USE_MOCK_WALLET === 'true' && <MockConnectButton />}
         <MoreMenu />

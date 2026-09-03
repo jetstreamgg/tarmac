@@ -184,18 +184,27 @@ function verbIcon(verb: StakeActivityVerb) {
 
 type ActivityRow = StakeActivityGroup & { skyPrice: number | null; chainId: number };
 
+// Two chunks so the subline gives way in order as the column narrows: first
+// the position drops to its own line (CellAction), then the time itself
+// wraps — this table has five columns in the tablet pane, so at the 912 seam
+// the time alone is wider than the column.
+const activitySublabel = (row: ActivityRow) => (
+  <>
+    <span className="whitespace-normal">
+      {formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
+      {row.urnIndex !== undefined && '\u00A0·'}
+    </span>
+    {row.urnIndex !== undefined && <span>Position {row.urnIndex + 1}</span>}
+  </>
+);
+
 // Figma Type=Action and Position (Transaction Stake): Label 5 title.
 const actionCell = (row: ActivityRow) => (
   <CellAction
     compact
     icon={verbIcon(row.verb)}
     label={verbLabel(row.verb)}
-    sublabel={
-      <>
-        {formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
-        {row.urnIndex !== undefined && <> · Position {row.urnIndex + 1}</>}
-      </>
-    }
+    sublabel={activitySublabel(row)}
   />
 );
 
@@ -261,16 +270,7 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
 const renderCard = (row: ActivityRow) => (
   <TransactionCard
     header={
-      <CellAction
-        icon={verbIcon(row.verb)}
-        label={verbLabel(row.verb)}
-        sublabel={
-          <>
-            {formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
-            {row.urnIndex !== undefined && <> · Position {row.urnIndex + 1}</>}
-          </>
-        }
-      />
+      <CellAction icon={verbIcon(row.verb)} label={verbLabel(row.verb)} sublabel={activitySublabel(row)} />
     }
     badge={<CellStatus status="completed" />}
     // Equal columns with the hairline dead-center — the same geometry as the
@@ -397,7 +397,6 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         rowHref={row => getEtherscanLink(row.chainId, row.transactionHash, 'tx')}
         isLoading={isLoading}
         error={error}
-        minWidth={720}
         renderCard={renderCard}
         onPageChange={(page, totalPages) => {
           if (hasNextPage && page >= totalPages) fetchNextPage();
