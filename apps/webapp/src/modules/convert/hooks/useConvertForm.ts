@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useTokenBalance } from '@/hooks';
-import { formatNumber } from '@/utils';
+import { formatBigInt } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
@@ -169,13 +169,12 @@ export function useConvertForm() {
     targetSymbol: originSymbolFor(OPPOSITE[direction]),
     value,
     // Display-only: the derived figure is grouped ("189,924,037.3125") per the
-    // Design QA note (APP-553). Six fraction digits is exact for the PSM —
-    // both directions bottleneck at USDC's 6 decimals — while keeping a
-    // wider Intl cap from printing a double's binary tail (1.1 → 1.1000…089).
-    targetValue:
-      value === ''
-        ? ''
-        : formatNumber(parseFloat(formatUnits(targetAmount, targetDecimals)), { maxDecimals: 6 }),
+    // Design QA note (APP-553). Six fraction digits covers the PSM — both
+    // directions bottleneck at USDC's 6 decimals — while keeping a wider Intl
+    // cap from printing a double's binary tail (1.1 → 1.1000…089). Like every
+    // formatBigInt caller this rounds through a double, so it is exact to ~16
+    // significant digits; the transacted bigint is untouched.
+    targetValue: value === '' ? '' : formatBigInt(targetAmount, { unit: targetDecimals, maxDecimals: 6 }),
     amount,
     targetAmount,
     originDecimals,

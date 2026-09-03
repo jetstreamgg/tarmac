@@ -114,8 +114,9 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       const originValue = await isolatedPage.getByTestId('convert-from-amount').inputValue();
       expect(parseFloat(originValue)).toBeGreaterThan(0);
+      // The To figure is grouped ("10,000.5"); parseFloat would stop at the comma.
       const targetValue = await isolatedPage.getByTestId('convert-to-amount').inputValue();
-      expect(parseFloat(targetValue)).toBeGreaterThan(0);
+      expect(parseFloat(targetValue.replace(/,/g, ''))).toBeGreaterThan(0);
     });
 
     test('Shows "Insufficient funds" when amount exceeds balance', async ({ isolatedPage }) => {

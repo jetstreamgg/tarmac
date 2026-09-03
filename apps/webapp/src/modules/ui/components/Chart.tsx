@@ -559,8 +559,10 @@ function DetailHeaderValue({
 function TrendBadge({ percentage, formatted }: { percentage: number; formatted: string }) {
   const isDown = percentage < 0;
   // Both directions carry their sign: colour alone left a falling series
-  // reading as a bare "4.14%" (APP-552 review).
-  const label = `${isDown ? '-' : '+'}${formatted}`;
+  // reading as a bare "4.14%" (APP-552 review). A rise is capped the way the
+  // default header caps it — a series that starts tiny on the All timeframe
+  // would otherwise print a nine-digit pill. A fall cannot pass -100%.
+  const label = percentage > 10000 ? '+10,000+%' : `${isDown ? '-' : '+'}${formatted}`;
   if (!isDown) {
     return <RateBadge data-testid="chart-trend-badge">{label}</RateBadge>;
   }
@@ -761,7 +763,10 @@ export function Chart({
       return 0;
     }
 
-    const offset = isPercentage ? 0.001 : 1;
+    // The nudge exists only to keep a zero start from dividing by zero; off a
+    // real baseline it is noise that skews the figure the trend badge prints
+    // (2 → 4 tokens read +66.67% with a flat +1), so it applies to zero alone.
+    const offset = data[0].value === 0 ? (isPercentage ? 0.001 : 1) : 0;
     const first = data[0].value + offset;
     const last = data[data.length - 1].value + offset;
 

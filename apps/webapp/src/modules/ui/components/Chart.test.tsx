@@ -186,13 +186,18 @@ describe('Chart — trend badge', () => {
       />
     );
 
-  it('signs a rising period with a plus', () => {
+  it('signs a rising period with a plus, measured off the real baseline', () => {
     renderTrend(100, 105);
-    expect(screen.getByTestId('chart-trend-badge').textContent).toMatch(/^\+\d/);
+    expect(screen.getByTestId('chart-trend-badge').textContent).toBe('+5%');
   });
 
   it('signs a falling period with a minus rather than relying on colour alone', () => {
     renderTrend(100, 95);
-    expect(screen.getByTestId('chart-trend-badge').textContent).toMatch(/^-\d/);
+    expect(screen.getByTestId('chart-trend-badge').textContent).toBe('-5%');
+  });
+
+  it('caps a runaway rise like the default header does', () => {
+    renderTrend(1, 1_000_000);
+    expect(screen.getByTestId('chart-trend-badge').textContent).toBe('+10,000+%');
   });
 });
