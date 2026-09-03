@@ -99,7 +99,7 @@ export function Layout({
                 blocking dialog here. It no longer does: wagmi pins its chainId
                 to the last configured chain, so every read still resolves and
                 the page renders correctly — and the route's chain resolution
-                (getRouteChainAction rule c) switches the wallet back on the
+                (getRouteChainAction rule b) switches the wallet back on the
                 user's behalf. If they decline, the transaction modal's chain
                 guard is what stops a transaction, where it actually matters. */}
               <AuthWrapper>{children}</AuthWrapper>

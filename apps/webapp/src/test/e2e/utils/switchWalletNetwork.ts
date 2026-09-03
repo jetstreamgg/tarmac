@@ -36,8 +36,8 @@ export const expectAppChain = async (page: Page, chainName: string) => {
  * Changes the connected mock wallet's network the way a user does from their
  * wallet's own menu — no app UI involved.
  *
- * It used to drive the wallet drawer's chain modal. That drawer control is the
- * app-wide network *filter* now, and switching moved to where a chain actually
+ * It used to drive the wallet drawer's chain modal. That control is gone —
+ * there is no global switcher — and switching moved to where a chain actually
  * decides something: a product page, or a transaction modal. So on a
  * mainnet-only page like /stake there is no control to drive at all — which is
  * exactly where these tests need to switch, because the behaviour under test is

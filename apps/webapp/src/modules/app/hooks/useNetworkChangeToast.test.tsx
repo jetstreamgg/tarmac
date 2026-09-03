@@ -96,4 +96,38 @@ describe('useNetworkChangeToast', () => {
       isAutoSwitch: true
     });
   });
+
+  it('stays quiet when the wallet lands where an in-app control asked it to', () => {
+    // A product page's network dropdown (or the modal's switch) records its
+    // target; that landing is the user's own change, so no toast — and the
+    // request is spent, so the next change is announced again.
+    const { result, rerender } = renderToastHook(Intent.SAVINGS_INTENT);
+    act(() => {
+      result.current.setPendingManualSwitchChainId(1);
+    });
+
+    h.chainId = 1;
+    rerender({ intent: Intent.SAVINGS_INTENT });
+
+    expect(h.showNetworkToast).not.toHaveBeenCalled();
+    expect(result.current.pendingManualSwitchChainId).toBeNull();
+
+    h.chainId = 8453;
+    rerender({ intent: Intent.SAVINGS_INTENT });
+    expect(h.showNetworkToast).toHaveBeenCalledTimes(1);
+    expect(h.showNetworkToast.mock.calls[0][0]).toMatchObject({ isAutoSwitch: false });
+  });
+
+  it('still announces a wallet-side change that lands elsewhere than the pending request', () => {
+    const { result, rerender } = renderToastHook(Intent.SAVINGS_INTENT);
+    act(() => {
+      result.current.setPendingManualSwitchChainId(10);
+    });
+
+    h.chainId = 1;
+    rerender({ intent: Intent.SAVINGS_INTENT });
+
+    expect(h.showNetworkToast).toHaveBeenCalledTimes(1);
+    expect(result.current.pendingManualSwitchChainId).toBeNull();
+  });
 });

@@ -30,15 +30,8 @@ export function requiresMainnet(intent: Intent): boolean {
   return WIDGET_NETWORK_REQUIREMENTS[intent] === 'mainnet';
 }
 
-/**
- * Check if an intent supports multiple chains
- */
-export function isMultichain(intent: Intent): boolean {
-  return WIDGET_NETWORK_REQUIREMENTS[intent] === 'multichain';
-}
-
 /** What landing on a module route should do given the chain the app points at. */
-export type RouteChainAction =
+type RouteChainAction =
   { kind: 'render' } | { kind: 'switch-network'; chainId: number } | { kind: 'redirect-home' };
 
 /**

@@ -15,6 +15,16 @@ interface NetworkSwitchContextValue {
    */
   autoSwitchIntent: Intent | null;
   setAutoSwitchIntent: (intent: Intent | null) => void;
+  /**
+   * The chain an in-app control (a product page's network dropdown, the
+   * transaction modal's switch) asked the wallet for. The shell's network toast
+   * stays quiet when the wallet lands there: the user made that change and
+   * needs no telling. It only speaks for a switch the app made on the user's
+   * behalf, or one made from inside the wallet (APP-547). Cleared by the toast
+   * hook on the next chain change, and by the switch's error path.
+   */
+  pendingManualSwitchChainId: number | null;
+  setPendingManualSwitchChainId: (chainId: number | null) => void;
 }
 
 const NetworkSwitchContext = createContext<NetworkSwitchContextValue | undefined>(undefined);
@@ -23,6 +33,7 @@ export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
   const [isSwitchingNetwork, setIsSwitchingNetwork] = useState(false);
   const [isAutoSwitching, setIsAutoSwitching] = useState(false);
   const [autoSwitchIntent, setAutoSwitchIntent] = useState<Intent | null>(null);
+  const [pendingManualSwitchChainId, setPendingManualSwitchChainId] = useState<number | null>(null);
 
   return (
     <NetworkSwitchContext.Provider
@@ -32,7 +43,9 @@ export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
         isAutoSwitching,
         setIsAutoSwitching,
         autoSwitchIntent,
-        setAutoSwitchIntent
+        setAutoSwitchIntent,
+        pendingManualSwitchChainId,
+        setPendingManualSwitchChainId
       }}
     >
       {children}

@@ -30,13 +30,11 @@ describe('buildIdleView', () => {
   });
 
   it('excludes zero/negative balances from tokens and the count', () => {
-    const view = buildIdleView(
-      [
-        { symbol: 'USDS', chainId: 1, amount: 100, amountUsd: 100 },
-        { symbol: 'USDC', chainId: 1, amount: 0, amountUsd: 0 },
-        { symbol: 'USDT', chainId: 1, amount: 0, amountUsd: 0 }
-      ]
-    );
+    const view = buildIdleView([
+      { symbol: 'USDS', chainId: 1, amount: 100, amountUsd: 100 },
+      { symbol: 'USDC', chainId: 1, amount: 0, amountUsd: 0 },
+      { symbol: 'USDT', chainId: 1, amount: 0, amountUsd: 0 }
+    ]);
     expect(view.tokens.map(t => t.symbol)).toEqual(['USDS']);
     expect(view.idleCount).toBe(1);
     expect(view.walletBalance).toBe(100);

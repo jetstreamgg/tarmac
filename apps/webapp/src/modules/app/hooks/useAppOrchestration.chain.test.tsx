@@ -27,7 +27,6 @@ const CHAINS = [
 let mockPathname = '/earn';
 let mockConfigChainId = TENDERLY;
 let mockWalletChainId: number | undefined = TENDERLY;
-let mockFilterChainId: number | null = null;
 let mockRewardContracts: { contractAddress: string }[] | undefined = [];
 let mockConnectionStatus = 'connected';
 
@@ -77,7 +76,6 @@ vi.mock('wagmi', () => ({
   }
 }));
 vi.mock('@/hooks', () => ({
-  useNetworkFilter: () => ({ chainId: mockFilterChainId }),
   useAvailableTokenRewardContracts: () => mockRewardContracts,
   // The real one reads the same two wagmi hooks mocked above; inlining its rule
   // here keeps the mock honest without pulling the whole barrel in.
@@ -138,7 +136,6 @@ beforeEach(() => {
   mockPathname = '/earn';
   mockConfigChainId = TENDERLY;
   mockWalletChainId = TENDERLY;
-  mockFilterChainId = null;
   mockRewardContracts = [];
   mockConnectionStatus = 'connected';
   search = new URLSearchParams();

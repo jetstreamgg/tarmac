@@ -109,12 +109,7 @@ describe('getRouteChainAction', () => {
   it('leaves the balances surfaces alone, whatever the chain', () => {
     const chains = [999999, base.id, mainnet.id, arbitrum.id];
     for (const current of chains) {
-      for (const opts of [
-        {},
-        { switchAttempted: true },
-        { chains: DEV_CHAINS },
-        { chains: PROD_CHAINS }
-      ]) {
+      for (const opts of [{}, { switchAttempted: true }, { chains: DEV_CHAINS }, { chains: PROD_CHAINS }]) {
         expect(getRouteChainAction(Intent.BALANCES_INTENT, current, opts)).toEqual({
           kind: 'render'
         });
@@ -136,4 +131,3 @@ describe('getRouteChainAction', () => {
     expect(getRouteChainAction(Intent.BALANCES_INTENT, 999999)).toEqual({ kind: 'render' });
   });
 });
-

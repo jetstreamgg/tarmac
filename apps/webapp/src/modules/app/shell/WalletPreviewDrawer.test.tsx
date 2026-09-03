@@ -98,10 +98,6 @@ vi.mock('@/modules/ui/context/ConnectModalContext', async importOriginal => {
   return { ...actual, useConnectModal: () => ({ openConnectModal: mocks.openConnectModal }) };
 });
 
-vi.mock('./NetworkSelector', () => ({
-  NetworkSelector: () => <div data-testid="wallet-drawer-network" />
-}));
-
 // The drawer's balance/rate wiring has its own coverage; the components under
 // test consume the aggregated shape.
 vi.mock('./useWalletDrawerAssets', () => ({
@@ -200,7 +196,6 @@ describe('WalletPreviewDrawer', () => {
     expect(drawer.textContent).toContain('bartoo.eth');
     expect(drawer.textContent).toContain('0x1234...5678');
     expect(drawer.querySelector('[data-testid="copy-to-clipboard"]')).toBeTruthy();
-    expect(drawer.querySelector('[data-testid="wallet-drawer-network"]')).toBeTruthy();
   });
 
   it('shows the wallet assets total USD value', async () => {
@@ -338,7 +333,6 @@ describe('WalletPreviewDrawer — mobile panel (M4.6)', () => {
     // Same content contract as the desktop drawer.
     expect(drawer.textContent).toContain('bartoo.eth');
     expect(drawer.querySelector('[data-testid="wallet-drawer-total"]')?.textContent).toContain('2,000');
-    expect(drawer.querySelector('[data-testid="wallet-drawer-network"]')).toBeTruthy();
     expect(drawer.querySelector('[data-testid="wallet-drawer-assets"]')).toBeTruthy();
   });
 

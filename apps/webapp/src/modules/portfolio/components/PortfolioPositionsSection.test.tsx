@@ -134,7 +134,7 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
   avgRate: 0,
   ratesLoading: false,
   activePositions: positions.length,
-  suppliedTokens: [],
+  suppliedTokens: []
 });
 
 // APP-450 earnings fixture: literal per-source figures, combined via the real

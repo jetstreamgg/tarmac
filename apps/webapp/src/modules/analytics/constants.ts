@@ -71,7 +71,6 @@ export type ConnectMethod = 'connect' | 'switch';
 export type GatedActionOutcome = 'completed' | 'abandoned';
 export type NetworkSwitchSource =
   | 'chain_modal'
-  | 'network_toast'
   | 'portfolio_supply'
   | 'pendle_claim'
   | 'transaction_modal'

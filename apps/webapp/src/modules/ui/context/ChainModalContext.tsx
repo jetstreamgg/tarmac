@@ -10,13 +10,15 @@ import { Trans } from '@lingui/react/macro';
 import { Failure } from '@/modules/icons';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { useNetworkSwitch } from './NetworkSwitchContext';
 
 /**
  * The one place a chain switch is requested: the wallet call plus its analytics
  * and its failure toasts (unsupported-chain vs generic). Every surface that can
  * switch goes through it — the product-page and transaction-modal
- * `NetworkSelect`s, the network toast's undo, and the transaction modal's chain
- * guard.
+ * `NetworkSelect`s and the transaction modal's chain guard. All of them are the
+ * user's own doing, so the switch is recorded as manual and the shell's network
+ * toast stays quiet when it lands (APP-547).
  *
  * Named for the ChainModal that used to be its only consumer; that dialog is
  * gone (switching is a dropdown now), but the name is left alone rather than
@@ -51,6 +53,7 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const chains = useChains();
   const currentChainId = useChainId();
   const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
+  const { setPendingManualSwitchChainId } = useNetworkSwitch();
   const duration = 10000;
 
   const handleSwitchChain = useCallback(
@@ -67,6 +70,7 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }) => {
       const fromChainId = currentChainId;
       trackNetworkSwitchRequested({ source, fromChainId, toChainId: chainId });
+      setPendingManualSwitchChainId(chainId);
       switchChain(
         { chainId },
         {
@@ -76,6 +80,7 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           },
           onSettled,
           onError: error => {
+            setPendingManualSwitchChainId(null);
             trackNetworkSwitchCompleted({
               source,
               fromChainId,
@@ -159,7 +164,15 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       );
     },
-    [switchChain, connector, chains, currentChainId, trackNetworkSwitchRequested, trackNetworkSwitchCompleted]
+    [
+      switchChain,
+      connector,
+      chains,
+      currentChainId,
+      trackNetworkSwitchRequested,
+      trackNetworkSwitchCompleted,
+      setPendingManualSwitchChainId
+    ]
   );
 
   return (

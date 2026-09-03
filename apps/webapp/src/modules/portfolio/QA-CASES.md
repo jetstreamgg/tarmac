@@ -61,11 +61,11 @@ page object `pages/PortfolioPage.ts`.
 
 ### Promotions
 
-| #   | Spec                                         | Contract                   | Covers (§2) | Why promoted                                             |
-| --- | -------------------------------------------- | -------------------------- | ----------- | -------------------------------------------------------- |
-| 1   | smoke: disconnected portfolio shell          | `portfolio-disconnected`   | A-1         | Public route; no wallet required                         |
-| 2   | smoke: connected portfolio shell             | `portfolio-connected`      | A-2, A-3    | Core destination mount + tab contract                    |
-| 4   | matured PT-sUSDS in Supplied carousel        | `portfolio-pendle-matured` | A-12        | UI clock + chain warp; PT via on-chain storage-slot mint |
+| #   | Spec                                  | Contract                   | Covers (§2) | Why promoted                                             |
+| --- | ------------------------------------- | -------------------------- | ----------- | -------------------------------------------------------- |
+| 1   | smoke: disconnected portfolio shell   | `portfolio-disconnected`   | A-1         | Public route; no wallet required                         |
+| 2   | smoke: connected portfolio shell      | `portfolio-connected`      | A-2, A-3    | Core destination mount + tab contract                    |
+| 4   | matured PT-sUSDS in Supplied carousel | `portfolio-pendle-matured` | A-12        | UI clock + chain warp; PT via on-chain storage-slot mint |
 
 ### Rejections
 

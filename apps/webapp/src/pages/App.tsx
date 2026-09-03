@@ -69,8 +69,11 @@ const AppContent = () => {
       <TermsModalProvider>
         <ConnectThenActProvider>
           <TooltipProvider delayDuration={300}>
-            <ChainModalProvider>
-              <NetworkSwitchProvider>
+            {/* NetworkSwitchProvider sits outside ChainModalProvider: the shared
+                switch function records the chain an in-app control asked for,
+                so the shell toast can tell a manual pick from an automatic one. */}
+            <NetworkSwitchProvider>
+              <ChainModalProvider>
                 <GatedTransactionProvider>
                   {/* Toast tier above the dialog tier (z-50): network/tx
                         toasts must stay readable over a modal's blurred
@@ -92,8 +95,8 @@ const AppContent = () => {
                   </DismissableLayerBranch>
                   <RouterProvider router={router} />
                 </GatedTransactionProvider>
-              </NetworkSwitchProvider>
-            </ChainModalProvider>
+              </ChainModalProvider>
+            </NetworkSwitchProvider>
           </TooltipProvider>
         </ConnectThenActProvider>
       </TermsModalProvider>
