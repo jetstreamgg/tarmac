@@ -348,14 +348,17 @@ function FeaturedCard({
           card narrows the group first gives up slack (the maturity date drops
           to two lines) and only once even that can't sit beside the CTA does
           the CTA wrap onto its own line, right-aligned. Stats align at the top
-          so their labels stay on one line while a two-line value hangs below;
-          the row aligns at the bottom so the CTA sits on the stats' baseline. */}
+          so their labels stay on one line while a two-line value hangs below.
+          The row aligns at the bottom so the stats sit on the CTA's baseline
+          when the CTA is the taller item (the one-line case); the CTA centres
+          itself so that when a two-line value makes the stats taller, it sits
+          mid-row instead of hanging off the last line. */}
       <div className="mt-8 flex flex-1 flex-wrap items-end gap-6 md:mt-10">
         <div className="flex flex-1 items-start gap-6">{product.stats(row)}</div>
         <Button
           variant="primary"
           size="l"
-          className="ml-auto hidden w-28 shrink-0 md:inline-flex"
+          className="ml-auto hidden w-28 shrink-0 self-center md:inline-flex"
           onClick={onSupply}
         >
           <Trans>Earn</Trans>
