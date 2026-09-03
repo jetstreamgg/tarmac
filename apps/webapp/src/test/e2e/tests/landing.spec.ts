@@ -22,16 +22,10 @@ test.describe('accept terms', () => {
   });
 });
 
-// The wallet drawer's network control used to be the app's one global chain
-// *switcher*. It is the app-wide network *filter* now, and switching moved to
-// where a chain actually decides something — a product page or a transaction
-// modal, both pinned in network-switching.spec.ts.
-//
-// The filter itself is not reachable from here: it offers the connected chain
-// FAMILY (getSupportedChainIds), which on a fork session collapses to the fork
-// alone — deliberately, since fork data is all there is to read. So on this
-// build it is a one-option control with nothing to pick. Its behaviour is
-// covered by lib/networkFilter.test.ts and the component tests instead.
+// The wallet drawer used to carry the app's one global chain switcher. There is
+// no global switcher any more: switching moved to where a chain actually decides
+// something — a product page or a transaction modal, both pinned in
+// network-switching.spec.ts.
 test.describe('Deep links', () => {
   test('a connected deep link still puts the wallet on the named chain', async ({ isolatedPage }) => {
     await isolatedPage.goto('/earn/savings?network=tenderlybase');

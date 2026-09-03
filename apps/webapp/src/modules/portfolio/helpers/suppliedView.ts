@@ -3,9 +3,17 @@ import type { Intent } from '@/lib/enums';
 import { projectAnnualEarnings } from '@/utils';
 import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/widgets/shared/constants';
 
-/** One supplied position, decorated for the Portfolio "Supplied" tab. */
+/**
+ * One supplied position, decorated for the Portfolio "Supplied" tab. A product
+ * held on several chains (sUSDS on Ethereum and Base, say) is several positions
+ * — one per chain, each wearing its own network mark (APP-547) — so `id` is
+ * unique per position while `rowId` names the product they share.
+ */
 export type SuppliedPosition = {
+  /** `${rowId}:${chainId}` — unique per card, legend row and donut segment. */
   id: string;
+  /** The marketplace row (registry product) — earnings and glyph lookups key on it. */
+  rowId: string;
   /** Registry display name, e.g. 'Sky Savings Rate'. */
   name: string;
   tokenSymbol: string;
@@ -27,13 +35,8 @@ export type SuppliedPosition = {
   share: number;
   /** In-app product page (registry route contract) — Supply/Manage destination. */
   detailPath: string;
-  /**
-   * Chains where this position holds a balance, scoped to the active filter:
-   * `'all'` → every `byChain` key with a positive amount; a specific chain →
-   * just that chain (the position only made the cut because it has a balance
-   * there). Drives the stacked network badge. Sorted ascending.
-   */
-  chainIds: number[];
+  /** The chain this position lives on. Drives the network badge and the Supply target. */
+  chainId: number;
 };
 
 export type SuppliedView = {
@@ -49,8 +52,6 @@ export type SuppliedView = {
   activePositions: number;
   /** Deduped display-token symbols across positions, in position order. */
   suppliedTokens: string[];
-  /** Chain ids where the user holds any supplied position (filter options). */
-  networksWithPositions: number[];
 };
 
 const EMPTY_VIEW: SuppliedView = {
@@ -60,55 +61,40 @@ const EMPTY_VIEW: SuppliedView = {
   avgRate: 0,
   ratesLoading: false,
   activePositions: 0,
-  suppliedTokens: [],
-  networksWithPositions: []
+  suppliedTokens: []
 };
 
 /**
- * Aggregates marketplace rows into the Portfolio "Supplied" overview, scoped to
- * a single chain or the whole family. Pure — no hooks, no fetching; consumes
- * the same `useEarnMarketplace` rows the Earn table renders, so the two agree.
- *
- * @param network a chain id to scope to (uses `position.byChain`), or `'all'`
- *   for the family total (`position.totalUsd`).
+ * Breaks marketplace rows down into the Portfolio "Supplied" overview: one
+ * position per chain a product holds a balance on, across the whole chain
+ * family. Pure — no hooks, no fetching; consumes the same `useEarnMarketplace`
+ * rows the Earn table renders, so the two agree.
  */
-export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all'): SuppliedView {
+export function buildSuppliedView(rows: EarnProductRow[]): SuppliedView {
   if (rows.length === 0) return EMPTY_VIEW;
 
-  const amountFor = (row: EarnProductRow): number => {
-    if (!row.position) return 0;
-    return network === 'all' ? row.position.totalUsd : (row.position.byChain?.[network] ?? 0);
+  // A product's per-chain legs, each a position of its own. Every producer
+  // fills `byChain`; a row carrying only a total (test fixtures, a future
+  // single-figure source) falls back to the product's first network so the
+  // balance is never dropped.
+  const legsFor = (row: EarnProductRow): { chainId: number; amountUsd: number }[] => {
+    if (!row.position) return [];
+    const legs = Object.entries(row.position.byChain ?? {})
+      .map(([id, amountUsd]) => ({ chainId: Number(id), amountUsd }))
+      .filter(({ amountUsd }) => amountUsd > 0);
+    if (legs.length > 0) return legs;
+    return row.position.totalUsd > 0 ? [{ chainId: row.networks[0], amountUsd: row.position.totalUsd }] : [];
   };
-
-  // 'all' → the chains this position actually holds a balance on; a specific
-  // chain → just that chain (the row only survives the filter with a balance
-  // there). Always sorted, for a stable badge order.
-  const chainsFor = (row: EarnProductRow): number[] => {
-    if (network !== 'all') return [network];
-    return Object.entries(row.position?.byChain ?? {})
-      .filter(([, usd]) => usd > 0)
-      .map(([id]) => Number(id))
-      .sort((a, b) => a - b);
-  };
-
-  // Network options come from the full (unfiltered) byChain map so selecting a
-  // network never removes the option you'd need to switch back from.
-  const networkSet = new Set<number>();
-  for (const row of rows) {
-    for (const [id, usd] of Object.entries(row.position?.byChain ?? {})) {
-      if (usd > 0) networkSet.add(Number(id));
-    }
-  }
 
   const withAmount = rows
-    .map(row => ({ row, amountUsd: amountFor(row) }))
-    .filter(({ amountUsd }) => amountUsd > 0)
+    .flatMap(row => legsFor(row).map(leg => ({ row, ...leg })))
     .sort((a, b) => b.amountUsd - a.amountUsd);
 
   const totalSupplied = withAmount.reduce((acc, { amountUsd }) => acc + amountUsd, 0);
 
-  const positions: SuppliedPosition[] = withAmount.map(({ row, amountUsd }) => ({
-    id: row.id,
+  const positions: SuppliedPosition[] = withAmount.map(({ row, chainId, amountUsd }) => ({
+    id: `${row.id}:${chainId}`,
+    rowId: row.id,
     name: row.name,
     tokenSymbol: row.tokenSymbol,
     kind: row.kind,
@@ -123,7 +109,7 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     }),
     share: totalSupplied > 0 ? amountUsd / totalSupplied : 0,
     detailPath: row.detailPath,
-    chainIds: chainsFor(row)
+    chainId
   }));
 
   const projected1Y = positions.reduce((acc, p) => acc + projectAnnualEarnings(p.amountUsd, p.rate), 0);
@@ -135,7 +121,6 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     avgRate: totalSupplied > 0 ? projected1Y / totalSupplied : 0,
     ratesLoading: positions.some(p => p.rateLoading),
     activePositions: positions.length,
-    suppliedTokens: [...new Set(positions.map(p => p.tokenSymbol))],
-    networksWithPositions: [...networkSet].sort((a, b) => a - b)
+    suppliedTokens: [...new Set(positions.map(p => p.tokenSymbol))]
   };
 }

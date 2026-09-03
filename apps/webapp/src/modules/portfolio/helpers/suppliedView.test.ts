@@ -57,19 +57,27 @@ describe('buildSuppliedView', () => {
     })
   ];
 
-  it('totals and sorts positions by amount descending for "all" networks', () => {
-    const view = buildSuppliedView(rows, 'all');
+  it('breaks a product down into one position per chain, sorted by amount descending', () => {
+    const view = buildSuppliedView(rows);
     expect(view.totalSupplied).toBe(1000);
-    expect(view.activePositions).toBe(3);
-    expect(view.positions.map(p => p.id)).toEqual(['savings', 'vault-usds', 'stusds']);
-    expect(view.positions.map(p => p.amountUsd)).toEqual([900, 80, 20]);
-    expect(view.positions.map(p => p.share)).toEqual([0.9, 0.08, 0.02]);
+    expect(view.activePositions).toBe(4);
+    expect(view.positions.map(p => p.id)).toEqual(['savings:1', 'savings:8453', 'vault-usds:1', 'stusds:1']);
+    expect(view.positions.map(p => p.rowId)).toEqual(['savings', 'savings', 'vault-usds', 'stusds']);
+    expect(view.positions.map(p => p.chainId)).toEqual([1, 8453, 1, 1]);
+    expect(view.positions.map(p => p.amountUsd)).toEqual([600, 300, 80, 20]);
+    expect(view.positions.map(p => p.share)).toEqual([0.6, 0.3, 0.08, 0.02]);
+  });
+
+  it('falls back to the product’s first network for a row carrying only a total', () => {
+    const view = buildSuppliedView([makeRow({ id: 'savings', networks: [8453, 1], position: amount(100) })]);
+    expect(view.positions).toHaveLength(1);
+    expect(view.positions[0]).toMatchObject({ id: 'savings:8453', rowId: 'savings', chainId: 8453, amountUsd: 100 });
   });
 
   it('derives each segment color from its display token', () => {
-    const view = buildSuppliedView(rows, 'all');
+    const view = buildSuppliedView(rows);
     expect(view.positions[0].color).toBe(resolveTokenColor('sUSDS'));
-    expect(view.positions[2].color).toBe('#deb3b5'); // DS Components/Charts/bg-stUSDS (APP-416)
+    expect(view.positions[3].color).toBe('#deb3b5'); // DS Components/Charts/bg-stUSDS (APP-416)
   });
 
   it('carries the owning module intent onto each position', () => {
@@ -77,38 +85,29 @@ describe('buildSuppliedView', () => {
       [
         makeRow({ id: 'savings', position: amount(100) }),
         makeRow({ id: 'vault-usds', kind: 'vault', intent: Intent.VAULTS_INTENT, position: amount(50) })
-      ],
-      'all'
+      ]
     );
-    expect(view.positions.find(p => p.id === 'savings')?.intent).toBe(Intent.SAVINGS_INTENT);
-    expect(view.positions.find(p => p.id === 'vault-usds')?.intent).toBe(Intent.VAULTS_INTENT);
+    expect(view.positions.find(p => p.rowId === 'savings')?.intent).toBe(Intent.SAVINGS_INTENT);
+    expect(view.positions.find(p => p.rowId === 'vault-usds')?.intent).toBe(Intent.VAULTS_INTENT);
   });
 
   it('carries the registry detailPath onto each position', () => {
-    const view = buildSuppliedView(rows, 'all');
+    const view = buildSuppliedView(rows);
     expect(view.positions.map(p => p.detailPath)).toEqual([
+      '/earn/savings',
       '/earn/savings',
       '/earn/vaults/morpho/0xabc',
       '/earn/expert/stusds'
     ]);
   });
 
-  it('lists a position’s balance-bearing chains for the "all" scope', () => {
-    const view = buildSuppliedView(rows, 'all');
-    expect(view.positions.find(p => p.id === 'savings')?.chainIds).toEqual([1, 8453]);
-    expect(view.positions.find(p => p.id === 'vault-usds')?.chainIds).toEqual([1]);
-  });
-
-  it('scopes chainIds to the selected chain', () => {
-    const base = buildSuppliedView(rows, 8453);
-    expect(base.positions.map(p => p.chainIds)).toEqual([[8453]]);
-
-    const ethereum = buildSuppliedView(rows, 1);
-    expect(ethereum.positions.map(p => p.chainIds)).toEqual([[1], [1], [1]]);
+  it('skips a chain the product holds nothing on', () => {
+    const view = buildSuppliedView([makeRow({ id: 'savings', position: amount(50, { 1: 50, 8453: 0 }) })]);
+    expect(view.positions.map(p => p.chainId)).toEqual([1]);
   });
 
   it('computes projected earnings and supplied-weighted average rate', () => {
-    const view = buildSuppliedView(rows, 'all');
+    const view = buildSuppliedView(rows);
     // 900*0.05 + 80*0.10 + 20*0.20 = 45 + 8 + 4 = 57
     expect(view.projected1Y).toBeCloseTo(57);
     expect(view.avgRate).toBeCloseTo(0.057);
@@ -119,26 +118,10 @@ describe('buildSuppliedView', () => {
       [
         makeRow({ id: 'a', rate: { value: 0.1, formatted: '10%' }, position: amount(100) }),
         makeRow({ id: 'b', rate: { formatted: '—' }, position: amount(100) })
-      ],
-      'all'
+      ]
     );
     expect(view.projected1Y).toBeCloseTo(10);
     expect(view.avgRate).toBeCloseTo(0.05);
-  });
-
-  it('narrows amounts to the selected chain via byChain', () => {
-    const ethereum = buildSuppliedView(rows, 1);
-    expect(ethereum.totalSupplied).toBe(700); // 600 + 80 + 20
-    expect(ethereum.activePositions).toBe(3);
-
-    const base = buildSuppliedView(rows, 8453);
-    expect(base.totalSupplied).toBe(300); // savings only
-    expect(base.activePositions).toBe(1);
-    expect(base.positions[0].id).toBe('savings');
-  });
-
-  it('lists every chain with a positive position, regardless of the selected scope', () => {
-    expect(buildSuppliedView(rows, 8453).networksWithPositions).toEqual([1, 8453]);
   });
 
   it('dedupes the supplied-token cluster by symbol', () => {
@@ -147,8 +130,7 @@ describe('buildSuppliedView', () => {
         makeRow({ id: 'v1', tokenSymbol: 'USDS', position: amount(100) }),
         makeRow({ id: 'v2', tokenSymbol: 'USDS', position: amount(50) }),
         makeRow({ id: 'savings', tokenSymbol: 'sUSDS', position: amount(25) })
-      ],
-      'all'
+      ]
     );
     expect(view.suppliedTokens).toEqual(['USDS', 'sUSDS']);
   });
@@ -159,15 +141,14 @@ describe('buildSuppliedView', () => {
         makeRow({ id: 'connected', position: amount(100) }),
         makeRow({ id: 'zero', position: amount(0) }),
         makeRow({ id: 'disconnected', position: undefined })
-      ],
-      'all'
+      ]
     );
-    expect(view.positions.map(p => p.id)).toEqual(['connected']);
+    expect(view.positions.map(p => p.id)).toEqual(['connected:1']);
     expect(view.totalSupplied).toBe(100);
   });
 
   it('returns an empty view for no rows', () => {
-    const view = buildSuppliedView([], 'all');
+    const view = buildSuppliedView([]);
     expect(view).toEqual({
       positions: [],
       totalSupplied: 0,
@@ -175,8 +156,7 @@ describe('buildSuppliedView', () => {
       avgRate: 0,
       ratesLoading: false,
       activePositions: 0,
-      suppliedTokens: [],
-      networksWithPositions: []
+      suppliedTokens: []
     });
   });
 
@@ -191,18 +171,16 @@ describe('buildSuppliedView', () => {
           isLoading: true,
           position: amount(80, { 1: 80 })
         })
-      ],
-      'all'
+      ]
     );
 
     expect(view.ratesLoading).toBe(true);
-    expect(view.positions.find(p => p.id === 'vault-usds')?.rateLoading).toBe(true);
-    expect(view.positions.find(p => p.id === 'savings')?.rateLoading).toBe(false);
+    expect(view.positions.find(p => p.rowId === 'vault-usds')?.rateLoading).toBe(true);
+    expect(view.positions.find(p => p.rowId === 'savings')?.rateLoading).toBe(false);
 
     // A rate-less product that has finished loading is absence, not loading.
     const settled = buildSuppliedView(
-      [makeRow({ id: 'points', rate: { formatted: '—' }, position: amount(10, { 1: 10 }) })],
-      'all'
+      [makeRow({ id: 'points', rate: { formatted: '—' }, position: amount(10, { 1: 10 }) })]
     );
     expect(settled.ratesLoading).toBe(false);
   });

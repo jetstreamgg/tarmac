@@ -1,5 +1,4 @@
 import type { EarnProductRow, EarnRiskTier } from '@/hooks';
-import type { NetworkFilter } from '@/lib/networkFilter';
 import type { EarnTableColumn, EarnTableSort } from '@/components/product/EarnTable';
 
 export const RISK_ORDER: Record<EarnRiskTier, number> = { low: 0, moderate: 1, advanced: 2 };
@@ -9,13 +8,8 @@ const RISK_TIERS = Object.keys(RISK_ORDER) as EarnRiskTier[];
 export type EarnTableFiltersState = {
   /** Selected tiers; empty = no risk filtering. */
   risk: EarnRiskTier[];
-  /**
-   * The app-wide network filter (lib/networkFilter): a chain id, or `null` for
-   * "All networks". Unlike the two below it is not local to this table — it is
-   * the same value the Portfolio header, the transactions toolbar and the
-   * wallet drawer read.
-   */
-  network: NetworkFilter;
+  /** 'all' or a chain slug (normalized chain name). */
+  network: string;
   /** 'all' or a lowercase supply-token symbol. */
   stablecoin: string;
   /** 'all' or an EarnProductKind. */
@@ -23,13 +17,14 @@ export type EarnTableFiltersState = {
 };
 
 export type EarnFilterOptionValues = {
+  networks: string[];
   stablecoins: string[];
   products: string[];
 };
 
 export const DEFAULT_FILTERS: EarnTableFiltersState = {
   risk: [],
-  network: null,
+  network: 'all',
   stablecoin: 'all',
   product: 'all'
 };
@@ -48,9 +43,8 @@ export function defaultDirectionFor(column: EarnTableColumn): 'asc' | 'desc' {
 
 /**
  * Validates persisted filter state against the option sets the table actually
- * offers, so stale localStorage (renamed product kinds…) can never produce an
- * inexplicably empty table. Network is exempt: it comes from the shared store,
- * which clamps against the connected chain family itself.
+ * offers, so stale localStorage (renamed product kinds, retired chains…) can
+ * never produce an inexplicably empty table.
  */
 export function sanitizeFilters(raw: unknown, valid: EarnFilterOptionValues): EarnTableFiltersState {
   if (typeof raw !== 'object' || raw === null) return DEFAULT_FILTERS;
@@ -62,7 +56,7 @@ export function sanitizeFilters(raw: unknown, valid: EarnFilterOptionValues): Ea
     typeof value === 'string' && options.includes(value) ? value : 'all';
   return {
     risk,
-    network: typeof candidate.network === 'number' ? candidate.network : null,
+    network: pick(candidate.network, valid.networks),
     stablecoin: pick(candidate.stablecoin, valid.stablecoins),
     product: pick(candidate.product, valid.products)
   };
@@ -75,10 +69,16 @@ export function sanitizeFilters(raw: unknown, valid: EarnFilterOptionValues): Ea
  */
 type EarnFilterableRow = Pick<EarnProductRow, 'risk' | 'networks' | 'supplyTokens' | 'kind'>;
 
-export function filterEarnRows<T extends EarnFilterableRow>(rows: T[], filters: EarnTableFiltersState): T[] {
+export function filterEarnRows<T extends EarnFilterableRow>(
+  rows: T[],
+  filters: EarnTableFiltersState,
+  chainSlugById: Record<number, string>
+): T[] {
   return rows.filter(row => {
     if (filters.risk.length > 0 && !filters.risk.includes(row.risk)) return false;
-    if (filters.network !== null && !row.networks.includes(filters.network)) return false;
+    if (filters.network !== 'all' && !row.networks.some(id => chainSlugById[id] === filters.network)) {
+      return false;
+    }
     if (
       filters.stablecoin !== 'all' &&
       !row.supplyTokens.some(symbol => symbol.toLowerCase() === filters.stablecoin)

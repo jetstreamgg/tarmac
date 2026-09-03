@@ -8,8 +8,7 @@ import { stageMaturedPtSusdsPosition } from '../utils/pendleOnChain';
 
 /**
  * Portfolio destination smoke suite (V2).
- * Contracts: portfolio-disconnected, portfolio-connected, portfolio-network-filter,
- * portfolio-pendle-matured
+ * Contracts: portfolio-disconnected, portfolio-connected, portfolio-pendle-matured
  */
 test.describe('Portfolio — disconnected', () => {
   test('smoke: shell renders connect prompt and statistics', async ({ isolatedPage }) => {
@@ -26,7 +25,7 @@ test.describe('Portfolio — connected', () => {
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   });
 
-  test('smoke: shell renders earnings card and network filter', async ({ isolatedPage }) => {
+  test('smoke: shell renders earnings card', async ({ isolatedPage }) => {
     const portfolio = new PortfolioPage(isolatedPage);
     await portfolio.expectConnectedShell();
     expect(portfolioConnectedContract.id).toBe('portfolio-connected');

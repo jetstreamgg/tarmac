@@ -14,7 +14,6 @@ import { Card } from '@/components/ui/card';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { productStatusType } from '@/components/product/productVisuals';
 import { rateInfoFor, RateInfo } from '@/components/product/RateInfo';
 import type { SuppliedPosition } from '../helpers/suppliedView';
@@ -41,7 +40,8 @@ const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-[20px] py-1 pr-
 
 /**
  * One supplied position in the Portfolio carousel: a 64px ringed status iconbox,
- * the network badge, a 2×2 stats block split by per-row dividers, and
+ * the network badge (one chain — a product held on several chains is several
+ * cards, APP-547), a 2×2 stats block split by per-row dividers, and
  * Supply/Manage actions. Presentational — the caller owns each action
  * (`onSupply` opens the product's supply modal in place, switching networks
  * first when needed; products without a modal route to the product page).
@@ -70,7 +70,7 @@ export function PositionCard({
         <IconboxStatus size="l" type={productStatusType(position)}>
           <TokenIcon token={{ symbol: position.tokenSymbol }} width={52} showChainIcon={false} />
         </IconboxStatus>
-        <NetworkBadge chainIds={position.chainIds} />
+        <NetworkBadge chainId={position.chainId} />
       </div>
 
       <div className="flex items-center gap-1.5">
@@ -78,7 +78,7 @@ export function PositionCard({
         <span className="text-fgPrimary font-circle text-xl leading-[22px] font-medium tracking-[-0.4px] md:text-2xl md:leading-[26px] md:tracking-[-0.48px]">
           {position.name}
         </span>
-        <ProductGlyph id={position.id} kind={position.kind} />
+        <ProductGlyph id={position.rowId} kind={position.kind} />
       </div>
 
       {/* Two stat rows, each pair split by its own short vertical divider; the
@@ -172,28 +172,12 @@ export function PositionCard({
   );
 }
 
-/**
- * DS Badges/Illustration: a 16px chain icon + chain name for a single-chain
- * position. Positions holding balances on several chains keep the stacked icons
- * with an "N networks" label (the comp only specifies the single-chain case).
- */
-function NetworkBadge({ chainIds }: { chainIds: number[] }) {
-  if (chainIds.length === 1) {
-    return (
-      <span className={badgePill} data-testid="position-card-networks">
-        <span className="flex h-4 w-4 shrink-0">{getChainIcon(chainIds[0], 'h-full w-full')}</span>
-        <span className={networkName}>{getChainName(chainIds[0])}</span>
-      </span>
-    );
-  }
+/** DS Badges/Illustration: a 16px chain icon + chain name. */
+function NetworkBadge({ chainId }: { chainId: number }) {
   return (
-    <span className={cn(badgePill, 'gap-1.5')} data-testid="position-card-networks">
-      <IconStack size={16}>{chainIds.map(id => getChainIcon(id, 'h-full w-full'))}</IconStack>
-      {/* Always ≥2 chains here (the single-chain case returns above), so the
-          label is always plural — no ICU pluralization needed. */}
-      <span className={networkName}>
-        <Trans>{chainIds.length} networks</Trans>
-      </span>
+    <span className={badgePill} data-testid="position-card-networks">
+      <span className="flex h-4 w-4 shrink-0">{getChainIcon(chainId, 'h-full w-full')}</span>
+      <span className={networkName}>{getChainName(chainId)}</span>
     </span>
   );
 }

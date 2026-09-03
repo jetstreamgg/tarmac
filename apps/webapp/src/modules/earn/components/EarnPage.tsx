@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useChainId } from 'wagmi';
+import { useChainId, useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho, Pendle } from '@/widgets';
@@ -19,6 +19,7 @@ import { getChainIcon } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { retainOnNavigate } from '@/lib/navigation';
 import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { cn } from '@/lib/cn';
@@ -121,6 +122,7 @@ function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem 
 export function EarnPage() {
   const { rows } = useEarnMarketplace();
   const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
+  const chains = useChains();
   const connectedChainId = useChainId();
   const navigate = useNavigate();
   const hash = useRouterState({ select: state => state.location.hash });
@@ -165,6 +167,31 @@ export function EarnPage() {
   const amount = circulation !== undefined ? formatCirculation(circulation) : undefined;
   const coarseAmount = circulation !== undefined ? formatCirculationCoarse(circulation) : undefined;
 
+  // Slug ↔ chain mapping for the network filter (same normalized names the
+  // `network` query param uses).
+  const chainSlugById = useMemo(
+    () => Object.fromEntries(chains.map(chain => [chain.id, normalizeUrlParam(chain.name)])),
+    [chains]
+  );
+
+  // Rows carry their chain icon (Figma 1036:201601, APP-432 item 7) at the
+  // dropdown's 16px icon size — the same shape the portfolio filter uses.
+  const networkOptions = useMemo<EarnFilterOption[]>(() => {
+    const ids = [...new Set(rows.flatMap(row => row.networks))];
+    return ids
+      .map(id => ({ id, chain: chains.find(chain => chain.id === id) }))
+      .filter(({ chain }) => chain !== undefined)
+      .map(({ id, chain }) => ({
+        value: chainSlugById[id],
+        label: (
+          <span className="flex items-center gap-2">
+            {getChainIcon(id, 'h-4 w-4 shrink-0')}
+            {chain!.name}
+          </span>
+        )
+      }));
+  }, [rows, chains, chainSlugById]);
+
   const stablecoinOptions = useMemo<EarnFilterOption[]>(
     () =>
       [...new Set(rows.flatMap(row => row.supplyTokens))].map(symbol => ({
@@ -194,10 +221,11 @@ export function EarnPage() {
   // rebuilt on every render.
   const filterOptionValues = useMemo(
     () => ({
+      networks: networkOptions.map(option => option.value),
       stablecoins: stablecoinOptions.map(option => option.value),
       products: productOptions.map(option => option.value)
     }),
-    [stablecoinOptions, productOptions]
+    [networkOptions, stablecoinOptions, productOptions]
   );
 
   const { filters, updateFilters, toggleRiskTier, clearFilters, hasActiveFilters, sort, toggleSort } =
@@ -206,13 +234,13 @@ export function EarnPage() {
   // Both tables run through the same filters and share one sort, so the two
   // sections always read as one list split in two.
   const visibleRows = useMemo(
-    () => sortEarnRows(filterEarnRows(availableRows, filters), sort),
-    [availableRows, filters, sort]
+    () => sortEarnRows(filterEarnRows(availableRows, filters, chainSlugById), sort),
+    [availableRows, filters, chainSlugById, sort]
   );
 
   const visibleUnavailableRows = useMemo(
-    () => sortEarnRows(filterEarnRows(unavailableRows, filters), sort),
-    [unavailableRows, filters, sort]
+    () => sortEarnRows(filterEarnRows(unavailableRows, filters, chainSlugById), sort),
+    [unavailableRows, filters, chainSlugById, sort]
   );
 
   // What the filters are holding back from the main table — the figure the
@@ -279,9 +307,10 @@ export function EarnPage() {
           supplyTokens: ['USDS', 'USDC', position.market.underlyingSymbol],
           kind: 'fixed' as const
         })),
-        filters
+        filters,
+        chainSlugById
       ),
-    [maturedPositions, filters, connectedChainId]
+    [maturedPositions, filters, chainSlugById, connectedChainId]
   );
   const requiresActionItems = useMemo<EarnTableRowItem[]>(
     () =>
@@ -408,6 +437,9 @@ export function EarnPage() {
       <EarnTableFilters
         selectedRiskTiers={filters.risk}
         onRiskTierToggle={toggleRiskTier}
+        networks={networkOptions}
+        selectedNetwork={filters.network}
+        onNetworkChange={network => updateFilters({ network })}
         stablecoins={stablecoinOptions}
         selectedStablecoin={filters.stablecoin}
         onStablecoinChange={stablecoin => updateFilters({ stablecoin })}

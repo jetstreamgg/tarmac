@@ -4,12 +4,12 @@ import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex, type EarnRiskTier } from '@/hooks';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
 import {
+  ALL_NETWORKS_LABEL,
   ALL_PRODUCTS_LABEL,
   ALL_STABLECOINS_LABEL,
   FilterSelect,
   type FilterOption
 } from '@/components/product/FilterSelect';
-import { NetworkFilterSelect } from '@/components/product/NetworkFilterSelect';
 
 export type EarnFilterOption = FilterOption;
 
@@ -27,6 +27,9 @@ export type EarnTableFiltersProps = {
   /** Selected risk tiers; empty = no risk filtering (all tiers shown). */
   selectedRiskTiers: EarnRiskTier[];
   onRiskTierToggle: (tier: EarnRiskTier) => void;
+  networks: EarnFilterOption[];
+  selectedNetwork: string;
+  onNetworkChange: (value: string) => void;
   stablecoins: EarnFilterOption[];
   selectedStablecoin: string;
   onStablecoinChange: (value: string) => void;
@@ -43,13 +46,14 @@ export type EarnTableFiltersProps = {
  * row; from md the single-row toolbar stays as C2 shipped it.
  *
  * The glyph labels live in FilterSelect — the Portfolio transactions toolbar
- * carries the same three. The network one is NetworkFilterSelect: that filter
- * is app-wide, so this toolbar shares both its value and its control with the
- * Portfolio surfaces and the wallet drawer.
+ * carries the same three.
  */
 export function EarnTableFilters({
   selectedRiskTiers,
   onRiskTierToggle,
+  networks,
+  selectedNetwork,
+  onNetworkChange,
   stablecoins,
   selectedStablecoin,
   onStablecoinChange,
@@ -96,7 +100,14 @@ export function EarnTableFilters({
         })}
       </div>
       <div className="flex flex-col gap-1.5 md:flex-row md:flex-wrap md:items-center md:gap-2">
-        <NetworkFilterSelect testId="earn-filter-network" triggerClassName={triggerClassName} />
+        <FilterSelect
+          options={networks}
+          selected={selectedNetwork}
+          onChange={onNetworkChange}
+          allLabel={ALL_NETWORKS_LABEL}
+          testId="earn-filter-network"
+          triggerClassName={triggerClassName}
+        />
         <FilterSelect
           options={stablecoins}
           selected={selectedStablecoin}

@@ -1,22 +1,26 @@
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useCallback, useMemo, useState } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useChains } from 'wagmi';
 import {
   BP,
   ModuleEnum,
   useAllNetworksCombinedHistory,
   useAvailableTokenRewardContractsForChains,
   useBreakpointIndex,
-  useFilteredPortfolioHistory,
-  useNetworkFilter
+  useFilteredPortfolioHistory
 } from '@/hooks';
 import { formatAddress, getChainIcon } from '@/utils';
 import { cn } from '@/lib/cn';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TransactionActionIcon } from '@/components/product/TransactionActionIcon';
-import { ALL_PRODUCTS_LABEL, ALL_STABLECOINS_LABEL, FilterSelect } from '@/components/product/FilterSelect';
-import { NetworkFilterSelect } from '@/components/product/NetworkFilterSelect';
+import {
+  ALL_NETWORKS_LABEL,
+  ALL_PRODUCTS_LABEL,
+  ALL_STABLECOINS_LABEL,
+  FilterSelect
+} from '@/components/product/FilterSelect';
 import {
   ProductTransactionsTable,
   ProductTransactionColumn
@@ -134,7 +138,7 @@ export interface PortfolioTransactionsViewProps {
   isLoading?: boolean;
   error?: Error | null;
   /** Notifies the data container so it can swap in a filter-scoped query. */
-  onFiltersChange?: (filters: { stablecoin: string; product: string }) => void;
+  onFiltersChange?: (filters: { network: string; stablecoin: string; product: string }) => void;
   /** Whether older history can be fetched from the server. */
   hasNextPage?: boolean;
   /** Fetches the next keyset page; called when the user lands on the last loaded page. */
@@ -158,14 +162,16 @@ export function PortfolioTransactionsView({
 }: PortfolioTransactionsViewProps) {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
-  // Network is the app-wide filter (lib/networkFilter); only stablecoin and
-  // product are local to this toolbar.
-  const { chainId: networkFilter } = useNetworkFilter();
+  const chains = useChains();
+  const chainName = useCallback((id: number) => chains.find(c => c.id === id)?.name ?? '', [chains]);
+
+  const [network, setNetwork] = useState(ALL);
   const [stablecoin, setStablecoin] = useState(ALL);
   const [product, setProduct] = useState(ALL);
 
-  const changeFilters = (next: { stablecoin?: string; product?: string }) => {
-    const merged = { stablecoin, product, ...next };
+  const changeFilters = (next: { network?: string; stablecoin?: string; product?: string }) => {
+    const merged = { network, stablecoin, product, ...next };
+    setNetwork(merged.network);
     setStablecoin(merged.stablecoin);
     setProduct(merged.product);
     onFiltersChange?.(merged);
@@ -175,10 +181,18 @@ export function PortfolioTransactionsView({
   // empty filter. Stablecoins are limited to rows that carry a USD value.
   // Products are grouped, so two modules that share a name (Morpho / sUSDT →
   // "Vault") offer one row that selects both.
-  const { stablecoins, products } = useMemo(() => {
+  const { networks, stablecoins, products } = useMemo(() => {
+    const net = new Map<string, ReactNode>();
     const stable = new Map<string, ReactNode>();
     const groupIds = new Set<string>();
     for (const row of optionRows ?? rows) {
+      net.set(
+        String(row.chainId),
+        <span className="flex items-center gap-1.5">
+          <span className="flex h-4 w-4 shrink-0">{getChainIcon(row.chainId, 'h-full w-full')}</span>
+          {chainName(row.chainId)}
+        </span>
+      );
       if (row.usd) {
         stable.set(
           row.symbol,
@@ -192,26 +206,27 @@ export function PortfolioTransactionsView({
       if (group) groupIds.add(group.id);
     }
     return {
+      networks: [...net].map(([value, label]) => ({ value, label })),
       stablecoins: [...stable].map(([value, label]) => ({ value, label })),
       products: PRODUCT_GROUPS.filter(group => groupIds.has(group.id)).map(group => ({
         value: group.id,
         label: group.label()
       }))
     };
-  }, [optionRows, rows]);
+  }, [optionRows, rows, chainName]);
 
   const filtered = useMemo(
     () =>
       rows.filter(
         row =>
-          (networkFilter === null || row.chainId === networkFilter) &&
+          (network === ALL || String(row.chainId) === network) &&
           (stablecoin === ALL || row.symbol === stablecoin) &&
           (product === ALL || groupForModule(row.module)?.id === product)
       ),
-    [rows, networkFilter, stablecoin, product]
+    [rows, network, stablecoin, product]
   );
 
-  const filterKey = `${networkFilter ?? ALL}-${stablecoin}-${product}`;
+  const filterKey = `${network}-${stablecoin}-${product}`;
   const triggerClassName = isMobile ? 'w-full' : undefined;
 
   return (
@@ -223,7 +238,14 @@ export function PortfolioTransactionsView({
           <Trans>Transactions</Trans>
         </h2>
         <div className={cn('flex gap-2 md:gap-3', isMobile ? 'flex-col' : 'flex-row')}>
-          <NetworkFilterSelect testId="portfolio-tx-filter-network" triggerClassName={triggerClassName} />
+          <FilterSelect
+            testId="portfolio-tx-filter-network"
+            options={networks}
+            selected={network}
+            onChange={value => changeFilters({ network: value })}
+            allLabel={ALL_NETWORKS_LABEL}
+            triggerClassName={triggerClassName}
+          />
           <FilterSelect
             testId="portfolio-tx-filter-stablecoin"
             options={stablecoins}
@@ -270,12 +292,12 @@ export function PortfolioTransactionsView({
  * own full history. Dropdown options always derive from the aggregate.
  */
 export function PortfolioTransactionsSection() {
-  const { chainId: networkFilter } = useNetworkFilter();
+  const [network, setNetwork] = useState(ALL);
   const [product, setProduct] = useState(ALL);
 
   const aggregate = useAllNetworksCombinedHistory();
   const { data, isLoading, error, hasNextPage, fetchNextPage } = useFilteredPortfolioHistory({
-    network: networkFilter ?? undefined,
+    network: network === ALL ? undefined : Number(network),
     products: product === ALL ? undefined : PRODUCT_GROUPS.find(g => g.id === product)?.modules
   });
 
@@ -311,7 +333,10 @@ export function PortfolioTransactionsSection() {
       optionRows={optionRows}
       isLoading={isLoading}
       error={error}
-      onFiltersChange={filters => setProduct(filters.product)}
+      onFiltersChange={filters => {
+        setNetwork(filters.network);
+        setProduct(filters.product);
+      }}
       hasNextPage={hasNextPage}
       fetchNextPage={fetchNextPage}
     />

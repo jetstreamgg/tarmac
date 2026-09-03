@@ -113,8 +113,7 @@ describe('getRouteChainAction', () => {
         {},
         { switchAttempted: true },
         { chains: DEV_CHAINS },
-        { filterChainId: base.id, chains: PROD_CHAINS },
-        { filterChainId: mainnet.id, chains: PROD_CHAINS }
+        { chains: PROD_CHAINS }
       ]) {
         expect(getRouteChainAction(Intent.BALANCES_INTENT, current, opts)).toEqual({
           kind: 'render'
@@ -138,61 +137,3 @@ describe('getRouteChainAction', () => {
   });
 });
 
-// Rule (a): the app-wide network filter decides which chain a module opens on,
-// but only where a chain actually decides something.
-describe('getRouteChainAction — the network filter', () => {
-  const withFilter = (intent: Intent, current: number, filterChainId: number | null) =>
-    getRouteChainAction(intent, current, { filterChainId, chains: PROD_CHAINS });
-
-  it('opens a module on the filtered network when the module runs there', () => {
-    expect(withFilter(Intent.SAVINGS_INTENT, mainnet.id, base.id)).toEqual({
-      kind: 'switch-network',
-      chainId: base.id
-    });
-  });
-
-  it('ignores a filter the module cannot honour, and stays put', () => {
-    // Stake is mainnet-only; a Base filter can't move it there.
-    expect(withFilter(Intent.STAKE_INTENT, mainnet.id, base.id)).toEqual({ kind: 'render' });
-  });
-
-  it('still lands a module whose filtered chain is unavailable on its own home chain', () => {
-    // Filter says Base, Stake can't run there, and the wallet is on Arbitrum:
-    // rule (a) declines, rule (b) fails, rule (c) brings it to mainnet.
-    expect(withFilter(Intent.STAKE_INTENT, arbitrum.id, base.id)).toEqual({
-      kind: 'switch-network',
-      chainId: mainnet.id
-    });
-  });
-
-  it('never fires on the Portfolio or the Earn marketplace', () => {
-    // Both resolve to BALANCES_INTENT — the surfaces the filter is FOR. A
-    // display filter must never prompt the wallet.
-    expect(withFilter(Intent.BALANCES_INTENT, mainnet.id, base.id)).toEqual({ kind: 'render' });
-  });
-
-  it('does not fight a manual switch made on the page', () => {
-    expect(
-      getRouteChainAction(Intent.SAVINGS_INTENT, mainnet.id, {
-        filterChainId: base.id,
-        switchAttempted: true,
-        chains: PROD_CHAINS
-      })
-    ).toEqual({ kind: 'render' });
-  });
-
-  it('is a no-op when the filter already names the current chain', () => {
-    expect(withFilter(Intent.SAVINGS_INTENT, base.id, base.id)).toEqual({ kind: 'render' });
-    expect(withFilter(Intent.SAVINGS_INTENT, base.id, null)).toEqual({ kind: 'render' });
-  });
-
-  it('ignores a filtered chain the wallet config does not carry', () => {
-    // A production session holding a dev-fork filter: nothing to switch to.
-    expect(
-      getRouteChainAction(Intent.SAVINGS_INTENT, mainnet.id, {
-        filterChainId: chainId.tenderly,
-        chains: PROD_CHAINS
-      })
-    ).toEqual({ kind: 'render' });
-  });
-});

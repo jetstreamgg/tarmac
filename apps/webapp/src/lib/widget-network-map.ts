@@ -43,15 +43,11 @@ export type RouteChainAction =
 
 /**
  * Which chain a module route should run on, and whether getting there needs a
- * wallet switch. Three rules, in order:
+ * wallet switch. Two rules, in order:
  *
- *  a. **The network filter.** If the user has filtered the app to a network and
- *     this module runs there, that is where the module opens. The filter is a
- *     display filter everywhere else — this is the one place it decides a
- *     chain, and only on arrival (see `switchAttempted`).
- *  b. **The chain already in play.** Otherwise, if the module runs on the chain
- *     the app is pointed at, stay put — no prompt.
- *  c. **The module's home chain.** Otherwise switch to `chainSwitchTarget`: the
+ *  a. **The chain already in play.** If the module runs on the chain the app is
+ *     pointed at, stay put — no prompt.
+ *  b. **The module's home chain.** Otherwise switch to `chainSwitchTarget`: the
  *     dev fork when one is configured (so a dev wallet is never moved onto real
  *     Ethereum and real fees), else mainnet, else any chain the module runs on
  *     that the wallet config knows — the last of which is what would carry a
@@ -63,15 +59,13 @@ export type RouteChainAction =
  * navigation validating against the chain being left.
  *
  * `switchAttempted` marks that this module visit already had its switch chance
- * — a declined wallet prompt, or an explicit wallet chain change. It keeps rule
- * (a) from fighting a user who switched chain by hand on the page, and makes
- * rule (c) fall through to the home redirect rather than re-prompting.
+ * — a declined wallet prompt, or an explicit wallet chain change. It makes rule
+ * (b) fall through to the home redirect rather than re-prompting.
  *
- * None of the three apply to `BALANCES_INTENT` — the Portfolio and the Earn
- * marketplace, which always render (see the early return). They are the
- * surfaces the filter is FOR, so rule (a) there would let a display filter
- * prompt the wallet; and they are where a redirect sends you, so rules (b)/(c)
- * there would prompt on arrival for a chain the surface never needed.
+ * Neither applies to `BALANCES_INTENT` — the Portfolio and the Earn
+ * marketplace, which always render (see the early return). They run on every
+ * chain, and they are where a redirect sends you, so a rule there would prompt
+ * on arrival for a chain the surface never needed.
  *
  * A module that is coming-soon on the current chain still redirects home rather
  * than switching: "arriving here shortly" is a promise about *this* chain, so
@@ -82,12 +76,9 @@ export function getRouteChainAction(
   currentChainId: number,
   {
     switchAttempted = false,
-    filterChainId = null,
     chains
   }: {
     switchAttempted?: boolean;
-    /** The app-wide network filter (lib/networkFilter), or null for "All networks". */
-    filterChainId?: number | null;
     chains?: readonly ChainRef[];
   } = {}
 ): RouteChainAction {
@@ -110,22 +101,10 @@ export function getRouteChainAction(
   // stopped by the modal's own guard.
   if (intent === Intent.BALANCES_INTENT) return { kind: 'render' };
 
-  // (a) The filter, when this module runs on it.
-  if (
-    !switchAttempted &&
-    !comingSoonHere &&
-    filterChainId !== null &&
-    filterChainId !== currentChainId &&
-    supported.includes(filterChainId) &&
-    configuredIds.includes(filterChainId)
-  ) {
-    return switchTo(filterChainId);
-  }
-
-  // (b) The chain already in play hosts the module.
+  // (a) The chain already in play hosts the module.
   if (supported.includes(currentChainId)) return { kind: 'render' };
 
-  // (c) The module's home chain.
+  // (b) The module's home chain.
   if (!comingSoonHere && !switchAttempted) {
     const target = chainSwitchTarget(supported, configuredIds);
     if (target !== undefined && target !== currentChainId) return switchTo(target);

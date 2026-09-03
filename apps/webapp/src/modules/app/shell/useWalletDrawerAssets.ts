@@ -1,15 +1,15 @@
-import { useConnection } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 import {
   TOKENS,
   useEarnMarketplace,
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
-  useNetworkFilter,
   usePrices,
   useStakeRewardContracts,
   useTokenBalances,
   type TokenItem
 } from '@/hooks';
+import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useGeoConfig } from '@/modules/geo-config';
 import { buildIdleSupplyInfo } from '@/modules/portfolio/helpers/idleView';
 import { useGeoVisibleRows } from '@/modules/portfolio/hooks/useGeoVisibleRows';
@@ -56,18 +56,15 @@ export type UseWalletDrawerAssetsResult = {
 
 /**
  * Wallet balances for the drawer's Assets tab: USDS/USDC/USDT/SKY across the
- * active chain family, valued in USD, decorated with the best earn rate per
- * token. Stablecoin rates come from the Earn marketplace (same source as the
- * Portfolio idle view); SKY earns through staking, so its rate is the highest
- * stake reward rate.
- *
- * Scoped by the app-wide network filter, which is the control sitting directly
- * beside this total in the drawer header — the two have to agree.
+ * whole active chain family, valued in USD, decorated with the best earn rate
+ * per token. Stablecoin rates come from the Earn marketplace (same source as
+ * the Portfolio idle view); SKY earns through staking, so its rate is the
+ * highest stake reward rate.
  */
 export function useWalletDrawerAssets(): UseWalletDrawerAssetsResult {
+  const connectedChainId = useChainId();
   const { address } = useConnection();
-  const { chainId: networkFilter, supportedChainIds } = useNetworkFilter();
-  const chainIds = networkFilter === null ? supportedChainIds : [networkFilter];
+  const chainIds = getSupportedChainIds(connectedChainId);
 
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 

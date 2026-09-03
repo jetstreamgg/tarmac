@@ -117,6 +117,7 @@ const position = (
   over: Partial<SuppliedPosition> = {}
 ): SuppliedPosition => ({
   id: kind,
+  rowId: over.id ?? kind,
   name: kind,
   tokenSymbol: 'USDS',
   kind,
@@ -128,7 +129,7 @@ const position = (
   hoverColor: '#000',
   share: 1,
   detailPath: `/earn/${kind}`,
-  chainIds: [1],
+  chainId: 1,
   ...over
 });
 
@@ -165,7 +166,7 @@ describe('usePortfolioSupplyActions', () => {
 
     // Card scoped to Base while the wallet sits on mainnet: supply belongs to
     // the position's chain, so the handler moves the wallet there first.
-    const handler = result.current(position('savings', { chainIds: [8453] }));
+    const handler = result.current(position('savings', { chainId: 8453 }));
 
     expect(handler).toBeTypeOf('function');
     await handler!();
@@ -177,15 +178,6 @@ describe('usePortfolioSupplyActions', () => {
     );
   });
 
-  it('prefers the connected chain for a position spanning several chains (no switch)', () => {
-    h.chainId = 8453;
-    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
-    result.current(position('savings', { chainIds: [1, 8453] }))!();
-
-    expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
-    expect(h.switchChainAsync).not.toHaveBeenCalled();
-  });
-
   it('targets the config Tenderly fork, never real Ethereum, when the build carries one (dev/staging)', async () => {
     h.chainId = 8453; // wallet on Base
     h.chains = [{ id: 1 }, { id: 314310 }, { id: 8453 }]; // dev config: Ethereum + fork + L2s
@@ -193,19 +185,10 @@ describe('usePortfolioSupplyActions', () => {
 
     // Position read from real mainnet, but the auto-switch must land on the
     // fork — landing a dev wallet on Ethereum means real fees.
-    await result.current(position('stusds', { chainIds: [1] }))!();
+    await result.current(position('stusds', { chainId: 1 }))!();
 
     expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 314310 });
     expect(h.openStUsdsSupply).toHaveBeenCalledTimes(1);
-  });
-
-  it('prefers the mainnet-family chain when a multi-chain position excludes the connected chain', async () => {
-    h.chainId = 10; // wallet on Optimism; position spans Base + mainnet
-    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
-    await result.current(position('savings', { chainIds: [8453, 1] }))!();
-
-    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 1 });
-    expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
   });
 
   it('resolves a Morpho vault position to an opener that launches the vault modal with its config', () => {
@@ -357,7 +340,7 @@ describe('usePortfolioSupplyActions', () => {
     h.isSafeWallet = true;
     const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
 
-    expect(result.current(position('savings', { chainIds: [1] }))).toBeUndefined();
+    expect(result.current(position('savings', { chainId: 1 }))).toBeUndefined();
     expect(h.switchChainAsync).not.toHaveBeenCalled();
     expect(h.openSavingsSupply).not.toHaveBeenCalled();
   });

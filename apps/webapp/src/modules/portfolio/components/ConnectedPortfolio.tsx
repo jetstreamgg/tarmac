@@ -4,12 +4,11 @@ import { useGeoConfig } from '@/modules/geo-config';
 import { useNavigate } from '@tanstack/react-router';
 import { mainnet } from 'viem/chains';
 import { Trans } from '@lingui/react/macro';
-import { isPendleChain, useEarnMarketplace, useNetworkFilter, useOverallSkyData } from '@/hooks';
+import { useEarnMarketplace, useOverallSkyData } from '@/hooks';
 import { formatAddress } from '@/utils';
 import { ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
 import { readPortfolioDecision, writePortfolioDecision } from '@/lib/portfolioDecisionCache';
-import { NetworkFilterSelect } from '@/components/product/NetworkFilterSelect';
 import { PageHeading } from '@/components/ui/page-header';
 import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
@@ -50,9 +49,6 @@ export function ConnectedPortfolio() {
   // filter names the geo-HIDDEN rows (rows minus visibleRows) so sources whose
   // rows are absent for other reasons — a matured Pendle market is delisted
   // from the marketplace while its closed position still earned — survive.
-  // The network filter is deliberately NOT applied here: the accrued stats are
-  // wallet-level, "total earnings this wallet made" (Kuba, 2026-08-24), while
-  // the positions and supplied totals below do follow the selected network.
   const earnings = useMemo(() => {
     const visible = new Set(visibleRows.map(row => row.id));
     const hidden = new Set(rows.filter(row => !visible.has(row.id)).map(row => row.id));
@@ -71,9 +67,6 @@ export function ConnectedPortfolio() {
   const navigate = useNavigate();
   const { data: ensName } = useEnsName({ address, chainId: mainnet.id });
 
-  // The app-wide network filter, shared with the transactions toolbar, the
-  // Earn toolbar and the wallet drawer (lib/networkFilter).
-  const { chainId: networkFilter } = useNetworkFilter();
   // Supplied/Idle is shared across sections (earnings card + positions carousel).
   // Until the user picks a tab, it follows the cached decision when there is
   // one, else a data-derived default: Idle once it's settled that there's no
@@ -85,14 +78,11 @@ export function ConnectedPortfolio() {
   // PortfolioPage keys this component by address, so one mount is one account.
   const [cachedDecision] = useState(() => readPortfolioDecision(address));
 
-  const network = networkFilter ?? 'all';
-  const suppliedView = buildSuppliedView(visibleRows, network);
+  const suppliedView = buildSuppliedView(visibleRows);
   // Matured PT rides beside suppliedView (the marketplace filters matured
-  // markets out, so it can't come from the rows). Mainnet-only, so a non-pendle
-  // network filter hides the cards like it hides mainnet positions.
-  const { maturedPositions: allMaturedPositions, isLoading: maturedLoading } = usePendleMaturedPositions();
-  const maturedPositions = network === 'all' || isPendleChain(network) ? allMaturedPositions : [];
-  const idleView = buildIdleView(balances, network);
+  // markets out, so it can't come from the rows).
+  const { maturedPositions, isLoading: maturedLoading } = usePendleMaturedPositions();
+  const idleView = buildIdleView(balances);
   // Best supply rate + venue count per token, for the idle table's rate badge.
   const idleSupplyInfo = buildIdleSupplyInfo(visibleRows);
 
@@ -111,8 +101,8 @@ export function ConnectedPortfolio() {
       ? parseFloat(overallSkyData.skySavingsRateTvl)
       : 0;
 
-  // Onboarding callout gates on family-wide totals (ignores the network filter),
-  // and only after all three data sources settle so it never flashes the wrong
+  // Onboarding callout gates on family-wide totals, and only after all three
+  // data sources settle so it never flashes the wrong
   // state — geo included, since visibleRows can shrink when the config lands.
   // Visible totals only: a hidden restricted position mustn't suppress the
   // callout or claim the Supplied tab for a portfolio that renders as empty.
@@ -130,7 +120,7 @@ export function ConnectedPortfolio() {
   // Matured PT is still capital in the protocol even though the marketplace
   // rows drop it — a matured-only wallet gets the Claim card, never the
   // get-started pitch its $0 depositedUsd would otherwise pick.
-  const hasMatured = !maturedLoading && allMaturedPositions.length > 0;
+  const hasMatured = !maturedLoading && maturedPositions.length > 0;
   const callout = hasMatured
     ? 'none'
     : cachedDecision
@@ -148,8 +138,8 @@ export function ConnectedPortfolio() {
   useEffect(() => {
     if (!address || calloutLoading || maturedLoading || isPositionsError || balancesError) return;
     writePortfolioDecision(address, {
-      outcome: allMaturedPositions.length > 0 ? 'none' : portfolioCallout(depositedUsd, idleTotalUsd),
-      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD && allMaturedPositions.length === 0 ? 'idle' : 'supplied'
+      outcome: maturedPositions.length > 0 ? 'none' : portfolioCallout(depositedUsd, idleTotalUsd),
+      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD && maturedPositions.length === 0 ? 'idle' : 'supplied'
     });
   }, [
     address,
@@ -159,7 +149,7 @@ export function ConnectedPortfolio() {
     balancesError,
     depositedUsd,
     idleTotalUsd,
-    allMaturedPositions.length
+    maturedPositions.length
   ]);
 
   // Matured PT needs action and renders only on Supplied, so it wins the
@@ -193,33 +183,21 @@ export function ConnectedPortfolio() {
       data-testid="portfolio-page"
     >
       {/* Header (Patterns/Headers, Portfolio type 5034:20993): Label 5
-          eyebrow over the Heading 3 + network-dropdown row. */}
+          eyebrow over the Heading 3. The comp's network dropdown is gone
+          (APP-547): there is no global network filter, positions carry their
+          own chain mark instead. */}
       <div className="flex flex-col gap-2">
         {displayName && (
           <p className="font-circle text-fgSecondary text-sm leading-4 font-medium tracking-[-0.28px]">
             <Trans>Welcome back, {displayName}</Trans>
           </p>
         )}
-        {/* M6.1 (486:20118): below md the title and the network dropdown stack,
-            the dropdown going full-width 24px under the heading; from md the
-            comp's desktop row (heading left, dropdown right) returns. */}
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-4">
-          <PageHeading
-            size="md"
-            className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
-          >
-            <Trans>Your Stablecoin Savings</Trans>
-          </PageHeading>
-          {/* 24px chain marks: the header filter is the DS Button / Dropdown
-              at size M (Patterns/Headers 5034:21316), unlike the S-sized table
-              filter bars. */}
-          <NetworkFilterSelect
-            testId="portfolio-network-filter"
-            size="m"
-            allLabelStyle="stack"
-            triggerClassName="w-full justify-between md:w-auto"
-          />
-        </div>
+        <PageHeading
+          size="md"
+          className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
+        >
+          <Trans>Your Stablecoin Savings</Trans>
+        </PageHeading>
       </div>
 
       {/* Banner and earnings card group: 56/48 below the header, and a tight

@@ -4,17 +4,6 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EarnTableFilters } from './EarnTableFilters';
 
-// The network filter is the app-wide one now (lib/networkFilter), so this
-// toolbar reads wagmi for the chain family it offers.
-vi.mock('wagmi', async io => ({
-  ...(await io<typeof import('wagmi')>()),
-  useChainId: () => 1,
-  useChains: () => [
-    { id: 1, name: 'Ethereum' },
-    { id: 8453, name: 'Base' }
-  ]
-}));
-
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).
 const breakpoint = vi.hoisted(() => ({ isMobile: false }));
 vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
@@ -34,6 +23,9 @@ const renderFilters = () => {
       <EarnTableFilters
         selectedRiskTiers={[]}
         onRiskTierToggle={vi.fn()}
+        networks={[{ value: 'ethereum', label: 'Ethereum' }]}
+        selectedNetwork="all"
+        onNetworkChange={vi.fn()}
         stablecoins={[{ value: 'usds', label: 'USDS' }]}
         selectedStablecoin="all"
         onStablecoinChange={vi.fn()}

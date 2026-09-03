@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { motion, useReducedMotion, type Transition } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
-import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
+import { formatDecimalPercentage, formatUsd, getChainIcon, projectAnnualEarnings } from '@/utils';
 import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
 import { RollingValue } from '@/components/ui/rolling-value';
@@ -14,7 +14,7 @@ import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
-import { earningsForPosition } from '../earnings/earningsForPosition';
+import { earningsForPosition, earningsForSuppliedPosition } from '../earnings/earningsForPosition';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
 import { CombinedEarningsStat, EarningsFigureValue, STAT_ROW, StatInfoGlyph } from './EarningsStat';
@@ -132,12 +132,15 @@ function SuppliedContent({
   const activePosition = activeId ? view.positions.find(p => p.id === activeId) : undefined;
   // Hover-focus for the two earnings stats: the hovered position's own slice
   // (null when the row is outside APP-450 scope → dash, like its siblings).
-  const activeEarnings = activePosition ? earningsForPosition(earnings, activePosition.id) : null;
-  // Positions with no earnings source at all: the combined stats exclude them,
+  const activeEarnings = activePosition ? earningsForSuppliedPosition(earnings, activePosition) : null;
+  // Products with no earnings source at all: the combined stats exclude them,
   // so the footer names them instead of posing as complete (review finding #2).
-  const untrackedNames = view.positions
-    .filter(p => earningsForPosition(earnings, p.id) === null)
-    .map(p => p.name);
+  // Keyed on the product, not the position: an L2 leg has no slice of its own
+  // (earnings read mainnet only) but its product is still tracked, and the
+  // mainnet-only coverage caveat already tells that story.
+  const untrackedNames = [
+    ...new Set(view.positions.filter(p => earningsForPosition(earnings, p.rowId) === null).map(p => p.name))
+  ];
   const activeSymbol = activePosition?.tokenSymbol ?? null;
   const displayTotal = activePosition ? activePosition.amountUsd : view.totalSupplied;
   const displayProjected = activePosition
@@ -186,6 +189,11 @@ function SuppliedContent({
                     <Text variant="medium" tag="span" className="text-text font-circle font-medium">
                       {position.name}
                     </Text>
+                    {/* One legend row per chain leg (APP-547): the chain mark is
+                        what tells two sUSDS rows apart. */}
+                    <span className="flex h-4 w-4 shrink-0" data-testid="legend-chain-icon">
+                      {getChainIcon(position.chainId, 'h-full w-full')}
+                    </span>
                     <Text variant="medium" tag="span" className="text-textSecondary">
                       ({pctLabel})
                     </Text>

@@ -1,3 +1,4 @@
+import { isMainnetId } from '@/utils/isMainnetId';
 import type {
   EarningsCoverage,
   EarningsFigure,
@@ -87,4 +88,17 @@ export function earningsForPosition(earnings: WalletEarnings, rowId: string): Po
     ...(pendleSplit ? { pendleSplit } : {}),
     ...(coverage ? { coverage } : {})
   };
+}
+
+/**
+ * The earnings slice for one supplied position. Every source behind
+ * `useWalletEarnings` is read against mainnet, so a product's L2 leg (sUSDS on
+ * Base, say — one position per chain since APP-547) has no figure of its own:
+ * it returns null and renders a dash rather than repeating the mainnet leg's.
+ */
+export function earningsForSuppliedPosition(
+  earnings: WalletEarnings,
+  position: { rowId: string; chainId: number }
+): PositionEarnings | null {
+  return isMainnetId(position.chainId) ? earningsForPosition(earnings, position.rowId) : null;
 }

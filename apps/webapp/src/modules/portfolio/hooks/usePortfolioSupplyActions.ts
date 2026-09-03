@@ -26,20 +26,19 @@ import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedReques
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
 /**
- * The chain a position's supply modal must run on: the connected chain when
- * the position lives there, otherwise the position's own chain (preferring the
- * mainnet-family entry when a position spans several). A mainnet-family target
- * follows getMainnetTargetName's rule: when the active config carries a
- * Tenderly fork (dev/staging builds), the fork is the target — auto-switching
- * a dev wallet onto real Ethereum would mean real fees.
+ * The chain a position's supply modal must run on: the position's own chain
+ * (one per position since APP-547). A mainnet-family target follows
+ * getMainnetTargetName's rule: when the active config carries a Tenderly fork
+ * (dev/staging builds), the fork is the target — auto-switching a dev wallet
+ * onto real Ethereum would mean real fees.
  */
 function supplyChainFor(
   position: SuppliedPosition,
   connectedChainId: number,
   chains: readonly { id: number }[]
 ): number {
-  if (position.chainIds.includes(connectedChainId)) return connectedChainId;
-  const target = position.chainIds.find(isMainnetId) ?? position.chainIds[0] ?? connectedChainId;
+  const target = position.chainId;
+  if (target === connectedChainId) return connectedChainId;
   if (isMainnetId(target)) {
     const fork = chains.find(c => isTestnetId(c.id));
     if (fork) return fork.id;

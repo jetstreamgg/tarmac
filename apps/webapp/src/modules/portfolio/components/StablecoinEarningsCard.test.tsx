@@ -47,7 +47,8 @@ i18n.activate('en');
 const SUPPLIED: SuppliedView = {
   positions: [
     {
-      id: 'savings',
+      id: 'savings:1',
+      rowId: 'savings',
       name: 'Sky Savings Rate',
       tokenSymbol: 'sUSDS',
       kind: 'savings',
@@ -59,7 +60,7 @@ const SUPPLIED: SuppliedView = {
       hoverColor: '#7C5BF5',
       share: 1,
       detailPath: '/earn/savings',
-      chainIds: [1]
+      chainId: 1
     }
   ],
   totalSupplied: 1000,
@@ -68,7 +69,6 @@ const SUPPLIED: SuppliedView = {
   ratesLoading: false,
   activePositions: 1,
   suppliedTokens: ['sUSDS'],
-  networksWithPositions: [1]
 };
 
 const IDLE: IdleView = {
@@ -324,7 +324,7 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
   it('shows a dash when the hovered position is outside APP-450 scope', () => {
     const outOfScope = {
       ...SUPPLIED,
-      positions: [{ ...SUPPLIED.positions[0], id: 'vault-other-0xdead', name: 'Other Vault' }]
+      positions: [{ ...SUPPLIED.positions[0], id: 'vault-other-0xdead:1', rowId: 'vault-other-0xdead', name: 'Other Vault' }]
     };
     renderCard({ suppliedView: outOfScope });
     fireEvent.mouseEnter(screen.getByRole('button', { name: /Other Vault/ }));
@@ -337,7 +337,7 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
   it("explains an untracked hovered position's dash with a tooltip", () => {
     const outOfScope = {
       ...SUPPLIED,
-      positions: [{ ...SUPPLIED.positions[0], id: 'vault-other-0xdead', name: 'Other Vault' }]
+      positions: [{ ...SUPPLIED.positions[0], id: 'vault-other-0xdead:1', rowId: 'vault-other-0xdead', name: 'Other Vault' }]
     };
     renderCard({ suppliedView: outOfScope });
     fireEvent.mouseEnter(screen.getByRole('button', { name: /Other Vault/ }));
@@ -352,7 +352,7 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
       ...SUPPLIED,
       positions: [
         SUPPLIED.positions[0],
-        { ...SUPPLIED.positions[0], id: 'vault-other-0xdead', name: 'Other Vault' }
+        { ...SUPPLIED.positions[0], id: 'vault-other-0xdead:1', rowId: 'vault-other-0xdead', name: 'Other Vault' }
       ]
     };
     renderCard({ suppliedView: withUntracked, earnings: allOk });
@@ -389,7 +389,7 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
   it("shows the hovered position's figure without a glyph for its announced gap", () => {
     const flagship = {
       ...SUPPLIED,
-      positions: [{ ...SUPPLIED.positions[0], id: 'vault-morpho-0xflagship', name: 'USDS Flagship' }]
+      positions: [{ ...SUPPLIED.positions[0], id: 'vault-morpho-0xflagship:1', rowId: 'vault-morpho-0xflagship', name: 'USDS Flagship' }]
     };
     renderCard({ suppliedView: flagship });
     fireEvent.mouseEnter(screen.getByRole('button', { name: /USDS Flagship/ }));
@@ -404,7 +404,7 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
   it("shows the hovered position's figure without a partial-data indicator for its error gap", () => {
     const flagship = {
       ...SUPPLIED,
-      positions: [{ ...SUPPLIED.positions[0], id: 'vault-morpho-0xflagship', name: 'USDS Flagship' }]
+      positions: [{ ...SUPPLIED.positions[0], id: 'vault-morpho-0xflagship:1', rowId: 'vault-morpho-0xflagship', name: 'USDS Flagship' }]
     };
     const merklDown = walletEarnings(
       EARNINGS.protocols.map(p =>

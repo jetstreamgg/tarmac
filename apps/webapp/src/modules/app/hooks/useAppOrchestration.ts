@@ -8,7 +8,7 @@ import { getRouteChainAction } from '@/lib/widget-network-map';
 import { pathToIntent, ROUTES } from '@/lib/routes';
 
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
-import { useAppChainId, useAvailableTokenRewardContracts, useNetworkFilter } from '@/hooks';
+import { useAppChainId, useAvailableTokenRewardContracts } from '@/hooks';
 import { useConnection, useChainId, useChains, useSwitchChain } from 'wagmi';
 import { useSafeAppNotification } from './useSafeAppNotification';
 import { useGovernanceMigrationToast } from './useGovernanceMigrationToast';
@@ -52,12 +52,6 @@ export function useAppOrchestration(): { intent: Intent } {
 
   const chainId = useChainId();
   const chains = useChains();
-  // Rule (a) of the route's chain resolution: a module opens on the filtered
-  // network when it runs there. Read here rather than inside the effect so a
-  // filter change while sitting on a module route is seen — the effect's
-  // `autoSwitchAttempted` guard is what keeps it from re-prompting.
-  const { chainId: networkFilter } = useNetworkFilter();
-
   const { connector, chainId: walletChainId, status } = useConnection();
   const { trackNetworkAutoSwitched } = useAppAnalytics();
 
@@ -115,7 +109,7 @@ export function useAppOrchestration(): { intent: Intent } {
   // well against it while the wallet is somewhere else entirely.
   // `useConnection().chainId` is the only place that truth surfaces, and the
   // resolver needs it: this is what used to raise the blocking "unsupported
-  // network" modal, and is now just case (c) — switch the wallet back to a
+  // network" modal, and is now just rule (b) — switch the wallet back to a
   // chain the module runs on.
   const appChainId = useAppChainId();
 
@@ -185,13 +179,10 @@ export function useAppOrchestration(): { intent: Intent } {
   useEffect(() => {
     const action = getRouteChainAction(intent, newChainId, {
       switchAttempted: autoSwitchAttempted.current,
-      filterChainId: networkFilter,
       chains
     });
 
-    // The module belongs on a different chain than the app is pointed at —
-    // either the user's network filter names one this module runs on, or the
-    // current chain can't host it at all. Switch on the user's behalf instead
+    // The current chain can't host the module. Switch on the user's behalf instead
     // of bouncing home. The auto flags make the shell toast explain the change;
     // they are skipped when the config chain won't move, because only
     // `useNetworkChangeToast` clears them and it watches that chain — raise
@@ -249,7 +240,7 @@ export function useAppOrchestration(): { intent: Intent } {
       trackRouteRedirected({ fromPath: pathname, toPath: ROUTES.EARN, reason: 'unknown_reward' });
       void navigate({ to: ROUTES.EARN, search: keepSearch, replace: true });
     }
-  }, [intent, rewardContract, newChainId, networkFilter, rewardContracts, navigate]);
+  }, [intent, rewardContract, newChainId, rewardContracts, navigate]);
 
   // Run validation on the remaining query-driven search params whenever they change
   useEffect(() => {

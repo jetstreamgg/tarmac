@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import {
   createMemoryHistory,
@@ -9,19 +9,10 @@ import {
   RouterProvider
 } from '@tanstack/react-router';
 import { recallEarnFilterSearch } from '@/lib/earnFilterMemory';
-import { resetNetworkFilterForTests } from '@/lib/networkFilter';
 import { useEarnTableState } from './useEarnTableState';
 
-// The network filter is the app-wide one now (lib/networkFilter), so the hook
-// reads wagmi for the chain family it clamps against. Mainnet keeps the family
-// at the five production chains, which is what makes 8453 a valid selection.
-vi.mock('wagmi', async io => ({
-  ...(await io<typeof import('wagmi')>()),
-  useChainId: () => 1
-}));
-
-const BASE = 8453;
 const VALID = {
+  networks: ['ethereum', 'base'],
   stablecoins: ['usds', 'usdc'],
   products: ['savings', 'vault']
 };
@@ -30,7 +21,7 @@ const KEY = 'earnOpportunitiesFilters';
 type State = ReturnType<typeof useEarnTableState>;
 
 /**
- * Memory-router harness: the two URL-driven filters read and write the search
+ * Memory-router harness: the three URL-driven filters read and write the search
  * string, so the hook needs a real router underneath. `parseSearch` /
  * `stringifySearch` mirror the app's (plain URLSearchParams semantics, not
  * TanStack's JSON encoding) so the params round-trip byte-for-byte.
@@ -78,26 +69,22 @@ async function renderState(initialPath = '/earn') {
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
-  // The network filter store is module-level, so clearing storage alone leaves
-  // the previous test's value in memory.
-  resetNetworkFilterForTests();
 });
 
 describe('useEarnTableState risk persistence', () => {
-  it('keeps risk in its own key, stablecoin/product in the URL, network in the shared store', async () => {
+  it('persists only the risk filter, never network/stablecoin/product', async () => {
     const { state, searchOf } = await renderState();
 
-    act(() => state.current.updateFilters({ stablecoin: 'usds', network: BASE, product: 'vault' }));
+    act(() => state.current.updateFilters({ stablecoin: 'usds', network: 'base', product: 'vault' }));
     act(() => state.current.toggleRiskTier('advanced'));
 
-    // This hook's localStorage key holds only risk...
+    // localStorage holds only risk...
     expect(JSON.parse(localStorage.getItem(KEY) as string)).toEqual({ risk: ['advanced'] });
-    // ...the two table-local filters went to the URL, and network went to the
-    // app-wide store rather than either.
-    await waitFor(() => expect(searchOf()).toEqual({ token: 'usds', product: 'vault' }));
+    // ...the other three went to the URL instead.
+    await waitFor(() => expect(searchOf()).toEqual({ chain: 'base', token: 'usds', product: 'vault' }));
     expect(state.current.filters).toEqual({
       risk: ['advanced'],
-      network: BASE,
+      network: 'base',
       stablecoin: 'usds',
       product: 'vault'
     });
@@ -113,7 +100,7 @@ describe('useEarnTableState risk persistence', () => {
 
     expect(state.current.filters).toEqual({
       risk: ['advanced'],
-      network: null,
+      network: 'all',
       stablecoin: 'all',
       product: 'all'
     });
@@ -121,31 +108,18 @@ describe('useEarnTableState risk persistence', () => {
 
   it('falls back to defaults when nothing is stored', async () => {
     const { state } = await renderState();
-    expect(state.current.filters).toEqual({ risk: [], network: null, stablecoin: 'all', product: 'all' });
-  });
-
-  it('survives a remount — the network filter is a global preference', async () => {
-    const first = await renderState();
-    act(() => first.state.current.updateFilters({ network: BASE }));
-
-    const { state } = await renderState('/earn');
-
-    expect(state.current.filters.network).toBe(BASE);
+    expect(state.current.filters).toEqual({ risk: [], network: 'all', stablecoin: 'all', product: 'all' });
   });
 });
 
 describe('useEarnTableState URL filters', () => {
-  it('reads the two table-local filters off the search string', async () => {
-    const { state } = await renderState('/earn?token=usdc&product=savings');
+  it('reads the three filters off the search string', async () => {
+    const { state } = await renderState('/earn?chain=ethereum&token=usdc&product=savings');
     expect(state.current.filters).toMatchObject({
+      network: 'ethereum',
       stablecoin: 'usdc',
       product: 'savings'
     });
-  });
-
-  it('ignores a legacy ?chain= param — the network filter is no longer URL-driven', async () => {
-    const { state } = await renderState('/earn?chain=base');
-    expect(state.current.filters.network).toBeNull();
   });
 
   it('accepts a deep link that spells the token as it is displayed', async () => {
@@ -154,42 +128,35 @@ describe('useEarnTableState URL filters', () => {
   });
 
   it('ignores values the table offers no option for, without rewriting the URL', async () => {
-    const { state, searchOf } = await renderState('/earn?product=bogus');
-    expect(state.current.filters).toMatchObject({ network: null, product: 'all' });
+    const { state, searchOf } = await renderState('/earn?chain=solana&product=bogus');
+    expect(state.current.filters).toMatchObject({ network: 'all', product: 'all' });
     expect(state.current.hasActiveFilters).toBe(false);
     // Left in place: the option sets arrive asynchronously, so a value that is
     // not valid *yet* must not be scrubbed.
-    expect(searchOf()).toEqual({ product: 'bogus' });
+    expect(searchOf()).toEqual({ chain: 'solana', product: 'bogus' });
   });
 
   it('drops a param rather than writing "all" when a filter is reset', async () => {
-    const { state, searchOf } = await renderState('/earn?token=usdc&product=vault');
+    const { state, searchOf } = await renderState('/earn?chain=base&token=usdc');
 
-    act(() => state.current.updateFilters({ product: 'all' }));
+    act(() => state.current.updateFilters({ network: 'all' }));
 
     await waitFor(() => expect(searchOf()).toEqual({ token: 'usdc' }));
   });
 });
 
 describe('useEarnTableState clearFilters', () => {
-  it('resets all four filters, risk and the shared network filter included', async () => {
+  it('resets all four filters, risk included', async () => {
     localStorage.setItem(KEY, JSON.stringify({ risk: ['low'] }));
-    const { state, searchOf } = await renderState('/earn?token=usdc&product=vault');
-    act(() => state.current.updateFilters({ network: BASE }));
+    const { state, searchOf } = await renderState('/earn?chain=base&token=usdc&product=vault');
     expect(state.current.hasActiveFilters).toBe(true);
 
     act(() => state.current.clearFilters());
 
     await waitFor(() => expect(searchOf()).toEqual({}));
-    expect(state.current.filters).toEqual({ risk: [], network: null, stablecoin: 'all', product: 'all' });
+    expect(state.current.filters).toEqual({ risk: [], network: 'all', stablecoin: 'all', product: 'all' });
     expect(JSON.parse(localStorage.getItem(KEY) as string)).toEqual({ risk: [] });
     expect(state.current.hasActiveFilters).toBe(false);
-  });
-
-  it('flags active filters from the shared network filter alone', async () => {
-    const { state } = await renderState();
-    act(() => state.current.updateFilters({ network: BASE }));
-    expect(state.current.hasActiveFilters).toBe(true);
   });
 
   it('flags active filters from risk alone', async () => {

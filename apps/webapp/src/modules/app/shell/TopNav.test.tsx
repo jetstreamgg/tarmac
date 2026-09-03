@@ -62,10 +62,6 @@ vi.mock('./WalletChip', () => ({
   WalletChip: () => <div data-testid="wallet-chip" data-stub="wallet-chip-stub" />
 }));
 
-vi.mock('@/components/product/NetworkFilterSelect', () => ({
-  NetworkFilterSelect: ({ testId }: { testId?: string }) => <div data-testid={testId} />
-}));
-
 vi.mock('@/modules/layout/components/MockConnectButton', () => ({
   MockConnectButton: () => <div data-testid="mock-connect-button-stub" />
 }));

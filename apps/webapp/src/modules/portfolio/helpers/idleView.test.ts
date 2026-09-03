@@ -12,8 +12,8 @@ const balances: StablecoinBalance[] = [
 ];
 
 describe('buildIdleView', () => {
-  it('aggregates each stablecoin across chains and sorts by amount descending for "all"', () => {
-    const view = buildIdleView(balances, 'all');
+  it('aggregates each stablecoin across chains and sorts by amount descending', () => {
+    const view = buildIdleView(balances);
     expect(view.walletBalance).toBe(1000);
     expect(view.idleCount).toBe(3);
     expect(view.tokens.map(t => t.symbol)).toEqual(['USDS', 'USDC', 'DAI']);
@@ -23,21 +23,10 @@ describe('buildIdleView', () => {
   });
 
   it('decorates tokens with the full display name and brand color', () => {
-    const view = buildIdleView(balances, 'all');
+    const view = buildIdleView(balances);
     expect(view.tokens[0]).toMatchObject({ symbol: 'USDS', name: 'Sky USD' });
     expect(view.tokens.find(t => t.symbol === 'USDC')?.name).toBe('USD Coin');
     expect(view.tokens[0].color).toBe(resolveTokenColor('USDS'));
-  });
-
-  it('scopes totals to the selected chain', () => {
-    const ethereum = buildIdleView(balances, 1);
-    expect(ethereum.walletBalance).toBe(700); // 600 + 80 + 20
-    expect(ethereum.idleCount).toBe(3);
-
-    const base = buildIdleView(balances, 8453);
-    expect(base.walletBalance).toBe(300); // USDS only
-    expect(base.idleCount).toBe(1);
-    expect(base.tokens[0].symbol).toBe('USDS');
   });
 
   it('excludes zero/negative balances from tokens and the count', () => {
@@ -46,8 +35,7 @@ describe('buildIdleView', () => {
         { symbol: 'USDS', chainId: 1, amount: 100, amountUsd: 100 },
         { symbol: 'USDC', chainId: 1, amount: 0, amountUsd: 0 },
         { symbol: 'USDT', chainId: 1, amount: 0, amountUsd: 0 }
-      ],
-      'all'
+      ]
     );
     expect(view.tokens.map(t => t.symbol)).toEqual(['USDS']);
     expect(view.idleCount).toBe(1);
@@ -55,7 +43,7 @@ describe('buildIdleView', () => {
   });
 
   it('returns an empty view for no balances', () => {
-    expect(buildIdleView([], 'all')).toEqual({ tokens: [], walletBalance: 0, idleCount: 0 });
+    expect(buildIdleView([])).toEqual({ tokens: [], walletBalance: 0, idleCount: 0 });
   });
 });
 

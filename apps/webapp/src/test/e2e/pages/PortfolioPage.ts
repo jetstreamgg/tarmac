@@ -1,7 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { portfolioConnectedContract } from '../contracts/portfolio-connected.contract';
 import { portfolioDisconnectedContract } from '../contracts/portfolio-disconnected.contract';
-import { portfolioNetworkFilterContract } from '../contracts/portfolio-network-filter.contract';
 import { portfolioPendleMaturedContract } from '../contracts/portfolio-pendle-matured.contract';
 import { formatContractContext, locate } from './locate';
 
@@ -21,9 +20,6 @@ export class PortfolioPage {
   statistics = () => locate(this.page, { testId: 'portfolio-statistics' }, portfolioDisconnectedContract);
 
   earningsCard = () => locate(this.page, { testId: 'stablecoin-earnings-card' }, portfolioConnectedContract);
-
-  networkFilter = () =>
-    locate(this.page, { testId: 'portfolio-network-filter' }, portfolioNetworkFilterContract);
 
   /** Tabs render in multiple synced sections — target the first chip group. */
   tabSupplied = () =>
@@ -53,7 +49,6 @@ export class PortfolioPage {
   async expectConnectedShell() {
     await expect(this.root()).toBeVisible({ timeout: 15_000 });
     await expect(this.earningsCard()).toBeVisible({ timeout: 30_000 });
-    await expect(this.networkFilter()).toBeVisible();
   }
 
   async switchToIdleTab() {
@@ -61,11 +56,10 @@ export class PortfolioPage {
     await expect(this.tabIdle()).toHaveAttribute('aria-pressed', 'true');
   }
 
-  repairContext(contractId: 'portfolio-disconnected' | 'portfolio-connected' | 'portfolio-network-filter') {
+  repairContext(contractId: 'portfolio-disconnected' | 'portfolio-connected') {
     const map = {
       'portfolio-disconnected': portfolioDisconnectedContract,
-      'portfolio-connected': portfolioConnectedContract,
-      'portfolio-network-filter': portfolioNetworkFilterContract
+      'portfolio-connected': portfolioConnectedContract
     } as const;
     return formatContractContext(map[contractId]);
   }

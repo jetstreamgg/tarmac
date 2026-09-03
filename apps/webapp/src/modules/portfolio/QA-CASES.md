@@ -27,7 +27,7 @@ section `🟢 Portfolio` (`772:36720`).
 | ---------------------------------------------------------------------- | ----------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
 | Portfolio / Your earning positions (`1036:189460`)                     | Full connected layout   | implemented | Header, earnings card, positions, tx table                                                                         |
 | Portfolio / Pie chart hover (`1036:189538`)                            | Donut hover state       | implemented | `PortfolioDonutChart.tsx`; hover is recharts-driven                                                                |
-| Portfolio / Network selection (`1036:190373`)                          | Header network filter   | implemented | `portfolio-network-filter`                                                                                         |
+| Portfolio / Network selection (`1036:190373`)                          | Header network filter   | removed     | APP-547: no global network filter; positions carry their own chain mark                                            |
 | Portfolio (Active) / Positions (`1036:189696`)                         | Supplied carousel       | implemented | `PortfolioPositionsSection`                                                                                        |
 | Portfolio (Active) / Positions / Supply (`1036:189774`, `1036:189824`) | Supply modal entry      | partial     | Modal lives in product modules; portfolio triggers via `usePortfolioSupplyActions` — e2e deferred to product specs |
 | Portfolio (Active) / Positions / Merkl Rewards (`1036:189973`)         | Merkl rewards block     | implemented | `PortfolioRewardsSection`                                                                                          |
@@ -65,7 +65,6 @@ page object `pages/PortfolioPage.ts`.
 | --- | -------------------------------------------- | -------------------------- | ----------- | -------------------------------------------------------- |
 | 1   | smoke: disconnected portfolio shell          | `portfolio-disconnected`   | A-1         | Public route; no wallet required                         |
 | 2   | smoke: connected portfolio shell             | `portfolio-connected`      | A-2, A-3    | Core destination mount + tab contract                    |
-| 3   | smoke: network filter visible when connected | `portfolio-network-filter` | A-4         | Header filter is portfolio-specific shell                |
 | 4   | matured PT-sUSDS in Supplied carousel        | `portfolio-pendle-matured` | A-12        | UI clock + chain warp; PT via on-chain storage-slot mint |
 
 ### Rejections
