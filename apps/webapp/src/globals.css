@@ -372,9 +372,13 @@
   --breakpoint-md: 768px;
   --breakpoint-lg: 912px;
   /* `desktop` is the M/L tier of the design-system grid (Figma: Foundations /
-     Grids & Spacing 5176:33992): tiers break at 640 (sm) and 1200. New and
-     redesigned surfaces should branch on `sm:` + `desktop:` only; md/lg/xl/2xl
-     are legacy values kept for the pre-redesign screens and die with them.
+     Grids & Spacing 5176:33992): tiers break at 640 (sm) and 1200. Two more
+     seams carry the redesign below that: `md` (768) is the phone cutoff for
+     overlays and tables (bottom sheets, card-reflowed tables), and `lg` (912)
+     is the tablet seam where the desktop header pills replace the bottom
+     navbar and the product pages go two-pane (APP-549 — the pill row needs
+     ~800px of app, so it can't come back at md). xl/2xl are legacy values kept
+     for the pre-redesign screens and die with them.
      Full tier strategy + dvh/svh conventions: docs/responsive-breakpoints.md */
   --breakpoint-desktop: 1200px;
   --breakpoint-xl: 1280px;
