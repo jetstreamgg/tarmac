@@ -50,10 +50,13 @@ describe('PositionHero', () => {
     renderHero({ balanceSymbol: 'USDS', amount: 100_000, ratePerSecond: SSR_3_75 });
 
     // 100,000 USDS at 3.75% turns its 4th decimal over about once a second.
-    expect(screen.getByTestId('rolling-digits').textContent).toBe('0000');
-    // Each digit gets its own clip window to roll inside — and only the
-    // fraction does, so the 44px whole part stays out of them.
-    expect(screen.getAllByTestId('rolling-digit')).toHaveLength(4);
-    expect(screen.getByText('100,000')).not.toBeNull();
+    expect(screen.getAllByTestId('rolling-digits').map(figure => figure.textContent)).toEqual([
+      '100,000',
+      '0000'
+    ]);
+    // Every digit on both sides of the point gets its own clip window, so a
+    // carry into the whole dollars turns over one digit rather than the figure.
+    expect(screen.getAllByTestId('rolling-digit')).toHaveLength(10);
+    expect(screen.queryByTestId('rolling-value')).toBeNull();
   });
 });

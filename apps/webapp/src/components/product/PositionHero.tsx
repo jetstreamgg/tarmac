@@ -89,13 +89,14 @@ export function PositionHero({
           />
           <span className="flex items-baseline gap-px">
             <span className="font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]">
-              <RollingValue value={whole} />
+              {/* A live figure is one odometer across the point: when the
+                  fraction carries into the whole dollars, only the units digit
+                  (and whatever it carries into) turns over, not the whole part
+                  as one figure. */}
+              {isAccruing ? <RollingDigits value={whole} /> : <RollingValue value={whole} />}
             </span>
             {fraction && (
               <span className="text-fgSecondary font-circle text-lg leading-5 font-medium tracking-[-0.36px] md:text-xl md:leading-[22px] md:tracking-[-0.4px]">
-                {/* Only the fraction ticks. The whole part turns over once every
-                    few hours at any realistic rate, so it rolls as one figure
-                    there too and stays out of the per-digit clip windows. */}
                 .
                 {isAccruing ? (
                   <RollingDigits value={fraction} />
