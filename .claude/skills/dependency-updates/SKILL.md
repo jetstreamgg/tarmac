@@ -5,13 +5,13 @@ description: Manually run dependabot-style dependency updates (dependabot doesn'
 
 # Manual dependency updates
 
-Dependabot PRs are unreliable with pnpm catalogs, so version updates are done manually with this procedure. All dependency versions live in the `catalog:` section of `pnpm-workspace.yaml` — every bump is an edit there plus a `pnpm install` to refresh the lockfile. Reference run: PR #1708 (July 2026).
+Dependabot PRs are unreliable with pnpm catalogs, so version updates are done manually with this procedure. All dependency versions live in the `catalog:` section of `pnpm-workspace.yaml` — every bump is an edit there plus a `pnpm install` to refresh the lockfile.
 
 ## 1. Load the rules (do not hardcode them)
 
 Read both files fresh each run — the config evolves:
 
-- `.github/dependabot.yml` — allowed update types, per-dependency ignores, and the group definitions (used for commit granularity). As of the reference run: **direct deps only, minor + patch only** (all majors ignored), and the wallet-connector packages (`@base-org/account`, `@coinbase/wallet-sdk`, `@metamask/connect-evm`, `@safe-global/*`, `@walletconnect/ethereum-provider`) are **patch-only**.
+- `.github/dependabot.yml` — allowed update types, per-dependency ignores, and the group definitions (used for commit granularity). Expect the wallet-connector packages to be patch-only.
 - `pnpm-workspace.yaml` — the catalog (current ranges, note `~` vs `^` per entry and preserve the style) and `minimumReleaseAge` (minutes; 10080 = 7 days).
 
 ## 2. Create a branch

@@ -165,23 +165,14 @@ actions:
 
       ## Example Pattern
       ```typescript
-      // Optimized contract reads
-      const useOptimizedContractRead = () => {
-        const { data, isLoading } = useContractRead({
-          address: CONTRACT_ADDRESS,
-          abi: CONTRACT_ABI,
-          functionName: 'getData',
-          cacheTime: 30_000,
-          enabled: !!address,
-          watch: true,
-          staleTime: 5_000,
-        })
-
-        return useMemo(() => ({
-          data,
-          isLoading
-        }), [data, isLoading])
-      }
+      // wagmi v3: caching/polling is configured via TanStack Query options
+      const { data, isLoading } = useReadContract({
+        chainId,
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'getData',
+        query: { enabled: !!address, staleTime: 5_000 },
+      })
       ```
 
       ## State Synchronization
@@ -190,26 +181,6 @@ actions:
       - Optimize event listeners
       - Use proper cleanup
       - Handle reconnection logic
-
-examples:
-  - input: |
-      // Bad
-      const { data } = useContractRead({
-        address,
-        abi,
-        functionName: 'getData',
-      })
-
-      // Good
-      const { data } = useContractRead({
-        address,
-        abi,
-        functionName: 'getData',
-        cacheTime: 30_000,
-        staleTime: 5_000,
-        enabled: !!address,
-      })
-    output: "Properly optimized Web3 interaction"
 
 metadata:
   priority: high
