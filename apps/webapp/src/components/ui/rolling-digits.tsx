@@ -17,9 +17,8 @@ export function RollingDigits({ value, className }: { value: string; className?:
 
   return (
     // Inline, not inline-flex: flex would drop the letter-spacing the hero
-    // figure is tracked with. `tabular-nums` keeps the box widths equal so the
-    // number doesn't shuffle sideways as digits turn over.
-    <span data-testid="rolling-digits" className={cn('tabular-nums', className)}>
+    // figure is tracked with.
+    <span data-testid="rolling-digits" className={className}>
       {/* The digits are the only copy of the figure in the DOM — adjacent inline
           spans form one text run, so this still reads and copies as a single
           number. Only the glyph on its way out is hidden, so a roll in flight
@@ -56,7 +55,11 @@ function RollingCharacter({ character }: { character: string }) {
   }
 
   return (
-    <span data-testid="rolling-digit" className="relative inline-block [clip-path:inset(0)]">
+    // `tabular-nums` keeps the window widths equal so the number doesn't shuffle
+    // sideways as digits turn over. It goes on the digit windows, not the whole
+    // figure: Circular's tabular feature also pads "$", "," and "." out to a
+    // digit's width, which spaces a currency figure out like a spreadsheet.
+    <span data-testid="rolling-digit" className="relative inline-block tabular-nums [clip-path:inset(0)]">
       {state.previous !== null && (
         <span
           key={`out-${state.gen}`}
