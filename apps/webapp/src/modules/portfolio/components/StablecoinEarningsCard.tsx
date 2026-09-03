@@ -190,10 +190,14 @@ function SuppliedContent({
                       {position.name}
                     </Text>
                     {/* One legend row per chain leg (APP-547): the chain mark is
-                        what tells two sUSDS rows apart. */}
-                    <span className="flex h-4 w-4 shrink-0" data-testid="legend-chain-icon">
-                      {getChainIcon(position.chainId, 'h-full w-full')}
-                    </span>
+                        what tells two sUSDS rows apart, so only multi-chain
+                        products carry it — on a single-chain product it says
+                        nothing the name doesn't. */}
+                    {position.multichain && (
+                      <span className="flex h-4 w-4 shrink-0" data-testid="legend-chain-icon">
+                        {getChainIcon(position.chainId, 'h-full w-full')}
+                      </span>
+                    )}
                     <Text variant="medium" tag="span" className="text-textSecondary">
                       ({pctLabel})
                     </Text>

@@ -25,6 +25,7 @@ const h = vi.hoisted(() => {
     rate: { value: 0.045 },
     detailPath: '/earn/savings',
     supplyTokens: ['USDS'],
+    networks: [1, 8453],
     position: { totalUsd, byChain: { 1: totalUsd } }
   });
   return {

@@ -116,6 +116,7 @@ const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   share: 0.5,
   detailPath: '/earn/x',
   chainId: 1,
+  multichain: false,
   ...over
 });
 

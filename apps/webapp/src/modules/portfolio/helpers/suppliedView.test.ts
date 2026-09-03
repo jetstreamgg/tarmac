@@ -104,6 +104,17 @@ describe('buildSuppliedView', () => {
     ]);
   });
 
+  it('flags multi-chain products so the legend can mark their legs', () => {
+    const view = buildSuppliedView([
+      makeRow({ id: 'savings', networks: [1, 8453], position: amount(100, { 1: 100 }) }),
+      makeRow({ id: 'vault-usds', kind: 'vault', networks: [1], position: amount(50, { 1: 50 }) })
+    ]);
+    expect(view.positions.map(p => [p.rowId, p.multichain])).toEqual([
+      ['savings', true],
+      ['vault-usds', false]
+    ]);
+  });
+
   it('skips a chain the product holds nothing on', () => {
     const view = buildSuppliedView([makeRow({ id: 'savings', position: amount(50, { 1: 50, 8453: 0 }) })]);
     expect(view.positions.map(p => p.chainId)).toEqual([1]);

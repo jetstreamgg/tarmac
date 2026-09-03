@@ -60,7 +60,8 @@ const SUPPLIED: SuppliedView = {
       hoverColor: '#7C5BF5',
       share: 1,
       detailPath: '/earn/savings',
-      chainId: 1
+      chainId: 1,
+      multichain: true
     }
   ],
   totalSupplied: 1000,

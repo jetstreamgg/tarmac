@@ -37,6 +37,12 @@ export type SuppliedPosition = {
   detailPath: string;
   /** The chain this position lives on. Drives the network badge and the Supply target. */
   chainId: number;
+  /**
+   * The product runs on more than one chain (registry `networks`), so its legs
+   * need telling apart — the legend shows a chain mark only for these. A
+   * single-chain product's chain is implied and the mark would be noise.
+   */
+  multichain: boolean;
 };
 
 export type SuppliedView = {
@@ -112,7 +118,8 @@ export function buildSuppliedView(rows: EarnProductRow[]): SuppliedView {
     }),
     share: totalSupplied > 0 ? amountUsd / totalSupplied : 0,
     detailPath: row.detailPath,
-    chainId
+    chainId,
+    multichain: row.networks.length > 1
   }));
 
   const projected1Y = positions.reduce((acc, p) => acc + projectAnnualEarnings(p.amountUsd, p.rate), 0);

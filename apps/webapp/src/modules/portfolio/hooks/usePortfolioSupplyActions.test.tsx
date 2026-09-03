@@ -130,6 +130,7 @@ const position = (
   share: 1,
   detailPath: `/earn/${kind}`,
   chainId: 1,
+  multichain: false,
   ...over
 });
 
