@@ -72,13 +72,17 @@ function NetworksBadge({ networks, size = 's' }: { networks: number[]; size?: 's
 
 function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex h-10 flex-col justify-between md:h-11">
-      <span className="text-fgSecondary text-xs leading-[18px]">{label}</span>
-      {/* The value slot is pinned to its own line height and centres what it
+    // The label never wraps, so the stat's minimum width is the wider of the
+    // label and the value's longest unbreakable run; the value may wrap onto
+    // a second line when the row gets tight (see the stats row in
+    // FeaturedCard), so the slot has a minimum height, not a fixed one.
+    <div className="flex flex-col gap-1">
+      <span className="text-fgSecondary text-xs leading-[18px] whitespace-nowrap">{label}</span>
+      {/* The value slot is at least its own line height and centres what it
           holds, rather than letting the content sit on the text baseline: the
           risk pill is a 15px box with no text in it, so baseline alignment
           hangs it ~3.5px below the neighbouring figures. */}
-      <span className="text-fgPrimary font-circle flex h-[18px] items-center text-base leading-[18px] font-medium tracking-[-0.32px] whitespace-nowrap md:h-[22px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
+      <span className="text-fgPrimary font-circle flex min-h-[18px] items-center text-base leading-[18px] font-medium tracking-[-0.32px] md:min-h-[22px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
         {children}
       </span>
     </div>
@@ -86,7 +90,7 @@ function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
 }
 
 function StatDivider() {
-  return <div className="bg-borderPrimary h-6 w-px shrink-0" />;
+  return <div className="bg-borderPrimary h-6 w-px shrink-0 self-center" />;
 }
 
 /** Rate stat label: the mobile comp says "APY" (486:22051), the desktop comps "Rate" (1036:201228). */
@@ -290,7 +294,11 @@ export const HIGHLIGHTED_PRODUCTS: HighlightedProduct[] = [
         <StatDivider />
         {row.maturity && (
           <>
-            <Stat label={<Trans>Maturity date</Trans>}>{formatMaturity(row.maturity)}</Stat>
+            {/* Day and month are glued so a tight row breaks the date into at
+                most two lines ("26 Nov" / "2026"), never three. */}
+            <Stat label={<Trans>Maturity date</Trans>}>
+              {formatMaturity(row.maturity).replace(' ', '\u00a0')}
+            </Stat>
             <StatDivider />
           </>
         )}
@@ -333,14 +341,23 @@ function FeaturedCard({
       <p className="text-fgSecondary mt-2 text-xs leading-[18px] md:max-w-[370px]">
         {product.description(row, context)}
       </p>
-      {/* The stats keep their natural width (the value slot is pinned to one
-          line, so a wrapped "26 Nov 2026" would spill onto its label); when
-          the card is too narrow for stats + CTA on one line — the two-up grid
-          beside a wallet extension panel (APP-549) — the row wraps and the CTA
-          drops to its own line, right-aligned. */}
-      <div className="mt-8 flex flex-1 flex-wrap items-end justify-between gap-6 md:mt-10">
-        <div className="flex items-center gap-6">{product.stats(row)}</div>
-        <Button variant="primary" size="l" className="ml-auto hidden w-28 md:inline-flex" onClick={onSupply}>
+      {/* Stats + CTA stay on one line for as long as possible (APP-549, the
+          two-up grid beside a wallet extension panel). The stats group is
+          `flex-1` from a zero basis with min-width:auto, so the row's wrap
+          decision is made against the group's *min-content* width: as the
+          card narrows the group first gives up slack (the maturity date drops
+          to two lines) and only once even that can't sit beside the CTA does
+          the CTA wrap onto its own line, right-aligned. Stats align at the top
+          so their labels stay on one line while a two-line value hangs below;
+          the row aligns at the bottom so the CTA sits on the stats' baseline. */}
+      <div className="mt-8 flex flex-1 flex-wrap items-end gap-6 md:mt-10">
+        <div className="flex flex-1 items-start gap-6">{product.stats(row)}</div>
+        <Button
+          variant="primary"
+          size="l"
+          className="ml-auto hidden w-28 shrink-0 md:inline-flex"
+          onClick={onSupply}
+        >
           <Trans>Earn</Trans>
         </Button>
       </div>
