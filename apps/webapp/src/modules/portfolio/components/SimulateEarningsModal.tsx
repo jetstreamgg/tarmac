@@ -1,11 +1,11 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Info, TrendingUp, X } from 'lucide-react';
 import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { RateBadge } from '@/components/ui/RateBadge';
-import { RollingValue } from '@/components/ui/rolling-value';
+import { OdometerValue } from '@/components/ui/odometer-value';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Text } from '@/modules/layout/components/Typography';
 import {
@@ -33,22 +33,6 @@ export function SimulateEarningsModal({
 }) {
   const [step, setStep] = useState(() => balanceToStep(INITIAL_BALANCE));
   const balance = stepToBalance(step);
-  // While the thumb is being dragged the balance changes every frame, and a
-  // roll (600ms / 400ms) would never get to finish — the glyphs would sit
-  // mid-flight for the whole drag. So the figures swap instantly during a
-  // pointer drag and roll again for discrete changes (keyboard steps, a
-  // click on the track).
-  const [dragging, setDragging] = useState(false);
-  useEffect(() => {
-    if (!dragging) return;
-    const stop = () => setDragging(false);
-    window.addEventListener('pointerup', stop);
-    window.addEventListener('pointercancel', stop);
-    return () => {
-      window.removeEventListener('pointerup', stop);
-      window.removeEventListener('pointercancel', stop);
-    };
-  }, [dragging]);
 
   const yearly = projectAnnualEarnings(balance, savingsRate);
   const monthly = yearly / 12;
@@ -108,13 +92,13 @@ export function SimulateEarningsModal({
               </Text>
               <Info className="size-3" aria-hidden />
             </div>
-            {/* Heading 3 with the comp's "numbers animation" — the whole figure
-                rolls over as the slider moves. */}
+            {/* Heading 3 with the comp's "numbers animation": a per-digit
+                odometer that keeps gliding while the thumb is dragged. */}
             <span
               className="text-text font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px]"
               data-testid="simulate-earnings-balance"
             >
-              <RollingValue value={formatUsd(balance)} instant={dragging} />
+              <OdometerValue value={formatUsd(balance)} />
             </span>
           </div>
 
@@ -125,7 +109,6 @@ export function SimulateEarningsModal({
               max={STEPS}
               step={1}
               onValueChange={([value]) => setStep(value)}
-              onPointerDown={() => setDragging(true)}
               aria-label="Balance supplied"
               valueText={formatUsd(balance)}
             />
@@ -138,9 +121,9 @@ export function SimulateEarningsModal({
         </div>
 
         <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
-          <Stat label={<Trans>Daily</Trans>} value={formatUsd(daily)} instant={dragging} />
-          <Stat label={<Trans>Monthly</Trans>} value={formatUsd(monthly)} instant={dragging} divided />
-          <Stat label={<Trans>Yearly</Trans>} value={formatUsd(yearly)} instant={dragging} divided />
+          <Stat label={<Trans>Daily</Trans>} value={formatUsd(daily)} />
+          <Stat label={<Trans>Monthly</Trans>} value={formatUsd(monthly)} divided />
+          <Stat label={<Trans>Yearly</Trans>} value={formatUsd(yearly)} divided />
         </div>
       </DialogContent>
     </Dialog>
@@ -152,17 +135,7 @@ export function SimulateEarningsModal({
  * trending-up mark over a Body 6 label, and splits the three with 29.5px
  * hairlines rather than full-height column rules.
  */
-function Stat({
-  label,
-  value,
-  divided,
-  instant
-}: {
-  label: ReactNode;
-  value: string;
-  divided?: boolean;
-  instant?: boolean;
-}) {
+function Stat({ label, value, divided }: { label: ReactNode; value: string; divided?: boolean }) {
   return (
     <div className="flex items-center gap-10">
       {divided && <span className="bg-borderPrimary h-[29.5px] w-px shrink-0" aria-hidden />}
@@ -172,7 +145,7 @@ function Stat({
         </Text>
         <span className="text-text font-circle flex items-center gap-1.5 text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <TrendingUp className="text-bullish size-4 shrink-0" aria-hidden />
-          <RollingValue value={value} speed="stat" instant={instant} />
+          <OdometerValue value={value} />
         </span>
       </div>
     </div>
