@@ -1,4 +1,4 @@
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { TokensComposition } from './TokensComposition';
@@ -96,7 +96,7 @@ describe('TokensComposition', () => {
     expect(bar[1].className).toContain('opacity-20');
   });
 
-  it('clears the hover when the pointer leaves the row itself', () => {
+  it('clears the hover when the pointer leaves the row itself', async () => {
     render(
       <TokensComposition
         segments={[{ ...segments[0], hoverDetail: <span>Absolute Cap</span> }, segments[1]]}
@@ -110,8 +110,9 @@ describe('TokensComposition', () => {
     // Leaving into the gap between rows (still inside the legend column) must
     // not hold the state.
     fireEvent.mouseLeave(row);
-    expect(screen.queryByText('Absolute Cap')).toBeNull();
     expect(screen.getAllByTestId('composition-segment')[1].className).not.toContain('opacity-20');
+    // The detail collapses out through AnimatePresence rather than vanishing.
+    await waitFor(() => expect(screen.queryByText('Absolute Cap')).toBeNull());
   });
 
   it('always mounts the market link so it is reachable without a pointer', () => {
@@ -120,7 +121,7 @@ describe('TokensComposition', () => {
     expect(screen.getByRole('link').getAttribute('href')).toBe('https://example.com/market');
   });
 
-  it('activates the row on keyboard focus and clears it on blur', () => {
+  it('activates the row on keyboard focus and clears it on blur', async () => {
     render(
       <TokensComposition
         segments={[
@@ -138,6 +139,6 @@ describe('TokensComposition', () => {
     expect(screen.getAllByTestId('composition-segment')[1].className).toContain('opacity-20');
 
     fireEvent.blur(link);
-    expect(screen.queryByText('Absolute Cap')).toBeNull();
+    await waitFor(() => expect(screen.queryByText('Absolute Cap')).toBeNull());
   });
 });

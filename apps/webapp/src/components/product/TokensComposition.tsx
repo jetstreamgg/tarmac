@@ -1,6 +1,19 @@
 import { useState, type ReactNode } from 'react';
+import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { LinkExternal } from '@/modules/icons';
+import { AnimationLabels } from '@/modules/ui/animation/constants';
+import { rowCollapseAnimations } from '@/modules/ui/animation/presets';
+import { easeInOutQuart } from '@/modules/ui/animation/timingFunctions';
+
+/**
+ * The hover detail rides the table filter's collapse variants (height 0 ⇄ auto
+ * + fade on in-out quart) but on a hover-length clock: 300ms is right for a
+ * filter you clicked, too slow for a row the pointer merely crossed — a quick
+ * drag down the legend would leave a train of half-open panels behind it.
+ */
+const DETAIL_REVEAL_MS = 200;
+const detailRevealTransition: Transition = { duration: DETAIL_REVEAL_MS / 1000, ease: easeInOutQuart };
 
 export type CompositionSegment = {
   id: string;
@@ -48,6 +61,12 @@ export type CompositionSegment = {
  * (its market link) activates the same state, and the state clears when the
  * pointer or focus leaves that row — not the column, so the gaps between rows
  * don't hold a stale hover.
+ *
+ * The detail grows and shrinks rather than popping: an instant mount moved
+ * every row below it by the panel's height in a single frame, which read as
+ * the whole legend jumping under a fast drag. Text colours fade on the same
+ * 150ms as the bar and dots; the label's face swap (Body 5 → Label 5) can't
+ * tween and stays instant.
  */
 export function TokensComposition({
   title,
@@ -68,6 +87,8 @@ export function TokensComposition({
   dataTestId?: string;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const reduceMotion = useReducedMotion();
+  const detailTransition: Transition = reduceMotion ? { duration: 0 } : detailRevealTransition;
   const sum = valueTotal ?? segments.reduce((acc, s) => acc + s.value, 0);
   const share = (value: number) => (sum > 0 ? (value / sum) * 100 : 0);
   const fillOf = (segment: CompositionSegment) =>
@@ -137,7 +158,9 @@ export function TokensComposition({
               onFocus={() => setHoveredId(segment.id)}
               onBlur={() => setHoveredId(null)}
             >
-              <div className="flex min-w-0 flex-col gap-3">
+              {/* No gap on the column: a gap would survive the detail's height 0
+                  and jump. The 12px sits inside the clip (pt-3) instead. */}
+              <div className="flex min-w-0 flex-col">
                 <div className="flex min-h-6 min-w-0 items-center gap-1.5">
                   <span
                     className={cn(
@@ -151,11 +174,26 @@ export function TokensComposition({
                   </Label>
                   {segment.badge && <span className={cn(isDimmed && 'opacity-50')}>{segment.badge}</span>}
                 </div>
-                {isHovered && segment.hoverDetail}
+                <AnimatePresence initial={false}>
+                  {isHovered && segment.hoverDetail && (
+                    <motion.div
+                      key="detail"
+                      data-testid="composition-detail"
+                      className="overflow-hidden"
+                      variants={rowCollapseAnimations}
+                      initial={AnimationLabels.initial}
+                      animate={AnimationLabels.animate}
+                      exit={AnimationLabels.exit}
+                      transition={detailTransition}
+                    >
+                      <div className="pt-3">{segment.hoverDetail}</div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <div
                 className={cn(
-                  'font-circle flex h-6 shrink-0 items-center gap-1.5 text-base leading-[18px] font-medium tracking-[-0.32px]',
+                  'font-circle flex h-6 shrink-0 items-center gap-1.5 text-base leading-[18px] font-medium tracking-[-0.32px] transition-colors duration-150',
                   isDimmed ? 'text-fgQuaternary' : 'text-text'
                 )}
               >
@@ -163,7 +201,7 @@ export function TokensComposition({
                 {segment.formattedValue}
                 <span
                   className={cn(
-                    'font-graphik pt-0.5 text-sm leading-[22px] font-normal tracking-normal',
+                    'font-graphik pt-0.5 text-sm leading-[22px] font-normal tracking-normal transition-colors duration-150',
                     isDimmed ? 'text-fgQuaternary' : 'text-fgSecondary'
                   )}
                 >
@@ -198,7 +236,7 @@ function Label({
   children: ReactNode;
 }) {
   const classes = cn(
-    'flex min-w-0 items-center gap-1.5 text-sm',
+    'flex min-w-0 items-center gap-1.5 text-sm transition-colors duration-150',
     active
       ? 'text-text font-circle leading-4 font-medium tracking-[-0.28px]'
       : cn('font-graphik leading-[22px]', dimmed ? 'text-fgQuaternary' : 'text-fgSecondary')
