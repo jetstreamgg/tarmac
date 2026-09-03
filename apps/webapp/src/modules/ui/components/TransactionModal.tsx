@@ -365,7 +365,12 @@ export function TransactionModal({
   // own row already says what is being waited on, and the flow's status
   // subtitle stays hidden too (it narrates an on-chain write that hasn't
   // started). Figma review 2829:141029: nothing beyond a step's description.
-  const gateSubtitle = gateCopy && !showStepList ? gateCopy.subtitle : undefined;
+  // The gate's copy is redundant only when the signature prelude step is in
+  // the list — that step carries its own description (Figma 2829:141028/9).
+  // Screening has no step of its own, so its "Running a quick check…" /
+  // "Verifying your wallet address…" copy still shows under a step list.
+  const gateCopyInStepList = showStepList && hasSignatureStep;
+  const gateSubtitle = gateCopy && !gateCopyInStepList ? gateCopy.subtitle : undefined;
   const subtitle = isFirstScreen ? subtitles?.review : gateCopy ? gateSubtitle : subtitleByStatus[txStatus];
   const firstScreenSubtitle = isFirstScreen ? subtitle : undefined;
 
@@ -776,23 +781,29 @@ export function TransactionModal({
                     occupy (Figma 2376:225580). The link left with them — a
                     confirmed transaction hands its hash to the success toast, and
                     a mid-flow link to one leg of a multi-step flow was noise. The
-                    gate's own copy survives only where there is no step list:
-                    it narrates an off-chain phase (screening, terms signature)
-                    that the chip's txStatus-keyed label cannot describe
-                    (APP-501). With a step list, the signature step's own
-                    description already carries the terms copy, so the extra
-                    sentence under the list goes (Figma review 2829:141028/9:
-                    nothing beyond a step's description on this screen). */}
-                {!showStepList && (badgeContent || gateCopy?.message) && (
-                  <div className="flex items-center gap-3 pt-4">
-                    {badgeContent && (
-                      <StepsBadge variant={badgeVariant} dataTestId="transaction-status-badge">
-                        {badgeContent}
-                      </StepsBadge>
-                    )}
-                    {gateCopy?.message && <Text className="text-textSecondary">{gateCopy.message}</Text>}
-                  </div>
-                )}
+                    gate's own copy narrates an off-chain phase (screening,
+                    terms signature) that the chip's txStatus-keyed label
+                    cannot describe (APP-501). With a step list, the signature
+                    step's own description already carries the terms copy, so
+                    that sentence goes (Figma review 2829:141028/9: nothing
+                    beyond a step's description on this screen) — but the
+                    screening sentence has no step to live in, so it stays,
+                    on its own: the list's header already shows the chip. */}
+                {(() => {
+                  const bottomChip = !showStepList && badgeContent;
+                  const gateMessage = gateCopy?.message && !gateCopyInStepList ? gateCopy.message : undefined;
+                  if (!bottomChip && !gateMessage) return null;
+                  return (
+                    <div className="flex items-center gap-3 pt-4">
+                      {bottomChip && (
+                        <StepsBadge variant={badgeVariant} dataTestId="transaction-status-badge">
+                          {badgeContent}
+                        </StepsBadge>
+                      )}
+                      {gateMessage && <Text className="text-textSecondary">{gateMessage}</Text>}
+                    </div>
+                  );
+                })()}
 
                 {/* Terminal-state actions only — the in-flight states (awaiting
                     signature / processing) are pure loading indicators now

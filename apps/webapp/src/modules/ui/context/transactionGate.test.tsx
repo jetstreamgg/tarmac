@@ -335,6 +335,36 @@ describe('TransactionProvider pre-transaction gate', () => {
     expect(badge.textContent).not.toContain('Confirm in the wallet');
   });
 
+  it('screening copy still shows under a step list — only the signature copy is redundant there', async () => {
+    // Screening fires before any prelude step exists, so on a 2+ step flow the
+    // list is already up. The signature step carries its own description; the
+    // address check has no step, so its sentence must survive (review on
+    // #1916) — as a lone sentence, since the list header already has the chip.
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setGateStatus('screening', {
+        message: 'Verifying your wallet address…',
+        subtitle: 'Running a quick check before your transaction starts.',
+        badgeLabel: 'Verifying'
+      });
+      return new Promise(() => {});
+    };
+    renderWithGate(gate, {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm: vi.fn(),
+      steps: ['Approve USDS', 'Supply USDS']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await flush();
+
+    expect(screen.getByText('Verifying your wallet address…')).not.toBeNull();
+    expect(screen.getByText('Running a quick check before your transaction starts.')).not.toBeNull();
+    expect(screen.getAllByTestId('transaction-status-badge')).toHaveLength(1);
+    expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Verifying');
+  });
+
   it("the engine's first onMutate clears the gate copy — the flow's narration takes over", async () => {
     let resolveSigned!: () => void;
     const gate: PreTransactionGate = ({ controls }) => {

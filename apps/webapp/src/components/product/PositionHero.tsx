@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { splitAmount } from '@/utils';
 import { useAccruingValue } from '@/hooks/ui';
-import { RollingDigits, splitRollingTail } from '@/components/ui/rolling-digits';
+import { RollingDigits } from '@/components/ui/rolling-digits';
+import { RollingValue } from '@/components/ui/rolling-value';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ProductBadge } from './ProductCard';
 
@@ -14,6 +15,10 @@ import { ProductBadge } from './ProductCard';
  *
  * The figure is Heading 2 (Circular 44/48, -0.88) with a Heading 6 fraction on
  * fg-secondary. The phone tier keeps M6.3's smaller scale (486:20976).
+ *
+ * A discrete change — a supply or withdraw landing, a fresh chain read — rolls
+ * the figure over as a whole (Design QA 2800:92561, comp 1598:76582) rather
+ * than snapping it.
  */
 export function PositionHero({
   pillSymbol,
@@ -60,10 +65,6 @@ export function PositionHero({
         ? splitAmount(value, fractionDigits, { trimTrailingZeros: false, round: false })
         : splitAmount(amount)
       : { whole: amount, fraction: undefined };
-  // A live figure also rolls its last two integer digits (Figma 2800:92561):
-  // a whale's position ticks its units within the second, and a still carry
-  // there would jump. The rest of the whole part stays out of the clip windows.
-  const { head, tail } = isAccruing ? splitRollingTail(whole) : { head: whole, tail: '' };
 
   return (
     <div className="flex flex-col gap-10 rounded-2xl bg-[linear-gradient(180deg,_rgba(182,179,252,0)_50.24%,_rgba(117,111,236,0.1)_100%)] p-4 md:gap-16 md:p-6">
@@ -87,16 +88,21 @@ export function PositionHero({
             className="h-8 w-8 shrink-0"
           />
           <span className="flex items-baseline gap-px">
-            <span
-              data-testid="position-hero-whole"
-              className="font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px] tabular-nums md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
-            >
-              {head}
-              {isAccruing && <RollingDigits value={tail} />}
+            <span className="font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]">
+              {/* A live figure is one odometer across the point: when the
+                  fraction carries into the whole dollars, only the units digit
+                  (and whatever it carries into) turns over, not the whole part
+                  as one figure. */}
+              {isAccruing ? <RollingDigits value={whole} /> : <RollingValue value={whole} />}
             </span>
             {fraction && (
-              <span className="text-fgSecondary font-circle text-lg leading-5 font-medium tracking-[-0.36px] tabular-nums md:text-xl md:leading-[22px] md:tracking-[-0.4px]">
-                .{isAccruing ? <RollingDigits value={fraction} /> : fraction}
+              <span className="text-fgSecondary font-circle text-lg leading-5 font-medium tracking-[-0.36px] md:text-xl md:leading-[22px] md:tracking-[-0.4px]">
+                .
+                {isAccruing ? (
+                  <RollingDigits value={fraction} />
+                ) : (
+                  <RollingValue value={fraction} speed="stat" />
+                )}
               </span>
             )}
           </span>
