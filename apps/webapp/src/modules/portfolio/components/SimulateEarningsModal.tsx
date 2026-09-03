@@ -60,8 +60,10 @@ export function SimulateEarningsModal({
           </Button>
         </DialogClose>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 pr-12">
+        {/* The close button hangs 32px into the content column and reaches
+            down past the title row, so the description clears it too. */}
+        <div className="flex flex-col gap-2 pr-14">
+          <div className="flex items-center gap-3">
             <DialogTitle className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
               <Trans>Simulate your savings with the Sky Savings Rate</Trans>
             </DialogTitle>
