@@ -5,6 +5,7 @@ import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/uti
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { RateBadge } from '@/components/ui/RateBadge';
+import { RollingDigits } from '@/components/ui/rolling-digits';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Text } from '@/modules/layout/components/Typography';
 import {
@@ -20,6 +21,11 @@ import {
  * slider on a log-uniform scale whose Daily / Monthly / Yearly figures update
  * live from the current Sky Savings Rate (simple, non-compounded —
  * projections assume the rate holds).
+ *
+ * The figures turn over digit by digit (Design QA 2800:92191 / 2800:92198,
+ * which point at number-flow's odometer). The slider fires on every step of a
+ * drag, so a whole-figure roll would never finish; per-digit windows only
+ * move the digits a step actually changes (APP-555).
  */
 export function SimulateEarningsModal({
   open,
@@ -91,13 +97,12 @@ export function SimulateEarningsModal({
               </Text>
               <Info className="size-3" aria-hidden />
             </div>
-            {/* Heading 3. The comp's "numbers animation" on this figure is
-                landing separately (APP-555), so it renders plain here. */}
+            {/* Heading 3 with the comp's "numbers animation" (APP-555). */}
             <span
               className="text-text font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px]"
               data-testid="simulate-earnings-balance"
             >
-              {formatUsd(balance)}
+              <RollingDigits value={formatUsd(balance)} />
             </span>
           </div>
 
@@ -144,7 +149,7 @@ function Stat({ label, value, divided }: { label: ReactNode; value: string; divi
         </Text>
         <span className="text-text font-circle flex items-center gap-1.5 text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <TrendingUp className="text-bullish size-4 shrink-0" aria-hidden />
-          {value}
+          <RollingDigits value={value} />
         </span>
       </div>
     </div>
