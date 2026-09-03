@@ -5,7 +5,6 @@ import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/uti
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { RateBadge } from '@/components/ui/RateBadge';
-import { OdometerValue } from '@/components/ui/odometer-value';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Text } from '@/modules/layout/components/Typography';
 import {
@@ -92,13 +91,13 @@ export function SimulateEarningsModal({
               </Text>
               <Info className="size-3" aria-hidden />
             </div>
-            {/* Heading 3 with the comp's "numbers animation": a per-digit
-                odometer that keeps gliding while the thumb is dragged. */}
+            {/* Heading 3. The comp's "numbers animation" on this figure is
+                landing separately (APP-555), so it renders plain here. */}
             <span
               className="text-text font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px]"
               data-testid="simulate-earnings-balance"
             >
-              <OdometerValue value={formatUsd(balance)} />
+              {formatUsd(balance)}
             </span>
           </div>
 
@@ -145,7 +144,7 @@ function Stat({ label, value, divided }: { label: ReactNode; value: string; divi
         </Text>
         <span className="text-text font-circle flex items-center gap-1.5 text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <TrendingUp className="text-bullish size-4 shrink-0" aria-hidden />
-          <OdometerValue value={value} />
+          {value}
         </span>
       </div>
     </div>
