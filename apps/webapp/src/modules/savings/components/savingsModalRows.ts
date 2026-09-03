@@ -33,6 +33,12 @@ export type SupplyModalRowInput = {
   savingsRate: string;
   /** Network the transaction runs on (e.g. "Ethereum"). */
   network: string;
+  /**
+   * The flow's supported chains. More than one turns the Network cell into the
+   * switch dropdown — entry screens only; the review keeps the static value,
+   * since its numbers were built for one chain.
+   */
+  networkChainIds?: number[];
   /** Supply (position) value before the deposit. */
   supplyBefore: string;
   /** Supply (position) value after the deposit. */
@@ -64,7 +70,10 @@ export type SupplyModalRowInput = {
 export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalGridRow[] {
   const networkFee = networkFeeCell(input.networkFee);
   return [
-    [rateCell('Savings rate', input.savingsRate, 'savings', 'ssr'), networkCell(input.network)],
+    [
+      rateCell('Savings rate', input.savingsRate, 'savings', 'ssr'),
+      networkCell(input.network, undefined, input.networkChainIds)
+    ],
     [
       singleOrDelta(
         { label: 'Supply', token: 'USDS' },
@@ -91,6 +100,12 @@ export type WithdrawModalRowInput = {
   savingsRate: string;
   /** Network the transaction runs on (e.g. "Ethereum"). */
   network: string;
+  /**
+   * The flow's supported chains. More than one turns the Network cell into the
+   * switch dropdown — entry screens only; the review keeps the static value,
+   * since its numbers were built for one chain.
+   */
+  networkChainIds?: number[];
   /** Supply (position) value before the withdrawal. */
   supplyBefore: string;
   /** Supply (position) value after the withdrawal. */
@@ -113,7 +128,10 @@ export type WithdrawModalRowInput = {
  */
 export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsModalGridRow[] {
   return [
-    [rateCell('Savings rate', input.savingsRate, 'savings', 'ssr'), networkCell(input.network)],
+    [
+      rateCell('Savings rate', input.savingsRate, 'savings', 'ssr'),
+      networkCell(input.network, undefined, input.networkChainIds)
+    ],
     [
       singleOrDelta(
         { label: 'Supply', token: 'USDS' },

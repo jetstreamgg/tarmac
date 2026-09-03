@@ -65,9 +65,9 @@ function supplyChainFor(
  * A rejected or failed switch opens nothing — the user stays on Portfolio and
  * the button remains clickable. Safe wallets are the exception: they can never
  * switch from the dapp, so a cross-chain position resolves to `undefined` and
- * the caller navigates to the product page instead, where the scoped
- * ChainModal explains that network switching is managed by the Safe app
- * (APP-486).
+ * the caller navigates to the product page instead, where the network
+ * selector renders as a static pill for a Safe — its chain is fixed by the
+ * Safe app it runs inside (APP-486).
  */
 export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (() => void) | undefined {
   const connectedChainId = useChainId();

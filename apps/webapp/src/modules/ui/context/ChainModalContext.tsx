@@ -11,6 +11,17 @@ import { Failure } from '@/modules/icons';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
+/**
+ * The one place a chain switch is requested: the wallet call plus its analytics
+ * and its failure toasts (unsupported-chain vs generic). Every surface that can
+ * switch goes through it — the product-page and transaction-modal
+ * `NetworkSelect`s, the network toast's undo, and the transaction modal's chain
+ * guard.
+ *
+ * Named for the ChainModal that used to be its only consumer; that dialog is
+ * gone (switching is a dropdown now), but the name is left alone rather than
+ * churning every import site out from under the open transaction work.
+ */
 type ChainModalContextType = {
   handleSwitchChain: ({
     chainId,

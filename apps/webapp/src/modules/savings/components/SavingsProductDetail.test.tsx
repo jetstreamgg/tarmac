@@ -51,8 +51,8 @@ vi.mock('./SavingsTransactionsTable', () => ({
 vi.mock('./SavingsTransactionsFilter', () => ({
   SavingsTransactionsFilter: () => <div data-testid="savings-transactions-filter" />
 }));
-vi.mock('@/modules/ui/components/ChainModal', () => ({
-  ChainModal: ({ triggerClassName }: { triggerClassName?: string }) => (
+vi.mock('@/modules/ui/components/NetworkSelect', () => ({
+  NetworkSelect: ({ triggerClassName }: { triggerClassName?: string }) => (
     <div data-testid="mock-chain-modal" data-trigger-class={triggerClassName ?? ''} />
   )
 }));

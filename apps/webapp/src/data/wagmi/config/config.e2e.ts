@@ -1,5 +1,6 @@
 import { http, WalletRpcSchema, EIP1193Parameters, UserRejectedRequestError } from 'viem';
 import { createConfig, createConnector, createStorage, noopStorage, CreateConnectorFn } from 'wagmi';
+import { switchChain } from '@wagmi/core';
 import { getTestTenderlyChains, TENDERLY_CHAIN_ID } from './testTenderlyChain';
 import { mock, MockParameters } from 'wagmi/connectors';
 import { TEST_WALLET_ADDRESSES, getTestWalletAddress } from '@/test/e2e/utils/testWallets';
@@ -110,6 +111,7 @@ function extendedMock(params: MockParameters) {
 declare global {
   interface Window {
     __MOCK_SWITCH_CHAIN_ERROR__?: 'reject' | 'error';
+    __MOCK_SWITCH_CHAIN__?: (chainName: string) => Promise<number>;
   }
 }
 
@@ -210,3 +212,28 @@ export const mockWagmiConfig = createConfig({
     key: `wagmi-mock-v2-${(window as any).__WORKER_INDEX__ || import.meta.env.VITE_TEST_WORKER_INDEX || 0}`
   })
 });
+
+/**
+ * Playwright hook for "the user changed network in their wallet" — the wallet's
+ * own menu, with no app UI involved.
+ *
+ * This is the only way to model that scenario now. Switching in the app is
+ * contextual: a product page (or a transaction modal) whose product runs on
+ * more than one chain. From a mainnet-only page like /stake there is no control
+ * to drive, which is precisely where the interesting behaviour lives — the app
+ * must honour the wallet's choice and send the user somewhere the module works,
+ * rather than prompting them straight back.
+ */
+if (typeof window !== 'undefined') {
+  window.__MOCK_SWITCH_CHAIN__ = async (chainName: string) => {
+    // Case-insensitive: callers build the name from the lowercase `NetworkName`
+    // enum (`Tenderly ${networkName}` → "Tenderly arbitrum"), and the URL the
+    // helper then waits on is lowercased anyway. Matching the display string
+    // exactly made the name a case-sensitive key it was never meant to be.
+    const wanted = chainName.toLowerCase();
+    const chain = mockWagmiConfig.chains.find(c => c.name.toLowerCase() === wanted);
+    if (!chain) throw new Error(`Mock wallet: no configured chain named "${chainName}".`);
+    await switchChain(mockWagmiConfig, { chainId: chain.id });
+    return chain.id;
+  };
+}

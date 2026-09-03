@@ -174,20 +174,37 @@ vi.mock('./SavingsOriginSelect', async importOriginal => {
 });
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+// Savings is multi-chain, so its entry grid's Network cell is the switch
+// dropdown. The real one wants a router (it writes the network= param) and a
+// query client (the Safe probe); these renders have neither, and what they are
+// about is the row set, so stand it in with its chain list.
+vi.mock('@/modules/ui/components/NetworkSelect', () => ({
+  NetworkSelect: ({ chainIds }: { chainIds: number[] }) => (
+    <div data-testid="modal-network-select">{chainIds.join(',')}</div>
+  )
+}));
 
 import { SavingsModalForm } from './SavingsModalForm';
 import { TOKENS } from '@/hooks';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const renderForm = (flow: SavingsLaunchFlow) =>
-  render(
-    <I18nProvider i18n={i18n}>
-      <TooltipProvider>
-        <SavingsModalForm sessionId="s1" flow={flow} />
-      </TooltipProvider>
-    </I18nProvider>
-  );
+const formTree = (flow: SavingsLaunchFlow) => (
+  <I18nProvider i18n={i18n}>
+    <TooltipProvider>
+      <SavingsModalForm sessionId="s1" flow={flow} />
+    </TooltipProvider>
+  </I18nProvider>
+);
+
+const renderForm = (flow: SavingsLaunchFlow) => {
+  const result = render(formTree(flow));
+  // Re-renders in place so the wagmi mock re-reads `h.chainId`. That is how a
+  // test moves the CHAIN under an already-open modal, which the entry grid's
+  // Network dropdown now lets a user do for real. A fresh element each time:
+  // React bails out of a re-render given the same reference.
+  return { ...result, refresh: () => result.rerender(formTree(flow)) };
+};
 
 // The last entry.confirmDisabled pushed to the modal.
 const lastDisabled = () => {
@@ -225,6 +242,17 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     for (const label of FIGMA_ROWS) {
       expect(screen.queryByTestId(`savings-modal-row-${label}`)).not.toBeNull();
     }
+  });
+
+  it('makes the entry Network cell a switch dropdown over the chains Savings runs on', () => {
+    renderForm('supply');
+
+    // Multi-chain product → the Network value is the control, not a label
+    // (Figma 2682:77695). Mainnet-only products resolve to one chain and keep
+    // the static value, which is why the dropdown is opt-in per builder.
+    const select = screen.getByTestId('modal-network-select');
+    expect(select.textContent).toContain('1');
+    expect(select.textContent).toContain('8453');
   });
 
   it('routes the supply flow to useSavingsLaunch', () => {
@@ -281,6 +309,23 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     renderForm('supply');
     fireEvent.click(screen.getByTestId('origin-opt-DAI'));
     expect(h.launchParams?.originToken?.symbol).toBe('DAI');
+  });
+
+  // The entry grid carries a Network dropdown, so the chain can change with the
+  // modal open — and the origin sets differ by chain. DAI is mainnet-only.
+  it('drops a mainnet-only origin when the chain changes under the modal', () => {
+    const { refresh } = renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-DAI'));
+    expect(h.launchParams?.originToken?.symbol).toBe('DAI');
+
+    h.chainId = 8453; // the user switches to Base from inside the modal
+    refresh();
+
+    // Left as DAI, the Select's value falls outside its own items (a blank
+    // trigger) and the supply is addressed to bridged DAI, which the L2 PSM
+    // will not take — on Optimism and Unichain there is no address at all.
+    expect(screen.queryByTestId('origin-opt-DAI')).toBeNull();
+    expect(h.launchParams?.originToken?.symbol).toBe('USDS');
   });
 
   it('routes the supply to the USDC origin token (PSM swap-and-supply) at 6 decimals', () => {

@@ -1,8 +1,8 @@
 import { mainnet } from 'viem/chains';
 import { Intent } from './enums';
-import { isL2ChainId, isMainnetId, isTestnetId } from '@/utils';
+import { getChainName, isL2ChainId, isMainnetId, isTestnetId } from '@/utils';
 import { normalizeUrlParam } from './helpers/string/normalizeUrlParam';
-import { CHAIN_WIDGET_MAP, COMING_SOON_MAP } from './chainAvailability';
+import { chainIdsForIntent, chainSwitchTarget, COMING_SOON_MAP } from './chainAvailability';
 
 /** The subset of a wagmi chain the network-target helpers need. */
 type ChainRef = { id: number; name: string };
@@ -78,32 +78,105 @@ export function getNetworkOverrideForIntent(
   return undefined;
 }
 
-/** What landing on a module route should do given the chain the URL points at. */
+/** What landing on a module route should do given the chain the app points at. */
 export type RouteChainAction =
-  { kind: 'render' } | { kind: 'switch-network'; network: string } | { kind: 'redirect-home' };
+  | { kind: 'render' }
+  | { kind: 'switch-network'; chainId: number; network: string }
+  | { kind: 'redirect-home' };
 
 /**
- * Decide between rendering a module, auto-switching the network, or sending
- * the user home. Mainnet-only modules reached with an L2 network don't bounce
- * home: in-app links retain the current network param and deep links can carry
- * anything, so the app switches on the user's behalf instead (announced by the
- * shell's network toast). `switchAttempted` marks that this module visit
- * already had its switch chance — a declined wallet prompt or an explicit
- * wallet chain change falls through to the home redirect rather than
- * re-prompting. Coming-soon modules and chains that can't host the module at
- * all still redirect home.
+ * Which chain a module route should run on, and whether getting there needs a
+ * wallet switch. Three rules, in order:
+ *
+ *  a. **The network filter.** If the user has filtered the app to a network and
+ *     this module runs there, that is where the module opens. The filter is a
+ *     display filter everywhere else — this is the one place it decides a
+ *     chain, and only on arrival (see `switchAttempted`).
+ *  b. **The chain already in play.** Otherwise, if the module runs on the chain
+ *     the app is pointed at, stay put — no prompt.
+ *  c. **The module's home chain.** Otherwise switch to `chainSwitchTarget`: the
+ *     dev fork when one is configured (so a dev wallet is never moved onto real
+ *     Ethereum and real fees), else mainnet, else any chain the module runs on
+ *     that the wallet config knows — the last of which is what would carry a
+ *     future L2-only module.
+ *
+ * `currentChainId` is the chain the app is pointed at: the `network` search
+ * param's chain when it has one, else the wallet's. The param normally mirrors
+ * the wallet and leads it while a switch is in flight, which is what stops a
+ * navigation validating against the chain being left.
+ *
+ * `switchAttempted` marks that this module visit already had its switch chance
+ * — a declined wallet prompt, or an explicit wallet chain change. It keeps rule
+ * (a) from fighting a user who switched chain by hand on the page, and makes
+ * rule (c) fall through to the home redirect rather than re-prompting.
+ *
+ * None of the three apply to `BALANCES_INTENT` — the Portfolio and the Earn
+ * marketplace, which always render (see the early return). They are the
+ * surfaces the filter is FOR, so rule (a) there would let a display filter
+ * prompt the wallet; and they are where a redirect sends you, so rules (b)/(c)
+ * there would prompt on arrival for a chain the surface never needed.
+ *
+ * A module that is coming-soon on the current chain still redirects home rather
+ * than switching: "arriving here shortly" is a promise about *this* chain, so
+ * moving the user off it would be the wrong answer.
  */
 export function getRouteChainAction(
   intent: Intent,
-  targetChainId: number,
-  { switchAttempted = false, chains }: { switchAttempted?: boolean; chains?: readonly ChainRef[] } = {}
+  currentChainId: number,
+  {
+    switchAttempted = false,
+    filterChainId = null,
+    chains
+  }: {
+    switchAttempted?: boolean;
+    /** The app-wide network filter (lib/networkFilter), or null for "All networks". */
+    filterChainId?: number | null;
+    chains?: readonly ChainRef[];
+  } = {}
 ): RouteChainAction {
-  const allowed = CHAIN_WIDGET_MAP[targetChainId] ?? [];
-  const comingSoon = COMING_SOON_MAP[targetChainId] ?? [];
-  if (allowed.includes(intent) && !comingSoon.includes(intent)) return { kind: 'render' };
-  if (!comingSoon.includes(intent) && !switchAttempted) {
-    const network = getNetworkOverrideForIntent(intent, targetChainId, chains);
-    if (network) return { kind: 'switch-network', network };
+  const supported = chainIdsForIntent(intent);
+  // Omitting `chains` means "assume production": every supported chain is a
+  // candidate except the dev fork, and names come from the static map. The app
+  // always passes them; the default keeps this callable as a pure predicate.
+  const configuredIds = chains?.map(chain => chain.id) ?? supported.filter(id => !isTestnetId(id));
+  const comingSoonHere = (COMING_SOON_MAP[currentChainId] ?? []).includes(intent);
+
+  const switchTo = (id: number): RouteChainAction => ({
+    kind: 'switch-network',
+    chainId: id,
+    network: normalizeUrlParam(chains?.find(chain => chain.id === id)?.name ?? getChainName(id))
+  });
+
+  // Portfolio and the Earn marketplace run on every chain and need none in
+  // particular, so they take no part in any of this: they never move the wallet
+  // and are never redirected. They are also where a user lands after being
+  // redirected OFF a module, which is why the two halves must go together —
+  // switching here would turn "this product isn't on your chain" into a prompt
+  // to change chain anyway, on the surface that had no complaint. Reads run
+  // against the configured chain wagmi keeps pinned, and a transaction is
+  // stopped by the modal's own guard.
+  if (intent === Intent.BALANCES_INTENT) return { kind: 'render' };
+
+  // (a) The filter, when this module runs on it.
+  if (
+    !switchAttempted &&
+    !comingSoonHere &&
+    filterChainId !== null &&
+    filterChainId !== currentChainId &&
+    supported.includes(filterChainId) &&
+    configuredIds.includes(filterChainId)
+  ) {
+    return switchTo(filterChainId);
   }
+
+  // (b) The chain already in play hosts the module.
+  if (supported.includes(currentChainId)) return { kind: 'render' };
+
+  // (c) The module's home chain.
+  if (!comingSoonHere && !switchAttempted) {
+    const target = chainSwitchTarget(supported, configuredIds);
+    if (target !== undefined && target !== currentChainId) return switchTo(target);
+  }
+
   return { kind: 'redirect-home' };
 }

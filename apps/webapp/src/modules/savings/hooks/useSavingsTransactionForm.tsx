@@ -165,7 +165,7 @@ export function useSavingsTransactionForm({
   // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
   // Cleared the moment the user edits the amount.
   const [max, setMax] = useState(false);
-  const [originSymbol, setOriginSymbol] = useState<OriginSymbol>(preset?.token ?? 'USDS');
+  const [pickedOrigin, setPickedOrigin] = useState<OriginSymbol>(preset?.token ?? 'USDS');
 
   // Supply always offers an origin choice (USDS/DAI mainnet, USDS/USDC L2); withdraw
   // offers a destination choice only on L2 (USDS/USDC). Mainnet withdraw → USDS-only
@@ -173,6 +173,14 @@ export function useSavingsTransactionForm({
   const showOriginSelect = isSupply || isL2;
   const origins = isSupply ? (isL2 ? L2_SUPPLY_ORIGINS : MAINNET_SUPPLY_ORIGINS) : L2_WITHDRAW_ORIGINS;
   const originOptions: OriginSymbol[] = showOriginSelect ? origins : ['USDS'];
+  // The chain can change under an open modal — the entry grid now carries a
+  // Network dropdown — and the origin sets differ by chain: DAI is mainnet-only.
+  // Clamping the READ (rather than resetting the state) keeps a DAI pick
+  // through a there-and-back chain switch, and costs no extra render. Without
+  // it the Select's value falls outside its own items, which renders a blank
+  // trigger, and `originToken` stays DAI: no address on Optimism or Unichain,
+  // and bridged DAI on Base and Arbitrum, which the L2 PSM will not take.
+  const originSymbol = originOptions.includes(pickedOrigin) ? pickedOrigin : originOptions[0];
   const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
   const amount = parseAmountInput(value, originDecimals);
@@ -315,7 +323,7 @@ export function useSavingsTransactionForm({
   // Switching the origin token resets the amount + Max (the previous amount was
   // denominated in the old token's balance/decimals).
   const switchOrigin = useCallback((next: OriginSymbol) => {
-    setOriginSymbol(next);
+    setPickedOrigin(next);
     setMax(false);
     setValue('');
   }, []);
@@ -326,7 +334,7 @@ export function useSavingsTransactionForm({
   }, []);
 
   const resetToUsds = useCallback(() => {
-    setOriginSymbol('USDS');
+    setPickedOrigin('USDS');
     setMax(false);
     setValue('');
   }, []);
