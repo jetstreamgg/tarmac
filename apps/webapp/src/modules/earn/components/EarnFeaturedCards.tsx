@@ -78,7 +78,7 @@ function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
           holds, rather than letting the content sit on the text baseline: the
           risk pill is a 15px box with no text in it, so baseline alignment
           hangs it ~3.5px below the neighbouring figures. */}
-      <span className="text-fgPrimary font-circle flex h-[18px] items-center text-base leading-[18px] font-medium tracking-[-0.32px] md:h-[22px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
+      <span className="text-fgPrimary font-circle flex h-[18px] items-center text-base leading-[18px] font-medium tracking-[-0.32px] whitespace-nowrap md:h-[22px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
         {children}
       </span>
     </div>
@@ -333,9 +333,14 @@ function FeaturedCard({
       <p className="text-fgSecondary mt-2 text-xs leading-[18px] md:max-w-[370px]">
         {product.description(row, context)}
       </p>
-      <div className="mt-8 flex flex-1 items-end justify-between gap-6 md:mt-10">
+      {/* The stats keep their natural width (the value slot is pinned to one
+          line, so a wrapped "26 Nov 2026" would spill onto its label); when
+          the card is too narrow for stats + CTA on one line — the two-up grid
+          beside a wallet extension panel (APP-549) — the row wraps and the CTA
+          drops to its own line, right-aligned. */}
+      <div className="mt-8 flex flex-1 flex-wrap items-end justify-between gap-6 md:mt-10">
         <div className="flex items-center gap-6">{product.stats(row)}</div>
-        <Button variant="primary" size="l" className="hidden w-28 md:inline-flex" onClick={onSupply}>
+        <Button variant="primary" size="l" className="ml-auto hidden w-28 md:inline-flex" onClick={onSupply}>
           <Trans>Earn</Trans>
         </Button>
       </div>
@@ -351,7 +356,8 @@ function FeaturedCard({
  * `HIGHLIGHTED_PRODUCTS` descriptors (overridable per render for
  * tests/previews). One visible product with a `wide` treatment renders it
  * full-width on desktop; anything else renders the vertical cards — stacked
- * below md, a two-up grid from md.
+ * below lg, a two-up grid from lg (912, the shell's tablet seam, APP-549: a
+ * two-up card at the md tier was too narrow for the stat row).
  */
 export function EarnFeaturedCards({
   rows,
@@ -389,7 +395,7 @@ export function EarnFeaturedCards({
     <div
       className={cn(
         'flex flex-col gap-3',
-        visible.length > 1 && 'md:grid md:grid-cols-2 md:items-stretch md:gap-4'
+        visible.length > 1 && 'lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-4'
       )}
       data-testid="earn-featured-cards"
     >
