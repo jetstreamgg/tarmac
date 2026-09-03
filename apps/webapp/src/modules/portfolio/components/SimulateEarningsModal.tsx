@@ -6,6 +6,7 @@ import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/uti
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { RateBadge } from '@/components/ui/RateBadge';
+import { RollingDigits } from '@/components/ui/rolling-digits';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Text } from '@/modules/layout/components/Typography';
 
@@ -19,6 +20,11 @@ const INITIAL_BALANCE = 100_000;
  * "Simulate earnings with Sky Savings" modal: a balance slider whose Daily /
  * Monthly / Yearly figures update live from the current Sky Savings Rate
  * (simple, non-compounded — projections assume the rate holds).
+ *
+ * The figures turn over digit by digit (Design QA 2800:92191 / 2800:92198,
+ * which point at number-flow's odometer). The slider fires on every step of a
+ * drag, so a whole-figure roll would never finish; per-digit windows only
+ * move the digits a step actually changes.
  */
 export function SimulateEarningsModal({
   open,
@@ -54,8 +60,10 @@ export function SimulateEarningsModal({
           </Button>
         </DialogClose>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 pr-12">
+        {/* The close button hangs 32px into the content column and reaches
+            down past the title row, so the description clears it too. */}
+        <div className="flex flex-col gap-2 pr-14">
+          <div className="flex items-center gap-3">
             <DialogTitle className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
               <Trans>Simulate your savings with the Sky Savings Rate</Trans>
             </DialogTitle>
@@ -79,7 +87,7 @@ export function SimulateEarningsModal({
             <Info className="h-3.5 w-3.5" />
           </div>
           <span className="text-text font-circle text-3xl leading-none font-medium">
-            {formatUsd(balance)}
+            <RollingDigits value={formatUsd(balance)} />
           </span>
 
           <div className="mt-2 flex flex-col gap-1.5">
@@ -127,7 +135,7 @@ function Stat({ label, value, divided }: { label: ReactNode; value: string; divi
         </Text>
         <span className="text-text font-circle flex items-center gap-1.5 text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <TrendingUp className="text-bullish h-4 w-4 shrink-0" aria-hidden />
-          {value}
+          <RollingDigits value={value} />
         </span>
       </div>
     </div>

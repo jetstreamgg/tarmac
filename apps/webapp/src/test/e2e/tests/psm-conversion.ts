@@ -73,7 +73,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await expect(convert.fromToken()).toContainText('USDS');
       await expect(convert.toToken()).toContainText('USDC');
       await expect(convert.fromAmount()).toBeEditable();
-      await expect(convert.toAmount()).not.toBeEditable();
+      await expect(convert.toAmount()).not.toHaveRole('textbox');
     });
 
     test('Shows wallet balances when connected', async ({ isolatedPage }) => {
@@ -104,7 +104,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       await isolatedPage.getByTestId('convert-from-amount').fill('225');
 
-      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveValue('225');
+      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveText('225');
     });
 
     test('Percentage buttons set correct amounts', async ({ isolatedPage }) => {
@@ -114,8 +114,8 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       const originValue = await isolatedPage.getByTestId('convert-from-amount').inputValue();
       expect(parseFloat(originValue)).toBeGreaterThan(0);
-      const targetValue = await isolatedPage.getByTestId('convert-to-amount').inputValue();
-      expect(parseFloat(targetValue)).toBeGreaterThan(0);
+      // A positive figure has a non-zero digit somewhere; the empty display is "0.00".
+      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveText(/[1-9]/);
     });
 
     test('Shows "Insufficient funds" when amount exceeds balance', async ({ isolatedPage }) => {
@@ -160,7 +160,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await openConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('50');
-      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveValue('50');
+      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveText('50');
 
       await isolatedPage.getByTestId('convert-flip').click();
 
