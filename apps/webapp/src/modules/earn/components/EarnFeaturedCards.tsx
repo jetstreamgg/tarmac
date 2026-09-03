@@ -89,8 +89,20 @@ function Stat({ label, children }: { label: ReactNode; children: ReactNode }) {
   );
 }
 
+/**
+ * Hairline between stats, owning the space on either side of it. The comp
+ * puts 24px each side (a 49px slot); the slot is a flexible spacer that
+ * grows to that and shrinks to 8px each side (17px) when the stats row gets
+ * tight, so the spacing gives before any value wraps (see the stats row in
+ * FeaturedCard). The stats themselves don't grow, so only the spacers take up
+ * slack.
+ */
 function StatDivider() {
-  return <div className="bg-borderPrimary h-6 w-px shrink-0 self-center" />;
+  return (
+    <div className="flex max-w-[49px] min-w-[17px] flex-1 basis-[17px] justify-center self-center">
+      <div className="bg-borderPrimary h-6 w-px" />
+    </div>
+  );
 }
 
 /** Rate stat label: the mobile comp says "APY" (486:22051), the desktop comps "Rate" (1036:201228). */
@@ -345,16 +357,17 @@ function FeaturedCard({
           two-up grid beside a wallet extension panel). The stats group is
           `flex-1` from a zero basis with min-width:auto, so the row's wrap
           decision is made against the group's *min-content* width: as the
-          card narrows the group first gives up slack (the maturity date drops
-          to two lines) and only once even that can't sit beside the CTA does
-          the CTA wrap onto its own line, right-aligned. Stats align at the top
+          card narrows the group gives up slack in order — first the spacing
+          around the dividers (24px → 8px, see StatDivider), then the maturity
+          date drops to two lines — and only once even that can't sit beside
+          the CTA does the CTA wrap onto its own line, right-aligned. Stats align at the top
           so their labels stay on one line while a two-line value hangs below.
           The row aligns at the bottom so the stats sit on the CTA's baseline
           when the CTA is the taller item (the one-line case); the CTA centres
           itself so that when a two-line value makes the stats taller, it sits
           mid-row instead of hanging off the last line. */}
       <div className="mt-8 flex flex-1 flex-wrap items-end gap-6 md:mt-10">
-        <div className="flex flex-1 items-start gap-6">{product.stats(row)}</div>
+        <div className="flex flex-1 items-start">{product.stats(row)}</div>
         <Button
           variant="primary"
           size="l"
