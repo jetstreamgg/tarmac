@@ -25,8 +25,20 @@ afterEach(cleanup);
 describe('PositionHero', () => {
   it('renders a still figure without a rate, trimmed to 5 decimals', () => {
     renderHero({ balanceSymbol: 'USDS', amount: 100000.0002 });
-    expect(screen.getByText('100,000')).not.toBeNull();
-    expect(screen.getByText('.0002')).not.toBeNull();
+    // Whole and fraction each roll over as one figure when the position changes.
+    expect(screen.getAllByTestId('rolling-value').map(box => box.textContent)).toEqual(['100,000', '0002']);
+    expect(screen.queryByTestId('rolling-digits')).toBeNull();
+  });
+
+  it('rolls the whole figure over when the position changes', () => {
+    const { rerender } = renderHero({ balanceSymbol: 'USDS', amount: 1000 });
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <PositionHero balanceSymbol="USDS" amount={2500} />
+      </I18nProvider>
+    );
+    expect(screen.getByTestId('rolling-value-out').textContent).toBe('1,000');
+    expect(screen.getByTestId('rolling-value-in').textContent).toBe('2,500');
   });
 
   it('renders a pre-formatted string figure whole', () => {
