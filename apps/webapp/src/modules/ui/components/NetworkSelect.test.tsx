@@ -22,7 +22,12 @@ vi.mock('wagmi', async io => ({
     { id: 42161, name: 'Arbitrum One' }
   ]
 }));
-vi.mock('@/hooks', () => ({ useIsSafeWallet: () => mocks.isSafeWallet }));
+// `useAppChainId` is the wallet's chain even when wagmi has it pinned elsewhere
+// (an unconfigured chain), which is what the escape-hatch test below relies on.
+vi.mock('@/hooks', () => ({
+  useIsSafeWallet: () => mocks.isSafeWallet,
+  useAppChainId: () => mocks.walletChainId
+}));
 
 const mockHandleSwitchChain = vi.fn();
 vi.mock('@/modules/ui/context/ChainModalContext', () => ({
@@ -51,6 +56,24 @@ describe('NetworkSelect', () => {
     fireEvent.click(screen.getByText('Base'));
 
     expect(mockHandleSwitchChain).toHaveBeenCalledWith(expect.objectContaining({ chainId: 8453 }));
+  });
+
+  it('still switches to the shown chain when the wallet is off every product chain', () => {
+    // Wallet parked on a chain the product (and the app) doesn't know. The pill
+    // shows the product's first chain, but nothing is SELECTED — so picking
+    // that same chain still asks the wallet. This is the way out after a
+    // declined automatic switch; with the pinned chain selected Radix would
+    // swallow the pick as a no-op.
+    mocks.walletChainId = 137;
+    render(<NetworkSelect chainIds={[1, 8453]} dataTestId="net" />);
+
+    const trigger = screen.getByTestId('net');
+    expect(trigger.textContent).toContain('Ethereum');
+
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    fireEvent.click(screen.getByText('Ethereum', { selector: '[role="option"] *' }));
+
+    expect(mockHandleSwitchChain).toHaveBeenCalledWith(expect.objectContaining({ chainId: 1 }));
   });
 
   it('renders a non-interactive pill when the product runs on one chain', () => {

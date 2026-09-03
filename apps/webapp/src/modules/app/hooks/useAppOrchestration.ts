@@ -240,7 +240,17 @@ export function useAppOrchestration(): { intent: Intent } {
       trackRouteRedirected({ fromPath: pathname, toPath: ROUTES.EARN, reason: 'unknown_reward' });
       void navigate({ to: ROUTES.EARN, search: keepSearch, replace: true });
     }
-  }, [intent, rewardContract, newChainId, rewardContracts, navigate]);
+  }, [
+    intent,
+    rewardContract,
+    newChainId,
+    rewardContracts,
+    navigate,
+    chains,
+    chainId,
+    walletChainId,
+    switchChain
+  ]);
 
   // Run validation on the remaining query-driven search params whenever they change
   useEffect(() => {
@@ -260,6 +270,12 @@ export function useAppOrchestration(): { intent: Intent } {
   // chain the wallet actually reconnects on — the param spent on nothing. This
   // is what the old `onConnect` handler was for.
   const networkParamHonoured = useRef(false);
+  // A target honoured before any wallet was attached. `switchChain` then only
+  // moved the config chain, and the chain the wallet reports on connecting
+  // would overrule it — the param spent on nothing, which is the failure the
+  // old `onConnect` handler existed for. Kept until the first connection lands
+  // so it can be asked for once more, against the wallet this time.
+  const honouredParamTargetRef = useRef<number | null>(null);
   useEffect(() => {
     if (networkParamHonoured.current) return;
     if (status === 'connecting' || status === 'reconnecting') return;
@@ -280,10 +296,28 @@ export function useAppOrchestration(): { intent: Intent } {
 
     const target = chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(param))?.id;
     if (target === undefined || target === chainId) return;
+    // Only a chain the module at this route can run on. Otherwise the switch
+    // would land and the route guard would switch straight back one render
+    // later — two wallet prompts for nothing. The guard's own resolution is the
+    // answer in that case, so the param is spent without acting.
+    if (getRouteChainAction(intent, target, { chains }).kind !== 'render') return;
+    if (status !== 'connected') honouredParamTargetRef.current = target;
     trackNetworkAutoSwitched({ trigger: 'url_param', fromChainId: chainId, toChainId: target });
     if (walletChainId !== undefined) setPendingSwitch({ from: walletChainId, to: target });
     switchChain({ chainId: target });
-  }, [status, searchParams, chains, chainId, walletChainId, setSearchParams, switchChain]);
+  }, [status, searchParams, chains, chainId, walletChainId, intent, setSearchParams, switchChain]);
+
+  // The wallet arrives after a cold-loaded link was honoured against the
+  // config chain alone: ask it once for the link's chain, then forget the link.
+  useEffect(() => {
+    const target = honouredParamTargetRef.current;
+    if (target === null || status !== 'connected' || walletChainId === undefined) return;
+    honouredParamTargetRef.current = null;
+    if (walletChainId === target) return;
+    if (getRouteChainAction(intent, target, { chains }).kind !== 'render') return;
+    setPendingSwitch({ from: walletChainId, to: target });
+    switchChain({ chainId: target });
+  }, [status, walletChainId, intent, chains, switchChain]);
 
   useEffect(() => {
     // The wallet's chain choice is explicit — never auto-revert it. Marking the

@@ -83,7 +83,10 @@ export function buildSuppliedView(rows: EarnProductRow[]): SuppliedView {
       .map(([id, amountUsd]) => ({ chainId: Number(id), amountUsd }))
       .filter(({ amountUsd }) => amountUsd > 0);
     if (legs.length > 0) return legs;
-    return row.position.totalUsd > 0 ? [{ chainId: row.networks[0], amountUsd: row.position.totalUsd }] : [];
+    const fallbackChainId = row.networks[0];
+    return fallbackChainId !== undefined && row.position.totalUsd > 0
+      ? [{ chainId: fallbackChainId, amountUsd: row.position.totalUsd }]
+      : [];
   };
 
   const withAmount = rows

@@ -55,8 +55,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 vi.mock('@/hooks', () => ({
   useEarnMarketplace: () => h.marketplace,
-  useOverallSkyData: () => ({ data: h.skyData.data, isLoading: h.skyData.isLoading }),
-  isPendleChain: (id: number) => id === 1
+  useOverallSkyData: () => ({ data: h.skyData.data, isLoading: h.skyData.isLoading })
 }));
 vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
   usePendleMaturedPositions: () => h.matured ?? { maturedPositions: [], isLoading: false }
@@ -79,9 +78,6 @@ vi.mock('@/modules/geo-config', () => ({
     isModuleEnabled: (module: string) => (module === 'savings' ? h.geo.savingsEnabled : true),
     isLoading: h.geo.isLoading
   })
-}));
-vi.mock('@/data/wagmi/config/chainFamily', () => ({
-  getSupportedChainIds: () => [1]
 }));
 vi.mock('@/utils', async importOriginal => ({
   ...(await importOriginal<typeof import('@/utils')>()),

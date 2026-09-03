@@ -6,8 +6,8 @@ No spec may sit in `retired` without a linked rewrite ticket.
 
 `blocked-on-nav-rewrite`: the flow under test is unrebuilt and its entry URL still works (legacyRedirects),
 but the spec navigates by clicking the legacy module nav (`widget-navigation`), which B4 removed. Fix is
-mechanical: replace the nav click with a deep-link `goto()` that preserves the current search params
-(`network=` after `switchToL2`), the pattern already used by `psm-conversion.ts:669` and `pendle.spec.ts:20`.
+mechanical: replace the nav click with a deep-link `goto()` that preserves the current search params,
+the pattern already used by `psm-conversion.ts:669` and `pendle.spec.ts:20`.
 QA owns the rewrite pass per plan §4; renames flagged in the B4 PR description.
 
 | Spec file                           | State          | Notes                                                                                                                                                                                                                                                                   |

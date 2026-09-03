@@ -175,9 +175,9 @@ vi.mock('./SavingsOriginSelect', async importOriginal => {
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 // Savings is multi-chain, so its entry grid's Network cell is the switch
-// dropdown. The real one wants a router (it writes the network= param) and a
-// query client (the Safe probe); these renders have neither, and what they are
-// about is the row set, so stand it in with its chain list.
+// dropdown. The real one wants wagmi and a query client (the Safe probe);
+// these renders have neither, and what they are about is the row set, so
+// stand it in with its chain list.
 vi.mock('@/modules/ui/components/NetworkSelect', () => ({
   NetworkSelect: ({ chainIds }: { chainIds: number[] }) => (
     <div data-testid="modal-network-select">{chainIds.join(',')}</div>

@@ -27,8 +27,8 @@ import type { SuppliedPosition } from '../helpers/suppliedView';
 
 /**
  * The chain a position's supply modal must run on: the position's own chain
- * (one per position since APP-547). A mainnet-family target follows
- * getMainnetTargetName's rule: when the active config carries a Tenderly fork
+ * (one per position since APP-547). A mainnet-family target follows the
+ * route guard's rule: when the active config carries a Tenderly fork
  * (dev/staging builds), the fork is the target — auto-switching a dev wallet
  * onto real Ethereum would mean real fees.
  */

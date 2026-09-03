@@ -159,9 +159,9 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     await expect(isolatedPage.getByText(/To access/)).toHaveCount(0);
   });
 
-  // E2: a manual switch on a multichain page stays put and the generic toast
-  // offers the quick-switch chains.
-  test('manual switch to Base while on Savings stays with quick-switch toast', async ({ isolatedPage }) => {
+  // E2: a wallet-side switch on a multichain page stays put, and the generic
+  // toast announces it — the app didn't make this change, the wallet did.
+  test('wallet-side switch to Base while on Savings stays put and is announced', async ({ isolatedPage }) => {
     await isolatedPage.goto('/portfolio');
     await connectMockWalletAndAcceptTerms(isolatedPage);
     await isolatedPage.getByTestId('nav-earn').click();
@@ -173,7 +173,6 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     await expect(isolatedPage).toHaveURL(/\/earn\/savings/);
     await expectAppChain(isolatedPage, 'Tenderly Base');
     await expect(isolatedPage.getByText(GENERIC_COPY).first()).toBeVisible();
-    await expect(isolatedPage.getByText('Savings is also supported on:')).toBeVisible();
   });
 
   // The in-app switch path that replaced the wallet drawer's chain modal: a
@@ -192,6 +191,8 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     // The pill names where the product now is, and the page stayed put —
     // Savings runs on Base.
     await expect(isolatedPage.getByTestId('product-detail-network')).toContainText('Tenderly Base');
+    // The user made this change themselves: nothing to announce (APP-547).
+    await expect(isolatedPage.getByText(GENERIC_COPY)).toHaveCount(0);
   });
 
   // A mainnet-only product has nothing to choose between, so its pill is a

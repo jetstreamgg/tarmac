@@ -1,26 +1,23 @@
 import { useCallback } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChains } from 'wagmi';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { getChainIcon } from '@/utils';
-import { useIsSafeWallet } from '@/hooks';
+import { useAppChainId, useIsSafeWallet } from '@/hooks';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
 
 type NetworkSelectProps = {
   /** The chains this surface may switch between — the product's supported set. */
   chainIds: number[];
-  showLabel?: boolean;
   /** Extra classes on the chain-name label, e.g. to hide it per tier. */
   labelClassName?: string;
   /** Extra classes on the trigger, e.g. `w-full justify-between` for a full-width row. */
   triggerClassName?: string;
-  showDropdownIcon?: boolean;
   /** DS Button / Dropdown recipe: Network M (24px icon) or Network XS (16px icon). */
   size?: 'm' | 'xs';
   dataTestId?: string;
-  disabled?: boolean;
   /**
    * A custom trigger body, replacing the pill — Convert's full-width Network row
    * is the whole clickable surface. The child then owns the trigger's looks
@@ -53,25 +50,33 @@ type NetworkSelectProps = {
 function NetworkSelectView({
   chainIds,
   onSelect,
-  showLabel = true,
   labelClassName,
   triggerClassName,
-  showDropdownIcon = true,
   size = 'm',
   dataTestId = 'network-select',
-  disabled = false,
   children
 }: NetworkSelectProps & { onSelect: (chainId: number) => void }) {
-  const walletChainId = useChainId();
+  // The wallet's chain, not wagmi's pinned one: a wallet parked on a chain the
+  // app doesn't configure leaves `useChainId()` naming the last configured
+  // chain, which would read here as "the product's chain is the wallet's" and
+  // make the dropdown inert (see below). Same derivation the transaction
+  // guard uses.
+  const walletChainId = useAppChainId();
   const chains = useChains();
   const isSafeWallet = useIsSafeWallet();
 
   // The chain this surface is showing: the wallet's when the product runs
   // there, else the product's own first chain.
-  const activeChainId = chainIds.includes(walletChainId) ? walletChainId : (chainIds[0] ?? walletChainId);
+  const onProductChain = chainIds.includes(walletChainId);
+  const activeChainId = onProductChain ? walletChainId : (chainIds[0] ?? walletChainId);
   const activeChainName = chains.find(chain => chain.id === activeChainId)?.name ?? 'Ethereum';
+  // Radix swallows a pick of the already-selected value. When the wallet is
+  // OFF the product's chains the pill shows the product's first chain, but
+  // nothing is selected — so picking that chain still asks the wallet for it.
+  // That is the escape hatch after a declined automatic switch.
+  const selectValue = onProductChain ? String(walletChainId) : '';
 
-  const isStatic = disabled || isSafeWallet || chainIds.length <= 1;
+  const isStatic = isSafeWallet || chainIds.length <= 1;
 
   // A custom trigger body brings its own looks, so the trigger gets out of its
   // way entirely: no pill recipe, and none of SelectTrigger's own layout.
@@ -102,18 +107,16 @@ function NetworkSelectView({
           inherits it. A <Text> here would re-declare Graphik at 16px and win,
           which is how the network pill drifted off the comps across all
           products. XS steps down to Label 6 (Figma 1030:138802). */}
-      {showLabel && (
-        <span
-          className={cn(
-            'text-text',
-            size === 'xs' && 'text-xs leading-[14px] tracking-[-0.24px]',
-            labelClassName
-          )}
-        >
-          {activeChainName}
-        </span>
-      )}
-      {showDropdownIcon && !isStatic && (
+      <span
+        className={cn(
+          'text-text',
+          size === 'xs' && 'text-xs leading-[14px] tracking-[-0.24px]',
+          labelClassName
+        )}
+      >
+        {activeChainName}
+      </span>
+      {!isStatic && (
         <ChevronDown
           className={cn(
             'transition-transform group-data-[state=open]:rotate-180',
@@ -129,10 +132,11 @@ function NetworkSelectView({
     // should take focus or announce itself as a control. It keeps the pill's
     // geometry by wearing the same recipe, minus the interactive states.
     return children ? (
-      // `contents` so the wrapper contributes no box of its own — a custom
-      // trigger body brings its own layout (Convert's full-width row), which an
-      // inline span around it would break.
-      <span className="contents" data-testid={dataTestId}>
+      // A block that spans the row, so the custom trigger body (Convert's
+      // full-width row) keeps its layout AND the wrapper has a box of its own —
+      // a `display: contents` wrapper has none, and an e2e visibility check on
+      // the testid would fail on any config where the product is single-chain.
+      <span className="block w-full" data-testid={dataTestId}>
         {children}
       </span>
     ) : (
@@ -146,7 +150,7 @@ function NetworkSelectView({
   }
 
   return (
-    <Select value={String(activeChainId)} onValueChange={value => onSelect(Number(value))}>
+    <Select value={selectValue} onValueChange={value => onSelect(Number(value))}>
       {/* hideIcon: the pill draws its own chevron (above), so it can sit
           inside the pill, flip with the panel and take the per-size geometry —
           and stay the trigger's last child, which is what callers target to
@@ -181,12 +185,9 @@ function NetworkSelectView({
 /**
  * Selecting a network does one thing: ask the wallet to switch.
  *
- * It deliberately does NOT touch the router. The `network=` search param
- * follows on its own — `useAppOrchestration` listens to the connector's `change`
- * event and mirrors whatever chain the wallet lands on, whatever asked for it.
- * (The predecessor `ChainModal` wrote the param itself from the switch's
- * `onSuccess`. That was redundant: if the connector never emitted, `useChainId`
- * wouldn't have moved either and the whole app would be stale, param included.)
+ * It deliberately does NOT touch the router. The chain lives in the wallet and
+ * nothing in the URL mirrors it any more (`?network=` is retired as app state);
+ * every surface reads the chain straight from wagmi once the switch lands.
  *
  * Staying router-free is also what lets this render inside a transaction modal.
  * `TransactionProvider` wraps `RouterProvider` (pages/App.tsx), so a modal body

@@ -34,9 +34,9 @@ export function useNetworkChangeToast(intent: Intent) {
   const { showNetworkToast } = useEnhancedNetworkToast();
   const [previousChainId, setPreviousChainId] = useState<number | undefined>(chainId);
 
-  // The module the user navigated away from, for the toast's quick-switch
-  // context: the nav click changes the route first, so by the time the chain
-  // switch lands the route intent is already the target module.
+  // The module the user navigated away from: the nav click changes the route
+  // first, so by the time the chain switch lands the route intent is already
+  // the target module. Same-module changes get a short delay before the toast.
   const [intentHistory, setIntentHistory] = useState<{ current: Intent; previous?: Intent }>({
     current: intent
   });
@@ -44,13 +44,17 @@ export function useNetworkChangeToast(intent: Intent) {
     setIntentHistory(prev => (prev.current === intent ? prev : { current: intent, previous: prev.current }));
   }, [intent]);
 
-  // Reset switching state when the wallet disconnects mid-switch
+  // Reset switching state when the wallet disconnects mid-switch. The manual
+  // record goes on any disconnect: a pick whose wallet prompt was abandoned
+  // never raised `isSwitchingNetwork`, and left in place it would silence the
+  // reconnect that happens to land on that chain.
   useEffect(() => {
-    if (!isConnected && isSwitchingNetwork) {
+    if (isConnected) return;
+    setPendingManualSwitchChainId(null);
+    if (isSwitchingNetwork) {
       setIsSwitchingNetwork(false);
       setIsAutoSwitching(false);
       setAutoSwitchIntent(null);
-      setPendingManualSwitchChainId(null);
     }
   }, [
     isConnected,

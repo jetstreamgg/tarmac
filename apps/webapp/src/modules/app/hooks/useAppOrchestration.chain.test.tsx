@@ -322,4 +322,64 @@ describe('useAppOrchestration — the retired network param', () => {
     expect(mockSwitchChain).not.toHaveBeenCalled();
     expect(search.get('network')).toBeNull();
   });
+
+  // A link naming a chain the module can't run on. Obeying it would switch the
+  // wallet there and have the route guard switch it straight back one render
+  // later — two prompts for nothing. The guard's resolution stands; the param
+  // is still spent.
+  it('spends, without switching, a param naming a chain the module cannot use', () => {
+    mockPathname = '/stake';
+    search = new URLSearchParams('network=tenderlybase');
+
+    mount();
+
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(search.get('network')).toBeNull();
+  });
+
+  // Opened cold with no wallet attached: the param is honoured against the
+  // config chain so reads are right, and asked of the wallet once more when it
+  // connects on a different chain — the link's chain wins over the wallet's
+  // default, which is what the old onConnect re-read did.
+  it('asks the wallet for the link chain once it connects after a cold load', () => {
+    mockPathname = '/earn';
+    search = new URLSearchParams('network=tenderlybase');
+    mockConnectionStatus = 'disconnected';
+    mockWalletChainId = undefined;
+
+    const { refresh } = mount();
+    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: BASE });
+    expect(search.get('network')).toBeNull();
+    mockSwitchChain.mockClear();
+
+    mockConnectionStatus = 'connected';
+    mockWalletChainId = TENDERLY;
+    refresh();
+
+    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: BASE });
+    mockSwitchChain.mockClear();
+
+    // Once. A later wallet-side change is the user's and is not answered.
+    refresh();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+  });
+
+  it('does not re-ask when the wallet connects already on the link chain', () => {
+    mockPathname = '/earn';
+    search = new URLSearchParams('network=tenderlybase');
+    mockConnectionStatus = 'disconnected';
+    mockWalletChainId = undefined;
+
+    const { refresh } = mount();
+    mockSwitchChain.mockClear();
+
+    mockConnectionStatus = 'connected';
+    mockWalletChainId = BASE;
+    mockConfigChainId = BASE;
+    refresh();
+
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+  });
 });

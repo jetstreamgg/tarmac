@@ -16,9 +16,9 @@ import { useNetworkSwitch } from './NetworkSwitchContext';
  * The one place a chain switch is requested: the wallet call plus its analytics
  * and its failure toasts (unsupported-chain vs generic). Every surface that can
  * switch goes through it — the product-page and transaction-modal
- * `NetworkSelect`s and the transaction modal's chain guard. All of them are the
- * user's own doing, so the switch is recorded as manual and the shell's network
- * toast stays quiet when it lands (APP-547).
+ * `NetworkSelect`s and the transaction modal's chain guard. A user's own pick is
+ * recorded as manual so the shell's network toast stays quiet when it lands
+ * (APP-547); the modal's automatic switch on open is not.
  *
  * Named for the ChainModal that used to be its only consumer; that dialog is
  * gone (switching is a dropdown now), but the name is left alone rather than
@@ -70,7 +70,10 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }) => {
       const fromChainId = currentChainId;
       trackNetworkSwitchRequested({ source, fromChainId, toChainId: chainId });
-      setPendingManualSwitchChainId(chainId);
+      // Recorded as the user's own pick so the shell toast stays quiet when it
+      // lands — except the modal's automatic switch on open, which the user did
+      // not ask for and should hear about like any other app-made change.
+      if (source !== 'transaction_modal_auto') setPendingManualSwitchChainId(chainId);
       switchChain(
         { chainId },
         {
