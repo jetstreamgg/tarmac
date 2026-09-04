@@ -12,6 +12,7 @@ import {
 } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 
 /** Fixed upgrade pairs: each source token has exactly one target. */
@@ -90,8 +91,16 @@ export function useUpgradeLaunch({
   // Step labels mirror the engine's call count so the indicator advances in
   // lockstep (the savings DAI-supply labelling convention).
   const steps = useMemo<TransactionStep[]>(() => {
-    const upgradeStep = t`Upgrade ${token} to ${target}`;
-    return needsAllowance ? [{ label: t`Approve`, tokenSymbol: token }, upgradeStep] : [upgradeStep];
+    const upgradeStep: TransactionStep = {
+      label: t`Upgrade ${token} to ${target}`,
+      failureDetail: stepFailureDetail.upgrade(token)
+    };
+    return needsAllowance
+      ? [
+          { label: t`Approve`, tokenSymbol: token, failureDetail: stepFailureDetail.approve(token) },
+          upgradeStep
+        ]
+      : [upgradeStep];
   }, [needsAllowance, token, target]);
 
   return toLaunchResult(upgrade, steps);

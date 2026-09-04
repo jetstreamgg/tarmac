@@ -143,15 +143,28 @@ export function StakeEngineCard() {
       }
       title={
         <span data-testid="stake-engine-headline">
-          {/* The trailing phrase is grouped in a non-breaking span so it wraps
-              as a unit (review item B8, comp: "and" opens the final line) —
-              robust across widths/locales, unlike a hardcoded <br>. */}
+          {/* The trailing phrase is an inline-block so it moves to the final
+              line as a unit when it fits (review item B8, comp: "and" opens the
+              final line) — robust across widths/locales, unlike a hardcoded
+              <br>. Unlike a non-breaking span it still wraps inside itself
+              once the card is narrower than the phrase (the 3-column pane of
+              the tablet grid, or a wallet extension panel beside a small
+              desktop — APP-549), instead of running off the card edge. Each
+              token mark is glued to its ticker so a break never separates
+              them. */}
           <Trans>
-            Stake <InlineTokenIcon symbol="SKY" />
-            SKY to accrue rewards, delegate votes{' '}
+            Stake{' '}
             <span className="whitespace-nowrap">
-              and borrow <InlineTokenIcon symbol="USDS" />
-              USDS
+              <InlineTokenIcon symbol="SKY" />
+              SKY
+            </span>{' '}
+            to accrue rewards, delegate votes{' '}
+            <span className="inline-block">
+              and borrow{' '}
+              <span className="whitespace-nowrap">
+                <InlineTokenIcon symbol="USDS" />
+                USDS
+              </span>
             </span>
           </Trans>
         </span>

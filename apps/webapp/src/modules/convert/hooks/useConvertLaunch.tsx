@@ -14,7 +14,7 @@ import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionL
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
-import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { usePsmConversion, type UsePsmConversionResult } from './usePsmConversion';
 import { getPsmDecimalsForDirection, type PsmConversionDirection } from './usePsmConversion.helpers';
 import { ConvertReviewContent } from '../components/ConvertReviewContent';
@@ -95,13 +95,25 @@ export function useConvertLaunch({
   // step 2 renders "Convert ◉ USDS to ◉ USDC" via the source→target pair chip
   // (Figma 1036:205564, two token icons side by side around a translated "to").
   const convertStep = useMemo<TransactionStep>(
-    () => ({ label: t`Convert`, tokenSymbol: originSymbol, targetTokenSymbol: targetSymbol }),
+    () => ({
+      label: t`Convert`,
+      tokenSymbol: originSymbol,
+      targetTokenSymbol: targetSymbol,
+      failureDetail: stepFailureDetail.convert(originSymbol)
+    }),
     [originSymbol, targetSymbol]
   );
   const steps = useMemo<TransactionStep[]>(
     () =>
       conversion.needsAllowance
-        ? [{ label: t`Approve`, tokenSymbol: originSymbol }, convertStep]
+        ? [
+            {
+              label: t`Approve`,
+              tokenSymbol: originSymbol,
+              failureDetail: stepFailureDetail.approve(originSymbol)
+            },
+            convertStep
+          ]
         : [convertStep],
     [conversion.needsAllowance, originSymbol, convertStep]
   );

@@ -19,6 +19,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
 import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
@@ -46,9 +47,13 @@ export function buildStakeOpenSteps({
   hasDelegate: boolean;
 }): TransactionStep[] {
   return [
-    needsSkyAllowance && { label: t`Approve`, tokenSymbol: 'SKY' },
-    { label: t`Stake`, tokenSymbol: 'SKY' },
-    hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS' },
+    needsSkyAllowance && {
+      label: t`Approve`,
+      tokenSymbol: 'SKY',
+      failureDetail: stepFailureDetail.approve('SKY')
+    },
+    { label: t`Stake`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.stake('SKY') },
+    hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.borrow('USDS') },
     hasDelegate && t`Delegate voting power`
   ].filter(Boolean) as TransactionStep[];
 }

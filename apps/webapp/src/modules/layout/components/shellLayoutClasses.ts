@@ -12,14 +12,17 @@ import { cn } from '@/lib/utils';
 
 /**
  * Side gutter of the design-system page container, per the DS grid tiers
- * (Foundations / Grids & Spacing 5176:33992): 24px on the tablet tier (640 to
+ * (Foundations / Grids & Spacing 5176:33992): 24px on the S tier (640 to
  * 1200), 20px elsewhere. The DS table lists 12px for the mobile tier, but the
  * mobile screen comps (Sky App: UI, 🟠 Mobile canvas, 393px frames) all place
  * page content at 20px — the 12px margin only shows up as the bottom Navbar's
- * in-situ inset. Shared by AppContainer and the header row so the header
- * content stays aligned with the page content at every tier.
+ * in-situ inset. The Design QA tablet-grid frames (2800:91684 — 1022px of app
+ * beside a wallet extension panel) widen the gutter to 32px from the tablet
+ * seam (APP-549), where the header keeps its desktop pills. Shared by
+ * AppContainer and the header row so the header content stays aligned with
+ * the page content at every tier.
  */
-export const pageGutterClasses = 'px-5 sm:px-6 desktop:px-5';
+export const pageGutterClasses = 'px-5 sm:px-6 lg:px-8 desktop:px-5';
 
 /** The shell surface (the VStack wrapping the header + content). */
 export const shellSurfaceClasses = () =>
@@ -31,13 +34,13 @@ export const shellSurfaceClasses = () =>
 /** The shell header bar (full-bleed; the row content lives in the inner div). */
 export const shellHeaderClasses = () =>
   cn(
-    // Mobile tiers take the DS Mobile / Topbar padding (551:10137): 16px above
-    // and below the chip row. The desktop tier follows the Navbar comp
-    // (1030:61380 / 1036:201581): an 88px bar around the 40px pill row, i.e.
-    // 24px (APP-456 #2 — the previous 8px sat the bar hard against the top
-    // edge). The bar's own padding is the gap to the content now, so the extra
-    // 4px margin is gone.
-    'w-full py-4 desktop:py-6',
+    // The phone tier takes the DS Mobile / Topbar padding (551:10137): 16px
+    // above and below the chip row. From the tablet seam up the bar follows
+    // the Navbar comp (1030:61380 / 1036:201581, and 2800:91699 at the tablet
+    // grid): an 88px bar around the 40px pill row, i.e. 24px (APP-456 #2 — the
+    // previous 8px sat the bar hard against the top edge). The bar's own
+    // padding is the gap to the content now, so the extra 4px margin is gone.
+    'w-full py-4 lg:py-6',
     // The bar's own `bg` layer, straight off the comps: the gradient-navbar
     // fill over background blur-md (Figma radius 12 ⇒ 6px). It lives on the bar
     // itself rather than on a child — `backdrop-filter` filters what is painted
@@ -64,15 +67,16 @@ export const shellHeaderClasses = () =>
 export const shellHeaderContentClasses = () =>
   cn(
     'flex items-center gap-4',
-    // APP-415: at the desktop tier the row becomes the comp's three-flank grid
-    // (Navbar 1036:201230 — equal 417|418|417 columns: logo | pills | wallet
-    // cluster; TopNav dissolves via desktop:contents so its groups land in the
-    // outer tracks). The pill group centers on the container axis — the same
-    // center line as the page content — instead of the leftover flex space,
-    // which sat it ~60px left and let it drift with wallet-chip width. `1fr`
-    // tracks bottom out at min-content, so a long chip squeezes the flanks
-    // (pills nudge off-center) rather than overlapping the pills.
-    'desktop:grid desktop:grid-cols-[1fr_auto_1fr]',
+    // APP-415: from the tablet seam up the row becomes the comp's three-flank
+    // grid (Navbar 1036:201230 — equal 417|418|417 columns: logo | pills |
+    // wallet cluster; TopNav dissolves via lg:contents so its groups land in
+    // the outer tracks). The pill group centers on the container axis — the
+    // same center line as the page content — instead of the leftover flex
+    // space, which sat it ~60px left and let it drift with wallet-chip width.
+    // `1fr` tracks bottom out at min-content, so at desktop a long chip
+    // squeezes the flanks (pills nudge off-center) rather than overlapping the
+    // pills; on the tablet tier the chip truncates instead (TopNav).
+    'lg:grid lg:grid-cols-[1fr_auto_1fr]',
     // The header content aligns with the design-system page container (same
     // max-width + gutter tiers as AppContainer).
     cn('mx-auto w-full max-w-[1320px]', pageGutterClasses)

@@ -98,6 +98,7 @@ import {
   PaginationContent,
   PaginationEllipsis,
   PaginationItem,
+  PaginationLabel,
   PaginationLink,
   PaginationNext,
   PaginationPrevious
@@ -1544,29 +1545,80 @@ function DataSection() {
         </div>
       </SubSection>
 
+      {/* DS Pagination (5984:10221): number base / arrow states, then the
+          web and mobile compositions (2829:140116). */}
       <SubSection title="Pagination">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink>1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink isActive>2</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink>3</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <Row>
+          <Spec label="number — default">
+            <PaginationLink>1</PaginationLink>
+          </Spec>
+          <Spec label="number — hover">
+            <PaginationLink className="from-brand2-start to-brand2-end bg-linear-to-b">1</PaginationLink>
+          </Spec>
+          <Spec label="number — focus">
+            <PaginationLink className="outline-focusRing outline-2 outline-offset-0">1</PaginationLink>
+          </Spec>
+          <Spec label="number — active">
+            <PaginationLink isActive>1</PaginationLink>
+          </Spec>
+          <Spec label="ellipsis">
+            <PaginationEllipsis />
+          </Spec>
+        </Row>
+        <Row>
+          <Spec label="arrow — default">
+            <PaginationPrevious />
+            <PaginationNext />
+          </Spec>
+          <Spec label="arrow — hover">
+            <PaginationPrevious className="bg-glassBadge" />
+            <PaginationNext className="bg-glassBadge" />
+          </Spec>
+          <Spec label="arrow — focus">
+            <PaginationPrevious className="outline-fgBrand outline-2 outline-offset-1" />
+            <PaginationNext className="outline-fgBrand outline-2 outline-offset-1" />
+          </Spec>
+          <Spec label="arrow — disabled">
+            <PaginationPrevious disabled />
+            <PaginationNext disabled />
+          </Spec>
+        </Row>
+        <Spec label="web">
+          <Pagination className="mt-0 w-auto">
+            <PaginationPrevious />
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationLink isActive>1</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink>2</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink>3</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink>8</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink>9</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink>10</PaginationLink>
+              </PaginationItem>
+            </PaginationContent>
+            <PaginationNext />
+          </Pagination>
+        </Spec>
+        <Spec label="mobile">
+          <Pagination className="mt-0 w-auto gap-4">
+            <PaginationPrevious />
+            <PaginationLabel current={1} total={10} />
+            <PaginationNext />
+          </Pagination>
+        </Spec>
       </SubSection>
 
       <SubSection title="Progress / Skeleton / Avatar">

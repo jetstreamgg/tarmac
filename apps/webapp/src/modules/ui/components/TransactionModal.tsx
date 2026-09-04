@@ -175,7 +175,9 @@ const statusBadgeLabel: Partial<Record<TxStatus, ReactNode>> = {
   [TxStatus.INITIALIZED]: <Trans>Confirm in the wallet</Trans>,
   [TxStatus.LOADING]: <Trans>Processing</Trans>,
   [TxStatus.SUCCESS]: <Trans>Success</Trans>,
-  [TxStatus.ERROR]: <Trans>Failed</Trans>,
+  // The failed chip swaps to the status-error treatment and leads with the
+  // alert triangle (Figma 2800:91683) — see `badgeContent` below.
+  [TxStatus.ERROR]: <Trans>Transaction failed</Trans>,
   [TxStatus.CANCELLED]: <Trans>Cancelled</Trans>
 };
 
@@ -257,10 +259,21 @@ export function TransactionModal({
   // A gate phase owns the label while it holds the floor: both of its phases
   // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
   // in the wallet" during an HTTP address check (APP-501).
-  const badgeLabel = gateCopy?.badgeLabel ?? statusBadgeLabel[txStatus];
+  const badgeFailed = txStatus === TxStatus.ERROR;
+  // A declined/failed terms signature is not a transaction — nothing reached
+  // the chain — so the chip names the signature rather than claiming a
+  // rolled-back transaction (the failed row below already says as much).
+  const failedStep = steps?.[currentStep];
+  const failedOnSignature =
+    badgeFailed && typeof failedStep === 'object' && failedStep !== null && failedStep.kind === 'signature';
+  const badgeLabel =
+    gateCopy?.badgeLabel ??
+    (failedOnSignature ? <Trans>Signature failed</Trans> : statusBadgeLabel[txStatus]);
+  const badgeVariant = badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
       {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
+      {badgeFailed && <TriangleAlert className="size-3 shrink-0" aria-hidden="true" />}
       {badgeLabel}
     </>
   ) : undefined;
@@ -347,7 +360,18 @@ export function TransactionModal({
     [TxStatus.SUCCESS]: subtitles?.success,
     [TxStatus.ERROR]: subtitles?.error
   };
-  const subtitle = isFirstScreen ? subtitles?.review : (gateCopy?.subtitle ?? subtitleByStatus[txStatus]);
+  // A gate phase (screening / terms signature) narrates itself through its
+  // subtitle only where there is no step list: with one, the signature step's
+  // own row already says what is being waited on, and the flow's status
+  // subtitle stays hidden too (it narrates an on-chain write that hasn't
+  // started). Figma review 2829:141029: nothing beyond a step's description.
+  // The gate's copy is redundant only when the signature prelude step is in
+  // the list — that step carries its own description (Figma 2829:141028/9).
+  // Screening has no step of its own, so its "Running a quick check…" /
+  // "Verifying your wallet address…" copy still shows under a step list.
+  const gateCopyInStepList = showStepList && hasSignatureStep;
+  const gateSubtitle = gateCopy && !gateCopyInStepList ? gateCopy.subtitle : undefined;
+  const subtitle = isFirstScreen ? subtitles?.review : gateCopy ? gateSubtitle : subtitleByStatus[txStatus];
   const firstScreenSubtitle = isFirstScreen ? subtitle : undefined;
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
@@ -498,7 +522,7 @@ export function TransactionModal({
                   from the left as the Actions panel arrives (2685:148222 animates
                   the same rule as a path length). */}
               {transactionScreenBody && <ModalStepDivider />}
-              <Steps className="pt-2" bundled={isBundled} badge={badgeContent}>
+              <Steps className="pt-2" bundled={isBundled} badge={badgeContent} badgeVariant={badgeVariant}>
                 {(() => {
                   const items = deriveTransactionStepItems({
                     steps: steps ?? [],
@@ -757,19 +781,29 @@ export function TransactionModal({
                     occupy (Figma 2376:225580). The link left with them — a
                     confirmed transaction hands its hash to the success toast, and
                     a mid-flow link to one leg of a multi-step flow was noise. The
-                    gate's own copy is the one thing that survives: it narrates an
-                    off-chain phase (screening, terms signature) that the chip's
-                    txStatus-keyed label cannot describe (APP-501). */}
-                {((!showStepList && badgeContent) || gateCopy?.message) && (
-                  <div className="flex items-center gap-3 pt-4">
-                    {!showStepList && badgeContent && (
-                      <StepsBadge variant="brand" dataTestId="transaction-status-badge">
-                        {badgeContent}
-                      </StepsBadge>
-                    )}
-                    {gateCopy?.message && <Text className="text-textSecondary">{gateCopy.message}</Text>}
-                  </div>
-                )}
+                    gate's own copy narrates an off-chain phase (screening,
+                    terms signature) that the chip's txStatus-keyed label
+                    cannot describe (APP-501). With a step list, the signature
+                    step's own description already carries the terms copy, so
+                    that sentence goes (Figma review 2829:141028/9: nothing
+                    beyond a step's description on this screen) — but the
+                    screening sentence has no step to live in, so it stays,
+                    on its own: the list's header already shows the chip. */}
+                {(() => {
+                  const bottomChip = !showStepList && badgeContent;
+                  const gateMessage = gateCopy?.message && !gateCopyInStepList ? gateCopy.message : undefined;
+                  if (!bottomChip && !gateMessage) return null;
+                  return (
+                    <div className="flex items-center gap-3 pt-4">
+                      {bottomChip && (
+                        <StepsBadge variant={badgeVariant} dataTestId="transaction-status-badge">
+                          {badgeContent}
+                        </StepsBadge>
+                      )}
+                      {gateMessage && <Text className="text-textSecondary">{gateMessage}</Text>}
+                    </div>
+                  );
+                })()}
 
                 {/* Terminal-state actions only — the in-flight states (awaiting
                     signature / processing) are pure loading indicators now
