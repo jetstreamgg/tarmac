@@ -46,7 +46,19 @@ export const shellHeaderClasses = () =>
     // grid): an 88px bar around the 40px pill row, i.e. 24px (APP-456 #2 — the
     // previous 8px sat the bar hard against the top edge). The bar's own
     // padding is the gap to the content now, so the extra 4px margin is gone.
-    'w-full py-4 lg:py-6',
+    'py-4 lg:py-6',
+    // The bar spans the whole viewport width, not just the surface's content
+    // box: on routes with no page scrollbar the surface pads its right edge by
+    // the bar's width (usePageScrollbarCompensation), and a bar that stopped at
+    // the padded edge left the frosted gradient short of the viewport. So the
+    // bar stretches across the surface, pulls itself back out over the pad
+    // with a matching negative margin, and pads its own content by the same
+    // amount — its row's box, and so the nav's alignment with the page
+    // content, is exactly what it was. All three are 0 whenever there is no
+    // pad. `self-stretch` rather than `w-full`: in this centred column a
+    // stretched item's width is the container's minus its margins, which is
+    // what lets the negative margin widen it instead of shifting it.
+    'self-stretch mr-[calc(var(--page-scrollbar-pad,0px)*-1)] pr-[var(--page-scrollbar-pad,0px)]',
     // The bar's own `bg` layer, straight off the comps: the gradient-navbar
     // fill over background blur-md (Figma radius 12 ⇒ 6px). It lives on the bar
     // itself rather than on a child — `backdrop-filter` filters what is painted

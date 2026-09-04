@@ -20,6 +20,7 @@ import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } fr
 import { PageFooter } from './PageFooter';
 import { defaultConfig } from '../../config/default-config';
 import { usePageScrollbarCompensation } from '../hooks/usePageScrollbarCompensation';
+import { useRouterState } from '@tanstack/react-router';
 
 export function Layout({
   children,
@@ -38,7 +39,8 @@ export function Layout({
   const { phase: loaderPhase, coverMode, released, revealAnimated, endCover } = useAppLoader();
 
   useWalletAnalytics();
-  usePageScrollbarCompensation();
+  // The route path only serves as the hook's navigation signal.
+  usePageScrollbarCompensation(useRouterState({ select: s => s.location.pathname }));
 
   const showEnvInfo = (IS_STAGING_ENV || IS_DEVELOPMENT_ENV) && import.meta.env.VITE_CF_PAGES_COMMIT_SHA;
 
