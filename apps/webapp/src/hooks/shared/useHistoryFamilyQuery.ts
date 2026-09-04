@@ -29,17 +29,8 @@ import { familyMainnetId, chainId as chainIdMap } from '@/utils';
  */
 export type HistoryFamily = 'savings' | 'upgrade' | 'stake' | 'rewards' | 'stusds' | 'susdt' | 'psmTrades';
 
-// Families whose entities exist on mainnet; savings and psmTrades (the
-// mainnet PSM conversions, APP-558) additionally have their L2 `Swap` legs.
-const MAINNET_FAMILIES: HistoryFamily[] = [
-  'savings',
-  'upgrade',
-  'stake',
-  'rewards',
-  'stusds',
-  'susdt',
-  'psmTrades'
-];
+// Every family has a mainnet document; savings and psmTrades (the mainnet
+// PSM conversions, APP-558) additionally have their L2 `Swap` legs.
 const L2_FAMILIES: HistoryFamily[] = ['savings', 'psmTrades'];
 
 function mainnetFamilyFragments(
@@ -73,7 +64,7 @@ function mapMainnetFamilyResponse(
   family: HistoryFamily,
   response: any,
   chainId: number,
-  tokenAddressMap: Record<string, any>
+  tokenAddressMap: ReturnType<typeof useTokenAddressMap>
 ): CombinedHistoryItem[] {
   switch (family) {
     case 'psmTrades':
@@ -197,8 +188,7 @@ export function useHistoryFamilyQuery({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const mainnetChainId = familyMainnetId(currentChainId);
-  const includeMainnet =
-    MAINNET_FAMILIES.includes(family) && (chainId === undefined || chainId === mainnetChainId);
+  const includeMainnet = chainId === undefined || chainId === mainnetChainId;
   const l2ChainIds = L2_FAMILIES.includes(family)
     ? chainId === undefined
       ? L2_HISTORY_CHAIN_IDS

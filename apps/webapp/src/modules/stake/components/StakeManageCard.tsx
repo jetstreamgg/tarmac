@@ -50,13 +50,7 @@ export function StakeManageCard<Mode extends string>({
               aria-pressed={mode.value === activeMode}
               data-state={mode.value === activeMode ? 'active' : 'inactive'}
               data-testid={`${dataTestId}-mode-${mode.value}`}
-              // The pill recipe has no disabled state of its own (Radix tabs
-              // never disable a trigger); the DS Disabled variant is the same
-              // chip at half opacity, inert to the pointer.
-              className={cn(
-                tabsTriggerVariants({ variant: 'pill' }),
-                'disabled:pointer-events-none disabled:opacity-50'
-              )}
+              className={tabsTriggerVariants({ variant: 'pill' })}
             >
               {mode.label}
             </button>
@@ -89,9 +83,10 @@ export function StakeManageStatCell({
 }) {
   const hasDelta = next !== undefined;
   return (
-    // min-w-0 + nowrap: the cell yields width to its row rather than wrapping
-    // its value onto a second line (see the borrow card's stat row, APP-546).
-    <div data-testid={dataTestId} className="flex min-w-0 flex-col gap-1 whitespace-nowrap">
+    // min-w-0 + nowrap from md: the cell yields width to its row rather than
+    // wrapping its value onto a second line (see the borrow card's stat row,
+    // APP-546). Phones keep the 2×2 grid, whose narrow tracks need the wrap.
+    <div data-testid={dataTestId} className="flex min-w-0 flex-col gap-1 md:whitespace-nowrap">
       <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
       <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
         <span className="flex items-center gap-1">{current}</span>

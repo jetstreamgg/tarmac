@@ -24,6 +24,11 @@ import { familyMainnetId } from '@/utils';
  * show up as a second, "Convert" row beside the savings row. Same-timestamp
  * rows always share a page (the clamp cuts on the timestamp), so the hash
  * check never misses across a page boundary.
+ *
+ * Combined-document path only: the per-family `psmTrades` query (the
+ * portfolio's Convert filter) fetches swaps alone and has no sibling rows to
+ * match against, so an embedded leg still lists there. The `Swap` entity
+ * carries no origin field; the real fix is an indexer-side discriminator.
  */
 export function dropEmbeddedSwaps(items: CombinedHistoryItem[]): CombinedHistoryItem[] {
   const otherHashes = new Set(
@@ -39,7 +44,7 @@ async function fetchEthereumIndexerHistoryPage(
   chainId: number,
   address: string,
   rewardContracts: RewardContract[],
-  tokenAddressMap: Record<string, any>,
+  tokenAddressMap: ReturnType<typeof useTokenAddressMap>,
   beforeTimestamp?: number
 ): Promise<HistoryPage<CombinedHistoryItem>> {
   const owner = address.toLowerCase();

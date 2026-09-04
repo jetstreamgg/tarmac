@@ -27,6 +27,7 @@ import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
+import { stakeUsdNotional } from '../lib/stakeUsdNotional';
 
 /**
  * Confirm-modal step labels, derived from the calldata set — not from tx count
@@ -208,19 +209,12 @@ export function useStakeLaunch({
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
 
-  // USD notional for the enhanced-screening threshold (APP-517): locked SKY
-  // at spot plus borrowed USDS at $1. A non-zero SKY lock with no price
-  // available stays `undefined` — unknown, treated as above-threshold. Live
-  // (not computed at launch) because the takeover runs the preflight on it
-  // while the user is still editing.
-  const usdValue = useMemo(() => {
-    const usdsFloat = Number(formatUnits(usdsToBorrow, 18));
-    return skyToLock === 0n
-      ? usdsFloat
-      : skyPriceString
-        ? Number(formatUnits(skyToLock, 18)) * parseFloat(skyPriceString) + usdsFloat
-        : undefined;
-  }, [skyToLock, usdsToBorrow, skyPriceString]);
+  // Live (not computed at launch) because the takeover runs the enhanced-
+  // screening preflight on it while the user is still editing.
+  const usdValue = useMemo(
+    () => stakeUsdNotional(skyToLock, usdsToBorrow, skyPriceString),
+    [skyToLock, usdsToBorrow, skyPriceString]
+  );
 
   const launch = useCallback(() => {
     const formattedSky = formatBigInt(skyToLock);

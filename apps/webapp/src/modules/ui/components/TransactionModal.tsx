@@ -146,8 +146,8 @@ export type TransactionModalProps = {
    * No first screen (see `TransactionConfig.skipReview`): the modal mounts on
    * the wallet/status screen and fires `onConfirm` itself, once, on mount —
    * the gated path, exactly as a review Confirm would. With nothing to go
-   * back to, the failure view offers Retry alone and the gate's
-   * return-to-first-screen closes the modal instead.
+   * back to, the failure view offers Retry alone (the provider closes the
+   * modal on a gate's return-to-first-screen).
    */
   skipReview?: boolean;
 };
@@ -463,22 +463,19 @@ export function TransactionModal({
 
   // Hand the provider the same back-to-first-screen the header arrow uses, so
   // the gate's returnToFirstScreen control (enhanced-screening denials) lands
-  // on an identical screen state — onBack's progress reset included. A
-  // skipReview flow has no first screen to return to: the denial hands the
-  // user back to the surface that launched it, which renders the same hold
-  // (see useTransactionPreflight).
-  const returnToFirstScreen = skipReview ? handleClose : handleBack;
+  // on an identical screen state — onBack's progress reset included. (For a
+  // skipReview flow the provider closes the modal instead — there is no first
+  // screen to return to.)
   useEffect(() => {
-    registerReturnToFirstScreen?.(returnToFirstScreen);
+    registerReturnToFirstScreen?.(handleBack);
     return () => registerReturnToFirstScreen?.(null);
-  }, [registerReturnToFirstScreen, returnToFirstScreen]);
+  }, [registerReturnToFirstScreen, handleBack]);
 
   // A skipReview launch is the review's Confirm: fire once on mount, through
-  // the same gated `onConfirm` the review CTA uses, AFTER the return-to-first-
-  // screen registration above so a synchronous refusal already has somewhere
-  // to land. The ref (not the effect) is the once-guard — StrictMode replays
-  // mount effects on the same instance, and a second run would be a second
-  // transaction under a synchronous gate.
+  // the same gated `onConfirm` the review CTA uses. The ref (not the effect)
+  // is the once-guard — StrictMode replays mount effects on the same
+  // instance, and a second run would be a second transaction under a
+  // synchronous gate.
   const autoConfirmedRef = useRef(false);
   useEffect(() => {
     if (!skipReview || autoConfirmedRef.current) return;

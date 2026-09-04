@@ -37,6 +37,8 @@ import {
   type StakeLaunchContentContext
 } from './useStakeConfirmContent';
 
+import { stakeUsdNotional } from '../lib/stakeUsdNotional';
+
 export type { StakeLaunchContentContext };
 
 /**
@@ -282,29 +284,18 @@ export function useStakeManageLaunch({
   const isBorrowOnly =
     hasBorrow && !hasLock && !hasFree && !hasWipe && !hasDelegateChange && !hasRewardChange;
 
-  // USD notional for the enhanced-screening threshold (APP-517): the moved
-  // SKY leg at spot plus the moved USDS leg at $1, magnitudes regardless of
-  // direction. A non-zero SKY leg with no price available stays
-  // `undefined` — unknown, treated as above-threshold. A delegate-only
-  // change moves nothing and values at $0. Live (not computed at launch)
-  // because the sheet runs the preflight on it while the user is editing.
-  const usdValue = useMemo(() => {
-    const skyLegFloat = hasLock
-      ? Number(formatUnits(skyToLock, 18))
-      : hasFree
-        ? Number(formatUnits(skyToFree, 18))
-        : 0;
-    const usdsLegFloat = hasBorrow
-      ? Number(formatUnits(usdsToBorrow, 18))
-      : hasWipe
-        ? Number(formatUnits(usdsToWipe, 18))
-        : 0;
-    return skyLegFloat === 0
-      ? usdsLegFloat
-      : skyPriceString
-        ? skyLegFloat * parseFloat(skyPriceString) + usdsLegFloat
-        : undefined;
-  }, [hasLock, hasFree, hasBorrow, hasWipe, skyToLock, skyToFree, usdsToBorrow, usdsToWipe, skyPriceString]);
+  // The moved legs (lock or free, borrow or wipe; a delegate-only change moves
+  // nothing and values at $0). Live (not computed at launch) because the sheet
+  // runs the enhanced-screening preflight on it while the user is editing.
+  const usdValue = useMemo(
+    () =>
+      stakeUsdNotional(
+        hasLock ? skyToLock : hasFree ? skyToFree : 0n,
+        hasBorrow ? usdsToBorrow : hasWipe ? usdsToWipe : 0n,
+        skyPriceString
+      ),
+    [hasLock, hasFree, hasBorrow, hasWipe, skyToLock, skyToFree, usdsToBorrow, usdsToWipe, skyPriceString]
+  );
 
   const launch = useCallback(() => {
     const formattedLock = hasLock ? formatBigInt(skyToLock) : undefined;

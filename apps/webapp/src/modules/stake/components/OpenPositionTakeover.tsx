@@ -27,7 +27,7 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
-import { useTransactionPreflight } from '@/modules/ui/context/TransactionContext';
+import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
@@ -356,15 +356,11 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const amountsSettled =
     debouncedSkyToLock === state.skyToLock && debouncedUsdsToBorrow === state.usdsToBorrow;
 
-  const actionable = formValid && prepared && !launchLoading && amountsSettled;
-
-  // The takeover IS the review (Design QA 2800:91832), so the enhanced-
-  // screening hold the modal's first screen would run for a $250k+ position
-  // (APP-517) runs here instead: Confirm waits on a pending verdict and is
-  // held, with the reason, on a blocked one. The gate re-checks at fire time.
-  const preflight = useTransactionPreflight({ usdValue, actionable });
-  const preflightBlocked = preflight.kind === 'blocked';
-  const confirmDisabled = !actionable || preflightBlocked;
+  const confirmHold = useStakeConfirmHold({
+    usdValue,
+    actionable: formValid && prepared && !launchLoading && amountsSettled,
+    launchErrorMessage
+  });
 
   return (
     <TakeoverShell
@@ -382,24 +378,20 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       footer={
         <>
           {/* 237px is the comp's two-line measure for this copy (1036:209863).
-              An engine prepare failure takes over the slot — the helper copy
-              would be a lie next to a dead Confirm. Two elements (not one
+              A screening or prepare failure takes over the slot — the helper
+              copy would be a lie next to a dead Confirm. Two elements (not one
               recolored <p>) so the alert mounts fresh for screen readers. */}
-          {preflightBlocked ? (
+          {confirmHold.alert ? (
             <p
               className={`text-error ${FOOTER_NOTE_CLASSES}`}
-              data-testid="stake-takeover-preflight-blocked"
+              data-testid={
+                confirmHold.alert.kind === 'prepare'
+                  ? 'stake-takeover-error'
+                  : `stake-takeover-${confirmHold.alert.kind}-blocked`
+              }
               role="alert"
             >
-              {preflight.message}
-            </p>
-          ) : launchErrorMessage ? (
-            <p
-              className={`text-error ${FOOTER_NOTE_CLASSES}`}
-              data-testid="stake-takeover-error"
-              role="alert"
-            >
-              {launchErrorMessage}
+              {confirmHold.alert.message}
             </p>
           ) : (
             <p className={`text-fgSecondary ${FOOTER_NOTE_CLASSES}`}>
@@ -410,8 +402,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
             variant="primary"
             size="xl"
             onClick={launch}
-            disabled={confirmDisabled}
-            loading={actionable && preflight.kind === 'pending'}
+            disabled={confirmHold.disabled}
+            loading={confirmHold.loading}
             data-testid="stake-takeover-confirm"
             // min-w, not w: the comp's 160px button leaves ~80px of text box
             // inside the 40px insets, and `whitespace-nowrap` from the base
