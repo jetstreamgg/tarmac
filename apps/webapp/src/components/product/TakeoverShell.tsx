@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'motion/react';
-import { ChevronLeft, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
 
@@ -22,7 +22,7 @@ const FOCUSABLE_SELECTOR =
 
 /**
  * Full-screen takeover chrome (hi-fi 486:32657, restyled to 1036:209505):
- * header row with title + badge and a close button over a scrollable centered
+ * header row with title + badge and a close button (never a back arrow) over a scrollable centered
  * card column that ends with the footer row. The one sanctioned
  * ProductDetailTemplate exception (Migration Mechanics §5) — layout + slots
  * only, no data fetching. Sits at z-[46]: above the bottom-anchored app
@@ -32,7 +32,6 @@ const FOCUSABLE_SELECTOR =
 export function TakeoverShell({
   title,
   badge,
-  onBack,
   onClose,
   footer,
   locked = false,
@@ -42,8 +41,6 @@ export function TakeoverShell({
 }: {
   title: ReactNode;
   badge?: ReactNode;
-  /** Optional back control before the title (UX B.3 "Back + ×" chrome). */
-  onBack?: () => void;
   onClose: () => void;
   footer?: ReactNode;
   /**
@@ -137,18 +134,9 @@ export function TakeoverShell({
       className="bg-modalOverlay fixed inset-0 z-[46] flex flex-col backdrop-blur-[100px]"
     >
       <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:px-10 md:py-5">
+        {/* Title + badge only — no back arrow (Design QA 2800:91832: "There's
+            no back arrow, only 'X' icon to close"). */}
         <div className="flex items-center gap-2 md:gap-3">
-          {onBack && (
-            <Button
-              variant="secondary"
-              size="iconM"
-              onClick={onBack}
-              aria-label="Back"
-              data-testid={`${dataTestId}-back`}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          )}
           {/* Label 4 on phones, Label 3 from md up (1369:44362). */}
           <h2
             id={titleId}
