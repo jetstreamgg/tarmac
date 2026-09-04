@@ -40,7 +40,8 @@ import {
   type GateStatusCopy,
   type GateTrigger,
   type PreflightHook,
-  type PreTransactionGate
+  type PreTransactionGate,
+  type TransactionPreflight
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 
@@ -114,6 +115,32 @@ const EntrySlotContext = createContext<HTMLElement | null>(null);
 /** The dialog entry slot to portal editable inputs into, or null when absent. */
 export function useEntrySlot() {
   return useContext(EntrySlotContext);
+}
+
+// The injected enhanced-screening preflight hook (see `usePreflight` on the
+// provider), shared with flows whose OWN surface fires the transaction.
+const PreflightHookContext = createContext<PreflightHook>(allowAllPreflight);
+
+/**
+ * The enhanced-screening preflight (APP-517) for a surface that fires the
+ * transaction itself — a `skipReview` flow's page-side Confirm (the stake
+ * takeovers). The modal's first screen normally runs this check, warms the
+ * verdict and holds its CTA; with no first screen the takeover has to: pass
+ * the live USD notional and whether the flow's own gating would let the user
+ * proceed, and hold the Confirm the same way the modal does (pending →
+ * loading, blocked → disabled with the message shown). The gate still
+ * enforces the verdict at fire time through the same query cache; this is
+ * the user-facing half.
+ */
+export function useTransactionPreflight({
+  usdValue,
+  actionable
+}: {
+  usdValue: number | undefined;
+  actionable: boolean;
+}): TransactionPreflight {
+  const usePreflight = useContext(PreflightHookContext);
+  return usePreflight({ usdValue, active: true, actionable });
 }
 
 /** The modal's render inputs, retained across its exit animation. */
@@ -428,10 +455,12 @@ export function TransactionProvider({
       setOpen(true);
 
       // Review-first flows open on the review screen, so launch IS the review
-      // view. Entry-first flows open on the editable entry — their review event
-      // (if the flow has a review stage at all) fires at the entry→review
-      // transition instead (onReviewStage below), and entry-only flows (claims,
-      // upgrade) emit none, matching the legacy widgets.
+      // view — and so is a `skipReview` launch, whose review lived on the
+      // flow's own surface and whose Confirm is what launched this. Entry-first
+      // flows open on the editable entry — their review event (if the flow has
+      // a review stage at all) fires at the entry→review transition instead
+      // (onReviewStage below), and entry-only flows (claims, upgrade) emit
+      // none, matching the legacy widgets.
       if (config.analytics && !config.entry) {
         trackWidgetReviewViewed({
           widgetName: config.analytics.widgetName,
@@ -1137,64 +1166,67 @@ export function TransactionProvider({
 
   return (
     <TransactionContext.Provider value={contextValue}>
-      <EntrySlotContext.Provider value={entrySlotEl}>
-        {children}
-        {/* In-flight hook host: kept mounted (hidden) for the modal's whole lifetime,
+      <PreflightHookContext.Provider value={usePreflight}>
+        <EntrySlotContext.Provider value={entrySlotEl}>
+          {children}
+          {/* In-flight hook host: kept mounted (hidden) for the modal's whole lifetime,
             OUTSIDE the Radix dialog, so minimizing (which unmounts the dialog body)
             never tears down a running transaction. It portals its visible inputs into
             the modal's entry slot when present. See `backgroundContent` in the contract. */}
-        {/* Held through the exit alongside the modal itself: this is where the
+          {/* Held through the exit alongside the modal itself: this is where the
             widget that portals its inputs into the modal's entry slot lives, so
             unmounting it on close emptied the modal's body a beat before the
             modal had finished animating away. */}
-        {modalView?.config.backgroundContent && (
-          <div hidden key={`bg-${launchCount}`}>
-            {modalView.config.backgroundContent}
-          </div>
-        )}
-        {/* Live state while the modal is up; the retained snapshot while it is
+          {modalView?.config.backgroundContent && (
+            <div hidden key={`bg-${launchCount}`}>
+              {modalView.config.backgroundContent}
+            </div>
+          )}
+          {/* Live state while the modal is up; the retained snapshot while it is
             animating away, which is the only time activeConfig is null here. */}
-        {modalView && (
-          <TransactionModal
-            key={launchCount}
-            // Already false by the time the snapshot is rendering — that is
-            // what tells Radix to play the exit rather than the enter.
-            open={open && !minimized && !!activeConfig}
-            registerEntrySlot={setEntrySlotEl}
-            registerReturnToFirstScreen={registerReturnToFirstScreen}
-            onClose={handleClose}
-            onMinimize={minimize}
-            title={modalView.config.title}
-            transactionTitle={modalView.config.transactionTitle}
-            reviewTitle={modalView.config.reviewTitle}
-            subtitles={modalView.config.subtitles}
-            transactionContent={modalView.config.transactionContent}
-            transactionScreenContent={modalView.config.transactionScreenContent}
-            entry={modalView.config.entry}
-            rightHeaderComponent={modalView.config.rightHeaderComponent}
-            titleBadge={modalView.config.titleBadge}
-            onConfirm={gatedConfirm}
-            // Only defined when the config carries the callback — the modal
-            // keys the two-CTA footer off its presence.
-            onSecondaryConfirm={modalView.config.onSecondaryConfirm ? gatedSecondaryConfirm : undefined}
-            onReviewStage={handleReviewStage}
-            onRetry={handleRetry}
-            onBack={handleBack}
-            backLocked={modalView.hasMinedStep}
-            txStatus={modalView.txStatus}
-            confirmLabel={modalView.config.confirmLabel}
-            confirmDisabled={modalView.config.confirmDisabled}
-            errorMessage={modalView.config.errorMessage}
-            successLabel={modalView.config.successLabel}
-            errorLabel={modalView.config.errorLabel}
-            steps={modalSteps}
-            currentStep={modalView.currentStep}
-            gateCopy={modalView.gateCopy}
-            preflight={preflight}
-            chainGuard={chainGuard}
-          />
-        )}
-      </EntrySlotContext.Provider>
+          {modalView && (
+            <TransactionModal
+              key={launchCount}
+              // Already false by the time the snapshot is rendering — that is
+              // what tells Radix to play the exit rather than the enter.
+              open={open && !minimized && !!activeConfig}
+              registerEntrySlot={setEntrySlotEl}
+              registerReturnToFirstScreen={registerReturnToFirstScreen}
+              onClose={handleClose}
+              onMinimize={minimize}
+              title={modalView.config.title}
+              transactionTitle={modalView.config.transactionTitle}
+              reviewTitle={modalView.config.reviewTitle}
+              subtitles={modalView.config.subtitles}
+              transactionContent={modalView.config.transactionContent}
+              transactionScreenContent={modalView.config.transactionScreenContent}
+              entry={modalView.config.entry}
+              rightHeaderComponent={modalView.config.rightHeaderComponent}
+              titleBadge={modalView.config.titleBadge}
+              onConfirm={gatedConfirm}
+              // Only defined when the config carries the callback — the modal
+              // keys the two-CTA footer off its presence.
+              onSecondaryConfirm={modalView.config.onSecondaryConfirm ? gatedSecondaryConfirm : undefined}
+              onReviewStage={handleReviewStage}
+              onRetry={handleRetry}
+              onBack={handleBack}
+              backLocked={modalView.hasMinedStep}
+              txStatus={modalView.txStatus}
+              confirmLabel={modalView.config.confirmLabel}
+              confirmDisabled={modalView.config.confirmDisabled}
+              errorMessage={modalView.config.errorMessage}
+              successLabel={modalView.config.successLabel}
+              errorLabel={modalView.config.errorLabel}
+              steps={modalSteps}
+              currentStep={modalView.currentStep}
+              gateCopy={modalView.gateCopy}
+              preflight={preflight}
+              chainGuard={chainGuard}
+              skipReview={modalView.config.skipReview}
+            />
+          )}
+        </EntrySlotContext.Provider>
+      </PreflightHookContext.Provider>
     </TransactionContext.Provider>
   );
 }

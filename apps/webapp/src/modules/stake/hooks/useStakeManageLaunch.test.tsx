@@ -438,6 +438,8 @@ describe('useStakeManageLaunch — launch() config', () => {
     act(() => withdrawRepay.result.current.launch());
     expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm');
     expect(h.launchMock.mock.calls[0][0].transactionTitle).toBe('Confirm the change in your position');
+    // The sheet is the review (Design QA 2800:91832): no in-modal review.
+    expect(h.launchMock.mock.calls[0][0].skipReview).toBe(true);
     withdrawRepay.unmount();
     h.launchMock.mockClear();
 

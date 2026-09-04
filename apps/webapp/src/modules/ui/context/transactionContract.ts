@@ -111,6 +111,24 @@ export type TransactionConfig = {
    */
   entry?: TransactionEntry;
   /**
+   * The flow's own surface already IS the review — the stake takeovers, where
+   * the user builds the configuration and checks it on the page (Design QA
+   * 2800:91832: "We don't have a 'Confirm' modal because this overlay already
+   * serves that purpose"). Launch then behaves as if the review's Confirm had
+   * been pressed: the modal opens straight on the wallet/status screen and the
+   * pre-transaction gate runs at once — screening, the enhanced tier, the terms
+   * signature step, the chain guard — before `onConfirm`. Nothing is skipped
+   * but the in-modal review body. Mutually exclusive with `entry`.
+   *
+   * The review-viewed analytics event still fires at launch, as for every
+   * review-first flow: the Confirm that launched this is the user leaving the
+   * review. A first-screen denial (an enhanced-screening or wrong-chain
+   * refusal) has no first screen to land on, so it closes the modal — the
+   * flow's surface is expected to render the same hold itself, through
+   * `useTransactionPreflight`.
+   */
+  skipReview?: boolean;
+  /**
    * Content the provider keeps mounted (hidden) for the whole modal lifetime —
    * independent of which screen is showing and of minimize. This is where a flow
    * hosts the in-flight engine hook whose receipt-watcher must survive a minimize:

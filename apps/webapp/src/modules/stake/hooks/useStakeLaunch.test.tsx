@@ -252,6 +252,9 @@ describe('useStakeLaunch — launch() config', () => {
     const config = h.launchMock.mock.calls[0][0];
     expect(config.title).toBe('Confirm');
     expect(config.transactionTitle).toBe('Confirm your transaction');
+    // The takeover is the review (Design QA 2800:91832): no in-modal review.
+    expect(config.skipReview).toBe(true);
+    expect(config.entry).toBeUndefined();
     expect(config.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
       { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },

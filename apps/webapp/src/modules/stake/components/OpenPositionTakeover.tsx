@@ -27,6 +27,7 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
+import { useTransactionPreflight } from '@/modules/ui/context/TransactionContext';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
@@ -51,8 +52,6 @@ export interface ReopenContext {
   urnIndex: number;
   /** Borrow card starts ON — the urn's history had debt (UX 1194:21914). */
   borrowExpanded: boolean;
-  /** Back to the position-details modal. */
-  onBack: () => void;
   /** Abandon the whole manage flow (clears the manage params). */
   onClose: () => void;
 }
@@ -336,6 +335,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     launch,
     locked,
     restore,
+    usdValue,
     prepared,
     isLoading: launchLoading,
     error: launchError
@@ -356,12 +356,19 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const amountsSettled =
     debouncedSkyToLock === state.skyToLock && debouncedUsdsToBorrow === state.usdsToBorrow;
 
-  const confirmDisabled = !formValid || !prepared || launchLoading || !amountsSettled;
+  const actionable = formValid && prepared && !launchLoading && amountsSettled;
+
+  // The takeover IS the review (Design QA 2800:91832), so the enhanced-
+  // screening hold the modal's first screen would run for a $250k+ position
+  // (APP-517) runs here instead: Confirm waits on a pending verdict and is
+  // held, with the reason, on a blocked one. The gate re-checks at fire time.
+  const preflight = useTransactionPreflight({ usdValue, actionable });
+  const preflightBlocked = preflight.kind === 'blocked';
+  const confirmDisabled = !actionable || preflightBlocked;
 
   return (
     <TakeoverShell
       title={<Trans>Open a position</Trans>}
-      onBack={reopen?.onBack}
       badge={
         <>
           <StakeSky className="h-4 w-4" />
@@ -378,7 +385,15 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
               An engine prepare failure takes over the slot — the helper copy
               would be a lie next to a dead Confirm. Two elements (not one
               recolored <p>) so the alert mounts fresh for screen readers. */}
-          {launchErrorMessage ? (
+          {preflightBlocked ? (
+            <p
+              className={`text-error ${FOOTER_NOTE_CLASSES}`}
+              data-testid="stake-takeover-preflight-blocked"
+              role="alert"
+            >
+              {preflight.message}
+            </p>
+          ) : launchErrorMessage ? (
             <p
               className={`text-error ${FOOTER_NOTE_CLASSES}`}
               data-testid="stake-takeover-error"
@@ -396,6 +411,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
             size="xl"
             onClick={launch}
             disabled={confirmDisabled}
+            loading={actionable && preflight.kind === 'pending'}
             data-testid="stake-takeover-confirm"
             // min-w, not w: the comp's 160px button leaves ~80px of text box
             // inside the 40px insets, and `whitespace-nowrap` from the base
