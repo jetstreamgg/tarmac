@@ -37,9 +37,12 @@ describe('RiskScaleMeter', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
-  it('fills a discrete Liquidation level to the threshold tick, not the full bar', () => {
+  it('fills a discrete Liquidation level to the end of the bar, past High', () => {
     renderMeter({ level: RiskLevel.LIQUIDATION });
-    // Liquidation threshold is 80%, so the fill stops there rather than at 100%.
+    expect(screen.getByTestId('risk-scale-fill').style.width).toBe('100%');
+    cleanup();
+    renderMeter({ level: RiskLevel.HIGH });
+    // High ends where Liquidation starts (the 80% threshold).
     expect(screen.getByTestId('risk-scale-fill').style.width).toBe('80%');
   });
 

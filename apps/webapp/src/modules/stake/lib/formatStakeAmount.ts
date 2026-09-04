@@ -18,7 +18,8 @@ export function formatStakeAmount(amount: bigint): string {
  * (APP-546).
  */
 export function formatOraclePrice(value: bigint | undefined): string {
-  return value !== undefined
-    ? `$${formatBigInt(value, { unit: WAD_PRECISION, maxDecimals: 4, minDecimals: 4 })}`
-    : NO_VALUE;
+  if (value === undefined) return NO_VALUE;
+  // No debt → no liquidation price; `$0.0000` would read as a real quote.
+  if (value === 0n) return '$0.00';
+  return `$${formatBigInt(value, { unit: WAD_PRECISION, maxDecimals: 4, minDecimals: 4 })}`;
 }

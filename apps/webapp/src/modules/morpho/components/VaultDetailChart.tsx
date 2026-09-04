@@ -7,7 +7,7 @@ import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { useParseVaultChartData } from '../hooks/useParseVaultChartData';
-import { hasRateIncentives, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
+import { hasRateBreakdown, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 
 type Metric = 'rate' | 'tvl';
 
@@ -94,7 +94,7 @@ export function VaultDetailChart({
         // here rather than the 12px the comps draw beside 14–18px text: no comp
         // pins it against this 44px figure, and 12px reads as a speck.
         valueSuffix={
-          isRate && hasRateIncentives(marketData?.rate) ? (
+          isRate && hasRateBreakdown(marketData?.rate) ? (
             <VaultRateTooltip rate={marketData?.rate}>
               <VaultRateMark className="size-4" />
             </VaultRateTooltip>

@@ -397,7 +397,7 @@ export function StakeManageBorrowCard({
             next={
               showDeltas
                 ? isFullRepay
-                  ? '$0.0'
+                  ? formatOraclePrice(0n)
                   : simulatedVault?.liquidationPrice !== undefined &&
                       simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
                     ? formatOraclePrice(simulatedVault.liquidationPrice)

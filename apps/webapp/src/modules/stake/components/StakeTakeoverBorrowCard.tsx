@@ -27,9 +27,10 @@ const RISK_PILL: Record<RiskLevel, string> = {
 
 function StatItem({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
-    // nowrap: the row below never breaks (APP-546), so a value must never
-    // fold onto a second line inside its cell either.
-    <div className="flex min-w-0 flex-col gap-1 whitespace-nowrap">
+    // nowrap from md: the row below never breaks there (APP-546), so a value
+    // must not fold onto a second line inside its cell either. Phones keep
+    // the 2×2 grid, whose narrow tracks need the wrap.
+    <div className="flex min-w-0 flex-col gap-1 md:whitespace-nowrap">
       <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
       <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
         {children}

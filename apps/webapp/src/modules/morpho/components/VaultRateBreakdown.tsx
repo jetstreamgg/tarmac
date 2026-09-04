@@ -23,7 +23,9 @@ export function hasRateIncentives(rate?: MorphoVaultRateData): rate is MorphoVau
  * figure with no mark and no tooltip (Design QA follow-up, APP-550).
  */
 export function hasRateBreakdown(rate?: MorphoVaultRateData): rate is MorphoVaultRateData {
-  return !!rate && (rate.rewards.length > 0 || rate.netRate !== rate.rate);
+  // The two rates are independently computed API floats: compare at display
+  // precision (basis points of a percent), not by the last ulp.
+  return !!rate && (rate.rewards.length > 0 || Math.abs(rate.netRate - rate.rate) >= 0.00005);
 }
 
 /**
