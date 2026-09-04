@@ -19,6 +19,7 @@ import { cn } from '@/lib/cn';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { PageFooter } from './PageFooter';
 import { defaultConfig } from '../../config/default-config';
+import { usePageScrollbarCompensation } from '../hooks/usePageScrollbarCompensation';
 
 export function Layout({
   children,
@@ -37,6 +38,7 @@ export function Layout({
   const { phase: loaderPhase, coverMode, released, revealAnimated, endCover } = useAppLoader();
 
   useWalletAnalytics();
+  usePageScrollbarCompensation();
 
   const showEnvInfo = (IS_STAGING_ENV || IS_DEVELOPMENT_ENV) && import.meta.env.VITE_CF_PAGES_COMMIT_SHA;
 

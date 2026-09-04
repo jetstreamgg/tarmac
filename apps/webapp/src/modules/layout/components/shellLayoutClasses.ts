@@ -29,7 +29,13 @@ export const shellSurfaceClasses = () =>
   // The surface is transparent: the page background lives on the
   // viewport-fixed .app-background layer Layout renders behind it. No height
   // cap and no `overflow` — the document scrolls.
-  'flex min-h-svh max-w-full items-center md:min-h-screen';
+  //
+  // pr-[var(--page-scrollbar-pad)]: on routes with no page scrollbar the
+  // surface pads its right edge by the bar's width so the header and content
+  // sit where they do when the bar is present (usePageScrollbarCompensation
+  // sets the variable; 0 with overlay scrollbars and whenever the bar shows).
+  // The fixed background image shows through the pad.
+  'flex min-h-svh max-w-full items-center pr-[var(--page-scrollbar-pad,0px)] md:min-h-screen';
 
 /** The shell header bar (full-bleed; the row content lives in the inner div). */
 export const shellHeaderClasses = () =>
