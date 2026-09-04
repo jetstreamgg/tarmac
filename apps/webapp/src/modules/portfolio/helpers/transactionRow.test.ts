@@ -65,7 +65,7 @@ describe('toPortfolioTxRow', () => {
       }),
       0
     );
-    expect(r.action).toBe('Trade');
+    expect(r.action).toBe('Convert');
     expect(r.chainId).toBe(8453);
     expect(r.status).toBe('pending');
     // CoW txHash is an order UID → CoW explorer, not Etherscan.

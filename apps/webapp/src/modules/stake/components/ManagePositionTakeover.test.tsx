@@ -246,6 +246,22 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
   };
 });
 
+// The takeover's own enhanced-screening hold (APP-517 via APP-550): the
+// provider's injected preflight, read through the context helper.
+const preflight = vi.hoisted(() => ({
+  state: { kind: 'clear' } as { kind: 'clear' } | { kind: 'pending' } | { kind: 'blocked'; message: string },
+  contexts: [] as Array<{ usdValue: number | undefined; actionable: boolean }>
+}));
+vi.mock('@/modules/ui/context/TransactionContext', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/modules/ui/context/TransactionContext')>();
+  return {
+    ...actual,
+    useTransactionPreflight: (context: { usdValue: number | undefined; actionable: boolean }) => {
+      preflight.contexts.push(context);
+      return preflight.state;
+    }
+  };
+});
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
@@ -253,14 +269,13 @@ import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } 
 import { ManagePositionTakeover } from './ManagePositionTakeover';
 
 const renderSheet = (init: StakeManageFlowInit = {}) => {
-  const onBack = vi.fn();
   const onClose = vi.fn();
   render(
     <I18nProvider i18n={i18n}>
-      <ManagePositionTakeover urnIndex={0} init={init} onBack={onBack} onClose={onClose} />
+      <ManagePositionTakeover urnIndex={0} init={init} onClose={onClose} />
     </I18nProvider>
   );
-  return { onBack, onClose };
+  return { onClose };
 };
 
 const confirmButton = () => screen.getByTestId('stake-manage-confirm') as HTMLButtonElement;
@@ -664,13 +679,50 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('back and close route through the controller callbacks', () => {
-    const { onBack, onClose } = renderSheet();
+  it('closes through the controller callback and draws no back arrow (Design QA 2800:91832)', () => {
+    const { onClose } = renderSheet();
 
-    fireEvent.click(screen.getByTestId('stake-manage-takeover-back'));
-    expect(onBack).toHaveBeenCalled();
+    expect(screen.queryByTestId('stake-manage-takeover-back')).toBeNull();
     fireEvent.click(screen.getByTestId('stake-manage-takeover-close'));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('disables the mode pills while a card is toggled off (Design QA 2800:91832)', () => {
+    renderSheet();
+
+    // Every card starts off: both stake pills are inert.
+    const stakePill = screen.getByTestId('stake-manage-stake-card-mode-stake') as HTMLButtonElement;
+    const withdrawPill = screen.getByTestId('stake-manage-stake-card-mode-withdraw') as HTMLButtonElement;
+    expect(stakePill.disabled).toBe(true);
+    expect(withdrawPill.disabled).toBe(true);
+
+    fireEvent.click(screen.getByTestId('stake-manage-stake-card-toggle'));
+    expect(stakePill.disabled).toBe(false);
+    expect(withdrawPill.disabled).toBe(false);
+
+    fireEvent.click(screen.getByTestId('stake-manage-stake-card-toggle'));
+    expect(stakePill.disabled).toBe(true);
+  });
+
+  it('holds Confirm on a pending verdict and blocks it, with the reason, on a denial (APP-550)', () => {
+    preflight.state = { kind: 'pending' };
+    renderSheet({ stakeCard: 'stake' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+    // The DS loading state disables the button while the verdict is in flight.
+    expect(confirmButton().disabled).toBe(true);
+    expect(preflight.contexts.at(-1)?.actionable).toBe(true);
+
+    cleanup();
+    preflight.state = { kind: 'blocked', message: 'This wallet did not pass the additional verification.' };
+    renderSheet({ stakeCard: 'stake' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+    expect(confirmButton().disabled).toBe(true);
+    expect(screen.getByTestId('stake-manage-preflight-blocked').textContent).toContain(
+      'did not pass the additional verification'
+    );
+    fireEvent.click(confirmButton());
+    expect(h.launchSpy).not.toHaveBeenCalled();
+    preflight.state = { kind: 'clear' };
   });
 
   it('launches the confirm modal from the footer', () => {

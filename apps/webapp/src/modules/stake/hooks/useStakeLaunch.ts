@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -27,6 +27,7 @@ import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
+import { stakeUsdNotional } from '../lib/stakeUsdNotional';
 
 /**
  * Confirm-modal step labels, derived from the calldata set — not from tx count
@@ -66,15 +67,17 @@ export interface UseStakeLaunchParams {
   /** Form validity — gates the engine's prepare/simulation. */
   enabled: boolean;
   /**
-   * Review-screen body (the stake/borrow amount heroes per hi-fi 486:33412,
-   * over the confirm grid). Pass a MEMOIZED function to receive the engine's
-   * own routing — the grid prices the live Network fee from it, which it cannot
-   * do from the caller's render (the calls are this hook's output, the body its
-   * input). The body is re-pushed as that routing changes, until the
-   * transaction leaves IDLE.
+   * Full summary body (the stake/borrow amount heroes per hi-fi 486:33412,
+   * over the confirm grid). The takeover is the review (Design QA
+   * 2800:91832), so the modal never shows this as a review screen — it is the
+   * wallet-screen fallback when no `transactionScreenContent` is passed. Pass
+   * a MEMOIZED function to receive the engine's own routing — the grid prices
+   * the live Network fee from it, which it cannot do from the caller's render
+   * (the calls are this hook's output, the body its input). The body is
+   * re-pushed as that routing changes, until the transaction leaves IDLE.
    */
   transactionContent?: StakeLaunchContent;
-  /** Compact wallet/status-screen summary; omitted, the review body carries over. */
+  /** Compact wallet/status-screen summary; omitted, the full body carries over. */
   transactionScreenContent?: ReactNode;
   /** Refetch positions/history + close the takeover after success. */
   onSuccess?: () => void;
@@ -84,7 +87,9 @@ export interface UseStakeLaunchParams {
  * The open-position seam (Architecture Proposal §5): wires the F1 calldata
  * (`useStakeCalldata`, flow `'open'`) into the unmodified
  * `useBatchStakeMulticall` engine, spreads the context `txCallbacks`, and
- * describes the confirm modal for `TransactionContext.launch()`.
+ * describes the transaction modal for `TransactionContext.launch()`. The
+ * launch is `skipReview`: the takeover already served as the review, so the
+ * modal opens on the wallet screen and the gate runs at once.
  *
  * Allowance decisions stay INSIDE the engine (landmine #1) — the read here only
  * labels the Approve step. Batching follows the legacy widget exactly:
@@ -204,6 +209,13 @@ export function useStakeLaunch({
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
 
+  // Live (not computed at launch) because the takeover runs the enhanced-
+  // screening preflight on it while the user is still editing.
+  const usdValue = useMemo(
+    () => stakeUsdNotional(skyToLock, usdsToBorrow, skyPriceString),
+    [skyToLock, usdsToBorrow, skyPriceString]
+  );
+
   const launch = useCallback(() => {
     const formattedSky = formatBigInt(skyToLock);
     const formattedUsds = formatBigInt(usdsToBorrow);
@@ -221,22 +233,13 @@ export function useStakeLaunch({
       ...(hasBorrow && { borrowAmount: Number(formatUnits(usdsToBorrow, 18)), borrowAction: 'borrow' })
     };
 
-    // USD notional for the enhanced-screening threshold (APP-517): locked SKY
-    // at spot plus borrowed USDS at $1. A non-zero SKY lock with no price
-    // available stays `undefined` — unknown, treated as above-threshold.
-    const usdsFloat = Number(formatUnits(usdsToBorrow, 18));
-    const usdValue =
-      skyToLock === 0n
-        ? usdsFloat
-        : skyPriceString
-          ? Number(formatUnits(skyToLock, 18)) * parseFloat(skyPriceString) + usdsFloat
-          : undefined;
-
     launchModal({
       usdValue,
       // Staking is mainnet-only — guard the modal off any L2 (APP-528).
       supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-      // Hi-fi 486:33412: the review screen is titled plain "Confirm".
+      // The takeover is the review (Design QA 2800:91832): open on the wallet
+      // screen, gate first. `title` is the minimized-toast fallback only.
+      skipReview: true,
       title: t`Confirm`,
       transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, StakeFlow.OPEN)),
       subtitles: {
@@ -282,7 +285,7 @@ export function useStakeLaunch({
     hasBorrow,
     hasDelegate,
     shouldUseBatch,
-    skyPriceString,
+    usdValue,
     sessionId,
     confirmContent,
     transactionScreenContent,
@@ -294,6 +297,8 @@ export function useStakeLaunch({
     launch,
     locked,
     restore,
+    /** Live USD notional of the staged position, for the takeover's own preflight. */
+    usdValue,
     execute: engine.execute,
     calls: engine.calls ?? [],
     isBatch: !!engine.isBatch,

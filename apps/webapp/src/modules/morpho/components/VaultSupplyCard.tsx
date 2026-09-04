@@ -20,7 +20,7 @@ import {
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo, vaultRateInfo } from '@/components/product/RateInfo';
-import { hasRateIncentives, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
+import { hasRateBreakdown, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 import { Morpho } from '@/widgets';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { NO_VALUE } from '@/lib/constants';
@@ -137,7 +137,7 @@ export function VaultSupplyCard({
                   — and never shows a mark the tooltip can't explain. */}
               <VaultRateTooltip rate={rateData}>
                 {rate}
-                {hasRateIncentives(rateData) && (
+                {hasRateBreakdown(rateData) && (
                   <VaultRateMark
                     className={provider === 'morpho' ? 'text-statusInfoSolid' : 'text-fgSecondary'}
                   />

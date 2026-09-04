@@ -40,7 +40,8 @@ import {
   type GateStatusCopy,
   type GateTrigger,
   type PreflightHook,
-  type PreTransactionGate
+  type PreTransactionGate,
+  type TransactionPreflight
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 
@@ -114,6 +115,32 @@ const EntrySlotContext = createContext<HTMLElement | null>(null);
 /** The dialog entry slot to portal editable inputs into, or null when absent. */
 export function useEntrySlot() {
   return useContext(EntrySlotContext);
+}
+
+// The injected enhanced-screening preflight hook (see `usePreflight` on the
+// provider), shared with flows whose OWN surface fires the transaction.
+const PreflightHookContext = createContext<PreflightHook>(allowAllPreflight);
+
+/**
+ * The enhanced-screening preflight (APP-517) for a surface that fires the
+ * transaction itself — a `skipReview` flow's page-side Confirm (the stake
+ * takeovers). The modal's first screen normally runs this check, warms the
+ * verdict and holds its CTA; with no first screen the takeover has to: pass
+ * the live USD notional and whether the flow's own gating would let the user
+ * proceed, and hold the Confirm the same way the modal does (pending →
+ * loading, blocked → disabled with the message shown). The gate still
+ * enforces the verdict at fire time through the same query cache; this is
+ * the user-facing half.
+ */
+export function useTransactionPreflight({
+  usdValue,
+  actionable
+}: {
+  usdValue: number | undefined;
+  actionable: boolean;
+}): TransactionPreflight {
+  const usePreflight = useContext(PreflightHookContext);
+  return usePreflight({ usdValue, active: true, actionable });
 }
 
 /** The modal's render inputs, retained across its exit animation. */
@@ -428,10 +455,12 @@ export function TransactionProvider({
       setOpen(true);
 
       // Review-first flows open on the review screen, so launch IS the review
-      // view. Entry-first flows open on the editable entry — their review event
-      // (if the flow has a review stage at all) fires at the entry→review
-      // transition instead (onReviewStage below), and entry-only flows (claims,
-      // upgrade) emit none, matching the legacy widgets.
+      // view — and so is a `skipReview` launch, whose review lived on the
+      // flow's own surface and whose Confirm is what launched this. Entry-first
+      // flows open on the editable entry — their review event (if the flow has
+      // a review stage at all) fires at the entry→review transition instead
+      // (onReviewStage below), and entry-only flows (claims, upgrade) emit
+      // none, matching the legacy widgets.
       if (config.analytics && !config.entry) {
         trackWidgetReviewViewed({
           widgetName: config.analytics.widgetName,
@@ -702,7 +731,11 @@ export function TransactionProvider({
           gatePhaseRef.current = null;
           gateCopyRef.current = null;
           setGateCopy(null);
-          returnToFirstScreenRef.current?.();
+          // A skipReview flow has no first screen: the denial hands the user
+          // back to the surface that launched it, which renders the same
+          // hold through useTransactionPreflight.
+          if (configRef.current?.skipReview) handleCloseRef.current();
+          else returnToFirstScreenRef.current?.();
         },
         reportSignatureRejected: () => {
           if (!live()) return;
@@ -1138,7 +1171,8 @@ export function TransactionProvider({
   return (
     <TransactionContext.Provider value={contextValue}>
       <EntrySlotContext.Provider value={entrySlotEl}>
-        {children}
+        {/* Only page surfaces read the preflight hook (see useTransactionPreflight). */}
+        <PreflightHookContext.Provider value={usePreflight}>{children}</PreflightHookContext.Provider>
         {/* In-flight hook host: kept mounted (hidden) for the modal's whole lifetime,
             OUTSIDE the Radix dialog, so minimizing (which unmounts the dialog body)
             never tears down a running transaction. It portals its visible inputs into
@@ -1192,6 +1226,7 @@ export function TransactionProvider({
             gateCopy={modalView.gateCopy}
             preflight={preflight}
             chainGuard={chainGuard}
+            skipReview={modalView.config.skipReview}
           />
         )}
       </EntrySlotContext.Provider>

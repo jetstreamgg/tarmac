@@ -29,9 +29,8 @@ import { familyMainnetId, chainId as chainIdMap } from '@/utils';
  */
 export type HistoryFamily = 'savings' | 'upgrade' | 'stake' | 'rewards' | 'stusds' | 'susdt' | 'psmTrades';
 
-// Families whose entities exist (only) on mainnet; savings additionally has
-// the L2 sUSDS-swap leg, and psmTrades is L2-only.
-const MAINNET_FAMILIES: HistoryFamily[] = ['savings', 'upgrade', 'stake', 'rewards', 'stusds', 'susdt'];
+// Every family has a mainnet document; savings and psmTrades (the mainnet
+// PSM conversions, APP-558) additionally have their L2 `Swap` legs.
 const L2_FAMILIES: HistoryFamily[] = ['savings', 'psmTrades'];
 
 function mainnetFamilyFragments(
@@ -42,6 +41,8 @@ function mainnetFamilyFragments(
   beforeTimestamp?: number
 ): string {
   switch (family) {
+    case 'psmTrades':
+      return psmTradeFragment({ alias: 'swaps', wallet: owner, chainId, beforeTimestamp });
     case 'savings':
       return savingsHistoryFragments({ owner, chainId, beforeTimestamp });
     case 'upgrade':
@@ -62,9 +63,12 @@ function mainnetFamilyFragments(
 function mapMainnetFamilyResponse(
   family: HistoryFamily,
   response: any,
-  chainId: number
+  chainId: number,
+  tokenAddressMap: ReturnType<typeof useTokenAddressMap>
 ): CombinedHistoryItem[] {
   switch (family) {
+    case 'psmTrades':
+      return mapPsmTradeRows(response.swaps ?? [], chainId, tokenAddressMap);
     case 'savings':
       return mapSavingsHistoryResponse(response, chainId);
     case 'upgrade':
@@ -104,7 +108,13 @@ async function fetchHistoryFamilyPage(
     requests.push({
       url: ctx.mainnetUrl,
       doc: `{ ${mainnetFamilyFragments(ctx.family, ctx.owner, ctx.mainnetChainId, ctx.rewardContracts, beforeTimestamp)} }`,
-      map: resp => mapMainnetFamilyResponse(ctx.family, resp, ctx.mainnetChainId)
+      map: resp =>
+        mapMainnetFamilyResponse(
+          ctx.family,
+          resp,
+          ctx.mainnetChainId,
+          ctx.tokenAddressMaps[ctx.mainnetChainId]
+        )
     });
   }
 
@@ -178,8 +188,7 @@ export function useHistoryFamilyQuery({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const mainnetChainId = familyMainnetId(currentChainId);
-  const includeMainnet =
-    MAINNET_FAMILIES.includes(family) && (chainId === undefined || chainId === mainnetChainId);
+  const includeMainnet = chainId === undefined || chainId === mainnetChainId;
   const l2ChainIds = L2_FAMILIES.includes(family)
     ? chainId === undefined
       ? L2_HISTORY_CHAIN_IDS
@@ -189,18 +198,20 @@ export function useHistoryFamilyQuery({
   const hasScope = includeMainnet || l2ChainIds.length > 0;
 
   const rewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
+  const mainnetTokens = useTokenAddressMap(mainnetChainId);
   const baseTokens = useTokenAddressMap(chainIdMap.base);
   const arbitrumTokens = useTokenAddressMap(chainIdMap.arbitrum);
   const optimismTokens = useTokenAddressMap(chainIdMap.optimism);
   const unichainTokens = useTokenAddressMap(chainIdMap.unichain);
   const tokenAddressMaps = useMemo(
     () => ({
+      [mainnetChainId]: mainnetTokens,
       [chainIdMap.base]: baseTokens,
       [chainIdMap.arbitrum]: arbitrumTokens,
       [chainIdMap.optimism]: optimismTokens,
       [chainIdMap.unichain]: unichainTokens
     }),
-    [baseTokens, arbitrumTokens, optimismTokens, unichainTokens]
+    [mainnetChainId, mainnetTokens, baseTokens, arbitrumTokens, optimismTokens, unichainTokens]
   );
 
   const { data, error, refetch, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =

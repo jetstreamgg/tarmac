@@ -11,9 +11,15 @@ export function formatStakeAmount(amount: bigint): string {
 }
 
 /**
- * Oracle price (WAD) for the stat cells — 4 decimals pinned, because the
- * magnitude-driven default would drop to 2 the moment a price crosses $10.
+ * Oracle price (WAD) for the stat cells — exactly 4 decimals: the
+ * magnitude-driven default would drop to 2 the moment a price crosses $10,
+ * and a trimmed tail (`$0.05` next to `$0.0478`) changed the cell's width as
+ * the slider moved, which is what made the stat row reflow under the pointer
+ * (APP-546).
  */
 export function formatOraclePrice(value: bigint | undefined): string {
-  return value !== undefined ? `$${formatBigInt(value, { unit: WAD_PRECISION, maxDecimals: 4 })}` : NO_VALUE;
+  if (value === undefined) return NO_VALUE;
+  // No debt → no liquidation price; `$0.0000` would read as a real quote.
+  if (value === 0n) return '$0.00';
+  return `$${formatBigInt(value, { unit: WAD_PRECISION, maxDecimals: 4, minDecimals: 4 })}`;
 }

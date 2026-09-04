@@ -85,10 +85,13 @@ export class StakePage {
     await expect(this.productPage()).toBeVisible({ timeout: 15_000 });
   }
 
+  /**
+   * The takeover / manage sheet IS the review (Design QA 2800:91832, APP-550):
+   * its Confirm launches the modal straight onto the wallet screen, so there
+   * is no in-modal Confirm to press any more — only the success toast to
+   * wait for. Kept under its historical name so the specs read unchanged.
+   */
   async confirmTransactionModal() {
-    const confirm = this.page.getByRole('button', { name: 'Confirm', exact: true });
-    await expect(confirm).toBeEnabled({ timeout: 60_000 });
-    await confirm.click();
     await expectTransactionSuccess(this.page);
   }
 
