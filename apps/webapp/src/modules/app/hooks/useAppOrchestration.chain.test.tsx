@@ -383,3 +383,28 @@ describe('useAppOrchestration — the retired network param', () => {
     expect(mockSwitchChain).not.toHaveBeenCalled();
   });
 });
+
+// A cold reload with a persisted L2 session. wagmi rehydrates `connections`
+// from storage with connector STUBS and reports `reconnecting`; the wallet
+// chain is already readable, but nothing can be asked of the wallet yet —
+// `switchChain` on the stub throws. Acting before the connection settles
+// would spend the visit's one switch chance on that throw and bounce home.
+describe('useAppOrchestration — reload with a persisted L2 session', () => {
+  it('waits for the reconnect to settle before asking for the module chain (PR review)', () => {
+    mockPathname = '/stake';
+    mockConnectionStatus = 'reconnecting';
+    mockWalletChainId = BASE;
+    mockConfigChainId = BASE;
+
+    const { refresh } = mount();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(redirectedHome()).toBe(false);
+
+    mockConnectionStatus = 'connected';
+    refresh();
+
+    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: TENDERLY });
+    expect(redirectedHome()).toBe(false);
+  });
+});

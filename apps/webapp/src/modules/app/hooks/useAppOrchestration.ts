@@ -177,6 +177,15 @@ export function useAppOrchestration(): { intent: Intent } {
   // Route validation: redirects that depend on chain or user state, replacing
   // the navigation-param stripping the legacy query-param validator did.
   useEffect(() => {
+    // Not while the connection is still settling. On a reload wagmi rehydrates
+    // a persisted session as `reconnecting`: the wallet's chain is already
+    // readable, but the connector is a storage stub that cannot be asked for
+    // anything — `switchChain` on it throws. Acting now would spend the visit's
+    // one switch chance on that throw and fall through to the home redirect,
+    // with nothing left to ask the wallet once it is actually there. The effect
+    // re-runs when the status settles, and resolves then.
+    if (status === 'connecting' || status === 'reconnecting') return;
+
     const action = getRouteChainAction(intent, newChainId, {
       switchAttempted: autoSwitchAttempted.current,
       chains
@@ -249,7 +258,8 @@ export function useAppOrchestration(): { intent: Intent } {
     chains,
     chainId,
     walletChainId,
-    switchChain
+    switchChain,
+    status
   ]);
 
   // Run validation on the remaining query-driven search params whenever they change

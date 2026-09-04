@@ -639,3 +639,38 @@ describe('SavingsModalForm — analytics parity blob (APP-444 B1/B2)', () => {
     expect(analytics.data.amount).toBe(10);
   });
 });
+
+describe('SavingsModalForm — a chain switch under the open modal', () => {
+  beforeEach(() => {
+    h.chainId = 1;
+    h.walletBalance = 100n * 10n ** 18n;
+    h.update.mockClear();
+  });
+  afterEach(() => cleanup());
+
+  // A Max withdraw is "redeem the whole position" — the position on the chain
+  // the user was looking at. Carried across a switch, the engine would redeem
+  // the OTHER chain's whole position while the hero still showed the old one.
+  it('drops a pending Max withdraw when the chain changes (PR review)', () => {
+    const { refresh } = renderForm('withdraw');
+    fireEvent.click(screen.getByTestId('savings-modal-amount-max'));
+    expect(h.launchParams?.max).toBe(true);
+
+    h.chainId = 8453;
+    refresh();
+
+    expect(h.launchParams?.max).toBe(false);
+    expect(h.launchParams?.amount ?? 0n).toBe(0n);
+  });
+
+  it('drops a typed amount when the chain changes', () => {
+    const { refresh } = renderForm('supply');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '25' } });
+    expect(h.launchParams?.amount).toBe(25n * 10n ** 18n);
+
+    h.chainId = 8453;
+    refresh();
+
+    expect(h.launchParams?.amount ?? 0n).toBe(0n);
+  });
+});
