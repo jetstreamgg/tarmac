@@ -141,19 +141,6 @@ export function RiskScaleMeter({
       className={cn('flex w-full flex-col gap-1.5', className)}
     >
       <div className="bg-fgQuaternary/30 relative h-1 w-full rounded-full">
-        {/* Zone boundary markers at the real thresholds (25 / 40 / 80%). */}
-        {RISK_ZONES.slice(1).map(zone => (
-          <span
-            key={zone}
-            data-testid="risk-scale-marker"
-            className="bg-fgQuaternary/60 absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{ left: `${RISK_ZONE_BOUNDS[zone][0] * 100}%` }}
-          />
-        ))}
-        <span
-          className="bg-fgQuaternary absolute top-1/2 h-2 w-px -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${liquidationTick * 100}%` }}
-        />
         {activeZone && fillFraction > 0 && (
           <span
             data-testid="risk-scale-fill"
@@ -162,6 +149,23 @@ export function RiskScaleMeter({
             style={{ width: `${fillFraction * 100}%` }}
           />
         )}
+        {/* Zone boundary markers at the real thresholds (25 / 40 / 80%), drawn
+            OVER the fill in the card's own colour so they read as notches on
+            the covered stretch too — a Medium position must still show where
+            Low ended (APP-545 follow-up). Rendered after the fill for the
+            stacking order; the 2px ring lifts them off either surface. */}
+        {RISK_ZONES.slice(1).map(zone => (
+          <span
+            key={zone}
+            data-testid="risk-scale-marker"
+            className="bg-fgSecondary ring-bgSecondary absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2"
+            style={{ left: `${RISK_ZONE_BOUNDS[zone][0] * 100}%` }}
+          />
+        ))}
+        <span
+          className="bg-fgSecondary ring-bgSecondary absolute top-1/2 h-2 w-px -translate-x-1/2 -translate-y-1/2 ring-1"
+          style={{ left: `${liquidationTick * 100}%` }}
+        />
       </div>
       {/* Each label spans its own zone, so it sits over the stretch of bar it
           names — the Medium label over 25–40%, not over the second quarter. */}
