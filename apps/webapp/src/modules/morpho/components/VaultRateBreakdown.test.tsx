@@ -54,31 +54,42 @@ const hoverTrigger = async () => {
 };
 
 /**
- * The Details-row rate (Design QA on the vault page: hoverable on every
- * vault, mark beside the value — APP-550). The Risk Capital vaults carry no
- * reward incentives, and used to render the mark without the tooltip wrapper,
- * as a second flex child that wrapped under the figure.
+ * The Details-row rate (Design QA on the vault page: mark beside the value,
+ * hoverable breakdown — APP-550). The Risk Capital vaults carry no reward
+ * incentives and net equals native: nothing to break down, so they show the
+ * bare figure. They used to render the mark without the tooltip wrapper, as a
+ * second flex child that wrapped under the figure.
  */
 describe('VaultRateBreakdown', () => {
   afterEach(cleanup);
 
-  it('keeps the figure and the mark in one inline box and breaks a plain rate down on hover', async () => {
+  it('shows the bare figure — no mark, no tooltip — when net equals native and there are no incentives', () => {
     renderRow(baseRate);
+
+    expect(screen.queryByTestId('vault-rate-breakdown')).toBeNull();
+    const figure = screen.getByText('4.50%');
+    expect(figure.className).toContain('inline-flex');
+    expect(figure.querySelector('svg')).toBeNull();
+  });
+
+  it('breaks a fee-only rate down into net over native (no incentive rows)', async () => {
+    renderRow({ ...baseRate, rate: 0.05, formattedRate: '5.00%', performanceFee: 0.1 });
     const trigger = await hoverTrigger();
 
     expect(trigger.className).toContain('inline-flex');
-    expect(trigger.textContent).toBe('4.50%');
     expect(trigger.querySelector('svg')).not.toBeNull();
-
-    // Net over native, and nothing else — no incentive rows to list.
     expect(screen.getAllByText('Net Rate').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Native Rate').length).toBeGreaterThan(0);
     expect(screen.queryByText(/Rewards$/)).toBeNull();
   });
 
-  it('lists each reward incentive under the native rate on a boosted vault', async () => {
+  it('keeps the figure and the mark in one inline box and lists each incentive on a boosted vault', async () => {
     renderRow(boostedRate);
-    await hoverTrigger();
+    const trigger = await hoverTrigger();
+
+    expect(trigger.className).toContain('inline-flex');
+    expect(trigger.textContent).toBe('4.82%');
+    expect(trigger.querySelector('svg')).not.toBeNull();
 
     expect(screen.getAllByText('4.82%').length).toBeGreaterThan(0);
     expect(screen.getAllByText('0.74%').length).toBeGreaterThan(0);

@@ -61,8 +61,8 @@ export function StakeAboutTab() {
   ];
 
   return (
-    // Design QA (2800:91832): 32px between the copy column and the engine card
-    // from lg up. Neither side carries an inset of its own (the sections sit
+    // Design QA (2800:91832): 32px between the two columns from lg up, on all
+    // three tabs. Neither side carries an inset of its own (the sections sit
     // flat, the card is the grid cell), so the column gap IS the measure.
     <div className="grid items-start gap-10 lg:grid-cols-3 lg:gap-8">
       <div className="order-2 flex flex-col gap-10 md:gap-14 lg:order-none lg:col-span-2">

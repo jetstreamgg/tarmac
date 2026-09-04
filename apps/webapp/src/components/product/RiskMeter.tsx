@@ -41,15 +41,32 @@ export function RiskMeter({
   );
 }
 
-// The four risk zones, ascending and evenly spaced across the DS Progress
-// Steps bar (Figma 5246:24677), each with its own 2-stop fill gradient.
+// The four risk zones, ascending across the DS Progress Steps bar (Figma
+// 5246:24677). Their boundaries are the REAL liquidation-proximity thresholds
+// (0 / 25 / 40 / 80%, `RISK_LEVEL_THRESHOLDS`), not even quarters: the fill
+// encodes the position's actual proximity, so a Medium position (say 33%)
+// has to land inside the zone labelled Medium (APP-545).
 const RISK_ZONES = [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.LIQUIDATION] as const;
 
-const RISK_ZONE_GRADIENT: Record<RiskLevel, string> = {
-  [RiskLevel.LOW]: 'linear-gradient(90deg, #015C4C 0%, #02C2A1 100%)',
-  [RiskLevel.MEDIUM]: 'linear-gradient(90deg, #1B71F5 0%, #59B1FF 100%)',
-  [RiskLevel.HIGH]: 'linear-gradient(90deg, #FF8A5C 0%, #FFC738 100%)',
-  [RiskLevel.LIQUIDATION]: 'linear-gradient(90deg, #F98607 0%, #F83C3B 100%)'
+const zoneStart = (level: RiskLevel) =>
+  (RISK_LEVEL_THRESHOLDS.find(t => t.level === level)?.threshold ?? 0) / 100;
+/** [start, end) of each zone as 0–1 fractions of the bar. */
+const RISK_ZONE_BOUNDS: Record<RiskLevel, [number, number]> = {
+  [RiskLevel.LOW]: [zoneStart(RiskLevel.LOW), zoneStart(RiskLevel.MEDIUM)],
+  [RiskLevel.MEDIUM]: [zoneStart(RiskLevel.MEDIUM), zoneStart(RiskLevel.HIGH)],
+  [RiskLevel.HIGH]: [zoneStart(RiskLevel.HIGH), zoneStart(RiskLevel.LIQUIDATION)],
+  [RiskLevel.LIQUIDATION]: [zoneStart(RiskLevel.LIQUIDATION), 1]
+};
+
+// The fill takes the DS Badges/Risk palette (components/badges/bg-risk-*) so
+// the bar and the risk pill beside it name the same level in the same colour
+// (APP-545: the pill read Medium in amber over a blue bar). Liquidation is
+// the one step past High: the status error red.
+const RISK_ZONE_FILL: Record<RiskLevel, string> = {
+  [RiskLevel.LOW]: 'bg-riskLow',
+  [RiskLevel.MEDIUM]: 'bg-riskMedium',
+  [RiskLevel.HIGH]: 'bg-riskHigh',
+  [RiskLevel.LIQUIDATION]: 'bg-statusError'
 };
 
 const RISK_ZONE_LABEL: Record<RiskLevel, ReactNode> = {
@@ -63,13 +80,14 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 /**
  * DS "Charts / Progress Steps" (Figma 5246:24677): a value-driven risk bar -
- * a rounded track split into four evenly-spaced zones (Low → Liquidation),
- * with a gradient fill whose length encodes the risk, zone dot-markers, and a
- * tick at the liquidation threshold. Distinct from the compact table-cell
- * `RiskMeter` pill above.
+ * a rounded track split into four zones (Low → Liquidation) at the real risk
+ * thresholds, with a fill whose length encodes the risk and whose colour is
+ * the zone's DS risk colour, dot-markers at the zone boundaries, and a tick at
+ * the liquidation threshold. Distinct from the compact table-cell `RiskMeter`
+ * pill above.
  *
  * Drive it with a discrete `level` (fills to the end of that zone) or a
- * continuous `value` (0–1 fraction; the gradient follows whichever zone the
+ * continuous `value` (0–1 fraction; the colour follows whichever zone the
  * value lands in). Pass both to fill to `value` while tinting by `level`. With
  * neither it renders the empty legend (track + labels). Decorative unless
  * `label` names the state for assistive tech.
@@ -85,25 +103,24 @@ export function RiskScaleMeter({
   label?: string;
   className?: string;
 }) {
-  const zoneCount = RISK_ZONES.length;
   const levelIndex = level ? RISK_ZONES.indexOf(level) : -1;
+  const liquidationTick = zoneStart(RiskLevel.LIQUIDATION);
 
-  // The liquidation threshold sits inside the last visual quarter, so the tick
-  // marks its real position rather than the zone boundary.
-  const liquidationTick =
-    (RISK_LEVEL_THRESHOLDS.find(t => t.level === RiskLevel.LIQUIDATION)?.threshold ?? 80) / 100;
-
-  // Zone/tint prefers an explicit `level`; otherwise the value's quarter. Fill
-  // length prefers a continuous `value`; otherwise the level's zone end
-  // (Liquidation → the real threshold tick - Figma 5246:24677 leaves a tail past
-  // it rather than filling the whole bar). Passing both fills to `value` but
-  // tints by `level`, e.g. the stake liquidation indicator (real proximity, real
-  // risk level, whose thresholds aren't evenly spaced).
+  // Zone/tint prefers an explicit `level`; otherwise the zone the value lands
+  // in (thresholds, not quarters). Fill length prefers a continuous `value`;
+  // otherwise the level's zone end (Liquidation → the threshold tick - Figma
+  // 5246:24677 leaves a tail past it rather than filling the whole bar).
+  // Passing both fills to `value` but tints by `level`, e.g. the stake
+  // liquidation indicator (real proximity, real risk level).
+  const valueZoneIndex =
+    value !== undefined ? RISK_ZONES.findIndex(zone => clamp01(value) < RISK_ZONE_BOUNDS[zone][1]) : -1;
   const activeIndex =
     levelIndex >= 0
       ? levelIndex
       : value !== undefined
-        ? Math.min(zoneCount - 1, Math.floor(clamp01(value) * zoneCount))
+        ? valueZoneIndex === -1
+          ? RISK_ZONES.length - 1 // value === 1 sits past every zone end
+          : valueZoneIndex
         : -1;
   const activeZone = activeIndex >= 0 ? RISK_ZONES[activeIndex] : undefined;
 
@@ -112,8 +129,8 @@ export function RiskScaleMeter({
       ? clamp01(value)
       : level === RiskLevel.LIQUIDATION
         ? liquidationTick
-        : levelIndex >= 0
-          ? (levelIndex + 1) / zoneCount
+        : level
+          ? RISK_ZONE_BOUNDS[level][1]
           : 0;
 
   return (
@@ -124,11 +141,13 @@ export function RiskScaleMeter({
       className={cn('flex w-full flex-col gap-1.5', className)}
     >
       <div className="bg-fgQuaternary/30 relative h-1 w-full rounded-full">
-        {[1, 2, 3].map(i => (
+        {/* Zone boundary markers at the real thresholds (25 / 40 / 80%). */}
+        {RISK_ZONES.slice(1).map(zone => (
           <span
-            key={i}
+            key={zone}
+            data-testid="risk-scale-marker"
             className="bg-fgQuaternary/60 absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{ left: `${(i / zoneCount) * 100}%` }}
+            style={{ left: `${RISK_ZONE_BOUNDS[zone][0] * 100}%` }}
           />
         ))}
         <span
@@ -138,19 +157,23 @@ export function RiskScaleMeter({
         {activeZone && fillFraction > 0 && (
           <span
             data-testid="risk-scale-fill"
-            className="absolute inset-y-0 left-0 rounded-full"
-            style={{ width: `${fillFraction * 100}%`, backgroundImage: RISK_ZONE_GRADIENT[activeZone] }}
+            data-zone={activeZone}
+            className={cn('absolute inset-y-0 left-0 rounded-full', RISK_ZONE_FILL[activeZone])}
+            style={{ width: `${fillFraction * 100}%` }}
           />
         )}
       </div>
+      {/* Each label spans its own zone, so it sits over the stretch of bar it
+          names — the Medium label over 25–40%, not over the second quarter. */}
       <div className="flex">
         {RISK_ZONES.map((zone, i) => (
           <span
             key={zone}
             className={cn(
-              'flex-1 text-center text-xs',
+              'text-center text-xs whitespace-nowrap',
               i <= activeIndex ? 'text-fgSecondary' : 'text-fgQuaternary'
             )}
+            style={{ width: `${(RISK_ZONE_BOUNDS[zone][1] - RISK_ZONE_BOUNDS[zone][0]) * 100}%` }}
           >
             {RISK_ZONE_LABEL[zone]}
           </span>
