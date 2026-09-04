@@ -34,17 +34,30 @@ export function VaultRateMark({ className }: { className?: string }) {
  * Every surface that shows the net rate on a vault product page wears this —
  * the supply card stat, the chart headline and the Details row — so the mark
  * and its explanation never appear on one and not the others.
+ *
+ * By default the tooltip only mounts for an incentive-boosted vault (there is
+ * nothing to break down otherwise); `always` keeps it on every vault, for the
+ * surfaces the Design QA wants hoverable regardless (the Details row,
+ * APP-550). Either way the children stay in ONE inline-flex box: the bare
+ * fragment used to hand the figure and the mark to the row's value cell as two
+ * separate flex children, and the mark wrapped under the figure on the vaults
+ * without incentives.
  */
 export function VaultRateTooltip({
   rate,
   className,
+  always = false,
   children
 }: {
   rate?: MorphoVaultRateData;
   className?: string;
+  /** Mount the tooltip even when the vault has no reward incentives. */
+  always?: boolean;
   children: ReactNode;
 }) {
-  if (!hasRateIncentives(rate)) return <>{children}</>;
+  if (!rate || (!always && !hasRateIncentives(rate))) {
+    return <span className={cn('inline-flex items-center gap-1.5', className)}>{children}</span>;
+  }
 
   return (
     <Tooltip>
@@ -101,13 +114,18 @@ export function VaultRateTooltip({
 
 /**
  * The Details-row flavour: the figure followed by the mark, both inside the
- * tooltip trigger.
+ * tooltip trigger. Hoverable on EVERY vault (Design QA on the Details row:
+ * "this area should be hoverable to see the rewards/rate breakdown + the icon
+ * should be placed next to the value, not below") — a vault without reward
+ * incentives still breaks down into its net and native rates. The mark only
+ * renders once the rate has resolved, so a loading row shows the bare
+ * placeholder rather than a mark with nothing to explain.
  */
 export function VaultRateBreakdown({ rate, value }: { rate?: MorphoVaultRateData; value: string }) {
   return (
-    <VaultRateTooltip rate={rate}>
+    <VaultRateTooltip rate={rate} always>
       {value}
-      <VaultRateMark />
+      {rate && <VaultRateMark />}
     </VaultRateTooltip>
   );
 }
