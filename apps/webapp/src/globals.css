@@ -309,6 +309,17 @@
      not the surface they sit on — to read as punched-out circles. Changing the
      dark value requires re-baking the pre-blended background image below. */
   --color-pageBackground: #090420;
+  /* Viewport (document) scrollbar, dark. Chrome paints a `scrollbar-color`
+     track as a flat colour over the root's background-COLOR only — never its
+     background image, and in dark the root has no colour at all, so a
+     `transparent` track renders WHITE. The track is therefore an explicit flat
+     stand-in for the fixed sky image behind it: the mean of the image's
+     right-edge column at a desktop viewport (#100c26, a hair above the
+     #090420 it fades into). The thumb is the DS Scrollbar — Classic / Brand
+     bar (Figma 5611:33590): colors/bg/bg-quarternary, lilac 20%. The comp's
+     track is bg-secondary with the fill switched off, i.e. transparent. */
+  --color-pageScrollbarTrack: #100c26;
+  --color-pageScrollbarThumb: #bcb6ef33; /* colors/bg/bg-quarternary */
   /* Dark page background (Figma 5010:6624): a bottom fade into the solid
      backdrop over the sky image. The image is pre-baked — sunset sky blended
      (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
@@ -626,15 +637,34 @@
    * which is what keeps it visible in light mode; the old utilities hardcoded
    * --transparent-white-15 and went invisible on light surfaces.
    *
-   * `:root *` and not `*`: html must NOT match, so the page scrollbar keeps
-   * the UA's own width and colors. Body does match, but that is harmless —
-   * the viewport bar reads its styling from the root element, not from body
+   * `:root *` and not `*`: html must NOT match, because the viewport bar gets
+   * its own recipe below. Body does match, but that is harmless — the
+   * viewport bar reads its styling from the root element, not from body
    * (measured: body on `thin` still yields a 15px gutter; `thin` on the root
    * yields 11px).
    */
   :root * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-borderTertiary) transparent;
+  }
+
+  /*
+   * The viewport (document) scrollbar, styled separately from the in-component
+   * bars above: thin, a faint low-alpha thumb and a track that reads as part
+   * of the page rather than a UA-grey groove (the Uniswap app recipe). Only
+   * html carries it — every descendant re-declares via `:root *`, so modals,
+   * token lists and tables keep the borderTertiary thumb.
+   *
+   * The track cannot actually be see-through: Chrome composites a
+   * `scrollbar-color` track over the root's background colour, not over the
+   * viewport-fixed .app-background image, so `transparent` yields the flat
+   * body colour in light and plain white in dark (root has no colour there).
+   * The per-theme --color-pageScrollbarTrack tokens are flat stand-ins sampled
+   * from the image's own edge. `thin` narrows the bar from 15px to 11px.
+   */
+  :root {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-pageScrollbarThumb) var(--color-pageScrollbarTrack);
   }
 
   /* Each face declares its real weight. Without the descriptor every face
@@ -680,11 +710,11 @@
        so the correct scheme is in place by the time anything renders.
 
        This does NOT change whether a scrollbar reserves layout space; that
-       stays an OS/browser decision. It only recolors the bar we already get —
-       which is the whole styling the viewport scrollbar gets, since the
-       `:root *` rule below deliberately does not match html. Verified: the
-       viewport bar takes its width from the root, not from body, so body
-       inheriting `thin` does not narrow it (15px vs 11px measured). */
+       stays an OS/browser decision. It picks the UA widget set (form controls,
+       canvas); the viewport scrollbar's own colours come from the `:root`
+       scrollbar-color rule above. Verified: the viewport bar takes its width
+       from the root, not from body, so body inheriting `thin` does not narrow
+       it (15px vs 11px measured). */
     color-scheme: dark;
 
     --brand-dark-purple: 26 24 85;
@@ -951,6 +981,16 @@
     --color-primary-bright-end: rgba(148, 131, 248);
 
     --color-pageBackground: #ecf0ff; /* colors/bg/bg-primary */
+    /* Viewport scrollbar, light — see the dark block. The image's edge is a
+       lavender well below bg-primary (mean #d9ddfc vs #ecf0ff), so a
+       bg-primary track showed a hard step against the sky; the sampled mean
+       sits flush at the top and only drifts where the image fades out at the
+       bottom. Thumb is 12% ink, NOT the DS bar's light value: bg-quarternary
+       resolves to white/20 in light, which is lighter than the lavender track
+       and vanishes on it (browser-checked, the same white-on-lavender trap
+       the chart track sidesteps). */
+    --color-pageScrollbarTrack: #dcdffc;
+    --color-pageScrollbarThumb: rgba(19, 19, 19, 0.12);
     /* Light page background (Figma 5124:25430): bottom fade + daytime sky
        image over a pale blue base gradient (visible only while the image
        loads, since the image is opaque and covers the layer). */
