@@ -14,7 +14,7 @@ import { PendleMaturedPositionCard } from '@/modules/pendle/components/PendleMat
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
 import type { WalletEarnings } from '../earnings/types';
-import { earningsForPosition } from '../earnings/earningsForPosition';
+import { earningsForSuppliedPosition } from '../earnings/earningsForPosition';
 import { PositionCard } from './PositionCard';
 import { IdleStablecoinsTable } from './IdleStablecoinsTable';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
@@ -138,7 +138,7 @@ export function PortfolioPositionsSection({
             <CarouselItem key={position.id} className={ITEM_BASIS}>
               <PositionCard
                 position={position}
-                alreadyEarned={earningsForPosition(earnings, position.id)}
+                alreadyEarned={earningsForSuppliedPosition(earnings, position)}
                 onSupply={resolveSupplyAction(position) ?? (() => goToProduct(position.detailPath))}
                 onManage={() => goToProduct(position.detailPath)}
               />

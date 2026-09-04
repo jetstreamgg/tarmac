@@ -7,6 +7,12 @@ import type { TransactionConfig } from './transactionContract';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads (mirrors transactionEntryStep.test.tsx).
+// The provider needs a live wagmi tree; these suites exercise the transaction
+// state machine, so the shared chain switch is stubbed inert.
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+}));
+
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,

@@ -21,7 +21,7 @@ const mobileNavTestId = (path: string) => `mobile-nav-${path.slice(1)}`;
  */
 export function MobileNavbar() {
   const activePath = useActiveDestinationPath();
-  const { searchForIntent, handleNavClick } = useDestinationLinkProps('mobile_drawer');
+  const { navSearch, handleNavClick } = useDestinationLinkProps('mobile_drawer');
   const isHidden = useHideOnScroll();
   const reducedMotion = useReducedMotion();
 
@@ -66,8 +66,8 @@ export function MobileNavbar() {
             <Link
               key={destination.path}
               to={destination.path}
-              search={searchForIntent(destination.intents[0])}
-              onClick={handleNavClick(destination.intents[0], destination.path)}
+              search={navSearch}
+              onClick={handleNavClick(destination.path)}
               data-testid={mobileNavTestId(destination.path)}
               aria-current={isActive ? 'page' : undefined}
               className={cn(

@@ -101,15 +101,16 @@ export const keepSearchFilteredTo =
   };
 
 /**
- * Search params preserved when navigating between modules. Mirrors the legacy
- * deleteSearchParams behavior: keep network (and valid geo overrides in
- * non-production), drop module-specific state like flow or source_token.
+ * Search params preserved when navigating between modules: the valid geo
+ * overrides, in non-production only. Module-specific state like flow or
+ * source_token is dropped.
+ *
+ * `network=` used to be retained here — it was the app's chain, so carrying it
+ * across a navigation is what kept the chain from resetting. The chain lives in
+ * the wallet now and needs nothing from the URL to survive a route change.
  */
 export function retainOnNavigate(prev: Record<string, string | undefined>): Record<string, string> {
   const retained: Record<string, string> = {};
-  for (const key of [QueryParams.Network] as string[]) {
-    if (prev[key] !== undefined) retained[key] = prev[key];
-  }
   if (!IS_PRODUCTION_ENV) {
     for (const key of GEO_OVERRIDE_PARAMS) {
       if (prev[key] !== undefined) retained[key] = prev[key];

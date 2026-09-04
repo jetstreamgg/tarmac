@@ -7,6 +7,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
+import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
 import { useChainImage } from '@/widgets';
 import { RateInfo, type RateInfoType } from './RateInfo';
@@ -60,6 +61,14 @@ export type ModalGridCellHints = {
    * connected chain.
    */
   networkChainId?: number;
+  /**
+   * Turns a Network cell into the network dropdown (Figma 2682:77695) over
+   * these chains — the flow's own `supportedChainIds`. Only worth passing on an
+   * ENTRY screen: a review was built for one chain, so switching underneath it
+   * would leave the numbers above describing a different transaction. One chain
+   * (every mainnet-only product) renders the static value either way.
+   */
+  networkChainIds?: number[];
   /**
    * Product rate treatment: 'savings' renders the value's trailing "%" through
    * the savings green gradient (deltas accent both values); 'morpho' keeps the
@@ -132,12 +141,17 @@ export const singleOrDelta = (
  * `toGridCells` keys the live estimate on, so a hand-typed 'Network fee'
  * that drifts would silently unhook a module's fee cell.
  */
-export const networkCell = (network: string, networkChainId?: number): ModalGridCell => ({
+export const networkCell = (
+  network: string,
+  networkChainId?: number,
+  networkChainIds?: number[]
+): ModalGridCell => ({
   kind: 'single',
   label: 'Network',
   value: network,
   network: true,
-  networkChainId
+  networkChainId,
+  networkChainIds
 });
 
 export const networkFeeCell = (networkFee: string): ModalGridCell => ({
@@ -222,6 +236,16 @@ function NetworkIcon({ chainId }: { chainId?: number }) {
 }
 
 /**
+ * The Network cell as a switch control (Figma 2682:77695). Stripped of the
+ * dropdown pill's chrome — border, fill, padding and its open-state gradient —
+ * so it reads as the cell's value with a chevron, and the label reverts to the
+ * grid's Label 5 that the XS size would otherwise shrink.
+ */
+const NETWORK_CELL_TRIGGER =
+  'h-auto w-auto gap-1.5 border-0 bg-transparent p-0 hover:border-0 hover:bg-transparent data-[state=open]:border-0 data-[state=open]:bg-none';
+const NETWORK_CELL_LABEL = 'text-fgPrimary text-sm leading-4 tracking-[-0.28px]';
+
+/**
  * 12px ring for the Product cell's gradient variants: SVG circle stroked with
  * the product gradient (Iconbox / Status, Type=Morpho / Pendle — raw hexes in
  * Figma, no variable).
@@ -285,6 +309,21 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
 
   if (cell.kind === 'node') {
     return <span className="flex items-center gap-1">{cell.node}</span>;
+  }
+
+  // A multi-chain flow's entry screen: the Network value IS the switch control.
+  // NetworkSelect would fall back to the static pill on a single chain anyway,
+  // but branching here keeps every one-chain cell byte-identical to before.
+  if (cell.network && cell.networkChainIds && cell.networkChainIds.length > 1) {
+    return (
+      <NetworkSelect
+        chainIds={cell.networkChainIds}
+        size="xs"
+        dataTestId="modal-network-select"
+        triggerClassName={NETWORK_CELL_TRIGGER}
+        labelClassName={NETWORK_CELL_LABEL}
+      />
+    );
   }
 
   // A delta's two sides can carry different glyphs (the stake reward-farm

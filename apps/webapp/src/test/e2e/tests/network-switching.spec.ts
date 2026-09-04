@@ -1,7 +1,11 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms';
-import { switchWalletNetwork } from '../utils/switchWalletNetwork';
+import {
+  expectAppChain,
+  switchNetworkOnProductPage,
+  switchWalletNetwork
+} from '../utils/switchWalletNetwork';
 
 // Centralized navigate-and-switch behavior (docs/network-switching-test-matrix.md):
 // navigation to a module always lands; if the module isn't available on the
@@ -9,7 +13,10 @@ import { switchWalletNetwork } from '../utils/switchWalletNetwork';
 // by the network toast) or, when the wallet doesn't honor it, falls back to
 // Portfolio. In the mock build every chain is tenderly-flavored — 'Tenderly
 // Base' keeps the real Base chain id (8453) so it behaves as a genuine L2,
-// and the L2 switch target is the config fork: network=tenderlymainnet.
+// and the L2 switch target is the config fork, 'Tenderly Mainnet'.
+//
+// `?network=` used to be the app's chain, so these assertions read it out of the
+// URL. It is retired; `expectAppChain` reads the wagmi store it mirrored.
 
 const AUTO_SWITCH_COPY = (widget: string) =>
   `To access ${widget}, you need to be on mainnet. We've switched your network automatically.`;
@@ -21,7 +28,6 @@ const connectOnBase = async (page: Page) => {
   await page.goto('/portfolio');
   await connectMockWalletAndAcceptTerms(page);
   await switchWalletNetwork(page, 'Tenderly Base');
-  await expect(page).toHaveURL(/network=tenderlybase/);
   await expect(page.getByText(GENERIC_COPY)).toHaveCount(0, { timeout: 15000 });
 };
 
@@ -32,7 +38,8 @@ test.describe('Network switching on navigation (V2 shell)', () => {
 
     await isolatedPage.getByTestId('nav-stake').click();
 
-    await expect(isolatedPage).toHaveURL(/\/stake\?.*network=tenderlymainnet/);
+    await expect(isolatedPage).toHaveURL(/\/stake/);
+    await expectAppChain(isolatedPage, 'Tenderly Mainnet');
     await expect(isolatedPage.getByText(AUTO_SWITCH_COPY('Stake'))).toBeVisible();
     // The toast shows the from → to chains.
     await expect(isolatedPage.getByText('Tenderly Base').first()).toBeVisible();
@@ -46,12 +53,14 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     await connectOnBase(isolatedPage);
 
     await isolatedPage.getByTestId('nav-earn').click();
-    await expect(isolatedPage).toHaveURL(/\/earn\?.*network=tenderlybase/);
+    await expect(isolatedPage).toHaveURL(/\/earn/);
+    await expectAppChain(isolatedPage, 'Tenderly Base');
     await expect(isolatedPage.getByTestId('earn-opportunities-table')).toBeVisible();
 
     await isolatedPage.locator('[data-testid^="earn-row-fixed-"]').first().click();
 
-    await expect(isolatedPage).toHaveURL(/\/earn\/fixed\/[a-z0-9-]+\?.*network=tenderlymainnet/);
+    await expect(isolatedPage).toHaveURL(/\/earn\/fixed\/[a-z0-9-]+/);
+    await expectAppChain(isolatedPage, 'Tenderly Mainnet');
     await expect(isolatedPage.getByText(AUTO_SWITCH_COPY('Fixed Yield'))).toBeVisible();
     await expect(isolatedPage.getByTestId('product-detail-network')).toBeVisible();
   });
@@ -63,7 +72,8 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     await isolatedPage.getByTestId('nav-earn').click();
     await isolatedPage.getByTestId('earn-row-stusds').click();
 
-    await expect(isolatedPage).toHaveURL(/\/earn\/stusds\?.*network=tenderlymainnet/);
+    await expect(isolatedPage).toHaveURL(/\/earn\/stusds/);
+    await expectAppChain(isolatedPage, 'Tenderly Mainnet');
     await expect(isolatedPage.getByText(AUTO_SWITCH_COPY('stUSDS'))).toBeVisible();
     await expect(isolatedPage.getByTestId('product-detail-network')).toBeVisible();
   });
@@ -75,7 +85,8 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     await isolatedPage.getByTestId('nav-earn').click();
     await isolatedPage.getByTestId('earn-row-savings').click();
 
-    await expect(isolatedPage).toHaveURL(/\/earn\/savings\?.*network=tenderlybase/);
+    await expect(isolatedPage).toHaveURL(/\/earn\/savings/);
+    await expectAppChain(isolatedPage, 'Tenderly Base');
     await expect(isolatedPage.getByTestId('product-detail-network')).toBeVisible();
     await expect(isolatedPage.getByText(/To access/)).toHaveCount(0);
     await expect(isolatedPage.getByText(GENERIC_COPY)).toHaveCount(0);
@@ -88,14 +99,15 @@ test.describe('Network switching on navigation (V2 shell)', () => {
 
     await isolatedPage.getByTestId('nav-stake').click();
 
-    await expect(isolatedPage).toHaveURL(/\/stake\?.*network=tenderlymainnet/);
+    await expect(isolatedPage).toHaveURL(/\/stake/);
+    await expectAppChain(isolatedPage, 'Tenderly Mainnet');
     await expect(isolatedPage.getByTestId('stake-network')).toBeVisible();
     await expect(isolatedPage.getByText(/To access/)).toHaveCount(0);
     await expect(isolatedPage.getByText(GENERIC_COPY)).toHaveCount(0);
   });
 
-  // B1 + B3: a rejected switch bounces home once (URL never claims the wrong
-  // network, no re-prompt), and the next visit to the module prompts again.
+  // B1 + B3: a rejected switch bounces home once (the app never claims the
+  // wrong network, no re-prompt), and the next visit to the module prompts again.
   test('rejected switch falls back to Portfolio; retrying the module prompts again', async ({
     isolatedPage
   }) => {
@@ -106,12 +118,14 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     });
     await isolatedPage.getByTestId('nav-stake').click();
 
-    await expect(isolatedPage).toHaveURL(/\/portfolio\?.*network=tenderlybase/);
+    await expect(isolatedPage).toHaveURL(/\/portfolio/);
+    await expectAppChain(isolatedPage, 'Tenderly Base');
     await expect(isolatedPage.getByText(/To access/)).toHaveCount(0);
 
     // The failure consumed the hook, so a fresh visit switches normally (B3).
     await isolatedPage.getByTestId('nav-stake').click();
-    await expect(isolatedPage).toHaveURL(/\/stake\?.*network=tenderlymainnet/);
+    await expect(isolatedPage).toHaveURL(/\/stake/);
+    await expectAppChain(isolatedPage, 'Tenderly Mainnet');
     await expect(isolatedPage.getByText(AUTO_SWITCH_COPY('Stake'))).toBeVisible();
   });
 
@@ -124,7 +138,8 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     });
     await isolatedPage.getByTestId('nav-stake').click();
 
-    await expect(isolatedPage).toHaveURL(/\/portfolio\?.*network=tenderlybase/);
+    await expect(isolatedPage).toHaveURL(/\/portfolio/);
+    await expectAppChain(isolatedPage, 'Tenderly Base');
     await expect(isolatedPage.getByText(/To access/)).toHaveCount(0);
   });
 
@@ -138,14 +153,15 @@ test.describe('Network switching on navigation (V2 shell)', () => {
 
     await switchWalletNetwork(isolatedPage, 'Tenderly Base');
 
-    await expect(isolatedPage).toHaveURL(/\/portfolio\?.*network=tenderlybase/);
+    await expect(isolatedPage).toHaveURL(/\/portfolio/);
+    await expectAppChain(isolatedPage, 'Tenderly Base');
     await expect(isolatedPage.getByText(GENERIC_COPY).first()).toBeVisible();
     await expect(isolatedPage.getByText(/To access/)).toHaveCount(0);
   });
 
-  // E2: a manual switch on a multichain page stays put, syncs the param, and
-  // the generic toast offers the quick-switch chains.
-  test('manual switch to Base while on Savings stays with quick-switch toast', async ({ isolatedPage }) => {
+  // E2: a wallet-side switch on a multichain page stays put, and the generic
+  // toast announces it — the app didn't make this change, the wallet did.
+  test('wallet-side switch to Base while on Savings stays put and is announced', async ({ isolatedPage }) => {
     await isolatedPage.goto('/portfolio');
     await connectMockWalletAndAcceptTerms(isolatedPage);
     await isolatedPage.getByTestId('nav-earn').click();
@@ -154,30 +170,65 @@ test.describe('Network switching on navigation (V2 shell)', () => {
 
     await switchWalletNetwork(isolatedPage, 'Tenderly Base');
 
-    await expect(isolatedPage).toHaveURL(/\/earn\/savings\?.*network=tenderlybase/);
+    await expect(isolatedPage).toHaveURL(/\/earn\/savings/);
+    await expectAppChain(isolatedPage, 'Tenderly Base');
     await expect(isolatedPage.getByText(GENERIC_COPY).first()).toBeVisible();
-    await expect(isolatedPage.getByText('Savings is also supported on:')).toBeVisible();
   });
 
-  // C2: a disconnected deep link at an L2 param is corrected silently — the
-  // store chain (fork) never left, so nothing announces a change.
-  test('disconnected deep link /stake?network=tenderlybase corrects the param silently', async ({
-    isolatedPage
-  }) => {
+  // The in-app switch path that replaced the wallet drawer's chain modal: a
+  // product page's network dropdown. Savings runs on every chain, so its
+  // selector is the one that offers a real choice.
+  test('the Savings network dropdown switches the wallet', async ({ isolatedPage }) => {
+    await isolatedPage.goto('/portfolio');
+    await connectMockWalletAndAcceptTerms(isolatedPage);
+    await isolatedPage.getByTestId('nav-earn').click();
+    await isolatedPage.getByTestId('earn-row-savings').click();
+    await expect(isolatedPage.getByTestId('product-detail-network')).toBeVisible();
+
+    await switchNetworkOnProductPage(isolatedPage, 'Tenderly Base');
+
+    await expect(isolatedPage).toHaveURL(/\/earn\/savings/);
+    // The pill names where the product now is, and the page stayed put —
+    // Savings runs on Base.
+    await expect(isolatedPage.getByTestId('product-detail-network')).toContainText('Tenderly Base');
+    // The user made this change themselves: nothing to announce (APP-547).
+    await expect(isolatedPage.getByText(GENERIC_COPY)).toHaveCount(0);
+  });
+
+  // A mainnet-only product has nothing to choose between, so its pill is a
+  // plain label — no dropdown to open.
+  test('the Stake network pill is static — one supported chain', async ({ isolatedPage }) => {
+    await isolatedPage.goto('/portfolio');
+    await connectMockWalletAndAcceptTerms(isolatedPage);
+    await isolatedPage.getByTestId('nav-stake').click();
+
+    const pill = isolatedPage.getByTestId('stake-network');
+    await expect(pill).toBeVisible();
+    await pill.click();
+    await expect(isolatedPage.getByRole('listbox')).toHaveCount(0);
+  });
+
+  // C2: `?network=` is retired as app state but still honoured once, so links
+  // minted while it was live keep working. Here it names a chain Stake cannot
+  // run on, so the route guard overrules it straight back to the fork — and
+  // either way the param is spent and stripped rather than left in the URL
+  // implying the app is still listening to it.
+  test('a deep link at an unusable network param is spent and overruled', async ({ isolatedPage }) => {
     await isolatedPage.goto('/stake?network=tenderlybase');
 
-    await expect(isolatedPage).toHaveURL(/\/stake\?.*network=tenderlymainnet/);
+    await expect(isolatedPage).toHaveURL(/\/stake/);
+    await expect(isolatedPage).not.toHaveURL(/network=/);
+    await expectAppChain(isolatedPage, 'Tenderly Mainnet');
     await expect(isolatedPage.getByTestId('stake-network')).toBeVisible();
     await expect(isolatedPage.getByText(/To access/)).toHaveCount(0);
   });
 
-  // C3: a garbage network param falls back to the store chain and renders.
-  test('disconnected deep link with a garbage network param still renders Stake', async ({
-    isolatedPage
-  }) => {
+  // C3: a garbage value resolves to nothing, so it is simply spent.
+  test('a garbage network param is stripped and Stake still renders', async ({ isolatedPage }) => {
     await isolatedPage.goto('/stake?network=foobar');
 
-    await expect(isolatedPage).toHaveURL(/\/stake\?/);
+    await expect(isolatedPage).toHaveURL(/\/stake/);
+    await expect(isolatedPage).not.toHaveURL(/network=/);
     await expect(isolatedPage.getByTestId('stake-network')).toBeVisible();
   });
 });

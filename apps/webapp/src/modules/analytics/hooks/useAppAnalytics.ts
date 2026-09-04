@@ -330,17 +330,6 @@ export function useAppAnalytics() {
     [posthog, getChainName, getFlowId]
   );
 
-  const trackUnsupportedNetworkShown = useCallback(
-    ({ walletChainId }: { walletChainId?: number }) => {
-      safeCapture(posthog, AppEvents.UNSUPPORTED_NETWORK_SHOWN, {
-        ...(walletChainId !== undefined && { wallet_chain_id: walletChainId }),
-        viewport: getViewport(),
-        flow_id: getFlowId()
-      });
-    },
-    [posthog, getFlowId]
-  );
-
   const trackConvertBlocked = useCallback(
     ({ reason, chainId }: { reason: string; chainId: number }) => {
       safeCapture(posthog, AppEvents.CONVERT_BLOCKED, {
@@ -368,7 +357,6 @@ export function useAppAnalytics() {
     trackNetworkSwitchRequested,
     trackNetworkSwitchCompleted,
     trackNetworkAutoSwitched,
-    trackUnsupportedNetworkShown,
     trackConvertBlocked
   };
 }

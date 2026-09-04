@@ -64,19 +64,15 @@ const EMPTY_VIEW: IdleView = { tokens: [], walletBalance: 0, idleCount: 0 };
 const NAME_BY_SYMBOL = new Map<string, string>(IDLE_STABLECOINS.map(s => [s.symbol, s.name]));
 
 /**
- * Aggregates per-chain stablecoin balances into the Portfolio "Idle" overview,
- * scoped to a single chain or the whole family. Pure — no hooks, no fetching.
- *
- * @param network a chain id to scope to, or `'all'` for every chain.
+ * Aggregates per-chain stablecoin balances into the Portfolio "Idle" overview
+ * across the whole chain family. Pure — no hooks, no fetching.
  */
-export function buildIdleView(balances: StablecoinBalance[], network: number | 'all'): IdleView {
+export function buildIdleView(balances: StablecoinBalance[]): IdleView {
   if (balances.length === 0) return EMPTY_VIEW;
 
-  const inScope = network === 'all' ? balances : balances.filter(b => b.chainId === network);
-
-  // Sum each stablecoin across the in-scope chains, ignoring dust/zero rows.
+  // Sum each stablecoin across every chain, ignoring dust/zero rows.
   const bySymbol = new Map<string, { amount: number; amountUsd: number }>();
-  for (const { symbol, amount, amountUsd } of inScope) {
+  for (const { symbol, amount, amountUsd } of balances) {
     if (amountUsd <= 0) continue;
     const entry = bySymbol.get(symbol) ?? { amount: 0, amountUsd: 0 };
     entry.amount += amount;

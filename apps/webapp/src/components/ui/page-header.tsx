@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
  * destination and stays with each page; these primitives pin the shared type
  * scale and badge treatment so they can't drift. The title-icon ring is
  * `IconboxStatus size="l"` (iconbox.tsx) and the network pill is the
- * Button dropdown/dropdownM recipe (ChainModal / FilterSelect).
+ * Button dropdown/dropdownM recipe (NetworkSelect / FilterSelect).
  */
 
 const PAGE_HEADING_SIZES = {

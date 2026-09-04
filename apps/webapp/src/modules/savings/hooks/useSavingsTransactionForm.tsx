@@ -160,12 +160,29 @@ export function useSavingsTransactionForm({
   const { data: overall } = useOverallSkyData();
   const isL2 = isL2ChainId(chainId);
 
-  // Seeded from `preset` on mount.
-  const [value, setValue] = useState(preset?.amount ?? '');
-  // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
-  // Cleared the moment the user edits the amount.
-  const [max, setMax] = useState(false);
-  const [originSymbol, setOriginSymbol] = useState<OriginSymbol>(preset?.token ?? 'USDS');
+  // The entered amount, seeded from `preset` on mount, together with the chain
+  // it was entered ON. `max` is withdraw-only: set by Max so the engine redeems
+  // the whole position (no dust), cleared the moment the user edits the amount.
+  //
+  // The chain can change under the open modal (the entry grid's Network
+  // dropdown), and an amount is only meaningful on the chain it was entered
+  // for: a Max carried across a switch would redeem the OTHER chain's whole
+  // position while the hero still showed the old one, and a typed figure was
+  // sized against the old chain's balance. So the read is clamped to the
+  // entering chain — anything from another chain reads as empty — the same
+  // way the origin pick below is clamped rather than reset.
+  const [entered, setEntered] = useState<{ chainId: number; value: string; max: boolean }>({
+    chainId,
+    value: preset?.amount ?? '',
+    max: false
+  });
+  const value = entered.chainId === chainId ? entered.value : '';
+  const max = entered.chainId === chainId && entered.max;
+  const setAmount = useCallback(
+    (nextValue: string, nextMax = false) => setEntered({ chainId, value: nextValue, max: nextMax }),
+    [chainId]
+  );
+  const [pickedOrigin, setPickedOrigin] = useState<OriginSymbol>(preset?.token ?? 'USDS');
 
   // Supply always offers an origin choice (USDS/DAI mainnet, USDS/USDC L2); withdraw
   // offers a destination choice only on L2 (USDS/USDC). Mainnet withdraw → USDS-only
@@ -173,6 +190,14 @@ export function useSavingsTransactionForm({
   const showOriginSelect = isSupply || isL2;
   const origins = isSupply ? (isL2 ? L2_SUPPLY_ORIGINS : MAINNET_SUPPLY_ORIGINS) : L2_WITHDRAW_ORIGINS;
   const originOptions: OriginSymbol[] = showOriginSelect ? origins : ['USDS'];
+  // The chain can change under an open modal — the entry grid now carries a
+  // Network dropdown — and the origin sets differ by chain: DAI is mainnet-only.
+  // Clamping the READ (rather than resetting the state) keeps a DAI pick
+  // through a there-and-back chain switch, and costs no extra render. Without
+  // it the Select's value falls outside its own items, which renders a blank
+  // trigger, and `originToken` stays DAI: no address on Optimism or Unichain,
+  // and bridged DAI on Base and Arbitrum, which the L2 PSM will not take.
+  const originSymbol = originOptions.includes(pickedOrigin) ? pickedOrigin : originOptions[0];
   const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
   const amount = parseAmountInput(value, originDecimals);
@@ -286,17 +311,18 @@ export function useSavingsTransactionForm({
   const rate = overall?.skySavingsRatecRate ? parseFloat(overall.skySavingsRatecRate) : undefined;
   const apyDisplay = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
 
-  const onInput = useCallback((raw: string) => {
-    // Typing overrides a previous Max selection.
-    setMax(false);
-    setValue(raw);
-  }, []);
+  const onInput = useCallback(
+    (raw: string) => {
+      // Typing overrides a previous Max selection.
+      setAmount(raw);
+    },
+    [setAmount]
+  );
 
   const setMaxAmount = useCallback(() => {
     // Flag a max only for withdraw; supply just deposits exactly the input.
-    setMax(!isSupply);
-    setValue(formatUnits(available, originDecimals));
-  }, [isSupply, available, originDecimals]);
+    setAmount(formatUnits(available, originDecimals), !isSupply);
+  }, [isSupply, available, originDecimals, setAmount]);
 
   // The 25/50/100% chips (Figma 859:36036). 100% is the old Max — same no-dust
   // withdraw semantics; the partial presets are plain amounts.
@@ -306,30 +332,27 @@ export function useSavingsTransactionForm({
         setMaxAmount();
         return;
       }
-      setMax(false);
-      setValue(formatUnits((available * BigInt(pct)) / 100n, originDecimals));
+      setAmount(formatUnits((available * BigInt(pct)) / 100n, originDecimals));
     },
-    [setMaxAmount, available, originDecimals]
+    [setMaxAmount, available, originDecimals, setAmount]
   );
 
   // Switching the origin token resets the amount + Max (the previous amount was
   // denominated in the old token's balance/decimals).
-  const switchOrigin = useCallback((next: OriginSymbol) => {
-    setOriginSymbol(next);
-    setMax(false);
-    setValue('');
-  }, []);
+  const switchOrigin = useCallback(
+    (next: OriginSymbol) => {
+      setPickedOrigin(next);
+      setAmount('');
+    },
+    [setAmount]
+  );
 
-  const clearAmount = useCallback(() => {
-    setMax(false);
-    setValue('');
-  }, []);
+  const clearAmount = useCallback(() => setAmount(''), [setAmount]);
 
   const resetToUsds = useCallback(() => {
-    setOriginSymbol('USDS');
-    setMax(false);
-    setValue('');
-  }, []);
+    setPickedOrigin('USDS');
+    setAmount('');
+  }, [setAmount]);
 
   return {
     isConnected,

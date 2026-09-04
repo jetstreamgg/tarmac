@@ -32,7 +32,7 @@ export class SavingsProductPage {
 
   async gotoConnectedOnL2(networkName: NetworkName, options?: ConnectMockWalletOptions) {
     await this.gotoConnected(options);
-    await switchWalletNetwork(this.page, tenderlyChainLabel(networkName), networkName);
+    await switchWalletNetwork(this.page, tenderlyChainLabel(networkName));
     await this.expectProductShell();
   }
 
