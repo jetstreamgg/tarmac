@@ -298,63 +298,76 @@ export function ProductDetailTemplate({
 
       {/* Body on the design grid at every tier (M3): 4 columns on mobile,
           8 on tablet, 12 at desktop — 20px gaps below desktop, 32px at it.
-          Desktop places two panes side by side: the left pane (8 cols) is a
-          single uniform stack — chart, Details, the optional afterDetails
-          section, About, Transactions — all one gap; the right pane (4 cols,
-          self-start) holds the position card at its own height. Below desktop
-          the left pane dissolves (`contents`) and every block spans the full
-          row, so everything stacks, with `order` slotting the card first
+          From the tablet seam (lg, 912) up two panes sit side by side: the
+          left pane (5 of 8 cols; 8 of 12 at desktop) is a single uniform
+          stack — chart, Details, the optional afterDetails section, About,
+          Transactions — all one gap; the right pane (3 of 8; 4 of 12 at
+          desktop, self-start) holds the position card at its own height. The
+          5|3 split is the Design QA tablet-grid frame (2800:91732: 587|351 in
+          1022px of app beside a wallet extension panel, APP-549). On the phone
+          tier the left pane dissolves (`contents`) and every block spans the
+          full row, so everything stacks, with `order` slotting the card first
           (M6.3, 486:20706 — the position/hero card leads on phones): position
           → chart → details → …. */}
       <div
         className="desktop:grid-cols-12 desktop:gap-8 grid grid-cols-4 gap-x-5 gap-y-10 sm:grid-cols-8"
         data-testid="product-detail-body"
       >
-        {/* Figma Annotations R2 F2 (measured, 1512px frame): chart, Details,
-            afterDetails, About and Transactions are ONE uniform stack — 80px
-            apart at desktop, via this wrapper's own `gap-20` once it becomes a
-            real flex column. Below desktop the wrapper is `contents`, so it
-            can't own a gap; the outer grid's `gap-y-10` (40px) is what
+        {/* Figma Annotations R2 F2 (measured, 1512px frame; the tablet-grid
+            frame 2800:91732 measures the same): chart, Details, afterDetails,
+            About and Transactions are ONE uniform stack — 80px apart from the
+            tablet seam up, via this wrapper's own `gap-20` once it becomes a
+            real flex column. On the phone tier the wrapper is `contents`, so
+            it can't own a gap; the outer grid's `gap-y-10` (40px) is what
             actually separates these — and it also separates the rail
             (position, order-1) from the chart, which must stay untouched — so
             each section past the first (order-3 and up) carries `mt-2` (8px)
-            to top the grid's 40px up to the same 48px the stack used below
-            desktop before this change, cancelled by `desktop:mt-0` once the
-            flex `gap-20` takes over. */}
+            to top the grid's 40px up to the same 48px the stack used on phones
+            before this change, cancelled by `lg:mt-0` once the flex `gap-20`
+            takes over. */}
         <div
-          className="desktop:col-span-8 desktop:flex desktop:flex-col desktop:gap-20 contents"
+          className="desktop:col-span-8 contents lg:col-span-5 lg:flex lg:flex-col lg:gap-20"
           data-testid="product-detail-left-pane"
         >
           <div className="order-2 col-span-full">{chart}</div>
           <DetailsSection
             title={detailsTitle}
             details={details}
-            className="desktop:mt-0 order-3 col-span-full mt-2"
+            className="order-3 col-span-full mt-2 lg:mt-0"
           />
           {afterDetails && (
             <section
-              className="desktop:mt-0 order-4 col-span-full mt-2 flex flex-col gap-4"
+              className="order-4 col-span-full mt-2 flex flex-col gap-4 lg:mt-0"
               data-testid="product-detail-after-details"
             >
               <SectionHeading className={minorHeadingClasses}>{afterDetails.title}</SectionHeading>
               {afterDetails.body}
             </section>
           )}
-          <AboutSection
-            title={aboutTitle}
-            about={about}
-            className="desktop:mt-0 order-5 col-span-full mt-2"
-          />
+          <AboutSection title={aboutTitle} about={about} className="order-5 col-span-full mt-2 lg:mt-0" />
           <TransactionsSection
             title={transactionsTitle}
             action={transactionsAction}
-            className="desktop:mt-0 order-6 col-span-full mt-2"
+            className="order-6 col-span-full mt-2 lg:mt-0"
           >
             {transactions}
           </TransactionsSection>
         </div>
+        {/* Figma 2829:138694 ("Sticky component following the user's viewport"):
+            from the tablet seam up (lg, where the two panes sit side by side)
+            the position card pins while the left pane scrolls past it.
+            `top-32` (128px) = the 88px navbar bar + the same 40px inset the
+            page keeps under it (`md:pt-10`), so the stuck card sits exactly
+            where it rested before the scroll. Sticky needs every
+            ancestor up to the document to NOT be a scroll container — which is
+            why AppContainer clips horizontal overflow with `overflow-x-clip`
+            rather than `-hidden` (hidden forces overflow-y to auto). A card
+            taller than the viewport minus that offset still pins at its top;
+            no inner scrolling — the comps don't want it, and no current card
+            gets that tall at this tier. Below the tablet seam the card leads
+            the stack and scrolls normally. */}
         <div
-          className="desktop:col-span-4 desktop:col-start-9 desktop:row-start-1 desktop:self-start order-1 col-span-full"
+          className="desktop:col-span-4 desktop:col-start-9 order-1 col-span-full lg:sticky lg:top-32 lg:col-span-3 lg:col-start-6 lg:row-start-1 lg:self-start"
           data-testid="product-detail-right-pane"
         >
           {position}

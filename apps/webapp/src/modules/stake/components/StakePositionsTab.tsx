@@ -45,7 +45,9 @@ export function StakePositionsTab({
           <StakeActivityTable positions={positions} />
         </div>
       </div>
-      <div className="order-1 lg:order-none lg:col-span-1">
+      {/* The rail pins at the two-pane tier (Figma 2829:138694 — sticky
+          position card); `top-32` mirrors ProductDetailTemplate's offset. */}
+      <div className="order-1 lg:sticky lg:top-32 lg:order-none lg:col-span-1">
         {isLoading ? (
           <Skeleton className="rounded-card h-[420px]" />
         ) : hasPositions ? (

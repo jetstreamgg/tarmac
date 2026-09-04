@@ -25,6 +25,7 @@ import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedReques
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -124,8 +125,17 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const needsAllowance = allowance !== undefined && ptBalance > 0n && allowance < ptBalance;
   const steps = useMemo<TransactionStep[]>(() => {
-    const claimStep = { label: t`Claim`, tokenSymbol: ptSymbol };
-    return needsAllowance ? [{ label: t`Approve`, tokenSymbol: ptSymbol }, claimStep] : [claimStep];
+    const claimStep = {
+      label: t`Claim`,
+      tokenSymbol: ptSymbol,
+      failureDetail: stepFailureDetail.claim(ptSymbol)
+    };
+    return needsAllowance
+      ? [
+          { label: t`Approve`, tokenSymbol: ptSymbol, failureDetail: stepFailureDetail.approve(ptSymbol) },
+          claimStep
+        ]
+      : [claimStep];
   }, [needsAllowance, ptSymbol]);
 
   // Simulate on the engine chain (the calldata is mainnet's even when the

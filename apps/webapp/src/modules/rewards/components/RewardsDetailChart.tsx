@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useRewardsChartInfo, type RewardContract } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { useParseRewardsChartData } from '../hooks/useParseRewardsChartData';
@@ -64,7 +65,16 @@ export function RewardsDetailChart({
         isPercentage={isRate}
         symbol={isRate ? undefined : contract.supplyToken.symbol}
         tokenSymbols={isRate ? undefined : [contract.supplyToken.symbol]}
-        label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
+        label={isRate ? <Trans>Current Rate</Trans> : <Trans>Total value locked</Trans>}
+        // The TVL metric leads its figure with the token mark instead of a
+        // trailing ticker and tags it with the period's change, the same
+        // recipe the portfolio totals chart wears (APP-552, Figma 2800:92438).
+        icons={
+          isRate ? undefined : (
+            <TokenIconStack symbols={[contract.supplyToken.symbol]} size={32} className="shrink-0" />
+          )
+        }
+        showTrend={!isRate}
         // Headline reads the canonical current rate (matches the Details grid),
         // not the last historic point.
         displayValue={isRate && currentRate !== undefined ? currentRate * 100 : undefined}
