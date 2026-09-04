@@ -315,9 +315,11 @@
      `transparent` track renders WHITE. The track is therefore an explicit flat
      stand-in for the fixed sky image behind it: the mean of the image's
      right-edge column at a desktop viewport (#100c26, a hair above the
-     #090420 it fades into). The thumb is 12% white ink, the Uniswap recipe. */
+     #090420 it fades into). The thumb is the DS Scrollbar — Classic / Brand
+     bar (Figma 5611:33590): colors/bg/bg-quarternary, lilac 20%. The comp's
+     track is bg-secondary with the fill switched off, i.e. transparent. */
   --color-pageScrollbarTrack: #100c26;
-  --color-pageScrollbarThumb: rgba(255, 255, 255, 0.12);
+  --color-pageScrollbarThumb: #bcb6ef33; /* colors/bg/bg-quarternary */
   /* Dark page background (Figma 5010:6624): a bottom fade into the solid
      backdrop over the sky image. The image is pre-baked — sunset sky blended
      (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
@@ -983,7 +985,10 @@
        lavender well below bg-primary (mean #d9ddfc vs #ecf0ff), so a
        bg-primary track showed a hard step against the sky; the sampled mean
        sits flush at the top and only drifts where the image fades out at the
-       bottom. Thumb is 12% ink (Uniswap ships 8%, which vanished on lavender). */
+       bottom. Thumb is 12% ink, NOT the DS bar's light value: bg-quarternary
+       resolves to white/20 in light, which is lighter than the lavender track
+       and vanishes on it (browser-checked, the same white-on-lavender trap
+       the chart track sidesteps). */
     --color-pageScrollbarTrack: #dcdffc;
     --color-pageScrollbarThumb: rgba(19, 19, 19, 0.12);
     /* Light page background (Figma 5124:25430): bottom fade + daytime sky
