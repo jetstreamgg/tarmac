@@ -334,7 +334,7 @@ describe('useSavingsLaunch — DAI upgrade-and-supply routing + steps', () => {
       { label: 'Approve', tokenSymbol: 'DAI', failureDetail: "The DAI hasn't been approved." },
       'Upgrade DAI to USDS',
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
-      { label: 'Supply', tokenSymbol: 'USDS' }
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
     ]);
   });
 
@@ -344,7 +344,10 @@ describe('useSavingsLaunch — DAI upgrade-and-supply routing + steps', () => {
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.dai, amount: AMOUNT, referralCode: REF })
     );
-    expect(result.current.steps).toEqual(['Upgrade DAI to USDS', { label: 'Supply', tokenSymbol: 'USDS' }]);
+    expect(result.current.steps).toEqual([
+      'Upgrade DAI to USDS',
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
+    ]);
   });
 
   it('routes onConfirm to the enabled upgrade engine (not the disabled supply engine, not withdraw)', () => {

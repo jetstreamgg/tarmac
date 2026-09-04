@@ -1,6 +1,19 @@
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { ReactElement } from 'react';
+import { render as rtlRender, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { i18n } from '@lingui/core';
+import { I18nProvider } from '@lingui/react';
 import { CustomPagination } from './CustomPagination';
+
+i18n.load('en', {});
+i18n.activate('en');
+
+// The mobile "Page x of y" label is a lingui message, so every render needs
+// the provider.
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <I18nProvider i18n={i18n}>{children}</I18nProvider>
+);
+const render = (ui: ReactElement) => rtlRender(ui, { wrapper });
 
 const pageButtons = () =>
   screen
@@ -37,10 +50,11 @@ describe('CustomPagination — derived window over a live dataLength', () => {
     rerender(<CustomPagination dataLength={65} onPageChange={onPageChange} />);
 
     // Regression: the stateful implementation drifted into showing "12 13 14"
-    // (14 pages don't exist) after navigating near the end post-growth.
+    // (14 pages don't exist) after navigating near the end post-growth. The
+    // tail window is the DS comp's three-and-three shape.
     fireEvent.click(screen.getByRole('button', { name: '13' }));
     expect(activePage()).toBe('13');
-    expect(pageButtons()).toEqual(['1', '11', '12', '13']);
+    expect(pageButtons()).toEqual(['1', '2', '3', '11', '12', '13']);
     expect(screen.getByRole('button', { name: 'Go to next page' })).toHaveProperty('disabled', true);
   });
 
@@ -64,5 +78,20 @@ describe('CustomPagination — derived window over a live dataLength', () => {
     expect(onPageChange).toHaveBeenLastCalledWith(6);
     expect(activePage()).toBe('6');
     expect(pageButtons()).toEqual(['1', '5', '6', '7', '13']);
+  });
+
+  it('shows the head-and-tail window while the current page sits at either end', () => {
+    // 50 rows / 5 per page → 10 pages: the DS comp's "1 2 3 … 8 9 10".
+    render(<CustomPagination dataLength={50} onPageChange={vi.fn()} />);
+    expect(pageButtons()).toEqual(['1', '2', '3', '8', '9', '10']);
+    fireEvent.click(screen.getByRole('button', { name: '9' }));
+    expect(pageButtons()).toEqual(['1', '2', '3', '8', '9', '10']);
+  });
+
+  it('renders the mobile "Page x of y" label alongside the numbered window', () => {
+    render(<CustomPagination dataLength={50} onPageChange={vi.fn()} />);
+    expect(screen.getByText('Page 1 of 10')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Go to next page' }));
+    expect(screen.getByText('Page 2 of 10')).toBeTruthy();
   });
 });

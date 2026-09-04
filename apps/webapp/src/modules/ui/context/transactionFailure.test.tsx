@@ -159,7 +159,8 @@ describe('TransactionModal failure & recovery', () => {
     batch.supported = true;
     renderFailedFlow(supplySteps);
 
-    expect(screen.getByText('Transaction failed')).toBeDefined();
+    // Once for the collapsed step row, once for the header chip (Figma 2800:91683).
+    expect(screen.getAllByText('Transaction failed')).toHaveLength(2);
     expect(
       screen.getByText(
         'The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.'

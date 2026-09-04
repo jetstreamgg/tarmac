@@ -59,10 +59,11 @@ export function Layout({
               )}
             >
               <div className={shellHeaderContentClasses()}>
-                {/* justify-self-start: in the desktop header grid the logo sits
-                  in a 1fr flank; without it the anchor stretches across the
-                  whole track and empty header space becomes clickable. */}
-                <AppLink to="/" title="Home page" className="desktop:justify-self-start min-w-[96px]">
+                {/* justify-self-start: in the header grid (tablet seam up) the
+                  logo sits in a 1fr flank; without it the anchor stretches
+                  across the whole track and empty header space becomes
+                  clickable. */}
+                <AppLink to="/" title="Home page" className="min-w-[96px] lg:justify-self-start">
                   {/* Theme-specific logo: dark is the default; light swaps in under
                     [data-theme='light'] (the `light:` variant). */}
                   <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
@@ -113,10 +114,11 @@ export function Layout({
           {/* Clearance for the fixed bottom MobileNavbar (60px pill + 16px top
             pad + max(16px, safe-area) bottom pad) so the end of the content can
             scroll out from under it. A spacer rather than padding utilities so
-            it stays independent of the surface's own spacing. */}
+            it stays independent of the surface's own spacing. Phone tier only,
+            like the bar itself. */}
           <div
             aria-hidden
-            className="desktop:hidden h-[calc(92px+env(safe-area-inset-bottom,0px))] w-full shrink-0"
+            className="h-[calc(92px+env(safe-area-inset-bottom,0px))] w-full shrink-0 lg:hidden"
           />
         </VStack>
 

@@ -10,8 +10,8 @@ const mobileNavTestId = (path: string) => `mobile-nav-${path.slice(1)}`;
 /**
  * Bottom navigation bar for the mobile tiers (DS Mobile / Navbar, Figma
  * 5153:25322 — in situ at Sky App: UI 536:26374). Fixed to the bottom edge on
- * a fade-to-background gradient; hidden at the desktop tier where TopNav's
- * pill group takes over.
+ * a fade-to-background gradient; phone tier only — from the tablet seam (lg,
+ * 912) up TopNav's pill group takes over (APP-549).
  *
  * The active recipe (brand2 gradient + dim border, same tokens as the desktop
  * navbar variant) is painted by one shared motion element instead of the
@@ -42,7 +42,7 @@ export function MobileNavbar() {
       data-testid="mobile-navbar"
       data-state={isHidden ? 'hidden' : 'visible'}
       className={cn(
-        'from-pageBackground/0 to-pageBackground desktop:hidden fixed inset-x-0 bottom-0 z-30 flex bg-gradient-to-b px-3 pt-4 pb-[max(16px,env(safe-area-inset-bottom))]',
+        'from-pageBackground/0 to-pageBackground fixed inset-x-0 bottom-0 z-30 flex bg-gradient-to-b px-3 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] lg:hidden',
         // Captured alongside the page during a route transition so the page's
         // snapshot — which paints in the top layer, above every z-index in the
         // document — passes behind the bar instead of over it (APP-518). The

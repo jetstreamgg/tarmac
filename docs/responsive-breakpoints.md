@@ -22,20 +22,34 @@ container, so from the webapp's perspective there are only three layout tiers.
 Custom screens live in `apps/webapp/src/globals.css` (`@theme --breakpoint-*`):
 `sm 640 / md 768 / lg 912 / desktop 1200 / xl 1280 / 2xl 1400`.
 
-**New and redesigned surfaces use exactly three tiers, mobile-first:**
+**New and redesigned surfaces use these tiers, mobile-first:**
 
 - **base** (no variant) — phones, the XS tier. Write default styles for a
   375px viewport.
-- **`sm:`** (≥640) — the S tier: large phones landscape, tablets, small
-  desktops.
+- **`sm:`** (≥640) — the S tier of the DS grid: 8 columns, 24px gutter.
+- **`md:`** (≥768) — the phone cutoff for overlays and tables. Below it the
+  app uses bottom sheets (`ResponsiveModal`, the More menu) and card-reflowed
+  tables; this is the JS `BP.md` cutoff those were already branching on.
+- **`lg:`** (≥912) — the tablet seam for the shell and product layout. Below
+  it the destinations live in the bottom `MobileNavbar`; from it up the shell
+  header keeps the desktop destination pills in its three-flank grid with the
+  88px bar and a 32px gutter, and `ProductDetailTemplate` runs its two panes
+  side by side (5|3 of the 8 columns). APP-549 moved this seam down from
+  `desktop` (1200), because a desktop user with a wallet extension panel open
+  has ~1022px of app and was getting the phone layout (Design QA tablet-grid
+  frames 2800:91684). It stops at 912, not 768, because the pill row plus
+  logo and wallet cluster need ~800px of app: at 768 the chip overlaps the
+  pills. `Chart` already drops its compact mode at the same line. An iPad in
+  portrait (768–834) therefore stays on the bottom navbar; landscape (1024+)
+  gets the pills.
 - **`desktop:`** (≥1200) — the M/L tier. Existing desktop layouts live here
   and stay unchanged by mobile work.
 
-`md` / `lg` / `xl` / `2xl` are **legacy** values kept only for the
-pre-redesign screens and die with them — don't introduce new usages. `3xl`
-(1680) had zero consumers and was removed in M1 (APP-367). Don't add `max-*`
-variants; the codebase has none, and mobile-first `min-width` tiers keep the
-cascade one-directional.
+`xl` / `2xl` are **legacy** values kept only for the pre-redesign screens and
+die with them — don't introduce new usages. `3xl` (1680) had zero
+consumers and was removed in M1 (APP-367). Don't add `max-*` variants; the
+codebase has none, and mobile-first `min-width` tiers keep the cascade
+one-directional.
 
 ## JS breakpoints
 
@@ -56,8 +70,8 @@ const isShort = useMediaQuery('(max-height: 900px)'); // arbitrary queries
 Both are `matchMedia`-based via `useSyncExternalStore`: correct on first
 render, no render-time `window` reads, no per-frame resize listeners. The `BP`
 ordinal mirrors the legacy Tailwind scale (`sm 0 … 2xl 5`); for new code
-compare against `BP.md` (mobile cutoff) or `BP.desktop` only, matching the
-three-tier strategy above.
+compare against `BP.md` (phone cutoff), `BP.lg` (tablet seam) or
+`BP.desktop` only, matching the tier strategy above.
 
 Overlays follow the same seam. `ResponsiveModal` (M4.2) and the wallet
 preview drawer (M4.6, `WalletPreviewDrawer`) branch presentation at
@@ -86,6 +100,13 @@ loading/empty/error states, `onRowClick` and `renderBelowRow`. Cards stack
 flush with 2px gaps and round only the list's outer corners (20px), mirroring
 the desktop table surface. Shared primitives live in
 `components/product/TransactionCard.tsx`.
+
+From 768 up the `<table>` has no width floor: it fills its pane and the
+cells' own min-content is the only limit before the wrapper scrolls
+sideways. The old 560/720px floors only ever bit inside the two-pane
+product/stake layout at the tablet seam (912 to 1200, pane 522 to 750px),
+where they forced a horizontal scroll the design does not have (the Sky
+Savings tablet-grid frame fits the Transaction Min table in 587px).
 
 ## Widgets & transaction flows (M7, APP-374)
 
