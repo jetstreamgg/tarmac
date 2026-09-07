@@ -1408,6 +1408,43 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
   }
 }
 
+/* The sticky header is captured for the same reason -------------------------
+   The bar never overlaps the page group (the group starts at the page
+   wrapper's own layout position, below the bar), so its layering was never
+   the problem — but the captured page is not painted in the document while
+   the transition runs, so the bar's 6px blur had nothing behind it and
+   whatever slid past underneath read sharp. Naming the bar gives it a group of
+   its own; as with the navbar and toaster that fixes nothing about the blur
+   (a snapshot has no backdrop) but lets the bar wear a stand-in fill below.
+   Only the live `new` image is kept: the nav pill's active state and the
+   wallet chip keep rendering through the transition. */
+@supports selector(:active-view-transition-type(page)) {
+  :root:active-view-transition-type(page) .vt-shell-header {
+    view-transition-name: shell-header;
+    /* Stand-in for the dead blur, transition only: the page colour under the
+       bar's own gradient tint, the same compositing the frosted rest state
+       lands on over a page of cards. The bar's box ends where its gradient
+       reaches transparent, so this reads as a hard edge only where the tint
+       already faded out — see the harness frames in PR #1927. */
+    background-color: var(--color-pageBackground);
+  }
+}
+::view-transition-group(shell-header) {
+  /* Above the page (0). The navbar (1) and the toaster (2) never share its
+     box, so its own place in that order is moot; 1 keeps it out of the page. */
+  z-index: 1;
+  /* The bar holds the same box on both routes. */
+  animation: none;
+}
+::view-transition-old(shell-header) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(shell-header) {
+  animation: none;
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   :root:active-view-transition-type(page)::view-transition-old(page) {
     animation: 300ms var(--ease-in-out-quart) both page-slide-out;

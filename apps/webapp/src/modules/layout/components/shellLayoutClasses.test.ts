@@ -35,6 +35,10 @@ describe('shellHeaderClasses', () => {
   // The comp's ramp stops at 5% alpha, which left a visible line where the bar
   // met the page. The DS stops still run over the first three quarters; the
   // last quarter carries them to nothing so the bar has no edge to see.
+  it('carries the page-transition capture hook', () => {
+    expect(shellHeaderClasses()).toContain('vt-shell-header');
+  });
+
   it('carries the fill to fully transparent at the bottom edge', () => {
     const cls = shellHeaderClasses();
     expect(cls).toContain('via-75%');

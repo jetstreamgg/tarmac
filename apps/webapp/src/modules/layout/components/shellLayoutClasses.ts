@@ -60,7 +60,13 @@ export const shellHeaderClasses = () =>
     // descendants: anything nested here that wants its own backdrop-filter
     // would sample the bar, not the page. Nothing does — the nav pills are
     // borders and gradients, and both menus portal to body.
-    'sticky top-0 z-30'
+    'sticky top-0 z-30',
+    // Captured alongside the page during a route transition (same hook as the
+    // navbar's `vt-shell-navbar`): the page's snapshots paint in the top layer
+    // and the captured page is no longer painted in the document, so the bar's
+    // blur had nothing to sample and content slid past it sharp. Inert outside
+    // a running transition; rules in globals.css.
+    'vt-shell-header'
   );
 
 /** The header row content (logo + TopNav) inside the full-bleed bar. */
