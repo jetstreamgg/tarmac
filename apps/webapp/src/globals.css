@@ -1421,12 +1421,52 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
 @supports selector(:active-view-transition-type(page)) {
   :root:active-view-transition-type(page) .vt-shell-header {
     view-transition-name: shell-header;
-    /* Stand-in for the dead blur, transition only: the page colour under the
-       bar's own gradient tint, the same compositing the frosted rest state
-       lands on over a page of cards. The bar's box ends where its gradient
-       reaches transparent, so this reads as a hard edge only where the tint
-       already faded out — see the harness frames in PR #1927. */
+    /* Stand-in for the dead blur, transition only. What the bar's blur samples
+       at rest is the viewport-fixed `.app-background` (plus whatever page
+       content is passing under it), so the fill is that same image, drawn on
+       the bar's own background with `background-attachment: fixed` and the
+       layer's exact size/position, under the bar's gradient tint. The pixels
+       line up with the fixed layer, so the bar's bottom edge disappears into
+       the ground it was already standing on. A flat colour does not do this
+       in light: the page colour (#ecf0ff) and the iOS-chrome sample (#d2d2fb)
+       both stand 10–23 RGB units off the lavender image and read as a pale
+       band with a hard edge (measured, PR #1927). This lands within 1 unit of
+       the rest frame at scroll 0 in both themes; scrolled, the only remainder
+       is the page content the rest-state blur was mixing in.
+
+       Layer list = the tint (scroll, on the bar) + the app-background token's
+       own layers (fixed): dark is fade + image, light is fade + image + base
+       gradient, so the per-layer attachment/size/position lists are written
+       per theme to match `.app-background` exactly. `.app-background` itself
+       is a fixed element rather than `background-attachment: fixed` because
+       iOS treats `fixed` as `scroll` — here that only degrades this stand-in
+       for the ~400ms of a transition on iOS (the layer is then sized to the
+       bar's own 88px box) and is left as is. */
     background-color: var(--color-pageBackground);
+    background-image:
+      linear-gradient(
+        to bottom in oklab,
+        var(--color-navbarGradientStart),
+        var(--color-navbarGradientEnd) 75%,
+        transparent
+      ),
+      var(--background-image-app-background);
+    background-repeat: no-repeat;
+    background-attachment: scroll, fixed, fixed;
+    background-size: auto, auto, cover;
+    background-position:
+      0 0,
+      center,
+      center top;
+  }
+  [data-theme='light']:active-view-transition-type(page) .vt-shell-header {
+    background-attachment: scroll, fixed, fixed, fixed;
+    background-size: auto, auto, cover, auto;
+    background-position:
+      0 0,
+      center,
+      center,
+      center;
   }
 }
 ::view-transition-group(shell-header) {
