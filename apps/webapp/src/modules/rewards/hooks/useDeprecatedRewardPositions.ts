@@ -54,7 +54,8 @@ export function useDeprecatedRewardPositions(): {
       functionName: 'balanceOf' as const,
       args: [address ?? ZERO_ADDRESS]
     })),
-    query: { enabled: !!address && deprecatedContracts.length > 0 }
+    // Region-restricted: don't issue a read whose result is discarded below.
+    query: { enabled: rewardsAvailable && !!address && deprecatedContracts.length > 0 }
   });
 
   const positions = useMemo<DeprecatedRewardPosition[]>(() => {
@@ -67,6 +68,11 @@ export function useDeprecatedRewardPositions(): {
 
   return {
     positions,
-    isLoading: !!address && deprecatedContracts.length > 0 && !error && (isLoading || balances === undefined)
+    isLoading:
+      rewardsAvailable &&
+      !!address &&
+      deprecatedContracts.length > 0 &&
+      !error &&
+      (isLoading || balances === undefined)
   };
 }

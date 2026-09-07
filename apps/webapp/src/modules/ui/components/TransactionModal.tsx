@@ -572,6 +572,11 @@ export function TransactionModal({
                     txStatus,
                     bundled: isBundled
                   });
+                  // Stays live off the product's chain: the provider refuses a
+                  // wrong-chain fire and returns the flow to its guarded first
+                  // screen, so the press is never dead. The guard's own copy and
+                  // switch action render under the list (below) so the failure
+                  // view explains itself before that round trip.
                   const tryAgain = (
                     <Button variant="primary" size="m" onClick={handleRetry}>
                       {errorLabel ?? <Trans>Try again</Trans>}
@@ -610,6 +615,15 @@ export function TransactionModal({
                   ));
                 })()}
               </Steps>
+              {/* The failure view's cross-chain guard (APP-528) lives here once
+                  the failure renders inline — the bottom CTA row that used to
+                  carry it is gone with the step list showing. */}
+              {showInlineFailure && chainGuarded && (
+                <div className="flex flex-col gap-4 pt-2">
+                  {chainGuardBlock}
+                  {guardCta}
+                </div>
+              )}
             </>
           )}
         </>

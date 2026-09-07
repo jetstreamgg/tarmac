@@ -100,8 +100,11 @@ export function MobileNavbar() {
                 />
               )}
               <Icon className="nav-icon relative h-4 w-4 shrink-0" />
-              {/* DS shows the label on the active pill only; sr-only keeps the
-                  icon-only items accessibly named. The label owns its WIDTH as
+              {/* Every item is named by one sr-only span, always mounted; the
+                  visible label below is decorative (aria-hidden), so an
+                  outgoing label still collapsing next to an inactive item
+                  can't read the name twice. DS shows the label on the active
+                  pill only. The label owns its WIDTH as
                   an animated value: an unmounting label used to drop its box in
                   one frame (the old icon snapped to the link's centre) while
                   the arriving one took its full box at opacity 0 (the new icon
@@ -110,11 +113,13 @@ export function MobileNavbar() {
                   one expands to its measured width. The icon-label gap rides
                   inside the animated box as `marginLeft`, so a collapsed label
                   leaves no 4px stub behind. */}
+              <span className="sr-only">{destination.label}</span>
               <AnimatePresence initial={false}>
                 {isActive && (
                   <motion.span
                     key="label"
                     data-nav-label
+                    aria-hidden
                     className="relative overflow-hidden whitespace-nowrap"
                     initial={reducedMotion ? false : { width: 0, opacity: 0, marginLeft: 0 }}
                     animate={{ width: 'auto', opacity: 1, marginLeft: 4 }}
@@ -125,7 +130,6 @@ export function MobileNavbar() {
                   </motion.span>
                 )}
               </AnimatePresence>
-              {!isActive && <span className="sr-only">{destination.label}</span>}
             </Link>
           );
         })}
