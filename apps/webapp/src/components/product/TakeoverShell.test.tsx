@@ -86,6 +86,26 @@ describe('TakeoverShell', () => {
     innerWidth.mockRestore();
   });
 
+  it('inherits the gap from a Radix dialog lock still in force (details modal → manage sheet)', () => {
+    // Under a react-remove-scroll lock the bar is already gone (nothing to
+    // measure) and body carries the width it removed as a custom property.
+    const clientWidth = vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(1024);
+    const innerWidth = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1024);
+    document.body.style.setProperty('--removed-body-scroll-bar-size', '15px');
+    const { unmount } = render(
+      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
+        <div />
+      </TakeoverShell>
+    );
+
+    expect(document.body.style.marginRight).toBe('15px');
+    unmount();
+    expect(document.body.style.marginRight).toBe('');
+    document.body.style.removeProperty('--removed-body-scroll-bar-size');
+    clientWidth.mockRestore();
+    innerWidth.mockRestore();
+  });
+
   it('names the dialog from its title via aria-labelledby', () => {
     renderShell();
 

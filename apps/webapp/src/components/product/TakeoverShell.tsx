@@ -17,6 +17,9 @@ import { Button } from '@/components/ui/button';
 const SCRIM_IN = { duration: 0.3, ease: [0.23, 1, 0.32, 1] } as const;
 const SCRIM_OUT = { duration: 0.3, ease: [0.77, 0, 0.175, 1] } as const;
 
+/** react-remove-scroll-bar's record of the scrollbar width a Radix dialog's lock removed. */
+const REMOVED_SCROLLBAR_SIZE_VAR = '--removed-body-scroll-bar-size';
+
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -73,7 +76,15 @@ export function TakeoverShell({
   // bar, and without the margin every centred layout under the scrim shifted
   // sideways on open and back on close — the only modal in the app that did.
   // The gap is measured before the lock, so a dialog opening on top (the
-  // transaction modal) measures 0 and adds nothing.
+  // transaction modal) measures 0 and adds nothing. The reverse stacking is
+  // the trap: handed off FROM a Radix dialog (the position-details modal),
+  // that dialog is still mounted for a tick — its presence boundary releases
+  // it a render later — so its own lock is still in force here and the bar
+  // measures 0. react-remove-scroll publishes the width it removed as a
+  // custom property on body; read that when the measurement comes back empty,
+  // or the takeover holds the page bar-less and un-compensated once the
+  // dialog's lock lifts (measured: a 15px shift on the manage sheet, none on
+  // the open takeover).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -82,7 +93,9 @@ export function TakeoverShell({
     const { body, documentElement } = document;
     const previousOverflow = body.style.overflow;
     const previousMarginRight = body.style.marginRight;
-    const gap = documentElement.clientWidth > 0 ? window.innerWidth - documentElement.clientWidth : 0;
+    const measured = documentElement.clientWidth > 0 ? window.innerWidth - documentElement.clientWidth : 0;
+    const inherited = parseFloat(getComputedStyle(body).getPropertyValue(REMOVED_SCROLLBAR_SIZE_VAR)) || 0;
+    const gap = measured > 0 ? measured : inherited;
     body.style.overflow = 'hidden';
     if (gap > 0) body.style.marginRight = `${gap}px`;
     return () => {
@@ -191,10 +204,13 @@ export function TakeoverShell({
       <div className="flex-1 overflow-y-auto px-3 md:px-4">
         <motion.div
           className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16"
-          // On a hand-off the scrim is already up, so the column carries the
-          // arrival on its own (fade + rise) rather than riding the scrim's.
-          initial={scrimHandoff ? { y: 40, opacity: 0 } : { y: 40 }}
-          animate={{ y: 0, opacity: 1 }}
+          // On a hand-off the scrim is already up, so the column arrives on
+          // its rise alone. NOT a fade: an element mid-opacity is a backdrop
+          // root, so for the length of a fade the glass cards inside would
+          // sample nothing but the column itself and read a shade too bright
+          // until opacity lands on 1 (measured on the manage sheet).
+          initial={{ y: 40 }}
+          animate={{ y: 0 }}
           exit={{ y: 40, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
           transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
         >
