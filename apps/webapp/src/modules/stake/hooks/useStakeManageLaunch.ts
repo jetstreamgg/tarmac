@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -36,6 +36,8 @@ import {
   type StakeLaunchContent,
   type StakeLaunchContentContext
 } from './useStakeConfirmContent';
+
+import { stakeUsdNotional } from '../lib/stakeUsdNotional';
 
 export type { StakeLaunchContentContext };
 
@@ -113,14 +115,17 @@ export interface UseStakeManageLaunchParams {
   /** Display symbols aligned to `rewardContractsToClaim`, for step labels only. */
   claimSymbols?: string[];
   /**
-   * Review-screen body (the amount heroes over the confirm grid). Pass a
-   * MEMOIZED function to receive the engine's own routing — the grid prices the
-   * live Network fee from it, which it cannot do from the caller's render (the
-   * calls are this hook's output, the body its input). The body is re-pushed
-   * as that routing changes, until the transaction leaves IDLE.
+   * Full summary body (the amount heroes over the confirm grid). The sheet is
+   * the review (Design QA 2800:91832), so the modal never shows this as a
+   * review screen — it is the wallet-screen fallback when no
+   * `transactionScreenContent` is passed. Pass a MEMOIZED function to receive
+   * the engine's own routing — the grid prices the live Network fee from it,
+   * which it cannot do from the caller's render (the calls are this hook's
+   * output, the body its input). The body is re-pushed as that routing
+   * changes, until the transaction leaves IDLE.
    */
   transactionContent?: StakeLaunchContent;
-  /** Compact wallet/status-screen summary; omitted, the review body carries over. */
+  /** Compact wallet/status-screen summary; omitted, the full body carries over. */
   transactionScreenContent?: ReactNode;
   onSuccess?: () => void;
 }
@@ -279,6 +284,19 @@ export function useStakeManageLaunch({
   const isBorrowOnly =
     hasBorrow && !hasLock && !hasFree && !hasWipe && !hasDelegateChange && !hasRewardChange;
 
+  // The moved legs (lock or free, borrow or wipe; a delegate-only change moves
+  // nothing and values at $0). Live (not computed at launch) because the sheet
+  // runs the enhanced-screening preflight on it while the user is editing.
+  const usdValue = useMemo(
+    () =>
+      stakeUsdNotional(
+        hasLock ? skyToLock : hasFree ? skyToFree : 0n,
+        hasBorrow ? usdsToBorrow : hasWipe ? usdsToWipe : 0n,
+        skyPriceString
+      ),
+    [hasLock, hasFree, hasBorrow, hasWipe, skyToLock, skyToFree, usdsToBorrow, usdsToWipe, skyPriceString]
+  );
+
   const launch = useCallback(() => {
     const formattedLock = hasLock ? formatBigInt(skyToLock) : undefined;
     const formattedFree = hasFree ? formatBigInt(skyToFree) : undefined;
@@ -313,32 +331,13 @@ export function useStakeManageLaunch({
       ...(borrowAmount != null && { borrowAmount, borrowAction })
     };
 
-    // USD notional for the enhanced-screening threshold (APP-517): the moved
-    // SKY leg at spot plus the moved USDS leg at $1, magnitudes regardless of
-    // direction. A non-zero SKY leg with no price available stays
-    // `undefined` — unknown, treated as above-threshold. A delegate-only
-    // change moves nothing and values at $0.
-    const skyLegFloat = hasLock
-      ? Number(formatUnits(skyToLock, 18))
-      : hasFree
-        ? Number(formatUnits(skyToFree, 18))
-        : 0;
-    const usdsLegFloat = hasBorrow
-      ? Number(formatUnits(usdsToBorrow, 18))
-      : hasWipe
-        ? Number(formatUnits(usdsToWipe, 18))
-        : 0;
-    const usdValue =
-      skyLegFloat === 0
-        ? usdsLegFloat
-        : skyPriceString
-          ? skyLegFloat * parseFloat(skyPriceString) + usdsLegFloat
-          : undefined;
-
     launchModal({
       usdValue,
       // Staking is mainnet-only — guard the modal off any L2 (APP-528).
       supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+      // The sheet is the review (Design QA 2800:91832): open on the wallet
+      // screen, gate first. The titles below are the minimized-toast fallback.
+      skipReview: true,
       // Confirm-modal titles by staged action set (M7, UX 1104:*).
       title: isDelegateOnly
         ? t`Confirm delegate change`
@@ -402,7 +401,7 @@ export function useStakeManageLaunch({
     effectiveRewardContract,
     selectedRewardSymbol,
     shouldUseBatch,
-    skyPriceString,
+    usdValue,
     sessionId,
     confirmContent,
     transactionScreenContent,
@@ -414,6 +413,8 @@ export function useStakeManageLaunch({
     launch,
     locked,
     restore,
+    /** Live USD notional of the staged changes, for the sheet's own preflight. */
+    usdValue,
     execute: engine.execute,
     steps,
     calldata,

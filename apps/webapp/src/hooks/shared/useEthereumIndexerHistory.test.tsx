@@ -6,6 +6,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { HISTORY_QUERY_LIMIT, ModuleEnum, TransactionTypeEnum } from '../constants';
+import { TOKENS } from '../tokens/tokens.constants';
 
 // Reconstruct the interpolated query string so assertions can inspect it.
 vi.mock('graphql-request', () => ({
@@ -53,8 +54,21 @@ const EMPTY_RESPONSE = {
   stusdsWithdraws: [],
   curveTokenExchanges: [],
   susdtDeposits: [],
-  susdtWithdraws: []
+  susdtWithdraws: [],
+  swaps: []
 };
+
+// A mainnet PSM conversion row (USDC → USDS through the LitePSM), as indexed.
+const swapRow = (blockTimestamp: number, transactionHash: string) => ({
+  transactionHash,
+  assetIn: TOKENS.usdc.address[1],
+  assetOut: TOKENS.usds.address[1],
+  sender: USER,
+  receiver: USER,
+  amountIn: '1000000',
+  amountOut: '1000000000000000000',
+  blockTimestamp: String(blockTimestamp)
+});
 
 function makeWrapper() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -109,10 +123,13 @@ describe('useEthereumIndexerHistory — merged mainnet indexer document', () => 
       'rewards: Reward',
       'stusdsDeposits: StusdsDeposit',
       'curveTokenExchanges: CurveTokenExchange',
-      'susdtDeposits: SusdtDeposit'
+      'susdtDeposits: SusdtDeposit',
+      // The mainnet PSM conversions (APP-558) ride the same document.
+      'swaps: Swap'
     ]) {
       expect(query).toContain(alias);
     }
+    expect(query).toContain(`sender: { _eq: "${USER}" }`);
     expect(query).toContain(`owner: { _eq: "${USER}" }`);
     expect(query).toContain(`user: { _eq: "${USER}" }`);
     expect(query).not.toContain('_ilike');
@@ -126,6 +143,42 @@ describe('useEthereumIndexerHistory — merged mainnet indexer document', () => 
     expect(result.current.data![0].type).toBe(TransactionTypeEnum.SUPPLY);
     expect(result.current.hasNextPage).toBe(false);
     expect(result.current.nextCursor).toBeUndefined();
+  });
+
+  it('maps mainnet PSM conversions as Trade rows (APP-558)', async () => {
+    vi.mocked(request).mockResolvedValueOnce({
+      ...EMPTY_RESPONSE,
+      swaps: [swapRow(1700000300, '0xconvert')],
+      stakingLocks: [{ index: '0', wad: '50', blockTimestamp: '1700000200', transactionHash: '0xlock' }]
+    });
+
+    const { result } = renderHook(() => useEthereumIndexerHistory(), { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data!.map(item => item.module)).toEqual([ModuleEnum.TRADE, ModuleEnum.STAKE]);
+    const convert = result.current.data![0];
+    expect(convert.type).toBe(TransactionTypeEnum.TRADE);
+    expect(convert.chainId).toBe(1);
+    expect('fromToken' in convert && convert.fromToken.symbol).toBe('USDC');
+    expect('toToken' in convert && convert.toToken.symbol).toBe('USDS');
+  });
+
+  it("drops a swap that is a leg of another product's transaction (USDC savings supply)", async () => {
+    // A mainnet USDC savings supply is one transaction: a PSM sellGem plus the
+    // deposit. The savings row is the user's action; the swap is its plumbing.
+    vi.mocked(request).mockResolvedValueOnce({
+      ...EMPTY_RESPONSE,
+      savingsSupplies: [{ assets: '100', blockTimestamp: '1700000300', transactionHash: '0xSupplyViaPsm' }],
+      swaps: [swapRow(1700000300, '0xsupplyviapsm'), swapRow(1700000100, '0xstandalone')]
+    });
+
+    const { result } = renderHook(() => useEthereumIndexerHistory(), { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data!.map(item => [item.module, item.transactionHash])).toEqual([
+      [ModuleEnum.SAVINGS, '0xSupplyViaPsm'],
+      [ModuleEnum.TRADE, '0xstandalone']
+    ]);
   });
 
   it('clamps at the densest family and pages older items in with _lt', async () => {

@@ -24,7 +24,7 @@ export function StakePositionsTab({
   // card) before the tables, so the phone tier reorders via `order-*` while
   // the lg grid keeps its DOM placement.
   return (
-    <div data-testid="stake-positions-tab" className="grid items-start gap-10 lg:grid-cols-3 lg:gap-6">
+    <div data-testid="stake-positions-tab" className="grid items-start gap-10 lg:grid-cols-3 lg:gap-8">
       {/* Two panes at lg (ProductDetailTemplate's pattern): the left pane is a
           real column so positions → activity follow its normal flow beside the
           self-heighted rail. Below lg the pane dissolves (`contents`) and

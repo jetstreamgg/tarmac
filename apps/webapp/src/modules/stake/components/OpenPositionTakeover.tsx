@@ -27,6 +27,7 @@ import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
+import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
@@ -51,8 +52,6 @@ export interface ReopenContext {
   urnIndex: number;
   /** Borrow card starts ON — the urn's history had debt (UX 1194:21914). */
   borrowExpanded: boolean;
-  /** Back to the position-details modal. */
-  onBack: () => void;
   /** Abandon the whole manage flow (clears the manage params). */
   onClose: () => void;
 }
@@ -336,6 +335,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     launch,
     locked,
     restore,
+    usdValue,
     prepared,
     isLoading: launchLoading,
     error: launchError
@@ -356,12 +356,15 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const amountsSettled =
     debouncedSkyToLock === state.skyToLock && debouncedUsdsToBorrow === state.usdsToBorrow;
 
-  const confirmDisabled = !formValid || !prepared || launchLoading || !amountsSettled;
+  const confirmHold = useStakeConfirmHold({
+    usdValue,
+    actionable: formValid && prepared && !launchLoading && amountsSettled,
+    launchErrorMessage
+  });
 
   return (
     <TakeoverShell
       title={<Trans>Open a position</Trans>}
-      onBack={reopen?.onBack}
       badge={
         <>
           <StakeSky className="h-4 w-4" />
@@ -375,16 +378,20 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       footer={
         <>
           {/* 237px is the comp's two-line measure for this copy (1036:209863).
-              An engine prepare failure takes over the slot — the helper copy
-              would be a lie next to a dead Confirm. Two elements (not one
+              A screening or prepare failure takes over the slot — the helper
+              copy would be a lie next to a dead Confirm. Two elements (not one
               recolored <p>) so the alert mounts fresh for screen readers. */}
-          {launchErrorMessage ? (
+          {confirmHold.alert ? (
             <p
               className={`text-error ${FOOTER_NOTE_CLASSES}`}
-              data-testid="stake-takeover-error"
+              data-testid={
+                confirmHold.alert.kind === 'prepare'
+                  ? 'stake-takeover-error'
+                  : `stake-takeover-${confirmHold.alert.kind}-blocked`
+              }
               role="alert"
             >
-              {launchErrorMessage}
+              {confirmHold.alert.message}
             </p>
           ) : (
             <p className={`text-fgSecondary ${FOOTER_NOTE_CLASSES}`}>
@@ -395,7 +402,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
             variant="primary"
             size="xl"
             onClick={launch}
-            disabled={confirmDisabled}
+            disabled={confirmHold.disabled}
+            loading={confirmHold.loading}
             data-testid="stake-takeover-confirm"
             // min-w, not w: the comp's 160px button leaves ~80px of text box
             // inside the 40px insets, and `whitespace-nowrap` from the base
