@@ -1417,11 +1417,20 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
    its own; as with the navbar and toaster that fixes nothing about the blur
    (a snapshot has no backdrop) but lets the bar wear a stand-in fill below.
    Only the live `new` image is kept: the nav pill's active state and the
-   wallet chip keep rendering through the transition. */
+   wallet chip keep rendering through the transition.
+
+   Desktop tier only (the `lg` seam, 912px, where TopNav's pill group takes
+   over from the bottom navbar). On the phone tiers the uncaptured bar looked
+   better in situ (user-verified on iOS): iOS treats `background-attachment:
+   fixed` as `scroll`, so the image stand-in below can't line up there, and
+   the bar's own frost over the live background beats a mis-cropped sliver of
+   sky. Below the seam nothing here applies and the bar behaves as it did
+   before the capture. */
 @supports selector(:active-view-transition-type(page)) {
-  :root:active-view-transition-type(page) .vt-shell-header {
-    view-transition-name: shell-header;
-    /* Stand-in for the dead blur, transition only. What the bar's blur samples
+  @media (min-width: 912px) {
+    :root:active-view-transition-type(page) .vt-shell-header {
+      view-transition-name: shell-header;
+      /* Stand-in for the dead blur, transition only. What the bar's blur samples
        at rest is the viewport-fixed `.app-background` (plus whatever page
        content is passing under it), so the fill is that same image, drawn on
        the bar's own background with `background-attachment: fixed` and the
@@ -1442,31 +1451,32 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
        iOS treats `fixed` as `scroll` — here that only degrades this stand-in
        for the ~400ms of a transition on iOS (the layer is then sized to the
        bar's own 88px box) and is left as is. */
-    background-color: var(--color-pageBackground);
-    background-image:
-      linear-gradient(
-        to bottom in oklab,
-        var(--color-navbarGradientStart),
-        var(--color-navbarGradientEnd) 75%,
-        transparent
-      ),
-      var(--background-image-app-background);
-    background-repeat: no-repeat;
-    background-attachment: scroll, fixed, fixed;
-    background-size: auto, auto, cover;
-    background-position:
-      0 0,
-      center,
-      center top;
-  }
-  [data-theme='light']:active-view-transition-type(page) .vt-shell-header {
-    background-attachment: scroll, fixed, fixed, fixed;
-    background-size: auto, auto, cover, auto;
-    background-position:
-      0 0,
-      center,
-      center,
-      center;
+      background-color: var(--color-pageBackground);
+      background-image:
+        linear-gradient(
+          to bottom in oklab,
+          var(--color-navbarGradientStart),
+          var(--color-navbarGradientEnd) 75%,
+          transparent
+        ),
+        var(--background-image-app-background);
+      background-repeat: no-repeat;
+      background-attachment: scroll, fixed, fixed;
+      background-size: auto, auto, cover;
+      background-position:
+        0 0,
+        center,
+        center top;
+    }
+    [data-theme='light']:active-view-transition-type(page) .vt-shell-header {
+      background-attachment: scroll, fixed, fixed, fixed;
+      background-size: auto, auto, cover, auto;
+      background-position:
+        0 0,
+        center,
+        center,
+        center;
+    }
   }
 }
 ::view-transition-group(shell-header) {
