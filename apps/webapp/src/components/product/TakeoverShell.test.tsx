@@ -64,9 +64,26 @@ describe('TakeoverShell', () => {
       </TakeoverShell>
     );
 
-    expect(document.documentElement.style.overflow).toBe('hidden');
+    expect(document.body.style.overflow).toBe('hidden');
     unmount();
-    expect(document.documentElement.style.overflow).toBe('');
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('compensates the hidden page scrollbar with a body margin, like the Radix dialogs', () => {
+    // jsdom lays nothing out, so stand in for a 15px bar.
+    const clientWidth = vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(1009);
+    const innerWidth = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1024);
+    const { unmount } = render(
+      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
+        <div />
+      </TakeoverShell>
+    );
+
+    expect(document.body.style.marginRight).toBe('15px');
+    unmount();
+    expect(document.body.style.marginRight).toBe('');
+    clientWidth.mockRestore();
+    innerWidth.mockRestore();
   });
 
   it('names the dialog from its title via aria-labelledby', () => {

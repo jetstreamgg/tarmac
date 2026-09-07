@@ -36,6 +36,7 @@ export function TakeoverShell({
   footer,
   locked = false,
   onOpenTransaction,
+  scrimHandoff = false,
   children,
   dataTestId = 'takeover-shell'
 }: {
@@ -49,6 +50,14 @@ export function TakeoverShell({
    */
   locked?: boolean;
   onOpenTransaction?: () => void;
+  /**
+   * The takeover is replacing a dialog whose scrim is already up (the
+   * position-details modal handing off to the manage sheet). That dialog is
+   * unmounted in the same commit, so a scrim fading in from 0 would uncover
+   * the page for a beat; the scrim mounts at full opacity instead and only
+   * the card column arrives.
+   */
+  scrimHandoff?: boolean;
   children: ReactNode;
   dataTestId?: string;
 }) {
@@ -57,16 +66,29 @@ export function TakeoverShell({
   const reduceMotion = useReducedMotion();
 
   // Escape-to-close + document scroll lock: syncing with the DOM outside React.
+  //
+  // The lock mirrors what Radix's dialogs do through react-remove-scroll (body
+  // overflow hidden + the scrollbar's width as a right MARGIN on body, its
+  // default gap mode): hiding the page scrollbar widens the viewport by the
+  // bar, and without the margin every centred layout under the scrim shifted
+  // sideways on open and back on close — the only modal in the app that did.
+  // The gap is measured before the lock, so a dialog opening on top (the
+  // transaction modal) measures 0 and adds nothing.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKeyDown);
-    const previousOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
+    const { body, documentElement } = document;
+    const previousOverflow = body.style.overflow;
+    const previousMarginRight = body.style.marginRight;
+    const gap = documentElement.clientWidth > 0 ? window.innerWidth - documentElement.clientWidth : 0;
+    body.style.overflow = 'hidden';
+    if (gap > 0) body.style.marginRight = `${gap}px`;
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      document.documentElement.style.overflow = previousOverflow;
+      body.style.overflow = previousOverflow;
+      body.style.marginRight = previousMarginRight;
     };
   }, [onClose]);
 
@@ -122,7 +144,7 @@ export function TakeoverShell({
       aria-labelledby={titleId}
       tabIndex={-1}
       data-testid={dataTestId}
-      initial={{ opacity: 0 }}
+      initial={{ opacity: scrimHandoff ? 1 : 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
       transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
@@ -169,8 +191,10 @@ export function TakeoverShell({
       <div className="flex-1 overflow-y-auto px-3 md:px-4">
         <motion.div
           className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16"
-          initial={{ y: 40 }}
-          animate={{ y: 0 }}
+          // On a hand-off the scrim is already up, so the column carries the
+          // arrival on its own (fade + rise) rather than riding the scrim's.
+          initial={scrimHandoff ? { y: 40, opacity: 0 } : { y: 40 }}
+          animate={{ y: 0, opacity: 1 }}
           exit={{ y: 40, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
           transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
         >

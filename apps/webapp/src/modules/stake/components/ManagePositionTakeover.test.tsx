@@ -324,7 +324,7 @@ describe('ManagePositionTakeover', () => {
   });
   afterEach(() => {
     cleanup();
-    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
   });
 
   it('renders summary strip + four cards, all off by default, Confirm disabled', () => {
