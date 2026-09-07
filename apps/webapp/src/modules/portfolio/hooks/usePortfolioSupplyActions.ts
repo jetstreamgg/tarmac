@@ -26,20 +26,19 @@ import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedReques
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
 /**
- * The chain a position's supply modal must run on: the connected chain when
- * the position lives there, otherwise the position's own chain (preferring the
- * mainnet-family entry when a position spans several). A mainnet-family target
- * follows getMainnetTargetName's rule: when the active config carries a
- * Tenderly fork (dev/staging builds), the fork is the target — auto-switching
- * a dev wallet onto real Ethereum would mean real fees.
+ * The chain a position's supply modal must run on: the position's own chain
+ * (one per position since APP-547). A mainnet-family target follows the
+ * route guard's rule: when the active config carries a Tenderly fork
+ * (dev/staging builds), the fork is the target — auto-switching a dev wallet
+ * onto real Ethereum would mean real fees.
  */
 function supplyChainFor(
   position: SuppliedPosition,
   connectedChainId: number,
   chains: readonly { id: number }[]
 ): number {
-  if (position.chainIds.includes(connectedChainId)) return connectedChainId;
-  const target = position.chainIds.find(isMainnetId) ?? position.chainIds[0] ?? connectedChainId;
+  const target = position.chainId;
+  if (target === connectedChainId) return connectedChainId;
   if (isMainnetId(target)) {
     const fork = chains.find(c => isTestnetId(c.id));
     if (fork) return fork.id;
@@ -65,9 +64,9 @@ function supplyChainFor(
  * A rejected or failed switch opens nothing — the user stays on Portfolio and
  * the button remains clickable. Safe wallets are the exception: they can never
  * switch from the dapp, so a cross-chain position resolves to `undefined` and
- * the caller navigates to the product page instead, where the scoped
- * ChainModal explains that network switching is managed by the Safe app
- * (APP-486).
+ * the caller navigates to the product page instead, where the network
+ * selector renders as a static pill for a Safe — its chain is fixed by the
+ * Safe app it runs inside (APP-486).
  */
 export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (() => void) | undefined {
   const connectedChainId = useChainId();

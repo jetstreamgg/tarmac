@@ -68,7 +68,7 @@ vi.mock('../PendlePositionCard', () => ({
 vi.mock('../PendleTransactionsTable', () => ({
   PendleTransactionsTable: () => <div data-testid="mock-tx-table" />
 }));
-vi.mock('@/modules/ui/components/ChainModal', () => ({ ChainModal: () => <div /> }));
+vi.mock('@/modules/ui/components/NetworkSelect', () => ({ NetworkSelect: () => <div /> }));
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { PendleProductDetail } from '../PendleProductDetail';

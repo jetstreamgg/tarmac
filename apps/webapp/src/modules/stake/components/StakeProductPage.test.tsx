@@ -29,6 +29,7 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
+    useChainId: () => 1,
     useChains: () => [{ id: 1 }] as unknown as ReturnType<typeof actual.useChains>,
     useConnection: () => ({ address: h.address }) as unknown as ReturnType<typeof actual.useConnection>
   };
@@ -51,8 +52,8 @@ vi.mock('../hooks/useStakeUserPositions', async importOriginal => {
 
 // The header sub-components pull in wagmi providers/contexts we don't exercise
 // here; stub them so the test stays scoped to the tab/param behavior.
-vi.mock('@/modules/ui/components/ChainModal', () => ({
-  ChainModal: ({ chainIds }: { chainIds?: number[] }) => (
+vi.mock('@/modules/ui/components/NetworkSelect', () => ({
+  NetworkSelect: ({ chainIds }: { chainIds?: number[] }) => (
     <div data-testid="chain-modal-stub" data-chain-ids={JSON.stringify(chainIds ?? [])} />
   )
 }));

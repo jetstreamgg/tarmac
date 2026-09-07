@@ -74,7 +74,7 @@ vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (action: () => void) => action
 }));
 
-// The card pulls in ChainModal → the full wagmi/network stack; the page test
+// The card pulls in NetworkSelect → the full wagmi/network stack; the page test
 // only asserts composition around it.
 vi.mock('./ConvertCard', () => ({
   ConvertCard: () => <div data-testid="convert-card" />

@@ -1,14 +1,10 @@
 import { ComponentType, MouseEvent, ReactNode, useCallback } from 'react';
 import { useRouterState } from '@tanstack/react-router';
-import { useChainId, useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Convert, Earn, StakeSky, Wallet } from '@/modules/icons';
 import { Intent } from '@/lib/enums';
-import { QueryParams } from '@/lib/constants';
 import { intentToPath, ROUTES, RoutePath } from '@/lib/routes';
 import { AppRoutePath, retainOnNavigate, useRouteIntent } from '@/lib/navigation';
-import { getNetworkOverrideForIntent } from '@/lib/widget-network-map';
-import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 
 /**
@@ -81,26 +77,17 @@ export function useActiveDestinationPath(): RoutePath | null {
  * its own selection_method ('header_nav' desktop, 'mobile_drawer' bottom bar).
  */
 export function useDestinationLinkProps(selectionMethod: 'header_nav' | 'mobile_drawer') {
-  const chainId = useChainId();
-  const chains = useChains();
-  const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
-
-  // Same semantics as the legacy nav: mainnet-only destinations carry the
-  // network switch in the href itself (cmd-click and copy-link included).
-  const searchForIntent = useCallback(
-    (targetIntent: Intent) => (prev: Record<string, string | undefined>) => {
-      const retained = retainOnNavigate(prev);
-      const override = getNetworkOverrideForIntent(targetIntent, chainId, chains);
-      if (override) retained[QueryParams.Network] = override;
-      return retained;
-    },
-    [chainId, chains]
-  );
+  // A mainnet-only destination used to carry its network switch in the href
+  // itself, so cmd-clicking one from an L2 opened a tab already pointed at
+  // mainnet. With `network=` retired there is nothing chain-shaped to put in a
+  // link — the tab arrives and the route guard switches on landing, same end
+  // state a beat later — which is why this no longer varies by destination.
+  const navSearch = retainOnNavigate;
 
   // Modified clicks open a new tab; this tab doesn't navigate, so skip the
   // switching feedback and the nav intent.
   const handleNavClick = useCallback(
-    (targetIntent: Intent, targetPath: RoutePath) => (event: MouseEvent) => {
+    (targetPath: RoutePath) => (event: MouseEvent) => {
       if (
         event.defaultPrevented ||
         event.button !== 0 ||
@@ -112,13 +99,15 @@ export function useDestinationLinkProps(selectionMethod: 'header_nav' | 'mobile_
         return;
       }
       setPendingNavIntent(selectionMethod, targetPath);
-      if (getNetworkOverrideForIntent(targetIntent, chainId, chains)) {
-        setIsSwitchingNetwork(true);
-        setIsAutoSwitching(true);
-      }
+      // The switching feedback used to be raised here, optimistically, because
+      // the href already knew the destination's chain. The route guard decides
+      // that now — and it may well decide not to switch (the visit has already
+      // had its chance, or the chain is right) — so raising the flags on a
+      // click would leave them set with nothing to clear them: only
+      // `useNetworkChangeToast` does, and only on a real chain change.
     },
-    [chainId, chains, setIsSwitchingNetwork, setIsAutoSwitching, selectionMethod]
+    [selectionMethod]
   );
 
-  return { searchForIntent, handleNavClick };
+  return { navSearch, handleNavClick };
 }

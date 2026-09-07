@@ -12,7 +12,6 @@ import { WalletIcon } from '@/modules/ui/components/WalletIcon';
 import { CopyToClipboard } from '@/widgets/shared/components/ui/CopyToClipboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SheetClose } from '@/components/ui/sheet';
-import { NetworkSelector } from './NetworkSelector';
 import { useWalletDrawerAssets } from './useWalletDrawerAssets';
 import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 import { formatAddress } from '@/utils';
@@ -156,7 +155,6 @@ export function WalletPreviewHeader({
             {formatUsd(totalUsd)}
           </Text>
         )}
-        <NetworkSelector compact={mobile} />
       </div>
     </div>
   );

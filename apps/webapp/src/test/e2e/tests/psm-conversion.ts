@@ -110,6 +110,14 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     test('Percentage buttons set correct amounts', async ({ isolatedPage }) => {
       await openConvert(isolatedPage, networkName);
 
+      // The percentage buttons are computed from the wallet balance, so the
+      // balance query settling is this test's real precondition. It only shows
+      // up on the L2s, where `navigateToConvert` switches chain first: the old
+      // drawer-driven switch helper spent several UI round-trips and a drawer
+      // exit animation getting there, which incidentally covered the refetch.
+      // Driving the wallet directly is instant, so the wait has to be stated.
+      await expect(isolatedPage.getByTestId('convert-from-balance')).toHaveText(/Balance: [\d,.]+/);
+
       await isolatedPage.getByTestId('convert-from-percent-100').click();
 
       const originValue = await isolatedPage.getByTestId('convert-from-amount').inputValue();
