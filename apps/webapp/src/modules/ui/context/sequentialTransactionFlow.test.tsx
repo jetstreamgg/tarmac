@@ -440,3 +440,118 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     expect(result.current.currentCallIndex).toBe(1);
   });
 });
+
+// The other half of the same rule: a call the wallet ACCEPTED but the chain
+// reverted. The wallet-rejection path already resumed; the receipt path used to
+// drop the run at any index, so a revert after a mined approve left Retry
+// bounds-checking the shrunk live `calls` and silently doing nothing.
+describe('useSequentialTransactionFlow — retry after an on-chain revert', () => {
+  beforeEach(resetWagmi);
+  afterEach(() => vi.clearAllMocks());
+
+  const lastDispatchedCall = () =>
+    (wagmi.writeContract.mock.calls.at(-1)?.[0] as { functionName?: string } | undefined)?.functionName;
+
+  // Drives [approve, supply] to the point where the approve has mined and the
+  // supply is the dispatched call.
+  function runToSupplyDispatched(calls: Call[]) {
+    const hook = renderHook(({ c }: { c: Call[] }) => useSequentialTransactionFlow({ calls: c }), {
+      initialProps: { c: calls }
+    });
+    act(() => hook.result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    hook.rerender({ c: calls });
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    hook.rerender({ c: calls });
+    return hook;
+  }
+
+  it('a revert AFTER a mined step keeps the run resumable, and Retry re-dispatches the failed leg', () => {
+    const onError = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ c }: { c: Call[] }) => useSequentialTransactionFlow({ calls: c, onError }),
+      { initialProps: { c: [APPROVE, SUPPLY] } }
+    );
+
+    // Approve signed and mined; the supply auto-dispatches.
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender({ c: [APPROVE, SUPPLY] });
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender({ c: [APPROVE, SUPPLY] });
+    expect(result.current.currentCallIndex).toBe(1);
+
+    // The supply is accepted by the wallet but REVERTS on-chain.
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender({ c: [APPROVE, SUPPLY] });
+    act(() => {
+      wagmi.receipt = {
+        isLoading: false,
+        isSuccess: false,
+        error: null,
+        failureReason: new Error('execution reverted')
+      };
+    });
+    // The allowance landed, so the live calls have shrunk past the approve.
+    rerender({ c: [SUPPLY] });
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    // Not stuck reporting "still working" — the run is paused awaiting a retry.
+    expect(result.current.isLoading).toBe(false);
+    // The failed leg is still the current one, so a resume targets it.
+    expect(result.current.currentCallIndex).toBe(1);
+
+    const dispatchesBefore = wagmi.writeContract.mock.calls.length;
+    act(() => result.current.execute());
+    expect(wagmi.writeContract.mock.calls.length).toBe(dispatchesBefore + 1);
+    expect(lastDispatchedCall()).toBe('supply');
+  });
+
+  it('a revert on the FIRST call still drops the snapshot so the next confirm signs the rebuilt call', () => {
+    const { result, rerender } = renderHook(
+      ({ c }: { c: Call[] }) => useSequentialTransactionFlow({ calls: c }),
+      { initialProps: { c: [SUPPLY] } }
+    );
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender({ c: [SUPPLY] });
+    act(() => {
+      wagmi.receipt = {
+        isLoading: false,
+        isSuccess: false,
+        error: null,
+        failureReason: new Error('execution reverted')
+      };
+    });
+
+    // Nothing mined, so the user can go back and edit: the rebuilt call is what
+    // the next confirm must sign.
+    rerender({ c: [makeCall('supply-edited')] });
+    act(() => result.current.execute());
+    expect(lastDispatchedCall()).toBe('supply-edited');
+    expect(result.current.currentCallIndex).toBe(0);
+  });
+
+  // Guards the helper above staying honest about what it set up.
+  it('keeps the frozen sequence while paused after a revert', () => {
+    const { result } = runToSupplyDispatched([APPROVE, SUPPLY]);
+    expect(result.current.currentCallIndex).toBe(1);
+  });
+});

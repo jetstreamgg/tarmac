@@ -64,4 +64,30 @@ describe('useResetPausedRunOnClose', () => {
     go(false, TxStatus.IDLE);
     expect(reset).not.toHaveBeenCalled();
   });
+
+  // The abandon close, not the failure close: the user walks away while a later
+  // leg sits in the wallet. The engine only drops its snapshot when the FIRST
+  // call is rejected, so a run paused mid-sequence survives here — and the next
+  // confirm would resume it, signing the pre-edit amount.
+  it('resets when the modal closes while a later leg is still awaiting the wallet', () => {
+    const reset = vi.fn();
+    const go = renderWith(reset);
+    go(true, TxStatus.IDLE);
+    go(true, TxStatus.INITIALIZED); // leg 1 in the wallet
+    go(true, TxStatus.LOADING); // leg 1 broadcast
+    go(true, TxStatus.INITIALIZED); // leg 1 mined, leg 2 now in the wallet
+    expect(reset).not.toHaveBeenCalled();
+
+    go(false, TxStatus.IDLE); // the user closes rather than answering
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets when the modal closes during the very first wallet prompt', () => {
+    const reset = vi.fn();
+    const go = renderWith(reset);
+    go(true, TxStatus.IDLE);
+    go(true, TxStatus.INITIALIZED);
+    go(false, TxStatus.IDLE);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
 });
