@@ -1348,6 +1348,66 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
   background-image: linear-gradient(var(--color-glassSurface), var(--color-glassSurface));
 }
 
+/* Toasts are captured for the same reason as the navbar -----------------------
+   sonner's toaster is a fixed, portal-free `<ol>` sitting at z-60 in the
+   document, and during a page transition the page's snapshots paint over it in
+   the top layer — a "10,000 USDS supplied!" toast disappears under the sliding
+   pages for the length of the animation. Naming the toaster gives it a group
+   of its own, ordered above the page and navbar groups.
+
+   The name is scoped to a running `page` transition (every animating
+   navigation carries the `page` type — drill/reverse are additive) and, via
+   `:not(.page-transition *)`, to a toaster living OUTSIDE the page: the
+   design-system page mounts a second Toaster inside the page, and two elements
+   sharing a view-transition-name abort the whole transition into an instant
+   swap.
+
+   As with the navbar, the capture restores the layering, not the frost: a
+   captured element's snapshot has no backdrop, so the toast's blur is dead for
+   the ~400ms. Left at that, its translucent tint lets the pages show through
+   sharp (measured: card text legible straight through the toast), so the
+   toast gets the navbar's stand-in below for the length of the transition. */
+@supports selector(:active-view-transition-type(page)) {
+  :root:active-view-transition-type(page) .vt-shell-toaster:not(.page-transition *) {
+    view-transition-name: shell-toaster;
+    /* sonner's <ol> is a zero-height anchor (its toasts are absolutely
+       positioned above its bottom edge), and a zero-height box captures to
+       nothing — measured: the toasts simply vanished for the transition.
+       Grown upward for the duration (bottom stays pinned, so the toasts don't
+       move) so the snapshot has a box to draw them in. */
+    height: 100dvh;
+    pointer-events: none;
+  }
+}
+::view-transition-group(shell-toaster) {
+  /* Above the page (0) and the navbar (1); group stacking is not inherited. */
+  z-index: 2;
+  /* The toaster holds the same box on both routes. */
+  animation: none;
+}
+/* Only the live `new` image is kept: a toast arriving or leaving mid-transition
+   keeps playing sonner's own slide instead of ghosting against a frozen copy. */
+::view-transition-old(shell-toaster) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(shell-toaster) {
+  animation: none;
+  opacity: 1;
+}
+/* The toast's `bg-bgTertiary!` is a LAYERED important (Tailwind's utilities
+   layer), and importance inverts layer order — an unlayered `!important` here
+   loses to it and silently no-ops (measured: computed bg unchanged). Declared
+   in the same layer, later in source, it wins. Page colour under the tint, so
+   the tint composites over the colour exactly as the glass composites over
+   its backdrop; frozen at 150/390ms it lands within a hair of the rest frame. */
+@layer utilities {
+  :root:active-view-transition-type(page) .vt-shell-toaster [data-sonner-toast] {
+    background-color: var(--color-pageBackground) !important;
+    background-image: linear-gradient(var(--color-bgTertiary), var(--color-bgTertiary)) !important;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   :root:active-view-transition-type(page)::view-transition-old(page) {
     animation: 300ms var(--ease-in-out-quart) both page-slide-out;
