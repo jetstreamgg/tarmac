@@ -34,7 +34,12 @@ vi.mock('@/hooks', async importOriginal => {
         name: 'Earn SPK'
       }
     ],
-    isDeprecatedRewardContract: (address: string) => address.toLowerCase() === SKY_FARM.toLowerCase()
+    isDeprecatedRewardContract: (address: string) => address.toLowerCase() === SKY_FARM.toLowerCase(),
+    useMultipleRewardsChartInfo: ({ rewardContractAddresses }: { rewardContractAddresses: string[] }) => ({
+      data: rewardContractAddresses.map(() => [{ totalSupplied: '9630000', rate: '0' }]),
+      isLoading: false,
+      error: null
+    })
   };
 });
 
@@ -80,6 +85,8 @@ describe('useDeprecatedRewardPositions', () => {
     expect(result.current.positions).toHaveLength(1);
     expect(result.current.positions[0].contract.contractAddress).toBe(SKY_FARM);
     expect(result.current.positions[0].balance).toBe(15n * 10n ** 18n);
+    // TVL rides along from the farm's BA Labs series (latest totalSupplied).
+    expect(result.current.positions[0].tvlUsds).toBe(9630000);
     expect(result.current.isLoading).toBe(false);
   });
 

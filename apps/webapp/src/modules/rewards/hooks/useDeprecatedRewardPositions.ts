@@ -3,6 +3,7 @@ import { useChainId, useConnection, useReadContracts } from 'wagmi';
 import {
   isDeprecatedRewardContract,
   useAvailableTokenRewardContracts,
+  useMultipleRewardsChartInfo,
   usdsSkyRewardAbi,
   ZERO_ADDRESS,
   type RewardContract
@@ -10,7 +11,12 @@ import {
 import { familyMainnetId } from '@/utils';
 import { useGeoConfig } from '@/modules/geo-config';
 
-export type DeprecatedRewardPosition = { contract: RewardContract; balance: bigint };
+export type DeprecatedRewardPosition = {
+  contract: RewardContract;
+  balance: bigint;
+  /** Farm TVL in USDS from its BA Labs series (latest `totalSupplied`); undefined until it resolves. */
+  tvlUsds?: number;
+};
 
 /**
  * Deprecated (ended) reward farms the connected user still has USDS supplied
@@ -58,13 +64,30 @@ export function useDeprecatedRewardPositions(): {
     query: { enabled: rewardsAvailable && !!address && deprecatedContracts.length > 0 }
   });
 
-  const positions = useMemo<DeprecatedRewardPosition[]>(() => {
+  const held = useMemo(() => {
     if (!rewardsAvailable || !address || !balances) return [];
     return deprecatedContracts.flatMap((contract, index) => {
       const balance = balances[index]?.result as bigint | undefined;
       return balance !== undefined && balance > 0n ? [{ contract, balance }] : [];
     });
   }, [rewardsAvailable, address, balances, deprecatedContracts]);
+
+  // TVL for the held farms only — the same BA Labs series the marketplace
+  // rows and the farm page read; an array-taking hook, so the call count
+  // stays fixed. An ended farm still has a TVL (the USDS left in it).
+  const { data: charts } = useMultipleRewardsChartInfo({
+    rewardContractAddresses: held.map(({ contract }) => contract.contractAddress)
+  });
+
+  const positions = useMemo<DeprecatedRewardPosition[]>(
+    () =>
+      held.map((position, index) => {
+        const latest = charts?.[index]?.[0];
+        const tvl = latest ? parseFloat(latest.totalSupplied) : NaN;
+        return Number.isFinite(tvl) ? { ...position, tvlUsds: tvl } : position;
+      }),
+    [held, charts]
+  );
 
   return {
     positions,

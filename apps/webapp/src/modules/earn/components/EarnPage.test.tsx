@@ -286,7 +286,8 @@ describe('EarnPage requires-action section', () => {
           rewardToken: { symbol: 'SKY' },
           name: 'Earn SKY'
         },
-        balance: 15n * 10n ** 18n
+        balance: 15n * 10n ** 18n,
+        tvlUsds: 9_630_000
       }
     ],
     isLoading: false
@@ -346,7 +347,13 @@ describe('EarnPage requires-action section', () => {
     expect(row.textContent).toContain('SKY Rewards');
     expect(row.textContent).toContain('Ended');
     expect(row.textContent).toContain('$15');
+    expect(row.textContent).toMatch(/\$9\.63m/i);
     expect(row.textContent).not.toContain('%');
+    // A reward product carries no status ring (that is the matured-PT treatment).
+    expect(row.innerHTML).not.toContain('statusSuccessRing');
+    expect(screen.getByTestId('earn-requires-action-row-matured-0x9c56').innerHTML).toContain(
+      'statusSuccessRing'
+    );
     // Matured markets lead the section; ended farms follow.
     const section = screen.getByTestId('earn-requires-action');
     const ids = Array.from(section.querySelectorAll('[data-testid^="earn-requires-action-row-"]')).map(el =>

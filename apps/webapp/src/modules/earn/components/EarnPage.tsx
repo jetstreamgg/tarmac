@@ -340,9 +340,10 @@ export function EarnPage() {
   );
   const endedRewardItems = useMemo<EarnTableRowItem[]>(
     () =>
-      visibleEndedRewardPositions.map(({ contract, balance }) => {
+      visibleEndedRewardPositions.map(({ contract, balance, tvlUsds }) => {
         // The supply token is USDS on every farm — the position reads at par.
         const usd = valueUsd(contract.supplyToken.symbol, parseFloat(formatUnits(balance, 18)));
+        const tvlUsd = tvlUsds !== undefined ? valueUsd(contract.supplyToken.symbol, tvlUsds) : undefined;
         return {
           id: endedRewardRowId(contract.contractAddress),
           name: rewardContractDisplayName(contract),
@@ -354,7 +355,8 @@ export function EarnPage() {
               showChainIcon={false}
             />
           ),
-          status: 'success' as const,
+          // No status ring: reward products carry none in the marketplace
+          // (the ring is the matured-PT treatment).
           supply: <TokenIconStack symbols={[contract.supplyToken.symbol]} size={12} />,
           statusLabel: (
             <span className="text-statusWarning">
@@ -364,7 +366,7 @@ export function EarnPage() {
           network: <CellNetworks>{[getChainIcon(mainnet.id, 'h-full w-full')]}</CellNetworks>,
           rate: NO_VALUE,
           rate30d: NO_VALUE,
-          tvl: NO_VALUE,
+          tvl: tvlUsd !== undefined ? formatUsd(tvlUsd) : NO_VALUE,
           position: formatUsd(usd),
           ctaLabel: <Trans>Withdraw</Trans>
         };
