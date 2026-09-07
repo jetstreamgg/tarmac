@@ -54,15 +54,17 @@ export function HeaderBadge({
   icon,
   size = 'm',
   className,
-  children
+  children,
+  ...rest
 }: {
   icon?: React.ReactNode;
   size?: keyof typeof HEADER_BADGE_SIZES;
   className?: string;
   children: React.ReactNode;
-}) {
+} & { 'data-testid'?: string }) {
   return (
     <span
+      {...rest}
       className={cn(
         'bg-glassBadge font-circle text-fgPrimary flex w-fit items-center rounded-full font-medium whitespace-nowrap',
         HEADER_BADGE_SIZES[size],

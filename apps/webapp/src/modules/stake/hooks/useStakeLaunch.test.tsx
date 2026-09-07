@@ -175,11 +175,29 @@ const expectedCalldata = (usdsToBorrow: bigint, delegate?: `0x${string}`) =>
 
 describe('buildStakeOpenSteps', () => {
   it('derives the step list from the calldata set (A-Q3: delegate shown honestly)', () => {
-    expect(buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: true, hasDelegate: true })).toEqual([
+    expect(
+      buildStakeOpenSteps({
+        needsSkyAllowance: true,
+        hasBorrow: true,
+        hasReward: true,
+        rewardSymbol: 'SPK',
+        hasDelegate: true
+      })
+    ).toEqual([
       { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
       { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
       { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." },
+      // The selectFarm leg is its own step, in engine order (after draw, before
+      // the delegate leg) — QA 2026-09-07.
+      { label: 'Select reward', tokenSymbol: 'SPK' },
       'Delegate voting power'
+    ]);
+    // The symbol read may still be unresolved at launch: the step stays a bare label.
+    expect(
+      buildStakeOpenSteps({ needsSkyAllowance: false, hasBorrow: false, hasReward: true, hasDelegate: false })
+    ).toEqual([
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      'Select reward'
     ]);
     expect(buildStakeOpenSteps({ needsSkyAllowance: false, hasBorrow: false, hasDelegate: false })).toEqual([
       { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
@@ -259,6 +277,7 @@ describe('useStakeLaunch — launch() config', () => {
       { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
       { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
       { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." },
+      { label: 'Select reward', tokenSymbol: 'SKY' },
       'Delegate voting power'
     ]);
     expect(config.analytics.widgetName).toBe('stake');
@@ -310,17 +329,10 @@ describe('useStakeLaunch — launch() config', () => {
     stakeOnly.unmount();
   });
 
-  it('reuses the legacy getStakeSubtitle msgids for the lifecycle subtitles', () => {
+  it('sets no status subtitles — the step list and toast narrate the transaction', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
-    const subtitles = h.launchMock.mock.calls[0][0].subtitles;
-    expect(subtitles.loading).toBe(
-      'Your transaction is being processed on the blockchain to create your position. Please wait.'
-    );
-    expect(subtitles.success).toBe(
-      "You've borrowed 30,000 USDS by staking 100,000 SKY. Your new position is open."
-    );
-    expect(subtitles.error).toBe('An error occurred while opening your position');
+    expect(h.launchMock.mock.calls[0][0].subtitles).toBeUndefined();
   });
 });

@@ -95,6 +95,12 @@ export type TransactionConfig = {
    * their two screens.
    */
   reviewTitle?: string;
+  /**
+   * Subtitle copy under the title. Flows set only `review` (a first-screen
+   * disclosure); the status entries are unused by design — the step list and
+   * status chip narrate the transaction (Figma 1030:139111), and the toast has
+   * its own `toast` copy below.
+   */
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
   /**
@@ -146,8 +152,9 @@ export type TransactionConfig = {
    * Per-state titles for the toast shown while the modal is minimized (it's hidden,
    * so the toast notifies progress). Flows set amount-aware titles here (e.g.
    * "10,000.00 USDS supplied!"); each falls back to the matching `subtitles` entry,
-   * then `title`. An editable flow pushes these live via `updateModalContent` as the
-   * amount changes.
+   * then `title`. Every flow sets all three (no flow sets status subtitles any
+   * more, so the fallback would otherwise land on the bare title). An editable
+   * flow pushes these live via `updateModalContent` as the amount changes.
    */
   toast?: {
     loading?: string;

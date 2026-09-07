@@ -3,6 +3,7 @@ import { useChains } from 'wagmi';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
+import { HeaderBadge } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { getChainIcon } from '@/utils';
 import { useAppChainId, useIsSafeWallet } from '@/hooks';
@@ -26,6 +27,70 @@ type NetworkSelectProps = {
    */
   children?: React.ReactNode;
 };
+
+/**
+ * The chain a network control shows for a product, and whether it can switch.
+ *
+ * Reads the wallet's chain, not wagmi's pinned one: a wallet parked on a chain
+ * the app doesn't configure leaves `useChainId()` naming the last configured
+ * chain, which would read here as "the product's chain is the wallet's" and
+ * make the dropdown inert. Same derivation the transaction guard uses.
+ *
+ * Shown chain: the wallet's when the product runs there, else the product's
+ * own first chain. `selectValue` is what the dropdown SELECTS — Radix swallows
+ * a pick of the already-selected value, so when the wallet is OFF the product's
+ * chains nothing is selected and picking the shown chain still asks the wallet.
+ * That is the escape hatch after a declined automatic switch.
+ *
+ * `isStatic`: a single-chain product has nothing to offer, and a Safe's chain
+ * is fixed by the Safe app it runs inside — either way there is no control.
+ */
+function useNetworkSelectChain(chainIds: number[]) {
+  const walletChainId = useAppChainId();
+  const chains = useChains();
+  const isSafeWallet = useIsSafeWallet();
+
+  const onProductChain = chainIds.includes(walletChainId);
+  const activeChainId = onProductChain ? walletChainId : (chainIds[0] ?? walletChainId);
+  const activeChainName = chains.find(chain => chain.id === activeChainId)?.name ?? 'Ethereum';
+  const selectValue = onProductChain ? String(walletChainId) : '';
+  const isStatic = isSafeWallet || chainIds.length <= 1;
+
+  return { activeChainId, activeChainName, selectValue, isStatic };
+}
+
+/** Whether `NetworkSelect` would render static (no switch to offer) for these chains. */
+export function useIsNetworkSelectStatic(chainIds: number[]): boolean {
+  return useNetworkSelectChain(chainIds).isStatic;
+}
+
+/**
+ * The phone-tier stand-in for a static network control: the DS Badges /
+ * Illustration title-suffix pill (Figma 1295:20810 — "SKY Staking ⟠ Ethereum")
+ * naming the product's chain beside the title. A page that runs on one chain
+ * has nothing to switch, so a full-width pill row under the title is an empty
+ * control; this states the chain as a fact instead. `HeaderBadge s` already IS
+ * the comp (4px inset, 16px icon, Label 6), so nothing is restyled here.
+ */
+export function NetworkBadge({
+  chainIds,
+  dataTestId = 'network-badge'
+}: {
+  chainIds: number[];
+  dataTestId?: string;
+}) {
+  const { activeChainId, activeChainName } = useNetworkSelectChain(chainIds);
+  return (
+    <HeaderBadge
+      size="s"
+      icon={getChainIcon(activeChainId, 'h-4 w-4')}
+      className="shrink-0"
+      data-testid={dataTestId}
+    >
+      {activeChainName}
+    </HeaderBadge>
+  );
+}
 
 /**
  * The network switch control on a product page and in a transaction modal's
@@ -56,27 +121,8 @@ function NetworkSelectView({
   dataTestId = 'network-select',
   children
 }: NetworkSelectProps & { onSelect: (chainId: number) => void }) {
-  // The wallet's chain, not wagmi's pinned one: a wallet parked on a chain the
-  // app doesn't configure leaves `useChainId()` naming the last configured
-  // chain, which would read here as "the product's chain is the wallet's" and
-  // make the dropdown inert (see below). Same derivation the transaction
-  // guard uses.
-  const walletChainId = useAppChainId();
   const chains = useChains();
-  const isSafeWallet = useIsSafeWallet();
-
-  // The chain this surface is showing: the wallet's when the product runs
-  // there, else the product's own first chain.
-  const onProductChain = chainIds.includes(walletChainId);
-  const activeChainId = onProductChain ? walletChainId : (chainIds[0] ?? walletChainId);
-  const activeChainName = chains.find(chain => chain.id === activeChainId)?.name ?? 'Ethereum';
-  // Radix swallows a pick of the already-selected value. When the wallet is
-  // OFF the product's chains the pill shows the product's first chain, but
-  // nothing is selected — so picking that chain still asks the wallet for it.
-  // That is the escape hatch after a declined automatic switch.
-  const selectValue = onProductChain ? String(walletChainId) : '';
-
-  const isStatic = isSafeWallet || chainIds.length <= 1;
+  const { activeChainId, activeChainName, selectValue, isStatic } = useNetworkSelectChain(chainIds);
 
   // A custom trigger body brings its own looks, so the trigger gets out of its
   // way entirely: no pill recipe, and none of SelectTrigger's own layout.

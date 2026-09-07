@@ -4,7 +4,6 @@ import { useChainId } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { i18n } from '@lingui/core';
 import { formatNumber } from '@/utils';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { TxStatus } from '@/widgets';
@@ -22,7 +21,6 @@ import type { ClaimableReward } from '@/modules/claim/types';
 import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 // Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
-import { claimSubtitle } from '../lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 /** SKY first (legacy dropdown sort), stable otherwise — the claim-execution order. */
@@ -240,11 +238,6 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
       supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
       // Figma 1036:214007 titles the wallet screen "Confirm claim".
       transactionTitle: t`Confirm claim`,
-      subtitles: {
-        loading: i18n._(claimSubtitle[TxStatus.LOADING]),
-        success: i18n._(claimSubtitle[TxStatus.SUCCESS]),
-        error: i18n._(claimSubtitle[TxStatus.ERROR])
-      },
       // Toasts reuse the legacy claim notification copy (C6).
       toast: {
         loading: t`Claiming rewards`,

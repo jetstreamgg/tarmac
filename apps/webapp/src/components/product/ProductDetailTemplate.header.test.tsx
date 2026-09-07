@@ -1,0 +1,118 @@
+import { render, screen, cleanup } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { I18nProvider } from '@lingui/react';
+import { i18n } from '@lingui/core';
+import { ProductDetailTemplate } from './ProductDetailTemplate';
+
+i18n.activate('en');
+
+// The header's network control by tier and chain count (item 8 of the Sep 7
+// QA round): a single-chain product on a phone states its chain as the DS
+// title-suffix badge beside the title (1295:20810) instead of an empty
+// control-shaped row; several chains keep the dropdown (a full-width labelled
+// row on phones, M6.3 486:20732; a pill from md up).
+const h = vi.hoisted(() => ({ isMobile: false }));
+
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return {
+    ...actual,
+    useBreakpointIndex: () => ({ bpi: h.isMobile ? actual.BP.sm : actual.BP.desktop })
+  };
+});
+vi.mock('@/lib/navigation', () => ({
+  AppLink: ({ children }: { children: React.ReactNode }) => <a>{children}</a>
+}));
+vi.mock('@/modules/ui/components/NetworkSelect', () => ({
+  NetworkSelect: ({ triggerClassName, dataTestId }: { triggerClassName?: string; dataTestId?: string }) => (
+    <div data-testid={dataTestId} data-kind="select" data-trigger-class={triggerClassName ?? ''} />
+  ),
+  NetworkBadge: ({ dataTestId }: { dataTestId?: string }) => (
+    <div data-testid={dataTestId} data-kind="badge" />
+  ),
+  useIsNetworkSelectStatic: (chainIds: number[]) => chainIds.length <= 1
+}));
+
+const renderHeader = (chainIds?: number[]) =>
+  render(
+    <I18nProvider i18n={i18n}>
+      <ProductDetailTemplate
+        backHref="/earn"
+        token={{ icon: <span /> }}
+        title="SPK Rewards"
+        networkChainIds={chainIds}
+        chart={<div />}
+        position={<div />}
+        details={[]}
+        about={{ body: <div /> }}
+        transactions={<div />}
+      />
+    </I18nProvider>
+  );
+
+afterEach(() => {
+  h.isMobile = false;
+  cleanup();
+});
+
+describe('ProductDetailTemplate header network control', () => {
+  it('shows the title-suffix badge for a single-chain product on a phone', () => {
+    h.isMobile = true;
+    renderHeader([1]);
+
+    const control = screen.getByTestId('product-detail-network');
+    expect(control.getAttribute('data-kind')).toBe('badge');
+    // Beside the title, in the same row.
+    expect(control.parentElement?.textContent).toContain('SPK Rewards');
+  });
+
+  it('hands a composite title the badge to place itself', () => {
+    h.isMobile = true;
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductDetailTemplate
+          backHref="/earn"
+          token={{ icon: <span /> }}
+          title={({ networkBadge }) => (
+            <span data-testid="composite-title">
+              USDS Flagship
+              {networkBadge}
+            </span>
+          )}
+          networkChainIds={[1]}
+          chart={<div />}
+          position={<div />}
+          details={[]}
+          about={{ body: <div /> }}
+          transactions={<div />}
+        />
+      </I18nProvider>
+    );
+
+    const control = screen.getByTestId('product-detail-network');
+    expect(control.getAttribute('data-kind')).toBe('badge');
+    expect(screen.getByTestId('composite-title').contains(control)).toBe(true);
+    expect(screen.getAllByTestId('product-detail-network')).toHaveLength(1);
+  });
+
+  it('keeps the dropdown as a full-width row for a multi-chain product on a phone', () => {
+    h.isMobile = true;
+    renderHeader([1, 8453]);
+
+    const control = screen.getByTestId('product-detail-network');
+    expect(control.getAttribute('data-kind')).toBe('select');
+    expect(control.getAttribute('data-trigger-class')).toContain('w-full');
+  });
+
+  it('keeps the pill from md up regardless of chain count', () => {
+    renderHeader([1]);
+    const control = screen.getByTestId('product-detail-network');
+    expect(control.getAttribute('data-kind')).toBe('select');
+    expect(control.getAttribute('data-trigger-class')).toBe('');
+  });
+
+  it('renders no network control when no chains are given', () => {
+    renderHeader(undefined);
+    expect(screen.queryByTestId('product-detail-network')).toBeNull();
+  });
+});

@@ -247,8 +247,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     };
   }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
 
-  // Toast headlines — without them the toast falls back to the success
-  // SUBTITLE above, a full sentence where the toast wants a label. Success
+  // Toast headlines — without them the toast falls back to the modal title,
+  // which is not an outcome. Success
   // names the quoted receive leg ("Claimed 1,012.30 USDS"), formatted like the
   // review's receive row. Live like `usdValue`/`analytics` (the output token
   // stays changeable after launch) and frozen with them once the tx leaves
@@ -320,11 +320,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
       title: t`Claim matured position`,
       transactionTitle: t`Confirm in the wallet`,
-      subtitles: {
-        loading: t`Your claim is being processed on the blockchain. Please wait.`,
-        success: t`You've successfully claimed your matured position.`,
-        error: t`An error occurred while claiming your matured position.`
-      },
       toast,
       transactionContent,
       errorMessage: prepareErrorMessage,

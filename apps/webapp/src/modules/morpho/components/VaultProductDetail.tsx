@@ -15,7 +15,6 @@ import {
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { Morpho } from '@/widgets';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { VaultDetailChart } from './VaultDetailChart';
@@ -159,7 +158,7 @@ export function VaultProductDetail({
         ),
         status: vault.provider === 'morpho' ? 'info' : undefined
       }}
-      title={
+      title={({ networkBadge }) => (
         <span className="flex flex-wrap items-center gap-2">
           {vault.name}
           {/* Only Morpho-provided vaults carry the badge — the sUSDT vault runs
@@ -169,15 +168,11 @@ export function VaultProductDetail({
               <Trans>Powered by Morpho</Trans>
             </HeaderBadge>
           )}
+          {networkBadge}
         </span>
-      }
-      networkSelector={
-        <NetworkSelect
-          chainIds={networks}
-          labelClassName="hidden sm:block"
-          dataTestId="vault-detail-network"
-        />
-      }
+      )}
+      networkChainIds={networks}
+      networkTestId="vault-detail-network"
       chart={<VaultDetailChart vaultAddress={vaultAddress} assetToken={vault.assetToken} />}
       position={
         <VaultPositionCard

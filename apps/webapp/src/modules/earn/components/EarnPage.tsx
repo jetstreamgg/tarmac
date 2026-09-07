@@ -7,6 +7,8 @@ import {
   useEarnMarketplace,
   EarnProductKind,
   productNetworks,
+  rewardContractDisplayName,
+  rewardsRiskProfile,
   RISK_TIER_BY_PROFILE,
   useUsdsDaiData,
   type EarnProductRow
@@ -15,13 +17,14 @@ import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { usePendleUsdValue } from '@/widgets';
 import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { useDeprecatedRewardPositions } from '@/modules/rewards/hooks/useDeprecatedRewardPositions';
 import { getChainIcon } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { retainOnNavigate } from '@/lib/navigation';
-import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
+import { EARN_OPPORTUNITIES_HASH, intentToPath, ROUTES } from '@/lib/routes';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
@@ -52,6 +55,9 @@ import { NO_VALUE } from '@/lib/constants';
 
 /** Stable identity so the geo split doesn't rebuild the tables every render. */
 const EMPTY_ROWS: EarnProductRow[] = [];
+
+/** Row id of an ended reward farm in the "Requires action" section. */
+const endedRewardRowId = (contractAddress: string) => `ended-${contractAddress.toLowerCase()}`;
 
 const formatUsd = (totalUsd?: number) => (totalUsd !== undefined ? formatUsdCompact(totalUsd) : NO_VALUE);
 
@@ -312,7 +318,60 @@ export function EarnPage() {
       ),
     [maturedPositions, filters, chainSlugById, connectedChainId]
   );
-  const requiresActionItems = useMemo<EarnTableRowItem[]>(
+  // Ended reward farms the user still has USDS in (the deprecated USDS → SKY
+  // farm): the marketplace drops them from the opportunities rows, so this
+  // section is their only Earn surface too. Same filter treatment as the
+  // matured markets, on the farm's registry attributes.
+  const { positions: endedRewardPositions } = useDeprecatedRewardPositions();
+  const visibleEndedRewardPositions = useMemo(
+    () =>
+      filterEarnRows(
+        endedRewardPositions.map(position => ({
+          ...position,
+          risk: RISK_TIER_BY_PROFILE[rewardsRiskProfile(position.contract.rewardToken.symbol)],
+          networks: productNetworks(Intent.REWARDS_INTENT, getSupportedChainIds(connectedChainId)),
+          supplyTokens: [position.contract.supplyToken.symbol],
+          kind: 'rewards' as const
+        })),
+        filters,
+        chainSlugById
+      ),
+    [endedRewardPositions, filters, chainSlugById, connectedChainId]
+  );
+  const endedRewardItems = useMemo<EarnTableRowItem[]>(
+    () =>
+      visibleEndedRewardPositions.map(({ contract, balance }) => {
+        // The supply token is USDS on every farm — the position reads at par.
+        const usd = valueUsd(contract.supplyToken.symbol, parseFloat(formatUnits(balance, 18)));
+        return {
+          id: endedRewardRowId(contract.contractAddress),
+          name: rewardContractDisplayName(contract),
+          icon: (
+            <TokenIcon
+              token={{ symbol: contract.rewardToken.symbol }}
+              width={28}
+              className="h-7 w-7"
+              showChainIcon={false}
+            />
+          ),
+          status: 'success' as const,
+          supply: <TokenIconStack symbols={[contract.supplyToken.symbol]} size={12} />,
+          statusLabel: (
+            <span className="text-statusWarning">
+              <Trans>Ended</Trans>
+            </span>
+          ),
+          network: <CellNetworks>{[getChainIcon(mainnet.id, 'h-full w-full')]}</CellNetworks>,
+          rate: NO_VALUE,
+          rate30d: NO_VALUE,
+          tvl: NO_VALUE,
+          position: formatUsd(usd),
+          ctaLabel: <Trans>Withdraw</Trans>
+        };
+      }),
+    [visibleEndedRewardPositions, valueUsd]
+  );
+  const maturedItems = useMemo<EarnTableRowItem[]>(
     () =>
       visibleMaturedPositions.map(({ market, ptBalance }) => {
         // 1 PT redeems 1 underlying (1 USDS on pegged markets) at expiry.
@@ -348,15 +407,27 @@ export function EarnPage() {
       }),
     [visibleMaturedPositions, valueUsd]
   );
+  const requiresActionItems = useMemo(
+    () => [...maturedItems, ...endedRewardItems],
+    [maturedItems, endedRewardItems]
+  );
 
-  // Rows route to the market's detail page, like every other row in this table
-  // — a matured market keeps its page, and the claim card is its position slot.
+  // Rows route to the product's detail page, like every other row in this
+  // table — a matured market keeps its page (the claim card is its position
+  // slot), and an ended farm keeps its withdraw/claim-only page.
   const handleRequiresActionSelect = (id: string) => {
-    const position = maturedPositions.find(
+    const matured = maturedPositions.find(
       ({ market }) => `matured-${market.marketAddress.toLowerCase()}` === id
     );
-    if (!position) return;
-    const detailPath = `${ROUTES.EARN_FIXED}/${position.market.slug}`;
+    const ended = endedRewardPositions.find(
+      ({ contract }) => endedRewardRowId(contract.contractAddress) === id
+    );
+    const detailPath = matured
+      ? `${ROUTES.EARN_FIXED}/${matured.market.slug}`
+      : ended
+        ? intentToPath(Intent.REWARDS_INTENT, ended.contract.contractAddress)
+        : null;
+    if (!detailPath) return;
     setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
   };

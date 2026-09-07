@@ -192,8 +192,9 @@ describe('StakeClaimModal', () => {
     const config = launchConfig();
     expect(config.title).toBe('Claim rewards');
     expect(config.transactionTitle).toBe('Confirm claim');
-    expect(config.subtitles.loading).toBe('Your claim is being processed on the blockchain. Please wait.');
-    expect(config.subtitles.success).toBe('You’ve claimed your rewards');
+    // No status subtitles: the wallet/status screens narrate through the
+    // step list and the toast (Design QA, Sep 2026).
+    expect(config.subtitles).toBeUndefined();
     expect(config.toast).toEqual({
       loading: 'Claiming rewards',
       success: 'Claim successful',

@@ -230,10 +230,11 @@ describe('buildStakeManageSteps', () => {
         hasWipe: false,
         hasBorrow: false,
         hasRewardChange: true,
+        rewardSymbol: 'SPK',
         hasDelegateChange: true
       })
     ).toEqual([
-      'Change reward',
+      { label: 'Change reward', tokenSymbol: 'SPK' },
       'Change delegate',
       { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
     ]);
@@ -462,7 +463,7 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
     act(() => rewardOnly.result.current.launch());
     expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm reward change');
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Change reward']);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([{ label: 'Change reward', tokenSymbol: 'SKY' }]);
     expect(h.launchMock.mock.calls[0][0].analytics.data.selectedRewardContract).toBe(SKY_REWARD_CONTRACT);
     rewardOnly.unmount();
   });
@@ -514,20 +515,14 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
   });
 
-  it('reuses the legacy MANAGE msgids for subtitles and flags the exit wording', () => {
+  it('sets no status subtitles and carries the manage toast copy', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
     const { subtitles, toast } = h.launchMock.mock.calls[0][0];
-    expect(subtitles.loading).toBe(
-      'Your transaction is being processed on the blockchain to change your position. Please wait.'
-    );
-    // Legacy quirk preserved: the free+wipe success copy says "exit" even for a
-    // partial withdraw+repay (getStakeSubtitle branches on presence, not size).
-    expect(subtitles.success).toBe(
-      "You've unstaked 55,000 SKY and repaid 30,000 USDS to exit your position."
-    );
-    expect(subtitles.error).toBe('An error occurred while changing your position');
+    // The wallet/status screens narrate through the step list and the toast
+    // (Design QA, Sep 2026) — no per-status sentence under the title.
+    expect(subtitles).toBeUndefined();
     expect(toast).toEqual({
       loading: 'Changing position',
       success: 'Your position is updated!',

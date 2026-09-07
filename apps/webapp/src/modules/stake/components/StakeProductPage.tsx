@@ -1,13 +1,15 @@
 import { useCallback, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { useRouterState } from '@tanstack/react-router';
 import { useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
 import { BP, useBreakpointIndex, useProductNetworks } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
+import { ROUTES } from '@/lib/routes';
 import { useAppSearchParams } from '@/lib/navigation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
+import { NetworkBadge, NetworkSelect, useIsNetworkSelectStatic } from '@/modules/ui/components/NetworkSelect';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -52,7 +54,23 @@ export function StakeProductPage() {
   const { data: positions, isLoading: positionsLoading } = useStakeUserPositions();
   const knownEmptyPositions = !positionsLoading && positions?.length === 0;
   const defaultTab: StakeTab = !address || knownEmptyPositions ? 'statistics' : 'positions';
-  const tab = parseStakeTab(searchParams.get(QueryParams.Tab), defaultTab);
+  const paramTab = parseStakeTab(searchParams.get(QueryParams.Tab), defaultTab);
+  // The tab shown while the page is on its way OUT. The router commits the next
+  // location (pathname AND search) a render before the route matches swap, so
+  // this page renders once more against the destination's search — which has
+  // no `tab` — and fell back to the default tab in that render. That frame is
+  // what the view transition captures as the outgoing snapshot, so leaving
+  // from About showed the page snapping to Statistics/My positions before it
+  // slid away (measured: ~40ms of default-tab frames between the pushState
+  // and startViewTransition). Latch the last tab picked while the path was
+  // still ours and keep drawing it once it isn't. Held in state, adjusted
+  // during render (react.dev's previous-value pattern), not a ref — the value
+  // is read in this same render.
+  const pathname = useRouterState({ select: s => s.location.pathname });
+  const leaving = pathname !== ROUTES.STAKE && !pathname.startsWith(`${ROUTES.STAKE}/`);
+  const [heldTab, setHeldTab] = useState<StakeTab>(paramTab);
+  if (!leaving && heldTab !== paramTab) setHeldTab(paramTab);
+  const tab = leaving ? heldTab : paramTab;
   // Route-driven overlays (Architecture §2.1): the F4 takeover mounts on
   // `flow=open`, the F5 manage flow (details modal ⇄ manage sheet) on
   // `flow=manage&urn_index=N`; closing returns to a clean URL.
@@ -100,6 +118,7 @@ export function StakeProductPage() {
   // label in the compact xs recipe — superseding the M3 icon-only treatment.
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
+  const networkIsStatic = useIsNetworkSelectStatic(networks);
 
   return (
     // Desktop comp 1222:15123: corrected measurement (Figma Annotations R2
@@ -120,19 +139,29 @@ export function StakeProductPage() {
               <TokenIcon token={{ symbol: 'SKY' }} width={52} showChainIcon={false} />
             </IconboxStatus>
           </div>
-          <PageHeading
-            size="lg"
-            className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
-          >
-            <Trans>SKY Staking</Trans>
-          </PageHeading>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            <PageHeading
+              size="lg"
+              className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
+            >
+              <Trans>SKY Staking</Trans>
+            </PageHeading>
+            {/* Phone comp 1295:20810: Staking runs on one chain, so the phone
+                header states it as the DS title-suffix badge beside the title
+                instead of a control-shaped pill with nothing to switch. Where
+                a config lists several chains (dev's Tenderly fork) the
+                dropdown stays. */}
+            {isMobile && networkIsStatic && <NetworkBadge chainIds={networks} dataTestId="stake-network" />}
+          </div>
         </div>
-        <NetworkSelect
-          chainIds={networks}
-          size={isMobile ? 'xs' : undefined}
-          triggerClassName="h-8 md:h-10"
-          dataTestId="stake-network"
-        />
+        {!(isMobile && networkIsStatic) && (
+          <NetworkSelect
+            chainIds={networks}
+            size={isMobile ? 'xs' : undefined}
+            triggerClassName="h-8 md:h-10"
+            dataTestId="stake-network"
+          />
+        )}
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>

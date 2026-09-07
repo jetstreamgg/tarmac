@@ -321,9 +321,9 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await interceptAndRejectTransactions(isolatedPage, 0, true);
       await confirm.click();
 
-      await expect(isolatedPage.getByText('An error occurred while converting your funds.')).toBeVisible({
-        timeout: 60_000
-      });
+      // The failure surfaces in the step list (failed row + inline retry) and the
+      // status chip — there is no status subtitle any more (Design QA, Sep 2026).
+      await expect(isolatedPage.getByText('Transaction failed')).toBeVisible({ timeout: 60_000 });
       await expect(isolatedPage.getByRole('button', { name: 'Try again' })).toBeVisible();
 
       // Back returns to the review screen with the breakdown intact

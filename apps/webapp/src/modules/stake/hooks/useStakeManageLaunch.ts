@@ -13,7 +13,6 @@ import {
   useStakeUrnSelectedVoteDelegate,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -22,7 +21,7 @@ import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionL
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 // Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
-import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
+import { getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import {
   calculateStakeApprovalAmounts,
@@ -56,6 +55,7 @@ export function buildStakeManageSteps({
   hasWipe,
   hasBorrow,
   hasRewardChange,
+  rewardSymbol,
   hasDelegateChange,
   claimSymbols
 }: {
@@ -66,6 +66,8 @@ export function buildStakeManageSteps({
   hasWipe: boolean;
   hasBorrow: boolean;
   hasRewardChange: boolean;
+  /** The staged farm's reward-token symbol, once resolved; labels the Change reward chip. */
+  rewardSymbol?: string;
   hasDelegateChange: boolean;
   /** Display symbols for the getReward legs, aligned to the engine's free-before-claim order. */
   claimSymbols?: string[];
@@ -85,7 +87,8 @@ export function buildStakeManageSteps({
       tokenSymbol: symbol,
       failureDetail: stepFailureDetail.claim(symbol)
     })),
-    hasRewardChange && t`Change reward`,
+    hasRewardChange &&
+      (rewardSymbol ? { label: t`Change reward`, tokenSymbol: rewardSymbol } : t`Change reward`),
     hasDelegateChange && t`Change delegate`,
     hasLock && { label: t`Stake`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.stake('SKY') },
     hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.borrow('USDS') }
@@ -262,6 +265,9 @@ export function useStakeManageLaunch({
   const hasRewardChange = !!needsRewardUpdate(urnAddress, effectiveRewardContract, urnSelectedRewardContract);
   const hasDelegateChange = !!needsDelegateUpdate(urnAddress, selectedDelegate, urnSelectedVoteDelegate);
 
+  const { data: rewardContractTokens } = useRewardContractTokens(effectiveRewardContract);
+  const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
+
   const steps = buildStakeManageSteps({
     needsSkyAllowance,
     needsUsdsAllowance,
@@ -270,12 +276,10 @@ export function useStakeManageLaunch({
     hasWipe,
     hasBorrow,
     hasRewardChange,
+    rewardSymbol: hasRewardChange ? selectedRewardSymbol : undefined,
     hasDelegateChange,
     claimSymbols
   });
-
-  const { data: rewardContractTokens } = useRewardContractTokens(effectiveRewardContract);
-  const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
 
   const isDelegateOnly =
     hasDelegateChange && !hasLock && !hasFree && !hasWipe && !hasBorrow && !hasRewardChange;
@@ -298,11 +302,6 @@ export function useStakeManageLaunch({
   );
 
   const launch = useCallback(() => {
-    const formattedLock = hasLock ? formatBigInt(skyToLock) : undefined;
-    const formattedFree = hasFree ? formatBigInt(skyToFree) : undefined;
-    const formattedBorrow = hasBorrow ? formatBigInt(usdsToBorrow) : undefined;
-    const formattedWipe = hasWipe ? formatBigInt(usdsToWipe) : undefined;
-
     // Legacy stakeData shape (M15): signed amount collapses lock/free, signed
     // borrowAmount collapses borrow/repay; manage carries the urn index.
     const skyAmount = hasLock
@@ -347,21 +346,6 @@ export function useStakeManageLaunch({
             ? t`Confirm borrow`
             : t`Confirm`,
       transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, StakeFlow.MANAGE)),
-      subtitles: {
-        loading: i18n._(getStakeSubtitle({ flow: StakeFlow.MANAGE, txStatus: TxStatus.LOADING })),
-        success: i18n._(
-          getStakeSubtitle({
-            flow: StakeFlow.MANAGE,
-            txStatus: TxStatus.SUCCESS,
-            collateralToLock: formattedLock,
-            borrowAmount: formattedBorrow,
-            collateralToFree: formattedFree,
-            borrowToRepay: formattedWipe,
-            selectedToken: 'SKY'
-          })
-        ),
-        error: i18n._(getStakeSubtitle({ flow: StakeFlow.MANAGE, txStatus: TxStatus.ERROR }))
-      },
       // Manage toast copy is not in the UX file — flagged on APP-312 (M16).
       toast: {
         loading: t`Changing position`,

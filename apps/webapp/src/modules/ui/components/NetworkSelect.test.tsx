@@ -1,6 +1,7 @@
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NetworkSelect } from './NetworkSelect';
+import { NetworkBadge, NetworkSelect, useIsNetworkSelectStatic } from './NetworkSelect';
+import { renderHook } from '@testing-library/react';
 
 // The two rules this control adds over the ChainModal it replaced: a
 // single-chain product offers no dropdown, and the pill names the chain the
@@ -99,6 +100,28 @@ describe('NetworkSelect', () => {
     render(<NetworkSelect chainIds={[1, 8453]} dataTestId="net" />);
 
     expect(screen.getByTestId('net').tagName).toBe('SPAN');
+  });
+});
+
+// The phone-tier stand-in for a static control (1295:20810): the chain named
+// as a title-suffix badge, not a control-shaped pill with nothing to switch.
+describe('NetworkBadge + useIsNetworkSelectStatic', () => {
+  it('is static for one chain or a Safe wallet, interactive otherwise', () => {
+    expect(renderHook(() => useIsNetworkSelectStatic([1])).result.current).toBe(true);
+    expect(renderHook(() => useIsNetworkSelectStatic([1, 8453])).result.current).toBe(false);
+    mocks.isSafeWallet = true;
+    expect(renderHook(() => useIsNetworkSelectStatic([1, 8453])).result.current).toBe(true);
+  });
+
+  it('names the product’s chain as a plain badge, never the wallet’s', () => {
+    mocks.walletChainId = 42161;
+    render(<NetworkBadge chainIds={[1]} dataTestId="badge" />);
+
+    const badge = screen.getByTestId('badge');
+    expect(badge.tagName).toBe('SPAN');
+    expect(badge.textContent).toContain('Ethereum');
+    expect(badge.querySelector('svg')).toBeTruthy();
+    expect(badge.querySelector('.lucide-chevron-down')).toBeNull();
   });
 });
 

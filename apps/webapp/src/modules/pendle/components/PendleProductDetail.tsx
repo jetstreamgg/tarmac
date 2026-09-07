@@ -6,7 +6,6 @@ import { Intent } from '@/lib/enums';
 import { type PendleMarketConfig, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import {
@@ -149,7 +148,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         ),
         status: 'success'
       }}
-      title={
+      title={({ networkBadge }) => (
         <span className="flex flex-col gap-1">
           <span className="flex flex-wrap items-center gap-2">
             {market.name}
@@ -158,6 +157,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
             <HeaderBadge size="s" icon={<img src="/images/pendle_logo.png" alt="" className="size-4" />}>
               <Trans>Powered by Pendle</Trans>
             </HeaderBadge>
+            {networkBadge}
           </span>
           {/* The DS date line under the title (5120:19542) is Body 6, so it
               opts back out of the heading's Circular styling. */}
@@ -166,14 +166,8 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
             {remainingSeconds > 0 && <> · {formatTimeLeft(remainingSeconds)}</>}
           </span>
         </span>
-      }
-      networkSelector={
-        <NetworkSelect
-          chainIds={networks}
-          labelClassName="hidden sm:block"
-          dataTestId="product-detail-network"
-        />
-      }
+      )}
+      networkChainIds={networks}
       chart={<PendleDetailChart market={market} />}
       position={<PendlePositionCard market={market} />}
       details={details}

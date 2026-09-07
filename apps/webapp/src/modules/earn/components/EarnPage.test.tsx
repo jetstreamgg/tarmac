@@ -40,6 +40,14 @@ vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
   usePendleMaturedNetworkSwitch: () => undefined
 }));
 
+// Ended reward farms the user still holds — the section's other source.
+const ended = vi.hoisted(() => ({
+  current: { positions: [] as { contract: Record<string, unknown>; balance: bigint }[], isLoading: false }
+}));
+vi.mock('@/modules/rewards/hooks/useDeprecatedRewardPositions', () => ({
+  useDeprecatedRewardPositions: () => ended.current
+}));
+
 vi.mock('@/widgets', async importOriginal => {
   const actual = await importOriginal<typeof import('@/widgets')>();
   return { ...actual, usePendleUsdValue: () => (_symbol: string, amount: number) => amount };
@@ -268,8 +276,25 @@ describe('EarnPage requires-action section', () => {
     ]
   };
 
+  const ENDED = {
+    positions: [
+      {
+        contract: {
+          contractAddress: '0x0650CAF159C5A49f711e8169D4336ECB9b950275' as `0x${string}`,
+          chainId: 1,
+          supplyToken: { symbol: 'USDS' },
+          rewardToken: { symbol: 'SKY' },
+          name: 'Earn SKY'
+        },
+        balance: 15n * 10n ** 18n
+      }
+    ],
+    isLoading: false
+  };
+
   beforeEach(() => {
     matured.current = { maturedPositions: [] };
+    ended.current = { positions: [], isLoading: false };
   });
 
   it('stays hidden while the user holds nothing matured', async () => {
@@ -307,6 +332,49 @@ describe('EarnPage requires-action section', () => {
     renderPage('/earn?token=usdc');
     await screen.findByText('Requires action');
     expect(screen.getByTestId('earn-requires-action-row-matured-0x9c56')).toBeTruthy();
+  });
+
+  it('lists an ended reward farm the user still holds, withdraw-only, after the matured rows', async () => {
+    matured.current = MATURED as typeof matured.current;
+    ended.current = ENDED as typeof ended.current;
+    renderPage();
+    await screen.findByText('Requires action');
+
+    const row = screen.getByTestId(
+      'earn-requires-action-row-ended-0x0650caf159c5a49f711e8169d4336ecb9b950275'
+    );
+    expect(row.textContent).toContain('SKY Rewards');
+    expect(row.textContent).toContain('Ended');
+    expect(row.textContent).toContain('$15');
+    expect(row.textContent).not.toContain('%');
+    // Matured markets lead the section; ended farms follow.
+    const section = screen.getByTestId('earn-requires-action');
+    const ids = Array.from(section.querySelectorAll('[data-testid^="earn-requires-action-row-"]')).map(el =>
+      el.getAttribute('data-testid')
+    );
+    expect(ids[0]).toBe('earn-requires-action-row-matured-0x9c56');
+    expect(ids[1]).toContain('ended-');
+  });
+
+  it('hides an ended farm under a filter its registry attributes miss, like the matured rows', async () => {
+    ended.current = ENDED as typeof ended.current;
+    // The farm accepted USDS only, so a USDC filter drops it — and the section.
+    renderPage('/earn?token=usdc');
+    await screen.findByText('Earn Opportunities');
+    expect(screen.queryByTestId('earn-requires-action')).toBeNull();
+  });
+
+  it('routes an ended farm row to its withdraw-only detail page', async () => {
+    ended.current = ENDED as typeof ended.current;
+    const router = renderPage();
+    await screen.findByText('Requires action');
+
+    fireEvent.click(
+      screen.getByTestId('earn-requires-action-row-ended-0x0650caf159c5a49f711e8169d4336ecb9b950275')
+    );
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/earn/rewards/0x0650CAF159C5A49f711e8169D4336ECB9b950275')
+    );
   });
 
   it('routes a row click to the matured market detail page, where the claim card lives', async () => {

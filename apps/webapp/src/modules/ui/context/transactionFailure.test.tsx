@@ -140,6 +140,23 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
+  it('single-step flow: grows the step list on failure so the failed row tells the error, replacing the footer', () => {
+    // A lone step has no list in flight (the chip carries the state) and, since
+    // the status subtitles went (design QA, Sep 2026), nothing else names what
+    // failed — so the failure renders as the same DS Steps row multi-step flows get.
+    renderFailedFlow([
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
+    ]);
+
+    expect(screen.getByText('Supply failed')).toBeDefined();
+    expect(
+      screen.getByText("The network rolled back your transaction. The USDS hasn't been supplied.")
+    ).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+    expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Transaction failed');
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
   it('standard flow: Try again re-runs the flow and the failure treatment clears once it restarts', () => {
     const onConfirm = vi.fn();
     const cb = renderFailedFlow(supplySteps, onConfirm);
