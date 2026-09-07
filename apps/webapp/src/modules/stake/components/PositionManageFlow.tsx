@@ -46,7 +46,7 @@ function parseUrnIndex(value: string | null): number | null {
 
 type ManageView =
   | { name: 'details' }
-  | { name: 'sheet'; init: StakeManageFlowInit; fromDetails?: boolean }
+  | { name: 'sheet'; init: StakeManageFlowInit; scrimHandoff?: boolean }
   | { name: 'claim' }
   | { name: 'reopen'; borrowExpanded: boolean };
 
@@ -101,7 +101,7 @@ export function PositionManageFlow({
 
   const onAction = useCallback(
     (action: StakeManageAction) =>
-      setView({ name: 'sheet', init: manageActionInit(action), fromDetails: true }),
+      setView({ name: 'sheet', init: manageActionInit(action), scrimHandoff: true }),
     []
   );
   const onClaim = useCallback(() => setView({ name: 'claim' }), []);
@@ -190,7 +190,7 @@ export function PositionManageFlow({
         urnIndex={index}
         init={currentView.init}
         onClose={close}
-        scrimHandoff={currentView.fromDetails}
+        scrimHandoff={currentView.scrimHandoff}
       />
     ) : null;
   };

@@ -69,7 +69,7 @@ describe('TakeoverShell', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
-  it('compensates the hidden page scrollbar with a body margin, like the Radix dialogs', () => {
+  it('compensates the hidden page scrollbar with body padding (a margin would be double-counted by a Radix dialog stacked on top)', () => {
     // jsdom lays nothing out, so stand in for a 15px bar.
     const clientWidth = vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(1009);
     const innerWidth = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1024);
@@ -79,9 +79,9 @@ describe('TakeoverShell', () => {
       </TakeoverShell>
     );
 
-    expect(document.body.style.marginRight).toBe('15px');
+    expect(document.body.style.paddingRight).toBe('15px');
     unmount();
-    expect(document.body.style.marginRight).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
     clientWidth.mockRestore();
     innerWidth.mockRestore();
   });
@@ -98,9 +98,9 @@ describe('TakeoverShell', () => {
       </TakeoverShell>
     );
 
-    expect(document.body.style.marginRight).toBe('15px');
+    expect(document.body.style.paddingRight).toBe('15px');
     unmount();
-    expect(document.body.style.marginRight).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
     document.body.style.removeProperty('--removed-body-scroll-bar-size');
     clientWidth.mockRestore();
     innerWidth.mockRestore();

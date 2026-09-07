@@ -9,7 +9,7 @@ import { QueryParams } from '@/lib/constants';
 import { ROUTES } from '@/lib/routes';
 import { useAppSearchParams } from '@/lib/navigation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { NetworkBadge, NetworkSelect, useIsNetworkSelectStatic } from '@/modules/ui/components/NetworkSelect';
+import { NetworkSelect, useNetworkTitleBadge } from '@/modules/ui/components/NetworkSelect';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -118,7 +118,7 @@ export function StakeProductPage() {
   // label in the compact xs recipe — superseding the M3 icon-only treatment.
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
-  const networkIsStatic = useIsNetworkSelectStatic(networks);
+  const networkBadge = useNetworkTitleBadge(networks, 'stake-network');
 
   return (
     // Desktop comp 1222:15123: corrected measurement (Figma Annotations R2
@@ -151,10 +151,10 @@ export function StakeProductPage() {
                 instead of a control-shaped pill with nothing to switch. Where
                 a config lists several chains (dev's Tenderly fork) the
                 dropdown stays. */}
-            {isMobile && networkIsStatic && <NetworkBadge chainIds={networks} dataTestId="stake-network" />}
+            {networkBadge}
           </div>
         </div>
-        {!(isMobile && networkIsStatic) && (
+        {!networkBadge && (
           <NetworkSelect
             chainIds={networks}
             size={isMobile ? 'xs' : undefined}

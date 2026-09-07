@@ -48,6 +48,10 @@ export function useDeprecatedRewardPositions(): {
     [allContracts, chainId]
   );
 
+  // One readiness predicate: the read's gate, the memo's guard and the
+  // reported loading state must agree, so they read it rather than restate it.
+  const enabled = rewardsAvailable && !!address && deprecatedContracts.length > 0;
+
   const {
     data: balances,
     isLoading,
@@ -61,22 +65,25 @@ export function useDeprecatedRewardPositions(): {
       args: [address ?? ZERO_ADDRESS]
     })),
     // Region-restricted: don't issue a read whose result is discarded below.
-    query: { enabled: rewardsAvailable && !!address && deprecatedContracts.length > 0 }
+    query: { enabled }
   });
 
   const held = useMemo(() => {
-    if (!rewardsAvailable || !address || !balances) return [];
+    if (!enabled || !balances) return [];
     return deprecatedContracts.flatMap((contract, index) => {
       const balance = balances[index]?.result as bigint | undefined;
       return balance !== undefined && balance > 0n ? [{ contract, balance }] : [];
     });
-  }, [rewardsAvailable, address, balances, deprecatedContracts]);
+  }, [enabled, balances, deprecatedContracts]);
 
   // TVL for the held farms only — the same BA Labs series the marketplace
   // rows and the farm page read; an array-taking hook, so the call count
-  // stays fixed. An ended farm still has a TVL (the USDS left in it).
+  // stays fixed. An ended farm still has a TVL (the USDS left in it). The
+  // series is newest-first and only its latest `totalSupplied` is wanted, so
+  // ask for a single row rather than paging 100 down behind it.
   const { data: charts } = useMultipleRewardsChartInfo({
-    rewardContractAddresses: held.map(({ contract }) => contract.contractAddress)
+    rewardContractAddresses: held.map(({ contract }) => contract.contractAddress),
+    limit: 1
   });
 
   const positions = useMemo<DeprecatedRewardPosition[]>(
@@ -91,11 +98,6 @@ export function useDeprecatedRewardPositions(): {
 
   return {
     positions,
-    isLoading:
-      rewardsAvailable &&
-      !!address &&
-      deprecatedContracts.length > 0 &&
-      !error &&
-      (isLoading || balances === undefined)
+    isLoading: enabled && !error && (isLoading || balances === undefined)
   };
 }

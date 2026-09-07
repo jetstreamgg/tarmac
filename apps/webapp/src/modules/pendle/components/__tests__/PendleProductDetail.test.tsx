@@ -70,8 +70,7 @@ vi.mock('../PendleTransactionsTable', () => ({
 }));
 vi.mock('@/modules/ui/components/NetworkSelect', () => ({
   NetworkSelect: () => <div />,
-  NetworkBadge: () => <div />,
-  useIsNetworkSelectStatic: (chainIds: number[]) => chainIds.length <= 1
+  useNetworkTitleBadge: () => null
 }));
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 

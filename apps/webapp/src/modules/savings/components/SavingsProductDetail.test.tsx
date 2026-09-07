@@ -57,8 +57,7 @@ vi.mock('@/modules/ui/components/NetworkSelect', () => ({
   NetworkSelect: ({ triggerClassName }: { triggerClassName?: string }) => (
     <div data-testid="mock-chain-modal" data-trigger-class={triggerClassName ?? ''} />
   ),
-  NetworkBadge: () => <div data-testid="mock-network-badge" />,
-  useIsNetworkSelectStatic: (chainIds: number[]) => chainIds.length <= 1
+  useNetworkTitleBadge: () => null
 }));
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 

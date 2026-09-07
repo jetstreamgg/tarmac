@@ -9,7 +9,7 @@ import { recallEarnFilterSearch } from '@/lib/earnFilterMemory';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 import { BP, useBreakpointIndex } from '@/hooks';
-import { NetworkBadge, NetworkSelect, useIsNetworkSelectStatic } from '@/modules/ui/components/NetworkSelect';
+import { NetworkSelect, useNetworkTitleBadge } from '@/modules/ui/components/NetworkSelect';
 
 /**
  * The reusable product-detail layout (Track C, C3 — "the gate"). Earn products
@@ -285,11 +285,7 @@ export function ProductDetailTemplate({
 
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
-  const networkIsStatic = useIsNetworkSelectStatic(networkChainIds ?? []);
-  const titleBadge = networkChainIds && isMobile && networkIsStatic;
-  const networkBadge = titleBadge ? (
-    <NetworkBadge chainIds={networkChainIds} dataTestId={networkTestId} />
-  ) : null;
+  const networkBadge = useNetworkTitleBadge(networkChainIds, networkTestId);
 
   return (
     // Figma Annotations R2 F2: 120px page-bottom padding below the last
@@ -327,7 +323,7 @@ export function ProductDetailTemplate({
             </div>
           </div>
           {networkChainIds &&
-            !titleBadge &&
+            !networkBadge &&
             (isMobile ? (
               // M6.3 (486:20732): full-width labelled row under the title — 24px
               // chain icon + Label 6 name left, chevron flush right.

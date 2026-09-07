@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { getChainIcon } from '@/utils';
-import { useAppChainId, useIsSafeWallet } from '@/hooks';
+import { BP, useAppChainId, useBreakpointIndex, useIsSafeWallet } from '@/hooks';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 
 type NetworkSelectProps = {
@@ -69,8 +69,9 @@ export function useIsNetworkSelectStatic(chainIds: number[]): boolean {
  * Illustration title-suffix pill (Figma 1295:20810 — "SKY Staking ⟠ Ethereum")
  * naming the product's chain beside the title. A page that runs on one chain
  * has nothing to switch, so a full-width pill row under the title is an empty
- * control; this states the chain as a fact instead. `HeaderBadge s` already IS
- * the comp (4px inset, 16px icon, Label 6), so nothing is restyled here.
+ * control; this states the chain as a fact instead. `HeaderBadge` at size `s`
+ * already IS the comp (4px inset, 16px icon, Label 6), so nothing is restyled
+ * here.
  */
 export function NetworkBadge({
   chainIds,
@@ -90,6 +91,24 @@ export function NetworkBadge({
       {activeChainName}
     </HeaderBadge>
   );
+}
+
+/**
+ * The header's network control on the phone tier, or `null` when a real
+ * control is warranted. One rule, in one place: a product with nothing to
+ * switch (one chain, or a Safe whose chain its host app fixes) draws the
+ * title-suffix badge beside the name on phones instead of a control-shaped
+ * row with only an icon in it, which read as broken (1295:20810). Both header
+ * builders — `ProductDetailTemplate` and the bespoke `StakeProductPage` one —
+ * ask this rather than each re-deriving the tier/static pair, so the two
+ * cannot drift apart on it. `undefined` chains means no network control at
+ * all, so no badge either.
+ */
+export function useNetworkTitleBadge(chainIds: number[] | undefined, dataTestId?: string): React.ReactNode {
+  const { bpi } = useBreakpointIndex();
+  const { isStatic } = useNetworkSelectChain(chainIds ?? []);
+  if (!chainIds || bpi >= BP.md || !isStatic) return null;
+  return <NetworkBadge chainIds={chainIds} dataTestId={dataTestId} />;
 }
 
 /**

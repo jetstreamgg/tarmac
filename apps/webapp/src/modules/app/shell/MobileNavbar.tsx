@@ -118,7 +118,6 @@ export function MobileNavbar() {
                 {isActive && (
                   <motion.span
                     key="label"
-                    data-nav-label
                     aria-hidden
                     className="relative overflow-hidden whitespace-nowrap"
                     initial={reducedMotion ? false : { width: 0, opacity: 0, marginLeft: 0 }}

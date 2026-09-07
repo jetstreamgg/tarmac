@@ -56,10 +56,9 @@ vi.mock('@/modules/ui/components/NetworkSelect', () => ({
   NetworkSelect: ({ chainIds }: { chainIds?: number[] }) => (
     <div data-testid="chain-modal-stub" data-chain-ids={JSON.stringify(chainIds ?? [])} />
   ),
-  NetworkBadge: ({ chainIds }: { chainIds?: number[] }) => (
-    <div data-testid="network-badge-stub" data-chain-ids={JSON.stringify(chainIds ?? [])} />
-  ),
-  useIsNetworkSelectStatic: (chainIds: number[]) => chainIds.length <= 1
+  // Desktop tier: no title badge, so the header draws the dropdown. The phone
+  // badge rule lives in NetworkSelect and is tested there.
+  useNetworkTitleBadge: () => null
 }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));

@@ -70,21 +70,18 @@ export function TakeoverShell({
 
   // Escape-to-close + document scroll lock: syncing with the DOM outside React.
   //
-  // The lock mirrors what Radix's dialogs do through react-remove-scroll (body
-  // overflow hidden + the scrollbar's width as a right MARGIN on body, its
-  // default gap mode): hiding the page scrollbar widens the viewport by the
-  // bar, and without the margin every centred layout under the scrim shifted
-  // sideways on open and back on close — the only modal in the app that did.
-  // The gap is measured before the lock, so a dialog opening on top (the
-  // transaction modal) measures 0 and adds nothing. The reverse stacking is
-  // the trap: handed off FROM a Radix dialog (the position-details modal),
-  // that dialog is still mounted for a tick — its presence boundary releases
-  // it a render later — so its own lock is still in force here and the bar
-  // measures 0. react-remove-scroll publishes the width it removed as a
-  // custom property on body; read that when the measurement comes back empty,
-  // or the takeover holds the page bar-less and un-compensated once the
-  // dialog's lock lifts (measured: a 15px shift on the manage sheet, none on
-  // the open takeover).
+  // Mirrors react-remove-scroll's gap-mode lock (what Radix's dialogs use):
+  // hide the page scrollbar, then push body out by the width that removed, or
+  // every centred layout under the scrim shifts sideways on open and back on
+  // close. As PADDING, not margin: react-remove-scroll folds body's current
+  // margin-right into the gap it computes, so a dialog opening ON TOP (the
+  // transaction modal) would count a margin twice and inset the page 30px;
+  // it ignores padding, measures 0 and adds nothing. Handed off FROM a
+  // Radix dialog (the position-details modal), that dialog is still mounted
+  // for a tick and its lock already hid the bar, so the measurement is 0 there
+  // too — fall back to the width react-remove-scroll recorded on body, or the
+  // takeover holds the page bar-less and un-compensated once that lock lifts
+  // (measured: a 15px shift on the manage sheet, none on the open takeover).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -92,16 +89,18 @@ export function TakeoverShell({
     document.addEventListener('keydown', onKeyDown);
     const { body, documentElement } = document;
     const previousOverflow = body.style.overflow;
-    const previousMarginRight = body.style.marginRight;
+    const previousPaddingRight = body.style.paddingRight;
     const measured = documentElement.clientWidth > 0 ? window.innerWidth - documentElement.clientWidth : 0;
-    const inherited = parseFloat(getComputedStyle(body).getPropertyValue(REMOVED_SCROLLBAR_SIZE_VAR)) || 0;
-    const gap = measured > 0 ? measured : inherited;
+    const gap =
+      measured > 0
+        ? measured
+        : parseFloat(getComputedStyle(body).getPropertyValue(REMOVED_SCROLLBAR_SIZE_VAR)) || 0;
     body.style.overflow = 'hidden';
-    if (gap > 0) body.style.marginRight = `${gap}px`;
+    if (gap > 0) body.style.paddingRight = `${gap}px`;
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       body.style.overflow = previousOverflow;
-      body.style.marginRight = previousMarginRight;
+      body.style.paddingRight = previousPaddingRight;
     };
   }, [onClose]);
 

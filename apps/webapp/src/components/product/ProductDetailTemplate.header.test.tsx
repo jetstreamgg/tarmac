@@ -27,10 +27,11 @@ vi.mock('@/modules/ui/components/NetworkSelect', () => ({
   NetworkSelect: ({ triggerClassName, dataTestId }: { triggerClassName?: string; dataTestId?: string }) => (
     <div data-testid={dataTestId} data-kind="select" data-trigger-class={triggerClassName ?? ''} />
   ),
-  NetworkBadge: ({ dataTestId }: { dataTestId?: string }) => (
-    <div data-testid={dataTestId} data-kind="badge" />
-  ),
-  useIsNetworkSelectStatic: (chainIds: number[]) => chainIds.length <= 1
+  // The tier/chain-count rule itself belongs to NetworkSelect and is tested
+  // there; this stub only answers "badge or control" so what this file
+  // exercises is the template's PLACEMENT of the badge.
+  useNetworkTitleBadge: (chainIds: number[] | undefined, dataTestId?: string) =>
+    chainIds && h.isMobile && chainIds.length <= 1 ? <div data-testid={dataTestId} data-kind="badge" /> : null
 }));
 
 const renderHeader = (chainIds?: number[]) =>
