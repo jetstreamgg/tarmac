@@ -19,10 +19,10 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
-import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
+import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
-import { getStakeSubtitle, getStakeTitle, StakeFlow } from '../lib/constants';
+import { getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
@@ -34,20 +34,38 @@ import { stakeUsdNotional } from '../lib/stakeUsdNotional';
  * (2 txs may render 4 steps). Decisions recorded on APP-311:
  *  - A-Q3: the delegate selection IS shown as a step (the engine bundles
  *    `selectVoteDelegate` into the multicall; hiding it under-reports actions).
- *  - The `selectFarm` call is folded into "Stake SKY" — no confirm design shows
- *    it as its own step; the picked farm is surfaced by the summary's reward
- *    row instead (APP-516).
+ *  - The `selectFarm` call used to be folded into "Stake SKY" (APP-516); it is
+ *    now its own "Select reward" step, like the delegate one — the engine
+ *    bundles it as a separate leg (open → lock → draw → selectFarm →
+ *    selectVoteDelegate), and the Actions list should mirror the legs it
+ *    sends (QA round 2026-09-07). The reward token symbol rides along as the
+ *    step's token chip once the farm's token read resolves.
+ *  - With bundling OFF the engine (`useBatchStakeMulticall`) sends the SKY
+ *    approval as its own write and then ONE `multicall` carrying every leg, so
+ *    the rows after the approval share a write index and light up, complete
+ *    and fail together — otherwise a reverted multicall retitled "Stake" alone
+ *    while the reward/delegate rows sat upcoming, as if their legs never ran.
+ *    Bundled, the whole list is one unit and needs no indices.
  */
 export function buildStakeOpenSteps({
   needsSkyAllowance,
   hasBorrow,
-  hasDelegate
+  hasReward = false,
+  rewardSymbol,
+  hasDelegate,
+  shouldUseBatch = true
 }: {
   needsSkyAllowance: boolean;
   hasBorrow: boolean;
+  /** A reward farm is selected — the multicall carries a `selectFarm` leg. */
+  hasReward?: boolean;
+  /** The selected farm's reward-token symbol, once resolved; labels the chip. */
+  rewardSymbol?: string;
   hasDelegate: boolean;
+  /** False = sequential writes (approval, then one multicall) — rows get `write` indices. */
+  shouldUseBatch?: boolean;
 }): TransactionStep[] {
-  return [
+  const steps = [
     needsSkyAllowance && {
       label: t`Approve`,
       tokenSymbol: 'SKY',
@@ -55,8 +73,10 @@ export function buildStakeOpenSteps({
     },
     { label: t`Stake`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.stake('SKY') },
     hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.borrow('USDS') },
+    hasReward && (rewardSymbol ? { label: t`Select reward`, tokenSymbol: rewardSymbol } : t`Select reward`),
     hasDelegate && t`Delegate voting power`
   ].filter(Boolean) as TransactionStep[];
+  return shouldUseBatch ? steps : assignSequentialWrites(steps, needsSkyAllowance ? 1 : 0);
 }
 
 export interface UseStakeLaunchParams {
@@ -200,14 +220,26 @@ export function useStakeLaunch({
   });
 
   const hasBorrow = usdsToBorrow > 0n;
+  // Same predicate the calldata builder uses for a NEW urn (`needsRewardUpdate`
+  // / `needsDelegateUpdate` with no urn address): a non-zero selection is a leg.
+  const hasReward = !!selectedRewardContract && selectedRewardContract !== ZERO_ADDRESS;
   const hasDelegate = !!selectedDelegate && selectedDelegate !== ZERO_ADDRESS;
-  const steps = buildStakeOpenSteps({ needsSkyAllowance, hasBorrow, hasDelegate });
 
-  // Legacy stakeData analytics shape (useStakeTransactionCallbacks) — event
-  // payloads are diffed against the legacy widget's before F7 deletes it.
-  // `urnIndex` stays undefined on the open flow (legacy passes activeUrn only).
+  // Labels the Select reward step's chip, and the legacy stakeData analytics
+  // shape (useStakeTransactionCallbacks) — event payloads are diffed against
+  // the legacy widget's before F7 deletes it. `urnIndex` stays undefined on
+  // the open flow (legacy passes activeUrn only).
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
+
+  const steps = buildStakeOpenSteps({
+    needsSkyAllowance,
+    hasBorrow,
+    hasReward,
+    rewardSymbol: selectedRewardSymbol,
+    hasDelegate,
+    shouldUseBatch
+  });
 
   // Live (not computed at launch) because the takeover runs the enhanced-
   // screening preflight on it while the user is still editing.
@@ -218,7 +250,6 @@ export function useStakeLaunch({
 
   const launch = useCallback(() => {
     const formattedSky = formatBigInt(skyToLock);
-    const formattedUsds = formatBigInt(usdsToBorrow);
 
     const stakeData: Record<string, unknown> = {
       module: 'stake',
@@ -242,19 +273,6 @@ export function useStakeLaunch({
       skipReview: true,
       title: t`Confirm`,
       transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, StakeFlow.OPEN)),
-      subtitles: {
-        loading: i18n._(getStakeSubtitle({ flow: StakeFlow.OPEN, txStatus: TxStatus.LOADING })),
-        success: i18n._(
-          getStakeSubtitle({
-            flow: StakeFlow.OPEN,
-            txStatus: TxStatus.SUCCESS,
-            collateralToLock: formattedSky,
-            borrowAmount: hasBorrow ? formattedUsds : undefined,
-            selectedToken: 'SKY'
-          })
-        ),
-        error: i18n._(getStakeSubtitle({ flow: StakeFlow.OPEN, txStatus: TxStatus.ERROR }))
-      },
       // Result toasts per UX A.4: borrow path announces the position, the
       // stake-only path announces the staked amount.
       toast: {

@@ -304,7 +304,7 @@ describe('OpenPositionTakeover', () => {
   });
   afterEach(() => {
     cleanup();
-    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
   });
 
   it('renders the four numbered cards with both optional cards off (A-Q1)', () => {
@@ -678,7 +678,7 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
   });
   afterEach(() => {
     cleanup();
-    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
   });
 
   it('routes the launch through the manage seam with the urn context (C17)', () => {
@@ -838,7 +838,7 @@ describe('OpenPositionTakeover — simulation and engine errors (APP-490)', () =
   });
   afterEach(() => {
     cleanup();
-    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
   });
 
   it('shows generic copy for a simulation failure at borrow = 0 — never "Insufficient collateral"', () => {

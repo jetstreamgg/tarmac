@@ -38,12 +38,24 @@ export type { TransactionStep } from './transactionStepsModel';
 // read-only first screen. Both transition to the shared 'transaction' screen.
 type TransactionModalStep = 'entry' | 'review' | 'transaction';
 
+/**
+ * Subtitle copy under the title. Only `review` is set by any flow today (the
+ * Pendle early-withdrawal disclosure): the status-keyed entries are no longer
+ * used by design — the wallet/status screens narrate through the step list and
+ * the status chip, and a failure lives in the failed step's row (Figma
+ * 1030:139111). The keys stay on the type so the modal keeps rendering one if a
+ * flow ever needs a status-specific disclosure.
+ */
 export type TransactionSubtitles = {
+  /**
+   * Body 6 sentence under the first screen's title — a flow-specific
+   * disclosure the user needs before confirming (Pendle's early-withdrawal
+   * market-price note). Deliberately the ONLY key: the transaction screen
+   * carries no status subtitle by design (Figma 1030:139111 — the step list
+   * and the status chip narrate the write, a failure lives in the failed row),
+   * so a flow cannot bring that treatment back by setting one.
+   */
   review?: string;
-  pending?: string;
-  loading?: string;
-  success?: string;
-  error?: string;
 };
 
 export type TransactionModalProps = {
@@ -120,11 +132,12 @@ export type TransactionModalProps = {
   errorLabel?: string;
   steps?: TransactionStep[];
   currentStep?: number;
+  /** The current ERROR is a wallet Reject (nothing broadcast) — see the step model. */
+  userRejected?: boolean;
   /**
    * Gate-owned status copy (APP-501): while set, replaces the status row's
-   * message and the status-keyed subtitle — the flow's copy narrates on-chain
-   * writes, which is wrong while the gate is screening or collecting the
-   * terms signature.
+   * message — the flow's copy narrates on-chain writes, which is wrong while
+   * the gate is screening or collecting the terms signature.
    */
   gateCopy?: GateStatusCopy | null;
   /**
@@ -217,6 +230,7 @@ export function TransactionModal({
   errorLabel,
   steps,
   currentStep = 0,
+  userRejected = false,
   gateCopy,
   preflight,
   chainGuard,
@@ -247,16 +261,24 @@ export function TransactionModal({
   // step (flows like the claim panel launch without a steps array): the step
   // row is where its explanatory copy, links, and inline retry live (APP-501).
   const hasSignatureStep = !!steps?.some(step => typeof step === 'object' && step.kind === 'signature');
-  const showStepList = !!hasMultipleSteps || hasSignatureStep;
+  // A lone on-chain step gets no list while it runs (the status chip carries
+  // the in-flight state), but once it FAILS the list is where the failure is
+  // told: the retitled "Supply failed" row, its rollback sentence and the
+  // inline "Try again" (Figma 1030:139111) — there is no status subtitle any
+  // more (design QA, Sep 2026), so without the list a single-step failure
+  // would name nothing beyond the chip.
+  const failedSingleStep = steps?.length === 1 && step === 'transaction' && txStatus === TxStatus.ERROR;
+  const showStepList = !!hasMultipleSteps || hasSignatureStep || failedSingleStep;
   // Same expression the launch hooks use for `shouldUseBatch` — when true the
   // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
   // steps active together, "Bundled" header badge).
   const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
-  // Multi-step failures render inside the step list (retitled step + inline
-  // "Try again", Figma 1030:139111) and drop the bottom status row/buttons —
-  // the header back arrow still returns to the first screen. Single-step flows
-  // have no list, so they keep the bottom treatment.
+  // Failures render inside the step list (retitled step + inline "Try again",
+  // Figma 1030:139111) and drop the bottom status row/buttons — the header
+  // back arrow still returns to the first screen. A single-step flow grows its
+  // list on failure for exactly this (see `failedSingleStep`), so only a flow
+  // launched with NO steps at all keeps the bottom treatment.
   const showInlineFailure = showStepList && isTransaction && txStatus === TxStatus.ERROR;
   // The status chip's content (Figma 2376:225580: leading dots + label). The
   // dots only hop while a status is genuinely in-flight (awaiting signature or
@@ -276,9 +298,17 @@ export function TransactionModal({
   const failedStep = steps?.[currentStep];
   const failedOnSignature =
     badgeFailed && typeof failedStep === 'object' && failedStep !== null && failedStep.kind === 'signature';
+  // A wallet Reject is not a failed transaction either — nothing was sent —
+  // so the chip says so, matching the declined row the step model draws.
   const badgeLabel =
     gateCopy?.badgeLabel ??
-    (failedOnSignature ? <Trans>Signature failed</Trans> : statusBadgeLabel[txStatus]);
+    (failedOnSignature ? (
+      <Trans>Signature failed</Trans>
+    ) : badgeFailed && userRejected ? (
+      <Trans>Request declined</Trans>
+    ) : (
+      statusBadgeLabel[txStatus]
+    ));
   const badgeVariant = badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
@@ -364,12 +394,6 @@ export function TransactionModal({
   // `transactionContent` keep their previous transaction-screen content.
   const transactionScreenBody = transactionScreenContent ?? (entry ? null : transactionContent);
 
-  const subtitleByStatus: Partial<Record<TxStatus, string | undefined>> = {
-    [TxStatus.INITIALIZED]: subtitles?.pending,
-    [TxStatus.LOADING]: subtitles?.loading,
-    [TxStatus.SUCCESS]: subtitles?.success,
-    [TxStatus.ERROR]: subtitles?.error
-  };
   // A gate phase (screening / terms signature) narrates itself through its
   // subtitle only where there is no step list: with one, the signature step's
   // own row already says what is being waited on, and the flow's status
@@ -381,7 +405,9 @@ export function TransactionModal({
   // "Verifying your wallet address…" copy still shows under a step list.
   const gateCopyInStepList = showStepList && hasSignatureStep;
   const gateSubtitle = gateCopy && !gateCopyInStepList ? gateCopy.subtitle : undefined;
-  const subtitle = isFirstScreen ? subtitles?.review : gateCopy ? gateSubtitle : subtitleByStatus[txStatus];
+  // Off the first screen the only sentence is the gate's own (screening copy);
+  // a flow has no status subtitle to show there (see `TransactionSubtitles`).
+  const subtitle = isFirstScreen ? subtitles?.review : gateSubtitle;
   const firstScreenSubtitle = isFirstScreen ? subtitle : undefined;
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
@@ -554,8 +580,14 @@ export function TransactionModal({
                     steps: steps ?? [],
                     currentStep,
                     txStatus,
-                    bundled: isBundled
+                    bundled: isBundled,
+                    userRejected
                   });
+                  // Stays live off the product's chain: the provider refuses a
+                  // wrong-chain fire and returns the flow to its guarded first
+                  // screen, so the press is never dead. The guard's own copy and
+                  // switch action render under the list (below) so the failure
+                  // view explains itself before that round trip.
                   const tryAgain = (
                     <Button variant="primary" size="m" onClick={handleRetry}>
                       {errorLabel ?? <Trans>Try again</Trans>}
@@ -594,6 +626,15 @@ export function TransactionModal({
                   ));
                 })()}
               </Steps>
+              {/* The failure view's cross-chain guard (APP-528) lives here once
+                  the failure renders inline — the bottom CTA row that used to
+                  carry it is gone with the step list showing. */}
+              {showInlineFailure && chainGuarded && (
+                <div className="flex flex-col gap-4 pt-2">
+                  {chainGuardBlock}
+                  {guardCta}
+                </div>
+              )}
             </>
           )}
         </>

@@ -42,11 +42,6 @@ export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
       launch({
         title: t`Supply to ${args.vaultName}`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your supply is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully supplied to ${args.vaultName}.`,
-          error: t`An error occurred while supplying to ${args.vaultName}.`
-        },
         sessionId: supplySessionId,
         reviewTitle: t`Review supply`,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
@@ -81,11 +76,6 @@ export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
       launch({
         title: t`Withdraw from ${args.vaultName}`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully withdrawn from ${args.vaultName}.`,
-          error: t`An error occurred while withdrawing from ${args.vaultName}.`
-        },
         sessionId: withdrawSessionId,
         reviewTitle: t`Review withdrawal`,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },

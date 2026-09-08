@@ -47,11 +47,6 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
         title: t`Supply to ${args.displayName}`,
         reviewTitle: t`Review supply`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your supply is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully supplied to ${args.displayName}.`,
-          error: t`An error occurred while supplying to ${args.displayName}.`
-        },
         sessionId: supplySessionId,
         // Three-screen flow per the Savings template: the entry advances to the
         // review; the review's Confirm fires the engine. The body pushes the
@@ -90,11 +85,6 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
         title: t`Withdraw from ${args.displayName}`,
         reviewTitle: t`Review withdrawal`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully withdrawn from ${args.displayName}.`,
-          error: t`An error occurred while withdrawing from ${args.displayName}.`
-        },
         sessionId: withdrawSessionId,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).

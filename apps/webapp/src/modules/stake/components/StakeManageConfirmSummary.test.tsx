@@ -61,6 +61,27 @@ describe('StakeManageConfirmSummary', () => {
     expect(screen.getByTestId('stake-manage-summary-stake').textContent).not.toContain('$');
   });
 
+  it('keeps the USD sub-line in the amount column, under the number rather than the icon', () => {
+    // The shared hero nests the USD line beside the icon, in the same column
+    // as the amount (QA 2026-09-07: it used to sit under the icon).
+    renderSummary({ skyToLock: 100n * WAD });
+
+    const hero = screen.getByTestId('stake-manage-summary-stake');
+    const usd = Array.from(hero.querySelectorAll('span')).find(el => el.textContent === '$5.00');
+    expect(usd).toBeTruthy();
+    const amountColumn = usd!.parentElement!;
+    expect(amountColumn.textContent).toContain('100');
+    expect(amountColumn.className).toContain('flex-col');
+  });
+
+  it('formats a dust USD value as $0.00, not $<0.01 (formatUsd, not a bare number)', () => {
+    // 0.01 SKY at $0.05 = half a cent — formatNumber marks that "<0.01" and the
+    // hero used to prepend "$" to it.
+    renderSummary({ skyToLock: WAD / 100n });
+    expect(screen.getByTestId('stake-manage-summary-stake').textContent).toContain('$0.00');
+    expect(screen.getByTestId('stake-manage-summary-stake').textContent).not.toContain('<');
+  });
+
   it('renders nothing for a selection-only change', () => {
     // A reward- or delegate-only manage stages no amount: the heroes collapse
     // and `StakeConfirmGrid`'s Reward / Delegate cells carry the change.

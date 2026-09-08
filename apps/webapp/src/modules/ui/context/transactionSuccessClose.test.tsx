@@ -111,7 +111,6 @@ const CONFIG: TransactionConfig = {
   usdValue: 0,
   supportedChainIds: [1],
   steps: ['Supply'],
-  subtitles: { success: "You've successfully supplied to Sky Savings." },
   toast: { success: '10,000.00 USDS supplied!' },
   onConfirm: () => {}
 };
@@ -140,7 +139,7 @@ describe('TransactionModal success handoff', () => {
     expect(link?.getAttribute('href')).toContain(HASH);
   });
 
-  it('falls back to the success subtitle when the flow sets no toast copy', () => {
+  it('falls back to the title when the flow sets no toast copy — there is no subtitle to fall back on', () => {
     const cb = renderFlow({ ...CONFIG, toast: undefined });
 
     act(() => cb.onMutate());
@@ -148,7 +147,7 @@ describe('TransactionModal success handoff', () => {
     act(() => cb.onSuccess(HASH));
 
     const { getByText } = renderLastToast();
-    expect(getByText("You've successfully supplied to Sky Savings.")).toBeDefined();
+    expect(getByText('Supply')).toBeDefined();
   });
 
   it('drops the hash line when a batched transaction settles without one', () => {

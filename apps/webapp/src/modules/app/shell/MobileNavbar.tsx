@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { DESTINATIONS, useActiveDestinationPath, useDestinationLinkProps } from './destinations';
@@ -24,6 +24,13 @@ export function MobileNavbar() {
   const { navSearch, handleNavClick } = useDestinationLinkProps('mobile_drawer');
   const isHidden = useHideOnScroll();
   const reducedMotion = useReducedMotion();
+  // One clock for everything that moves on a tab switch: the pill's glide, the
+  // leaving label's collapse and the arriving label's expansion. Sharing it is
+  // what keeps the icons travelling with the pill instead of snapping to their
+  // new centres the frame the route changes.
+  const switchTransition = reducedMotion
+    ? { duration: 0 }
+    : { type: 'spring' as const, duration: 0.45, bounce: 0.15 };
 
   return (
     // `motion.nav` + `layoutScroll`: the active pill below is a layout animation
@@ -78,7 +85,7 @@ export function MobileNavbar() {
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 buttonVariants({ variant: 'navbar' }),
-                'font-circle relative h-full min-w-0 flex-1 gap-1 rounded-full border-transparent px-2 text-xs leading-[14px] font-medium tracking-[-0.24px]',
+                'font-circle relative h-full min-w-0 flex-1 gap-0 rounded-full border-transparent px-2 text-xs leading-[14px] font-medium tracking-[-0.24px]',
                 // The shared pill supplies the active fill/border, so the
                 // variant's own aria-current recipe is switched off (it would
                 // double-paint and can't animate between items).
@@ -94,28 +101,40 @@ export function MobileNavbar() {
                   // positioned siblings keep it under the icon/label without
                   // z-index games.
                   layoutId="mobile-nav-active-pill"
-                  transition={
-                    reducedMotion ? { duration: 0 } : { type: 'spring', duration: 0.45, bounce: 0.15 }
-                  }
+                  transition={switchTransition}
                   className="border-borderBrandDim from-brand2-start to-brand2-end absolute inset-0 rounded-full border bg-linear-to-b"
                 />
               )}
               <Icon className="nav-icon relative h-4 w-4 shrink-0" />
-              {/* DS shows the label on the active pill only; sr-only keeps the
-                  icon-only items accessibly named. The reveal trails the pill
-                  so the text fades in where the pill lands. */}
-              {isActive ? (
-                <motion.span
-                  className="relative"
-                  initial={reducedMotion ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.15 }}
-                >
-                  {destination.label}
-                </motion.span>
-              ) : (
-                <span className="sr-only">{destination.label}</span>
-              )}
+              {/* Every item is named by one sr-only span, always mounted; the
+                  visible label below is decorative (aria-hidden), so an
+                  outgoing label still collapsing next to an inactive item
+                  can't read the name twice. DS shows the label on the active
+                  pill only. The label owns its WIDTH as
+                  an animated value: an unmounting label used to drop its box in
+                  one frame (the old icon snapped to the link's centre) while
+                  the arriving one took its full box at opacity 0 (the new icon
+                  snapped aside to make room). Both now travel over the pill's
+                  own clock — the leaving copy collapses to 0 as the arriving
+                  one expands to its measured width. The icon-label gap rides
+                  inside the animated box as `marginLeft`, so a collapsed label
+                  leaves no 4px stub behind. */}
+              <span className="sr-only">{destination.label}</span>
+              <AnimatePresence initial={false}>
+                {isActive && (
+                  <motion.span
+                    key="label"
+                    aria-hidden
+                    className="relative overflow-hidden whitespace-nowrap"
+                    initial={reducedMotion ? false : { width: 0, opacity: 0, marginLeft: 0 }}
+                    animate={{ width: 'auto', opacity: 1, marginLeft: 4 }}
+                    exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+                    transition={switchTransition}
+                  >
+                    {destination.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </Link>
           );
         })}

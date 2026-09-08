@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { i18n } from '@lingui/core';
 import { TxStatus } from '@/widgets/shared/constants';
-import { deriveTransactionStepItems } from './transactionStepsModel';
+import { assignSequentialWrites, deriveTransactionStepItems } from './transactionStepsModel';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -58,6 +58,152 @@ describe('deriveTransactionStepItems — standard flow', () => {
     expect(items[0].description).toBe(
       "The network rolled back your transaction. The USDS hasn't been approved."
     );
+  });
+});
+
+describe('deriveTransactionStepItems — rows grouped by write (sequential multicall flows)', () => {
+  // The stake engine's sequential shape: approve (write 0), then lock + draw +
+  // selectFarm + selectVoteDelegate in ONE multicall (write 1).
+  const stakeSteps = assignSequentialWrites(
+    [
+      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." },
+      { label: 'Select reward', tokenSymbol: 'SPK' },
+      'Delegate voting power'
+    ],
+    1
+  );
+
+  it('assignSequentialWrites: leading rows are their own writes, the rest share the next one', () => {
+    expect(stakeSteps.map(step => (typeof step === 'string' ? undefined : step.write))).toEqual([
+      0, 1, 1, 1, 1
+    ]);
+    expect(stakeSteps[4]).toEqual({ label: 'Delegate voting power', write: 1 });
+  });
+
+  it('after the approval mines, every row of the multicall is active together', () => {
+    const items = deriveTransactionStepItems({
+      steps: stakeSteps,
+      currentStep: 1,
+      txStatus: TxStatus.LOADING,
+      bundled: false
+    });
+    expect(items.map(item => item.state)).toEqual(['completed', 'active', 'active', 'active', 'active']);
+  });
+
+  it('a reverted multicall fails every row of that write, with one Try again on the last', () => {
+    const items = deriveTransactionStepItems({
+      steps: stakeSteps,
+      currentStep: 1,
+      txStatus: TxStatus.ERROR,
+      bundled: false
+    });
+    expect(items[0]).toMatchObject({ label: 'Approve', state: 'completed' });
+    expect(items.slice(1).map(item => item.label)).toEqual([
+      'Stake failed',
+      'Borrow failed',
+      'Select reward failed',
+      'Delegate voting power failed'
+    ]);
+    expect(items[1].description).toBe(
+      "The network rolled back your transaction. The SKY hasn't been staked."
+    );
+    expect(items[3].description).toBe('The network rolled back your transaction.');
+    expect(items.map(item => item.retry)).toEqual([undefined, undefined, undefined, undefined, 'trailing']);
+  });
+
+  it('a rejected multicall declines every row of that write', () => {
+    const items = deriveTransactionStepItems({
+      steps: stakeSteps,
+      currentStep: 1,
+      txStatus: TxStatus.ERROR,
+      bundled: false,
+      userRejected: true
+    });
+    expect(items.slice(1).every(item => item.label.endsWith(' declined'))).toBe(true);
+    expect(items.filter(item => item.retry === 'trailing')).toHaveLength(1);
+  });
+
+  it("a gate signature prepended ahead of a grouped list offsets the flow's write numbering", () => {
+    const items = deriveTransactionStepItems({
+      steps: [{ label: 'Sign the terms', kind: 'signature' }, ...stakeSteps],
+      currentStep: 2, // signature (0) and approve (1) done, the multicall (2) in flight
+      txStatus: TxStatus.LOADING,
+      bundled: false
+    });
+    expect(items.map(item => item.state)).toEqual([
+      'completed',
+      'completed',
+      'active',
+      'active',
+      'active',
+      'active'
+    ]);
+  });
+
+  it('rows without a write index keep the one-row-per-transaction model', () => {
+    const items = deriveTransactionStepItems({
+      steps: supplySteps,
+      currentStep: 1,
+      txStatus: TxStatus.LOADING,
+      bundled: false
+    });
+    expect(items.map(item => item.state)).toEqual(['completed', 'active']);
+  });
+});
+
+describe('deriveTransactionStepItems — wallet rejection', () => {
+  it('a rejected write reads as declined, with no rollback sentence and no consequence detail', () => {
+    const items = deriveTransactionStepItems({
+      steps: [{ label: 'Withdraw', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been withdrawn." }],
+      currentStep: 0,
+      txStatus: TxStatus.ERROR,
+      bundled: false,
+      userRejected: true
+    });
+    expect(items).toEqual([
+      {
+        stepNumber: 1,
+        label: 'Withdraw declined',
+        tokenSymbol: undefined,
+        targetTokenSymbol: undefined,
+        state: 'failed',
+        description: 'You declined the request in your wallet. Nothing was sent.',
+        retry: 'trailing'
+      }
+    ]);
+  });
+
+  it('a rejected bundle collapses to a "Request declined" slot with the retry slot', () => {
+    const items = deriveTransactionStepItems({
+      steps: supplySteps,
+      currentStep: 0,
+      txStatus: TxStatus.ERROR,
+      bundled: true,
+      userRejected: true
+    });
+    expect(items[0]).toMatchObject({
+      label: 'Request declined',
+      state: 'failed',
+      description:
+        'You declined the bundled transaction in your wallet. Try again and confirm it to continue.'
+    });
+    expect(items[1]).toMatchObject({ state: 'active', retry: 'slot' });
+  });
+
+  it('a declined signature keeps its own sentence regardless of the flag', () => {
+    const items = deriveTransactionStepItems({
+      steps: [{ label: 'Sign the terms', kind: 'signature' }, 'Supply'],
+      currentStep: 0,
+      txStatus: TxStatus.ERROR,
+      bundled: false,
+      userRejected: true
+    });
+    expect(items[0]).toMatchObject({
+      label: 'Sign the terms failed',
+      description: 'The signature request was declined or could not be completed.'
+    });
   });
 });
 

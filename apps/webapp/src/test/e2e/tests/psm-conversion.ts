@@ -321,7 +321,11 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await interceptAndRejectTransactions(isolatedPage, 0, true);
       await confirm.click();
 
-      await expect(isolatedPage.getByText('An error occurred while converting your funds.')).toBeVisible({
+      // The failure surfaces in the step list (failed row + inline retry) and the
+      // status chip — there is no status subtitle any more (Design QA, Sep 2026).
+      // The chip by testid: a bundled failure also retitles its collapsed step
+      // row "Transaction failed", so a text locator resolves to two elements.
+      await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText(/Transaction failed/, {
         timeout: 60_000
       });
       await expect(isolatedPage.getByRole('button', { name: 'Try again' })).toBeVisible();

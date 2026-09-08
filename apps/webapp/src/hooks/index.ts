@@ -307,8 +307,10 @@ export { trailingAverageRate, type DailyRatePoint } from './shared/trailingRate'
 
 // Earn marketplace (C1 registry + aggregator)
 export { useEarnMarketplace } from './earn/useEarnMarketplace';
+export { deriveEndedRewardPositions } from './earn/endedRewardPositions';
 export {
   buildEarnProducts,
+  buildRewardsProduct,
   productNetworks,
   rewardsRiskProfile,
   RISK_TIER_BY_PROFILE
@@ -322,7 +324,8 @@ export type {
   EarnProductRow,
   EarnRate,
   EarnRiskTier,
-  EarnUsdAmount
+  EarnUsdAmount,
+  EndedRewardPosition
 } from './earn/types';
 
 // Decentralized Storage
