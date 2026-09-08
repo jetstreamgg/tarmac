@@ -11,6 +11,8 @@ import { GEO_OVERRIDE_PARAMS } from '@/modules/geo-config/applyGeoOverrides';
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
 const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST;
+// APP-559: api_host is a reverse proxy, so the toolbar needs the real app URL to authenticate.
+const POSTHOG_UI_HOST = import.meta.env.VITE_POSTHOG_UI_HOST || 'https://eu.posthog.com';
 export const POSTHOG_ENABLED = import.meta.env.VITE_POSTHOG_ENABLED === 'true';
 
 let hasInitializedPostHog = false;
@@ -96,6 +98,7 @@ function initializePostHogIfNeeded(forceAccepted = false) {
 
   posthog.init(POSTHOG_KEY, {
     api_host: POSTHOG_HOST,
+    ui_host: POSTHOG_UI_HOST,
 
     // PERSON PROFILES
     // Accepted users: 'always' creates person profiles with browser/OS properties.

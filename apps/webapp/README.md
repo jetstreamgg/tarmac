@@ -82,7 +82,8 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 #### Analytics
 
 - `VITE_POSTHOG_KEY`: (Optional) PostHog project API key
-- `VITE_POSTHOG_HOST`: (Optional) PostHog ingestion host
+- `VITE_POSTHOG_HOST`: (Optional) PostHog ingestion host (may be a reverse proxy)
+- `VITE_POSTHOG_UI_HOST`: (Optional) PostHog app URL used by the toolbar (heatmaps etc.). Defaults to `https://eu.posthog.com`
 - `VITE_POSTHOG_ENABLED`: (Optional) Set to `'true'` to enable PostHog analytics
 - `VITE_GA_MEASUREMENT_ID`: (Optional) Google Analytics measurement ID
 
