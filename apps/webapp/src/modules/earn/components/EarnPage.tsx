@@ -53,6 +53,9 @@ import { NO_VALUE } from '@/lib/constants';
 /** Stable identity so the geo split doesn't rebuild the tables every render. */
 const EMPTY_ROWS: EarnProductRow[] = [];
 
+/** Row id of an ended reward farm in the "Requires action" section. */
+const endedRewardRowId = (contractAddress: string) => `ended-${contractAddress.toLowerCase()}`;
+
 const formatUsd = (totalUsd?: number) => (totalUsd !== undefined ? formatUsdCompact(totalUsd) : NO_VALUE);
 
 /**
@@ -120,7 +123,7 @@ function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem 
 
 /** The /earn destination: the Earn Opportunities marketplace section (C2). */
 export function EarnPage() {
-  const { rows } = useEarnMarketplace();
+  const { rows, endedRewardPositions: allEndedRewardPositions } = useEarnMarketplace();
   const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
   const chains = useChains();
   const connectedChainId = useChainId();
@@ -312,7 +315,64 @@ export function EarnPage() {
       ),
     [maturedPositions, filters, chainSlugById, connectedChainId]
   );
-  const requiresActionItems = useMemo<EarnTableRowItem[]>(
+  // Ended reward farms the user still has USDS in (the deprecated USDS → SKY
+  // farm): the marketplace drops them from the opportunities rows, so this
+  // section is their only Earn surface too. Region-restricted positions hide
+  // app-wide (APP-484), with the matured markets' in-flight tradeoff: they
+  // pass while the geo config loads, since the loading default is
+  // restrictive and would blank them for everyone. Same filter treatment as
+  // the matured markets, on the farm's registry descriptor — the one the
+  // marketplace builds live farm rows from.
+  const endedRewardPositions = useMemo(
+    () => (isGeoLoading || isModuleEnabled('rewards') ? allEndedRewardPositions : []),
+    [allEndedRewardPositions, isGeoLoading, isModuleEnabled]
+  );
+  const visibleEndedRewardPositions = useMemo(
+    () =>
+      filterEarnRows(
+        endedRewardPositions.map(position => ({ ...position, ...position.product })),
+        filters,
+        chainSlugById
+      ),
+    [endedRewardPositions, filters, chainSlugById]
+  );
+  const endedRewardItems = useMemo<EarnTableRowItem[]>(
+    () =>
+      visibleEndedRewardPositions.map(({ product, contract, balance, tvlUsds: tvlSupplied }) => {
+        // The supply token is USDS on every farm — the position reads at par.
+        const usd = valueUsd(contract.supplyToken.symbol, parseFloat(formatUnits(balance, 18)));
+        const tvlUsd =
+          tvlSupplied !== undefined ? valueUsd(contract.supplyToken.symbol, tvlSupplied) : undefined;
+        return {
+          id: endedRewardRowId(contract.contractAddress),
+          name: product.name,
+          icon: (
+            <TokenIcon
+              token={{ symbol: contract.rewardToken.symbol }}
+              width={28}
+              className="h-7 w-7"
+              showChainIcon={false}
+            />
+          ),
+          // No status ring: reward products carry none in the marketplace
+          // (the ring is the matured-PT treatment).
+          supply: <TokenIconStack symbols={product.supplyTokens} size={12} />,
+          statusLabel: (
+            <span className="text-statusWarning">
+              <Trans>Ended</Trans>
+            </span>
+          ),
+          network: <CellNetworks>{[getChainIcon(mainnet.id, 'h-full w-full')]}</CellNetworks>,
+          rate: NO_VALUE,
+          rate30d: NO_VALUE,
+          tvl: formatUsd(tvlUsd),
+          position: formatUsd(usd),
+          ctaLabel: <Trans>Withdraw</Trans>
+        };
+      }),
+    [visibleEndedRewardPositions, valueUsd]
+  );
+  const maturedItems = useMemo<EarnTableRowItem[]>(
     () =>
       visibleMaturedPositions.map(({ market, ptBalance }) => {
         // 1 PT redeems 1 underlying (1 USDS on pegged markets) at expiry.
@@ -348,15 +408,25 @@ export function EarnPage() {
       }),
     [visibleMaturedPositions, valueUsd]
   );
+  const requiresActionItems = useMemo(
+    () => [...maturedItems, ...endedRewardItems],
+    [maturedItems, endedRewardItems]
+  );
 
-  // Rows route to the market's detail page, like every other row in this table
-  // — a matured market keeps its page, and the claim card is its position slot.
+  // Rows route to the product's detail page, like every other row in this
+  // table — a matured market keeps its page (the claim card is its position
+  // slot), and an ended farm keeps its withdraw/claim-only page.
   const handleRequiresActionSelect = (id: string) => {
-    const position = maturedPositions.find(
+    const matured = maturedPositions.find(
       ({ market }) => `matured-${market.marketAddress.toLowerCase()}` === id
     );
-    if (!position) return;
-    const detailPath = `${ROUTES.EARN_FIXED}/${position.market.slug}`;
+    const ended = endedRewardPositions.find(
+      ({ contract }) => endedRewardRowId(contract.contractAddress) === id
+    );
+    const detailPath = matured
+      ? `${ROUTES.EARN_FIXED}/${matured.market.slug}`
+      : (ended?.product.detailPath ?? null);
+    if (!detailPath) return;
     setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
   };

@@ -1,9 +1,16 @@
 import { Trans } from '@lingui/react/macro';
 import { formatBigInt, formatUsd } from '@/utils';
 import { formatUnits } from 'viem';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { FittedAmount } from '@/components/product/FittedAmount';
+import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 
+/**
+ * One staged amount, on the shared modal amount hero (DS 1310:130565): icon
+ * beside an amount column whose USD sub-line sits under the NUMBER, not under
+ * the icon — the hand-rolled hero this replaced stacked the USD line below the
+ * whole icon+amount row, so it read as aligned to the icon (QA 2026-09-07).
+ * The symbol moves out of the amount text into the hero's token badge, as on
+ * every other product's review.
+ */
 function AmountHero({
   label,
   amount,
@@ -18,19 +25,14 @@ function AmountHero({
   dataTestId: string;
 }) {
   return (
-    <div className="flex flex-col gap-1" data-testid={dataTestId}>
-      <span className="text-textSecondary text-sm">{label}</span>
-      <span className="text-text font-circle flex min-w-0 items-center gap-2 text-2xl font-medium tracking-tight">
-        <TokenIcon token={{ symbol }} width={28} className="h-7 w-7 shrink-0" showChainIcon={false} />
-        {/* The symbol sits inside the hero here, not in a chip, so it is measured too. */}
-        <FittedAmount
-          amount={`${formatBigInt(amount)} ${symbol}`}
-          maxPx={24}
-          className="text-2xl leading-[1.3333] tracking-tight"
-        />
-      </span>
-      {usdValue !== null && <span className="text-textSecondary text-xs">{formatUsd(usdValue)}</span>}
-    </div>
+    <TransactionAmountHero
+      label={label}
+      amount={formatBigInt(amount)}
+      symbol={symbol}
+      // The hero draws the `$` itself.
+      usd={usdValue !== null ? formatUsd(usdValue) : undefined}
+      dataTestId={dataTestId}
+    />
   );
 }
 

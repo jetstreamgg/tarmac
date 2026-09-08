@@ -209,6 +209,37 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('shows the guard under a single-step inline failure, and Try again still routes to the guarded first screen', () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    const { refresh } = renderModal(cb => ({
+      ...mainnetOnlyConfig(onConfirm),
+      // One step: the failure renders inside the step list (no bottom CTA row),
+      // which is where the guard must follow it.
+      steps: [{ label: 'Supply', tokenSymbol: 'USDS' }],
+      onConfirm: () => {
+        onConfirm();
+        cb.onMutate();
+        cb.onStart('0xsupply');
+        cb.onError(new Error('boom'), '0xsupply');
+      }
+    }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(screen.getByText('Supply failed')).toBeTruthy();
+
+    mockChainId = 8453; // the user switches to Base while looking at the failure
+    act(() => refresh());
+
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+    // Never a dead click: the provider refuses the wrong-chain fire and lands
+    // the flow back on its guarded first screen.
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+  });
+
   it('guards a wallet on a chain the app does not configure at all', () => {
     // wagmi REFUSES to move `config.state.chainId` onto an unconfigured chain,
     // so `useChainId()` keeps naming the last configured one (mainnet here)
@@ -632,8 +663,6 @@ describe('TransactionProvider — chain guard fallbacks', () => {
       cb.onMutate();
       cb.onError(new Error('boom'));
     });
-    // Multi-step failures render inline, replacing the footer the guard
-    // block lives in — so there is no guard copy on this screen.
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
     expect(screen.queryByTestId('transaction-chain-guard')).toBeNull();
 
@@ -641,6 +670,10 @@ describe('TransactionProvider — chain guard fallbacks', () => {
       mockChainId = 8453;
       forceRerender();
     });
+    // The inline failure replaced the footer the guard block used to live in,
+    // so the guard copy + switch follow the failure under the step list.
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);

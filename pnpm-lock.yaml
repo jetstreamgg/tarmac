@@ -237,6 +237,9 @@ catalogs:
     react-markdown:
       specifier: ^10.1.0
       version: 10.1.0
+    react-remove-scroll:
+      specifier: ^2.7.2
+      version: 2.7.2
     recharts:
       specifier: ^3.10.1
       version: 3.10.1
@@ -530,6 +533,9 @@ importers:
       react-markdown:
         specifier: 'catalog:'
         version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
+      react-remove-scroll:
+        specifier: 'catalog:'
+        version: 2.7.2(@types/react@19.2.18)(react@19.2.8)
       recharts:
         specifier: 'catalog:'
         version: 3.10.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@18.3.1)(react@19.2.8)(redux@5.0.1)

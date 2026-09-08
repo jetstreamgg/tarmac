@@ -38,11 +38,6 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
       launch({
         title: t`Supply to ${ptName}`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your supply is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully supplied to ${ptName}.`,
-          error: t`An error occurred while supplying to ${ptName}.`
-        },
         sessionId: supplySessionId,
         reviewTitle: t`Review supply`,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
@@ -63,18 +58,16 @@ export function usePendleModal({ onSuccess }: UsePendleModalOptions = {}) {
 
   const openWithdraw = useCallback(
     (market: PendleMarketConfig) => {
-      const ptName = `PT-${market.underlyingSymbol}`;
       launch({
         // Pre-maturity the only withdrawal IS an early one (matured positions
         // go through the redeem flow); the `review` subtitle renders on both
-        // first screens (Figma 2193:73598 / 2193:73807).
+        // first screens (Figma 2193:73598 / 2193:73807). It is the one
+        // disclosure the modal carries as a subtitle — the wallet/status
+        // screens narrate through the step list instead (Design QA, Sep 2026).
         title: t`Early withdrawal`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
-          review: t`Early withdrawal is settled at the current market price, not your locked-in rate. Your final amount may be lower than shown if market conditions change before the transaction confirms.`,
-          loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully withdrawn from ${ptName}.`,
-          error: t`An error occurred while withdrawing from ${ptName}.`
+          review: t`Early withdrawal is settled at the current market price, not your locked-in rate. Your final amount may be lower than shown if market conditions change before the transaction confirms.`
         },
         sessionId: withdrawSessionId,
         reviewTitle: t`Review withdrawal`,

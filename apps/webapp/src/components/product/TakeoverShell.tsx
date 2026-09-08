@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'motion/react';
+import { RemoveScroll } from 'react-remove-scroll';
 import { X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ export function TakeoverShell({
   footer,
   locked = false,
   onOpenTransaction,
+  scrimHandoff = false,
   children,
   dataTestId = 'takeover-shell'
 }: {
@@ -49,6 +51,14 @@ export function TakeoverShell({
    */
   locked?: boolean;
   onOpenTransaction?: () => void;
+  /**
+   * The takeover is replacing a dialog whose scrim is already up (the
+   * position-details modal handing off to the manage sheet). That dialog is
+   * unmounted in the same commit, so a scrim fading in from 0 would uncover
+   * the page for a beat; the scrim mounts at full opacity instead and only
+   * the card column arrives.
+   */
+  scrimHandoff?: boolean;
   children: ReactNode;
   dataTestId?: string;
 }) {
@@ -56,18 +66,14 @@ export function TakeoverShell({
   const titleId = useId();
   const reduceMotion = useReducedMotion();
 
-  // Escape-to-close + document scroll lock: syncing with the DOM outside React.
+  // Escape-to-close: syncing with the DOM outside React. (The document scroll
+  // lock is `RemoveScroll` around the portal below.)
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKeyDown);
-    const previousOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.documentElement.style.overflow = previousOverflow;
-    };
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
 
   // Focus management (aria-modal contract): move focus into the dialog on
@@ -114,98 +120,114 @@ export function TakeoverShell({
   // body anyway — the dialog and sheet overlays it shares its recipe with are
   // both portalled — and that also keeps it out of reach of any future
   // transform/filter ancestor.
+  // `RemoveScroll` is the lock Radix's dialogs use, from the same singleton:
+  // it hides the page scrollbar and hands its width back to body as a margin
+  // (so nothing under the scrim shifts), reference-counts with the details
+  // dialog that hands off to the manage sheet (that dialog stays mounted a
+  // tick past the switch, so a lock of our own measured a bar that was already
+  // gone), and publishes the width on body for usePageScrollbarCompensation to
+  // subtract — a hand-rolled lock set none of those signals, so the page
+  // column padded itself on top of it. Scrolling stays allowed inside the
+  // shell's own column.
   return createPortal(
-    <motion.div
-      ref={containerRef}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      tabIndex={-1}
-      data-testid={dataTestId}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
-      transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
-      // The comps draw the takeover as a full-page MODAL over the live page
-      // (APP-432 item 21 — 1036:209505 layers it over `bg-modal`, a render of
-      // /earn), not as a second opaque page: same scrim + blur recipe as the
-      // dialog and sheet overlays. It previously repainted the app background,
-      // which hid the page underneath entirely.
-      className="bg-modalOverlay fixed inset-0 z-[46] flex flex-col backdrop-blur-[100px]"
-    >
-      <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:px-10 md:py-5">
-        {/* Title + badge only — no back arrow (Design QA 2800:91832: "There's
+    <RemoveScroll>
+      <motion.div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        data-testid={dataTestId}
+        initial={{ opacity: scrimHandoff ? 1 : 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
+        transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
+        // The comps draw the takeover as a full-page MODAL over the live page
+        // (APP-432 item 21 — 1036:209505 layers it over `bg-modal`, a render of
+        // /earn), not as a second opaque page: same scrim + blur recipe as the
+        // dialog and sheet overlays. It previously repainted the app background,
+        // which hid the page underneath entirely.
+        className="bg-modalOverlay fixed inset-0 z-[46] flex flex-col backdrop-blur-[100px]"
+      >
+        <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:px-10 md:py-5">
+          {/* Title + badge only — no back arrow (Design QA 2800:91832: "There's
             no back arrow, only 'X' icon to close"). */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Label 4 on phones, Label 3 from md up (1369:44362). */}
-          <h2
-            id={titleId}
-            className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]"
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Label 4 on phones, Label 3 from md up (1369:44362). */}
+            <h2
+              id={titleId}
+              className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]"
+            >
+              {title}
+            </h2>
+            {badge && (
+              // Badges / Illustration (I1369:44421): glass pill, 4px inset around
+              // a 16px logo, Label 6 on fg-primary — one recipe at every tier.
+              <span className="bg-glassBadge text-text font-circle flex items-center gap-1 rounded-[20px] py-1 pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px]">
+                {badge}
+              </span>
+            )}
+          </div>
+          <Button
+            variant="secondary"
+            size="iconM"
+            onClick={onClose}
+            aria-label="Close"
+            data-testid={`${dataTestId}-close`}
           >
-            {title}
-          </h2>
-          {badge && (
-            // Badges / Illustration (I1369:44421): glass pill, 4px inset around
-            // a 16px logo, Label 6 on fg-primary — one recipe at every tier.
-            <span className="bg-glassBadge text-text font-circle flex items-center gap-1 rounded-[20px] py-1 pr-2 pl-1 text-xs leading-[14px] font-medium tracking-[-0.24px]">
-              {badge}
-            </span>
-          )}
+            <X className="h-4 w-4" />
+          </Button>
         </div>
-        <Button
-          variant="secondary"
-          size="iconM"
-          onClick={onClose}
-          aria-label="Close"
-          data-testid={`${dataTestId}-close`}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
 
-      {/* 610px column, 12px between cards, 64px of air under the header
+        {/* 610px column, 12px between cards, 64px of air under the header
           (1036:209509). The footer is the column's last row rather than a
           sticky bar — the comps scroll it with the content. */}
-      <div className="flex-1 overflow-y-auto px-3 md:px-4">
-        <motion.div
-          className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16"
-          initial={{ y: 40 }}
-          animate={{ y: 0 }}
-          exit={{ y: 40, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
-          transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
-        >
-          <div
-            inert={locked}
-            className={locked ? 'flex flex-col gap-3 opacity-50' : 'flex flex-col gap-3'}
-            data-testid={`${dataTestId}-form`}
+        <div className="flex-1 overflow-y-auto px-3 md:px-4">
+          <motion.div
+            className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16"
+            // On a hand-off the scrim is already up, so the column arrives on
+            // its rise alone. NOT a fade: an element mid-opacity is a backdrop
+            // root, so for the length of a fade the glass cards inside would
+            // sample nothing but the column itself and read a shade too bright
+            // until opacity lands on 1 (measured on the manage sheet).
+            initial={{ y: 40 }}
+            animate={{ y: 0 }}
+            exit={{ y: 40, transition: reduceMotion ? { duration: 0 } : SCRIM_OUT }}
+            transition={reduceMotion ? { duration: 0 } : SCRIM_IN}
           >
-            {children}
-          </div>
-          {(locked || footer) && (
-            <div className="flex items-center justify-between gap-4 px-2 py-4 md:gap-6 md:px-6 md:py-6">
-              {locked ? (
-                <>
-                  <p className="text-textSecondary max-w-xs text-sm">
-                    <Trans>A transaction is in progress. Open it to continue.</Trans>
-                  </p>
-                  <Button
-                    variant="primary"
-                    size="xl"
-                    onClick={onOpenTransaction}
-                    data-testid={`${dataTestId}-open-transaction`}
-                    className="px-10"
-                  >
-                    <Trans>Open transaction</Trans>
-                  </Button>
-                </>
-              ) : (
-                footer
-              )}
+            <div
+              inert={locked}
+              className={locked ? 'flex flex-col gap-3 opacity-50' : 'flex flex-col gap-3'}
+              data-testid={`${dataTestId}-form`}
+            >
+              {children}
             </div>
-          )}
-        </motion.div>
-      </div>
-    </motion.div>,
+            {(locked || footer) && (
+              <div className="flex items-center justify-between gap-4 px-2 py-4 md:gap-6 md:px-6 md:py-6">
+                {locked ? (
+                  <>
+                    <p className="text-textSecondary max-w-xs text-sm">
+                      <Trans>A transaction is in progress. Open it to continue.</Trans>
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="xl"
+                      onClick={onOpenTransaction}
+                      data-testid={`${dataTestId}-open-transaction`}
+                      className="px-10"
+                    >
+                      <Trans>Open transaction</Trans>
+                    </Button>
+                  </>
+                ) : (
+                  footer
+                )}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </motion.div>
+    </RemoveScroll>,
     document.body
   );
 }

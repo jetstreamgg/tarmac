@@ -8,6 +8,8 @@ import { ROUTES } from '@/lib/routes';
 import { recallEarnFilterSearch } from '@/lib/earnFilterMemory';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
+import { BP, useBreakpointIndex } from '@/hooks';
+import { NetworkSelect, useNetworkTitleBadge } from '@/modules/ui/components/NetworkSelect';
 
 /**
  * The reusable product-detail layout (Track C, C3 — "the gate"). Earn products
@@ -82,9 +84,28 @@ export interface ProductDetailTemplateProps {
   /** Back-link label; defaults to "Back to products". */
   backLabel?: ReactNode;
   token: ProductDetailToken;
+  /** The heading — the product's name alone (the h1's accessible name). */
   title: ReactNode;
-  /** Per-product network selector, right-aligned in the header row. */
-  networkSelector?: ReactNode;
+  /**
+   * Title-suffix badges (a provider mark such as "Powered by Morpho"), placed
+   * by `PageHeading`'s badge slot 12px after the name; the phone tier's
+   * network badge (see `networkChainIds`) follows them in the same row.
+   */
+  titleBadges?: ReactNode;
+  /** The DS Body 6 line under the title (a maturity date, a description). */
+  titleSubtitle?: ReactNode;
+  /**
+   * The chains the product runs on — drives the header's network control.
+   * Several chains: the NetworkSelect dropdown (pill right of the title from
+   * md up; a full-width labelled row under it on phones, M6.3 486:20732).
+   * One chain (or a Safe wallet): nothing to switch, so from md up a static
+   * pill states the chain, and on phones the DS title-suffix badge takes its
+   * place beside the title (1295:20810) — a control-shaped row with just an
+   * icon in it read as broken. Omit for no network control at all.
+   */
+  networkChainIds?: number[];
+  /** Test id on the network control (pill, row or badge). */
+  networkTestId?: string;
   /** Top-left: the Rate/TVL chart. */
   chart: ReactNode;
   /** Top-right: the "My position" card. */
@@ -245,7 +266,10 @@ export function ProductDetailTemplate({
   backLabel,
   token,
   title,
-  networkSelector,
+  titleBadges,
+  titleSubtitle,
+  networkChainIds,
+  networkTestId = 'product-detail-network',
   chart,
   position,
   details,
@@ -262,6 +286,10 @@ export function ProductDetailTemplate({
   // can't change while a product page is up (only /earn writes it), so this is
   // a value, not a subscription.
   const [backTo] = useState(() => backToMarketplace(backHref));
+
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
+  const networkBadge = useNetworkTitleBadge(networkChainIds, networkTestId);
 
   return (
     // Figma Annotations R2 F2: 120px page-bottom padding below the last
@@ -285,14 +313,39 @@ export function ProductDetailTemplate({
         <div className="flex flex-col items-stretch gap-8 md:flex-row md:items-center md:justify-between md:gap-4">
           <div className="flex items-center gap-3 md:gap-4">
             <ProductTitleIcon token={token} />
+            {/* Title, then its badges (provider mark, and on phones the
+                single-chain network badge) in PageHeading's slot: 12px after
+                the name (1295:20810), wrapping under it, outside the h1. */}
             <PageHeading
               size="md"
               className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
+              badges={
+                titleBadges || networkBadge ? (
+                  <>
+                    {titleBadges}
+                    {networkBadge}
+                  </>
+                ) : undefined
+              }
+              subtitle={titleSubtitle}
             >
               {title}
             </PageHeading>
           </div>
-          {networkSelector}
+          {networkChainIds &&
+            !networkBadge &&
+            (isMobile ? (
+              // M6.3 (486:20732): full-width labelled row under the title — 24px
+              // chain icon + Label 6 name left, chevron flush right.
+              <NetworkSelect
+                chainIds={networkChainIds}
+                dataTestId={networkTestId}
+                triggerClassName="w-full [&>svg:last-child]:ml-auto"
+                labelClassName="font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]"
+              />
+            ) : (
+              <NetworkSelect chainIds={networkChainIds} dataTestId={networkTestId} />
+            ))}
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { FittedAmount } from '@/components/product/FittedAmount';
@@ -48,7 +49,12 @@ export function TransactionAmountHero({
    * no amount field to carry the selector).
    */
   badge?: ReactNode;
-  /** Dollar value of the amount, formatted without the `$` (e.g. "10,000.00"). Omit to hide. */
+  /**
+   * Dollar value of the amount, FULLY formatted — `formatUsd` output, `$`
+   * included (e.g. "$10,000.00"). Rendered verbatim: the hero used to prepend
+   * the `$` itself, which turned `formatNumber`'s dust marker into "$<0.01".
+   * Omit to hide.
+   */
   usd?: string;
   /**
    * 'md' = 32px icon + 12px USD line (savings/rewards comps 1310:130565 /
@@ -64,30 +70,36 @@ export function TransactionAmountHero({
     <div className="flex flex-col gap-1" data-testid={dataTestId}>
       {label && <span className="text-fgSecondary text-sm leading-5.5">{label}</span>}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <TokenIcon
-            token={{ symbol }}
-            className={lg ? 'size-10 shrink-0' : 'size-8 shrink-0'}
-            width={lg ? 40 : 32}
-            showChainIcon={false}
-          />
-          <div className="flex min-w-0 flex-col">
+        {/* The icon shares a row with the AMOUNT alone and centres on it, so
+            it holds whatever line box FittedAmount ends up with (44px down to
+            its 20px floor) — with the USD sub-line in the same column the icon
+            used to drift down between the two lines (QA 2026-09-07). The USD
+            line then indents past the icon to sit under the number. */}
+        <div className="flex min-w-0 flex-col">
+          <div className="flex min-w-0 items-center gap-3">
+            <TokenIcon
+              token={{ symbol }}
+              className={lg ? 'size-10 shrink-0' : 'size-8 shrink-0'}
+              width={lg ? 40 : 32}
+              showChainIcon={false}
+            />
             {loading ? (
               <Skeleton className="my-2 h-8 w-40 rounded" data-testid="hero-loading" />
             ) : (
               <FittedAmount amount={amount} />
             )}
-            {usd && (
-              <span
-                className={
-                  lg ? 'text-fgSecondary text-sm leading-5.5' : 'text-fgSecondary text-xs leading-4.5'
-                }
-                data-testid={usdTestId}
-              >
-                ${usd}
-              </span>
-            )}
           </div>
+          {usd && (
+            <span
+              className={cn(
+                'text-fgSecondary',
+                lg ? 'pl-[52px] text-sm leading-5.5' : 'pl-11 text-xs leading-4.5'
+              )}
+              data-testid={usdTestId}
+            >
+              {usd}
+            </span>
+          )}
         </div>
         {badge ?? <TokenBadge symbol={symbol} />}
       </div>

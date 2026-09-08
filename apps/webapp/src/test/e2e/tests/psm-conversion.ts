@@ -9,7 +9,7 @@ import { NetworkName } from '../utils/constants';
 // V2 rewrite (see convert/QA-CASES.md §3): the PSM flow IS the /convert page
 // (page-as-widget, E2). The form lives on the page (`convert-*` testids), and
 // Review launches the shared TransactionModal ("Review conversion" → Confirm →
-// step list → success). Default direction is USDS → USDC; `convert-flip` (or
+// step list → success). Default direction is USDC → USDS; `convert-flip` (or
 // `?source_token=`) switches it. The engine routes mainnet (UsdsPsmWrapper)
 // vs L2 (PSM3 swapExactIn) internally, so the same tests run on every network.
 
@@ -20,12 +20,12 @@ const openConvert = async (page: Page, networkName: NetworkName) => {
 };
 
 /**
- * Asserts the two-step DS step list: "Approve ◉ USDS" then "Convert ◉ USDS to ◉ USDC".
+ * Asserts the two-step DS step list: "Approve ◉ USDC" then "Convert ◉ USDC to ◉ USDS".
  *
  * The convert row is no longer one text node — `StepsItem` draws the label, each
  * token symbol (beside its own 14px icon) and the "to" as sibling spans with no
- * whitespace between them, so the row's text content reads "ConvertUSDStoUSDC"
- * and `getByText('Convert USDS to USDC')` can never match. Locate the row, then
+ * whitespace between them, so the row's text content reads "ConvertUSDCtoUSDS"
+ * and `getByText('Convert USDC to USDS')` can never match. Locate the row, then
  * assert its parts.
  */
 /*
@@ -67,11 +67,11 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await expect(reviewCta).toBeDisabled();
     });
 
-    test('Shows from and to inputs with the default USDS → USDC direction', async ({ isolatedPage }) => {
+    test('Shows from and to inputs with the default USDC → USDS direction', async ({ isolatedPage }) => {
       const convert = await openConvert(isolatedPage, networkName);
 
-      await expect(convert.fromToken()).toContainText('USDS');
-      await expect(convert.toToken()).toContainText('USDC');
+      await expect(convert.fromToken()).toContainText('USDC');
+      await expect(convert.toToken()).toContainText('USDS');
       await expect(convert.fromAmount()).toBeEditable();
       await expect(convert.toAmount()).not.toHaveRole('textbox');
     });
@@ -152,16 +152,16 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Direction switching', () => {
-    test('Flip changes USDS→USDC to USDC→USDS', async ({ isolatedPage }) => {
+    test('Flip changes USDC→USDS to USDS→USDC', async ({ isolatedPage }) => {
       await openConvert(isolatedPage, networkName);
-
-      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
-      await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDC');
-
-      await isolatedPage.getByTestId('convert-flip').click();
 
       await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDC');
       await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDS');
+
+      await isolatedPage.getByTestId('convert-flip').click();
+
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
+      await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDC');
     });
 
     test('Flip preserves the typed amount', async ({ isolatedPage }) => {
@@ -178,13 +178,13 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
     test('Double flip returns to the original direction', async ({ isolatedPage }) => {
       await openConvert(isolatedPage, networkName);
 
-      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
-
-      await isolatedPage.getByTestId('convert-flip').click();
       await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDC');
 
       await isolatedPage.getByTestId('convert-flip').click();
       await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
+
+      await isolatedPage.getByTestId('convert-flip').click();
+      await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDC');
     });
   });
 
@@ -203,7 +203,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await expect(isolatedPage.getByTestId('convert-modal-review')).toBeVisible();
       await expect(isolatedPage.getByTestId('convert-modal-from-amount')).toHaveText('225.00');
       await expect(isolatedPage.getByTestId('convert-modal-to-amount')).toHaveText('225.00');
-      // await expect(isolatedPage.getByTestId('convert-modal-row-rate')).toContainText('1.00 USDS = 1.00 USDC');
+      // await expect(isolatedPage.getByTestId('convert-modal-row-rate')).toContainText('1.00 USDC = 1.00 USDS');
       await expect(isolatedPage.getByText('$0.00')).toBeTruthy();
     });
 
@@ -215,7 +215,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await isolatedPage.getByTestId('convert-review-cta').click();
 
       await expect(isolatedPage.getByTestId('convert-modal-from-amount')).toHaveText('100.00');
-      // await expect(isolatedPage.getByTestId('convert-modal-row-rate')).toContainText('1.00 USDC = 1.00 USDS');
+      // await expect(isolatedPage.getByTestId('convert-modal-row-rate')).toContainText('1.00 USDS = 1.00 USDC');
     });
 
     test('Closing the review modal returns to the editable form', async ({ isolatedPage }) => {
@@ -237,27 +237,27 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Bundled transaction', () => {
-    test('USDS to USDC bundled conversion completes successfully', async ({ isolatedPage }) => {
+    test('USDC to USDS bundled conversion completes successfully', async ({ isolatedPage }) => {
       const convert = await openConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await convert.reviewAndConfirm();
 
-      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted to USDC!' });
+      await expectTransactionSuccess(isolatedPage, { title: 'USDC converted to USDS!' });
 
       // onSuccess resets the form for the next conversion
       await expect(isolatedPage.getByTestId('convert-from-amount')).toHaveValue('');
       await expect(isolatedPage.getByTestId('convert-review-cta')).toBeDisabled();
     });
 
-    test('USDC to USDS bundled conversion completes successfully', async ({ isolatedPage }) => {
+    test('USDS to USDC bundled conversion completes successfully', async ({ isolatedPage }) => {
       const convert = await openConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-flip').click();
       await isolatedPage.getByTestId('convert-from-amount').fill('5');
       await convert.reviewAndConfirm();
 
-      await expectTransactionSuccess(isolatedPage, { title: 'USDC converted to USDS!' });
+      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted to USDC!' });
     });
 
     test('Transaction screen shows the approve and convert steps', async ({ isolatedPage }) => {
@@ -321,7 +321,11 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await interceptAndRejectTransactions(isolatedPage, 0, true);
       await confirm.click();
 
-      await expect(isolatedPage.getByText('An error occurred while converting your funds.')).toBeVisible({
+      // The failure surfaces in the step list (failed row + inline retry) and the
+      // status chip — there is no status subtitle any more (Design QA, Sep 2026).
+      // The chip by testid: a bundled failure also retitles its collapsed step
+      // row "Transaction failed", so a text locator resolves to two elements.
+      await expect(isolatedPage.getByTestId('transaction-status-badge')).toHaveText(/Transaction failed/, {
         timeout: 60_000
       });
       await expect(isolatedPage.getByRole('button', { name: 'Try again' })).toBeVisible();
@@ -338,12 +342,12 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
   if (isMainnet) {
     test.describe('PSM Conversion — URL state', () => {
-      test('source_token=USDC starts in the USDC→USDS direction', async ({ isolatedPage }) => {
-        await isolatedPage.goto('/convert?source_token=USDC');
+      test('source_token=USDS starts in the USDS→USDC direction', async ({ isolatedPage }) => {
+        await isolatedPage.goto('/convert?source_token=USDS');
         await connectAndVerify(isolatedPage, { batch: true });
 
-        await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDC');
-        await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDS');
+        await expect(isolatedPage.getByTestId('convert-from-token')).toContainText('USDS');
+        await expect(isolatedPage.getByTestId('convert-to-token')).toContainText('USDC');
       });
     });
   }
@@ -353,19 +357,19 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   // ─────────────────────────────────────────────────────────────────────────
 
   test.describe('PSM Conversion — Round-trip', () => {
-    test('Convert USDS to USDC, then USDC back to USDS', async ({ isolatedPage }) => {
+    test('Convert USDC to USDS, then USDS back to USDC', async ({ isolatedPage }) => {
       const convert = await openConvert(isolatedPage, networkName);
 
-      // USDS → USDC
-      await isolatedPage.getByTestId('convert-from-amount').fill('3');
-      await convert.reviewAndConfirm();
-      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted to USDC!' });
-
       // USDC → USDS
-      await isolatedPage.getByTestId('convert-flip').click();
       await isolatedPage.getByTestId('convert-from-amount').fill('3');
       await convert.reviewAndConfirm();
       await expectTransactionSuccess(isolatedPage, { title: 'USDC converted to USDS!' });
+
+      // USDS → USDC
+      await isolatedPage.getByTestId('convert-flip').click();
+      await isolatedPage.getByTestId('convert-from-amount').fill('3');
+      await convert.reviewAndConfirm();
+      await expectTransactionSuccess(isolatedPage, { title: 'USDS converted to USDC!' });
     });
   });
 };

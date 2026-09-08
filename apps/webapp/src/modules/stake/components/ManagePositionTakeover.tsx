@@ -56,11 +56,14 @@ import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorro
 export function ManagePositionTakeover({
   urnIndex,
   init,
-  onClose
+  onClose,
+  scrimHandoff
 }: {
   urnIndex: number;
   init: StakeManageFlowInit;
   onClose: () => void;
+  /** Opened from the details modal, whose scrim is already up — see TakeoverShell. */
+  scrimHandoff?: boolean;
 }) {
   const chainId = useChainId();
   const { address } = useConnection();
@@ -426,6 +429,7 @@ export function ManagePositionTakeover({
 
   return (
     <TakeoverShell
+      scrimHandoff={scrimHandoff}
       title={<Trans>Manage a position</Trans>}
       badge={
         <>

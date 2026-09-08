@@ -151,6 +151,8 @@ type TransactionModalView = {
   currentStep: number;
   /** A step of this session has mined — see `hasMinedStep` in the provider. */
   hasMinedStep: boolean;
+  /** The ERROR on screen is a wallet Reject — the modal words it as declined, not rolled back. */
+  userRejected: boolean;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
   /** Gate-owned status copy override active when the session ended (APP-501). */
@@ -214,6 +216,9 @@ export function TransactionProvider({
   // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
+  // Written on every ERROR (true/false), so it is always fresh for the failure
+  // the modal is showing; never read outside ERROR.
+  const [userRejected, setUserRejected] = useState(false);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
   // in the close snapshot. Reset on every launch and close — a prelude belongs
@@ -563,6 +568,7 @@ export function TransactionProvider({
         txStatus: txStatusRef.current,
         currentStep,
         hasMinedStep,
+        userRejected,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
       });
@@ -656,9 +662,10 @@ export function TransactionProvider({
     }
     const config = configRef.current;
     if (!config) return;
-    // Amount-aware title when the flow supplied one, else the subtitle sentence, else the title.
-    const titleFor = (state: 'loading' | 'error') =>
-      config.toast?.[state] ?? config.subtitles?.[state] ?? config.title;
+    // Amount-aware title when the flow supplied one, else the flow's title.
+    // (No subtitle fallback: status subtitles no longer exist — every launch
+    // sets its own toast copy.)
+    const titleFor = (state: 'loading' | 'error') => config.toast?.[state] ?? config.title;
 
     // SUCCESS never reaches here: it closes the session (see onSuccess), which
     // clears `minimized` in the same commit and posts its own toast.
@@ -979,7 +986,7 @@ export function TransactionProvider({
       // toast first, so the two never sit stacked.
       if (config) {
         toast.dismiss(MINIMIZED_TOAST_ID);
-        const successTitle = config.toast?.success ?? config.subtitles?.success ?? config.title;
+        const successTitle = config.toast?.success ?? config.title;
         const txHash = hash ?? txHashRef.current;
         toastWithClose(
           () => (
@@ -1028,6 +1035,7 @@ export function TransactionProvider({
       }
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
+      setUserRejected(isUserRejectedRequestError(error));
       if (hash) {
         txHashRef.current = hash;
       }
@@ -1096,7 +1104,7 @@ export function TransactionProvider({
   );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, currentStep, hasMinedStep, preludeSteps, gateCopy }
+    ? { config: activeConfig, txStatus, currentStep, hasMinedStep, userRejected, preludeSteps, gateCopy }
     : exitingView;
 
   // Chain guard (APP-528): the modal survives a wallet chain switch (the
@@ -1275,6 +1283,7 @@ export function TransactionProvider({
             errorLabel={modalView.config.errorLabel}
             steps={modalSteps}
             currentStep={modalView.currentStep}
+            userRejected={modalView.userRejected}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
             chainGuard={chainGuard}

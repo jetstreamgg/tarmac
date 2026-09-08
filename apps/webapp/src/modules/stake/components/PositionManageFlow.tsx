@@ -46,7 +46,7 @@ function parseUrnIndex(value: string | null): number | null {
 
 type ManageView =
   | { name: 'details' }
-  | { name: 'sheet'; init: StakeManageFlowInit }
+  | { name: 'sheet'; init: StakeManageFlowInit; scrimHandoff?: boolean }
   | { name: 'claim' }
   | { name: 'reopen'; borrowExpanded: boolean };
 
@@ -100,7 +100,8 @@ export function PositionManageFlow({
   }, [setSearchParams]);
 
   const onAction = useCallback(
-    (action: StakeManageAction) => setView({ name: 'sheet', init: manageActionInit(action) }),
+    (action: StakeManageAction) =>
+      setView({ name: 'sheet', init: manageActionInit(action), scrimHandoff: true }),
     []
   );
   const onClaim = useCallback(() => setView({ name: 'claim' }), []);
@@ -179,8 +180,18 @@ export function PositionManageFlow({
       );
     }
 
+    // The details modal is a Radix dialog, not a motion child, so switching
+    // views unmounts it in this same commit — the sheet's scrim must mount
+    // already up, or the page shows through for a beat between the two
+    // (a deep-linked sheet has no scrim to inherit and fades in as usual).
     return isOpen ? (
-      <ManagePositionTakeover key="manage" urnIndex={index} init={currentView.init} onClose={close} />
+      <ManagePositionTakeover
+        key="manage"
+        urnIndex={index}
+        init={currentView.init}
+        onClose={close}
+        scrimHandoff={currentView.scrimHandoff}
+      />
     ) : null;
   };
 

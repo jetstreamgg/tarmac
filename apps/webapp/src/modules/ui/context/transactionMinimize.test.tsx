@@ -467,8 +467,7 @@ describe('TransactionModal minimize', () => {
     usdValue: 0,
     supportedChainIds: [1],
     steps: ['Supply'],
-    subtitles: { success: 'Supplied!', error: 'Supply failed' },
-    // Amount-aware title (what the savings host pushes) takes precedence over subtitles.
+    // Amount-aware title (what the savings host pushes).
     toast: { success: '10,000.00 USDS supplied!' },
     onConfirm: () => {}
   };
@@ -491,7 +490,7 @@ describe('TransactionModal minimize', () => {
     act(() => cb.onSuccess('0xhash'));
     expect(toastWithCloseMock).toHaveBeenCalled();
 
-    // The toast carries the amount-aware title (config.toast wins over subtitles).
+    // The toast carries the amount-aware title.
     const { getByText } = renderLastToast();
     expect(getByText('10,000.00 USDS supplied!')).toBeDefined();
   });

@@ -364,6 +364,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
 
   return (
     <TakeoverShell
+      // A reopen arrives from the details modal, whose scrim is already up.
+      scrimHandoff={!!reopen}
       title={<Trans>Open a position</Trans>}
       badge={
         <>

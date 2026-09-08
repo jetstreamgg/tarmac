@@ -213,11 +213,6 @@ export function useConvertLaunch({
       // The wallet screen keeps the review title (Figma 1036:205564 draws
       // "Review conversion" above the steps, not a "Confirm …" variant).
       transactionTitle: t`Review conversion`,
-      subtitles: {
-        loading: t`Your conversion is being processed on the blockchain. Please wait.`,
-        success: t`You've successfully converted ${amountLabel} to ${targetSymbol}.`,
-        error: t`An error occurred while converting your funds.`
-      },
       toast: {
         loading: t`Converting ${amountLabel}`,
         success: t`${amountLabel} converted to ${targetSymbol}!`,

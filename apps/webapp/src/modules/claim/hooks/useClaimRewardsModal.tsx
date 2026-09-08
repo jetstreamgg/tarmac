@@ -39,11 +39,6 @@ export function useClaimRewardsModal({ onSuccess }: UseClaimRewardsModalOptions 
       launch({
         title: modalTitle(scope),
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your claim is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully claimed your rewards.`,
-          error: t`An error occurred while claiming your rewards.`
-        },
         sessionId,
         // UNKNOWN until the claim set resolves (the panel pushes the real
         // sum) — treated as above-threshold, so the enhanced check runs
