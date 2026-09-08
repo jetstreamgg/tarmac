@@ -1396,6 +1396,153 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
   background-image: linear-gradient(var(--color-glassSurface), var(--color-glassSurface));
 }
 
+/* Toasts are captured for the same reason as the navbar -----------------------
+   sonner's toaster is a fixed, portal-free `<ol>` sitting at z-60 in the
+   document, and during a page transition the page's snapshots paint over it in
+   the top layer — a "10,000 USDS supplied!" toast disappears under the sliding
+   pages for the length of the animation. Naming the toaster gives it a group
+   of its own, ordered above the page and navbar groups.
+
+   The name is scoped to a running `page` transition (every animating
+   navigation carries the `page` type — drill/reverse are additive) and, via
+   `:not(.page-transition *)`, to a toaster living OUTSIDE the page: the
+   design-system page mounts a second Toaster inside the page, and two elements
+   sharing a view-transition-name abort the whole transition into an instant
+   swap.
+
+   As with the navbar, the capture restores the layering, not the frost: a
+   captured element's snapshot has no backdrop, so the toast's blur is dead for
+   the ~400ms. Left at that, its translucent tint lets the pages show through
+   sharp (measured: card text legible straight through the toast), so the
+   toast gets the navbar's stand-in below for the length of the transition. */
+@supports selector(:active-view-transition-type(page)) {
+  :root:active-view-transition-type(page) .vt-shell-toaster:not(.page-transition *) {
+    view-transition-name: shell-toaster;
+    /* sonner's <ol> is a zero-height anchor (its toasts are absolutely
+       positioned above its bottom edge), and a zero-height box captures to
+       nothing — measured: the toasts simply vanished for the transition.
+       Grown upward for the duration (bottom stays pinned, so the toasts don't
+       move) so the snapshot has a box to draw them in. */
+    height: 100dvh;
+    pointer-events: none;
+  }
+}
+::view-transition-group(shell-toaster) {
+  /* Above the page (0) and the navbar (1); group stacking is not inherited. */
+  z-index: 2;
+  /* The toaster holds the same box on both routes. */
+  animation: none;
+}
+/* Only the live `new` image is kept: a toast arriving or leaving mid-transition
+   keeps playing sonner's own slide instead of ghosting against a frozen copy. */
+::view-transition-old(shell-toaster) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(shell-toaster) {
+  animation: none;
+  opacity: 1;
+}
+/* The toast's `bg-bgTertiary!` is a LAYERED important (Tailwind's utilities
+   layer), and importance inverts layer order — an unlayered `!important` here
+   loses to it and silently no-ops (measured: computed bg unchanged). Declared
+   in the same layer, later in source, it wins. Page colour under the tint, so
+   the tint composites over the colour exactly as the glass composites over
+   its backdrop; frozen at 150/390ms it lands within a hair of the rest frame. */
+@layer utilities {
+  :root:active-view-transition-type(page) .vt-shell-toaster [data-sonner-toast] {
+    background-color: var(--color-pageBackground) !important;
+    background-image: linear-gradient(var(--color-bgTertiary), var(--color-bgTertiary)) !important;
+  }
+}
+
+/* The sticky header is captured for the same reason -------------------------
+   The bar never overlaps the page group (the group starts at the page
+   wrapper's own layout position, below the bar), so its layering was never
+   the problem — but the captured page is not painted in the document while
+   the transition runs, so the bar's 6px blur had nothing behind it and
+   whatever slid past underneath read sharp. Naming the bar gives it a group of
+   its own; as with the navbar and toaster that fixes nothing about the blur
+   (a snapshot has no backdrop) but lets the bar wear a stand-in fill below.
+   Only the live `new` image is kept: the nav pill's active state and the
+   wallet chip keep rendering through the transition.
+
+   Desktop tier only (the `lg` seam, 912px, where TopNav's pill group takes
+   over from the bottom navbar). On the phone tiers the uncaptured bar looked
+   better in situ (user-verified on iOS): iOS treats `background-attachment:
+   fixed` as `scroll`, so the image stand-in below can't line up there, and
+   the bar's own frost over the live background beats a mis-cropped sliver of
+   sky. Below the seam nothing here applies and the bar behaves as it did
+   before the capture. */
+@supports selector(:active-view-transition-type(page)) {
+  @media (min-width: 912px) {
+    :root:active-view-transition-type(page) .vt-shell-header {
+      view-transition-name: shell-header;
+      /* Stand-in for the dead blur, transition only. What the bar's blur samples
+       at rest is the viewport-fixed `.app-background` (plus whatever page
+       content is passing under it), so the fill is that same image, drawn on
+       the bar's own background with `background-attachment: fixed` and the
+       layer's exact size/position, under the bar's gradient tint. The pixels
+       line up with the fixed layer, so the bar's bottom edge disappears into
+       the ground it was already standing on. A flat colour does not do this
+       in light: the page colour (#ecf0ff) and the iOS-chrome sample (#d2d2fb)
+       both stand 10–23 RGB units off the lavender image and read as a pale
+       band with a hard edge (measured, PR #1927). This lands within 1 unit of
+       the rest frame at scroll 0 in both themes; scrolled, the only remainder
+       is the page content the rest-state blur was mixing in.
+
+       Layer list = the tint (scroll, on the bar) + the app-background token's
+       own layers (fixed): dark is fade + image, light is fade + image + base
+       gradient, so the per-layer attachment/size/position lists are written
+       per theme to match `.app-background` exactly. `.app-background` itself
+       is a fixed element rather than `background-attachment: fixed` because
+       iOS treats `fixed` as `scroll` — here that only degrades this stand-in
+       for the ~400ms of a transition on iOS (the layer is then sized to the
+       bar's own 88px box) and is left as is. */
+      background-color: var(--color-pageBackground);
+      background-image:
+        linear-gradient(
+          to bottom in oklab,
+          var(--color-navbarGradientStart),
+          var(--color-navbarGradientEnd) 75%,
+          transparent
+        ),
+        var(--background-image-app-background);
+      background-repeat: no-repeat;
+      background-attachment: scroll, fixed, fixed;
+      background-size: auto, auto, cover;
+      background-position:
+        0 0,
+        center,
+        center top;
+    }
+    [data-theme='light']:active-view-transition-type(page) .vt-shell-header {
+      background-attachment: scroll, fixed, fixed, fixed;
+      background-size: auto, auto, cover, auto;
+      background-position:
+        0 0,
+        center,
+        center,
+        center;
+    }
+  }
+}
+::view-transition-group(shell-header) {
+  /* Above the page (0). The navbar (1) and the toaster (2) never share its
+     box, so its own place in that order is moot; 1 keeps it out of the page. */
+  z-index: 1;
+  /* The bar holds the same box on both routes. */
+  animation: none;
+}
+::view-transition-old(shell-header) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(shell-header) {
+  animation: none;
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   :root:active-view-transition-type(page)::view-transition-old(page) {
     animation: 300ms var(--ease-in-out-quart) both page-slide-out;
