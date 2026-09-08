@@ -93,7 +93,7 @@ function actionLabel(item: CombinedHistoryItem): string {
     case TransactionTypeEnum.USDS_TO_DAI:
       return t`Revert`;
     case TransactionTypeEnum.TRADE:
-      return t`Trade`;
+      return t`Convert`;
     case TransactionTypeEnum.SUPPLY:
       if (module === ModuleEnum.REWARDS) return t`Rewards Supply`;
       if (module === ModuleEnum.SAVINGS) return t`Savings Supply`;

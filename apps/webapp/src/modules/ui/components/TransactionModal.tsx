@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus } from '@/widgets';
 import { ArrowLeft } from 'lucide-react';
@@ -142,6 +142,14 @@ export type TransactionModalProps = {
    * so a product address resolved on another chain can never be sent here.
    */
   chainGuard?: ChainGuard | null;
+  /**
+   * No first screen (see `TransactionConfig.skipReview`): the modal mounts on
+   * the wallet/status screen and fires `onConfirm` itself, once, on mount —
+   * the gated path, exactly as a review Confirm would. With nothing to go
+   * back to, the failure view offers Retry alone (the provider closes the
+   * modal on a gate's return-to-first-screen).
+   */
+  skipReview?: boolean;
 };
 
 /** The transaction modal's chain-guard descriptor (see `chainGuard` prop). */
@@ -212,12 +220,14 @@ export function TransactionModal({
   gateCopy,
   preflight,
   chainGuard,
-  registerReturnToFirstScreen
+  registerReturnToFirstScreen,
+  skipReview = false
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
-  // read-only review. Initialised per mount (the provider remounts the modal on
-  // each launch, so the initializer sees the launch's `entry`).
-  const firstStep: TransactionModalStep = entry ? 'entry' : 'review';
+  // read-only review — or, for a flow whose own surface was the review, the
+  // wallet/status screen itself. Initialised per mount (the provider remounts
+  // the modal on each launch, so the initializer sees the launch's `entry`).
+  const firstStep: TransactionModalStep = entry ? 'entry' : skipReview ? 'transaction' : 'review';
   // A config carrying BOTH an entry and review content is the three-screen flow
   // (Figma 859:36036 → 859:36154 → 859:36214): entry → review → transaction.
   // Entry-only and review-only configs keep their two screens.
@@ -453,11 +463,27 @@ export function TransactionModal({
 
   // Hand the provider the same back-to-first-screen the header arrow uses, so
   // the gate's returnToFirstScreen control (enhanced-screening denials) lands
-  // on an identical screen state — onBack's progress reset included.
+  // on an identical screen state — onBack's progress reset included. (For a
+  // skipReview flow the provider closes the modal instead — there is no first
+  // screen to return to.)
   useEffect(() => {
     registerReturnToFirstScreen?.(handleBack);
     return () => registerReturnToFirstScreen?.(null);
   }, [registerReturnToFirstScreen, handleBack]);
+
+  // A skipReview launch is the review's Confirm: fire once on mount, through
+  // the same gated `onConfirm` the review CTA uses. The ref (not the effect)
+  // is the once-guard — StrictMode replays mount effects on the same
+  // instance, and a second run would be a second transaction under a
+  // synchronous gate.
+  const autoConfirmedRef = useRef(false);
+  useEffect(() => {
+    if (!skipReview || autoConfirmedRef.current) return;
+    autoConfirmedRef.current = true;
+    onConfirm();
+    // Mount-only by design: the launch is the click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Header back arrow (Figma chrome on every screen): on the flow's first screen
   // it closes (there's nothing before it — the inputs live on the page/entry); on
@@ -820,7 +846,9 @@ export function TransactionModal({
                   <>
                     {chainGuardBlock}
                     <div className="flex w-full gap-3">
-                      {!backLocked && (
+                      {/* No Back either once a step has mined (APP-448) or when
+                          there is no first screen to go back to. */}
+                      {!backLocked && !skipReview && (
                         <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
                           <Trans>Back</Trans>
                         </Button>

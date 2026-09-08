@@ -15,5 +15,6 @@ export const shellNavigationContract: TestContract = {
     { action: 'click Stake in TopNav', locator: { testId: 'nav-stake' } },
     { action: 'assert auto-switch toast', locator: { role: { type: 'button' } } }
   ],
-  oracle: 'URL contains network=tenderlymainnet; explanatory toast visible; stake-network selector mounted'
+  oracle:
+    'app chain reads Tenderly Mainnet (expectAppChain); explanatory toast visible; stake-network selector mounted'
 };

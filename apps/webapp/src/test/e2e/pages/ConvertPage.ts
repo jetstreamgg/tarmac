@@ -24,7 +24,7 @@ export class ConvertPage {
     await this.goto();
     await this.connect(options);
     if (networkName !== NetworkName.mainnet) {
-      await switchWalletNetwork(this.page, tenderlyChainLabel(networkName), networkName);
+      await switchWalletNetwork(this.page, tenderlyChainLabel(networkName));
     }
     await this.expectShell();
     await this.expectBalancesLoaded();

@@ -54,7 +54,8 @@ export const PRODUCT_GROUPS: { id: string; modules: ModuleEnum[]; label: () => s
   { id: 'rewards', modules: [ModuleEnum.REWARDS], label: () => t`Rewards` },
   { id: 'stake', modules: [ModuleEnum.STAKE], label: () => t`Staking` },
   { id: 'upgrade', modules: [ModuleEnum.UPGRADE], label: () => t`Upgrade` },
-  { id: 'trade', modules: [ModuleEnum.TRADE], label: () => t`Trade` }
+  // The PSM conversions (and the legacy CoW trades) — the product is /convert.
+  { id: 'trade', modules: [ModuleEnum.TRADE], label: () => t`Convert` }
 ];
 
 const groupForModule = (module: ModuleEnum) => PRODUCT_GROUPS.find(g => g.modules.includes(module));

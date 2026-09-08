@@ -37,18 +37,40 @@ describe('RiskScaleMeter', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
-  it('fills a discrete Liquidation level to the threshold tick, not the full bar', () => {
+  it('fills a discrete Liquidation level to the end of the bar, past High', () => {
     renderMeter({ level: RiskLevel.LIQUIDATION });
-    // Liquidation threshold is 80%, so the fill stops there rather than at 100%.
+    expect(screen.getByTestId('risk-scale-fill').style.width).toBe('100%');
+    cleanup();
+    renderMeter({ level: RiskLevel.HIGH });
+    // High ends where Liquidation starts (the 80% threshold).
     expect(screen.getByTestId('risk-scale-fill').style.width).toBe('80%');
   });
 
   it('fills to the value while tinting by the level when given both', () => {
     renderMeter({ value: 0.5, level: RiskLevel.HIGH });
     const fill = screen.getByTestId('risk-scale-fill');
-    // Fill length follows the continuous value (50%), not the HIGH zone end (75%).
+    // Fill length follows the continuous value (50%), not the HIGH zone end (80%).
     expect(fill.style.width).toBe('50%');
-    // The gradient tint still comes from the level.
-    expect(fill.style.backgroundImage).toContain('gradient');
+    // The tint still comes from the level: the DS risk-high colour.
+    expect(fill.dataset.zone).toBe(RiskLevel.HIGH);
+    expect(fill.className).toContain('bg-riskHigh');
+  });
+
+  it('places the zone markers at the real risk thresholds, not even quarters (APP-545)', () => {
+    renderMeter({ level: RiskLevel.LOW });
+    expect(screen.getAllByTestId('risk-scale-marker').map(m => m.style.left)).toEqual(['25%', '40%', '80%']);
+  });
+
+  it('a continuous value lands in the zone its threshold says — 33% is Medium, in the medium colour', () => {
+    renderMeter({ value: 0.33 });
+    const fill = screen.getByTestId('risk-scale-fill');
+    expect(fill.dataset.zone).toBe(RiskLevel.MEDIUM);
+    expect(fill.className).toContain('bg-riskMedium');
+    expect(fill.style.width).toBe('33%');
+  });
+
+  it('a discrete level fills to the end of its threshold zone', () => {
+    renderMeter({ level: RiskLevel.MEDIUM });
+    expect(screen.getByTestId('risk-scale-fill').style.width).toBe('40%');
   });
 });

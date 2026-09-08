@@ -199,7 +199,9 @@ export function StakeManageBorrowCard({
       onEnabledChange={onEnabledChange}
       dataTestId="stake-manage-borrow-card"
     >
-      <div className="flex flex-col gap-5">
+      {/* Design QA 2800:91832 ("More gap", 32px): the amount block, the
+          slider and the stats space like the card's own header→body gap. */}
+      <div className="flex flex-col gap-6 md:gap-8">
         <StakeTakeoverAmountField
           tokenSymbol="USDS"
           amount={amount}
@@ -325,8 +327,16 @@ export function StakeManageBorrowCard({
         )}
 
         {/* Comp 1036:213936 stat columns: Borrow rate · risk badge · prices,
-            hugging cells split by hairlines. */}
-        <div className="flex flex-wrap items-start gap-4">
+            hugging cells split by hairlines. 2×2 on phones (the takeover's
+            1222:19900 geometry), one row from md — and that row never wraps
+            (APP-546): the two oracle prices change precision as the slider
+            moves, and a wrapping row flipped between one and two lines under
+            the pointer. The cells are nowrap and each carries `min-w-0`, so a
+            long value shrinks its neighbours rather than pushing a cell down.
+            12px gutters in the row: with a staged delta in the price cell
+            (`$0.0125 → $0.0147`) plus the Updated-hourly badge, 16px ones ran
+            ~20px into the card's inset (measured at the 610px column). */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 md:flex md:flex-nowrap md:gap-3">
           <StakeManageStatCell
             label={
               <>
@@ -374,7 +384,7 @@ export function StakeManageBorrowCard({
             }
             dataTestId="stake-manage-risk-row"
           />
-          <StakeManageStatDivider />
+          <StakeManageStatDivider className="hidden md:block" />
           <StakeManageStatCell
             label={<Trans>Liquidation price</Trans>}
             current={
@@ -387,7 +397,7 @@ export function StakeManageBorrowCard({
             next={
               showDeltas
                 ? isFullRepay
-                  ? '$0.0'
+                  ? formatOraclePrice(0n)
                   : simulatedVault?.liquidationPrice !== undefined &&
                       simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
                     ? formatOraclePrice(simulatedVault.liquidationPrice)

@@ -234,6 +234,22 @@ vi.mock('../hooks/useStakeLaunch', async importOriginal => {
   };
 });
 
+// The takeover's own enhanced-screening hold (APP-517 via APP-550): the
+// provider's injected preflight, read through the context helper.
+const preflight = vi.hoisted(() => ({
+  state: { kind: 'clear' } as { kind: 'clear' } | { kind: 'pending' } | { kind: 'blocked'; message: string },
+  contexts: [] as Array<{ usdValue: number | undefined; actionable: boolean }>
+}));
+vi.mock('@/modules/ui/context/TransactionContext', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/modules/ui/context/TransactionContext')>();
+  return {
+    ...actual,
+    useTransactionPreflight: (context: { usdValue: number | undefined; actionable: boolean }) => {
+      preflight.contexts.push(context);
+      return preflight.state;
+    }
+  };
+});
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
@@ -383,6 +399,40 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(100n * WAD);
     expect(h.launchParams?.usdsToBorrow).toBe(0n);
     expect(h.launchParams?.enabled).toBe(true);
+  });
+
+  it('runs the enhanced-screening preflight itself — the takeover is the review (APP-550)', () => {
+    preflight.contexts = [];
+    renderTakeover();
+    // Nothing staged → not actionable: a user playing with the form never
+    // triggers a screening call.
+    expect(preflight.contexts.at(-1)?.actionable).toBe(false);
+
+    typeStakeAmount('100');
+    expect(preflight.contexts.at(-1)?.actionable).toBe(true);
+  });
+
+  it('holds Confirm on a pending verdict and blocks it, with the reason, on a denial (APP-550)', () => {
+    preflight.state = { kind: 'pending' };
+    const { rerender } = renderTakeover();
+    typeStakeAmount('100');
+    const confirm = screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement;
+    // The DS loading state disables the button while the verdict is in flight.
+    expect(confirm.disabled).toBe(true);
+
+    preflight.state = { kind: 'blocked', message: 'This wallet did not pass the additional verification.' };
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <OpenPositionTakeover />
+      </I18nProvider>
+    );
+    expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId('stake-takeover-preflight-blocked').textContent).toContain(
+      'did not pass the additional verification'
+    );
+    fireEvent.click(screen.getByTestId('stake-takeover-confirm'));
+    expect(h.launchSpy).not.toHaveBeenCalled();
+    preflight.state = { kind: 'clear' };
   });
 
   it('keeps Confirm disabled while the typed amount has not debounced yet', () => {
@@ -596,14 +646,13 @@ describe('OpenPositionTakeover', () => {
 
 describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)', () => {
   const renderReopen = (borrowExpanded = false) => {
-    const onBack = vi.fn();
     const onClose = vi.fn();
     render(
       <I18nProvider i18n={i18n}>
-        <OpenPositionTakeover reopen={{ urnIndex: 2, borrowExpanded, onBack, onClose }} />
+        <OpenPositionTakeover reopen={{ urnIndex: 2, borrowExpanded, onClose }} />
       </I18nProvider>
     );
-    return { onBack, onClose };
+    return { onClose };
   };
 
   beforeEach(() => {
@@ -748,10 +797,11 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
   });
 
-  it('renders the back chevron wired to the details modal', () => {
-    const { onBack } = renderReopen();
-    fireEvent.click(screen.getByTestId('stake-takeover-back'));
-    expect(onBack).toHaveBeenCalled();
+  it('draws no back chevron — × is the only way out (Design QA 2800:91832)', () => {
+    const { onClose } = renderReopen();
+    expect(screen.queryByTestId('stake-takeover-back')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-takeover-close'));
+    expect(onClose).toHaveBeenCalled();
   });
 
   it('keeps the manage seam disabled in plain-open mode', () => {

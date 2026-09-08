@@ -186,15 +186,18 @@ describe('PositionManageFlow', () => {
     expect(second.container.innerHTML).toBe('');
   });
 
-  it('swaps to the sheet on a menu action and back again', () => {
+  it('swaps to the sheet on a menu action; the sheet only closes (no back to the modal)', () => {
     render(<PositionManageFlow />);
 
     act(() => (h.modalProps!.onAction as (a: string) => void)('withdraw'));
     expect(screen.getByTestId('manage-sheet-stub')).toBeTruthy();
     expect(h.sheetProps?.init).toEqual({ stakeCard: 'withdraw' });
 
-    act(() => (h.sheetProps!.onBack as () => void)());
-    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    // Design QA 2800:91832: the sheet has no back arrow — it is not handed one.
+    expect(h.sheetProps?.onBack).toBeUndefined();
+    act(() => (h.sheetProps!.onClose as () => void)());
+    expect(mockSearchParams.get('flow')).toBeNull();
+    expect(mockSearchParams.get('urn_index')).toBeNull();
   });
 
   it('swaps to the claim modal and its × returns to the details modal (F6/C11)', () => {
@@ -218,8 +221,10 @@ describe('PositionManageFlow', () => {
     expect(h.reopenProps?.urnIndex).toBe(2);
     expect(h.reopenProps?.borrowExpanded).toBe(true);
 
-    act(() => (h.reopenProps!.onBack as () => void)());
-    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    // No back arrow on the takeover (Design QA 2800:91832): × clears the flow.
+    expect(h.reopenProps?.onBack).toBeUndefined();
+    act(() => (h.reopenProps!.onClose as () => void)());
+    expect(mockSearchParams.get('flow')).toBeNull();
   });
 
   it('opens the sheet directly on a stake_tab deep link', () => {

@@ -1,22 +1,17 @@
 import { useCallback, useEffect } from 'react';
 import { useAppNavigate } from '@/lib/navigation';
-import { useChainId } from 'wagmi';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { USDS_SKY_REWARDS_NOTIFICATION_KEY } from '@/lib/constants';
-import { isTestnetId } from '@/utils';
 
 const GOVERNANCE_PROPOSAL_URL =
   'https://vote.sky.money/executive/template-executive-vote-reduce-rewards-emissions-complete-guni-vault-offboardings-whitelist-keel-subproxy-to-send-cross-chain-messages-adjust-grove-dc-iam-parameters-delegate-compensation-star-agent-proxy-spells-january-15-2026';
 
 export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
   const navigate = useAppNavigate();
-  const chainId = useChainId();
-  const isTestnet = isTestnetId(chainId);
-  const networkParam = isTestnet ? 'tenderly' : 'ethereum';
 
   const onClose = useCallback(() => {
     localStorage.setItem(USDS_SKY_REWARDS_NOTIFICATION_KEY, 'true');
@@ -53,7 +48,9 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
                 variant="pill"
                 size="xs"
                 onClick={() => {
-                  navigate(`/earn/rewards?network=${networkParam}`);
+                  // No `?network=`: the param is retired as app state (APP-547). The route
+                  // guard resolves the chain when the destination needs one.
+                  navigate('/earn?product=rewards');
                   toast.dismiss(toastId);
                   onClose();
                 }}
@@ -75,5 +72,5 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
     return () => {
       clearTimeout(timer);
     };
-  }, [isAuthorized, navigate, onClose, networkParam]);
+  }, [isAuthorized, navigate, onClose]);
 };

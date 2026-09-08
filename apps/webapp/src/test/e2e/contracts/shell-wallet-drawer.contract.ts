@@ -1,6 +1,6 @@
 import { SKY_APP_UI_FILE, type TestContract } from './types';
 
-/** Wallet preview drawer network switch (QA §2 C-3). */
+/** Wallet preview drawer (QA §2 C-3). */
 export const shellWalletDrawerContract: TestContract = {
   id: 'shell-wallet-drawer',
   qaCase: 'C-3',
@@ -8,12 +8,8 @@ export const shellWalletDrawerContract: TestContract = {
     fileKey: SKY_APP_UI_FILE,
     frames: ['1030:138710', '1030:138802']
   },
-  intent: 'User switches chain from the wallet preview drawer; URL and selector label update',
+  intent: 'User opens the wallet preview drawer from the wallet chip',
   preconditions: ['connected wallet', 'drawer closed'],
-  steps: [
-    { action: 'open wallet chip', locator: { testId: 'wallet-chip' } },
-    { action: 'open network selector', locator: { testId: 'wallet-drawer-network' } },
-    { action: 'pick Tenderly Base', locator: { role: { type: 'button', name: 'Tenderly Base' } } }
-  ],
-  oracle: 'URL network=tenderlybase; drawer network label reads Tenderly Base after reopen'
+  steps: [{ action: 'open wallet chip', locator: { testId: 'wallet-chip' } }],
+  oracle: 'wallet-drawer visible; no network control in the drawer header (switching is per product)'
 };
