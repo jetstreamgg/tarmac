@@ -24,6 +24,11 @@ vi.mock('@/hooks', async io => ({
   useIsBatchSupported: () => ({ data: false })
 }));
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));
+// TransactionProvider reads the chain switch (APP-547) the same way every
+// sibling TransactionProvider test stubs it.
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+}));
 const analytics = vi.hoisted(() => ({
   trackWidgetReviewViewed: vi.fn(),
   trackTransactionStarted: vi.fn(),
