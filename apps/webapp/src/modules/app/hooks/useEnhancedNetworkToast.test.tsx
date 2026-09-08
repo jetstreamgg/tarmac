@@ -6,7 +6,6 @@ const h = vi.hoisted(() => ({
   toastWithClose: vi.fn()
 }));
 
-vi.mock('wagmi', () => ({ useChains: () => [] }));
 vi.mock('@/components/ui/use-toast', () => ({
   toast: { dismiss: vi.fn() },
   toastWithClose: h.toastWithClose
@@ -21,16 +20,8 @@ vi.mock(import('@/utils'), async importOriginal => ({
 }));
 vi.mock('@/modules/icons', () => ({ ArrowRightLong: () => null }));
 vi.mock('@/lib/widget-network-map', () => ({
-  isMultichain: () => false,
   requiresMainnet: () => false
 }));
-vi.mock('@/modules/ui/context/ChainModalContext', () => ({
-  useChainModalContext: () => ({ handleSwitchChain: vi.fn() })
-}));
-vi.mock('@/lib/navigation', () => ({
-  useAppSearchParams: () => [new URLSearchParams(), vi.fn()]
-}));
-vi.mock('@/data/wagmi/config/config.default', () => ({ getSupportedChainIds: () => [] }));
 
 const COVER_FLAG = 'data-app-loader-cover';
 

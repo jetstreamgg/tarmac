@@ -1812,7 +1812,7 @@ function IconboxSection() {
 
 // ─── Headers ──────────────────────────────────────────────────────────────────
 
-/** Static stand-in for the header network pill (ChainModal / FilterSelect at dropdownM). */
+/** Static stand-in for the header network pill (NetworkSelect / FilterSelect at dropdownM). */
 function HeaderNetworkPill({ label }: { label: string }) {
   return (
     <Button variant="dropdown" size="dropdownM">

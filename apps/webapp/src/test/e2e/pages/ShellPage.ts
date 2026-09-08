@@ -29,12 +29,6 @@ export class ShellPage {
     await expect(this.page.getByTestId('wallet-drawer')).toBeVisible({ timeout: 15_000 });
   }
 
-  async switchNetworkInDrawer(chainLabel: string) {
-    const contract = shellWalletDrawerContract;
-    await locate(this.page, { testId: 'wallet-drawer-network' }, contract).click();
-    await locate(this.page, { role: { type: 'button', name: chainLabel } }, contract).click();
-  }
-
   async setMobileViewport() {
     await this.page.setViewportSize(MOBILE_VIEWPORT);
   }

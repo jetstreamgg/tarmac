@@ -7,7 +7,7 @@ import { BP, useBreakpointIndex, useProductNetworks } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -127,7 +127,7 @@ export function StakeProductPage() {
             <Trans>SKY Staking</Trans>
           </PageHeading>
         </div>
-        <ChainModal
+        <NetworkSelect
           chainIds={networks}
           size={isMobile ? 'xs' : undefined}
           triggerClassName="h-8 md:h-10"
@@ -163,13 +163,17 @@ export function StakeProductPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-5 md:mt-6">
+        {/* Design QA (2800:91832): 40px from the tab pills to the content from
+            md up; the phone tier keeps its 20px. The nav pills carry no
+            padding of their own and the tab bodies start flush, so the
+            margin IS the gap. */}
+        <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-5 md:mt-10">
           <StakePositionsTab onRemediate={onRemediate} />
         </TabsContent>
-        <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-5 md:mt-6">
+        <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-5 md:mt-10">
           <StakeStatisticsTab />
         </TabsContent>
-        <TabsContent value="about" data-testid="stake-tab-content-about" className="mt-5 md:mt-6">
+        <TabsContent value="about" data-testid="stake-tab-content-about" className="mt-5 md:mt-10">
           <StakeAboutTab />
         </TabsContent>
       </Tabs>

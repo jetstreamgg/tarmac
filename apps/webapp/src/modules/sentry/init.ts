@@ -149,13 +149,16 @@ export function initSentry(router: AnyRouter): void {
       //     speculatively probe optional methods (EIP-5792 capabilities,
       //     wallet_watchAsset, etc.) and wallets that don't implement them
       //     reject with this code.
+      //   - 4900: "provider is disconnected from all chains" — a locked or
+      //     chain-less extension (seen from Rabby) rejecting wagmi's
+      //     auto-reconnect probes on page load (WEBAPP-V, WEBAPP-B).
       const extraData = (event.extra as Record<string, unknown> | undefined)?.__serialized__ as
         Record<string, unknown> | undefined;
       if (
         event.exception?.values?.some(v =>
           v.value?.includes('Object captured as promise rejection with keys')
         ) &&
-        (extraData?.code === 4001 || extraData?.code === -32601)
+        (extraData?.code === 4001 || extraData?.code === 4900 || extraData?.code === -32601)
       ) {
         return null;
       }

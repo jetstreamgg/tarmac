@@ -57,7 +57,9 @@ type ManageView =
  * whose × returns to the details modal; an inactive urn's Reopen CTA swaps to
  * the open-position takeover in reopen mode (F6/C17), borrow-expanded when the
  * urn ever had debt — the urn context rides the already-staged `urn_index`.
- * Back returns to the modal; × clears the flow params. A `stake_tab` param
+ * The takeovers have no back arrow (Design QA 2800:91832: only × to close),
+ * and × clears the flow params; the claim modal's × alone returns to the
+ * details modal. A `stake_tab` param
  * (legacy deep-link contract) opens the sheet directly, and so does
  * `initialSheetInit` (a caller-staged pre-toggle, e.g. a remediation CTA
  * clicked before this flow was even mounted) — it takes priority over both.
@@ -158,7 +160,7 @@ export function PositionManageFlow({
       return isOpen ? (
         <OpenPositionTakeover
           key="reopen"
-          reopen={{ urnIndex: index, borrowExpanded: currentView.borrowExpanded, onBack, onClose: close }}
+          reopen={{ urnIndex: index, borrowExpanded: currentView.borrowExpanded, onClose: close }}
         />
       ) : null;
     }
@@ -178,13 +180,7 @@ export function PositionManageFlow({
     }
 
     return isOpen ? (
-      <ManagePositionTakeover
-        key="manage"
-        urnIndex={index}
-        init={currentView.init}
-        onBack={onBack}
-        onClose={close}
-      />
+      <ManagePositionTakeover key="manage" urnIndex={index} init={currentView.init} onClose={close} />
     ) : null;
   };
 

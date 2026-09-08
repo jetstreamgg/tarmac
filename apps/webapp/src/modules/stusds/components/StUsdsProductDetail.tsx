@@ -18,7 +18,7 @@ import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/ut
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import {
   ProductDetailTemplate,
@@ -166,7 +166,7 @@ export function StUsdsProductDetail() {
         </span>
       }
       networkSelector={
-        <ChainModal
+        <NetworkSelect
           chainIds={networks}
           labelClassName="hidden sm:block"
           dataTestId="product-detail-network"

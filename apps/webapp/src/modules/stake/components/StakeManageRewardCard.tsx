@@ -25,7 +25,9 @@ export function StakeManageRewardCard({
   return (
     <section
       data-testid="stake-manage-reward-card"
-      className="bg-glassSurface rounded-card flex flex-col gap-6 p-6 backdrop-blur-[20px]"
+      // Same inset and header→body gap as the stake/borrow cards (Design QA
+      // 2800:91832): 32px from md up, 20px on phones.
+      className="bg-glassSurface rounded-card flex flex-col gap-6 p-5 backdrop-blur-[20px] md:gap-8 md:p-8"
     >
       <div className="flex items-center justify-between gap-4">
         <h3 className="text-text font-circle text-lg font-medium">
