@@ -43,8 +43,8 @@ const clampFraction = (value: string, decimals: number) => {
  * `useConvertLaunch` executes it.
  *
  * The URL is the source of truth for the direction: it is *derived* from the
- * legacy `?source_token=` param every render (default USDS → USDC per the Figma
- * default frame), and flips only write the param. Deep links, back/forward and
+ * legacy `?source_token=` param every render (default USDC → USDS, APP-560), and
+ * flips only write the param. Deep links, back/forward and
  * in-page flips therefore can never disagree with the form. The typed amount is
  * kept raw and clamped to the active origin's decimals at read time, so a
  * direction change (whichever way it arrives) needs no state surgery.
@@ -59,7 +59,7 @@ export function useConvertForm() {
   const { address, isConnected } = useConnection();
   const [searchParams, setSearchParams] = useAppSearchParams();
 
-  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDS_TO_USDC';
+  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDC_TO_USDS';
   const [rawValue, setRawValue] = useState('');
 
   const originDecimals = getPsmDecimalsForDirection(direction);

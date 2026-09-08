@@ -63,36 +63,36 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('useConvertForm', () => {
-  it('defaults to USDS → USDC (the Figma default frame)', () => {
-    const { result } = renderHook(() => useConvertForm());
-    expect(result.current.direction).toBe('USDS_TO_USDC');
-    expect(result.current.originSymbol).toBe('USDS');
-    expect(result.current.targetSymbol).toBe('USDC');
-    expect(result.current.originDecimals).toBe(18);
-    expect(result.current.targetDecimals).toBe(6);
-  });
-
-  it('honours the legacy ?source_token=USDC deep link', () => {
-    h.searchInit = 'source_token=USDC';
+  it('defaults to USDC → USDS (APP-560)', () => {
     const { result } = renderHook(() => useConvertForm());
     expect(result.current.direction).toBe('USDC_TO_USDS');
     expect(result.current.originSymbol).toBe('USDC');
+    expect(result.current.targetSymbol).toBe('USDS');
     expect(result.current.originDecimals).toBe(6);
+    expect(result.current.targetDecimals).toBe(18);
+  });
+
+  it('honours the legacy ?source_token=USDS deep link', () => {
+    h.searchInit = 'source_token=USDS';
+    const { result } = renderHook(() => useConvertForm());
+    expect(result.current.direction).toBe('USDS_TO_USDC');
+    expect(result.current.originSymbol).toBe('USDS');
+    expect(result.current.originDecimals).toBe(18);
   });
 
   it('parses the typed amount at origin decimals and derives the target 1:1', () => {
     const { result } = renderHook(() => useConvertForm());
     act(() => result.current.onInput('1.5'));
     expect(result.current.value).toBe('1.5');
-    expect(result.current.amount).toBe(parseUnits('1.5', 18));
-    expect(result.current.targetAmount).toBe(parseUnits('1.5', 6));
+    expect(result.current.amount).toBe(parseUnits('1.5', 6));
+    expect(result.current.targetAmount).toBe(parseUnits('1.5', 18));
     expect(result.current.targetValue).toBe('1.5');
   });
 
   it('groups the derived To figure for display while keeping the raw amount exact (APP-553)', () => {
     const { result } = renderHook(() => useConvertForm());
     act(() => result.current.onInput('189924037.3125'));
-    expect(result.current.targetAmount).toBe(parseUnits('189924037.3125', 6));
+    expect(result.current.targetAmount).toBe(parseUnits('189924037.3125', 18));
     expect(result.current.targetValue).toBe('189,924,037.3125');
   });
 
@@ -120,7 +120,7 @@ describe('useConvertForm', () => {
 
     act(() => result.current.onInput('.5'));
     expect(result.current.value).toBe('.5');
-    expect(result.current.amount).toBe(parseUnits('0.5', 18));
+    expect(result.current.amount).toBe(parseUnits('0.5', 6));
 
     // A second tap of the key must not relocate the point (0.5 → 5).
     act(() => result.current.onInput('.5,'));
@@ -128,6 +128,7 @@ describe('useConvertForm', () => {
   });
 
   it('flip inverts the direction via the URL, clamping the typed fraction', () => {
+    h.searchInit = 'source_token=USDS'; // USDS origin: 18 decimals, clamped to 6 on flip
     // The router re-renders on URL writes in the app; `rerender()` stands in here.
     const { result, rerender } = renderHook(() => useConvertForm());
     act(() => result.current.onInput('1.1234567890123'));
@@ -154,47 +155,47 @@ describe('useConvertForm', () => {
 
   it('follows external ?source_token= changes (browser back/forward)', () => {
     const { result, rerender } = renderHook(() => useConvertForm());
-    expect(result.current.direction).toBe('USDS_TO_USDC');
+    expect(result.current.direction).toBe('USDC_TO_USDS');
 
     // Back/forward and direct navigation change the param without touching the
     // form — the derived direction must follow.
-    h.searchInit = 'source_token=USDC';
-    rerender();
-    expect(result.current.direction).toBe('USDC_TO_USDS');
-
     h.searchInit = 'source_token=USDS';
     rerender();
     expect(result.current.direction).toBe('USDS_TO_USDC');
+
+    h.searchInit = 'source_token=USDC';
+    rerender();
+    expect(result.current.direction).toBe('USDC_TO_USDS');
   });
 
   it('token chips flip direction from either side and never duplicate a token', () => {
     const { result, rerender } = renderHook(() => useConvertForm());
 
-    // Picking USDC on the From side: USDC becomes the origin.
-    act(() => result.current.selectToken('from', 'USDC'));
-    rerender();
-    expect(result.current.direction).toBe('USDC_TO_USDS');
-
-    // Picking USDC on the To side: USDC becomes the target again.
-    act(() => result.current.selectToken('to', 'USDC'));
+    // Picking USDS on the From side: USDS becomes the origin.
+    act(() => result.current.selectToken('from', 'USDS'));
     rerender();
     expect(result.current.direction).toBe('USDS_TO_USDC');
+
+    // Picking USDS on the To side: USDS becomes the target again.
+    act(() => result.current.selectToken('to', 'USDS'));
+    rerender();
+    expect(result.current.direction).toBe('USDC_TO_USDS');
   });
 
   it('percentage pills derive the value from the origin balance with bigint math', () => {
-    h.usdsBalance = parseUnits('1000', 18);
+    h.usdcBalance = parseUnits('1000', 6);
     const { result } = renderHook(() => useConvertForm());
 
     act(() => result.current.setPercent(25));
     expect(result.current.value).toBe('250');
-    expect(result.current.amount).toBe(parseUnits('250', 18));
+    expect(result.current.amount).toBe(parseUnits('250', 6));
 
     act(() => result.current.setPercent(100));
-    expect(result.current.amount).toBe(h.usdsBalance);
+    expect(result.current.amount).toBe(h.usdcBalance);
   });
 
   it('flags an amount above the origin balance as insufficient', () => {
-    h.usdsBalance = parseUnits('10', 18);
+    h.usdcBalance = parseUnits('10', 6);
     const { result } = renderHook(() => useConvertForm());
 
     act(() => result.current.onInput('11'));
