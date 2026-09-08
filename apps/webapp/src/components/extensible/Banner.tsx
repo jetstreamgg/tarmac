@@ -46,7 +46,11 @@ export function Banner({
 
   const positionStyles = {
     left: 'left-4 md:left-4',
-    right: 'right-4 md:right-4'
+    // Anchored to the PAGE's right edge: backs off whatever the page has given
+    // up on the right (a hidden bar under a scroll lock, or the shell's
+    // no-bar pad), both 0 with overlay scrollbars.
+    right:
+      'right-4 md:right-4 mr-[calc(var(--removed-body-scroll-bar-size,0px)+var(--page-scrollbar-pad,0px))]'
   };
 
   return (
