@@ -612,7 +612,17 @@
      once the real 500 cut shipped. Affects Graphik too — the comps are the target
      for both families. */
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
+    /* The canvas colour, and with it the reserved scrollbar gutter (see the
+       :root rule below). The page never shows this directly — the
+       viewport-fixed .app-background layer covers the whole viewport — but the
+       gutter lies OUTSIDE that viewport, and Chrome paints it in the canvas
+       colour, which propagates from body when html has none. The track token
+       makes the empty gutter the same flat colour as the track behind a real
+       bar. body rather than html on purpose: a colour on html would stop
+       body's from reaching the canvas, and --background (bg-background) is
+       only defined in the light scope — the known deferred gap. */
+    background-color: var(--color-pageScrollbarTrack);
   }
 
   /*
@@ -661,10 +671,37 @@
    * body colour in light and plain white in dark (root has no colour there).
    * The per-theme --color-pageScrollbarTrack tokens are flat stand-ins sampled
    * from the image's own edge. `thin` narrows the bar from 15px to 11px.
+   *
+   * `scrollbar-gutter: stable` holds the content still across navigations:
+   * routes that fit the viewport (Convert at desktop heights) have no bar, and
+   * without a reserved gutter the centred content shifted by the bar's width
+   * on every navigation to or from them. The gutter is reserved on the
+   * viewport itself, so fixed and portaled elements — dialogs, the mobile
+   * navbar pill, banners, toasts — centre on the same width as the page
+   * content (measured: a fixed `left: 50%` probe and the page content share
+   * one centre on a no-bar route). A padding-based compensation on the shell
+   * could not give them that. The gutter paints in the canvas colour, which
+   * body sets to the track token above, so a non-scrolling route shows a
+   * thumbless strip of the track colour rather than the sky image; the
+   * design accepted that over content that moves. With overlay scrollbars
+   * (macOS trackpad default, all phones) nothing is reserved and nothing
+   * changes.
    */
   :root {
     scrollbar-width: thin;
     scrollbar-color: var(--color-pageScrollbarThumb) var(--color-pageScrollbarTrack);
+    scrollbar-gutter: stable;
+  }
+
+  /* Radix dialogs lock the page through react-remove-scroll, which hides the
+     bar with `overflow: hidden` and then re-adds the bar's width as a
+     margin-right on body so the page does not widen underneath the scrim.
+     With the gutter reserved the bar's space never goes away, so that margin
+     would shift the page by a second bar width (measured: body 1056 in a 1067
+     viewport). Its rule is `body[data-scroll-locked]` with !important; the
+     extra `html` wins on specificity. */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
   }
 
   /* Each face declares its real weight. Without the descriptor every face
