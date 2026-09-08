@@ -37,7 +37,7 @@ are explicitly out of the current V2 Convert module scope.
 | ---- | --------------------------------------------------- | -------- | ---------------------------------------------------- |
 | A-1  | `/convert` renders heading, card, network selector  | **pass** | `psm-conversion.ts` Navigation & UI                  |
 | A-2  | Review disabled with empty amount                   | **pass** | same                                                 |
-| A-3  | Default direction USDS→USDC; to field read-only     | **pass** | same                                                 |
+| A-3  | Default direction USDC→USDS; to field read-only     | **pass** | same                                                 |
 | A-4  | Connected wallet shows numeric balances             | **pass** | same                                                 |
 | A-5  | Amount entry enables Review; 1:1 mirror on to field | **pass** | Amount entry describe                                |
 | A-6  | Percent chips (25/50/100) set positive amounts      | **pass** | same                                                 |
