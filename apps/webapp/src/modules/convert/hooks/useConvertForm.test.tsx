@@ -140,6 +140,18 @@ describe('useConvertForm', () => {
     expect(result.current.value).toBe('1.123456');
   });
 
+  it('flip keeps the scroll position when writing the URL', () => {
+    // The page overflows short viewports (Safe iframe, small laptops); the
+    // router's default scroll-to-top on navigation made the flip read as broken.
+    const { result } = renderHook(() => useConvertForm());
+    act(() => result.current.flip());
+
+    expect(h.setSearchParams).toHaveBeenCalledWith(expect.any(Function), {
+      replace: true,
+      resetScroll: false
+    });
+  });
+
   it('follows external ?source_token= changes (browser back/forward)', () => {
     const { result, rerender } = renderHook(() => useConvertForm());
     expect(result.current.direction).toBe('USDS_TO_USDC');

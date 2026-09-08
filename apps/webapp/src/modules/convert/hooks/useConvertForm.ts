@@ -120,7 +120,8 @@ export function useConvertForm() {
           params.set(QueryParams.SourceToken, originSymbolFor(next));
           return params;
         },
-        { replace: true }
+        // resetScroll: false keeps the viewport on the card when the page overflows
+        { replace: true, resetScroll: false }
       );
     },
     [direction, setSearchParams]
