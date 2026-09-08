@@ -220,6 +220,37 @@ describe('buildStakeManageSteps', () => {
     ).toEqual([{ label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." }]);
   });
 
+  it('sequential: each approval is its own write, every other leg shares the multicall write', () => {
+    expect(
+      buildStakeManageSteps({
+        needsSkyAllowance: true,
+        needsUsdsAllowance: true,
+        hasLock: true,
+        hasFree: false,
+        hasWipe: true,
+        hasBorrow: true,
+        hasRewardChange: true,
+        rewardSymbol: 'SPK',
+        hasDelegateChange: true,
+        claimSymbols: ['USDS'],
+        shouldUseBatch: false
+      }).map(step => (typeof step === 'string' ? undefined : step.write))
+    ).toEqual([0, 1, 2, 2, 2, 2, 2, 2]);
+    // Bundled lists carry no indices.
+    expect(
+      buildStakeManageSteps({
+        needsSkyAllowance: true,
+        needsUsdsAllowance: false,
+        hasLock: true,
+        hasFree: false,
+        hasWipe: false,
+        hasBorrow: false,
+        hasRewardChange: false,
+        hasDelegateChange: false
+      }).every(step => typeof step === 'string' || step.write === undefined)
+    ).toBe(true);
+  });
+
   it('places Change reward before Change delegate, matching the manage calldata order', () => {
     expect(
       buildStakeManageSteps({
@@ -463,7 +494,9 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
     act(() => rewardOnly.result.current.launch());
     expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm reward change');
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual([{ label: 'Change reward', tokenSymbol: 'SKY' }]);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+      { label: 'Change reward', tokenSymbol: 'SKY', write: 0 }
+    ]);
     expect(h.launchMock.mock.calls[0][0].analytics.data.selectedRewardContract).toBe(SKY_REWARD_CONTRACT);
     rewardOnly.unmount();
   });
@@ -472,9 +505,9 @@ describe('useStakeManageLaunch — launch() config', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
     expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
-      { label: 'Repay', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been repaid." },
-      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." }
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved.", write: 0 },
+      { label: 'Repay', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been repaid.", write: 1 },
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn.", write: 1 }
     ]);
   });
 
@@ -487,9 +520,9 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
     act(() => result.current.launch());
     expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." },
-      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
-      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn.", write: 0 },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed.", write: 0 },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed.", write: 0 }
     ]);
   });
 

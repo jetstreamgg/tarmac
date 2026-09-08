@@ -148,25 +148,21 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         ),
         status: 'success'
       }}
-      title={({ networkBadge }) => (
-        <span className="flex flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-2">
-            {market.name}
-            {/* Brand-colored mark from the design system (a bitmap in Figma too) —
-                the monochrome <Pendle /> glyph reads wrong at badge size. */}
-            <HeaderBadge size="s" icon={<img src="/images/pendle_logo.png" alt="" className="size-4" />}>
-              <Trans>Powered by Pendle</Trans>
-            </HeaderBadge>
-            {networkBadge}
-          </span>
-          {/* The DS date line under the title (5120:19542) is Body 6, so it
-              opts back out of the heading's Circular styling. */}
-          <span className="font-graphik text-fgSecondary text-xs leading-[18px] font-normal tracking-normal">
-            {maturityDateLabel}
-            {remainingSeconds > 0 && <> · {formatTimeLeft(remainingSeconds)}</>}
-          </span>
-        </span>
-      )}
+      title={market.name}
+      titleBadges={
+        // Brand-colored mark from the design system (a bitmap in Figma too) —
+        // the monochrome <Pendle /> glyph reads wrong at badge size.
+        <HeaderBadge size="s" icon={<img src="/images/pendle_logo.png" alt="" className="size-4" />}>
+          <Trans>Powered by Pendle</Trans>
+        </HeaderBadge>
+      }
+      // The DS date line under the title (5120:19542).
+      titleSubtitle={
+        <>
+          {maturityDateLabel}
+          {remainingSeconds > 0 && <> · {formatTimeLeft(remainingSeconds)}</>}
+        </>
+      }
       networkChainIds={networks}
       chart={<PendleDetailChart market={market} />}
       position={<PendlePositionCard market={market} />}

@@ -7,8 +7,6 @@ import {
   useEarnMarketplace,
   EarnProductKind,
   productNetworks,
-  rewardContractDisplayName,
-  rewardsRiskProfile,
   RISK_TIER_BY_PROFILE,
   useUsdsDaiData,
   type EarnProductRow
@@ -17,14 +15,13 @@ import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { usePendleUsdValue } from '@/widgets';
 import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
-import { useDeprecatedRewardPositions } from '@/modules/rewards/hooks/useDeprecatedRewardPositions';
 import { getChainIcon } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { retainOnNavigate } from '@/lib/navigation';
-import { EARN_OPPORTUNITIES_HASH, intentToPath, ROUTES } from '@/lib/routes';
+import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
@@ -126,7 +123,7 @@ function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem 
 
 /** The /earn destination: the Earn Opportunities marketplace section (C2). */
 export function EarnPage() {
-  const { rows } = useEarnMarketplace();
+  const { rows, endedRewardPositions: allEndedRewardPositions } = useEarnMarketplace();
   const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
   const chains = useChains();
   const connectedChainId = useChainId();
@@ -320,34 +317,35 @@ export function EarnPage() {
   );
   // Ended reward farms the user still has USDS in (the deprecated USDS → SKY
   // farm): the marketplace drops them from the opportunities rows, so this
-  // section is their only Earn surface too. Same filter treatment as the
-  // matured markets, on the farm's registry attributes.
-  const { positions: endedRewardPositions } = useDeprecatedRewardPositions();
+  // section is their only Earn surface too. Region-restricted positions hide
+  // app-wide (APP-484), with the matured markets' in-flight tradeoff: they
+  // pass while the geo config loads, since the loading default is
+  // restrictive and would blank them for everyone. Same filter treatment as
+  // the matured markets, on the farm's registry descriptor — the one the
+  // marketplace builds live farm rows from.
+  const endedRewardPositions = useMemo(
+    () => (isGeoLoading || isModuleEnabled('rewards') ? allEndedRewardPositions : []),
+    [allEndedRewardPositions, isGeoLoading, isModuleEnabled]
+  );
   const visibleEndedRewardPositions = useMemo(
     () =>
       filterEarnRows(
-        endedRewardPositions.map(position => ({
-          ...position,
-          risk: RISK_TIER_BY_PROFILE[rewardsRiskProfile(position.contract.rewardToken.symbol)],
-          networks: productNetworks(Intent.REWARDS_INTENT, getSupportedChainIds(connectedChainId)),
-          supplyTokens: [position.contract.supplyToken.symbol],
-          kind: 'rewards' as const
-        })),
+        endedRewardPositions.map(position => ({ ...position, ...position.product })),
         filters,
         chainSlugById
       ),
-    [endedRewardPositions, filters, chainSlugById, connectedChainId]
+    [endedRewardPositions, filters, chainSlugById]
   );
   const endedRewardItems = useMemo<EarnTableRowItem[]>(
     () =>
-      visibleEndedRewardPositions.map(({ contract, balance, tvlUsds: tvlSupplied }) => {
+      visibleEndedRewardPositions.map(({ product, contract, balance, tvlUsds: tvlSupplied }) => {
         // The supply token is USDS on every farm — the position reads at par.
         const usd = valueUsd(contract.supplyToken.symbol, parseFloat(formatUnits(balance, 18)));
         const tvlUsd =
           tvlSupplied !== undefined ? valueUsd(contract.supplyToken.symbol, tvlSupplied) : undefined;
         return {
           id: endedRewardRowId(contract.contractAddress),
-          name: rewardContractDisplayName(contract),
+          name: product.name,
           icon: (
             <TokenIcon
               token={{ symbol: contract.rewardToken.symbol }}
@@ -358,7 +356,7 @@ export function EarnPage() {
           ),
           // No status ring: reward products carry none in the marketplace
           // (the ring is the matured-PT treatment).
-          supply: <TokenIconStack symbols={[contract.supplyToken.symbol]} size={12} />,
+          supply: <TokenIconStack symbols={product.supplyTokens} size={12} />,
           statusLabel: (
             <span className="text-statusWarning">
               <Trans>Ended</Trans>
@@ -427,9 +425,7 @@ export function EarnPage() {
     );
     const detailPath = matured
       ? `${ROUTES.EARN_FIXED}/${matured.market.slug}`
-      : ended
-        ? intentToPath(Intent.REWARDS_INTENT, ended.contract.contractAddress)
-        : null;
+      : (ended?.product.detailPath ?? null);
     if (!detailPath) return;
     setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });

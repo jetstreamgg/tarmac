@@ -6,7 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
 import { BP, useBreakpointIndex, useProductNetworks } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
-import { ROUTES } from '@/lib/routes';
+import { pathToIntent } from '@/lib/routes';
 import { useAppSearchParams } from '@/lib/navigation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { NetworkSelect, useNetworkTitleBadge } from '@/modules/ui/components/NetworkSelect';
@@ -66,8 +66,12 @@ export function StakeProductPage() {
   // still ours and keep drawing it once it isn't. Held in state, adjusted
   // during render (react.dev's previous-value pattern), not a ref — the value
   // is read in this same render.
+  // `pathToIntent`, not a raw compare: the router matches `/Stake` or
+  // `/STAKE/` to this route but reports the pathname verbatim, and a raw
+  // compare read those as "leaving" for the page's whole life — the latch
+  // froze on its first tab and clicks moved the URL but never the view.
   const pathname = useRouterState({ select: s => s.location.pathname });
-  const leaving = pathname !== ROUTES.STAKE && !pathname.startsWith(`${ROUTES.STAKE}/`);
+  const leaving = pathToIntent(pathname) !== Intent.STAKE_INTENT;
   const [heldTab, setHeldTab] = useState<StakeTab>(paramTab);
   if (!leaving && heldTab !== paramTab) setHeldTab(paramTab);
   const tab = leaving ? heldTab : paramTab;
@@ -139,20 +143,19 @@ export function StakeProductPage() {
               <TokenIcon token={{ symbol: 'SKY' }} width={52} showChainIcon={false} />
             </IconboxStatus>
           </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <PageHeading
-              size="lg"
-              className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
-            >
-              <Trans>SKY Staking</Trans>
-            </PageHeading>
-            {/* Phone comp 1295:20810: Staking runs on one chain, so the phone
-                header states it as the DS title-suffix badge beside the title
-                instead of a control-shaped pill with nothing to switch. Where
-                a config lists several chains (dev's Tenderly fork) the
-                dropdown stays. */}
-            {networkBadge}
-          </div>
+          {/* Phone comp 1295:20810: Staking runs on one chain, so the phone
+              header states it as the DS title-suffix badge beside the title
+              (PageHeading's badge slot, 12px after the name, outside the h1)
+              instead of a control-shaped pill with nothing to switch. Where a
+              config lists several chains (dev's Tenderly fork) the dropdown
+              stays. */}
+          <PageHeading
+            size="lg"
+            className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
+            badges={networkBadge}
+          >
+            <Trans>SKY Staking</Trans>
+          </PageHeading>
         </div>
         {!networkBadge && (
           <NetworkSelect

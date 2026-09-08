@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-router';
 import { Intent } from '@/lib/enums';
 import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
-import type { EarnProductRow } from '@/hooks';
+import { buildRewardsProduct, type EarnProductRow, type RewardContract } from '@/hooks';
 
 // Rows are injected; every product family's own data hook is out of scope here.
 const marketplace = vi.hoisted(() => ({ rows: [] as unknown[] }));
@@ -20,7 +20,12 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
-    useEarnMarketplace: () => ({ rows: marketplace.rows, isLoading: false, totalDepositedUsd: 0 }),
+    useEarnMarketplace: () => ({
+      rows: marketplace.rows,
+      endedRewardPositions: ended.current.positions,
+      isLoading: false,
+      totalDepositedUsd: 0
+    }),
     useUsdsDaiData: () => ({ data: undefined, isLoading: false })
   };
 });
@@ -40,12 +45,10 @@ vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
   usePendleMaturedNetworkSwitch: () => undefined
 }));
 
-// Ended reward farms the user still holds — the section's other source.
+// Ended reward farms the user still holds — the section's other source,
+// read off the marketplace result beside the rows.
 const ended = vi.hoisted(() => ({
-  current: { positions: [] as { contract: Record<string, unknown>; balance: bigint }[], isLoading: false }
-}));
-vi.mock('@/modules/rewards/hooks/useDeprecatedRewardPositions', () => ({
-  useDeprecatedRewardPositions: () => ended.current
+  current: { positions: [] as unknown[] }
 }));
 
 vi.mock('@/widgets', async importOriginal => {
@@ -276,26 +279,29 @@ describe('EarnPage requires-action section', () => {
     ]
   };
 
+  const SKY_FARM = {
+    contractAddress: '0x0650CAF159C5A49f711e8169D4336ECB9b950275' as `0x${string}`,
+    chainId: 1,
+    supplyToken: { symbol: 'USDS' },
+    rewardToken: { symbol: 'SKY' },
+    name: 'Earn SKY'
+  };
   const ENDED = {
     positions: [
       {
-        contract: {
-          contractAddress: '0x0650CAF159C5A49f711e8169D4336ECB9b950275' as `0x${string}`,
-          chainId: 1,
-          supplyToken: { symbol: 'USDS' },
-          rewardToken: { symbol: 'SKY' },
-          name: 'Earn SKY'
-        },
+        // The marketplace hands over the registry descriptor a live farm row
+        // would be built from.
+        product: buildRewardsProduct(SKY_FARM as unknown as RewardContract, [1]),
+        contract: SKY_FARM,
         balance: 15n * 10n ** 18n,
         tvlUsds: 9_630_000
       }
-    ],
-    isLoading: false
+    ]
   };
 
   beforeEach(() => {
     matured.current = { maturedPositions: [] };
-    ended.current = { positions: [], isLoading: false };
+    ended.current = { positions: [] };
   });
 
   it('stays hidden while the user holds nothing matured', async () => {

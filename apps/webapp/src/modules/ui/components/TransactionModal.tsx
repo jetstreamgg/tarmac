@@ -47,11 +47,15 @@ type TransactionModalStep = 'entry' | 'review' | 'transaction';
  * flow ever needs a status-specific disclosure.
  */
 export type TransactionSubtitles = {
+  /**
+   * Body 6 sentence under the first screen's title — a flow-specific
+   * disclosure the user needs before confirming (Pendle's early-withdrawal
+   * market-price note). Deliberately the ONLY key: the transaction screen
+   * carries no status subtitle by design (Figma 1030:139111 — the step list
+   * and the status chip narrate the write, a failure lives in the failed row),
+   * so a flow cannot bring that treatment back by setting one.
+   */
   review?: string;
-  pending?: string;
-  loading?: string;
-  success?: string;
-  error?: string;
 };
 
 export type TransactionModalProps = {
@@ -128,11 +132,12 @@ export type TransactionModalProps = {
   errorLabel?: string;
   steps?: TransactionStep[];
   currentStep?: number;
+  /** The current ERROR is a wallet Reject (nothing broadcast) — see the step model. */
+  userRejected?: boolean;
   /**
    * Gate-owned status copy (APP-501): while set, replaces the status row's
-   * message and the status-keyed subtitle — the flow's copy narrates on-chain
-   * writes, which is wrong while the gate is screening or collecting the
-   * terms signature.
+   * message — the flow's copy narrates on-chain writes, which is wrong while
+   * the gate is screening or collecting the terms signature.
    */
   gateCopy?: GateStatusCopy | null;
   /**
@@ -225,6 +230,7 @@ export function TransactionModal({
   errorLabel,
   steps,
   currentStep = 0,
+  userRejected = false,
   gateCopy,
   preflight,
   chainGuard,
@@ -292,9 +298,17 @@ export function TransactionModal({
   const failedStep = steps?.[currentStep];
   const failedOnSignature =
     badgeFailed && typeof failedStep === 'object' && failedStep !== null && failedStep.kind === 'signature';
+  // A wallet Reject is not a failed transaction either — nothing was sent —
+  // so the chip says so, matching the declined row the step model draws.
   const badgeLabel =
     gateCopy?.badgeLabel ??
-    (failedOnSignature ? <Trans>Signature failed</Trans> : statusBadgeLabel[txStatus]);
+    (failedOnSignature ? (
+      <Trans>Signature failed</Trans>
+    ) : badgeFailed && userRejected ? (
+      <Trans>Request declined</Trans>
+    ) : (
+      statusBadgeLabel[txStatus]
+    ));
   const badgeVariant = badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
@@ -380,12 +394,6 @@ export function TransactionModal({
   // `transactionContent` keep their previous transaction-screen content.
   const transactionScreenBody = transactionScreenContent ?? (entry ? null : transactionContent);
 
-  const subtitleByStatus: Partial<Record<TxStatus, string | undefined>> = {
-    [TxStatus.INITIALIZED]: subtitles?.pending,
-    [TxStatus.LOADING]: subtitles?.loading,
-    [TxStatus.SUCCESS]: subtitles?.success,
-    [TxStatus.ERROR]: subtitles?.error
-  };
   // A gate phase (screening / terms signature) narrates itself through its
   // subtitle only where there is no step list: with one, the signature step's
   // own row already says what is being waited on, and the flow's status
@@ -397,7 +405,9 @@ export function TransactionModal({
   // "Verifying your wallet address…" copy still shows under a step list.
   const gateCopyInStepList = showStepList && hasSignatureStep;
   const gateSubtitle = gateCopy && !gateCopyInStepList ? gateCopy.subtitle : undefined;
-  const subtitle = isFirstScreen ? subtitles?.review : gateCopy ? gateSubtitle : subtitleByStatus[txStatus];
+  // Off the first screen the only sentence is the gate's own (screening copy);
+  // a flow has no status subtitle to show there (see `TransactionSubtitles`).
+  const subtitle = isFirstScreen ? subtitles?.review : gateSubtitle;
   const firstScreenSubtitle = isFirstScreen ? subtitle : undefined;
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
@@ -570,7 +580,8 @@ export function TransactionModal({
                     steps: steps ?? [],
                     currentStep,
                     txStatus,
-                    bundled: isBundled
+                    bundled: isBundled,
+                    userRejected
                   });
                   // Stays live off the product's chain: the provider refuses a
                   // wrong-chain fire and returns the flow to its guarded first

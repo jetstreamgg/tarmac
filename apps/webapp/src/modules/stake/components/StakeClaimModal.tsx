@@ -4,7 +4,7 @@ import { useChainId } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { formatNumber } from '@/utils';
+import { formatUsd } from '@/utils';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { TxStatus } from '@/widgets';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
@@ -43,7 +43,7 @@ function heroFor(reward: ClaimableReward, testIdPrefix: string, label?: boolean)
       label={label ? <Trans>Claim amount</Trans> : undefined}
       amount={reward.formattedAmount}
       symbol={reward.tokenSymbol}
-      usd={formatNumber(reward.amountUsd, { minDecimals: 2, maxDecimals: 2 })}
+      usd={formatUsd(reward.amountUsd)}
       size="lg"
       dataTestId={`${testIdPrefix}-${reward.tokenSymbol.toLowerCase()}`}
     />

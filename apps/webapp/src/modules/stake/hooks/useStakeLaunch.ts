@@ -19,7 +19,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
-import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
+import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
 import { getStakeTitle, StakeFlow } from '../lib/constants';
@@ -40,13 +40,20 @@ import { stakeUsdNotional } from '../lib/stakeUsdNotional';
  *    selectVoteDelegate), and the Actions list should mirror the legs it
  *    sends (QA round 2026-09-07). The reward token symbol rides along as the
  *    step's token chip once the farm's token read resolves.
+ *  - With bundling OFF the engine (`useBatchStakeMulticall`) sends the SKY
+ *    approval as its own write and then ONE `multicall` carrying every leg, so
+ *    the rows after the approval share a write index and light up, complete
+ *    and fail together — otherwise a reverted multicall retitled "Stake" alone
+ *    while the reward/delegate rows sat upcoming, as if their legs never ran.
+ *    Bundled, the whole list is one unit and needs no indices.
  */
 export function buildStakeOpenSteps({
   needsSkyAllowance,
   hasBorrow,
   hasReward = false,
   rewardSymbol,
-  hasDelegate
+  hasDelegate,
+  shouldUseBatch = true
 }: {
   needsSkyAllowance: boolean;
   hasBorrow: boolean;
@@ -55,8 +62,10 @@ export function buildStakeOpenSteps({
   /** The selected farm's reward-token symbol, once resolved; labels the chip. */
   rewardSymbol?: string;
   hasDelegate: boolean;
+  /** False = sequential writes (approval, then one multicall) — rows get `write` indices. */
+  shouldUseBatch?: boolean;
 }): TransactionStep[] {
-  return [
+  const steps = [
     needsSkyAllowance && {
       label: t`Approve`,
       tokenSymbol: 'SKY',
@@ -67,6 +76,7 @@ export function buildStakeOpenSteps({
     hasReward && (rewardSymbol ? { label: t`Select reward`, tokenSymbol: rewardSymbol } : t`Select reward`),
     hasDelegate && t`Delegate voting power`
   ].filter(Boolean) as TransactionStep[];
+  return shouldUseBatch ? steps : assignSequentialWrites(steps, needsSkyAllowance ? 1 : 0);
 }
 
 export interface UseStakeLaunchParams {
@@ -227,7 +237,8 @@ export function useStakeLaunch({
     hasBorrow,
     hasReward,
     rewardSymbol: selectedRewardSymbol,
-    hasDelegate
+    hasDelegate,
+    shouldUseBatch
   });
 
   // Live (not computed at launch) because the takeover runs the enhanced-

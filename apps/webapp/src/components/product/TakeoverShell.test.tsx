@@ -1,4 +1,4 @@
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -57,53 +57,19 @@ describe('TakeoverShell', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('locks document scroll while mounted and restores it on unmount', () => {
+  it('locks document scroll through react-remove-scroll while mounted and releases it on unmount', async () => {
+    // The same lock Radix's dialogs use: it marks body with `data-scroll-locked`
+    // (and publishes the hidden bar's width there for the page column's
+    // compensation to subtract); the sidecar loads async, hence the waits.
     const { unmount } = render(
       <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
         <div />
       </TakeoverShell>
     );
 
-    expect(document.body.style.overflow).toBe('hidden');
+    await waitFor(() => expect(document.body.hasAttribute('data-scroll-locked')).toBe(true));
     unmount();
-    expect(document.body.style.overflow).toBe('');
-  });
-
-  it('compensates the hidden page scrollbar with body padding (a margin would be double-counted by a Radix dialog stacked on top)', () => {
-    // jsdom lays nothing out, so stand in for a 15px bar.
-    const clientWidth = vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(1009);
-    const innerWidth = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1024);
-    const { unmount } = render(
-      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
-        <div />
-      </TakeoverShell>
-    );
-
-    expect(document.body.style.paddingRight).toBe('15px');
-    unmount();
-    expect(document.body.style.paddingRight).toBe('');
-    clientWidth.mockRestore();
-    innerWidth.mockRestore();
-  });
-
-  it('inherits the gap from a Radix dialog lock still in force (details modal → manage sheet)', () => {
-    // Under a react-remove-scroll lock the bar is already gone (nothing to
-    // measure) and body carries the width it removed as a custom property.
-    const clientWidth = vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(1024);
-    const innerWidth = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1024);
-    document.body.style.setProperty('--removed-body-scroll-bar-size', '15px');
-    const { unmount } = render(
-      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
-        <div />
-      </TakeoverShell>
-    );
-
-    expect(document.body.style.paddingRight).toBe('15px');
-    unmount();
-    expect(document.body.style.paddingRight).toBe('');
-    document.body.style.removeProperty('--removed-body-scroll-bar-size');
-    clientWidth.mockRestore();
-    innerWidth.mockRestore();
+    await waitFor(() => expect(document.body.hasAttribute('data-scroll-locked')).toBe(false));
   });
 
   it('names the dialog from its title via aria-labelledby', () => {

@@ -19,7 +19,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
-import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
+import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 // Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
 import { getStakeTitle, StakeFlow } from '../lib/constants';
 import { TxStatus } from '@/widgets/shared/constants';
@@ -57,7 +57,8 @@ export function buildStakeManageSteps({
   hasRewardChange,
   rewardSymbol,
   hasDelegateChange,
-  claimSymbols
+  claimSymbols,
+  shouldUseBatch = true
 }: {
   needsSkyAllowance: boolean;
   needsUsdsAllowance: boolean;
@@ -71,8 +72,16 @@ export function buildStakeManageSteps({
   hasDelegateChange: boolean;
   /** Display symbols for the getReward legs, aligned to the engine's free-before-claim order. */
   claimSymbols?: string[];
+  /**
+   * False = sequential writes: each approval is its own transaction and every
+   * other leg (repay, free, claims, farm/delegate switch, lock, borrow) rides
+   * in ONE `multicall` (`useBatchStakeMulticall`), so those rows share a
+   * `write` index and move together. Bundled needs no indices.
+   */
+  shouldUseBatch?: boolean;
 }): TransactionStep[] {
-  return [
+  const approvals = (needsSkyAllowance && hasLock ? 1 : 0) + (needsUsdsAllowance && hasWipe ? 1 : 0);
+  const steps = [
     // Approval steps only render alongside the action that needs them, so a
     // still-loading allowance can't flash a phantom Approve step (the engine
     // still derives the real approve calls itself).
@@ -93,6 +102,7 @@ export function buildStakeManageSteps({
     hasLock && { label: t`Stake`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.stake('SKY') },
     hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.borrow('USDS') }
   ].filter(Boolean) as TransactionStep[];
+  return shouldUseBatch ? steps : assignSequentialWrites(steps, approvals);
 }
 
 export interface UseStakeManageLaunchParams {
@@ -278,7 +288,8 @@ export function useStakeManageLaunch({
     hasRewardChange,
     rewardSymbol: hasRewardChange ? selectedRewardSymbol : undefined,
     hasDelegateChange,
-    claimSymbols
+    claimSymbols,
+    shouldUseBatch
   });
 
   const isDelegateOnly =

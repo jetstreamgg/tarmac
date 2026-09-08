@@ -151,10 +151,10 @@ export type TransactionConfig = {
   /**
    * Per-state titles for the toast shown while the modal is minimized (it's hidden,
    * so the toast notifies progress). Flows set amount-aware titles here (e.g.
-   * "10,000.00 USDS supplied!"); each falls back to the matching `subtitles` entry,
-   * then `title`. Every flow sets all three (no flow sets status subtitles any
-   * more, so the fallback would otherwise land on the bare title). An editable
-   * flow pushes these live via `updateModalContent` as the amount changes.
+   * "10,000.00 USDS supplied!"); a missing state falls back to `title` alone.
+   * Every flow sets all three (status subtitles no longer exist, so there is
+   * no sentence to fall back on). An editable flow pushes these live via
+   * `updateModalContent` as the amount changes.
    */
   toast?: {
     loading?: string;

@@ -1,4 +1,5 @@
 import type { Intent } from '@/lib/enums';
+import type { RewardContract } from '../rewards/rewards';
 
 /**
  * Risk tier vocabulary from the V2 Figma ("Earn Opportunities" filter pills).
@@ -103,8 +104,29 @@ export type EarnProductRow = EarnProductDescriptor & {
   error: Error | null;
 };
 
+/**
+ * A deprecated (ended) rewards farm the connected wallet still has USDS in.
+ * The marketplace drops deprecated farms from `rows` outright, so — like a
+ * matured Pendle market — a position in one has no opportunities row; the
+ * Earn page's "Requires action" section lists these instead. `product` is the
+ * same registry descriptor a live farm row is built from.
+ */
+export type EndedRewardPosition = {
+  product: EarnProductDescriptor;
+  contract: RewardContract;
+  balance: bigint;
+  /** Farm TVL in USDS from its BA Labs series (latest `totalSupplied`); undefined until it resolves. */
+  tvlUsds?: number;
+};
+
 export type EarnMarketplaceResult = {
   rows: EarnProductRow[];
+  /**
+   * Deprecated farms the wallet still holds a balance in, with the farm's
+   * TVL. Empty while disconnected. NOT geo-gated (neither are `rows`) — the
+   * consumer applies the rewards module's region check.
+   */
+  endedRewardPositions: EndedRewardPosition[];
   /** True while any row is still loading. Rows fail independently — check per-row error. */
   isLoading: boolean;
   /**

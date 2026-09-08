@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { formatBigInt, formatNumber } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils';
 import { formatUnits } from 'viem';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 
@@ -30,7 +30,7 @@ function AmountHero({
       amount={formatBigInt(amount)}
       symbol={symbol}
       // The hero draws the `$` itself.
-      usd={usdValue !== null ? formatNumber(usdValue, { minDecimals: 2, maxDecimals: 2 }) : undefined}
+      usd={usdValue !== null ? formatUsd(usdValue) : undefined}
       dataTestId={dataTestId}
     />
   );

@@ -228,6 +228,25 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(activeTab()).toBe('positions');
   });
 
+  it('keeps following the tab param on a case-variant pathname (/Stake matches the route too)', () => {
+    // The router matches `/Stake` but reports it verbatim; a raw compare
+    // against ROUTES.STAKE read that as "leaving" for the page's whole life
+    // and froze the tab latch — the URL moved on a click, the view did not.
+    h.pathname = '/Stake';
+    mockSearchParams = new URLSearchParams('tab=about');
+    const view = renderPage();
+    expect(activeTab()).toBe('about');
+
+    mockSearchParams = new URLSearchParams('tab=statistics');
+    view.rerender(
+      <I18nProvider i18n={i18n}>
+        <StakeProductPage />
+      </I18nProvider>
+    );
+    expect(activeTab()).toBe('statistics');
+    h.pathname = '/stake';
+  });
+
   it('selects the About tab when tab=about is in the URL', () => {
     mockSearchParams = new URLSearchParams('tab=about');
     renderPage();

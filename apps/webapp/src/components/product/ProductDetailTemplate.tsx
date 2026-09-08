@@ -84,14 +84,16 @@ export interface ProductDetailTemplateProps {
   /** Back-link label; defaults to "Back to products". */
   backLabel?: ReactNode;
   token: ProductDetailToken;
+  /** The heading — the product's name alone (the h1's accessible name). */
+  title: ReactNode;
   /**
-   * The heading. A plain node gets the phone-tier network badge (see
-   * `networkChainIds`) appended after it; a composite heading (a name with its
-   * own provider badge, a subtitle line) takes the function form and places
-   * `networkBadge` itself — beside the name, in its own badge row — so the
-   * chain doesn't land under a subtitle it has nothing to do with.
+   * Title-suffix badges (a provider mark such as "Powered by Morpho"), placed
+   * by `PageHeading`'s badge slot 12px after the name; the phone tier's
+   * network badge (see `networkChainIds`) follows them in the same row.
    */
-  title: ReactNode | ((slots: { networkBadge: ReactNode }) => ReactNode);
+  titleBadges?: ReactNode;
+  /** The DS Body 6 line under the title (a maturity date, a description). */
+  titleSubtitle?: ReactNode;
   /**
    * The chains the product runs on — drives the header's network control.
    * Several chains: the NetworkSelect dropdown (pill right of the title from
@@ -264,6 +266,8 @@ export function ProductDetailTemplate({
   backLabel,
   token,
   title,
+  titleBadges,
+  titleSubtitle,
   networkChainIds,
   networkTestId = 'product-detail-network',
   chart,
@@ -309,18 +313,24 @@ export function ProductDetailTemplate({
         <div className="flex flex-col items-stretch gap-8 md:flex-row md:items-center md:justify-between md:gap-4">
           <div className="flex items-center gap-3 md:gap-4">
             <ProductTitleIcon token={token} />
-            {/* Title + (on phones, single-chain) the network badge: the badge
-                trails the title by 12px (1295:20810) and wraps under it
-                rather than squeezing a long product name. */}
-            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-              <PageHeading
-                size="md"
-                className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
-              >
-                {typeof title === 'function' ? title({ networkBadge }) : title}
-              </PageHeading>
-              {typeof title !== 'function' && networkBadge}
-            </div>
+            {/* Title, then its badges (provider mark, and on phones the
+                single-chain network badge) in PageHeading's slot: 12px after
+                the name (1295:20810), wrapping under it, outside the h1. */}
+            <PageHeading
+              size="md"
+              className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
+              badges={
+                titleBadges || networkBadge ? (
+                  <>
+                    {titleBadges}
+                    {networkBadge}
+                  </>
+                ) : undefined
+              }
+              subtitle={titleSubtitle}
+            >
+              {title}
+            </PageHeading>
           </div>
           {networkChainIds &&
             !networkBadge &&

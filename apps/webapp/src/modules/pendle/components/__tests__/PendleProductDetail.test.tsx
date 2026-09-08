@@ -94,8 +94,10 @@ describe('PendleProductDetail', () => {
 
     const heading = screen.getByRole('heading', { level: 1 });
     expect(heading.textContent).toContain('PT-USDG');
-    // Maturity subtitle in the header (26 Nov 2026).
-    expect(heading.textContent).toMatch(/2026/);
+    // Maturity subtitle in the header (26 Nov 2026) — under the title, not
+    // inside the heading, so the h1's accessible name stays the market name.
+    expect(heading.textContent).not.toMatch(/2026/);
+    expect(heading.parentElement?.parentElement?.textContent).toMatch(/2026/);
   });
 
   it('surfaces the market stats in the Details grid', () => {

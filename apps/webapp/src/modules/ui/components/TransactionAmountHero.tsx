@@ -49,7 +49,12 @@ export function TransactionAmountHero({
    * no amount field to carry the selector).
    */
   badge?: ReactNode;
-  /** Dollar value of the amount, formatted without the `$` (e.g. "10,000.00"). Omit to hide. */
+  /**
+   * Dollar value of the amount, FULLY formatted — `formatUsd` output, `$`
+   * included (e.g. "$10,000.00"). Rendered verbatim: the hero used to prepend
+   * the `$` itself, which turned `formatNumber`'s dust marker into "$<0.01".
+   * Omit to hide.
+   */
   usd?: string;
   /**
    * 'md' = 32px icon + 12px USD line (savings/rewards comps 1310:130565 /
@@ -92,7 +97,7 @@ export function TransactionAmountHero({
               )}
               data-testid={usdTestId}
             >
-              ${usd}
+              {usd}
             </span>
           )}
         </div>

@@ -67,19 +67,16 @@ describe('ProductDetailTemplate header network control', () => {
     expect(control.parentElement?.textContent).toContain('SPK Rewards');
   });
 
-  it('hands a composite title the badge to place itself', () => {
+  it('places provider badges and the network badge after the title, outside the heading, 12px apart', () => {
     h.isMobile = true;
     render(
       <I18nProvider i18n={i18n}>
         <ProductDetailTemplate
           backHref="/earn"
           token={{ icon: <span /> }}
-          title={({ networkBadge }) => (
-            <span data-testid="composite-title">
-              USDS Flagship
-              {networkBadge}
-            </span>
-          )}
+          title="USDS Flagship"
+          titleBadges={<span data-testid="provider-badge">Powered by Morpho</span>}
+          titleSubtitle="A vault"
           networkChainIds={[1]}
           chart={<div />}
           position={<div />}
@@ -90,10 +87,25 @@ describe('ProductDetailTemplate header network control', () => {
       </I18nProvider>
     );
 
-    const control = screen.getByTestId('product-detail-network');
-    expect(control.getAttribute('data-kind')).toBe('badge');
-    expect(screen.getByTestId('composite-title').contains(control)).toBe(true);
+    // The heading's accessible name is the plain title: badges are siblings,
+    // never children, so a screen reader doesn't hear "USDS Flagship Powered
+    // by Morpho Ethereum" as the page heading.
+    const heading = screen.getByRole('heading', { level: 1, name: 'USDS Flagship' });
+    const provider = screen.getByTestId('provider-badge');
+    const network = screen.getByTestId('product-detail-network');
+    expect(network.getAttribute('data-kind')).toBe('badge');
+    expect(heading.contains(provider)).toBe(false);
+    expect(heading.contains(network)).toBe(false);
+    // One row: title, provider badge, network badge, on the 12px title-suffix gap (1295:20810).
+    const row = heading.parentElement!;
+    const kids = Array.from(row.children);
+    expect(row.className).toContain('gap-x-3');
+    expect(kids.indexOf(heading)).toBeLessThan(kids.indexOf(provider));
+    expect(kids.indexOf(provider)).toBeLessThan(kids.indexOf(network));
     expect(screen.getAllByTestId('product-detail-network')).toHaveLength(1);
+    // The subtitle sits under the row, outside the heading too.
+    expect(heading.textContent).toBe('USDS Flagship');
+    expect(heading.contains(screen.getByText('A vault'))).toBe(false);
   });
 
   it('keeps the dropdown as a full-width row for a multi-chain product on a phone', () => {

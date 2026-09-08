@@ -154,19 +154,11 @@ export function StUsdsProductDetail() {
           <TokenIcon token={{ symbol: 'stUSDS' }} width={48} className="h-12 w-12" showChainIcon={false} />
         )
       }}
-      title={({ networkBadge }) => (
-        <span className="flex flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-3">
-            stUSDS
-            {networkBadge}
-          </span>
-          {/* The DS line under the title (5120:19542) is Body 6, so it opts
-              back out of the heading's Circular styling. */}
-          <span className="font-graphik text-fgSecondary text-xs leading-[18px] font-normal tracking-normal">
-            <Trans>Access a variable reward rate on USDS by participating in SKY-backed borrowing</Trans>
-          </span>
-        </span>
-      )}
+      title="stUSDS"
+      // The DS line under the title (5120:19542).
+      titleSubtitle={
+        <Trans>Access a variable reward rate on USDS by participating in SKY-backed borrowing</Trans>
+      }
       networkChainIds={networks}
       chart={<StUsdsDetailChart />}
       position={<StUsdsPositionCard />}

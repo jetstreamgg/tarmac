@@ -209,6 +209,35 @@ describe('buildStakeOpenSteps', () => {
   });
 });
 
+describe('buildStakeOpenSteps — write indices', () => {
+  it('bundled: no indices (the bundle is one unit)', () => {
+    const steps = buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: true, hasDelegate: true });
+    expect(steps.every(step => typeof step === 'string' || step.write === undefined)).toBe(true);
+  });
+
+  it('sequential: the approval is write 0 and every multicall leg shares write 1', () => {
+    expect(
+      buildStakeOpenSteps({
+        needsSkyAllowance: true,
+        hasBorrow: true,
+        hasReward: true,
+        rewardSymbol: 'SPK',
+        hasDelegate: true,
+        shouldUseBatch: false
+      }).map(step => (typeof step === 'string' ? undefined : step.write))
+    ).toEqual([0, 1, 1, 1, 1]);
+    // No approval: the multicall is the only write.
+    expect(
+      buildStakeOpenSteps({
+        needsSkyAllowance: false,
+        hasBorrow: true,
+        hasDelegate: true,
+        shouldUseBatch: false
+      }).map(step => (typeof step === 'string' ? undefined : step.write))
+    ).toEqual([0, 0, 0]);
+  });
+});
+
 describe('useStakeLaunch — calldata parity with the F1 seam', () => {
   beforeEach(() => {
     h.capturedCalls = [];
@@ -273,12 +302,14 @@ describe('useStakeLaunch — launch() config', () => {
     // The takeover is the review (Design QA 2800:91832): no in-modal review.
     expect(config.skipReview).toBe(true);
     expect(config.entry).toBeUndefined();
+    // Sequential path (bundling off in this harness): the approval is its own
+    // write, every multicall leg shares the next one.
     expect(config.steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
-      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
-      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." },
-      { label: 'Select reward', tokenSymbol: 'SKY' },
-      'Delegate voting power'
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved.", write: 0 },
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked.", write: 1 },
+      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed.", write: 1 },
+      { label: 'Select reward', tokenSymbol: 'SKY', write: 1 },
+      { label: 'Delegate voting power', write: 1 }
     ]);
     expect(config.analytics.widgetName).toBe('stake');
     expect(config.analytics.flow).toBe('open');

@@ -158,19 +158,16 @@ export function VaultProductDetail({
         ),
         status: vault.provider === 'morpho' ? 'info' : undefined
       }}
-      title={({ networkBadge }) => (
-        <span className="flex flex-wrap items-center gap-2">
-          {vault.name}
-          {/* Only Morpho-provided vaults carry the badge — the sUSDT vault runs
-              on Spark infra and is not a Morpho product. */}
-          {vault.provider === 'morpho' && (
-            <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
-              <Trans>Powered by Morpho</Trans>
-            </HeaderBadge>
-          )}
-          {networkBadge}
-        </span>
-      )}
+      title={vault.name}
+      // Only Morpho-provided vaults carry the badge — the sUSDT vault runs on
+      // Spark infra and is not a Morpho product.
+      titleBadges={
+        vault.provider === 'morpho' ? (
+          <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
+            <Trans>Powered by Morpho</Trans>
+          </HeaderBadge>
+        ) : undefined
+      }
       networkChainIds={networks}
       networkTestId="vault-detail-network"
       chart={<VaultDetailChart vaultAddress={vaultAddress} assetToken={vault.assetToken} />}
