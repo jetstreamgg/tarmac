@@ -109,6 +109,7 @@ function makeBark(overrides: Partial<StakeUrnBark> = {}): StakeUrnBark {
 function makePosition(overrides: Partial<StakeUserPosition> = {}): StakeUserPosition {
   return {
     index: 2,
+    urnAddress: '0x1111111111111111111111111111111111111111',
     skyLocked: 0n,
     usdsDebt: 0n,
     barks: [],

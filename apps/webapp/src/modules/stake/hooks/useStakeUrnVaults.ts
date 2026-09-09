@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { readContract, readContracts, type Config } from '@wagmi/core';
 import { stringToHex } from 'viem';
-import { useChainId, useConnection, useReadContracts } from 'wagmi';
-import { getIlkName, mcdVatAbi, mcdVatAddress, useAllStakeUrnAddresses, useCurrentUrnIndex } from '@/hooks';
+import { useChainId, useConfig, useConnection } from 'wagmi';
+import { getIlkName, mcdVatAbi, mcdVatAddress, stakeModuleAbi, stakeModuleAddress } from '@/hooks';
 import { math } from '@/utils';
 
 /** Live Vat state of one staking urn, keyed by its owner-scoped index. */
@@ -15,110 +16,114 @@ export type StakeUrnVault = {
 };
 
 export type StakeUrnVaultsResult = {
-  /** One entry per urn the engine reports for the user, ascending by index. Undefined until every read has landed. */
+  /** One entry per urn the engine reports for the user, ascending by index. Undefined until the first read lands. */
   data: StakeUrnVault[] | undefined;
+  /** First load only — a refetch keeps the previous list on screen. */
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
   mutate: () => void;
 };
 
+/** Query-key prefix; `invalidateStakeQueries` refetches it after every stake tx. */
+export const STAKE_URN_VAULTS_KEY = 'stake-urn-vaults';
+
 /**
- * Staked/borrowed amounts of every urn the connected user owns, straight from
- * the chain: engine `ownerUrnsCount` → `ownerUrns(i)` → Vat `urns(ilk, urn)`
- * (+ one `ilks(ilk)` for the rate), batched by wagmi's multicall.
- *
- * This is the live-value source for the positions surfaces. The indexer's
- * `StakingUrn.skyLocked/usdsDebt` are event-derived tallies and can be wrong
- * (Sep 2026: locks misattributed to a phantom zero-address urn hid live
- * positions), so amounts are never read from it — see `useStakeUserPositions`.
+ * Engine `ownerUrnsCount` → `ownerUrns(i)` → Vat `ilks` + `urns(ilk, urn)`,
+ * read in sequence so the whole snapshot comes from one pass (the batches are
+ * multicalls with `allowFailure: false`, so any failed leg rejects the query
+ * instead of silently dropping an urn).
  */
-export function useStakeUrnVaults(): StakeUrnVaultsResult {
-  const chainId = useChainId();
-  const { address } = useConnection();
-  const ilkHex = stringToHex(getIlkName(2), { size: 32 });
+export async function readStakeUrnVaults(
+  config: Config,
+  chainId: number,
+  address: `0x${string}`
+): Promise<StakeUrnVault[]> {
+  const engineAddress = stakeModuleAddress[chainId as keyof typeof stakeModuleAddress];
   const vatAddress = mcdVatAddress[chainId as keyof typeof mcdVatAddress];
+  if (!engineAddress || !vatAddress) return [];
+  const ilkHex = stringToHex(getIlkName(2), { size: 32 });
 
-  const {
-    data: urnCount,
-    isLoading: countLoading,
-    error: countError,
-    mutate: refetchCount
-  } = useCurrentUrnIndex();
-  const {
-    data: urnAddresses,
-    isLoading: addressesLoading,
-    error: addressesError,
-    mutate: refetchAddresses
-  } = useAllStakeUrnAddresses(address);
+  const count = Number(
+    await readContract(config, {
+      chainId,
+      address: engineAddress,
+      abi: stakeModuleAbi,
+      functionName: 'ownerUrnsCount',
+      args: [address]
+    })
+  );
+  if (count === 0) return [];
 
-  const expectedCount = urnCount === undefined ? undefined : Number(urnCount);
-  // `useAllStakeUrnAddresses` drops failed reads, so only trust the list once
-  // it has an address for every index the engine reported.
-  const addressesReady = expectedCount !== undefined && urnAddresses.length === expectedCount;
+  const urnAddresses = await readContracts(config, {
+    allowFailure: false,
+    contracts: Array.from({ length: count }, (_, index) => ({
+      chainId,
+      address: engineAddress,
+      abi: stakeModuleAbi,
+      functionName: 'ownerUrns' as const,
+      args: [address, BigInt(index)] as const
+    }))
+  });
 
-  const contracts = useMemo(() => {
-    if (!addressesReady || !vatAddress || expectedCount === 0) return [];
-    return [
-      {
-        chainId,
-        address: vatAddress,
-        abi: mcdVatAbi,
-        functionName: 'ilks' as const,
-        args: [ilkHex] as const
-      },
-      ...urnAddresses.map(urn => ({
+  const [ilk, urns] = await Promise.all([
+    readContract(config, {
+      chainId,
+      address: vatAddress,
+      abi: mcdVatAbi,
+      functionName: 'ilks',
+      args: [ilkHex]
+    }),
+    readContracts(config, {
+      allowFailure: false,
+      contracts: urnAddresses.map(urn => ({
         chainId,
         address: vatAddress,
         abi: mcdVatAbi,
         functionName: 'urns' as const,
         args: [ilkHex, urn] as const
       }))
-    ];
-  }, [addressesReady, expectedCount, vatAddress, chainId, ilkHex, urnAddresses]);
+    })
+  ]);
+  const [, rate] = ilk;
 
-  const {
-    data: vatResults,
-    isLoading: vatLoading,
-    error: vatError,
-    refetch: refetchVat
-  } = useReadContracts({
-    contracts,
-    query: { enabled: contracts.length > 0 }
+  return urns.map((urn, index) => {
+    const [ink, art] = urn;
+    return { index, urnAddress: urnAddresses[index], skyLocked: ink, usdsDebt: math.debtValue(art, rate) };
   });
+}
 
-  const data = useMemo<StakeUrnVault[] | undefined>(() => {
-    if (!addressesReady) return undefined;
-    if (expectedCount === 0) return [];
-    if (!vatResults) return undefined;
-    const [ilkResult, ...urnResults] = vatResults;
-    if (ilkResult.status !== 'success' || urnResults.some(result => result.status !== 'success')) {
-      return undefined;
-    }
-    const [, rate] = ilkResult.result as readonly [bigint, bigint, bigint, bigint, bigint];
-    return urnResults.map((result, index) => {
-      const [ink, art] = result.result as readonly [bigint, bigint];
-      return {
-        index,
-        urnAddress: urnAddresses[index],
-        skyLocked: ink,
-        usdsDebt: math.debtValue(art, rate)
-      };
-    });
-  }, [addressesReady, expectedCount, vatResults, urnAddresses]);
+/**
+ * Staked/borrowed amounts of every urn the connected user owns, straight from
+ * the chain. This is the live-value source for the positions surfaces: the
+ * indexer's `StakingUrn.skyLocked/usdsDebt` are event-derived tallies and can
+ * be wrong (Sep 2026: locks misattributed to a phantom zero-address urn hid
+ * live positions), so amounts are never read from it.
+ *
+ * One react-query entry keyed by chain + address: a post-tx invalidation
+ * refetches it in place (the previous list stays on screen, no skeleton
+ * collapse), and a freshly opened urn shows up as soon as `ownerUrnsCount`
+ * reports it — `invalidateStakeQueries` re-fires along its lag trail in case
+ * the first refetch is answered by a node still a block behind the receipt.
+ */
+export function useStakeUrnVaults(): StakeUrnVaultsResult {
+  const config = useConfig();
+  const chainId = useChainId();
+  const { address } = useConnection();
 
-  const failedRead =
-    vatResults && data === undefined && addressesReady && expectedCount !== 0
-      ? new Error('Vat read failed for a staking urn')
-      : null;
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
+    enabled: Boolean(address),
+    queryKey: [STAKE_URN_VAULTS_KEY, chainId, address],
+    queryFn: () => readStakeUrnVaults(config, chainId, address!)
+  });
 
   return {
     data,
-    isLoading: !data && (countLoading || addressesLoading || vatLoading),
-    error: (countError as Error | null) ?? (addressesError as Error | null) ?? vatError ?? failedRead,
+    isLoading,
+    isFetching,
+    error: (error as Error | null) ?? null,
     mutate: () => {
-      refetchCount();
-      refetchAddresses();
-      refetchVat();
+      refetch();
     }
   };
 }

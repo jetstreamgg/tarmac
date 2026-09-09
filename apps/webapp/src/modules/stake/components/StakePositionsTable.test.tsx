@@ -102,13 +102,28 @@ function bark(overrides: Partial<StakeUserPosition['barks'][number]> = {}) {
 const POSITIONS: StakeUserPosition[] = [
   {
     index: 0,
+    urnAddress: '0x1111111111111111111111111111111111111111',
     skyLocked: 700550n * 10n ** 18n,
     usdsDebt: 30000n * 10n ** 18n,
     barks: [],
     lastMutationTimestamp: undefined
   },
-  { index: 1, skyLocked: 50000n * 10n ** 18n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined },
-  { index: 2, skyLocked: 0n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined } // inactive (emptied) urn
+  {
+    index: 1,
+    urnAddress: '0x1111111111111111111111111111111111111111',
+    skyLocked: 50000n * 10n ** 18n,
+    usdsDebt: 0n,
+    barks: [],
+    lastMutationTimestamp: undefined
+  },
+  {
+    index: 2,
+    urnAddress: '0x1111111111111111111111111111111111111111',
+    skyLocked: 0n,
+    usdsDebt: 0n,
+    barks: [],
+    lastMutationTimestamp: undefined
+  } // inactive (emptied) urn
 ];
 
 const renderTable = (
@@ -214,7 +229,14 @@ describe('StakePositionsTable', () => {
 
   it('shows the liquidation badge instead of the risk meter for a liquidated position', () => {
     const positions: StakeUserPosition[] = [
-      { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [bark()], lastMutationTimestamp: undefined }
+      {
+        index: 0,
+        urnAddress: '0x1111111111111111111111111111111111111111',
+        skyLocked: 0n,
+        usdsDebt: 0n,
+        barks: [bark()],
+        lastMutationTimestamp: undefined
+      }
     ];
     renderTable(positions);
 
@@ -224,8 +246,22 @@ describe('StakePositionsTable', () => {
 
   it('keeps a liquidated-but-empty urn visible while hiding a plain inactive one', () => {
     const positions: StakeUserPosition[] = [
-      { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [bark()], lastMutationTimestamp: undefined }, // liquidated
-      { index: 1, skyLocked: 0n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined } // plain inactive
+      {
+        index: 0,
+        urnAddress: '0x1111111111111111111111111111111111111111',
+        skyLocked: 0n,
+        usdsDebt: 0n,
+        barks: [bark()],
+        lastMutationTimestamp: undefined
+      }, // liquidated
+      {
+        index: 1,
+        urnAddress: '0x1111111111111111111111111111111111111111',
+        skyLocked: 0n,
+        usdsDebt: 0n,
+        barks: [],
+        lastMutationTimestamp: undefined
+      } // plain inactive
     ];
     renderTable(positions);
 
@@ -235,7 +271,14 @@ describe('StakePositionsTable', () => {
 
   it('renders the row banner directly under its matching row', () => {
     const positions: StakeUserPosition[] = [
-      { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [bark()], lastMutationTimestamp: undefined }
+      {
+        index: 0,
+        urnAddress: '0x1111111111111111111111111111111111111111',
+        skyLocked: 0n,
+        usdsDebt: 0n,
+        barks: [bark()],
+        lastMutationTimestamp: undefined
+      }
     ];
     renderTable(positions);
 
@@ -265,6 +308,7 @@ describe('StakePositionsTable — borrowed cell', () => {
     renderTable([
       {
         index: 0,
+        urnAddress: '0x1111111111111111111111111111111111111111',
         skyLocked: 10n * 10n ** 18n,
         usdsDebt: 31000n * 10n ** 18n,
         barks: [],
@@ -305,7 +349,14 @@ describe('StakePositionsTable — mobile cards (M5)', () => {
 
   it('keeps the liquidation banner under its matching card', () => {
     const positions: StakeUserPosition[] = [
-      { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [bark()], lastMutationTimestamp: undefined }
+      {
+        index: 0,
+        urnAddress: '0x1111111111111111111111111111111111111111',
+        skyLocked: 0n,
+        usdsDebt: 0n,
+        barks: [bark()],
+        lastMutationTimestamp: undefined
+      }
     ];
     renderTable(positions);
 

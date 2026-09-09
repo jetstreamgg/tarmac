@@ -3,7 +3,6 @@ import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import {
-  useStakeUrnAddress,
   useStakeRewardContracts,
   useRewardContractsToClaim,
   useVault,
@@ -77,10 +76,13 @@ function LiquidatedBadge() {
 /** Liquidation-risk cell: liquidated badge, vault risk for urns with debt, or an unlit meter. */
 function PositionRiskCell({ position }: { position: StakeUserPosition }) {
   const hasDebt = position.usdsDebt > 0n;
-  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
   // The vault read only feeds the risk meter, which is unlit without debt —
   // an undefined urn disables `useVault`'s Vat read for debt-free rows.
-  const { data: vault, isLoading, error } = useVault(hasDebt ? urnAddress : undefined, getIlkName(2));
+  const {
+    data: vault,
+    isLoading,
+    error
+  } = useVault(hasDebt ? position.urnAddress : undefined, getIlkName(2));
 
   if (isLiquidatedStakePosition(position)) return <LiquidatedBadge />;
   if (hasDebt && isLoading) return <Skeleton className="h-5 w-14" />;
@@ -113,7 +115,7 @@ function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
 /** Claimable-rewards cell: USD value of every reward earned by this urn. */
 function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
   const chainId = useChainId();
-  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
+  const urnAddress = position.urnAddress;
   const { data: rewardContracts } = useStakeRewardContracts();
   const {
     data: toClaim,
@@ -273,11 +275,14 @@ export function StakePositionsTable({
   positions,
   isLoading,
   error,
+  contextError,
   onRemediate
 }: {
   positions?: StakeUserPosition[];
   isLoading: boolean;
   error?: Error | null;
+  /** Subgraph failure: rows are live but have no barks, so liquidated urns can't be told from emptied ones. */
+  contextError?: Error | null;
   /** Warning-banner CTA: stage the given remediation action for that position's manage sheet. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
 }) {
@@ -299,11 +304,14 @@ export function StakePositionsTable({
   );
 
   const allPositions = positions ?? [];
-  const visiblePositions = hideInactive
-    ? allPositions.filter(
-        position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position)
-      )
-    : allPositions;
+  // Without bark context an emptied urn may really be a liquidated one, so
+  // the inactive filter stands down rather than hide it.
+  const visiblePositions =
+    hideInactive && !contextError
+      ? allPositions.filter(
+          position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position)
+        )
+      : allPositions;
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
   // Comp 1036:208676: the empty state is a self-contained card — the section

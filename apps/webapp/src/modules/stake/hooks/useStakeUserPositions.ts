@@ -32,6 +32,8 @@ export type StakeUrnBark = {
  */
 export type StakeUserPosition = {
   index: number;
+  /** Engine `ownerUrns(index)` — resolved once by `useStakeUrnVaults`, shared by every per-row read. */
+  urnAddress: `0x${string}`;
   skyLocked: bigint;
   usdsDebt: bigint;
   barks: StakeUrnBark[];
@@ -102,7 +104,10 @@ export function isInactiveStakePosition(position: { skyLocked: bigint; usdsDebt:
   return position.skyLocked === 0n && position.usdsDebt === 0n;
 }
 
-export function parseStakeUserPositions(response: StakeUserPositionsResponse): StakeUserPosition[] {
+/** The subgraph's contribution to a row: everything but the live amounts and the urn address. */
+export type StakeSubgraphPosition = Omit<StakeUserPosition, 'urnAddress'>;
+
+export function parseStakeUserPositions(response: StakeUserPositionsResponse): StakeSubgraphPosition[] {
   return (response.stakingUrns ?? [])
     .map(urn => ({
       index: Number(urn.index),
@@ -149,7 +154,7 @@ export function isLiquidatedStakePosition(position: StakeUserPosition): boolean 
  */
 export function mergeStakeUserPositions(
   vaults: StakeUrnVault[],
-  subgraphPositions: StakeUserPosition[] | undefined
+  subgraphPositions: StakeSubgraphPosition[] | undefined
 ): StakeUserPosition[] {
   const byIndex = new Map((subgraphPositions ?? []).map(position => [position.index, position]));
   return vaults
@@ -157,6 +162,7 @@ export function mergeStakeUserPositions(
       const indexed = byIndex.get(vault.index);
       return {
         index: vault.index,
+        urnAddress: vault.urnAddress,
         skyLocked: vault.skyLocked,
         usdsDebt: vault.usdsDebt,
         barks: indexed?.barks ?? [],
@@ -170,7 +176,7 @@ async function fetchStakeUserPositions(
   urlIndexer: string,
   chainId: number,
   address: string
-): Promise<StakeUserPosition[]> {
+): Promise<StakeSubgraphPosition[]> {
   const query = gql`
     {
       stakingUrns: StakingUrn(where: { owner: { _eq: "${address.toLowerCase()}" }, chainId: { _eq: ${chainId} } }) {
@@ -203,10 +209,11 @@ async function fetchStakeUserPositions(
 /**
  * All staking urns of the connected user: amounts from the chain, event
  * context from the subgraph, joined per urn index (`mergeStakeUserPositions`).
- * The chain is authoritative — until its reads land the hook is loading, and
- * a subgraph outage only costs barks/timestamps, never a row. Should the
- * chain reads themselves fail, the subgraph rows stand in so the tab still
- * renders something rather than an error.
+ * The chain is authoritative — a chain read failure is surfaced as `error`
+ * with no rows (never the indexer's tallies, which are what this hook exists
+ * to distrust). The subgraph decides liquidation state through barks, so the
+ * rows wait for it to settle too; if it fails, the rows still render from the
+ * chain and `contextError` tells the surfaces the bark context is missing.
  */
 export function useStakeUserPositions() {
   const { address } = useConnection();
@@ -226,11 +233,14 @@ export function useStakeUserPositions() {
     queryFn: () => fetchStakeUserPositions(indexerUrl, chainId, address!)
   });
 
-  const data = useMemo(() => {
-    if (vaults.data) return mergeStakeUserPositions(vaults.data, subgraphPositions);
-    if (vaults.error && subgraphPositions) return subgraphPositions;
-    return undefined;
-  }, [vaults.data, vaults.error, subgraphPositions]);
+  const subgraphSettled = subgraphPositions !== undefined || Boolean(subgraphError);
+  const data = useMemo(
+    () =>
+      vaults.data && !vaults.error && subgraphSettled
+        ? mergeStakeUserPositions(vaults.data, subgraphPositions)
+        : undefined,
+    [vaults.data, vaults.error, subgraphSettled, subgraphPositions]
+  );
 
   const mutate = useCallback(() => {
     vaults.mutate();
@@ -239,8 +249,10 @@ export function useStakeUserPositions() {
 
   return {
     data,
-    isLoading: !data && (vaults.isLoading || subgraphLoading),
-    error: data ? null : ((vaults.error ?? subgraphError) as Error | null),
+    isLoading: !data && !vaults.error && (vaults.isLoading || subgraphLoading),
+    error: vaults.error,
+    /** Subgraph failure: rows are live but carry no barks/timestamps, so liquidation state is unknown. */
+    contextError: (subgraphError as Error | null) ?? null,
     mutate
   };
 }

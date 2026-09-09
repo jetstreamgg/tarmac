@@ -17,29 +17,32 @@ describe('invalidateStakeQueries', () => {
     expect(keysCalled(client)).toEqual([
       'stake-user-positions',
       'stake-history',
+      'stake-urn-vaults',
       'readContract',
       'readContracts',
       'simulateDrip'
     ]);
   });
 
-  it('re-invalidates only the subgraph keys along the lag trail', () => {
+  it('re-invalidates the subgraph keys and the positions list along the lag trail', () => {
     const client = makeClient();
     invalidateStakeQueries(client);
     (client.invalidateQueries as ReturnType<typeof vi.fn>).mockClear();
 
     vi.advanceTimersByTime(5_000);
-    expect(keysCalled(client)).toEqual(['stake-user-positions', 'stake-history']);
+    expect(keysCalled(client)).toEqual(['stake-user-positions', 'stake-history', 'stake-urn-vaults']);
 
     vi.advanceTimersByTime(10_000);
     expect(keysCalled(client)).toEqual([
       'stake-user-positions',
       'stake-history',
+      'stake-urn-vaults',
       'stake-user-positions',
-      'stake-history'
+      'stake-history',
+      'stake-urn-vaults'
     ]);
 
     vi.advanceTimersByTime(60_000);
-    expect((client.invalidateQueries as ReturnType<typeof vi.fn>).mock.calls.length).toBe(4);
+    expect((client.invalidateQueries as ReturnType<typeof vi.fn>).mock.calls.length).toBe(6);
   });
 });

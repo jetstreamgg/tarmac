@@ -188,6 +188,7 @@ function makeBark(overrides: Partial<StakeUrnBark> = {}): StakeUrnBark {
 function makePosition(overrides: Partial<StakeUserPosition> = {}): StakeUserPosition {
   return {
     index: 0,
+    urnAddress: '0x1111111111111111111111111111111111111111',
     skyLocked: 0n,
     usdsDebt: 0n,
     barks: [],
@@ -254,9 +255,10 @@ describe('isLiquidatedStakePosition', () => {
 });
 
 describe('mergeStakeUserPositions', () => {
+  const addr = (index: number) => `0x${String(index).padStart(40, '0')}` as `0x${string}`;
   const vault = (index: number, skyLocked: bigint, usdsDebt = 0n) => ({
     index,
-    urnAddress: `0x${String(index).padStart(40, '0')}` as `0x${string}`,
+    urnAddress: addr(index),
     skyLocked,
     usdsDebt
   });
@@ -276,23 +278,56 @@ describe('mergeStakeUserPositions', () => {
     const merged = mergeStakeUserPositions(
       [vault(1, 5n, 2n), vault(0, 553_916n)],
       [
-        { index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined },
-        { index: 1, skyLocked: 999n, usdsDebt: 999n, barks: [bark], lastMutationTimestamp: 50 }
+        {
+          index: 0,
+          skyLocked: 0n,
+          usdsDebt: 0n,
+          barks: [],
+          lastMutationTimestamp: undefined
+        },
+        {
+          index: 1,
+          skyLocked: 999n,
+          usdsDebt: 999n,
+          barks: [bark],
+          lastMutationTimestamp: 50
+        }
       ]
     );
 
     expect(merged).toEqual([
-      { index: 0, skyLocked: 553_916n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined },
-      { index: 1, skyLocked: 5n, usdsDebt: 2n, barks: [bark], lastMutationTimestamp: 50 }
+      {
+        index: 0,
+        urnAddress: addr(0),
+        skyLocked: 553_916n,
+        usdsDebt: 0n,
+        barks: [],
+        lastMutationTimestamp: undefined
+      },
+      { index: 1, urnAddress: addr(1), skyLocked: 5n, usdsDebt: 2n, barks: [bark], lastMutationTimestamp: 50 }
     ]);
   });
 
   it('keeps an on-chain urn the subgraph has not indexed, with empty context', () => {
     expect(mergeStakeUserPositions([vault(0, 7n)], [])).toEqual([
-      { index: 0, skyLocked: 7n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }
+      {
+        index: 0,
+        urnAddress: addr(0),
+        skyLocked: 7n,
+        usdsDebt: 0n,
+        barks: [],
+        lastMutationTimestamp: undefined
+      }
     ]);
     expect(mergeStakeUserPositions([vault(0, 7n)], undefined)).toEqual([
-      { index: 0, skyLocked: 7n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }
+      {
+        index: 0,
+        urnAddress: addr(0),
+        skyLocked: 7n,
+        usdsDebt: 0n,
+        barks: [],
+        lastMutationTimestamp: undefined
+      }
     ]);
   });
 
@@ -308,7 +343,15 @@ describe('mergeStakeUserPositions', () => {
   it('a live position the subgraph tallies at zero is no longer inactive', () => {
     const [position] = mergeStakeUserPositions(
       [vault(0, 19_110n)],
-      [{ index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }]
+      [
+        {
+          index: 0,
+          skyLocked: 0n,
+          usdsDebt: 0n,
+          barks: [],
+          lastMutationTimestamp: undefined
+        }
+      ]
     );
     expect(isInactiveStakePosition(position)).toBe(false);
   });
