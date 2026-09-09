@@ -12,6 +12,7 @@ describe('AnalyticsErrorBoundary', () => {
   });
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   // Sentry WEBAPP-DP / WEBAPP-D4: the boundary used to hand the reporter a

@@ -49,10 +49,12 @@ vi.mock('wagmi', async importOriginal => {
 // channel through which calldata leaves useBatchStakeMulticall. The engine
 // itself is left unmodified (landmine #1: allowance derivation stays inside it).
 vi.mock('@/hooks/shared/useTransactionFlow', () => ({
-  useTransactionFlow: (params: { calls: unknown[]; enabled?: boolean }) => {
+  useTransactionFlow: (params: { calls: unknown[]; enabled?: boolean; shouldUseBatch?: boolean }) => {
     h.capturedCalls = params.calls;
     h.capturedEnabled = params.enabled;
     return {
+      calls: params.calls,
+      isBatch: !!params.shouldUseBatch && params.calls.length > 1,
       error: null,
       isLoading: false,
       prepared: true,
@@ -302,6 +304,7 @@ describe('useStakeLaunch — launch() config', () => {
     h.launchMock.mockClear();
     h.skyAllowance = 0n;
     h.usdsAllowance = HAS_ALLOWANCE;
+    h.chainId = 1;
   });
   afterEach(cleanup);
 

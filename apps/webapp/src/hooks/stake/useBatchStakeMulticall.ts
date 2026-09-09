@@ -100,10 +100,9 @@ export function useBatchStakeMulticall({
   const enabled =
     isConnected &&
     paramEnabled &&
-    stakeModule !== undefined &&
     skyAllowance !== undefined &&
     usdsAllowance !== undefined &&
-    !!calldata?.length;
+    calls.length > 0;
 
   const transactionFlowResults = useTransactionFlow({
     calls,

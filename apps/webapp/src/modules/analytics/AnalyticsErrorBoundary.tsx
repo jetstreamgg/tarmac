@@ -1,5 +1,5 @@
 import React from 'react';
-import { reportAnalyticsError } from './constants';
+import { reportError } from '@/modules/sentry/reportError';
 
 interface Props {
   children: React.ReactNode;
@@ -10,8 +10,9 @@ interface State {
 }
 
 /**
- * Error boundary that catches rendering errors in analytics components.
- * Always renders children on error — never shows a blank screen.
+ * Reports render errors from the analytics provider layer, then renders the
+ * children again unchanged so a transient throw recovers. A child that throws
+ * on every render re-throws past this boundary.
  */
 export class AnalyticsErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false };
@@ -21,13 +22,16 @@ export class AnalyticsErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    reportAnalyticsError('AnalyticsErrorBoundary', error, {
-      react: { componentStack: info.componentStack }
+    reportError(error, {
+      module: 'analytics',
+      flow: 'render',
+      action: 'AnalyticsErrorBoundary',
+      type: 'error-boundary',
+      contexts: { react: { componentStack: info.componentStack } }
     });
   }
 
   render() {
-    // Always render children — analytics errors should never break the UI
     return this.props.children;
   }
 }
