@@ -30,26 +30,32 @@ export function useBatchStakeMulticall({
   const hasSkyAllowance = skyAllowance !== undefined && skyAllowance >= skyAmount;
   const hasUsdsAllowance = usdsAllowance !== undefined && usdsAllowance >= usdsAmount;
 
+  // The stake module is mainnet-only. A wallet on another chain can still reach
+  // this hook (deep link, declined auto-switch, chain changed from the wallet
+  // while the flow is open), and an undefined target would throw from viem the
+  // moment anything encodes the calls (Sentry WEBAPP-E4).
+  const stakeModule = stakeModuleAddress[chainId as keyof typeof stakeModuleAddress];
+
   // Calls for the batch transaction
   const calls: Call[] = [];
-  if (calldata?.length) {
+  if (calldata?.length && stakeModule) {
     const approveSkyCall = getWriteContractCall({
       to: skyAddress[chainId as keyof typeof skyAddress],
       abi: erc20Abi,
       functionName: 'approve',
-      args: [stakeModuleAddress[chainId as keyof typeof stakeModuleAddress], skyAmount]
+      args: [stakeModule, skyAmount]
     });
 
     const approveUsdsCall = getWriteContractCall({
       to: usdsAddress[chainId as keyof typeof usdsAddress],
       abi: erc20Abi,
       functionName: 'approve',
-      args: [stakeModuleAddress[chainId as keyof typeof stakeModuleAddress], usdsAmount]
+      args: [stakeModule, usdsAmount]
     });
 
     // Individual transaction using `multicall`
     const multicallCall = getWriteContractCall({
-      to: stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
+      to: stakeModule,
       abi: stakeModuleAbi,
       functionName: 'multicall',
       args: [calldata]
@@ -57,7 +63,7 @@ export function useBatchStakeMulticall({
 
     // Array of individual transactions, intended to be used in a batch transaction
     const individualCalls: Call[] = calldata.map(data => ({
-      to: stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
+      to: stakeModule,
       data
     }));
 
@@ -71,7 +77,7 @@ export function useBatchStakeMulticall({
         data: calldata[0]
       });
       const singleCall = getWriteContractCall({
-        to: stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
+        to: stakeModule,
         abi: stakeModuleAbi,
         functionName: decodedSingleCalldata.functionName as ContractFunctionName<
           typeof stakeModuleAbi,
@@ -94,6 +100,7 @@ export function useBatchStakeMulticall({
   const enabled =
     isConnected &&
     paramEnabled &&
+    stakeModule !== undefined &&
     skyAllowance !== undefined &&
     usdsAllowance !== undefined &&
     !!calldata?.length;

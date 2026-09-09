@@ -30,14 +30,15 @@ const h = vi.hoisted(() => ({
   mockExecute: vi.fn(),
   launchMock: vi.fn(),
   skyAllowance: 0n as bigint | undefined,
-  usdsAllowance: 0n as bigint | undefined
+  usdsAllowance: 0n as bigint | undefined,
+  chainId: 1
 }));
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => 1,
+    useChainId: () => h.chainId,
     useConnection: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
     useAccount: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
     useBlockNumber: () => ({ data: 0n })
@@ -246,6 +247,7 @@ describe('useStakeLaunch — calldata parity with the F1 seam', () => {
     h.launchMock.mockClear();
     h.skyAllowance = 0n;
     h.usdsAllowance = HAS_ALLOWANCE;
+    h.chainId = 1;
   });
   afterEach(cleanup);
 
@@ -277,6 +279,18 @@ describe('useStakeLaunch — calldata parity with the F1 seam', () => {
 
   it('keeps the engine disabled until the form is valid', () => {
     renderLaunch({ enabled: false });
+    expect(h.capturedEnabled).toBe(false);
+  });
+
+  // WEBAPP-E4: the stake module is mainnet-only. Reached from an L2 (deep
+  // link, declined auto-switch), the engine used to build approve calls
+  // against an undefined spender, and encoding them for the confirm-content
+  // cache key threw during render.
+  it('builds no calls and stays disabled on a chain without the stake module', () => {
+    h.chainId = 8453;
+    expect(() => renderLaunch()).not.toThrow();
+
+    expect(h.capturedCalls).toEqual([]);
     expect(h.capturedEnabled).toBe(false);
   });
 });
