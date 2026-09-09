@@ -259,6 +259,22 @@ describe('StakePositionsTable', () => {
   });
 });
 
+describe('StakePositionsTable — borrowed cell', () => {
+  it('renders the position debt without depending on the per-row vault read', () => {
+    h.vault = undefined;
+    renderTable([
+      {
+        index: 0,
+        skyLocked: 10n * 10n ** 18n,
+        usdsDebt: 31000n * 10n ** 18n,
+        barks: [],
+        lastMutationTimestamp: 1
+      }
+    ]);
+    expect(screen.getByTestId('stake-position-row-0').textContent).toContain('31,000');
+  });
+});
+
 describe('StakePositionsTable — mobile cards (M5)', () => {
   beforeEach(() => {
     breakpoint.isMobile = true;

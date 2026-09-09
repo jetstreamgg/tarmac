@@ -9,8 +9,7 @@ import {
   useVault,
   usePrices,
   getIlkName,
-  RiskLevel,
-  ZERO_ADDRESS
+  RiskLevel
 } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
@@ -77,9 +76,11 @@ function LiquidatedBadge() {
 
 /** Liquidation-risk cell: liquidated badge, vault risk for urns with debt, or an unlit meter. */
 function PositionRiskCell({ position }: { position: StakeUserPosition }) {
-  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
-  const { data: vault, isLoading, error } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
   const hasDebt = position.usdsDebt > 0n;
+  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
+  // The vault read only feeds the risk meter, which is unlit without debt —
+  // an undefined urn disables `useVault`'s Vat read for debt-free rows.
+  const { data: vault, isLoading, error } = useVault(hasDebt ? urnAddress : undefined, getIlkName(2));
 
   if (isLiquidatedStakePosition(position)) return <LiquidatedBadge />;
   if (hasDebt && isLoading) return <Skeleton className="h-5 w-14" />;
@@ -96,19 +97,15 @@ function PositionRiskCell({ position }: { position: StakeUserPosition }) {
 }
 
 /**
- * Borrowed cell: LIVE debt (principal + accrued interest) from the Vat — the
- * figure the legacy widget shows (`vault.debtValue`). The subgraph's principal
- * stands in only until the on-chain read lands. Shares the risk cell's cached
- * vault read, so this adds no extra RPC.
+ * Borrowed cell: LIVE debt (principal + accrued interest). `position.usdsDebt`
+ * is the Vat's `art × rate` from `useStakeUrnVaults` — the same figure
+ * `useVault` derives — so no per-row read is needed here.
  */
 function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
-  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
-  const { data: vault } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
-
   return (
     <CellAmount
       icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
-      amount={formatStakeAmount(vault?.debtValue ?? position.usdsDebt)}
+      amount={formatStakeAmount(position.usdsDebt)}
     />
   );
 }

@@ -1,7 +1,9 @@
+import { useCallback, useMemo } from 'react';
 import { request, gql } from 'graphql-request';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
+import { StakeUrnVault, useStakeUrnVaults } from './useStakeUrnVaults';
 
 /**
  * One historical liquidation event ("bark") of a staking urn, as indexed by
@@ -24,8 +26,9 @@ export type StakeUrnBark = {
 /**
  * One row of the My positions tab: the per-urn staked/borrowed state every
  * surface on the tab shares (table rows, summary aggregates, activity filter).
- * Risk and claimable-rewards data stay per-row on-chain reads — this hook only
- * covers what the subgraph answers in a single query.
+ * `skyLocked`/`usdsDebt` are live Vat reads (`useStakeUrnVaults`); the subgraph
+ * contributes only the event-derived context (barks, latest mutation). Risk and
+ * claimable-rewards data stay per-row on-chain reads.
  */
 export type StakeUserPosition = {
   index: number;
@@ -135,6 +138,34 @@ export function isLiquidatedStakePosition(position: StakeUserPosition): boolean 
   );
 }
 
+/**
+ * Live Vat amounts joined with the subgraph's event context, one row per urn
+ * the engine reports. The chain decides which urns exist and what they hold;
+ * a subgraph row with no on-chain counterpart is dropped, and an on-chain urn
+ * the subgraph hasn't (correctly) indexed still renders — with no barks and no
+ * mutation timestamp. That is exactly the Sep 2026 failure: the indexer
+ * credited fresh locks to a phantom zero-address urn, so `skyLocked` stayed 0
+ * and live positions were classified inactive and hidden.
+ */
+export function mergeStakeUserPositions(
+  vaults: StakeUrnVault[],
+  subgraphPositions: StakeUserPosition[] | undefined
+): StakeUserPosition[] {
+  const byIndex = new Map((subgraphPositions ?? []).map(position => [position.index, position]));
+  return vaults
+    .map(vault => {
+      const indexed = byIndex.get(vault.index);
+      return {
+        index: vault.index,
+        skyLocked: vault.skyLocked,
+        usdsDebt: vault.usdsDebt,
+        barks: indexed?.barks ?? [],
+        lastMutationTimestamp: indexed?.lastMutationTimestamp
+      };
+    })
+    .sort((a, b) => a.index - b.index);
+}
+
 async function fetchStakeUserPositions(
   urlIndexer: string,
   chainId: number,
@@ -170,32 +201,46 @@ async function fetchStakeUserPositions(
 }
 
 /**
- * All staking urns of the connected user in one subgraph query — the shared
- * data source for the positions table, the summary card aggregates, and the
- * activity filter options. Same query family as the engine's `useStakePosition`
- * (single-urn) and `useTotalUserStaked`, kept module-local per the F1 seam
- * precedent: presentation-layer data composition without touching engine hooks.
+ * All staking urns of the connected user: amounts from the chain, event
+ * context from the subgraph, joined per urn index (`mergeStakeUserPositions`).
+ * The chain is authoritative — until its reads land the hook is loading, and
+ * a subgraph outage only costs barks/timestamps, never a row. Should the
+ * chain reads themselves fail, the subgraph rows stand in so the tab still
+ * renders something rather than an error.
  */
 export function useStakeUserPositions() {
   const { address } = useConnection();
   const chainId = useChainId();
   const indexerUrl = useIndexerUrl();
 
+  const vaults = useStakeUrnVaults();
+
   const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
+    data: subgraphPositions,
+    error: subgraphError,
+    refetch: refetchSubgraph,
+    isLoading: subgraphLoading
   } = useQuery({
     enabled: Boolean(indexerUrl && address),
     queryKey: ['stake-user-positions', indexerUrl, address, chainId],
     queryFn: () => fetchStakeUserPositions(indexerUrl, chainId, address!)
   });
 
+  const data = useMemo(() => {
+    if (vaults.data) return mergeStakeUserPositions(vaults.data, subgraphPositions);
+    if (vaults.error && subgraphPositions) return subgraphPositions;
+    return undefined;
+  }, [vaults.data, vaults.error, subgraphPositions]);
+
+  const mutate = useCallback(() => {
+    vaults.mutate();
+    refetchSubgraph();
+  }, [vaults, refetchSubgraph]);
+
   return {
     data,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
+    isLoading: !data && (vaults.isLoading || subgraphLoading),
+    error: data ? null : ((vaults.error ?? subgraphError) as Error | null),
     mutate
   };
 }
