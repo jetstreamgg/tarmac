@@ -21,7 +21,9 @@ export class AnalyticsErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    reportAnalyticsError('AnalyticsErrorBoundary', { error, componentStack: info.componentStack });
+    reportAnalyticsError('AnalyticsErrorBoundary', error, {
+      react: { componentStack: info.componentStack }
+    });
   }
 
   render() {

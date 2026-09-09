@@ -1,5 +1,5 @@
 import type posthog from 'posthog-js';
-import { reportError } from '@/modules/sentry/reportError';
+import { reportError, type ReportContext } from '@/modules/sentry/reportError';
 
 // ── Event Names ──────────────────────────────────────────────────────────────
 
@@ -116,14 +116,19 @@ export function safeCapture(
 /**
  * Report analytics errors without letting analytics failures break the app.
  */
-export function reportAnalyticsError(context: string, error: unknown): void {
+export function reportAnalyticsError(
+  context: string,
+  error: unknown,
+  contexts?: ReportContext['contexts']
+): void {
   console.warn(`[Analytics] ${context}:`, error);
   reportError(error, {
     module: 'analytics',
     flow: 'safe-capture',
     action: context,
     type: 'analytics_error',
-    level: 'warning'
+    level: 'warning',
+    contexts
   });
 }
 
