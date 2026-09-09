@@ -170,13 +170,17 @@ export function useStakeLaunch({
   });
 
   // READ ONLY — labels the Approve step; the engine derives its own approve call.
-  const { data: skyAllowance } = useStakeSkyAllowance();
+  const { data: skyAllowance, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
   const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
   // Nothing to approve on the open flow (`usdsAmount` is 0), but the engine
   // still emits an approve leg while the read is unresolved — mirrored so the
   // leg count below can't disagree with the calls it actually builds.
-  const { data: usdsAllowance } = useStakeUsdsAllowance();
+  const { data: usdsAllowance, mutate: mutateUsdsAllowance } = useStakeUsdsAllowance();
   const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
+  const refetchAllowances = useCallback(() => {
+    mutateSkyAllowance();
+    mutateUsdsAllowance();
+  }, [mutateSkyAllowance, mutateUsdsAllowance]);
 
   const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);
 
@@ -191,7 +195,7 @@ export function useStakeLaunch({
     enabled: enabled && currentUrnIndex !== undefined && calldata.length > 0,
     ...txCallbacks
   });
-  useResetPausedRunOnClose(engine.reset);
+  useResetPausedRunOnClose(engine.reset, refetchAllowances);
 
   // Live execute ref: launch() must never snapshot onConfirm state (landmine #2)
   // — the engine hook re-renders between launch and the user's Confirm click.

@@ -80,7 +80,9 @@ export function useConvertLaunch({
     shouldUseBatch: !!batchEnabled,
     ...txCallbacks
   });
-  useResetPausedRunOnClose(conversion.reset);
+  // The allowance refetch is what drops a mined approve out of the next
+  // launch's step list once a later leg fails (APP-563 #3).
+  useResetPausedRunOnClose(conversion.reset, conversion.mutateAllowance);
   const { locked, restore } = useMinimizedSessionLock(sessionId);
 
   const originSymbol = conversion.originToken?.symbol ?? '';
