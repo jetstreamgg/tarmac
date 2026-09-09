@@ -175,6 +175,8 @@ export type ChainGuard = {
   onSwitch?: () => void;
   /** True while the wallet is answering the guard's own switch request. */
   switching?: boolean;
+  /** Which explanation to show (see `TransactionConfig.chainGuardReason`). */
+  reason?: 'product-unavailable' | 'launch-chain';
 };
 
 // Figma review (badge restyle, "Confirm in the wallet" 2376:225580): the old
@@ -355,7 +357,22 @@ export function TransactionModal({
     <div className="flex items-start gap-2" data-testid="transaction-chain-guard">
       <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
       <Text className="text-error text-sm">
-        {chainGuard.targetName ? (
+        {chainGuard.reason === 'launch-chain' ? (
+          // The flow was prepared for the chain it launched on (APP-563 #4);
+          // the product may run on the wallet's new chain too, so don't claim
+          // it is unavailable there.
+          chainGuard.targetName ? (
+            <Trans>
+              This transaction was prepared on {chainGuard.targetName}. Switch back to {chainGuard.targetName}{' '}
+              to continue, or close and start again on {chainGuard.currentName ?? t`this network`}.
+            </Trans>
+          ) : (
+            <Trans>
+              This transaction was prepared on another network. Switch back to it to continue, or close and
+              start again on {chainGuard.currentName ?? t`this network`}.
+            </Trans>
+          )
+        ) : chainGuard.targetName ? (
           <Trans>
             This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}. Switch to{' '}
             {chainGuard.targetName} to continue.
