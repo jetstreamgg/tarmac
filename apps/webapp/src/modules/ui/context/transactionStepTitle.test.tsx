@@ -1,5 +1,5 @@
 import { StrictMode, useEffect, useRef, type ReactNode } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -88,6 +88,44 @@ function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks'
   );
 }
 
+// Launches a review flow, confirms it, then fails the write with `error` —
+// handing back the live engine callbacks of the launched session (the ones
+// `build` receives are pre-launch and stale).
+function renderFailedFlow(error: Error, hash = ''): ReturnType<typeof useTransaction>['txCallbacks'] {
+  let cb!: ReturnType<typeof useTransaction>['txCallbacks'];
+  function LiveCallbacks() {
+    const { txCallbacks } = useTransaction();
+    useEffect(() => {
+      cb = txCallbacks;
+    });
+    return null;
+  }
+  render(
+    <StrictMode>
+      <I18nProvider i18n={i18n}>
+        <TransactionProvider>
+          <Harness
+            build={() => ({
+              title: 'Review withdraw',
+              usdValue: 0,
+              supportedChainIds: [1],
+              transactionTitle: 'Confirm in the wallet',
+              transactionContent: <div>review</div>,
+              confirmLabel: 'Withdraw',
+              onConfirm: () => cb.onMutate()
+            })}
+          />
+          <LiveCallbacks />
+        </TransactionProvider>
+      </I18nProvider>
+    </StrictMode>
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Withdraw' }));
+  expect(screen.getAllByText('Confirm in the wallet').length).toBeGreaterThan(0);
+  act(() => cb.onError(error, hash));
+  return cb;
+}
+
 afterEach(() => vi.clearAllMocks());
 
 describe('TransactionModal — per-step title', () => {
@@ -115,6 +153,21 @@ describe('TransactionModal — per-step title', () => {
     // renders inline, alongside the modal title.
     expect(screen.queryByText('Review supply')).toBeNull();
     expect(screen.getAllByText('Confirm in the wallet').length).toBeGreaterThan(0);
+  });
+
+  it('replaces the wallet-screen title with a declined/failed title once the write fails', () => {
+    const cb = renderFailedFlow(Object.assign(new Error('User rejected the request'), { code: 4001 }));
+    expect(cb).toBeDefined();
+    // A wallet Reject: nothing was sent, so the header says declined, not "Confirm".
+    expect(screen.queryByText('Confirm in the wallet')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Transaction declined' })).toBeTruthy();
+  });
+
+  it('titles a reverted write as failed rather than declined', () => {
+    renderFailedFlow(new Error('execution reverted'), '0xhash');
+    expect(screen.queryByText('Confirm in the wallet')).toBeNull();
+    // The status chip carries the same words; the header is what changed.
+    expect(screen.getByRole('heading', { name: 'Transaction failed' })).toBeTruthy();
   });
 
   it('shows the entry title on an entry screen and the transaction-screen title after confirm', () => {

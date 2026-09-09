@@ -413,8 +413,22 @@ export function TransactionModal({
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
   // and the three-screen review stage its own (e.g. "Review supply"); both fall back
   // to `title` so single-title configs render unchanged on every screen.
+  //
+  // A failure replaces the wallet-screen title: it names the wait for the
+  // wallet ("Confirm in the wallet"), and kept reading that above the declined
+  // row after a Reject (APP-563 #5). The failed title mirrors the chip's split —
+  // a denied gate signature is not a transaction, a wallet Reject sent nothing,
+  // a revert did — and is the same for every flow, so Convert's "Review
+  // conversion" no longer differs here either.
+  const failedTitle = failedOnSignature
+    ? t`Signature failed`
+    : userRejected
+      ? t`Transaction declined`
+      : t`Transaction failed`;
   const displayTitle = isTransaction
-    ? (transactionTitle ?? title)
+    ? badgeFailed
+      ? failedTitle
+      : (transactionTitle ?? title)
     : isReview && hasReviewStage
       ? (reviewTitle ?? title)
       : title;
