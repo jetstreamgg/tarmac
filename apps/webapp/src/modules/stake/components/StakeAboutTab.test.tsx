@@ -7,10 +7,10 @@ import { getBannerById } from '@/data/banners/banners';
 i18n.load('en', {});
 i18n.activate('en');
 
-// The engine card drives live reward/collateral reads; stub it so this test
-// stays scoped to the About-tab structure (same pattern the shell test uses).
-vi.mock('./StakeEngineCard', () => ({
-  StakeEngineCard: () => <div data-testid="stake-engine-card" />
+// The rail card drives live position/reward/collateral reads; stub it so this
+// test stays scoped to the About-tab structure (same pattern the shell test uses).
+vi.mock('./StakeRailCard', () => ({
+  StakeRailCard: () => <div data-testid="stake-rail-card" />
 }));
 
 // The contract link is chain-scoped; pin the chain so the Etherscan href is
@@ -78,8 +78,8 @@ describe('StakeAboutTab', () => {
     );
   });
 
-  it('mounts the engine card in the right rail', () => {
+  it('mounts the shared rail card in the right rail', () => {
     renderTab();
-    expect(screen.getByTestId('stake-engine-card')).toBeTruthy();
+    expect(screen.getByTestId('stake-rail-card')).toBeTruthy();
   });
 });

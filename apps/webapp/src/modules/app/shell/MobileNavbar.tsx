@@ -50,12 +50,10 @@ export function MobileNavbar() {
       data-state={isHidden ? 'hidden' : 'visible'}
       className={cn(
         'from-pageBackground/0 to-pageBackground fixed inset-x-0 bottom-0 z-30 flex bg-gradient-to-b px-3 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] lg:hidden',
-        // The pill centres on the PAGE, not the viewport: the right padding
-        // grows by whatever the page has given up on the right — the bar's
-        // width while a scroll lock hides it (--removed-body-scroll-bar-size)
-        // plus the shell's no-bar pad (--page-scrollbar-pad). Both are 0 with
-        // overlay scrollbars, which is every phone.
-        'pr-[calc(0.75rem+var(--removed-body-scroll-bar-size,0px)+var(--page-scrollbar-pad,0px))]',
+        // Centred on the viewport, which is also the page's centre: the root
+        // reserves the scrollbar's column on every route and through a scroll
+        // lock (scrollbar-gutter in globals.css), so the page never gives up
+        // width on the right that the pill would have to back off from.
         // Captured alongside the page during a route transition so the page's
         // snapshot — which paints in the top layer, above every z-index in the
         // document — passes behind the bar instead of over it (APP-518). The

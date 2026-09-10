@@ -16,8 +16,6 @@ import { cn } from '@/lib/cn';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { PageFooter } from './PageFooter';
 import { defaultConfig } from '../../config/default-config';
-import { usePageScrollbarCompensation } from '../hooks/usePageScrollbarCompensation';
-import { useRouterState } from '@tanstack/react-router';
 
 export function Layout({
   children,
@@ -34,8 +32,6 @@ export function Layout({
   const { phase: loaderPhase, coverMode, released, revealAnimated, endCover } = useAppLoader();
 
   useWalletAnalytics();
-  // The route path only serves as the hook's navigation signal.
-  usePageScrollbarCompensation(useRouterState({ select: s => s.location.pathname }));
 
   const showEnvInfo = (IS_STAGING_ENV || IS_DEVELOPMENT_ENV) && import.meta.env.VITE_CF_PAGES_COMMIT_SHA;
 
@@ -94,14 +90,13 @@ export function Layout({
             has space to push against; the gap and centering are the ones this
             box inherited from the surface.
 
-            pr-[var(--page-scrollbar-pad)]: on routes with no page scrollbar
-            the column pads its right edge by the bar's width so the content
-            sits where it does when the bar is present (the header bar carries
-            the same pad; usePageScrollbarCompensation sets the variable, 0
-            with overlay scrollbars and whenever the bar shows). */}
+            The column never compensates for the page scrollbar: the root
+            reserves the bar's column on every route (scrollbar-gutter in
+            globals.css), so the content sits in the same place with or
+            without a bar. */}
           <div
             className={cn(
-              'page-transition flex w-full flex-1 flex-col items-center gap-y-4 pr-[var(--page-scrollbar-pad,0px)]',
+              'page-transition flex w-full flex-1 flex-col items-center gap-y-4',
               appLoaderRevealClasses(loaderPhase, 'content', revealAnimated)
             )}
           >

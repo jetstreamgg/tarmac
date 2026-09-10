@@ -513,7 +513,20 @@ function DetailHeaderValue({
   mobile?: boolean;
 }) {
   if (isLoading) {
-    return <Skeleton className="h-9 w-32" />;
+    // The placeholder occupies the exact box the figure will: the figure's own
+    // line box (48px desktop / 26px phone) beside the same leading marks, so
+    // the header — and everything under it — does not move when the value
+    // lands. A bare 36px block used to sit here, and the card grew 12px on
+    // desktop (shrank 10px on the phone tier) at the swap (measured on every
+    // detail chart: portfolio, savings, stUSDS, stake).
+    return (
+      <span className="flex items-center gap-2">
+        {icons}
+        <span className={cn('flex items-center', mobile ? 'h-[26px]' : 'h-12')}>
+          <Skeleton className={mobile ? 'h-5 w-24' : 'h-9 w-32'} />
+        </span>
+      </span>
+    );
   }
   const value = displayValue ?? data[data.length - 1]?.value ?? 0;
   // The token mark already names the series, so a figure that carries `icons`

@@ -41,11 +41,6 @@ export const shellHeaderClasses = () =>
     // previous 8px sat the bar hard against the top edge). The bar's own
     // padding is the gap to the content now, so the extra 4px margin is gone.
     'w-full py-4 lg:py-6',
-    // Same pad as the page column (Layout.tsx): the bar stays full-bleed so
-    // its frosted gradient reaches the viewport edge, and its content box —
-    // hence the nav row's alignment with the page — ends where the column's
-    // does. 0 whenever there is no pad.
-    'pr-[var(--page-scrollbar-pad,0px)]',
     // The bar's own `bg` layer, straight off the comps: the gradient-navbar
     // fill over background blur-md (Figma radius 12 ⇒ 6px). It lives on the bar
     // itself rather than on a child — `backdrop-filter` filters what is painted
