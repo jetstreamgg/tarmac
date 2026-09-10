@@ -56,13 +56,14 @@ export const shellHeaderClasses = () =>
     // The fill is drawn by a ::before under the bar's content (the bar's
     // backdrop-filter makes it a stacking context, so -z-10 sits between the
     // backdrop and the children) rather than as the bar's own background, so
-    // it can be masked on its own: from the tablet seam the tint fades out
-    // over the last 64px, the width of the `.app-background::after` edge
-    // strip (globals.css). The page scrollbar's reserved gutter beside the
-    // bar is bare canvas that nothing paints into, so a tint running to the
-    // scrollport's edge left the gutter reading as a paler notch beside the
-    // bar's rows. The bar's backdrop blur stays on the bar itself.
-    'before:absolute before:inset-0 before:-z-10 before:bg-linear-to-b before:from-navbarGradientStart before:via-navbarGradientEnd before:via-75% before:to-transparent lg:before:mask-r-from-[calc(100%-64px)] lg:before:mask-r-to-100%',
+    // it can be masked on its own: the tint fades out over the page's edge
+    // fade (`--page-edge-fade`, globals.css — the `.app-background::after`
+    // strip's width beside a classic scrollbar, 0 with overlay bars, where
+    // the mask then does nothing). The page scrollbar's reserved gutter
+    // beside the bar is bare canvas that nothing paints into, so a tint
+    // running to the scrollport's edge left the gutter reading as a paler
+    // notch beside the bar's rows. The bar's backdrop blur stays on the bar.
+    'before:absolute before:inset-0 before:-z-10 before:bg-linear-to-b before:from-navbarGradientStart before:via-navbarGradientEnd before:via-75% before:to-transparent before:mask-r-from-[calc(100%-var(--page-edge-fade,0px))] before:mask-r-to-100%',
     'backdrop-blur-[6px]',
     // Pages scroll on the document, so the header pins as a sticky, see-through
     // frosted bar. The Earn Opportunities heading's scroll-mt-24 (EarnPage)

@@ -47,8 +47,9 @@ export function Banner({
   const positionStyles = {
     left: 'left-4 md:left-4',
     // The viewport's right edge is the page's: the root reserves the
-    // scrollbar's column on every route and through a scroll lock
-    // (scrollbar-gutter in globals.css), so nothing to back off from.
+    // scrollbar's column on every route (scrollbar-gutter in globals.css).
+    // Under a scroll lock the column is released and the viewport widens by
+    // it; a banner sitting 16px from that edge is not worth compensating.
     right: 'right-4 md:right-4'
   };
 

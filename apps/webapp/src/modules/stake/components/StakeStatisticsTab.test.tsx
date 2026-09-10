@@ -19,7 +19,7 @@ vi.mock('./StakeRailCard', () => ({
 
 describe('StakeStatisticsTab', () => {
   it('stacks chart, Details and Borrow Utilization in the left column, with the rail card in its own rail', () => {
-    render(<StakeStatisticsTab />);
+    render(<StakeStatisticsTab rail={{ positions: [], isLoading: false }} />);
 
     const chart = screen.getByTestId('stub-rate-chart');
     const strip = screen.getByTestId('stub-details-strip');

@@ -51,9 +51,11 @@ export function MobileNavbar() {
       className={cn(
         'from-pageBackground/0 to-pageBackground fixed inset-x-0 bottom-0 z-30 flex bg-gradient-to-b px-3 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] lg:hidden',
         // Centred on the viewport, which is also the page's centre: the root
-        // reserves the scrollbar's column on every route and through a scroll
-        // lock (scrollbar-gutter in globals.css), so the page never gives up
-        // width on the right that the pill would have to back off from.
+        // reserves the scrollbar's column on every route (scrollbar-gutter in
+        // globals.css). Under a scroll lock the column is released so a scrim
+        // can cover it, and the bar spans the widened window while the page
+        // holds still — globals.css backs the pill off by the column then
+        // (`body[data-scroll-locked] .vt-shell-navbar`).
         // Captured alongside the page during a route transition so the page's
         // snapshot — which paints in the top layer, above every z-index in the
         // document — passes behind the bar instead of over it (APP-518). The

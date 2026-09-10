@@ -123,10 +123,12 @@ export function TakeoverShell({
   // `RemoveScroll` is the lock Radix's dialogs use, from the same singleton:
   // it reference-counts with the details dialog that hands off to the manage
   // sheet (that dialog stays mounted a tick past the switch, so a lock of our
-  // own measured a bar that was already gone), and its body margin — the
-  // width of the bar it hides — is cancelled globally because the root keeps
-  // the bar's column reserved through the lock (scrollbar-gutter in
-  // globals.css). Scrolling stays allowed inside the shell's own column.
+  // own measured a bar that was already gone). Its body margin is replaced
+  // globally by the root's own measurement of the bar's column
+  // (`--page-scrollbar-gutter`, globals.css): under the lock the root
+  // releases the reserved column so this scrim covers the whole window, and
+  // that margin is what holds the page still. Scrolling stays allowed inside
+  // the shell's own column.
   return createPortal(
     <RemoveScroll>
       <motion.div

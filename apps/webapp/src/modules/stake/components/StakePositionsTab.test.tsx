@@ -43,7 +43,7 @@ import { StakePositionsTab } from './StakePositionsTab';
 const renderTab = (onRemediate = vi.fn()) =>
   render(
     <I18nProvider i18n={i18n}>
-      <StakePositionsTab onRemediate={onRemediate} />
+      <StakePositionsTab onRemediate={onRemediate} rail={{ positions: [], isLoading: false }} />
     </I18nProvider>
   );
 

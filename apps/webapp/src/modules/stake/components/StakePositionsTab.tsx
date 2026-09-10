@@ -1,7 +1,7 @@
 import { useStakeUserPositions, StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { StakePositionsTable } from './StakePositionsTable';
 import { StakeActivityTable } from './StakeActivityTable';
-import { StakeRailCard } from './StakeRailCard';
+import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 /**
  * My positions tab body (hi-fi 486:31830): the active-positions table with the
@@ -9,10 +9,13 @@ import { StakeRailCard } from './StakeRailCard';
  * the right rail, and the activity table below.
  */
 export function StakePositionsTab({
-  onRemediate
+  onRemediate,
+  rail
 }: {
   /** Passed straight through to the positions table — see its prop doc. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
+  /** The page's positions read, for the shared rail card. */
+  rail: StakeRailCardProps;
 }) {
   const { data: positions, isLoading, error, contextError } = useStakeUserPositions();
 
@@ -45,7 +48,7 @@ export function StakePositionsTab({
       {/* The rail pins at the two-pane tier (Figma 2829:138694 — sticky
           position card); `top-32` mirrors ProductDetailTemplate's offset. */}
       <div className="order-1 lg:sticky lg:top-32 lg:order-none lg:col-span-1">
-        <StakeRailCard />
+        <StakeRailCard {...rail} />
       </div>
     </div>
   );

@@ -695,13 +695,24 @@
     scrollbar-color: var(--color-pageScrollbarThumb) var(--color-pageScrollbarTrack);
     scrollbar-gutter: stable;
     background-color: var(--color-pageScrollbarTrack);
+    /* Width of the fade from the sky image into the track colour along the
+       page's right edge — the `.app-background::after` strip, the header
+       tint's mask (shellLayoutClasses) and the page-transition stand-in for
+       the header all read it. 0 until usePageScrollbarGutter (the root route)
+       finds a classic bar's column beside the page (`data-page-scrollbar`);
+       with overlay bars there is no column to fade into, and the fade would
+       only darken the edge for nothing. */
+    --page-edge-fade: 0px;
+  }
+  html[data-page-scrollbar='classic'] {
+    --page-edge-fade: 64px;
   }
 
   /* Under a scroll lock the gutter goes: with the bar hidden and no column
      reserved, the scrollport spans the whole window and the scrim covers all
      of it. The page stays put because body keeps the column's width as a
      margin — `--page-scrollbar-gutter`, measured by usePageScrollbarGutter
-     (Layout). react-remove-scroll injects its own `margin-right` for the
+     (root route). react-remove-scroll injects its own `margin-right` for the
      same purpose, but its measurement is 0 on a route with no bar (the
      reserved column is not excluded from the root's clientWidth there), so
      the page shifted right under a modal on Convert; layered `!important`
@@ -714,6 +725,10 @@
   html body[data-scroll-locked] {
     margin-right: var(--page-scrollbar-gutter, 0px) !important;
   }
+  /* The fixed layers that must not step right by the released column under
+     the lock are handled beside `.app-background` below (unlayered: they
+     have to outrank `.app-background`'s own inset and the navbar's padding
+     utility, and a layered rule can do neither). */
 
   /* Each face declares its real weight. Without the descriptor every face
      defaults to 400, so the browser has a single candidate per family and
@@ -1120,22 +1135,35 @@ svg.recharts-surface [tabindex]:focus,
   background-size: auto, cover, auto;
   background-position: center;
 }
+/* Fixed layers span the widened scrollport under a scroll lock (the root
+   releases the scrollbar column so the scrim can cover it — see the :root
+   scrollbar rule), so anything centred or right-anchored on the viewport
+   would step right by the column while the page (body) holds still. The
+   background layer keeps the page's box so the sky and its edge strip don't
+   jump under a scrim-less lock (Select, DropdownMenu); the phone navbar backs
+   its pill off by the column on top of its own `px-3`; a dialog does the
+   same in its own `left` (dialog.tsx). Unlayered on purpose: these must
+   outrank `.app-background`'s inset and the navbar's padding utility. */
+html:has(body[data-scroll-locked]) .app-background {
+  right: var(--page-scrollbar-gutter, 0px);
+}
+body[data-scroll-locked] .vt-shell-navbar {
+  padding-right: calc(0.75rem + var(--page-scrollbar-gutter, 0px));
+}
 /* Edge strip: fades the sky image into the page scrollbar's track colour
    along the right edge of the scrollport, so the reserved scrollbar column
    beside it (the track when the page scrolls, bare canvas when it does not —
    both --color-pageScrollbarTrack; see the :root scrollbar rule) continues
    the page instead of standing against it as a flat stripe. The layer is
    clipped to the scrollport, so `right: 0` is exactly the column's edge.
-   Desktop only: that is where a classic bar's column shows beside the
-   content. */
-@media (min-width: 912px) {
-  .app-background::after {
-    content: '';
-    position: absolute;
-    inset: 0 0 0 auto;
-    width: 64px;
-    background: linear-gradient(to right, transparent, var(--color-pageScrollbarTrack));
-  }
+   `--page-edge-fade` is 0 without a classic bar (see the :root scrollbar
+   rule), so with overlay bars nothing paints. */
+.app-background::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--page-edge-fade);
+  background: linear-gradient(to right, transparent, var(--color-pageScrollbarTrack));
 }
 
 /* App loader cover (APP-419): surfaces that mount outside Layout (the toast
@@ -1548,8 +1576,12 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
        the rest frame at scroll 0 in both themes; scrolled, the only remainder
        is the page content the rest-state blur was mixing in.
 
-       Layer list = the app-background token's own layers (fixed): dark is
-       fade + image, light is fade + image + base gradient, so the per-layer
+       Layer list = the `.app-background::after` edge strip (fixed, so its
+       `calc(100% - fade)` is the viewport's; the bar's tint is masked out
+       over the same width, so without it the bar's last pixels showed bare
+       sky against the gutter for the length of a transition) + the
+       app-background token's own layers (fixed): dark is fade + image, light
+       is fade + image + base gradient, so the per-layer
        attachment/size/position lists are written per theme to match
        `.app-background` exactly. The bar's gradient tint is not here: it
        lives on the bar's `::before` (shellLayoutClasses), which is captured
@@ -1559,17 +1591,24 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
        stand-in for the ~400ms of a transition on iOS (the layer is then
        sized to the bar's own 88px box) and is left as is. */
       background-color: var(--color-pageBackground);
-      background-image: var(--background-image-app-background);
+      background-image:
+        linear-gradient(
+          to right,
+          transparent calc(100% - var(--page-edge-fade)),
+          var(--color-pageScrollbarTrack)
+        ),
+        var(--background-image-app-background);
       background-repeat: no-repeat;
-      background-attachment: fixed, fixed;
-      background-size: auto, cover;
+      background-attachment: fixed, fixed, fixed;
+      background-size: auto, auto, cover;
       background-position:
+        center,
         center,
         center top;
     }
     [data-theme='light']:active-view-transition-type(page) .vt-shell-header {
-      background-attachment: fixed, fixed, fixed;
-      background-size: auto, cover, auto;
+      background-attachment: fixed, fixed, fixed, fixed;
+      background-size: auto, auto, cover, auto;
       background-position: center;
     }
   }

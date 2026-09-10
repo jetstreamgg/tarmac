@@ -1,14 +1,14 @@
 import { StakeRateChart } from './StakeRateChart';
 import { StakeDetailsStrip } from './StakeDetailsStrip';
 import { BorrowUtilizationBlock } from './BorrowUtilizationBlock';
-import { StakeRailCard } from './StakeRailCard';
+import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 /**
  * Statistics tab body (hi-fi 486:31955): the Rate/TVL chart card, the details
  * strip, and the borrow-utilization block in the main column, with the shared
  * rail card (`StakeRailCard`) in the right rail. Read-only.
  */
-export function StakeStatisticsTab() {
+export function StakeStatisticsTab({ rail }: { rail: StakeRailCardProps }) {
   // Mobile comp 1222:17089 order: rail card → chart (20px below) → Details →
   // Borrow Utilization (40px rhythm).
   //
@@ -25,7 +25,7 @@ export function StakeStatisticsTab() {
         <BorrowUtilizationBlock />
       </div>
       <div className="order-1 lg:sticky lg:top-32 lg:order-none lg:col-span-1">
-        <StakeRailCard />
+        <StakeRailCard {...rail} />
       </div>
     </div>
   );

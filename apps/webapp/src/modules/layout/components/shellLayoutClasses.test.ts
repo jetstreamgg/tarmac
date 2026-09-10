@@ -37,13 +37,15 @@ describe('shellHeaderClasses', () => {
 
   // The page scrollbar's reserved gutter beside the bar is bare canvas that
   // nothing can paint into, so a tint running to the scrollport edge left the
-  // gutter reading as a paler notch beside the bar's rows. From the tablet
-  // seam the fill fades out over the 64px of the `.app-background::after`
-  // edge strip; below it there is no classic bar column to meet.
-  it('fades the fill out over the edge strip from the tablet seam', () => {
+  // gutter reading as a paler notch beside the bar's rows. The fill fades out
+  // over the page's edge fade — the `.app-background::after` strip's width,
+  // set by the root only beside a classic bar, so the mask is a no-op with
+  // overlay bars. The mask is on the fill alone, never on the bar (that would
+  // fade the pills too).
+  it('fades the fill out over the page edge fade', () => {
     const cls = shellHeaderClasses().split(/\s+/);
-    expect(cls).toContain('lg:before:mask-r-from-[calc(100%-64px)]');
-    expect(cls).toContain('lg:before:mask-r-to-100%');
+    expect(cls).toContain('before:mask-r-from-[calc(100%-var(--page-edge-fade,0px))]');
+    expect(cls).toContain('before:mask-r-to-100%');
     expect(cls.some(c => c.startsWith('mask-'))).toBe(false);
   });
 

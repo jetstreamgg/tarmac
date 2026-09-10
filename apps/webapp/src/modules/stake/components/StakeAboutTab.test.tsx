@@ -29,7 +29,7 @@ import { StakeAboutTab } from './StakeAboutTab';
 const renderTab = () =>
   render(
     <I18nProvider i18n={i18n}>
-      <StakeAboutTab />
+      <StakeAboutTab rail={{ positions: [], isLoading: false }} />
     </I18nProvider>
   );
 

@@ -1,10 +1,14 @@
 import { useLayoutEffect } from 'react';
 
 export const PAGE_SCROLLBAR_GUTTER_VAR = '--page-scrollbar-gutter';
+export const PAGE_SCROLLBAR_ATTR = 'data-page-scrollbar';
 
 /**
  * Width of the page scrollbar's column, published on the root as
- * `--page-scrollbar-gutter` for the scroll-lock rules in globals.css.
+ * `--page-scrollbar-gutter` (plus `data-page-scrollbar="classic" | "overlay"`)
+ * for the scrollbar rules in globals.css. Mounted once from the root route,
+ * above every page — including ones outside Layout, whose dialogs lock the
+ * page too — and never remounted, so a lock can't outlive the value.
  *
  * The root reserves the column on every route (`scrollbar-gutter: stable`) and
  * releases it while a dialog or the takeover holds a scroll lock, so the scrim
@@ -20,21 +24,34 @@ export const PAGE_SCROLLBAR_GUTTER_VAR = '--page-scrollbar-gutter';
  * (measured 11px for Chrome's thin classic bar; 0 with overlay bars, where
  * nothing is reserved). Body has no horizontal margin outside a lock, and
  * the lock's margin is the one thing this feeds, so it is read outside locks
- * only — on mount and on resize, which is where the bar can come and go.
+ * only. Reads happen when body's box changes (a ResizeObserver — macOS flips
+ * overlay ↔ classic bars when a mouse is plugged in or out without a window
+ * resize, and the column's width is the one thing that changes) and when a
+ * lock is released (a resize during the lock was skipped), so the value never
+ * goes stale across a lock.
  */
 export function usePageScrollbarGutter(): void {
   useLayoutEffect(() => {
     const root = document.documentElement;
+    const body = document.body;
     const measure = () => {
-      if (document.body.hasAttribute('data-scroll-locked')) return;
-      const gutter = Math.max(0, window.innerWidth - document.body.clientWidth);
+      if (body.hasAttribute('data-scroll-locked')) return;
+      const gutter = Math.max(0, window.innerWidth - body.clientWidth);
       root.style.setProperty(PAGE_SCROLLBAR_GUTTER_VAR, `${gutter}px`);
+      root.setAttribute(PAGE_SCROLLBAR_ATTR, gutter > 0 ? 'classic' : 'overlay');
     };
     measure();
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : undefined;
+    resize?.observe(body);
     window.addEventListener('resize', measure);
+    const lock = new MutationObserver(measure);
+    lock.observe(body, { attributes: true, attributeFilter: ['data-scroll-locked'] });
     return () => {
+      resize?.disconnect();
+      lock.disconnect();
       window.removeEventListener('resize', measure);
-      root.style.removeProperty(PAGE_SCROLLBAR_GUTTER_VAR);
+      // The value is left in place: the rules keyed on it must not lose it
+      // mid-lock if the tree ever remounts.
     };
   }, []);
 }
