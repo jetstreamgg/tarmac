@@ -320,12 +320,6 @@
      track is bg-secondary with the fill switched off, i.e. transparent. */
   --color-pageScrollbarTrack: #100c26;
   --color-pageScrollbarThumb: #bcb6ef33; /* colors/bg/bg-quarternary */
-  /* The track seen through a modal scrim: --color-modalOverlay composited
-     over the track (rgba(5,4,17,.6) over #100c26 → #090719). A flat colour
-     because it is the canvas colour under a scroll lock (see the
-     `html:has(body[data-scroll-locked])` rule), and the canvas takes a
-     colour only. Re-derive when either input changes. */
-  --color-pageScrollbarTrackLocked: #090719;
   /* Dark page background (Figma 5010:6624): a bottom fade into the solid
      backdrop over the sky image. The image is pre-baked — sunset sky blended
      (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
@@ -691,8 +685,10 @@
    *
    * A scroll lock (react-remove-scroll, under Radix dialogs and the takeover)
    * hides the bar with `overflow: hidden` on body and hands the width back as
-   * a body margin; the gutter survives `hidden`, so that margin would shift
-   * the page under the scrim — it is cancelled in the body rule below.
+   * a body margin. The reserved gutter would survive `hidden`, and it is bare
+   * canvas nothing can paint into — not the scrim, which is a fixed layer and
+   * ends at the scrollport's edge — so it showed beside every dialog as an
+   * untinted stripe. The rule below releases it for the lock's lifetime.
    */
   :root {
     scrollbar-width: thin;
@@ -701,28 +697,16 @@
     background-color: var(--color-pageScrollbarTrack);
   }
 
-  /* react-remove-scroll injects `margin-right: <bar width> !important` on
-     body from a <head> style tag while a lock is up, to fill the column the
-     hidden bar vacated. The root's `scrollbar-gutter: stable` keeps that
-     column reserved through `overflow: hidden`, so the margin would push the
-     page left by a bar's width under every dialog. Layered `!important`
-     outranks their unlayered one. */
-  html body[data-scroll-locked] {
-    margin-right: 0 !important;
-  }
-
-  /* The scrim of a dialog or the takeover is a fixed layer, and a fixed layer
-     ends at the scrollport's edge: the reserved gutter beside it stays the
-     bare canvas colour and reads as a pale stripe next to the tinted page
-     (the same lock attribute react-remove-scroll sets for both). The gutter
-     cannot be painted into, so the canvas colour itself takes the scrim for
-     the lock's lifetime: the track with --color-modalOverlay composited on
-     it, precomputed per theme. It fades in with the scrim (both 300ms); on
-     the way out it snaps, since the lock is released only once the scrim's
-     exit animation has finished — a fade there would lag behind it. */
+  /* Under a scroll lock the gutter goes: with the bar hidden and no column
+     reserved, the scrollport spans the whole window and the scrim covers all
+     of it. The page does not move, because react-remove-scroll's injected
+     `margin-right: <bar width> !important` on body is exactly the column
+     the gutter gave up, so body keeps its width and place; a dialog centres
+     itself on the page (not the wider viewport) via the same measurement,
+     `--removed-body-scroll-bar-size` (dialog.tsx). Both flip in the same
+     style update as the lock attribute, so there is no frame in between. */
   html:has(body[data-scroll-locked]) {
-    background-color: var(--color-pageScrollbarTrackLocked);
-    transition: background-color 300ms var(--ease-out-quint);
+    scrollbar-gutter: auto;
   }
 
   /* Each face declares its real weight. Without the descriptor every face
@@ -1049,8 +1033,6 @@
        the chart track sidesteps). */
     --color-pageScrollbarTrack: #dcdffc;
     --color-pageScrollbarThumb: rgba(19, 19, 19, 0.12);
-    /* --color-modalOverlay (#504dff at 20%) over the track: #c0c2fd. */
-    --color-pageScrollbarTrackLocked: #c0c2fd;
     /* Light page background (Figma 5124:25430): bottom fade + daytime sky
        image over a pale blue base gradient (visible only while the image
        loads, since the image is opaque and covers the layer). */
