@@ -31,6 +31,8 @@ export function StakeBorrowSliderRow({
 }) {
   const { axis } = slider;
   const markerFraction = slider.markers[0] !== undefined ? slider.markers[0] / STAKE_SLIDER_MAX : undefined;
+  // Borrow-more colours only the staged delta, from the current debt outward.
+  const fillStart = mode === 'borrow' ? slider.markers[0] : undefined;
   const label = (children: ReactNode) => (
     <span className="flex items-center gap-1 whitespace-nowrap">
       {children}
@@ -46,6 +48,7 @@ export function StakeBorrowSliderRow({
         max={STAKE_SLIDER_MAX}
         step={1}
         markers={slider.markers}
+        rangeStart={fillStart}
         disabled={slider.disabled}
         onValueChange={value => slider.onValueChange(value[0])}
         aria-label={mode === 'repay' ? t`Repay amount` : t`Borrow amount`}
@@ -59,7 +62,12 @@ export function StakeBorrowSliderRow({
         ) : (
           label(<Trans>Min. {fmt(axis.min)}</Trans>)
         )}
-        <SliderTicks variant="range" progress={slider.progress} className="grow" />
+        <SliderTicks
+          variant="range"
+          progress={slider.progress}
+          progressStart={fillStart !== undefined ? fillStart / (STAKE_SLIDER_MAX / 100) : undefined}
+          className="grow"
+        />
         {maxLoading ? (
           <Skeleton className="h-3.5 w-14" />
         ) : mode === 'repay' ? (
