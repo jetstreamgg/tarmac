@@ -31,7 +31,7 @@ import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
-import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 /**
@@ -58,7 +58,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
 
   // Quote: PT → user-selected output via /convert. The `maturedExit` flag
   // adds the YT-with-zero-amount entry the API requires for matured exits.
-  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
+  const {
+    data: quote,
+    isLoading: isFetchingQuote,
+    error: quoteError
+  } = useQuotePendleConvert({
     side: PendleConvertSide.WITHDRAW,
     marketAddress: market.marketAddress,
     inputToken: market.ptToken,
@@ -106,6 +110,17 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
     [writeHook.prepared, writeHook.error]
   );
+
+  // React Query keeps the last quote across a failed refetch, so while the
+  // Pendle API is down `quote` stays populated and ages past its TTL while
+  // `prepared` stays true. The redeem amount is fixed (the full PT balance),
+  // so nothing the user does can refresh the quote — gate Confirm on the
+  // error rather than let a stale quote be signed.
+  const quoteErrorMessage = useMemo<string | undefined>(
+    () => pendleQuoteErrorMessage(quoteError?.message),
+    [quoteError]
+  );
+  const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
 
   // The Network cell describes where the trade executes — the engine chain,
   // which the connected chain only matches while Pendle stays mainnet-gated.
@@ -182,7 +197,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     ]
   );
 
-  const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
+  const confirmDisabled = !!quoteError || !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be
   // live-updated, but the ref always points at the latest writeHook.execute.
@@ -322,7 +337,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       transactionTitle: t`Confirm in the wallet`,
       toast,
       transactionContent,
-      errorMessage: prepareErrorMessage,
+      errorMessage,
       steps,
       confirmLabel: t`Claim`,
       confirmDisabled,
@@ -342,7 +357,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     switchChainAsync,
     launch,
     transactionContent,
-    prepareErrorMessage,
+    errorMessage,
     steps,
     confirmDisabled,
     sessionId,
@@ -359,7 +374,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
       transactionContent,
-      errorMessage: prepareErrorMessage,
+      errorMessage,
       steps,
       confirmDisabled,
       analytics,
@@ -372,7 +387,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     sessionId,
     updateModalContent,
     transactionContent,
-    prepareErrorMessage,
+    errorMessage,
     steps,
     confirmDisabled,
     analytics,

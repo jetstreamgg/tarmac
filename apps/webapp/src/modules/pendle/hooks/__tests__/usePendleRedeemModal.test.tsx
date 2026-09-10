@@ -48,6 +48,8 @@ const hoisted = vi.hoisted(() => ({
   isModalOpen: false,
   txStatus: 'idle',
   matured: true,
+  // Swappable quote error so a test can fail the /convert fetch while a quote is still cached.
+  quoteError: undefined as Error | undefined,
   // Swappable execute fn so tests can prove the latest one fires through onConfirm.
   currentExecute: (() => undefined) as () => void,
   // Swappable USD value fn (default ≈$1/token) so a test can force "no value".
@@ -123,7 +125,7 @@ vi.mock('@/hooks', async importOriginal => {
     useQuotePendleConvert: () => ({
       data: QUOTE,
       isLoading: false,
-      error: undefined,
+      error: hoisted.quoteError,
       mutate: () => undefined,
       dataSources: []
     }),
@@ -344,6 +346,54 @@ describe('usePendleRedeemModal analytics', () => {
     expect(data.expiry).toBe(MATURED_MARKET.expiry);
     expect(data.aggregatorType).toBe('KYBERSWAP');
     expect(data.feeUsd).toBe(1.23);
+    unmount();
+  });
+});
+
+describe('usePendleRedeemModal quote errors', () => {
+  beforeEach(() => {
+    hoisted.launchMock.mockClear();
+    hoisted.updateMock.mockClear();
+    hoisted.isModalOpen = false;
+    hoisted.txStatus = 'idle';
+    hoisted.matured = true;
+    hoisted.quoteError = undefined;
+  });
+
+  afterEach(() => {
+    hoisted.quoteError = undefined;
+    vi.clearAllMocks();
+  });
+
+  it('enables Confirm with no error message while the quote is healthy', () => {
+    const { unmount } = renderComponent(<TestConsumer />);
+    const args = hoisted.launchMock.mock.calls[0][0];
+    expect(args.confirmDisabled).toBe(false);
+    expect(args.errorMessage).toBeUndefined();
+    unmount();
+  });
+
+  it('disables Confirm and surfaces the quote error even though a cached quote is still present', () => {
+    hoisted.quoteError = new Error('Pendle /convert 503');
+    const { unmount } = renderComponent(<TestConsumer />);
+    const args = hoisted.launchMock.mock.calls[0][0];
+    expect(args.confirmDisabled).toBe(true);
+    expect(args.errorMessage).toBe("Pendle's quote service is temporarily unavailable. Please try again.");
+    unmount();
+  });
+
+  it('re-enables Confirm through the live push once the quote recovers', () => {
+    hoisted.quoteError = new Error('Pendle /convert 503');
+    hoisted.isModalOpen = true;
+    const { rerender, unmount } = renderComponent(<TestConsumer />);
+    const failing = hoisted.updateMock.mock.calls.at(-1)?.[1];
+    expect(failing.confirmDisabled).toBe(true);
+
+    hoisted.quoteError = undefined;
+    rerender(<TestConsumer />);
+    const recovered = hoisted.updateMock.mock.calls.at(-1)?.[1];
+    expect(recovered.confirmDisabled).toBe(false);
+    expect(recovered.errorMessage).toBeUndefined();
     unmount();
   });
 });
