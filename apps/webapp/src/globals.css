@@ -699,14 +699,20 @@
 
   /* Under a scroll lock the gutter goes: with the bar hidden and no column
      reserved, the scrollport spans the whole window and the scrim covers all
-     of it. The page does not move, because react-remove-scroll's injected
-     `margin-right: <bar width> !important` on body is exactly the column
-     the gutter gave up, so body keeps its width and place; a dialog centres
-     itself on the page (not the wider viewport) via the same measurement,
-     `--removed-body-scroll-bar-size` (dialog.tsx). Both flip in the same
+     of it. The page stays put because body keeps the column's width as a
+     margin — `--page-scrollbar-gutter`, measured by usePageScrollbarGutter
+     (Layout). react-remove-scroll injects its own `margin-right` for the
+     same purpose, but its measurement is 0 on a route with no bar (the
+     reserved column is not excluded from the root's clientWidth there), so
+     the page shifted right under a modal on Convert; layered `!important`
+     outranks their unlayered one. The dialog backs off by half the same
+     variable to centre on the page (dialog.tsx). Both rules flip in the same
      style update as the lock attribute, so there is no frame in between. */
   html:has(body[data-scroll-locked]) {
     scrollbar-gutter: auto;
+  }
+  html body[data-scroll-locked] {
+    margin-right: var(--page-scrollbar-gutter, 0px) !important;
   }
 
   /* Each face declares its real weight. Without the descriptor every face

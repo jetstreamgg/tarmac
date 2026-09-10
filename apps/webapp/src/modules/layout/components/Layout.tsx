@@ -16,6 +16,7 @@ import { cn } from '@/lib/cn';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { PageFooter } from './PageFooter';
 import { defaultConfig } from '../../config/default-config';
+import { usePageScrollbarGutter } from '../hooks/usePageScrollbarGutter';
 
 export function Layout({
   children,
@@ -32,6 +33,8 @@ export function Layout({
   const { phase: loaderPhase, coverMode, released, revealAnimated, endCover } = useAppLoader();
 
   useWalletAnalytics();
+  // Publishes the page scrollbar column's width for the scroll-lock rules.
+  usePageScrollbarGutter();
 
   const showEnvInfo = (IS_STAGING_ENV || IS_DEVELOPMENT_ENV) && import.meta.env.VITE_CF_PAGES_COMMIT_SHA;
 
