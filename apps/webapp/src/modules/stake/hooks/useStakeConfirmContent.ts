@@ -64,7 +64,15 @@ export function useStakeConfirmContent({
 }): ReactNode {
   const { updateModalContent, txStatus } = useTransaction();
 
-  const callsKey = getCallsKey(calls);
+  // Same guard as useNetworkFee: a call the engine cannot encode yet must
+  // degrade the summary, not take the route down.
+  const callsKey = useMemo(() => {
+    try {
+      return getCallsKey(calls);
+    } catch {
+      return null;
+    }
+  }, [calls]);
   const routing = useMemo<StakeLaunchContentContext>(
     () => ({ calls, isBatch, legCount }),
     // Keyed on the calldata's content, not the array's identity — see above.
