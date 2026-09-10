@@ -30,7 +30,7 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
   // asked for it. `batchSupported` is undefined while the probe is in flight, so this is
   // false until the wallet answers.
   const batchPossible = shouldUseBatch && calls.length > 1;
-  const useBatch = batchPossible && !!batchSupported;
+  const walletBatches = batchPossible && !!batchSupported;
 
   // `wallet_getCapabilities` is a round trip to the WALLET, not to an RPC — instant over
   // an injected provider, seconds over a WalletConnect relay or a wallet that rejects the
@@ -54,18 +54,27 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
     chainId
   };
 
+  // Use batch flow. Its send leg is gated on the wallet's answer, but its prepare-time
+  // simulation is not: that is an RPC round trip of its own, and for the same reason as
+  // above it must not queue behind the wallet probe. It starts as soon as bundling is
+  // possible and stops only once the wallet has said no.
+  const batchResults = useSendBatchTransactionFlow({
+    ...commonTransactionParameters,
+    enabled: enabled && walletBatches,
+    simulateEnabled: enabled && batchPossible && batchSupported !== false
+  });
+
+  // A wallet that bundles on a chain whose RPC can't simulate a bundle would otherwise
+  // sit on a Confirm that never enables. The calls are still validated one at a time on
+  // the sequential path, so route there — N signatures instead of one, never an
+  // unsimulated send.
+  const useBatch = walletBatches && !batchResults.batchUnavailable;
+
   // Use sequential flow
   const sequentialResults = useSequentialTransactionFlow({
     ...commonTransactionParameters,
     enabled: enabled && !useBatch && !routeUndecided,
     gcTime
-  });
-
-  // Use batch flow. `useBatch` already implies the probe has answered, so it carries the
-  // loading gate the sequential path spells out.
-  const batchResults = useSendBatchTransactionFlow({
-    ...commonTransactionParameters,
-    enabled: enabled && useBatch
   });
 
   // Return the appropriate results based on useBatch, carrying the calls and the routing
