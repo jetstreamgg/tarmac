@@ -16,7 +16,7 @@ import {
   useTokenBalance,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd, math } from '@/utils';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
@@ -154,10 +154,19 @@ export function ManagePositionTakeover({
   // Figma 3015:62253 / 3015:56730 withdraw bounds: the liquidation-safe max
   // (collateral − minSafeCollateral for the resulting debt) and, while debt
   // remains, the min-collateral bound (collateral − minCollateralForDust).
+  // The hook's minSafeCollateralAmount is for the existing debt; a staged
+  // borrow/repay moves the bound, so derive it from the resulting debt.
+  const minSafeCollateralForNewDebt =
+    debouncedVault?.liquidationRatio && debouncedVault?.delayedPrice
+      ? math.minSafeCollateralAmount(
+          newDebtValue,
+          debouncedVault.liquidationRatio,
+          debouncedVault.delayedPrice
+        )
+      : undefined;
   const maxWithdrawSafe =
-    debouncedVault?.minSafeCollateralAmount !== undefined &&
-    existingCollateral > debouncedVault.minSafeCollateralAmount
-      ? existingCollateral - debouncedVault.minSafeCollateralAmount
+    minSafeCollateralForNewDebt !== undefined && existingCollateral > minSafeCollateralForNewDebt
+      ? existingCollateral - minSafeCollateralForNewDebt
       : 0n;
   const isMinCollateralWithdrawError =
     skyToFree > 0n &&
@@ -182,7 +191,7 @@ export function ManagePositionTakeover({
           // price), so the more specific message must win the tie — after it,
           // the generic risk error is unreachable-shadowed, not the reverse.
           isCappedOsmError || isLiquidationError
-          ? debouncedVault?.minSafeCollateralAmount !== undefined && newDebtValue > 0n
+          ? minSafeCollateralForNewDebt !== undefined && newDebtValue > 0n
             ? t`Withdrawing ${formatBigInt(state.skyAmount)} SKY would liquidate your position. With your ${formatBigInt(newDebtValue)} USDS debt, you can withdraw at most ${formatBigInt(maxWithdrawSafe)} SKY.`
             : isCappedOsmError
               ? t`Liquidation price is higher than the capped OSM SKY price`
@@ -224,7 +233,7 @@ export function ManagePositionTakeover({
       : minDebtNotMet
         ? t`Debt must be paid off entirely, or left with a minimum of ${formatBigInt(existingVault?.dust ?? 0n)}`
         : !hasEnoughUsds && usdsToWipe > 0n
-          ? t`Not enough USDS in your wallet`
+          ? t`You'll need USDS in your wallet to repay. Swap or transfer some in first.`
           : newDebtValue < 0n
             ? t`Amount exceeds debt`
             : formatSimulationErrorMessage(simulationError?.message, undefined, usdsToWipe);

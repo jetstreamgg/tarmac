@@ -24,6 +24,8 @@ import { NO_VALUE } from '@/lib/constants';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
 
 const WAD = 10n ** 18n;
+/** One unit at the field's 2dp display precision. */
+const DISPLAY_STEP = 10n ** 16n;
 
 // Badges/Risk dash mapping (comp 1036:213853) — the F3 table-meter levels on
 // the shared RiskMeter pill (dashes only, no text; the level name stays on the
@@ -250,7 +252,19 @@ export function StakeManageBorrowCard({
         <StakeTakeoverAmountField
           tokenSymbol="USDS"
           amount={amount}
-          onAmountChange={value => onAmountChange(value)}
+          onAmountChange={value => {
+            // Typing the displayed (2dp) debt means "all of it": the live debt
+            // carries more decimals, so snap to wipeAll instead of a dust error.
+            const displayedDebt = (existingDebt / DISPLAY_STEP) * DISPLAY_STEP;
+            const typedFull =
+              isRepay &&
+              existingDebt > 0n &&
+              value >= displayedDebt &&
+              value <= existingDebt &&
+              maxRepayable >= existingDebt;
+            if (typedFull) onAmountChange(existingDebt, true);
+            else onAmountChange(value);
+          }}
           onPercentClick={onPercentClick}
           percentChips={BORROW_PERCENT_CHIPS}
           chips={labelledChips}
