@@ -1,10 +1,9 @@
 import { ReactNode, useCallback, useMemo } from 'react';
-import { useChainId, useConnection } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import {
   useSkyPrice,
-  useAllStakeUrnAddresses,
   useStakeRewardContracts,
   useRewardContractsToClaim,
   usePrices,
@@ -32,7 +31,6 @@ import {
 } from '@/components/product/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
-import { useStakeTotalDebt } from '../hooks/useStakeTotalDebt';
 
 /**
  * Net APY per BL-13: staking-reward APY netted against the borrow-cost APY on
@@ -95,7 +93,6 @@ function SummaryStat({
  */
 export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
-  const { address } = useConnection();
   const [, setSearchParams] = useAppSearchParams();
 
   const openPosition = useCallback(() => {
@@ -109,8 +106,10 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   }, [setSearchParams]);
   const onOpenPosition = useConnectThenAct(openPosition, 'stake_open');
 
+  // Both live Vat figures via `useStakeUrnVaults` (debt = art × rate, accrued
+  // interest included — legacy parity).
   const totalStaked = (positions ?? []).reduce((total, position) => total + position.skyLocked, 0n);
-  const subgraphTotalBorrowed = (positions ?? []).reduce((total, position) => total + position.usdsDebt, 0n);
+  const totalBorrowed = (positions ?? []).reduce((total, position) => total + position.usdsDebt, 0n);
 
   // USD figures: SKY via the protocol price feed; USDS at parity (the same
   // convention the Savings transactions table uses).
@@ -119,12 +118,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   const totalStakedUsd = skyPrice !== null ? Number(formatUnits(totalStaked, 18)) * skyPrice : null;
 
   // Claimable rewards across every urn, valued via the price feed.
-  const { data: urnAddresses } = useAllStakeUrnAddresses(address);
-
-  // Total borrowed = LIVE Vat debt (principal + accrued interest, legacy
-  // parity); the subgraph principal stands in until the batch read lands.
-  const { data: liveTotalDebt } = useStakeTotalDebt(urnAddresses);
-  const totalBorrowed = liveTotalDebt ?? subgraphTotalBorrowed;
+  const urnAddresses = useMemo(() => (positions ?? []).map(position => position.urnAddress), [positions]);
   const totalBorrowedUsd = Number(formatUnits(totalBorrowed, 18));
   const { data: rewardContracts } = useStakeRewardContracts();
   const {
@@ -133,9 +127,9 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
     error: claimableError
   } = useRewardContractsToClaim({
     rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
-    addresses: urnAddresses ?? [],
+    addresses: urnAddresses,
     chainId,
-    enabled: Boolean(urnAddresses?.length && rewardContracts?.length)
+    enabled: Boolean(urnAddresses.length && rewardContracts?.length)
   });
   // A failed claimables read is "unknown", not $0.00 — dash both reward stats.
   const claimableUnavailable = Boolean(claimableError && !toClaim);
@@ -231,7 +225,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
           <ProductStatPair grow>
             <SummaryStat
               label={<Trans>Total borrowed</Trans>}
-              isLoading={positions === undefined && liveTotalDebt === undefined}
+              isLoading={positions === undefined}
               icon={
                 <TokenIcon
                   token={{ symbol: 'USDS' }}

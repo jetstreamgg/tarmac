@@ -3,15 +3,7 @@ import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { TriangleAlert } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import {
-  useStakeUrnAddress,
-  useStakeRewardContracts,
-  useRewardContractsToClaim,
-  useVault,
-  usePrices,
-  getIlkName,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { useStakeRewardContracts, useRewardContractsToClaim, useVault, usePrices, getIlkName } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
@@ -42,8 +34,8 @@ export function StakePositionRowBanner({
   onClaim: () => void;
 }) {
   const chainId = useChainId();
-  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
-  const { data: vault, isLoading: vaultLoading } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
+  const urnAddress = position.urnAddress;
+  const { data: vault, isLoading: vaultLoading } = useVault(urnAddress, getIlkName(2));
   const { data: rewardContracts } = useStakeRewardContracts();
   const {
     data: toClaim,
