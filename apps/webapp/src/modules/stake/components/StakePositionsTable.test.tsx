@@ -3,7 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SetSearchParams } from '@/lib/navigation';
-import type { StakeUserPosition } from '../hooks/useStakeUserPositions';
+import type { StakeUrnBark, StakeUserPosition } from '../hooks/useStakeUserPositions';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -84,7 +84,7 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { StakePositionsTable } from './StakePositionsTable';
 
-function bark(overrides: Partial<StakeUserPosition['barks'][number]> = {}) {
+function bark(overrides: Partial<StakeUrnBark> = {}) {
   return {
     id: '1-ilk-1',
     ilk: '0x4c534556322d534b592d41',
@@ -129,7 +129,8 @@ const POSITIONS: StakeUserPosition[] = [
 const renderTable = (
   positions: StakeUserPosition[] | undefined = POSITIONS,
   isLoading = false,
-  onRemediate = vi.fn()
+  onRemediate = vi.fn(),
+  contextError: Error | null = null
 ) =>
   render(
     <I18nProvider i18n={i18n}>
@@ -137,6 +138,7 @@ const renderTable = (
         positions={positions}
         isLoading={isLoading}
         error={null}
+        contextError={contextError}
         onRemediate={onRemediate}
       />
     </I18nProvider>
@@ -267,6 +269,39 @@ describe('StakePositionsTable', () => {
 
     expect(screen.getByText('Position 1')).toBeTruthy();
     expect(screen.queryByText('Position 2')).toBeNull();
+  });
+
+  it('keeps an emptied urn with unknown liquidation state visible and marks its risk cell', () => {
+    // Subgraph down: barks undefined. The urn may be a liquidated one, so the
+    // hide-inactive filter must not hide it, and the risk cell can't claim
+    // "no risk" nor "liquidated".
+    const positions: StakeUserPosition[] = [
+      {
+        index: 0,
+        urnAddress: '0x1111111111111111111111111111111111111111',
+        skyLocked: 0n,
+        usdsDebt: 0n,
+        barks: undefined,
+        lastMutationTimestamp: undefined
+      }
+    ];
+    renderTable(positions);
+
+    expect(screen.getByText('Position 1')).toBeTruthy();
+    expect(screen.getByTestId('stake-position-liquidation-unknown')).toBeTruthy();
+    expect(screen.queryByTestId('stake-position-liquidated-badge')).toBeNull();
+    expect(screen.queryByTestId('stake-position-liquidated-banner')).toBeNull();
+  });
+
+  it('disables the hide-inactive toggle and hints when the bark context failed', () => {
+    const unknownPositions = POSITIONS.map(position => ({ ...position, barks: undefined }));
+    renderTable(unknownPositions, false, vi.fn(), new Error('indexer down'));
+
+    // Every row shows, including the emptied urn.
+    expect(screen.getByText('Position 3')).toBeTruthy();
+    const toggle = screen.getByTestId('stake-hide-inactive-toggle') as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    expect(screen.getByTestId('stake-hide-inactive-unavailable')).toBeTruthy();
   });
 
   it('renders the row banner directly under its matching row', () => {

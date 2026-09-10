@@ -214,6 +214,10 @@ describe('isLiquidatedStakePosition', () => {
     expect(isLiquidatedStakePosition(makePosition({ barks: [] }))).toBe(false);
   });
 
+  it('is undefined (unknown) when the row carries no bark history at all', () => {
+    expect(isLiquidatedStakePosition(makePosition({ barks: undefined }))).toBeUndefined();
+  });
+
   it('is true with a bark and no mutating events', () => {
     const theBark = makeBark({ blockTimestamp: 1_700_000_000 });
     expect(
@@ -319,16 +323,22 @@ describe('mergeStakeUserPositions', () => {
         lastMutationTimestamp: undefined
       }
     ]);
-    expect(mergeStakeUserPositions([vault(0, 7n)], undefined)).toEqual([
-      {
-        index: 0,
-        urnAddress: addr(0),
-        skyLocked: 7n,
-        usdsDebt: 0n,
-        barks: [],
-        lastMutationTimestamp: undefined
-      }
-    ]);
+  });
+
+  it('marks liquidation state unknown (barks undefined) when the subgraph failed', () => {
+    // Review round: an empty bark list reads as "never liquidated" and routes a
+    // barked urn to the regular manage modal — a failed subgraph must not do that.
+    const [position] = mergeStakeUserPositions([vault(0, 0n)], undefined);
+    expect(position).toEqual({
+      index: 0,
+      urnAddress: addr(0),
+      skyLocked: 0n,
+      usdsDebt: 0n,
+      barks: undefined,
+      lastMutationTimestamp: undefined
+    });
+    expect(isLiquidatedStakePosition(position)).toBeUndefined();
+    expect(lastStakeUrnBark(position)).toBeUndefined();
   });
 
   it('drops a subgraph row with no on-chain urn and yields nothing for a user with no urns', () => {

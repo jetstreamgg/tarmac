@@ -12,6 +12,7 @@ import {
 } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
+import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky, Liquidated, SuppliedEmpty } from '@/modules/icons';
@@ -84,13 +85,23 @@ function PositionRiskCell({ position }: { position: StakeUserPosition }) {
     error
   } = useVault(hasDebt ? position.urnAddress : undefined, getIlkName(2));
 
-  if (isLiquidatedStakePosition(position)) return <LiquidatedBadge />;
+  const isLiquidated = isLiquidatedStakePosition(position);
+  if (isLiquidated) return <LiquidatedBadge />;
   if (hasDebt && isLoading) return <Skeleton className="h-5 w-14" />;
   if (hasDebt && error && !vault) {
     // A failed read on a debt-carrying urn must not render the unlit
     // "no risk" meter — that masks a position that may be near liquidation.
     return (
       <span data-testid="stake-position-risk-unavailable" className="text-textSecondary text-sm">
+        –
+      </span>
+    );
+  }
+  if (isLiquidated === undefined && isInactiveStakePosition(position)) {
+    // No bark history (subgraph down) on an emptied urn: it may be a
+    // liquidated one, so neither the badge nor the unlit meter is honest.
+    return (
+      <span data-testid="stake-position-liquidation-unknown" className="text-textSecondary text-sm">
         –
       </span>
     );
@@ -281,7 +292,11 @@ export function StakePositionsTable({
   positions?: StakeUserPosition[];
   isLoading: boolean;
   error?: Error | null;
-  /** Subgraph failure: rows are live but have no barks, so liquidated urns can't be told from emptied ones. */
+  /**
+   * Subgraph failure: rows are live but carry no bark history, so liquidated
+   * urns can't be told from emptied ones. Disables the hide-inactive toggle
+   * (with a hint); the filter itself stands down per row via `barks: undefined`.
+   */
   contextError?: Error | null;
   /** Warning-banner CTA: stage the given remediation action for that position's manage sheet. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
@@ -304,14 +319,15 @@ export function StakePositionsTable({
   );
 
   const allPositions = positions ?? [];
-  // Without bark context an emptied urn may really be a liquidated one, so
-  // the inactive filter stands down rather than hide it.
-  const visiblePositions =
-    hideInactive && !contextError
-      ? allPositions.filter(
-          position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position)
-        )
-      : allPositions;
+  // An emptied urn only hides when it is known NOT to be liquidated: a
+  // liquidated one stays listed, and so does one whose bark history is
+  // unknown (subgraph down — `isLiquidatedStakePosition` is undefined).
+  const visiblePositions = hideInactive
+    ? allPositions.filter(
+        position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position) !== false
+      )
+    : allPositions;
+  const filterUnavailable = Boolean(contextError);
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
   // Comp 1036:208676: the empty state is a self-contained card — the section
@@ -338,20 +354,39 @@ export function StakePositionsTable({
         {/* Label 5 per comp 1036:214062 (Circular Medium 14/16, -0.28px). The comp
             also puts this on fg-primary; the fgSecondary tint is left as-is. */}
         {allPositions.length > 0 && (
-          <label className="text-textSecondary font-circle flex cursor-pointer items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
-            {/* Comp 1222:16843 shortens the label at the phone tier. */}
-            <span className="md:hidden">
-              <Trans>Hide inactive</Trans>
-            </span>
-            <span className="hidden md:inline">
-              <Trans>Hide inactive positions</Trans>
-            </span>
-            <Switch
-              checked={hideInactive}
-              onCheckedChange={setHideInactive}
-              data-testid="stake-hide-inactive-toggle"
-            />
-          </label>
+          <div className="flex flex-col items-end gap-1">
+            <label
+              className={cn(
+                'text-textSecondary font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]',
+                filterUnavailable ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              )}
+            >
+              {/* Comp 1222:16843 shortens the label at the phone tier. */}
+              <span className="md:hidden">
+                <Trans>Hide inactive</Trans>
+              </span>
+              <span className="hidden md:inline">
+                <Trans>Hide inactive positions</Trans>
+              </span>
+              <Switch
+                checked={hideInactive}
+                onCheckedChange={setHideInactive}
+                disabled={filterUnavailable}
+                data-testid="stake-hide-inactive-toggle"
+              />
+            </label>
+            {/* Without bark history the filter can't tell an emptied urn from a
+                liquidated one, so every position is shown and the switch is
+                inert — say so rather than leave a toggle that does nothing. */}
+            {filterUnavailable && (
+              <span
+                data-testid="stake-hide-inactive-unavailable"
+                className="text-textSecondary font-circle text-xs leading-4"
+              >
+                <Trans>Liquidation history unavailable — showing all positions</Trans>
+              </span>
+            )}
+          </div>
         )}
       </div>
 

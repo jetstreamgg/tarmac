@@ -36,7 +36,12 @@ export type StakeUserPosition = {
   urnAddress: `0x${string}`;
   skyLocked: bigint;
   usdsDebt: bigint;
-  barks: StakeUrnBark[];
+  /**
+   * Liquidation history. `undefined` means the subgraph never settled, so the
+   * liquidation state of this urn is UNKNOWN — distinct from `[]` (indexed,
+   * never barked). Consumers must treat the two differently.
+   */
+  barks: StakeUrnBark[] | undefined;
   /** Unix seconds of the latest lock/free/draw/wipe on this urn, undefined if none happened. */
   lastMutationTimestamp: number | undefined;
 };
@@ -105,7 +110,9 @@ export function isInactiveStakePosition(position: { skyLocked: bigint; usdsDebt:
 }
 
 /** The subgraph's contribution to a row: everything but the live amounts and the urn address. */
-export type StakeSubgraphPosition = Omit<StakeUserPosition, 'urnAddress'>;
+export type StakeSubgraphPosition = Omit<StakeUserPosition, 'urnAddress' | 'barks'> & {
+  barks: StakeUrnBark[];
+};
 
 export function parseStakeUserPositions(response: StakeUserPositionsResponse): StakeSubgraphPosition[] {
   return (response.stakingUrns ?? [])
@@ -119,9 +126,9 @@ export function parseStakeUserPositions(response: StakeUserPositionsResponse): S
     .sort((a, b) => a.index - b.index);
 }
 
-/** Bark with the greatest `blockTimestamp`, undefined if the urn was never barked. */
+/** Bark with the greatest `blockTimestamp`; undefined if the urn was never barked or its history is unknown. */
 export function lastStakeUrnBark(position: Pick<StakeUserPosition, 'barks'>): StakeUrnBark | undefined {
-  return position.barks.reduce<StakeUrnBark | undefined>(
+  return (position.barks ?? []).reduce<StakeUrnBark | undefined>(
     (latest, bark) => (!latest || bark.blockTimestamp > latest.blockTimestamp ? bark : latest),
     undefined
   );
@@ -134,8 +141,13 @@ export function lastStakeUrnBark(position: Pick<StakeUserPosition, 'barks'>): St
  * deliberately don't clear the state; a recovery withdraw (free) does, after
  * which the row falls back to `isInactiveStakePosition`. Urn opens only
  * happen at creation, always before any bark, so they're not tracked here.
+ *
+ * Tri-state: `undefined` when the row carries no bark history at all (the
+ * subgraph failed), so callers can't mistake "unknown" for "not liquidated" —
+ * an emptied urn with unknown history may well be a liquidated one.
  */
-export function isLiquidatedStakePosition(position: StakeUserPosition): boolean {
+export function isLiquidatedStakePosition(position: StakeUserPosition): boolean | undefined {
+  if (position.barks === undefined) return undefined;
   const lastBark = lastStakeUrnBark(position);
   if (!lastBark) return false;
   return (
@@ -151,6 +163,11 @@ export function isLiquidatedStakePosition(position: StakeUserPosition): boolean 
  * mutation timestamp. That is exactly the Sep 2026 failure: the indexer
  * credited fresh locks to a phantom zero-address urn, so `skyLocked` stayed 0
  * and live positions were classified inactive and hidden.
+ *
+ * `subgraphPositions === undefined` means the subgraph FAILED (not "returned
+ * nothing"): every row then carries `barks: undefined`, i.e. liquidation
+ * state unknown, rather than an empty history that would read as "never
+ * liquidated" and route a barked urn to the ordinary manage modal.
  */
 export function mergeStakeUserPositions(
   vaults: StakeUrnVault[],
@@ -165,7 +182,7 @@ export function mergeStakeUserPositions(
         urnAddress: vault.urnAddress,
         skyLocked: vault.skyLocked,
         usdsDebt: vault.usdsDebt,
-        barks: indexed?.barks ?? [],
+        barks: subgraphPositions === undefined ? undefined : (indexed?.barks ?? []),
         lastMutationTimestamp: indexed?.lastMutationTimestamp
       };
     })
@@ -213,7 +230,8 @@ async function fetchStakeUserPositions(
  * with no rows (never the indexer's tallies, which are what this hook exists
  * to distrust). The subgraph decides liquidation state through barks, so the
  * rows wait for it to settle too; if it fails, the rows still render from the
- * chain and `contextError` tells the surfaces the bark context is missing.
+ * chain with `barks: undefined` (liquidation state unknown) and `contextError`
+ * tells the surfaces why.
  */
 export function useStakeUserPositions() {
   const { address } = useConnection();
@@ -237,7 +255,9 @@ export function useStakeUserPositions() {
   const data = useMemo(
     () =>
       vaults.data && !vaults.error && subgraphSettled
-        ? mergeStakeUserPositions(vaults.data, subgraphPositions)
+        ? // A failed refetch keeps TSQ's last good data alongside the error; the
+          // rows are only "unknown" when there is no context at all.
+          mergeStakeUserPositions(vaults.data, subgraphPositions)
         : undefined,
     [vaults.data, vaults.error, subgraphSettled, subgraphPositions]
   );
@@ -251,7 +271,7 @@ export function useStakeUserPositions() {
     data,
     isLoading: !data && !vaults.error && (vaults.isLoading || subgraphLoading),
     error: vaults.error,
-    /** Subgraph failure: rows are live but carry no barks/timestamps, so liquidation state is unknown. */
+    /** Subgraph failure: rows are live but carry `barks: undefined`, so liquidation state is unknown. */
     contextError: (subgraphError as Error | null) ?? null,
     mutate
   };

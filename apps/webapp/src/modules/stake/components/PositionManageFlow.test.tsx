@@ -163,6 +163,14 @@ describe('PositionManageFlow', () => {
     expect(screen.queryByTestId('manage-sheet-stub')).toBeNull();
   });
 
+  it('falls through to the ordinary views when liquidation state is unknown (no post-mortem to build)', () => {
+    h.positions = [makePosition({ barks: undefined })];
+    render(<PositionManageFlow />);
+
+    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    expect(screen.queryByTestId('post-mortem-modal-stub')).toBeNull();
+  });
+
   it('keeps a non-liquidated position on the ordinary details modal', () => {
     h.positions = [makePosition({ skyLocked: 100n, barks: [] })];
     render(<PositionManageFlow />);
