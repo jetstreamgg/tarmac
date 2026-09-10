@@ -142,7 +142,11 @@ vi.mock('@/hooks', async importOriginal => {
         minCollateralForDust: h.minCollateralForDust,
         riskLevel: desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW,
         liquidationProximityPercentage: desiredDebt > 0n ? h.simProximity : 0,
-        liquidationPrice: h.simLiqPrice,
+        // Scales with the collateral so a stake-only change moves the price.
+        liquidationPrice:
+          collateral > 0n && collateral !== h.existingCollateral
+            ? (h.simLiqPrice * h.existingCollateral) / collateral
+            : h.simLiqPrice,
         delayedPrice: h.simDelayedPrice
       },
       isLoading: false,
@@ -454,13 +458,13 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.wipeAll).toBe(false);
   });
 
-  it('repay: a full-left slider drag stages wipeAll like the 100% chip (M11)', () => {
+  it('repay: a full-right slider drag stages wipeAll like the 100% chip (M11)', () => {
     renderSheet({ borrowCard: 'repay' });
 
-    // Radix slider: Home jumps to the minimum → stages the exact full debt.
+    // Radix slider: End jumps to the maximum → stages the exact full debt.
     // Without wipeAll this would launch a plain wipe that strands sub-dust
     // accrued interest (vat dust revert).
-    fireEvent.keyDown(screen.getByRole('slider'), { key: 'Home' });
+    fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
 
     expect(h.launchParams?.usdsToWipe).toBe(30_000n * WAD);
     expect(h.launchParams?.wipeAll).toBe(true);
@@ -477,11 +481,13 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('full repay renders the No-position delta row (M13)', () => {
+  it('full repay renders the Repaid delta row (M13)', () => {
     renderSheet({ borrowCard: 'repay' });
 
     fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-100'));
-    expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('No position');
+    expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('Repaid');
+    // Liquidation price after a full repay is `–`, not `$0.0`.
+    expect(screen.getByTestId('stake-manage-liq-price-row').textContent).toMatch(/–$/);
     expect(screen.getByTestId('stake-manage-borrow-rate-row').textContent).toContain('0.00%');
   });
 
@@ -527,6 +533,54 @@ describe('ManagePositionTakeover', () => {
 
     expect(screen.getByTestId('stake-manage-min-collateral-warning')).toBeTruthy();
     expect(screen.queryByTestId('stake-manage-max-hint')).toBeNull();
+  });
+
+  it('borrow: below the min collateral the off switch is disabled behind the hint (G11)', () => {
+    h.existingDebt = 0n;
+    h.existingCollateral = 1_000_000n * WAD;
+    renderSheet();
+
+    const toggle = screen.getByTestId('stake-manage-borrow-card-toggle') as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    expect(screen.getByTestId('stake-manage-borrow-card-toggle-hint')).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId('stake-manage-borrow-amount')).toBeNull();
+  });
+
+  it('stake: the min-stake row flips to Reached once the staged stake clears it (G2)', () => {
+    h.existingDebt = 0n;
+    h.existingCollateral = 1_000_000n * WAD;
+    renderSheet({ stakeCard: 'stake' });
+
+    expect(screen.getByTestId('stake-manage-min-stake').textContent).toContain('Not reached');
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '500000' } });
+    expect(screen.getByTestId('stake-manage-min-stake').textContent).toContain('Reached');
+    expect(screen.getByTestId('stake-manage-min-stake').textContent).not.toContain('Not reached');
+  });
+
+  it('stake-only change surfaces the borrow card price delta (G3)', () => {
+    renderSheet({ stakeCard: 'stake', borrowCard: 'borrow' });
+
+    const row = () => screen.getByTestId('stake-manage-liq-price-row').textContent;
+    // Nothing staged: single value.
+    expect(row()).toBe('Liquidation price$0.0432');
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '500000' } });
+    // 3M → 3.5M collateral: 0.0432 × 3 / 3.5
+    expect(row()).toBe('Liquidation price$0.0432$0.0370');
+  });
+
+  it('borrow: the slider runs on total debt with a tick at the current debt (Progress Steps)', () => {
+    h.debtCeiling = 40_000n * WAD;
+    renderSheet({ borrowCard: 'borrow' });
+
+    const slider = screen.getByTestId('stake-manage-borrow-slider');
+    // 30k debt on a 30k + 40k axis → tick at 3/7.
+    expect(slider.querySelectorAll('[data-slot="slider-marker"]').length).toBe(1);
+    expect(screen.getByTestId('stake-manage-borrow-slider-marker-label').textContent).toContain(
+      'Borrowed: 30K'
+    );
+    fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
+    expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
   });
 
   it('borrow: amount reaches the seam and the borrowed line shows the delta', () => {

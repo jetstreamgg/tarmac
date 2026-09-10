@@ -1,14 +1,19 @@
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
-import { Info } from 'lucide-react';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { formatBigInt, formatUsd } from '@/utils';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { StakeManageCard, StakeManageStatCell, StakeManageStatDivider } from './StakeManageCard';
+import {
+  ReachedBadge,
+  StakeManageCard,
+  StakeManageStatCell,
+  StakeManageStatDivider
+} from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -38,6 +43,7 @@ export function StakeManageStakeCard({
   estNextUsd,
   minStakeToBorrow,
   minStakeToBorrowLoading,
+  minStakeReached,
   error
 }: {
   mode: StakeCardMode;
@@ -66,6 +72,8 @@ export function StakeManageStakeCard({
   minStakeToBorrow: bigint | undefined;
   /** The simulation backing `minStakeToBorrow` is in flight. */
   minStakeToBorrowLoading?: boolean;
+  /** Collateral after the staged change clears `minStakeToBorrow`. */
+  minStakeReached?: boolean;
   error?: string;
 }) {
   const isStake = mode === 'stake';
@@ -143,7 +151,15 @@ export function StakeManageStakeCard({
             label={
               <>
                 <Trans>Min. stake amount to borrow</Trans>
-                <Info className="h-3 w-3" aria-hidden />
+                <InfoTooltip
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={
+                    minStakeToBorrow !== undefined
+                      ? t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`
+                      : t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least the minimum shown here.`
+                  }
+                />
               </>
             }
             current={
@@ -151,6 +167,7 @@ export function StakeManageStakeCard({
                 <>
                   {formatBigInt(minStakeToBorrow)}
                   {skyIcon}
+                  {minStakeReached !== undefined && <ReachedBadge reached={minStakeReached} />}
                 </>
               ) : minStakeToBorrowLoading ? (
                 <Skeleton className="h-4 w-14" />
@@ -180,7 +197,16 @@ export function StakeManageStakeCard({
           />
           <StakeManageStatDivider />
           <StakeManageStatCell
-            label={<Trans>Est. annual rewards</Trans>}
+            label={
+              <>
+                <Trans>Est. annual rewards</Trans>
+                <InfoTooltip
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={t`Projected yearly rewards at the current Staking Rewards Rate and SKY price. Rates change over time, so the actual amount will differ.`}
+                />
+              </>
+            }
             current={
               estCurrentUsd === null && (rateLoading || stakedAmountLoading) ? (
                 <Skeleton className="h-4 w-14" />

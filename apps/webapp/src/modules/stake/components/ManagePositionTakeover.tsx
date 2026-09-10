@@ -35,7 +35,7 @@ import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
 import { StakeManageStakeCard } from './StakeManageStakeCard';
-import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
+import { StakeManageBorrowCard, RiskPill } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageRewardCard } from './StakeManageRewardCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
@@ -105,13 +105,6 @@ export function ManagePositionTakeover({
   const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
     liveCollateralAmount > 0n ? liveCollateralAmount : 0n,
     liveDebtValue > 0n ? liveDebtValue : 0n,
-    existingDebt,
-    ilkName
-  );
-  // Slider floor/ceiling baseline: same collateral, unchanged debt.
-  const { data: vaultNoBorrow } = useSimulatedVault(
-    liveCollateralAmount > 0n ? liveCollateralAmount : 0n,
-    existingDebt,
     existingDebt,
     ilkName
   );
@@ -545,7 +538,7 @@ export function ManagePositionTakeover({
               {detail.vaultLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : existingDebt > 0n && existingVault?.riskLevel ? (
-                <RiskBadge riskLevel={existingVault.riskLevel} />
+                <RiskPill riskLevel={existingVault.riskLevel} dataTestId="stake-manage-summary-risk" />
               ) : (
                 NO_VALUE
               )}
@@ -603,6 +596,11 @@ export function ManagePositionTakeover({
         estNextUsd={estNextUsd}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
         minStakeToBorrowLoading={liveSimLoading}
+        minStakeReached={
+          simulatedVault?.minCollateralForDust !== undefined
+            ? liveCollateralAmount >= simulatedVault.minCollateralForDust
+            : undefined
+        }
         error={stakeError}
       />
 
@@ -619,7 +617,6 @@ export function ManagePositionTakeover({
         positionLoading={detail.vaultLoading}
         simulatedVault={simulatedVault}
         simulationLoading={liveSimLoading}
-        vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
         collateralLoading={collateralLoading}
         maxBorrowable={availableBorrowBalance}
@@ -629,6 +626,10 @@ export function ManagePositionTakeover({
         minCollateralNotMet={minCollateralNotMet}
         minCollateralForDust={simulatedVault?.minCollateralForDust}
         currentCollateral={newCollateralAmount > 0n ? newCollateralAmount : 0n}
+        hasStagedChange={
+          (state.stakeEnabled && state.skyAmount > 0n) ||
+          (state.borrowEnabled && (state.usdsAmount > 0n || state.wipeAll))
+        }
         error={borrowError}
       />
 

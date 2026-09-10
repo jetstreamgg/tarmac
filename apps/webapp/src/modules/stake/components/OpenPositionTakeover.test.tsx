@@ -560,19 +560,38 @@ describe('OpenPositionTakeover', () => {
     expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
   });
 
-  it('min-collateral constraint: warning box shown, borrow input disabled, Confirm disabled (C.3)', () => {
+  it('min-collateral constraint: Borrow switch disabled behind the "Stake more to borrow" hint (G11)', () => {
     h.minCollateralForDust = 715104n * WAD;
     h.dust = 30000n * WAD;
     renderTakeover();
     typeStakeAmount('1000');
 
+    const toggle = screen.getByTestId('stake-takeover-borrow-card-toggle') as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    expect(screen.getByTestId('stake-takeover-borrow-card-toggle-hint')).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
+    // The stake card's min row carries the Not-reached badge.
+    const badge = screen.getByTestId('stake-min-stake-badge');
+    expect(badge.textContent).toBe('Not reached');
+    expect(badge.getAttribute('data-reached')).toBeNull();
+  });
+
+  it('min-collateral constraint: a card already on keeps the warning when the stake drops (C.3)', () => {
+    h.minCollateralForDust = 715104n * WAD;
+    h.dust = 30000n * WAD;
+    renderTakeover();
+    typeStakeAmount('800000');
+    expect(screen.getByTestId('stake-min-stake-badge').textContent).toBe('Reached');
+
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    typeStakeAmount('1000');
 
     const warning = screen.getByTestId('stake-takeover-min-collateral-warning');
-    expect(warning).toBeTruthy();
     // The callout prose spells the dust floor out in full (UX 1104:19793).
     expect(warning.textContent).toContain('30,000 USDS');
     expect(warning.textContent).not.toContain('30K USDS');
+    expect(screen.queryByTestId('stake-takeover-borrow-slider')).toBeNull();
     expect((screen.getByTestId('stake-takeover-borrow-amount') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
   });

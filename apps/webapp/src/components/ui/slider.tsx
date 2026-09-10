@@ -21,9 +21,12 @@ function Slider({
   max = 100,
   variant = 'default',
   valueText,
+  markers,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root> & {
   variant?: SliderVariant;
+  /** Interior tick marks, in the slider's value domain (e.g. the current debt on an amount axis). */
+  markers?: number[];
   /** Spoken value for the thumb (aria-valuetext) — e.g. "25%" where the bare
    *  number would be ambiguous. Radix puts role="slider" on the THUMB, so this
    *  cannot be passed through Root's props. */
@@ -66,10 +69,25 @@ function Slider({
             'absolute rounded-full bg-linear-to-r data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
             isRange
               ? 'from-slider-yellow-start to-slider-yellow-end'
-              : 'from-slider-brand-start to-slider-brand-end'
+              : 'from-slider-brand-start to-slider-brand-end',
+            // Disabled = nothing to stage: a flat grey track, no gradient.
+            'group-data-[disabled]:bg-fgQuaternary group-data-[disabled]:bg-none'
           )}
         />
       </SliderPrimitive.Track>
+      {markers?.map(marker => {
+        const fraction = max > min ? Math.min(1, Math.max(0, (marker - min) / (max - min))) : 0;
+        return (
+          <span
+            key={marker}
+            aria-hidden
+            data-slot="slider-marker"
+            // Centered on the thumb's travel: 8px radius inset at each end.
+            className="bg-sliderMarker absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `calc(8px + ${fraction} * (100% - 16px))` }}
+          />
+        );
+      })}
       {isRange && (
         // Min/max markers (2×14) centered on the thumb's end positions — the
         // thumb radius is 8px, so the 2px markers sit 7px in from each edge.

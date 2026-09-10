@@ -118,8 +118,6 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     0n,
     ilkName
   );
-  // Same simulation with no new debt — feeds the slider's floor math.
-  const { data: vaultNoBorrow } = useSimulatedVault(state.skyToLock, 0n, 0n, ilkName);
   // Debounced simulation for validation, so errors wait for typing to settle.
   const {
     data: debouncedVault,
@@ -425,7 +423,13 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         rewardsRate={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : null}
         rateLoading={rateLoading}
         estAnnualRewardsUsd={estAnnualRewardsUsd}
-        minStakeToBorrow={state.borrowEnabled ? simulatedVault?.minCollateralForDust : undefined}
+        minStakeToBorrow={simulatedVault?.minCollateralForDust}
+        minStakeLoading={liveSimLoading}
+        minStakeReached={
+          simulatedVault?.minCollateralForDust !== undefined
+            ? state.skyToLock >= simulatedVault.minCollateralForDust
+            : undefined
+        }
         error={stakeError}
       />
 
@@ -447,7 +451,6 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         skyToLock={debouncedSkyToLock}
         simulatedVault={simulatedVault}
         simulationLoading={liveSimLoading}
-        vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
         collateralLoading={collateralLoading}
         error={borrowError}

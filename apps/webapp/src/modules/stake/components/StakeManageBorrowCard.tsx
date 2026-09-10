@@ -1,16 +1,17 @@
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
-import { Info } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
-import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@/utils';
+import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Slider, SliderTicks } from '@/components/ui/slider';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { RiskMeter } from '@/components/product/RiskMeter';
-import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
+import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
+import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
+import { StakeMoreToBorrowHint } from './StakeCardToggle';
 import {
   StakeManageCard,
   StakeManageStatCell,
@@ -45,9 +46,10 @@ const RISK_PILL: Record<RiskLevel, string> = {
   [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
 };
 
-function RiskPill({ riskLevel }: { riskLevel: RiskLevel }) {
+export function RiskPill({ riskLevel, dataTestId }: { riskLevel: RiskLevel; dataTestId?: string }) {
   return (
     <span
+      data-testid={dataTestId}
       className={cn(
         'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
         RISK_PILL[riskLevel]
@@ -68,13 +70,28 @@ export function RiskBadge({ riskLevel }: { riskLevel: RiskLevel }) {
   );
 }
 
+/** Neutral pill for the post-full-repay risk cell. */
+function RepaidPill() {
+  return (
+    <span
+      data-testid="stake-manage-repaid-pill"
+      className="bg-glassBadge text-fgSecondary font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]"
+    >
+      <Trans>Repaid</Trans>
+    </span>
+  );
+}
+
 /**
  * Manage card 2 · Borrow USDS | Repay USDS (UX 1104:18395 / 1104:20574):
  * segmented mode + toggle, amount field, "Borrowed:" before→after line, the
- * legacy risk slider (borrow: floor at current risk, min-dust/max labels;
- * repay: ceiling at current risk, 0–100% labels), and the delta rows. Full
- * repay renders `No position` / `$0.0` / `0.00%` (M13). Repay percent chips
- * stage wipeAll only when the max equals the full debt (M11).
+ * amount slider (borrow: total debt 0 → debt + headroom with a "Borrowed:"
+ * tick; repay: 0 → debt with a tick at debt − dust) and the delta rows. Deltas
+ * follow any staged change on the position (a stake/unstake moves the risk
+ * too), blank while the card carries an error. Full repay renders `Repaid` /
+ * `–` / `0.00%`. Repay percent chips stage wipeAll only when the max equals
+ * the full debt (M11). Below the min collateral the Borrow switch is disabled
+ * behind a "Stake more to borrow" hint; a card already on keeps the notice.
  */
 export function StakeManageBorrowCard({
   mode,
@@ -87,7 +104,6 @@ export function StakeManageBorrowCard({
   positionLoading,
   simulatedVault,
   simulationLoading,
-  vaultNoBorrow,
   collateralData,
   collateralLoading,
   maxBorrowable,
@@ -97,6 +113,7 @@ export function StakeManageBorrowCard({
   minCollateralNotMet,
   minCollateralForDust,
   currentCollateral,
+  hasStagedChange,
   error
 }: {
   mode: BorrowCardMode;
@@ -111,7 +128,6 @@ export function StakeManageBorrowCard({
   simulatedVault: Vault | undefined;
   /** The live simulation is in flight — its dust/max figures hold skeletons. */
   simulationLoading?: boolean;
-  vaultNoBorrow: Vault | undefined;
   collateralData: CollateralRiskParameters | undefined;
   /** The collateral-parameters read is in flight — the borrow rate holds a skeleton. */
   collateralLoading?: boolean;
@@ -125,28 +141,24 @@ export function StakeManageBorrowCard({
   minCollateralNotMet: boolean;
   minCollateralForDust: bigint | undefined;
   currentCollateral: bigint;
+  /** Any staged change on the position (stake, unstake, borrow, repay) — drives the delta rows. */
+  hasStagedChange?: boolean;
   error?: string;
 }) {
   const isRepay = mode === 'repay';
   const existingDebt = existingVault?.debtValue ?? 0n;
-
-  const { sliderValue, handleSliderChange, shouldShowSlider } = useStakeRiskSlider({
-    vault: simulatedVault,
-    existingVault,
-    vaultNoBorrow,
-    isRepayMode: isRepay,
-    usdsToBorrow: isRepay ? 0n : amount,
-    setUsdsToBorrow: value => onAmountChange(value),
-    usdsToWipe: isRepay ? amount : 0n,
-    // Mirror the 100% chip's wipeAll staging (M11): a full-left drag lands on
-    // the exact debt, and without wipeAll the launch builds a plain wipe whose
-    // accrued-interest remainder strands sub-dust debt (vat dust revert).
-    setUsdsToWipe: value =>
-      onAmountChange(value, value === existingDebt && maxRepayable === existingDebt && existingDebt > 0n)
-  });
+  const dust = existingVault?.dust ?? simulatedVault?.dust;
 
   const debtCeilingReached = collateralData?.debtCeilingUtilization === 1;
-  const inputDisabled = isRepay ? existingDebt === 0n : minCollateralNotMet || debtCeilingReached;
+  const slider = useStakeAmountSlider({
+    mode: isRepay ? 'repay' : 'borrow',
+    existingDebt,
+    dust,
+    headroom: debtCeilingReached ? 0n : maxBorrowable,
+    amount,
+    onAmountChange
+  });
+  const inputDisabled = isRepay ? existingDebt === 0n : minCollateralNotMet || slider.disabled;
   const hasAmount = amount > 0n;
 
   // Always-visible cap next to the "Borrowed:" line (pre-redesign behavior):
@@ -182,7 +194,7 @@ export function StakeManageBorrowCard({
 
   // Delta values (M13): current → simulated, arrow only when they differ.
   const isFullRepay = isRepay && (wipeAll || (hasAmount && amount >= existingDebt));
-  const showDeltas = hasAmount || wipeAll;
+  const showDeltas = (hasStagedChange ?? (hasAmount || wipeAll)) && !error;
 
   const currentRisk = existingVault?.riskLevel;
   const nextRisk = isFullRepay ? null : simulatedVault?.riskLevel;
@@ -197,6 +209,23 @@ export function StakeManageBorrowCard({
       onModeChange={onModeChange}
       enabled={enabled}
       onEnabledChange={onEnabledChange}
+      toggleDisabled={!enabled && !isRepay && minCollateralNotMet}
+      toggleDisabledHint={
+        <StakeMoreToBorrowHint
+          title={<Trans>Stake more to borrow</Trans>}
+          current={currentCollateral}
+          required={minCollateralForDust ?? 0n}
+          currentLabel={
+            <Trans>
+              {formatBigInt(currentCollateral, { compact: true })} /{' '}
+              {minCollateralForDust !== undefined
+                ? formatBigInt(minCollateralForDust, { compact: true })
+                : NO_VALUE}{' '}
+              SKY staked
+            </Trans>
+          }
+        />
+      }
       dataTestId="stake-manage-borrow-card"
     >
       {/* Design QA 2800:91832 ("More gap", 32px): the amount block, the
@@ -259,47 +288,15 @@ export function StakeManageBorrowCard({
           }
         />
 
-        {(isRepay ? shouldShowSlider && !minCollateralNotMet : !inputDisabled) && (
-          <div className="flex flex-col gap-2">
-            <Slider
-              variant="range"
-              value={sliderValue}
-              max={100}
-              step={1}
-              onValueChange={value => handleSliderChange(value[0])}
-              aria-label={t`Liquidation risk meter`}
-              data-testid="stake-manage-borrow-slider"
-            />
-            <div className="text-fgSecondary flex items-center gap-4 text-xs">
-              {isRepay ? (
-                <>
-                  <span>0%</span>
-                  <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
-                  <span>100%</span>
-                </>
-              ) : (
-                <>
-                  <span className="flex items-center gap-1">
-                    {simulatedVault?.dust !== undefined ? (
-                      <Trans>min. {formatBigInt(simulatedVault.dust, { compact: true })} USDS</Trans>
-                    ) : simulationLoading ? (
-                      <Skeleton className="h-3.5 w-14" />
-                    ) : (
-                      <Trans>min. {NO_VALUE} USDS</Trans>
-                    )}
-                  </span>
-                  <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
-                  <span className="flex items-center gap-1">
-                    {maxHintLoading ? (
-                      <Skeleton className="h-3.5 w-14" />
-                    ) : (
-                      <Trans>max. {formatBigInt(maxBorrowable, { compact: true })} USDS</Trans>
-                    )}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
+        {(isRepay ? !slider.hidden : !minCollateralNotMet) && (
+          <StakeBorrowSliderRow
+            slider={slider}
+            mode={isRepay ? 'repay' : 'borrow'}
+            minLoading={dust === undefined && (positionLoading || simulationLoading)}
+            maxLoading={isRepay ? positionLoading : maxHintLoading}
+            unit="USDS"
+            dataTestId="stake-manage-borrow-slider"
+          />
         )}
 
         {!isRepay && minCollateralNotMet && (
@@ -361,7 +358,15 @@ export function StakeManageBorrowCard({
             label={
               <>
                 <Trans>Liquidation risk</Trans>
-                <Info className="h-3 w-3" aria-hidden />
+                <InfoTooltip
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={
+                    existingVault?.liquidationPrice
+                      ? t`Sky closes your position if SKY's price drops to your liquidation price ($${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}). Your collateral is sold to repay the debt plus a penalty.`
+                      : t`Sky closes your position if SKY's price drops to your liquidation price. Your collateral is sold to repay the debt plus a penalty.`
+                  }
+                />
               </>
             }
             current={
@@ -376,7 +381,7 @@ export function StakeManageBorrowCard({
             next={
               showDeltas ? (
                 isFullRepay ? (
-                  t`No position`
+                  <RepaidPill />
                 ) : nextRisk && nextRisk !== currentRisk ? (
                   <RiskPill riskLevel={nextRisk} />
                 ) : undefined
@@ -397,7 +402,7 @@ export function StakeManageBorrowCard({
             next={
               showDeltas
                 ? isFullRepay
-                  ? formatOraclePrice(0n)
+                  ? NO_VALUE
                   : simulatedVault?.liquidationPrice !== undefined &&
                       simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
                     ? formatOraclePrice(simulatedVault.liquidationPrice)

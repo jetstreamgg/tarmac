@@ -6,11 +6,12 @@ import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } fro
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { RateInfo } from '@/components/product/RateInfo';
-import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
+import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
+import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
+import { StakeMoreToBorrowHint } from './StakeCardToggle';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
@@ -48,11 +49,11 @@ function StatDivider({ className }: { className?: string }) {
 
 /**
  * Card 2 · Borrow USDS (Optional, Modal / 10 · 1036:209743): enable toggle,
- * amount + max + percent chips,
- * the legacy risk slider (math verbatim via useStakeRiskSlider), risk/price
- * stats, and the min-collateral warning state (UX `1104:19793` — input pinned,
- * Confirm handled by the container). Risk/price rows show "–" until an amount
- * is entered (UX §A.2).
+ * amount + max + percent chips, the amount slider (0 → max, min-dust label),
+ * risk/price stats. Below the min collateral the switch is disabled behind a
+ * "Stake more to borrow" hint; a card already on keeps the notice (input
+ * pinned, Confirm handled by the container). Risk/price rows show "–" until
+ * an amount is entered (UX §A.2).
  */
 export function StakeTakeoverBorrowCard({
   enabled,
@@ -66,7 +67,6 @@ export function StakeTakeoverBorrowCard({
   skyToLock,
   simulatedVault,
   simulationLoading,
-  vaultNoBorrow,
   collateralData,
   collateralLoading,
   error
@@ -84,23 +84,21 @@ export function StakeTakeoverBorrowCard({
   simulatedVault: Vault | undefined;
   /** The simulation is in flight — its dust/max/risk figures hold skeletons. */
   simulationLoading?: boolean;
-  vaultNoBorrow: Vault | undefined;
   collateralData: CollateralRiskParameters | undefined;
   /** The collateral-parameters read is in flight — the borrow rate holds a skeleton. */
   collateralLoading?: boolean;
   error?: string;
 }) {
-  const { sliderValue, handleSliderChange } = useStakeRiskSlider({
-    vault: simulatedVault,
-    vaultNoBorrow,
-    usdsToBorrow,
-    setUsdsToBorrow: onAmountChange,
-    usdsToWipe: 0n,
-    setUsdsToWipe: () => undefined
-  });
-
   const debtCeilingReached = collateralData?.debtCeilingUtilization === 1;
-  const inputDisabled = minCollateralNotMet || debtCeilingReached;
+  const slider = useStakeAmountSlider({
+    mode: 'borrow',
+    existingDebt: 0n,
+    dust,
+    headroom: debtCeilingReached ? 0n : maxBorrowable,
+    amount: usdsToBorrow,
+    onAmountChange
+  });
+  const inputDisabled = minCollateralNotMet || slider.disabled;
   const hasAmount = usdsToBorrow > 0n;
   const riskLevel = hasAmount ? simulatedVault?.riskLevel : undefined;
   // `maxBorrowable` composes over `?? 0n` fallbacks, so it skeletons while
@@ -120,6 +118,23 @@ export function StakeTakeoverBorrowCard({
       optional
       enabled={enabled}
       onEnabledChange={onEnabledChange}
+      toggleDisabled={!enabled && minCollateralNotMet}
+      toggleDisabledHint={
+        <StakeMoreToBorrowHint
+          title={<Trans>Stake more to borrow</Trans>}
+          current={skyToLock}
+          required={minCollateralForDust ?? 0n}
+          currentLabel={
+            <Trans>
+              {formatBigInt(skyToLock, { compact: true })} /{' '}
+              {minCollateralForDust !== undefined
+                ? formatBigInt(minCollateralForDust, { compact: true })
+                : NO_VALUE}{' '}
+              SKY staked
+            </Trans>
+          }
+        />
+      }
       dataTestId="stake-takeover-borrow-card"
     >
       <div className="flex flex-col gap-6 md:gap-8">
@@ -144,39 +159,17 @@ export function StakeTakeoverBorrowCard({
           />
         </div>
 
-        {!inputDisabled && (
-          <div className="flex flex-col gap-1.5">
-            <Slider
-              variant="range"
-              value={sliderValue}
-              max={100}
-              step={1}
-              onValueChange={value => handleSliderChange(value[0])}
-              aria-label="Liquidation risk meter"
-              data-testid="stake-takeover-borrow-slider"
-            />
-            <div className="text-fgSecondary flex items-center gap-4 text-xs leading-[18px]">
-              <span className="flex items-center gap-1">
-                {dust !== undefined ? (
-                  <Trans>min. {formatBigInt(dust, { compact: true })}</Trans>
-                ) : simulationLoading ? (
-                  <Skeleton className="h-3.5 w-10" />
-                ) : (
-                  <Trans>min. {NO_VALUE}</Trans>
-                )}
-                <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
-              </span>
-              <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
-              <span className="flex items-center gap-1">
-                {maxLoading ? (
-                  <Skeleton className="h-3.5 w-10" />
-                ) : (
-                  <Trans>max. {formatBigInt(maxBorrowable, { compact: true })}</Trans>
-                )}
-                <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
-              </span>
-            </div>
-          </div>
+        {!minCollateralNotMet && (
+          <StakeBorrowSliderRow
+            slider={slider}
+            mode="borrow"
+            minLoading={dust === undefined && simulationLoading}
+            maxLoading={maxLoading}
+            unit={
+              <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
+            }
+            dataTestId="stake-takeover-borrow-slider"
+          />
         )}
 
         {minCollateralNotMet && (

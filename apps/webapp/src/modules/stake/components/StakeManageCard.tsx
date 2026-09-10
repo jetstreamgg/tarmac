@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { Switch } from '@/components/ui/switch';
+import { StakeCardToggle } from './StakeCardToggle';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 
@@ -23,6 +23,8 @@ export function StakeManageCard<Mode extends string>({
   onModeChange,
   enabled,
   onEnabledChange,
+  toggleDisabled,
+  toggleDisabledHint,
   dataTestId,
   children
 }: {
@@ -31,6 +33,9 @@ export function StakeManageCard<Mode extends string>({
   onModeChange: (mode: Mode) => void;
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
+  /** The switch can't be turned on yet; `toggleDisabledHint` says why (hover/tap). */
+  toggleDisabled?: boolean;
+  toggleDisabledHint?: ReactNode;
   dataTestId: string;
   children: ReactNode;
 }) {
@@ -56,7 +61,13 @@ export function StakeManageCard<Mode extends string>({
             </button>
           ))}
         </div>
-        <Switch checked={enabled} onCheckedChange={onEnabledChange} data-testid={`${dataTestId}-toggle`} />
+        <StakeCardToggle
+          checked={enabled}
+          onCheckedChange={onEnabledChange}
+          disabled={toggleDisabled}
+          disabledHint={toggleDisabledHint}
+          dataTestId={`${dataTestId}-toggle`}
+        />
       </div>
       {enabled && children}
     </section>
@@ -98,6 +109,22 @@ export function StakeManageStatCell({
         )}
       </span>
     </div>
+  );
+}
+
+/** Min-stake-to-borrow status (Figma "Reached" / "Not reached" badge on every manage frame). */
+export function ReachedBadge({ reached }: { reached: boolean }) {
+  return (
+    <span
+      data-testid="stake-min-stake-badge"
+      data-reached={reached || undefined}
+      className={cn(
+        'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
+        reached ? 'bg-statusSuccess/10 text-statusSuccess' : 'bg-statusWarning/10 text-statusWarning'
+      )}
+    >
+      {reached ? <Trans>Reached</Trans> : <Trans>Not reached</Trans>}
+    </span>
   );
 }
 

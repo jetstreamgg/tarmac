@@ -8,6 +8,7 @@ import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { RateInfo } from '@/components/product/RateInfo';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
+import { ReachedBadge } from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -42,6 +43,8 @@ export function StakeTakeoverStakeCard({
   rateLoading,
   estAnnualRewardsUsd,
   minStakeToBorrow,
+  minStakeLoading,
+  minStakeReached,
   error
 }: {
   amount: bigint;
@@ -58,8 +61,10 @@ export function StakeTakeoverStakeCard({
    * count of the reward token — showing it as one named the wrong token.
    */
   estAnnualRewardsUsd: number | null;
-  /** Shown only when Borrow is enabled (minCollateralForDust). */
+  /** minCollateralForDust — always shown, with a Reached / Not reached badge. */
   minStakeToBorrow: bigint | undefined;
+  minStakeLoading?: boolean;
+  minStakeReached?: boolean;
   error?: string;
 }) {
   const onPercentClick = (percent: number) => {
@@ -150,28 +155,39 @@ export function StakeTakeoverStakeCard({
             )}
           </span>
         </StatItem>
-        {minStakeToBorrow !== undefined && (
-          <>
-            <StatDivider />
-            <StatItem
-              label={
-                <>
-                  <Trans>Min. stake to borrow</Trans>
-                  <InfoTooltip
-                    iconSize={12}
-                    iconClassName="shrink-0"
-                    content={t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`}
-                  />
-                </>
-              }
-            >
-              <span data-testid="stake-takeover-min-stake" className="flex items-center gap-1">
+        <StatDivider />
+        <StatItem
+          label={
+            <>
+              <Trans>Min. stake to borrow</Trans>
+              <InfoTooltip
+                iconSize={12}
+                iconClassName="shrink-0"
+                content={
+                  minStakeToBorrow !== undefined
+                    ? t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`
+                    : t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least the minimum shown here.`
+                }
+              />
+            </>
+          }
+        >
+          <span data-testid="stake-takeover-min-stake" className="flex items-center gap-1">
+            {minStakeToBorrow !== undefined ? (
+              <>
                 {formatBigInt(minStakeToBorrow)}
                 <TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />
-              </span>
-            </StatItem>
-          </>
-        )}
+              </>
+            ) : minStakeLoading ? (
+              <Skeleton className="h-4 w-14" />
+            ) : (
+              NO_VALUE
+            )}
+          </span>
+          {minStakeToBorrow !== undefined && minStakeReached !== undefined && (
+            <ReachedBadge reached={minStakeReached} />
+          )}
+        </StatItem>
       </div>
     </StakeTakeoverCard>
   );
