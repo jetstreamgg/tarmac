@@ -2,12 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { base } from 'wagmi/chains';
 import type { Address, Call, Hex, PublicClient } from 'viem';
 import { estimateFlowGas } from './estimateFlowGas';
-import { BATCH_EXECUTOR_ADDRESS, EIP7702_AUTH_COST } from './networkFee';
+import { EIP7702_AUTH_COST } from './networkFee';
+import { MULTICALL3_RUNTIME_CODE } from './multicall3RuntimeCode';
 
 const ACCOUNT: Address = '0x0650CAF159C5A49f711e8169D4336ECB9b950275';
 const USDS: Address = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
 const SUSDS: Address = '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD';
-const EXECUTOR_CODE: Hex = '0x60806040';
 
 const calls: Call[] = [
   { to: USDS, data: '0xdeadbeef' },
@@ -17,28 +17,20 @@ const calls: Call[] = [
 type SimulateParams = { calls: readonly Call[]; stateOverrides?: readonly unknown[] };
 type SimulateResult = { results: { status: 'success' | 'failure'; gasUsed: bigint }[] };
 
-/**
- * Each test gets a fresh chain id so the module-level executor-code cache (one fetch per
- * chain per session) can't leak between cases.
- */
 let nextChainId = 1000;
 const freshChainId = () => ++nextChainId;
 
 function makeClient({
   simulate,
   accountCode,
-  executorCode = EXECUTOR_CODE,
   l1Fee = 0n
 }: {
   simulate: (params: SimulateParams) => SimulateResult;
   accountCode?: Hex;
-  executorCode?: Hex;
   l1Fee?: bigint;
 }) {
   const simulateCalls = vi.fn(async (params: SimulateParams) => simulate(params));
-  const getCode = vi.fn(async ({ address }: { address: Address }) =>
-    address === BATCH_EXECUTOR_ADDRESS ? executorCode : accountCode
-  );
+  const getCode = vi.fn(async () => accountCode);
   const estimateL1Fee = vi.fn(async () => l1Fee);
   const client = {
     simulateCalls,
@@ -67,7 +59,7 @@ describe('estimateFlowGas — sequential', () => {
 
     expect(result.sequentialGas).toBe(199_222n);
     expect(result.batchGas).toBeUndefined();
-    // No batch requested — nothing should have gone looking for delegation or executor code.
+    // No batch requested — nothing should have gone looking for delegation.
     expect(getCode).not.toHaveBeenCalled();
   });
 
@@ -111,7 +103,7 @@ describe('estimateFlowGas — batch', () => {
       .find(params => params.stateOverrides);
     expect(batchCall?.calls).toHaveLength(1);
     expect(batchCall?.calls[0]?.to).toBe(ACCOUNT);
-    expect(batchCall?.stateOverrides).toEqual([{ address: ACCOUNT, code: EXECUTOR_CODE }]);
+    expect(batchCall?.stateOverrides).toEqual([{ address: ACCOUNT, code: MULTICALL3_RUNTIME_CODE }]);
   });
 
   it('charges no auth cost to an already-delegated account', async () => {
@@ -169,18 +161,61 @@ describe('estimateFlowGas — batch', () => {
     expect(result.sequentialGas).toBe(181_833n);
   });
 
-  it('fetches the executor code once per chain across repeated estimates', async () => {
-    const chainId = freshChainId();
+  it('never reads the executor code from the chain — it is embedded', async () => {
     const { client, getCode } = makeClient({
       accountCode: undefined,
       simulate: params => (params.stateOverrides ? success(162_592n) : success(51_086n, 148_136n))
     });
 
-    await estimateFlowGas({ client, chainId, account: ACCOUNT, calls, wantsBatch: true });
-    await estimateFlowGas({ client, chainId, account: ACCOUNT, calls, wantsBatch: true });
+    await estimateFlowGas({ client, chainId: freshChainId(), account: ACCOUNT, calls, wantsBatch: true });
 
-    const executorFetches = getCode.mock.calls.filter(([{ address }]) => address === BATCH_EXECUTOR_ADDRESS);
-    expect(executorFetches).toHaveLength(1);
+    // The only code read is the account's own, for the delegation check.
+    expect(getCode).toHaveBeenCalledTimes(1);
+    expect(getCode).toHaveBeenCalledWith({ address: ACCOUNT });
+  });
+
+  it('keeps the sequential figure when only the bundled simulation fails', async () => {
+    // The bundled figure is the optional one. It used to reject the whole estimate,
+    // which blanked the sequential fee the row falls back to.
+    const { client } = makeClient({
+      accountCode: undefined,
+      simulate: params =>
+        params.stateOverrides ? { results: [{ status: 'failure', gasUsed: 0n }] } : success(51_086n, 148_136n)
+    });
+
+    const result = await estimateFlowGas({
+      client,
+      chainId: freshChainId(),
+      account: ACCOUNT,
+      calls,
+      wantsBatch: true
+    });
+
+    expect(result.sequentialGas).toBe(199_222n);
+    expect(result.batchGas).toBeUndefined();
+  });
+
+  it('keeps the sequential figure when the delegation read fails', async () => {
+    const { client } = makeClient({
+      simulate: params => (params.stateOverrides ? success(162_592n) : success(51_086n, 148_136n))
+    });
+    const failing = {
+      ...client,
+      getCode: async () => {
+        throw new Error('rpc unavailable');
+      }
+    } as unknown as PublicClient;
+
+    const result = await estimateFlowGas({
+      client: failing,
+      chainId: freshChainId(),
+      account: ACCOUNT,
+      calls,
+      wantsBatch: true
+    });
+
+    expect(result.sequentialGas).toBe(199_222n);
+    expect(result.batchGas).toBeUndefined();
   });
 });
 

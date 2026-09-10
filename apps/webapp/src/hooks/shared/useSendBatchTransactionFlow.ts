@@ -1,15 +1,18 @@
 import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
-import { BatchWriteHook, UseSendBatchTransactionFlowParameters } from '../hooks';
+import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
 import { useEffect } from 'react';
+import type { Call } from 'viem';
 import { isRevertedError, toError } from '../helpers';
 import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
+import { useSimulateBatch } from './useSimulateBatch';
 
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
-): BatchWriteHook {
+): BatchTransactionFlowHook {
   const {
     enabled,
+    simulateEnabled = enabled,
     onMutate = () => null,
     onSuccess = () => null,
     onError = () => null,
@@ -23,6 +26,15 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     isLoading: isLoadingCapabilities,
     error: capabilitiesError
   } = useIsBatchSupported();
+
+  // Prepare-time simulation of the whole bundle — the batch counterpart of the per-call
+  // `useSimulateContract` the sequential flow gates on. Nothing goes to the wallet unless
+  // it ran clean (APP-537).
+  const simulation = useSimulateBatch({
+    calls: parameters.calls as readonly Call[],
+    chainId: parameters.chainId,
+    enabled: simulateEnabled
+  });
 
   // Initiate hook to send the batch transaction
   const {
@@ -107,16 +119,29 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         );
         console.error(error);
         onError(error, undefined);
+      } else if (!simulation.prepared) {
+        // `prepared` only disables a button. This is the guarantee behind it: a bundle
+        // that has not simulated clean never reaches `wallet_sendCalls`, whatever
+        // called execute(). Reported like the backstop above, for the same reason.
+        const error = new Error(
+          simulation.error
+            ? `Refusing to send a batch that failed simulation: ${simulation.error.message}`
+            : 'Refusing to send a batch before its simulation has completed.'
+        );
+        console.error(error);
+        onError(error, undefined);
       } else {
         // Call is legit, proceed to send the transaction
         sendCalls(sendCallsParameters);
       }
     },
     data: data?.receipts?.[0]?.transactionHash,
-    isLoading: isLoadingCapabilities || (isMining && !txReverted),
-    prepared: !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError,
-    error: sendError || miningError,
+    isLoading: isLoadingCapabilities || simulation.isLoading || (isMining && !txReverted),
+    prepared:
+      !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError && simulation.prepared,
+    error: sendError || miningError || simulation.error,
     currentCallIndex: 0,
-    reset: resetSendCalls
+    reset: resetSendCalls,
+    batchUnavailable: simulation.structuralFailure
   };
 }

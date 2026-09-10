@@ -1,7 +1,6 @@
 import { publicActionsL2 } from 'viem/op-stack';
 import type { Address, Call, Hex, PublicClient } from 'viem';
 import {
-  BATCH_EXECUTOR_ADDRESS,
   EIP7702_AUTH_COST,
   encodeBatchExecutorData,
   getBatchGasFloor,
@@ -10,6 +9,7 @@ import {
   isOpStackChain,
   totalCallValue
 } from './networkFee';
+import { MULTICALL3_RUNTIME_CODE } from './multicall3RuntimeCode';
 
 export type FlowGasEstimate = {
   /** Cost of signing the calls one at a time: N intrinsics, N cold-access sets. */
@@ -70,28 +70,6 @@ async function estimateL1Fee(
 }
 
 /**
- * The stand-in executor's runtime code is immutable, so fetch it once per chain per
- * session rather than on every modal open. Keyed by chain even though the bytecode is
- * byte-identical everywhere we deploy — a chain without the deployment must not silently
- * borrow another's code.
- */
-const batchExecutorCodeCache = new Map<number, Promise<Hex | undefined>>();
-
-function getBatchExecutorCode(client: PublicClient, chainId: number): Promise<Hex | undefined> {
-  const cached = batchExecutorCodeCache.get(chainId);
-  if (cached) return cached;
-
-  const pending = client.getCode({ address: BATCH_EXECUTOR_ADDRESS }).catch((error: unknown) => {
-    // Don't poison the cache — a transient RPC failure shouldn't disable batch estimation
-    // for the rest of the session.
-    batchExecutorCodeCache.delete(chainId);
-    throw error;
-  });
-  batchExecutorCodeCache.set(chainId, pending);
-  return pending;
-}
-
-/**
  * Gas for the calls signed one at a time.
  *
  * Each entry in a `simulateCalls` batch is processed as its own transaction — the
@@ -119,31 +97,25 @@ async function simulateSequential(
  * Gas for the same calls as one bundled transaction.
  *
  * Always modelled with the stand-in executor, never by calling the account's real 7702
- * delegate. Measured against MetaMask's delegate the stand-in agrees to 0.05% (148,003 vs
- * 148,070 for an approve+deposit), so asking the real delegate buys nothing — while
+ * delegate. Measured against MetaMask's delegate the stand-in agrees to ~0.1% (154,612 vs
+ * 154,804 for an approve+deposit), so asking the real delegate buys nothing — while
  * Ambire's delegate returns *success* from an ERC-7821 `execute` it doesn't implement and
- * reports 31,180 gas for the same work, which we would otherwise have shown as a 5x-too-
- * cheap fee. One code path, no assumptions about a wallet's ABI.
+ * reports ~31,000 gas for the same work, which we would otherwise have shown as a 5x-too-
+ * cheap fee. One code path, no assumptions about a wallet's ABI. The executor's code is
+ * embedded (see multicall3RuntimeCode.ts), so the only read is the account's own code,
+ * which decides whether the authorization tuple still has to be paid.
  */
-async function simulateBatch(
+async function simulateBundledGas(
   client: PublicClient,
-  chainId: number,
   account: Address,
   calls: readonly Call[]
 ): Promise<{ gas: bigint; steadyStateGas: bigint }> {
-  const [accountCode, executorCode] = await Promise.all([
-    client.getCode({ address: account }),
-    getBatchExecutorCode(client, chainId)
-  ]);
-
-  if (!executorCode) {
-    throw new Error('Network fee estimation failed: batch executor code unavailable');
-  }
+  const accountCode = await client.getCode({ address: account });
 
   const { results } = await client.simulateCalls({
     account,
     calls: [{ to: account, data: encodeBatchExecutorData(calls), value: totalCallValue(calls) }],
-    stateOverrides: [{ address: account, code: executorCode }]
+    stateOverrides: [{ address: account, code: MULTICALL3_RUNTIME_CODE }]
   });
 
   const [result] = results;
@@ -179,9 +151,13 @@ export async function estimateFlowGas({
   calls: readonly Call[];
   wantsBatch: boolean;
 }): Promise<FlowGasEstimate> {
+  // The bundled branch catches its own failures: it is the optional figure, and letting
+  // it reject the pair blanked the sequential fee too — the one the row falls back to.
   const [perCallGas, simulatedBatchGas] = await Promise.all([
     simulateSequential(client, account, calls),
-    wantsBatch ? simulateBatch(client, chainId, account, calls) : Promise.resolve(undefined)
+    wantsBatch
+      ? simulateBundledGas(client, account, calls).catch(() => undefined)
+      : Promise.resolve(undefined)
   ]);
 
   const sequentialGas = perCallGas.reduce((total, gas) => total + gas, 0n);
