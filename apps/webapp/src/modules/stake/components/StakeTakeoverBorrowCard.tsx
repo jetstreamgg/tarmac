@@ -13,7 +13,7 @@ import { BorrowRequirementNotice } from './BorrowRequirementNotice';
 import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
 import { StakeMoreToBorrowHint } from './StakeCardToggle';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
-import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
+import { StakeTakeoverAmountField, AmountChip } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
 
@@ -105,11 +105,11 @@ export function StakeTakeoverBorrowCard({
   // either input read is unresolved.
   const maxLoading = collateralLoading || simulationLoading;
 
-  const onPercentClick = (percent: number) => {
-    if (maxBorrowable === 0n) return;
-    // Chips follow the slider's whole-USDS rounding.
-    onAmountChange(((maxBorrowable * BigInt(percent)) / 100n / 10n ** 18n) * 10n ** 18n);
-  };
+  // Figma 3015:59004 chips: Min stages the dust floor, Max the full headroom.
+  const chips: AmountChip[] = [
+    { key: 'chip-min', label: t`Min`, onClick: () => dust !== undefined && onAmountChange(dust) },
+    { key: 'chip-max', label: t`Max`, onClick: () => maxBorrowable > 0n && onAmountChange(maxBorrowable) }
+  ];
 
   return (
     <StakeTakeoverCard
@@ -144,8 +144,7 @@ export function StakeTakeoverBorrowCard({
             tokenSymbol="USDS"
             amount={usdsToBorrow}
             onAmountChange={onAmountChange}
-            onPercentClick={onPercentClick}
-            percentChips={BORROW_PERCENT_CHIPS}
+            chips={chips}
             disabled={inputDisabled}
             error={error}
             dataTestId="stake-takeover-borrow-amount"

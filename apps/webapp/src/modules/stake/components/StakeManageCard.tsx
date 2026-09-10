@@ -75,12 +75,14 @@ export function StakeManageCard<Mode extends string>({
 }
 
 /**
- * In-card stat cell (comps 1036:213889/213936): Body 6 label over a Label 5
- * Circular value; a staged change renders `current → next` with both values
- * white and a muted 12px arrow. Values arrive pre-formatted (token icons
- * included); the arrow only appears when a next value is passed.
+ * Stacked stat rows (Figma 3015:58333 cards): full-width label / value rows
+ * split by hairlines; a staged change renders `current → next`.
  */
-export function StakeManageStatCell({
+export function StakeManageStatRows({ children }: { children: ReactNode }) {
+  return <div className="divide-borderPrimary flex flex-col divide-y">{children}</div>;
+}
+
+export function StakeManageStatRow({
   label,
   current,
   next,
@@ -92,16 +94,14 @@ export function StakeManageStatCell({
   next?: ReactNode;
   dataTestId?: string;
 }) {
-  const hasDelta = next !== undefined;
   return (
-    // min-w-0 + nowrap from md: the cell yields width to its row rather than
-    // wrapping its value onto a second line (see the borrow card's stat row,
-    // APP-546). Phones keep the 2×2 grid, whose narrow tracks need the wrap.
-    <div data-testid={dataTestId} className="flex min-w-0 flex-col gap-1 md:whitespace-nowrap">
-      <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
-      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
+    <div data-testid={dataTestId} className="flex items-center justify-between gap-4 py-2.5">
+      <span className="text-textSecondary flex shrink-0 items-center gap-1 text-xs leading-[18px]">
+        {label}
+      </span>
+      <span className="text-text font-circle flex min-w-0 flex-wrap items-center justify-end gap-1.5 text-right text-sm leading-4 font-medium tracking-[-0.28px]">
         <span className="flex items-center gap-1">{current}</span>
-        {hasDelta && (
+        {next !== undefined && (
           <>
             <ArrowRight className="text-textSecondary h-3 w-3 shrink-0" aria-hidden />
             <span className="flex items-center gap-1">{next}</span>
@@ -127,11 +127,6 @@ export function ReachedBadge({ reached }: { reached: boolean }) {
     </span>
   );
 }
-
-/** 32px vertical hairline between hugging stat cells (comps' Vector 461x). */
-export const StakeManageStatDivider = ({ className }: { className?: string }) => (
-  <span className={cn('bg-borderPrimary h-8 w-px shrink-0 self-center', className)} aria-hidden />
-);
 
 /** Badges XS neutral "Updated hourly" (comp 1594:43606): no icon, 11px Circular on the glass tint. */
 export const UpdatedHourlyBadge = () => (

@@ -612,16 +612,17 @@ describe('OpenPositionTakeover', () => {
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('borrow: the top chip is 75% and stages three quarters of the max, whole-USDS rounded', () => {
+  it('borrow: the Min chip stages the dust floor and Max the ceiling headroom', () => {
     h.debtCeilingHeadroom = 50n * WAD;
     renderTakeover();
     typeStakeAmount('1000');
 
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
-    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-100')).toBeNull();
-    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-percent-75'));
-
-    expect(h.launchParams?.usdsToBorrow).toBe(37n * WAD);
+    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-75')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-chip-max'));
+    expect(h.launchParams?.usdsToBorrow).toBe(50n * WAD);
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-chip-min'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
   });
 
   it('borrow above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {

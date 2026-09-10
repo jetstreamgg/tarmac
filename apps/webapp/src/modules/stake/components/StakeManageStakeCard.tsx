@@ -8,12 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import {
-  ReachedBadge,
-  StakeManageCard,
-  StakeManageStatCell,
-  StakeManageStatDivider
-} from './StakeManageCard';
+import { ReachedBadge, StakeManageCard, StakeManageStatRow, StakeManageStatRows } from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -22,8 +17,9 @@ const WAD = 10n ** 18n;
 /**
  * Manage card 1 · Stake SKY | Withdraw SKY (UX 1050:21454 / 1104:20574):
  * segmented mode + toggle, amount field, balance/staked line, a 0–100% percent
- * slider over the mode's base amount, and the info rows with before→after
- * deltas (M13/M22). Withdraw validation arrives via `error` (legacy Free.tsx
+ * slider over the mode's base amount, and the stacked stat rows (Figma
+ * 3015:58333: Min. stake to borrow, Staked amount, Est. annual rewards,
+ * rewards rate) with before→after deltas (M13/M22). Withdraw validation arrives via `error` (legacy Free.tsx
  * rules, computed in the container).
  */
 export function StakeManageStakeCard({
@@ -88,6 +84,16 @@ export function StakeManageStakeCard({
   };
   const onPercentClick = (percent: number) => onSliderChange(percent);
 
+  // Staked amount after the staged change (row delta only while an amount is staged).
+  const stakedNext =
+    amount > 0n && stakedAmount !== undefined
+      ? isStake
+        ? stakedAmount + amount
+        : stakedAmount > amount
+          ? stakedAmount - amount
+          : 0n
+      : undefined;
+
   // Comp values carry a 12px SKY icon instead of the symbol text (1036:213909).
   const skyIcon = (
     <TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />
@@ -145,9 +151,8 @@ export function StakeManageStakeCard({
           </div>
         </div>
 
-        {/* Comp 1036:213889 stat columns: hugging cells split by hairlines. */}
-        <div className="flex flex-wrap items-start gap-4">
-          <StakeManageStatCell
+        <StakeManageStatRows>
+          <StakeManageStatRow
             label={
               <>
                 <Trans>Min. stake amount to borrow</Trans>
@@ -165,9 +170,9 @@ export function StakeManageStakeCard({
             current={
               minStakeToBorrow !== undefined ? (
                 <>
+                  {minStakeReached !== undefined && <ReachedBadge reached={minStakeReached} />}
                   {formatBigInt(minStakeToBorrow)}
                   {skyIcon}
-                  {minStakeReached !== undefined && <ReachedBadge reached={minStakeReached} />}
                 </>
               ) : minStakeToBorrowLoading ? (
                 <Skeleton className="h-4 w-14" />
@@ -177,26 +182,29 @@ export function StakeManageStakeCard({
             }
             dataTestId="stake-manage-min-stake"
           />
-          <StakeManageStatDivider />
-          <StakeManageStatCell
-            label={
-              <>
-                <Trans>Staking Rewards Rate</Trans>
-                <RateInfo type="srr" size={12} />
-              </>
-            }
+          <StakeManageStatRow
+            label={<Trans>Staked amount</Trans>}
             current={
-              rewardsRate !== null ? (
-                formatDecimalPercentage(rewardsRate)
-              ) : rateLoading ? (
+              stakedAmountLoading && stakedAmount === undefined ? (
                 <Skeleton className="h-4 w-14" />
               ) : (
-                NO_VALUE
+                <>
+                  {formatBigInt(stakedAmount ?? 0n)}
+                  {skyIcon}
+                </>
               )
             }
+            next={
+              stakedNext !== undefined ? (
+                <>
+                  {formatBigInt(stakedNext)}
+                  {skyIcon}
+                </>
+              ) : undefined
+            }
+            dataTestId="stake-manage-staked-amount"
           />
-          <StakeManageStatDivider />
-          <StakeManageStatCell
+          <StakeManageStatRow
             label={
               <>
                 <Trans>Est. annual rewards</Trans>
@@ -223,7 +231,24 @@ export function StakeManageStakeCard({
             }
             dataTestId="stake-manage-est-rewards"
           />
-        </div>
+          <StakeManageStatRow
+            label={
+              <>
+                <Trans>Staking Rewards Rate</Trans>
+                <RateInfo type="srr" size={12} />
+              </>
+            }
+            current={
+              rewardsRate !== null ? (
+                formatDecimalPercentage(rewardsRate)
+              ) : rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
+          />
+        </StakeManageStatRows>
       </div>
     </StakeManageCard>
   );

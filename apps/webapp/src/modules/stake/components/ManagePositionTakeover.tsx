@@ -151,6 +151,24 @@ export function ManagePositionTakeover({
     !!debouncedVault?.liquidationPrice &&
     debouncedVault.liquidationPrice > debouncedVault.delayedPrice
   );
+  // Figma 3015:62253 / 3015:56730 withdraw bounds: the liquidation-safe max
+  // (collateral − minSafeCollateral for the resulting debt) and, while debt
+  // remains, the min-collateral bound (collateral − minCollateralForDust).
+  const maxWithdrawSafe =
+    debouncedVault?.minSafeCollateralAmount !== undefined &&
+    existingCollateral > debouncedVault.minSafeCollateralAmount
+      ? existingCollateral - debouncedVault.minSafeCollateralAmount
+      : 0n;
+  const isMinCollateralWithdrawError =
+    skyToFree > 0n &&
+    newDebtValue > 0n &&
+    debouncedVault?.minCollateralForDust !== undefined &&
+    newCollateralAmount < debouncedVault.minCollateralForDust;
+  const maxWithdrawForMinCollateral =
+    debouncedVault?.minCollateralForDust !== undefined &&
+    existingCollateral > debouncedVault.minCollateralForDust
+      ? existingCollateral - debouncedVault.minCollateralForDust
+      : 0n;
   const stakeError =
     state.stakeMode === 'stake'
       ? skyBalance !== undefined && state.skyAmount > skyBalance.value && state.skyAmount !== 0n
@@ -163,10 +181,14 @@ export function ManagePositionTakeover({
           // short-circuit reports 100 whenever liquidation price ≥ delayed
           // price), so the more specific message must win the tie — after it,
           // the generic risk error is unreachable-shadowed, not the reverse.
-          isCappedOsmError
-          ? t`Liquidation price is higher than the capped OSM SKY price`
-          : isLiquidationError
-            ? t`Liquidation risk too high`
+          isCappedOsmError || isLiquidationError
+          ? debouncedVault?.minSafeCollateralAmount !== undefined && newDebtValue > 0n
+            ? t`Withdrawing ${formatBigInt(state.skyAmount)} SKY would liquidate your position. With your ${formatBigInt(newDebtValue)} USDS debt, you can withdraw at most ${formatBigInt(maxWithdrawSafe)} SKY.`
+            : isCappedOsmError
+              ? t`Liquidation price is higher than the capped OSM SKY price`
+              : t`Liquidation risk too high`
+          : isMinCollateralWithdrawError
+            ? t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation. You must first repay your position or close it entirely.`
             : undefined;
   const stakeCardValid = !state.stakeEnabled || state.skyAmount === 0n || !stakeError;
 
