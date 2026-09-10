@@ -12,6 +12,13 @@ const toPosition = (value: bigint, max: bigint): number => {
   return Number((value * STEPS) / max);
 };
 
+// An interior tick only; one that rounds onto an end would overlap the end label.
+const interiorMarker = (value: bigint | undefined, max: bigint) => {
+  if (value === undefined) return undefined;
+  const position = toPosition(value, max);
+  return position > 0 && position < STAKE_SLIDER_MAX ? { value, position } : undefined;
+};
+
 export type StakeAmountSlider = {
   /** Thumb position in [0, STAKE_SLIDER_MAX], derived from `amount`. */
   value: number;
@@ -63,15 +70,15 @@ export function useStakeAmountSlider({
   if (mode === 'repay') {
     const max = existingDebt;
     const gapStart = max - minBorrow;
-    const marker = gapStart > 0n && gapStart < max ? gapStart : undefined;
+    const marker = interiorMarker(gapStart, max);
     const value = toPosition(amount, max);
     return {
       value,
-      markers: marker !== undefined ? [toPosition(marker, max)] : [],
+      markers: marker ? [marker.position] : [],
       progress: value / (STAKE_SLIDER_MAX / 100),
       disabled: forcedDisabled,
       hidden: max <= 0n,
-      axis: { min: 0n, max, marker },
+      axis: { min: 0n, max, marker: marker?.value },
       onValueChange: position => {
         if (max <= 0n) return;
         if (position >= STAKE_SLIDER_MAX) {
@@ -99,10 +106,10 @@ export function useStakeAmountSlider({
   const noHeadroom = headroom <= 0n;
   const disabled = forcedDisabled || noHeadroom;
   const value = toPosition(existingDebt + amount, max);
-  const marker = existingDebt > 0n && existingDebt < max ? existingDebt : undefined;
+  const marker = interiorMarker(existingDebt, max);
   return {
     value,
-    markers: marker !== undefined ? [toPosition(marker, max)] : [],
+    markers: marker ? [marker.position] : [],
     progress: disabled ? 0 : value / (STAKE_SLIDER_MAX / 100),
     disabled,
     hidden: false,
@@ -110,7 +117,7 @@ export function useStakeAmountSlider({
       // With nothing borrowable the ends collapse onto the current debt.
       min: noHeadroom ? existingDebt : minBorrow,
       max,
-      marker
+      marker: marker?.value
     },
     onValueChange: position => {
       if (disabled || max <= 0n) return;

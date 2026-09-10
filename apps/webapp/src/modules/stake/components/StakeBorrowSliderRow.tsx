@@ -34,7 +34,7 @@ export function StakeBorrowSliderRow({
   const label = (children: ReactNode) => (
     <span className="flex items-center gap-1 whitespace-nowrap">
       {children}
-      {unit}
+      {unit !== undefined && <span>{unit}</span>}
     </span>
   );
 
